@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# extends the default conf by adjusting some options.
+
+extends: default
+
+rules:
+  document-start: disable
+  line-length:
+    max: 120

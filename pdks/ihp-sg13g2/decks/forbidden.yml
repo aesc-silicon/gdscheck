@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: forbidden
+    check: forbidden
+    layers: [BiWind, PEmWind, BasPoly, DeepCo, PEmPoly, EmPoly, LDMOS, PBiWind, NoDRC, Flash, ColWind]
+    value: 0.0

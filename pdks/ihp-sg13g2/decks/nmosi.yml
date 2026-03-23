@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: nmosi.b
+    check: min_enclosure
+    layers: [nBuLay, IsoPWellAct]
+    value: 1.24
+  - id: nmosi.c
+    check: min_space
+    layers: [NWellRing, IsoPWellAct]
+    value: 0.39
+  - id: nmosi.d
+    check: min_width
+    layers: [NWellNBuLay]
+    value: 0.62
+  - id: nmosi.f
+    check: min_width
+    layers: [nSDBlockIso]
+    value: 0.62
+  - id: nmosi.g
+    check: nonempty
+    layers: [NmosiGBad]
+    value: 0.0

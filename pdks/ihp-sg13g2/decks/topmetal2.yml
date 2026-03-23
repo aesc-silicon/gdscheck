@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: TM2.a
+    check: min_width
+    layers: [TopMetal2]
+    value: 2.00
+  - id: TM2.b
+    check: min_space
+    layers: [TopMetal2]
+    value: 2.00
+  - id: TM2.b
+    check: min_notch
+    layers: [TopMetal2]
+    value: 2.00
+  - id: TM2.bR
+    check: min_space_prl
+    layers: [TopMetal2NotIND]
+    value: 5.00
+    params:
+      wide_width: 5.00
+      parallel_run: 50.00
+  - id: TM2.c
+    check: min_density
+    layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]
+    value: 25.00
+    params:
+      boundary_layer: 39
+  - id: TM2.d
+    check: max_density
+    layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]
+    value: 70.00
+    params:
+      boundary_layer: 39
+
+  - id: TM2Fil.a
+    check: min_width
+    layers: [TopMetal2.filler]
+    value: 5.00
+  - id: TM2Fil.a1
+    check: max_width
+    layers: [TopMetal2.filler]
+    value: 10.00
+  - id: TM2Fil.b
+    check: min_space
+    layers: [TopMetal2.filler]
+    value: 3.00
+  - id: TM2Fil.c
+    check: min_space
+    layers: [TopMetal2.filler, TopMetal2]
+    value: 3.00
+  - id: TM2Fil.d
+    check: min_space
+    layers: [TopMetal2.filler, TRANS]
+    value: 4.90

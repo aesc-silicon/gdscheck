@@ -1,0 +1,249 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Slt.a
+    check: min_width
+    layers: [Metal1.slit]
+    value: 2.80
+  - id: Slt.a
+    check: min_width
+    layers: [Metal2.slit]
+    value: 2.80
+  - id: Slt.a
+    check: min_width
+    layers: [Metal3.slit]
+    value: 2.80
+  - id: Slt.a
+    check: min_width
+    layers: [Metal4.slit]
+    value: 2.80
+  - id: Slt.a
+    check: min_width
+    layers: [Metal5.slit]
+    value: 2.80
+  - id: Slt.a
+    check: min_width
+    layers: [TopMetal1.slit]
+    value: 2.80
+  - id: Slt.a
+    check: min_width
+    layers: [TopMetal2.slit]
+    value: 2.80
+
+  - id: Slt.b
+    check: max_width
+    layers: [Metal1.slit]
+    value: 20.00
+  - id: Slt.b
+    check: max_width
+    layers: [Metal2.slit]
+    value: 20.00
+  - id: Slt.b
+    check: max_width
+    layers: [Metal3.slit]
+    value: 20.00
+  - id: Slt.b
+    check: max_width
+    layers: [Metal4.slit]
+    value: 20.00
+  - id: Slt.b
+    check: max_width
+    layers: [Metal5.slit]
+    value: 20.00
+  - id: Slt.b
+    check: max_width
+    layers: [TopMetal1.slit]
+    value: 20.00
+  - id: Slt.b
+    check: max_width
+    layers: [TopMetal2.slit]
+    value: 20.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [Metal1NoExempt, Metal1.slit]
+    value: 30.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [Metal2NoExempt, Metal2.slit]
+    value: 30.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [Metal3NoExempt, Metal3.slit]
+    value: 30.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [Metal4NoExempt, Metal4.slit]
+    value: 30.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [Metal5NoExempt, Metal5.slit]
+    value: 30.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [TopMetal1NoExempt, TopMetal1.slit]
+    value: 30.00
+  - id: Slt.c
+    check: wide_uncovered
+    layers: [TopMetal2NoExempt, TopMetal2.slit]
+    value: 30.00
+  - id: Slt.e
+    check: nonempty
+    layers: [Metal1SlitOnPad]
+    value: 0.0
+  - id: Slt.e
+    check: nonempty
+    layers: [Metal2SlitOnPad]
+    value: 0.0
+  - id: Slt.e
+    check: nonempty
+    layers: [Metal3SlitOnPad]
+    value: 0.0
+  - id: Slt.e
+    check: nonempty
+    layers: [Metal4SlitOnPad]
+    value: 0.0
+  - id: Slt.e
+    check: nonempty
+    layers: [Metal5SlitOnPad]
+    value: 0.0
+  - id: Slt.e
+    check: nonempty
+    layers: [TopMetal1SlitOnPad]
+    value: 0.0
+  - id: Slt.e
+    check: nonempty
+    layers: [TopMetal2SlitOnPad]
+    value: 0.0
+
+  - id: Slt.f
+    check: min_enclosure
+    layers: [Metal1, Metal1.slit]
+    value: 1.00
+  - id: Slt.f
+    check: min_enclosure
+    layers: [Metal2, Metal2.slit]
+    value: 1.00
+  - id: Slt.f
+    check: min_enclosure
+    layers: [Metal3, Metal3.slit]
+    value: 1.00
+  - id: Slt.f
+    check: min_enclosure
+    layers: [Metal4, Metal4.slit]
+    value: 1.00
+  - id: Slt.f
+    check: min_enclosure
+    layers: [Metal5, Metal5.slit]
+    value: 1.00
+  - id: Slt.f
+    check: min_enclosure
+    layers: [TopMetal1, TopMetal1.slit]
+    value: 1.00
+  - id: Slt.f
+    check: min_enclosure
+    layers: [TopMetal2, TopMetal2.slit]
+    value: 1.00
+  - id: Slt.g
+    check: min_space
+    layers: [Metal5.slit, MIM]
+    value: 0.60
+  - id: Slt.g
+    check: min_space
+    layers: [TopMetal1.slit, MIM]
+    value: 0.60
+  - id: Slt.h1
+    check: min_space
+    layers: [Metal1.slit, Cont]
+    value: 0.30
+  - id: Slt.h1
+    check: min_space
+    layers: [Metal1.slit, Via1]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal2.slit, Via1]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal2.slit, Via2]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal3.slit, Via2]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal3.slit, Via3]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal4.slit, Via3]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal4.slit, Via4]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal5.slit, Via4]
+    value: 0.30
+  - id: Slt.h2
+    check: min_space
+    layers: [Metal5.slit, TopVia1]
+    value: 0.30
+  - id: Slt.h3
+    check: min_space
+    layers: [TopMetal1.slit, TopVia1]
+    value: 1.00
+  - id: Slt.h3
+    check: min_space
+    layers: [TopMetal1.slit, TopVia2]
+    value: 1.00
+  - id: Slt.h4
+    check: min_space
+    layers: [TopMetal2.slit, TopVia2]
+    value: 1.00
+  - id: Slt.i
+    check: min_region_density
+    layers: [Metal1NoExempt, Metal1.slit]
+    value: 6.00
+    params:
+      min_size: 35.0
+  - id: Slt.i
+    check: min_region_density
+    layers: [Metal2NoExempt, Metal2.slit]
+    value: 6.00
+    params:
+      min_size: 35.0
+  - id: Slt.i
+    check: min_region_density
+    layers: [Metal3NoExempt, Metal3.slit]
+    value: 6.00
+    params:
+      min_size: 35.0
+  - id: Slt.i
+    check: min_region_density
+    layers: [Metal4NoExempt, Metal4.slit]
+    value: 6.00
+    params:
+      min_size: 35.0
+  - id: Slt.i
+    check: min_region_density
+    layers: [Metal5NoExempt, Metal5.slit]
+    value: 6.00
+    params:
+      min_size: 35.0
+  - id: Slt.i
+    check: min_region_density
+    layers: [TopMetal1NoExempt, TopMetal1.slit]
+    value: 6.00
+    params:
+      min_size: 35.0
+  - id: Slt.i
+    check: min_region_density
+    layers: [TopMetal2NoExempt, TopMetal2.slit]
+    value: 6.00
+    params:
+      min_size: 35.0

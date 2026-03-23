@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The full run: import every per-layer deck with no rule restriction.
+include:
+  - deck: offgrid
+  - deck: forbidden
+  - deck: pin
+  - deck: lbe
+  - deck: pad
+  - deck: activ
+  - deck: tgo
+  - deck: gatpoly
+  - deck: extblock
+  - deck: cont
+  - deck: contbar
+  - deck: salblock
+  - deck: nsdblock
+  - deck: psd
+  - deck: resistor
+  - deck: nwell
+  - deck: pwellblock
+  - deck: metal1
+  - deck: metal2
+  - deck: metal3
+  - deck: metal4
+  - deck: via1
+  - deck: via2
+  - deck: via3
+  - deck: topvia1
+  - deck: topmetal1
+  - deck: passiv
+  - deck: sealring
+  - deck: slit
+  - deck: lu
+  - deck: antenna

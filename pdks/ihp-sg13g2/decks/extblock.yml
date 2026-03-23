@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: EXTB.a
+    check: min_width
+    layers: [EXTBlock]
+    value: 0.31
+  - id: EXTB.b
+    check: min_space
+    layers: [EXTBlock]
+    value: 0.31
+  - id: EXTB.b
+    check: min_notch
+    layers: [EXTBlock]
+    value: 0.31
+  - id: EXTB.c
+    check: min_space
+    layers: [EXTBlock, pSD]
+    value: 0.31

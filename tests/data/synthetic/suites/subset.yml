@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Whitelist import: A.2 alone — should pull BOTH A.2 entries (min_space + min_notch).
+include:
+  - deck: deckA
+    rules: [A.2]

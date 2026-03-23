@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Minimal synthetic PDK for PDK-agnostic engine tests (deck/suite resolution).
+# Intentionally tiny so expected rule sets are obvious; independent of any foundry.
+name: Synthetic
+version: "1.0"
+
+suites:
+  - name: full
+    path: suites/full.yml
+  - name: subset
+    path: suites/subset.yml
+  - name: badrule
+    path: suites/badrule.yml
+  - name: baddeck
+    path: suites/baddeck.yml
+
+decks:
+  - name: deckA
+    path: decks/deckA.yml
+  - name: deckB
+    path: decks/deckB.yml
+  # An inside_boundary rule pointed at a lazy virtual layer — must be rejected.
+  - name: badlazy
+    path: decks/badlazy.yml
+
+virtual_layers:
+  # GlobalDiff is materialised eagerly (compute_virtual_layers); LazyDiff is built
+  # per tile in the merge cache.  Both = LayerA NOT LayerB.
+  - name: GlobalDiff
+    op: difference
+    mode: global
+    layers: [LayerA, LayerB]
+  - name: LazyDiff
+    op: difference
+    mode: lazy
+    layers: [LayerA, LayerB]
+  # `inside`: LayerA restricted to the area enclosed by the LayerB ring (filled).
+  - name: InsideRing
+    op: inside
+    layers: [LayerA, LayerB]
+
+layers:
+  - name: LayerA
+    gds_layer: 1
+    gds_datatype: 0
+  - name: LayerB
+    gds_layer: 2
+    gds_datatype: 0

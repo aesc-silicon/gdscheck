@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: nSDB.a
+    check: min_width
+    layers: [nSD.block]
+    value: 0.31
+  - id: nSDB.b
+    check: min_space
+    layers: [nSD.block]
+    value: 0.31
+  - id: nSDB.b
+    check: min_notch
+    layers: [nSD.block]
+    value: 0.31
+  - id: nSDB.c
+    check: min_space
+    layers: [nSD.block, pSD]
+    value: 0.31
+  - id: nSDB.e
+    check: forbidden_overlap
+    layers: [nSD.block, Cont]
+    value: 0.0

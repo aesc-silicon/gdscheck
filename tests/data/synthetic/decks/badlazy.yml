@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# inside_boundary is a whole-layout check, so it cannot see a lazy (tiled) virtual
+# layer — run_drc must reject this deck up front.
+rules:
+  - id: BAD.1
+    check: inside_boundary
+    layers: [LazyDiff]
+    value: 0.0

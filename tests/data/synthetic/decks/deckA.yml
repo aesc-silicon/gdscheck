@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: A.1
+    check: min_width
+    layers: [LayerA]
+    value: 0.1
+  # A.2 maps to two entries on purpose, to test that a whitelist keeps all of them.
+  - id: A.2
+    check: min_space
+    layers: [LayerA]
+    value: 0.2
+  - id: A.2
+    check: min_notch
+    layers: [LayerA]
+    value: 0.2

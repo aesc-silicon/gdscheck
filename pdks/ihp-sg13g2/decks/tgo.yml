@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: TGO.a
+    check: min_extension
+    layers: [ThickGateOx, Activ]
+    value: 0.27
+  - id: TGO.b
+    check: min_space
+    layers: [ThickGateOx, ActivOutsideTGO]
+    value: 0.27
+  - id: TGO.c
+    check: min_extension
+    layers: [ThickGateOxOverActiv, GatPoly]
+    value: 0.34
+  - id: TGO.d
+    check: min_space
+    layers: [ThickGateOx, GatPolyOverActivOutsideTGO]
+    value: 0.34
+  - id: TGO.e
+    check: min_space
+    layers: [ThickGateOx]
+    value: 0.86
+  - id: TGO.f
+    check: min_width
+    layers: [ThickGateOx]
+    value: 0.86

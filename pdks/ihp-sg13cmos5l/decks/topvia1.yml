@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: TV1.a
+    check: exact_width
+    layers: [TopVia1NoSealring]
+    value: 0.42
+  - id: TV1.b
+    check: min_space
+    layers: [TopVia1]
+    value: 0.42
+  - id: TV1.c
+    check: min_enclosure
+    layers: [Metal4, TopVia1NoSealring]
+    value: 0.1
+  - id: TV1.d
+    check: min_enclosure
+    layers: [TopMetal1, TopVia1NoSealring]
+    value: 0.42

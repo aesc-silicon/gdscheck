@@ -1,0 +1,121 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Gat.a
+    check: min_width
+    layers: [GatPoly]
+    value: 0.13
+  - id: Gat.a1
+    check: gate_length
+    layers: [GatPoly, GatPolyOverNsdActivNoTGO]
+    value: 0.13
+  - id: Gat.a2
+    check: gate_length
+    layers: [GatPoly, GatPolyOverPsdActivNoTGO]
+    value: 0.13
+  - id: Gat.a3
+    check: gate_length
+    layers: [GatPoly, GatPolyOverNsdActivTGO]
+    value: 0.45
+  - id: Gat.a4
+    check: gate_length
+    layers: [GatPoly, GatPolyOverPsdActivTGO]
+    value: 0.40
+  - id: Gat.b
+    check: min_space
+    layers: [GatPoly]
+    value: 0.18
+  - id: Gat.b
+    check: min_notch
+    layers: [GatPoly]
+    value: 0.18
+  - id: Gat.b1
+    check: min_space
+    layers: [GatPolyOverActivTGO]
+    value: 0.25
+  - id: Gat.c
+    check: min_extension
+    layers: [GatPolyNoSRAM, Activ]
+    value: 0.18
+  - id: Gat.d
+    check: min_space
+    layers: [GatPoly, Activ]
+    value: 0.07
+  - id: Gat.e
+    check: min_area
+    layers: [GatPoly]
+    value: 0.09
+  - id: Gat.f
+    check: no_angle
+    layers: [GatPolyOverActiv]
+    value: 0.0
+  - id: Gat.g
+    check: min_45_width
+    layers: [GatPoly]
+    value: 0.16
+    params:
+      bent_length: 0.39
+  - id: GFil.a
+    check: max_width
+    layers: [GatPoly.filler]
+    value: 5.00
+  - id: GFil.b
+    check: min_width
+    layers: [GatPoly.filler]
+    value: 0.70
+  - id: GFil.c
+    check: min_space
+    layers: [GatPoly.filler]
+    value: 0.80
+  - id: GFil.d
+    check: min_space
+    layers: [GatPoly.filler, Activ]
+    value: 1.10
+  - id: GFil.d
+    check: min_space
+    layers: [GatPoly.filler, GatPoly]
+    value: 1.10
+  - id: GFil.d
+    check: min_space
+    layers: [GatPoly.filler, Cont]
+    value: 1.10
+  - id: GFil.d
+    check: min_space
+    layers: [GatPoly.filler, pSD]
+    value: 1.10
+  - id: GFil.d
+    check: min_space
+    layers: [GatPoly.filler, nSD.block]
+    value: 1.10
+  - id: GFil.d
+    check: min_space
+    layers: [GatPoly.filler, SalBlock]
+    value: 1.10
+  - id: GFil.e
+    check: min_space
+    layers: [GatPoly.filler, NWell]
+    value: 1.10
+  - id: GFil.e
+    check: min_space
+    layers: [GatPoly.filler, nBuLay]
+    value: 1.10
+  - id: GFil.f
+    check: min_space
+    layers: [GatPoly.filler, TRANS]
+    value: 1.10
+  - id: GFil.g
+    check: min_density
+    layers: [GatPoly, GatPoly.filler]
+    value: 15.00
+    params:
+      boundary_layer: 39
+  - id: GFil.i
+    check: max_area
+    layers: [GatPoly.nofill]
+    value: 160000.0
+  - id: GFil.j
+    check: min_extension
+    layers: [GatPoly.filler, Activ.filler]
+    value: 0.18

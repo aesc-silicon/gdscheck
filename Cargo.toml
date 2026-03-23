@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[package]
+name = "gdscheck"
+version = "0.1.0"
+edition = "2024"
+authors = ["Daniel Schultz <dnltz@aesc-silicon.de>"]
+description = "Open-source, geometry-only DRC (Design Rule Check) engine for GDSII layouts."
+license = "AGPL-3.0-or-later"
+readme = "README.rst"
+repository = "https://github.com/aesc-silicon/gdscheck"
+keywords = ["gds", "eda", "vlsi", "drc", "layout"]
+categories = ["command-line-utilities", "science"]
+include = [
+    "src/**/*.rs",
+    "build.rs",
+    "pdks/**/*.yml",
+    "gen/**/*.rs",
+    "/README.rst",
+    "/LICENSE",
+]
+
+[dev-dependencies]
+rstest = "0.23"
+
+[profile.release]
+opt-level = 3        # maximum optimization
+lto = true           # link-time optimization across crates
+codegen-units = 1    # single codegen unit for better LTO
+strip = true         # strip debug symbols from binary
+
+[[bin]]
+name = "gdscheck"
+path = "src/main.rs"
+
+[features]
+dev-tools = []
+
+[[bin]]
+name = "gen-testdata"
+path = "gen/main.rs"
+required-features = ["dev-tools"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+gds21 = "3.0.0-pre.2"
+serde = { version = "1", features = ["derive"] }
+serde_yml = "0.0.12"
+flate2 = "1"
+quick-xml = { version = "0.37", features = ["serialize"] }
+rayon = "1"
+i_overlay = "4.5.1"

@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: PWB.a
+    check: min_width
+    layers: [PWell.block]
+    value: 0.62
+  - id: PWB.b
+    check: min_space
+    layers: [PWell.block]
+    value: 0.62
+  - id: PWB.b
+    check: min_notch
+    layers: [PWell.block]
+    value: 0.62
+  - id: PWB.c
+    check: min_space
+    layers: [PWell.block, NWell]
+    value: 0.62
+  - id: PWB.e
+    check: min_space
+    layers: [PWell.block, NsdActivInPWellNoTGO]
+    value: 0.31
+  - id: PWB.e1
+    check: min_space
+    layers: [PWell.block, NsdActivInPWellTGO]
+    value: 0.62
+  - id: PWB.f
+    check: min_space
+    layers: [PWell.block, PsdActivInPWellNoTGO]
+    value: 0.24
+  - id: PWB.f1
+    check: min_space
+    layers: [PWell.block, PsdActivInPWellTGO]
+    value: 0.62

@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: NW.a
+    check: min_width
+    layers: [NWell]
+    value: 0.62
+  - id: NW.b
+    check: min_space
+    layers: [NWell]
+    value: 0.62
+  - id: NW.b1
+    check: min_space
+    layers: [NWellMergedNoSRAM]
+    value: 1.80
+  - id: NW.c
+    check: min_enclosure
+    layers: [NWell, PsdActivInNWellNoTGONoSRAM]
+    value: 0.31
+  - id: NW.c1
+    check: min_enclosure
+    layers: [NWell, PsdActivInNWellTGOAna]
+    value: 0.62
+  - id: NW.c1.dig
+    check: min_enclosure
+    layers: [NWell, PsdActivInNWellTGODig]
+    value: 0.31
+  - id: NW.d
+    check: min_space
+    layers: [NWellNoSRAM, NActFullNoTGO]
+    value: 0.31
+  - id: NW.d1
+    check: min_space
+    layers: [NWellNoSRAM, NActFullTGOAna]
+    value: 0.62
+  - id: NW.d1.dig
+    check: min_space
+    layers: [NWellNoSRAM, NActFullTGODig]
+    value: 0.31
+  - id: NW.e
+    check: min_enclosure
+    layers: [NWell, NActivInNWellNoTGO]
+    value: 0.24
+    params:
+      skip_clipped: 1
+  - id: NW.e1
+    check: min_enclosure
+    layers: [NWell, NActivInNWellTGOAna]
+    value: 0.62
+    params:
+      skip_clipped: 1
+  - id: NW.e1.dig
+    check: min_enclosure
+    layers: [NWell, NActivInNWellTGODig]
+    value: 0.24
+    params:
+      skip_clipped: 1
+  - id: NW.f
+    check: min_space
+    layers: [NWell, PsdActivInPWellNoTGO]
+    value: 0.24
+  - id: NW.f1
+    check: min_space
+    layers: [NWell, PsdActivInPWellTGOAna]
+    value: 0.62
+  - id: NW.f1.dig
+    check: min_space
+    layers: [NWell, PsdActivInPWellTGODig]
+    value: 0.24

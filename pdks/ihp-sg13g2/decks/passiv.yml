@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Pas.a
+    check: min_width
+    layers: [Passiv]
+    value: 2.10
+  - id: Pas.b
+    check: min_space
+    layers: [Passiv]
+    value: 3.50
+  - id: Pas.b
+    check: min_notch
+    layers: [Passiv]
+    value: 3.50
+  - id: Pas.c
+    check: min_enclosure
+    layers: [TopMetal2, PassivInSeal]
+    value: 2.10

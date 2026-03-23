@@ -1,0 +1,100 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: M4.a
+    check: min_width
+    layers: [Metal4]
+    value: 0.20
+  - id: M4.b
+    check: min_space
+    layers: [Metal4]
+    value: 0.21
+  - id: M4.b
+    check: min_notch
+    layers: [Metal4]
+    value: 0.21
+  - id: M4.c
+    check: min_enclosure
+    layers: [Metal4, Via3NoSealring]
+    value: 0.005
+  - id: M4.c1
+    check: min_endcap_enclosure
+    layers: [Metal4, Via3NoSealring]
+    value: 0.05
+  - id: M4.d
+    check: min_area
+    layers: [Metal4]
+    value: 0.144
+  - id: M4.e
+    check: min_space_prl
+    layers: [Metal4]
+    value: 0.24
+    params:
+      wide_width: 0.39
+      parallel_run: 1.00
+  - id: M4.f
+    check: min_space_prl
+    layers: [Metal4]
+    value: 0.60
+    params:
+      wide_width: 10.00
+      parallel_run: 10.00
+  - id: M4.g
+    check: min_45_width
+    layers: [Metal4]
+    value: 0.24
+    params:
+      bent_length: 0.50
+  - id: M4.i
+    check: min_space_bent
+    layers: [Metal4]
+    value: 0.24
+  - id: M4.j
+    check: min_density
+    layers: [Metal4, Metal4.filler, Metal4.mask]
+    value: 35.00
+    params:
+      boundary_layer: 39
+  - id: M4.k
+    check: max_density
+    layers: [Metal4, Metal4.filler, Metal4.mask]
+    value: 60.00
+    params:
+      boundary_layer: 39
+
+  - id: M4Fil.a1
+    check: min_width
+    layers: [Metal4.filler]
+    value: 1.00
+  - id: M4Fil.a2
+    check: max_width
+    layers: [Metal4.filler]
+    value: 5.00
+  - id: M4Fil.b
+    check: min_space
+    layers: [Metal4.filler]
+    value: 0.42
+  - id: M4Fil.c
+    check: min_space
+    layers: [Metal4.filler, Metal4]
+    value: 0.42
+  - id: M4Fil.d
+    check: min_space
+    layers: [Metal4.filler, TRANS]
+    value: 1.00
+  - id: M4Fil.h
+    check: min_windowed_density
+    layers: [Metal4, Metal4.filler, Metal4.mask]
+    value: 25.00
+    params:
+      window: 800.0
+      boundary_layer: 39
+  - id: M4Fil.k
+    check: max_windowed_density
+    layers: [Metal4, Metal4.filler, Metal4.mask]
+    value: 75.00
+    params:
+      window: 800.0
+      boundary_layer: 39

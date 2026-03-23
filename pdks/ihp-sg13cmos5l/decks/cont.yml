@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Cnt.a
+    check: exact_width
+    layers: [ContSquare]
+    value: 0.16
+  - id: Cnt.b
+    check: min_space
+    layers: [ContSquare]
+    value: 0.18
+  - id: Cnt.b1
+    check: min_array_space
+    layers: [ContSquare]
+    value: 0.20
+    params:
+      rows: 4
+      cols: 4
+  - id: Cnt.c
+    check: min_enclosure
+    layers: [Activ, ContOnActivAna]
+    value: 0.07
+  - id: Cnt.c.Digi
+    check: min_enclosure
+    layers: [Activ, ContOnActivDig]
+    value: 0.05
+  - id: Cnt.d
+    check: min_enclosure
+    layers: [GatPoly, ContOnGatPoly]
+    value: 0.07
+  - id: Cnt.e
+    check: min_space
+    layers: [ContOnGatPoly, Activ]
+    value: 0.14
+  - id: Cnt.f
+    check: min_space
+    layers: [ContOnActiv, GatPoly]
+    value: 0.11
+  - id: Cnt.g
+    check: coverage
+    layers: [ContSquare, Activ, GatPoly]
+    value: 0.0
+  - id: Cnt.g1
+    check: min_space
+    layers: [pSD, ContOnNsdActiv]
+    value: 0.09
+  - id: Cnt.g2
+    check: min_enclosure
+    layers: [pSD, ContOnPsdActiv]
+    value: 0.09
+  - id: Cnt.h
+    check: coverage
+    layers: [ContSquare, Metal1]
+    value: 0.0
+  - id: Cnt.j
+    check: forbidden_overlap
+    layers: [ContOnGatPoly, Activ]
+    value: 0.0

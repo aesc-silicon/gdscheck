@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: CntB.a
+    check: min_dim
+    layers: [ContBar]
+    value: 0.16
+  - id: CntB.a
+    check: max_dim
+    layers: [ContBar]
+    value: 0.16
+  - id: CntB.a1
+    check: min_length
+    layers: [ContBar]
+    value: 0.34
+  - id: CntB.b
+    check: min_space
+    layers: [ContBar]
+    value: 0.28
+  - id: CntB.b1
+    check: min_space_prl
+    layers: [ContBar]
+    value: 0.36
+    params:
+      wide_width: 0.0
+      parallel_run: 5.00
+  - id: CntB.b2
+    check: min_space
+    layers: [ContBar, Cont]
+    value: 0.22
+  - id: CntB.c
+    check: min_enclosure
+    layers: [Activ, ContBarOnActiv]
+    value: 0.07
+  - id: CntB.d
+    check: min_enclosure
+    layers: [GatPoly, ContBarOnGatPoly]
+    value: 0.07
+  - id: CntB.e
+    check: min_space
+    layers: [ContBarOnGatPoly, Activ]
+    value: 0.14
+  - id: CntB.f
+    check: min_space
+    layers: [ContBarOnActiv, GatPoly]
+    value: 0.11
+  - id: CntB.g
+    check: coverage
+    layers: [ContBar, Activ, GatPoly]
+    value: 0.0
+  - id: CntB.g1
+    check: min_space
+    layers: [pSD, ContBarOnNsdActiv]
+    value: 0.09
+  - id: CntB.g2
+    check: min_enclosure
+    layers: [pSD, ContBarOnPsdActiv]
+    value: 0.09
+  - id: CntB.h
+    check: coverage
+    layers: [ContBar, Metal1]
+    value: 0.0
+  - id: CntB.h1
+    check: min_enclosure
+    layers: [Metal1, ContBar]
+    value: 0.05
+  - id: CntB.j
+    check: forbidden_overlap
+    layers: [ContBarOnGatPoly, Activ]
+    value: 0.0

@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Rsil.a
+    check: min_width
+    layers: [RsilAll]
+    value: 0.50
+  - id: Rsil.b
+    check: min_space
+    layers: [RES, Cont]
+    value: 0.12
+  - id: Rsil.c
+    check: nonempty
+    layers: [RsilResProtrusionNoCont]
+    value: 0.0
+  - id: Rsil.d
+    check: min_space
+    layers: [GPRsilExtended, pSD]
+    value: 0.18
+  - id: Rsil.e
+    check: min_enclosure
+    layers: [EXTBlock, GPRsilExtended]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: Rsil.f
+    check: min_width
+    layers: [RES]
+    value: 0.50
+
+  - id: Rppd.a
+    check: min_width
+    layers: [RppdAll]
+    value: 0.50
+  - id: Rppd.b
+    check: min_enclosure
+    layers: [pSD, RppdAll]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: Rppd.c
+    check: min_space
+    layers: [RppdCont, SalBlockRppd]
+    value: 0.20
+  - id: Rppd.c
+    check: nonempty
+    layers: [RppdContTooFar]
+    value: 0.0
+  - id: Rppd.d
+    check: min_enclosure
+    layers: [EXTBlock, GPRppdExtended]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: Rppd.e
+    check: min_width
+    layers: [SalBlockRppd]
+    value: 0.50
+
+  - id: Rhi.a
+    check: min_width
+    layers: [RhighA]
+    value: 0.50
+  - id: Rhi.b
+    check: nonempty
+    layers: [NsdMismatchAtRhigh]
+    value: 0.0
+  - id: Rhi.c
+    check: min_enclosure
+    layers: [pSDnSD, GPRhighExtended]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: Rhi.d
+    check: min_space
+    layers: [RhighCont, SalBlockRhigh]
+    value: 0.20
+  - id: Rhi.d
+    check: nonempty
+    layers: [RhighContTooFar]
+    value: 0.0
+  - id: Rhi.e
+    check: min_enclosure
+    layers: [EXTBlock, GPRhighExtended]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: Rhi.f
+    check: min_width
+    layers: [SalBlockRhigh]
+    value: 0.50

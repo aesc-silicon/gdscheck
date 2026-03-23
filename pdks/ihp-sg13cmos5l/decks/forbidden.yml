@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: forbidden
+    check: forbidden
+    layers: [BiWind, PEmWind, BasPoly, DeepCo, PEmPoly, EmPoly, LDMOS, PBiWind, NoDRC, Flash, ColWind,
+             Metal5, Metal5.filler, Via4, TopMetal2, TopMetal2.filler, TopVia2, TRANS, nBuLay, MIM, Vmim]
+    value: 0.0

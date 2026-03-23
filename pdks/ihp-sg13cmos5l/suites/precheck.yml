@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# IHP open-source precheck: a curated subset of rules imported from the per-layer
+# decks.  `rules:` whitelists ids within a deck; an id may map to several rule
+# entries (e.g. a `min_space`/`min_notch` pair), all of which are kept.
+include:
+  - deck: activ
+    rules: [Act.a, Act.b, AFil.c1, AFil.g, AFil.g1, AFil.g2, AFil.g3]
+  - deck: tgo
+    rules: [TGO.f]
+  - deck: gatpoly
+    rules: [Gat.a, Gat.b, Gat.d, GFil.d, GFil.g]
+  - deck: cont
+    rules: [Cnt.a, Cnt.b]
+
+  - deck: metal1
+    rules: [M1.a, M1.b, M1.j, M1.k, M1Fil.c, M1Fil.h, M1Fil.k]
+  - deck: metal2
+    rules: [M2.a, M2.b, M2.j, M2.k, M2Fil.c, M2Fil.h, M2Fil.k]
+  - deck: metal3
+    rules: [M3.a, M3.b, M3.j, M3.k, M3Fil.c, M3Fil.h, M3Fil.k]
+  - deck: metal4
+    rules: [M4.a, M4.b, M4.j, M4.k, M4Fil.c, M4Fil.h, M4Fil.k]
+
+  - deck: via1
+    rules: [V1.a, V1.b]
+  - deck: via2
+    rules: [V2.a, V2.b]
+  - deck: via3
+    rules: [V3.a, V3.b]
+
+  - deck: topvia1
+    rules: [TV1.a, TV1.b]
+  - deck: topmetal1
+    rules: [TM1.a, TM1.b, TM1.c, TM1.d, TM1Fil.c]
+
+  - deck: passiv
+    rules: [Pas.a, Pas.b]
+  - deck: pad
+    rules: [Padb.a, Padb.b, Padb.c, Padc.a, Padc.b, Padc.c]
+  - deck: sealring
+    rules: [Seal.l, Seal.n]
+  - deck: pin
+    rules: [Pin.a, Pin.b, Pin.e, Pin.f, Pin.g, Pin.h]
+  - deck: lbe
+    rules: [LBE.a, LBE.b, LBE.b1, LBE.c, LBE.d, LBE.h, LBE.i]
+  - deck: forbidden
+    rules: [forbidden]

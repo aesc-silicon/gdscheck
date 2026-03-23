@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: LU.a
+    check: max_space
+    layers: [PsdActivInNWell, NActivInNWell]
+    value: 20.00
+  - id: LU.b
+    check: max_space
+    layers: [NActivInPWell, PsdActivInPWell]
+    value: 20.00
+  - id: LU.c
+    check: max_space
+    layers: [NActivInNWell, ContOnNWellTie]
+    value: 6.00
+  - id: LU.c1
+    check: max_space
+    layers: [PsdActivInPWell, ContOnSubstrateTie]
+    value: 6.00
+  - id: LU.d
+    check: max_space
+    layers: [NActivInNWell, ContOnNWellTie]
+    value: 6.00
+  - id: LU.d1
+    check: max_space
+    layers: [PsdActivInPWell, ContOnSubstrateTie]
+    value: 6.00

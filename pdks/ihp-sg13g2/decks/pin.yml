@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Pin.a
+    check: coverage
+    layers: [Activ.pin, Activ]
+    value: 0.0
+  - id: Pin.b
+    check: coverage
+    layers: [GatPoly.pin, GatPoly]
+    value: 0.0
+  - id: Pin.e
+    check: coverage
+    layers: [Metal1.pin, Metal1]
+    value: 0.0
+  - id: Pin.f
+    check: coverage
+    layers: [Metal2.pin, Metal2]
+    value: 0.0
+  - id: Pin.f
+    check: coverage
+    layers: [Metal3.pin, Metal3]
+    value: 0.0
+  - id: Pin.f
+    check: coverage
+    layers: [Metal4.pin, Metal4]
+    value: 0.0
+  - id: Pin.f
+    check: coverage
+    layers: [Metal5.pin, Metal5]
+    value: 0.0
+  - id: Pin.g
+    check: coverage
+    layers: [TopMetal1.pin, TopMetal1]
+    value: 0.0
+  - id: Pin.h
+    check: coverage
+    layers: [TopMetal2.pin, TopMetal2]
+    value: 0.0

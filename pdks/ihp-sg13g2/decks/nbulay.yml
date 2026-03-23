@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: NBL.a
+    check: min_width
+    layers: [nBuLay]
+    value: 1.00
+  - id: NBL.b
+    check: min_space
+    layers: [nBuLay]
+    value: 1.50
+  - id: NBL.c
+    check: min_space
+    layers: [nBuLayMerged]
+    value: 3.20
+  - id: NBL.d
+    check: min_space
+    layers: [nBuLay, NWell]
+    value: 2.20
+  - id: NBL.e
+    check: min_space
+    layers: [nBuLay, NActiv]
+    value: 1.00
+  - id: NBL.f
+    check: min_space
+    layers: [nBuLay, PsdActiv]
+    value: 0.50

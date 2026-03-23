@@ -1,0 +1,209 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Seal.a
+    check: min_width
+    layers: [SealActiv]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealpSD]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealMetal1]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealMetal2]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealMetal3]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealMetal4]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealMetal5]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealTopMetal1]
+    value: 3.50
+  - id: Seal.a
+    check: min_width
+    layers: [SealTopMetal2]
+    value: 3.50
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealActiv]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealpSD]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealMetal1]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealMetal2]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealMetal3]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealMetal4]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealMetal5]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealTopMetal1]
+    value: 4.90
+  - id: Seal.b
+    check: min_space
+    layers: [Activ, SealTopMetal2]
+    value: 4.90
+  - id: Seal.c
+    check: min_width
+    layers: [SealCont]
+    value: 0.16
+  - id: Seal.c1
+    check: min_width
+    layers: [SealVia1]
+    value: 0.19
+  - id: Seal.c1
+    check: min_width
+    layers: [SealVia2]
+    value: 0.19
+  - id: Seal.c1
+    check: min_width
+    layers: [SealVia3]
+    value: 0.19
+  - id: Seal.c1
+    check: min_width
+    layers: [SealVia4]
+    value: 0.19
+  - id: Seal.c2
+    check: min_width
+    layers: [SealTopVia1]
+    value: 0.42
+  - id: Seal.c3
+    check: min_width
+    layers: [SealTopVia2]
+    value: 0.90
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealCont]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealVia1]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealVia2]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealVia3]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealVia4]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealTopVia1]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.d
+    check: min_enclosure
+    layers: [SealActiv, SealTopVia2]
+    value: 1.30
+    params:
+      skip_coincident: 1
+      interacting_only: 1
+  - id: Seal.e
+    check: min_width
+    layers: [RingPassiv]
+    value: 4.20
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealActiv]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealpSD]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealMetal1]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealMetal2]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealMetal3]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealMetal4]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealMetal5]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealTopMetal1]
+    value: 1.00
+  - id: Seal.f
+    check: min_space
+    layers: [RingPassiv, SealTopMetal2]
+    value: 1.00
+  - id: Seal.l
+    check: inside_boundary
+    layers: [EdgeSeal]
+    value: 0.0
+    ignore:
+      - Passiv
+      - Pad
+      - EdgeSeal.boundary
+      - prBoundary.boundary
+      - TopMetal1.dt30
+      - TopMetal2.dt30
+  - id: Seal.n
+    check: ring_covers_boundary
+    layers: [Passiv, EdgeSeal]
+    value: 0.0

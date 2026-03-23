@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# References a deck that does not exist — must error.
+include:
+  - deck: nodeck

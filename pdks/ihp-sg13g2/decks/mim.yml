@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: MIM.a
+    check: min_width
+    layers: [MIM]
+    value: 1.14
+  - id: MIM.b
+    check: min_space
+    layers: [MIM]
+    value: 0.60
+  - id: MIM.c
+    check: min_enclosure
+    layers: [Metal5, MIM]
+    value: 0.60
+  - id: MIM.d
+    check: min_enclosure
+    layers: [MIM, TopVia1]
+    value: 0.36
+    params:
+      interacting_only: 1
+  - id: MIM.e
+    check: min_space
+    layers: [TopMetal1, MIM]
+    value: 0.60
+  - id: MIM.f
+    check: min_area
+    layers: [MIM]
+    value: 1.30
+  - id: MIM.g
+    check: max_area
+    layers: [MIM]
+    value: 5625.00
+  - id: MIM.gR
+    check: max_total_area
+    layers: [MIM]
+    value: 174800.00
+  - id: MIM.h
+    check: must_interact
+    layers: [MIM, TopVia1, Vmim]
+    value: 0.0

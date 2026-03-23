@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Rust
+/target/
+Cargo.lock
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/build/
+
+# DRC reports
+*.lyrdb
+
+# GDS files: ignore generated GDS everywhere, but keep the committed test
+# fixtures (the negation must come last to win, and reach any depth under tests/).
+*.gds
+*.gds.gz
+!tests/data/**/*.gds.gz

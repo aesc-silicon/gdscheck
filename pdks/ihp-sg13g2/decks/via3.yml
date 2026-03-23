@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: V3.a
+    check: exact_width
+    layers: [Via3NoSealring]
+    value: 0.19
+  - id: V3.b
+    check: min_space
+    layers: [Via3]
+    value: 0.22
+  - id: V3.b1
+    check: min_array_space
+    layers: [Via3]
+    value: 0.29
+    params:
+      rows: 3
+      cols: 3
+  - id: V3.c
+    check: min_enclosure
+    layers: [Metal3, Via3NoSealring]
+    value: 0.005
+  - id: V3.c1
+    check: min_endcap_enclosure
+    layers: [Metal3, Via3NoSealring]
+    value: 0.05

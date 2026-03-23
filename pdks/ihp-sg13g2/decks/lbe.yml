@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: LBE.a
+    check: min_width
+    layers: [LBE]
+    value: 100.00
+  - id: LBE.b
+    check: max_width
+    layers: [LBE]
+    value: 1500.00
+  - id: LBE.b1
+    check: max_area
+    layers: [LBE]
+    value: 250000.00
+  - id: LBE.b2
+    check: min_area
+    layers: [LBE]
+    value: 30000.00
+  - id: LBE.c
+    check: min_space
+    layers: [LBE]
+    value: 100.0
+  - id: LBE.c
+    check: min_notch
+    layers: [LBE]
+    value: 100.0
+  - id: LBE.d
+    check: min_space
+    layers: [LBE, EdgeSeal]
+    value: 150.0
+  - id: LBE.e
+    check: min_space
+    layers: [LBE, dfpad]
+    value: 50.0
+  - id: LBE.e
+    check: min_space
+    layers: [LBE, Passiv]
+    value: 50.0
+  - id: LBE.f
+    check: min_space
+    layers: [LBE, Activ]
+    value: 30.0
+  - id: LBE.h
+    check: no_ring
+    layers: [LBE]
+    value: 0.00
+  - id: LBE.i
+    check: max_density
+    layers: [LBE]
+    value: 20.00
+    params:
+      boundary_layer: 39

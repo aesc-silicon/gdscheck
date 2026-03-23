@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Dummy / metal-fill density verification: every min/max (and windowed) density rule
+# across Activ, GatPoly, Metal1–4 and TopMetal1.  Run this to confirm the fill brings
+# each layer within its density window without pulling in the rest of the DRC.
+include:
+  - deck: activ
+    rules: [AFil.g, AFil.g1, AFil.g2, AFil.g3]
+  - deck: gatpoly
+    rules: [GFil.g]
+  - deck: metal1
+    rules: [M1.j, M1.k, M1Fil.h, M1Fil.k]
+  - deck: metal2
+    rules: [M2.j, M2.k, M2Fil.h, M2Fil.k]
+  - deck: metal3
+    rules: [M3.j, M3.k, M3Fil.h, M3Fil.k]
+  - deck: metal4
+    rules: [M4.j, M4.k, M4Fil.h, M4Fil.k]
+  - deck: topmetal1
+    rules: [TM1.c, TM1.d]

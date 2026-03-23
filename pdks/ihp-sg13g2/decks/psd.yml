@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: pSD.a
+    check: min_width
+    layers: [pSD]
+    value: 0.31
+  - id: pSD.b
+    check: min_space
+    layers: [pSD]
+    value: 0.31
+  - id: pSD.c
+    check: min_enclosure
+    layers: [pSD, ActivInNWell]
+    value: 0.18
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: pSD.c1
+    check: min_enclosure
+    layers: [pSD, PsdC1Target]
+    value: 0.03
+    params:
+      interacting_only: 1
+  - id: pSD.d
+    check: min_space
+    layers: [pSD, NActivInPWell]
+    value: 0.18
+  - id: pSD.d1
+    check: min_space
+    layers: [pSD, NActivInNWell]
+    value: 0.03
+  - id: pSD.e
+    check: nonempty
+    layers: [TieTooNarrow]
+    value: 0.0
+  - id: pSD.f
+    check: nonempty
+    layers: [PsdFBad]
+    value: 0.0
+  - id: pSD.g
+    check: min_area
+    layers: [NTapNoGateOutSRAM]
+    value: 0.09
+  - id: pSD.g
+    check: min_area
+    layers: [PTapNoGateOutSRAM]
+    value: 0.09
+  - id: pSD.i
+    check: min_enclosure
+    layers: [pSDNoSRAM, GatPolyOverPsdActivNoTGO]
+    value: 0.30
+    params:
+      interacting_only: 1
+  - id: pSD.i1
+    check: min_enclosure
+    layers: [pSDNoSRAM, GatPolyOverPsdActivTGO]
+    value: 0.40
+    params:
+      interacting_only: 1
+  - id: pSD.j
+    check: min_space
+    layers: [pSDNoSRAM, GatPolyOverNsdActivNoTGO]
+    value: 0.30
+  - id: pSD.j1
+    check: min_space
+    layers: [pSDNoSRAM, GatPolyOverNsdActivTGO]
+    value: 0.40
+  - id: pSD.k
+    check: min_area
+    layers: [pSD]
+    value: 0.25
+  - id: pSD.l
+    check: min_enclosed_area
+    layers: [pSD]
+    value: 0.25
+  - id: pSD.m
+    check: min_space
+    layers: [GPRsilExtended, pSD]
+    value: 0.18
+  - id: pSD.n
+    check: min_enclosure
+    layers: [pSD, RppdAll]
+    value: 0.18
+    params:
+      interacting_only: 1

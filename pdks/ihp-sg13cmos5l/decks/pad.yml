@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Pad.a1
+    check: max_width
+    layers: [PassivDfpad]
+    value: 150.00
+  - id: Pad.d
+    check: min_space
+    layers: [PassivDfpad, SealActiv]
+    value: 7.50
+  - id: Pad.i
+    check: nonempty
+    layers: [DfpadNoTopMetal1]
+    value: 0.0
+
+  - id: Padb.a
+    check: exact_width
+    layers: [SBumpPad]
+    value: 60.0
+  - id: Padb.b
+    check: min_space
+    layers: [SBumpPad]
+    value: 70.0
+  - id: Padb.c
+    check: min_enclosure
+    layers: [TopMetal1, SBumpPad]
+    value: 10.0
+  - id: Padb.d
+    check: min_space
+    layers: [SBumpPad, EdgeSeal]
+    value: 50.0
+  - id: Padb.f
+    check: nonempty
+    layers: [SBumpPadBadShape]
+    value: 0.0
+
+  - id: Padc.a
+    check: exact_width
+    layers: [CuPillarPad]
+    value: 35.0
+  - id: Padc.b
+    check: min_space
+    layers: [CuPillarPad]
+    value: 40.0
+  - id: Padc.c
+    check: min_enclosure
+    layers: [TopMetal1, CuPillarPad]
+    value: 7.5
+  - id: Padc.d
+    check: nonempty
+    layers: [PadcDBad]
+    value: 0.0
+  - id: Padc.f
+    check: nonempty
+    layers: [CuPillarPadBadShape]
+    value: 0.0

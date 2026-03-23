@@ -1,0 +1,164 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: IHP SG13CMOS5L
+version: "0.1"
+extends: ../ihp-sg13g2/pdk.yml
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every per-layer deck
+  - name: precheck
+    path: suites/precheck.yml
+    description: IHP open-source precheck subset
+  - name: fill
+    path: suites/fill.yml
+    description: Dummy-fill density checks
+
+decks:
+  - name: offgrid
+    path: ../ihp-sg13g2/decks/offgrid.yml
+    description: Grid rules
+  - name: forbidden
+    path: decks/forbidden.yml
+    description: Forbidden layers (incl. the CMOS5L-prohibited G2 layers)
+  - name: pin
+    path: ../ihp-sg13g2/decks/pin.yml
+    description: Pin layer rules
+  - name: lbe
+    path: ../ihp-sg13g2/decks/lbe.yml
+    description: Local back-etch
+  - name: pad
+    path: decks/pad.yml
+    description: Pad dimensions (pads on TopMetal1)
+  - name: activ
+    path: ../ihp-sg13g2/decks/activ.yml
+    description: Active area
+  - name: tgo
+    path: ../ihp-sg13g2/decks/tgo.yml
+    description: Thick gate oxide
+  - name: gatpoly
+    path: ../ihp-sg13g2/decks/gatpoly.yml
+    description: Gate poly
+  - name: extblock
+    path: ../ihp-sg13g2/decks/extblock.yml
+    description: EXTBlock
+  - name: cont
+    path: decks/cont.yml
+    description: Contacts (Cnt.c split by DigiBnd)
+  - name: contbar
+    path: ../ihp-sg13g2/decks/contbar.yml
+    description: Contact bars
+  - name: salblock
+    path: ../ihp-sg13g2/decks/salblock.yml
+    description: Silicide block
+  - name: nsdblock
+    path: ../ihp-sg13g2/decks/nsdblock.yml
+    description: nSD block
+  - name: psd
+    path: ../ihp-sg13g2/decks/psd.yml
+    description: P+ source/drain
+  - name: resistor
+    path: ../ihp-sg13g2/decks/resistor.yml
+    description: Poly resistors (Rsil/Rppd/Rhigh)
+  - name: nwell
+    path: decks/nwell.yml
+    description: NWell (NW.f1 split by DigiBnd)
+  - name: pwellblock
+    path: ../ihp-sg13g2/decks/pwellblock.yml
+    description: PWell block
+  - name: metal1
+    path: ../ihp-sg13g2/decks/metal1.yml
+    description: Metal1
+  - name: metal2
+    path: ../ihp-sg13g2/decks/metal2.yml
+    description: Metal2
+  - name: metal3
+    path: ../ihp-sg13g2/decks/metal3.yml
+    description: Metal3
+  - name: metal4
+    path: ../ihp-sg13g2/decks/metal4.yml
+    description: Metal4
+  - name: via1
+    path: ../ihp-sg13g2/decks/via1.yml
+    description: Via1
+  - name: via2
+    path: ../ihp-sg13g2/decks/via2.yml
+    description: Via2
+  - name: via3
+    path: ../ihp-sg13g2/decks/via3.yml
+    description: Via3
+  - name: topvia1
+    path: decks/topvia1.yml
+    description: TopVia1 (sits on Metal4)
+  - name: topmetal1
+    path: ../ihp-sg13g2/decks/topmetal1.yml
+    description: TopMetal1
+  - name: passiv
+    path: decks/passiv.yml
+    description: Passivation (enclosed by TopMetal1)
+  - name: sealring
+    path: ../ihp-sg13g2/decks/sealring.yml
+    description: Sealring (M5/TM2/Via4/TopVia2 ring entries are vacuous here)
+  - name: slit
+    path: ../ihp-sg13g2/decks/slit.yml
+    description: Metal slots (M5/TM2 entries are vacuous here)
+  - name: lu
+    path: ../ihp-sg13g2/decks/lu.yml
+    description: Latch-up
+  - name: antenna
+    path: decks/antenna.yml
+    description: Antenna rules (M1-M4 + TopMetal1 stack)
+
+# The M1–M4 + TopVia1 + TopMetal1 stack: TopVia1 lands on Metal4 (no Metal5/Via4,
+# no TopVia2/TopMetal2).
+connectivity:
+  - connector: Cont
+    layers: [GatPoly]
+  - connector: Cont
+    layers: [Activ]
+  - connector: Cont
+    layers: [Metal1]
+  - connector: Via1
+    layers: [Metal1]
+  - connector: Via1
+    layers: [Metal2]
+  - connector: Via2
+    layers: [Metal2]
+  - connector: Via2
+    layers: [Metal3]
+  - connector: Via3
+    layers: [Metal3]
+  - connector: Via3
+    layers: [Metal4]
+  - connector: TopVia1
+    layers: [Metal4]
+  - connector: TopVia1
+    layers: [TopMetal1]
+
+# CMOS5L-only recognition (appended after the inherited SG13G2 virtual layers).
+virtual_layers:
+  # Pad.i: a dfpad opening without TopMetal1 underneath (TM1 is the pad metal here).
+  - name: DfpadNoTopMetal1
+    op: difference
+    mode: lazy
+    layers: [dfpad, TopMetal1]
+  # Chapter 8 digital splits: Cnt.c and NW.f1 relax inside a DigiBnd region.
+  - name: ContOnActivAna
+    op: not_interacting
+    mode: lazy
+    layers: [ContOnActivNoSRAM, DigiBnd]
+  - name: ContOnActivDig
+    op: interacting
+    mode: lazy
+    layers: [ContOnActivNoSRAM, DigiBnd]
+  - name: PsdActivInPWellTGOAna
+    op: not_interacting
+    mode: lazy
+    layers: [PsdActivInPWellTGO, DigiBnd]
+  - name: PsdActivInPWellTGODig
+    op: interacting
+    mode: lazy
+    layers: [PsdActivInPWellTGO, DigiBnd]

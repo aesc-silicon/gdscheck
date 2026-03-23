@@ -1,0 +1,341 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Activ.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Activ, Activ.mask, Activ.filler]
+  - id: GatPoly.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [GatPoly, GatPoly.filler]
+  - id: PolyRes.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PolyRes]
+  - id: Cont.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Cont]
+  - id: nSD.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [nSD, nSD.block]
+  - id: pSD.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [pSD]
+  - id: SalBlock.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [SalBlock]
+  - id: ThickGateOx.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [ThickGateOx]
+  - id: NLDB.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [NLDB]
+  - id: PLDB.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PLDB]
+  - id: NLDD.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [NLDD]
+  - id: PLDD.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PLDD]
+  - id: NExt.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [NExt]
+  - id: PExt.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PExt]
+  - id: NExtHV.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [NExtHV]
+  - id: PExtHV.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PExtHV]
+  - id: EXTBlock.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [EXTBlock]
+
+  - id: NWell.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [NWell]
+  - id: PWell.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PWell, PWell.block]
+  - id: nBuLay.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [nBuLay, nBuLay.block]
+  - id: nBuLayCut.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [nBuLayCut]
+  - id: isoNWell.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [isoNWell]
+  - id: INLDPWL.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [INLDPWL]
+  - id: IC.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [IC]
+  - id: Substrate.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Substrate]
+
+  - id: Metal1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Metal1, Metal1.mask, Metal1.filler, Metal1.slit]
+  - id: Metal2.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Metal2, Metal2.mask, Metal2.filler, Metal2.slit]
+  - id: Metal3.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Metal3, Metal3.mask, Metal3.filler, Metal3.slit]
+  - id: Metal4.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Metal4, Metal4.mask, Metal4.filler, Metal4.slit]
+  - id: Metal5.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Metal5, Metal5.mask, Metal5.filler, Metal5.slit]
+  - id: Via1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Via1]
+  - id: Via2.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Via2]
+  - id: Via3.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Via3]
+  - id: Via4.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Via4]
+  - id: MIM.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [MIM]
+  - id: Vmim.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Vmim]
+
+  - id: TopVia1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [TopVia1]
+  - id: TopMetal1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [TopMetal1, TopMetal1.mask, TopMetal1.filler, TopMetal1.slit]
+  - id: TopVia2.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [TopVia2]
+  - id: TopMetal2.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [TopMetal2, TopMetal2.mask, TopMetal2.filler, TopMetal2.slit]
+  - id: Passiv.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Passiv, Passiv.pillar, Passiv.sbump, Passiv.pdl]
+  - id: AntMetal1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [AntMetal1]
+
+  - id: BackMetal1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [BackMetal1, BackMetal1.mask, BackMetal1.filler, BackMetal1.slit]
+  - id: BackPassiv.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [BackPassiv]
+  - id: AlCuStop.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [AlCuStop]
+  - id: DeepVia.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [DeepVia]
+  - id: LBE.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [LBE]
+
+  - id: BiWind.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [BiWind]
+  - id: PEmWind.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PEmWind]
+  - id: BasPoly.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [BasPoly]
+  - id: EmWind.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [EmWind]
+  - id: EmWiHV.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [EmWiHV]
+  - id: EmPoly.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [EmPoly]
+  - id: PEmPoly.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PEmPoly]
+  - id: PBiWind.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [PBiWind]
+  - id: DeepCo.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [DeepCo]
+  - id: ColOpen.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [ColOpen]
+  - id: ColWind.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [ColWind]
+  - id: CtrGat.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [CtrGat]
+  - id: LDMOS.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [LDMOS]
+
+  - id: FBE.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [FBE]
+  - id: FGEtch.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [FGEtch]
+  - id: FGImp.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [FGImp]
+  - id: FLM.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [FLM]
+  - id: HafniumOx.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [HafniumOx]
+  - id: ThinFilmRes.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [ThinFilmRes]
+
+  - id: GraphGate.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [GraphGate]
+  - id: MEMPAD.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [MEMPAD]
+  - id: MEMVia.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [MEMVia]
+  - id: RFMEM.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [RFMEM]
+  - id: SNSRing.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [SNSRing]
+  - id: Sensor.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Sensor]
+  - id: SNSArms.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [SNSArms]
+  - id: SNSCMOSVia.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [SNSCMOSVia]
+  - id: SNSBotVia.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [SNSBotVia]
+  - id: SNSTopVia.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [SNSTopVia]
+
+  - id: prBoundary.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [prBoundary]
+  - id: Exchange0.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Exchange0]
+  - id: Exchange1.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Exchange1]
+  - id: Exchange2.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Exchange2]
+  - id: Exchange3.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Exchange3]
+  - id: Exchange4.offgrid
+    check: offgrid
+    value: 0.005
+    layers: [Exchange4]

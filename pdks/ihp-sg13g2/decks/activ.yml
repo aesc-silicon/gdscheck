@@ -1,0 +1,100 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Act.a
+    check: min_width
+    layers: [Activ]
+    value: 0.15
+  - id: Act.b
+    check: min_space
+    layers: [Activ]
+    value: 0.21
+  - id: Act.b
+    check: min_notch
+    layers: [Activ]
+    value: 0.21
+  - id: Act.c
+    check: min_extension
+    layers: [Activ, GatPoly]
+    value: 0.23
+  - id: Act.d
+    check: min_area
+    layers: [Activ]
+    value: 0.122
+  - id: Act.e
+    check: min_enclosed_area
+    layers: [Activ]
+    value: 0.15
+
+  - id: AFil.a
+    check: max_width
+    layers: [Activ.filler]
+    value: 5.0
+  - id: AFil.a1
+    check: min_width
+    layers: [Activ.filler]
+    value: 1.0
+  - id: AFil.b
+    check: min_space
+    layers: [Activ.filler]
+    value: 0.42
+  - id: AFil.c
+    check: min_space
+    layers: [Activ.filler, Cont]
+    value: 1.10
+  - id: AFil.c
+    check: min_space
+    layers: [Activ.filler, GatPoly]
+    value: 1.10
+  - id: AFil.c1
+    check: min_space
+    layers: [Activ.filler, Activ]
+    value: 0.42
+  - id: AFil.d
+    check: min_space
+    layers: [Activ.filler, NWell]
+    value: 1.00
+  - id: AFil.d
+    check: min_space
+    layers: [Activ.filler, nBuLay]
+    value: 1.00
+  - id: AFil.e
+    check: min_space
+    layers: [Activ.filler, TRANS]
+    value: 1.00
+  - id: AFil.g
+    check: min_density
+    layers: [Activ, Activ.filler, Activ.mask]
+    value: 35.00
+    params:
+      boundary_layer: 39
+  - id: AFil.g1
+    check: max_density
+    layers: [Activ, Activ.filler, Activ.mask]
+    value: 55.00
+    params:
+      boundary_layer: 39
+  - id: AFil.g2
+    check: min_windowed_density
+    layers: [Activ, Activ.filler, Activ.mask]
+    value: 25.00
+    params:
+      window: 800.0
+      boundary_layer: 39
+  - id: AFil.g3
+    check: max_windowed_density
+    layers: [Activ, Activ.filler, Activ.mask]
+    value: 65.00
+    params:
+      window: 800.0
+      boundary_layer: 39
+  - id: AFil.i
+    check: min_space
+    layers: [Activ.filler, PWell.block]
+    value: 1.50
+  - id: AFil.j
+    check: min_enclosure
+    layers: [nSDBlockAndSalBlock, ActivFillerInPWellBlock]
+    value: 0.25

@@ -1,0 +1,100 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: M1.a
+    check: min_width
+    layers: [Metal1]
+    value: 0.16
+  - id: M1.b
+    check: min_space
+    layers: [Metal1]
+    value: 0.18
+  - id: M1.b
+    check: min_notch
+    layers: [Metal1]
+    value: 0.18
+  - id: M1.c
+    check: min_enclosure
+    layers: [Metal1, ContNoSealring]
+    value: 0.0
+  - id: M1.c1
+    check: min_endcap_enclosure
+    layers: [Metal1, ContNoSealring]
+    value: 0.05
+  - id: M1.d
+    check: min_area
+    layers: [Metal1]
+    value: 0.09
+  - id: M1.e
+    check: min_space_prl
+    layers: [Metal1]
+    value: 0.22
+    params:
+      wide_width: 0.3
+      parallel_run: 1.0
+  - id: M1.f
+    check: min_space_prl
+    layers: [Metal1]
+    value: 0.60
+    params:
+      wide_width: 10.00
+      parallel_run: 10.00
+  - id: M1.g
+    check: min_45_width
+    layers: [Metal1]
+    value: 0.20
+    params:
+      bent_length: 0.50
+  - id: M1.i
+    check: min_space_bent
+    layers: [Metal1]
+    value: 0.22
+  - id: M1.j
+    check: min_density
+    layers: [Metal1, Metal1.filler, Metal1.mask]
+    value: 35.00
+    params:
+      boundary_layer: 39
+  - id: M1.k
+    check: max_density
+    layers: [Metal1, Metal1.filler, Metal1.mask]
+    value: 60.00
+    params:
+      boundary_layer: 39
+
+  - id: M1Fil.a1
+    check: min_width
+    layers: [Metal1.filler]
+    value: 1.00
+  - id: M1Fil.a2
+    check: max_width
+    layers: [Metal1.filler]
+    value: 5.00
+  - id: M1Fil.b
+    check: min_space
+    layers: [Metal1.filler]
+    value: 0.42
+  - id: M1Fil.c
+    check: min_space
+    layers: [Metal1.filler, Metal1]
+    value: 0.42
+  - id: M1Fil.d
+    check: min_space
+    layers: [Metal5.filler, TRANS]
+    value: 1.00
+  - id: M1Fil.h
+    check: min_windowed_density
+    layers: [Metal1, Metal1.filler, Metal1.mask]
+    value: 25.00
+    params:
+      window: 800.0
+      boundary_layer: 39
+  - id: M1Fil.k
+    check: max_windowed_density
+    layers: [Metal1, Metal1.filler, Metal1.mask]
+    value: 75.00
+    params:
+      window: 800.0
+      boundary_layer: 39

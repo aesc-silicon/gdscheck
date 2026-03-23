@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Sdiod.a
+    check: min_enclosure
+    layers: [PWell.block, SchottkyContBar]
+    value: 0.25
+    params:
+      interacting_only: 1
+  - id: Sdiod.a
+    check: max_enclosure
+    layers: [PWell.block, SchottkyContBar]
+    value: 0.25
+  - id: Sdiod.b
+    check: min_enclosure
+    layers: [nSD.block, SchottkyContBar]
+    value: 0.40
+    params:
+      interacting_only: 1
+  - id: Sdiod.b
+    check: max_enclosure
+    layers: [nSD.block, SchottkyContBar]
+    value: 0.40
+  - id: Sdiod.c
+    check: min_enclosure
+    layers: [SalBlock, SchottkyContBar]
+    value: 0.45
+    params:
+      interacting_only: 1
+  - id: Sdiod.c
+    check: max_enclosure
+    layers: [SalBlock, SchottkyContBar]
+    value: 0.45
+  - id: Sdiod.d
+    check: min_dim
+    layers: [SchottkyContBar]
+    value: 0.30
+  - id: Sdiod.d
+    check: max_dim
+    layers: [SchottkyContBar]
+    value: 0.30
+  - id: Sdiod.e
+    check: min_length
+    layers: [SchottkyContBar]
+    value: 1.00
+  - id: Sdiod.e
+    check: max_length
+    layers: [SchottkyContBar]
+    value: 1.00

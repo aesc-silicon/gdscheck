@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: npnG2.b
+    check: nonempty
+    layers: [NpnTieNoTrans]
+    value: 0.0
+  - id: npnG2.c
+    check: min_enclosure
+    layers: [pSD, NpnTieRingActiv]
+    value: 0.20
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: npnG2.d
+    check: min_space
+    layers: [NActiv, TransInTie]
+    value: 1.21
+  - id: npnG2.d
+    check: min_space
+    layers: [NWell, TransInTie]
+    value: 1.21
+  - id: npnG2.d
+    check: min_space
+    layers: [PWell.block, TransInTie]
+    value: 1.21
+  - id: npnG2.d
+    check: min_space
+    layers: [nBuLay, TransInTie]
+    value: 1.21
+  - id: npnG2.d
+    check: min_space
+    layers: [nSD.block, TransInTie]
+    value: 1.21
+  - id: npnG2.d1
+    check: min_space
+    layers: [GatPolyNoSRAM, TransInTie]
+    value: 0.90
+  - id: npnG2.d2
+    check: min_space
+    layers: [SalBlock, TransInTie]
+    value: 0.90
+  - id: npnG2.e
+    check: min_space
+    layers: [Cont, TransInTie]
+    value: 0.27
+
+  - id: npn13G2.a
+    check: min_length
+    layers: [EmitG2]
+    value: 0.90
+  - id: npn13G2.a
+    check: max_length
+    layers: [EmitG2]
+    value: 0.90
+  - id: npn13G2L.a
+    check: min_length
+    layers: [EmitG2L]
+    value: 1.00
+  - id: npn13G2L.b
+    check: max_length
+    layers: [EmitG2L]
+    value: 2.50
+  - id: npn13G2V.a
+    check: min_length
+    layers: [EmitG2V]
+    value: 1.00
+  - id: npn13G2V.b
+    check: max_length
+    layers: [EmitG2V]
+    value: 5.00

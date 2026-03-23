@@ -1,0 +1,2306 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: IHP SG13G2
+version: "1.0"
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every per-layer deck
+  - name: precheck
+    path: suites/precheck.yml
+    description: IHP open-source precheck subset
+  - name: fill
+    path: suites/fill.yml
+    description: Dummy-fill density checks
+
+decks:
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Off-grid geometry (5 nm grid)
+  - name: forbidden
+    path: decks/forbidden.yml
+    description: Forbidden layers
+  - name: pin
+    path: decks/pin.yml
+    description: Pins and labels
+  - name: lbe
+    path: decks/lbe.yml
+    description: LBE layer
+  - name: pad
+    path: decks/pad.yml
+    description: Bond pads
+
+  - name: activ
+    path: decks/activ.yml
+    description: Active area
+  - name: tgo
+    path: decks/tgo.yml
+    description: Thick gate oxide (HV devices)
+  - name: gatpoly
+    path: decks/gatpoly.yml
+    description: Gate poly
+  - name: extblock
+    path: decks/extblock.yml
+    description: Extension-implant block (EXTBlock)
+  - name: cont
+    path: decks/cont.yml
+    description: Contacts
+  - name: contbar
+    path: decks/contbar.yml
+    description: Contact bars
+  - name: salblock
+    path: decks/salblock.yml
+    description: Salicide block
+  - name: nsdblock
+    path: decks/nsdblock.yml
+    description: n+ S/D implant block
+  - name: psd
+    path: decks/psd.yml
+    description: p+ S/D implant (pSD)
+  - name: resistor
+    path: decks/resistor.yml
+    description: Poly resistors (Rsil/Rppd/Rhigh)
+  - name: nmosi
+    path: decks/nmosi.yml
+    description: Isolated NMOS (nBuLay-isolated PWell)
+  - name: npn
+    path: decks/npn.yml
+    description: Bipolar npn HBT (npnG2, npn13G2/L/V)
+  - name: sdiod
+    path: decks/sdiod.yml
+    description: Schottky diode (nBuLay/PWell:block/nSD:block/SalBlock ContBar)
+  - name: nwell
+    path: decks/nwell.yml
+    description: N-well
+  - name: pwellblock
+    path: decks/pwellblock.yml
+    description: P-well block
+  - name: nbulay
+    path: decks/nbulay.yml
+    description: N-buried layer
+  - name: nbulayblock
+    path: decks/nbulayblock.yml
+    description: N-buried-layer block
+  - name: metal1
+    path: decks/metal1.yml
+    description: Metal 1
+  - name: metal2
+    path: decks/metal2.yml
+    description: Metal 2
+  - name: metal3
+    path: decks/metal3.yml
+    description: Metal 3
+  - name: metal4
+    path: decks/metal4.yml
+    description: Metal 4
+  - name: metal5
+    path: decks/metal5.yml
+    description: Metal 5
+  - name: via1
+    path: decks/via1.yml
+    description: Via 1
+  - name: via2
+    path: decks/via2.yml
+    description: Via 2
+  - name: via3
+    path: decks/via3.yml
+    description: Via 3
+  - name: via4
+    path: decks/via4.yml
+    description: Via 4
+  - name: topvia1
+    path: decks/topvia1.yml
+    description: Top via 1
+  - name: topmetal1
+    path: decks/topmetal1.yml
+    description: Top metal 1
+  - name: topvia2
+    path: decks/topvia2.yml
+    description: Top via 2
+  - name: topmetal2
+    path: decks/topmetal2.yml
+    description: Top metal 2
+  - name: passiv
+    path: decks/passiv.yml
+    description: Passivation
+  - name: sealring
+    path: decks/sealring.yml
+    description: Seal ring
+  - name: slit
+    path: decks/slit.yml
+    description: Metal slotting (slits)
+  - name: lu
+    path: decks/lu.yml
+    description: Latch-up
+  - name: antenna
+    path: decks/antenna.yml
+    description: Antenna (Ant.a–i, full §7.1)
+  - name: mim
+    path: decks/mim.yml
+    description: MIM capacitor
+
+# Connect graph for net extraction (antenna checks, §7.1).  Ordered: a net-aware check
+# can partition over any prefix (e.g. "everything up to Metal2") for the per-level ratio.
+connectivity:
+  - connector: Cont
+    layers: [GatPoly]
+  - connector: Cont
+    layers: [Activ]
+  - connector: Cont
+    layers: [Metal1]
+  - connector: Via1
+    layers: [Metal1]
+  - connector: Via1
+    layers: [Metal2]
+  - connector: Via2
+    layers: [Metal2]
+  - connector: Via2
+    layers: [Metal3]
+  - connector: Via3
+    layers: [Metal3]
+  - connector: Via3
+    layers: [Metal4]
+  - connector: Via4
+    layers: [Metal4]
+  - connector: Via4
+    layers: [Metal5]
+  - connector: TopVia1
+    layers: [Metal5]
+  - connector: TopVia1
+    layers: [TopMetal1]
+  - connector: TopVia2
+    layers: [TopMetal1]
+  - connector: TopVia2
+    layers: [TopMetal2]
+
+virtual_layers:
+  - name: Pad
+    op: union
+    layers:
+      - Passiv
+      - Passiv.sbump
+      - Passiv.pillar
+      - dfpad
+  # Device recognition: pad = passivation-type marker AND dfpad (intersection, not union).
+  - name: SBumpPad
+    op: intersection
+    layers:
+      - Passiv.sbump
+      - dfpad
+  - name: CuPillarPad
+    op: intersection
+    layers:
+      - Passiv.pillar
+      - dfpad
+  # Padb.f/Padc.f: only circles/octagons are allowed passivation-opening shapes.
+  - name: SBumpPadBadShape
+    op: not_circle_or_octagon
+    mode: lazy
+    layers: [SBumpPad]
+  - name: CuPillarPadBadShape
+    op: not_circle
+    mode: lazy
+    layers: [CuPillarPad]
+  # Padc.d: pad-anchored 30 µm reach — grows the sparse pad instead of giving dense Activ
+  # a 30 µm halo. radius 29.995 + grow's 5 dbu margin = an exact 30.000 reach.
+  - name: CuPillarPadGrown
+    op: grow
+    mode: lazy
+    radius: 29.995
+    layers: [CuPillarPad]
+  - name: PadcDBad
+    op: intersection
+    mode: lazy
+    layers: [CuPillarPadGrown, SealActiv]
+
+  # The seal ring is a continuous Cont/via band that legitimately fails exact_width;
+  # checking the NoSealring variant skips it without globally silencing the periphery.
+  - name: ContNoSealring
+    op: difference
+    mode: lazy
+    layers:
+      - Cont
+      - EdgeSeal
+
+  - name: Via1NoSealring
+    op: difference
+    mode: lazy
+    layers: [Via1, EdgeSeal]
+  - name: Via2NoSealring
+    op: difference
+    mode: lazy
+    layers: [Via2, EdgeSeal]
+  - name: Via3NoSealring
+    op: difference
+    mode: lazy
+    layers: [Via3, EdgeSeal]
+  - name: Via4NoSealring
+    op: difference
+    mode: lazy
+    layers: [Via4, EdgeSeal]
+  - name: TopVia1NoSealring
+    op: difference
+    mode: lazy
+    layers: [TopVia1, EdgeSeal]
+  - name: TopVia2NoSealring
+    op: difference
+    mode: lazy
+    layers: [TopVia2, EdgeSeal]
+
+  # Passiv inside the (hole-filled) seal ring — Pad.c isn't checked outside the seal.
+  - name: PassivInSeal
+    op: inside
+    layers: [Passiv, EdgeSeal]
+
+  # TM2.bR (wide-line spacing) is not checked inside inductor (IND) regions.
+  - name: TopMetal2NotIND
+    op: difference
+    mode: lazy
+    layers: [TopMetal2, IND]
+
+  # Salicidable area (diffusion + gate poly); Sal.d treats them together.
+  - name: ActivOrGatPoly
+    op: union
+    mode: lazy
+    layers: [Activ, GatPoly]
+
+  # Square vs. bar contacts, on the seal-excluded Conts (else the seal band reads as one
+  # giant bar). Used by Cnt.e–Cnt.j (square) and CntB.e–CntB.j (bar).
+  - name: ContSquare
+    op: square
+    mode: lazy
+    layers: [ContNoSealring]
+  - name: ContBar
+    op: not_square
+    mode: lazy
+    layers: [ContNoSealring]
+
+  - name: ContOnGatPoly
+    op: intersection
+    mode: lazy
+    layers: [ContSquare, GatPoly]
+  - name: ContOnActiv
+    op: intersection
+    mode: lazy
+    layers: [ContSquare, Activ]
+  # SRAM macros use foundry-qualified bit cells that waive several FEOL rules. The
+  # exclusion goes on the side that makes the rule silent (measured/enclosed, or the
+  # well side for spacings) — excluding the enclosing side instead would fabricate FPs.
+  - name: ContOnActivNoSRAM
+    op: not_interacting
+    mode: lazy
+    layers: [ContOnActiv, SRAM]
+  - name: ContOnNsdActiv
+    op: intersection
+    mode: lazy
+    layers: [ContSquare, Activ, nSD]
+  - name: ContOnPsdActiv
+    op: intersection
+    mode: lazy
+    layers: [ContSquare, Activ, pSD]
+
+  - name: ContBarOnGatPoly
+    op: intersection
+    mode: lazy
+    layers: [ContBar, GatPoly]
+  - name: ContBarOnActiv
+    op: intersection
+    mode: lazy
+    layers: [ContBar, Activ]
+  - name: ContBarOnNsdActiv
+    op: intersection
+    mode: lazy
+    layers: [ContBar, Activ, nSD]
+  - name: ContBarOnPsdActiv
+    op: intersection
+    mode: lazy
+    layers: [ContBar, Activ, pSD]
+
+  # P+/N+ Activ (∩pSD/∩nSD), split by ThickGateOx. NW.c: NWell enclosure of P+ tap.
+  # NW.d: NWell space to external N+ (min_space already skips overlapping shapes).
+  - name: PsdActivInNWell
+    op: intersection
+    mode: lazy
+    layers: [Activ, pSD, NWell]
+  - name: PsdActivInNWellTGO
+    op: intersection
+    mode: lazy
+    layers: [PsdActivInNWell, ThickGateOx]
+  - name: PsdActivInNWellNoTGO
+    op: difference
+    mode: lazy
+    layers: [PsdActivInNWell, ThickGateOx]
+  - name: NsdActiv
+    op: intersection
+    mode: lazy
+    layers: [Activ, nSD]
+  - name: NsdActivTGO
+    op: intersection
+    mode: lazy
+    layers: [NsdActiv, ThickGateOx]
+  - name: NsdActivNoTGO
+    op: difference
+    mode: lazy
+    layers: [NsdActiv, ThickGateOx]
+  # Full derived N+ for NW.d/d1: undoped Activ is N+ by default, nSD:block suppresses it,
+  # drawn nSD overrides the block — drawn-nSD-only would miss almost every real N+ region.
+  - name: ActivDefaultN
+    op: difference
+    mode: lazy
+    layers: [Activ, nSD.block, pSD]
+  - name: NActFull
+    op: union
+    mode: lazy
+    layers: [NsdActiv, ActivDefaultN]
+  - name: NActFullNoTGO
+    op: difference
+    mode: lazy
+    layers: [NActFull, ThickGateOx]
+  - name: NActFullTGO
+    op: intersection
+    mode: lazy
+    layers: [NActFull, ThickGateOx]
+  # N+ diffusion for the latch-up deck: IHP marks only P+ (pSD), so N+ = Activ − pSD.
+  - name: NActiv
+    op: difference
+    mode: lazy
+    layers: [Activ, pSD]
+  # NWell tie (N+Activ in NWell — no NMOS lives in an NWell, so this is all tap).
+  - name: NActivInNWell
+    op: intersection
+    mode: lazy
+    layers: [NActiv, NWell]
+  - name: NActivInNWellNoTGO
+    op: difference
+    mode: lazy
+    layers: [NActivInNWell, ThickGateOx]
+  - name: NActivInNWellTGO
+    op: intersection
+    mode: lazy
+    layers: [NActivInNWell, ThickGateOx]
+  - name: NActivInPWell
+    op: difference
+    mode: lazy
+    layers: [NActiv, NWell]
+  # Chapter 8 DigiBnd: inside the digital boundary, the HV NWell rules relax to LV values
+  # (NW.c1/d1/e1 → .dig at 0.31/0.31/0.24).
+  - name: PsdActivInNWellTGOAna
+    op: not_interacting
+    mode: lazy
+    layers: [PsdActivInNWellTGO, DigiBnd]
+  - name: PsdActivInNWellTGODig
+    op: interacting
+    mode: lazy
+    layers: [PsdActivInNWellTGO, DigiBnd]
+  - name: NActFullTGOAna
+    op: not_interacting
+    mode: lazy
+    layers: [NActFullTGO, DigiBnd]
+  - name: NActFullTGODig
+    op: interacting
+    mode: lazy
+    layers: [NActFullTGO, DigiBnd]
+  - name: NActivInNWellTGOAna
+    op: not_interacting
+    mode: lazy
+    layers: [NActivInNWellTGO, DigiBnd]
+  - name: NActivInNWellTGODig
+    op: interacting
+    mode: lazy
+    layers: [NActivInNWellTGO, DigiBnd]
+  # pSD.c requires pSD to enclose only the NWell Activ parts that actually touch it
+  # (bare N+ NWell taps are skipped).
+  - name: ActivInNWell
+    op: intersection
+    mode: lazy
+    layers: [Activ, NWell]
+  # pSD.i/i1/j/j1 ignore SRAM bit cells.
+  - name: pSDNoSRAM
+    op: difference
+    mode: lazy
+    layers: [pSD, SRAM]
+  # pSD.g: abutted-tie taps (NWell/PWell tie Activ minus Gate, outside SRAM) below
+  # 0.09 µm² can't form a reliable electrical tie.
+  - name: Gate
+    op: intersection
+    mode: lazy
+    layers: [Activ, GatPoly]
+  - name: NTapNoGate
+    op: difference
+    mode: lazy
+    layers: [NActivInNWell, Gate]
+  - name: PTapNoGate
+    op: difference
+    mode: lazy
+    layers: [PsdActivInPWell, Gate]
+  - name: NTapNoGateOutSRAM
+    op: not_interacting
+    mode: lazy
+    layers: [NTapNoGate, SRAM]
+  - name: PTapNoGateOutSRAM
+    op: not_interacting
+    mode: lazy
+    layers: [PTapNoGate, SRAM]
+  # pSD.e: an abutted-tie P+ overlap sliver must be ≥0.30 wide at ONE position (inverse of
+  # min_width) — implemented as morphological open: a sliver that vanishes under open(r)
+  # has no ≥2r-wide spot. r = 0.149 (not 0.150) so exactly-0.30 survives, ≤0.295 dies.
+  - name: ActivNoSRAM
+    op: difference
+    mode: lazy
+    layers: [Activ, SRAM]
+  - name: ActivOutsidePsd
+    op: difference
+    mode: lazy
+    layers: [ActivNoSRAM, pSD]
+  - name: ActivStraddlePsd
+    op: interacting
+    mode: lazy
+    layers: [ActivNoSRAM, ActivOutsidePsd]
+  - name: TieCandidate
+    op: interacting
+    mode: lazy
+    layers: [ActivStraddlePsd, pSD]
+  - name: TieOverlap
+    op: intersection
+    mode: lazy
+    layers: [TieCandidate, pSD]
+  - name: TieOverlapOpened
+    op: open
+    mode: lazy
+    radius: 0.149
+    layers: [TieOverlap]
+  - name: TieTooNarrow
+    op: not_interacting
+    mode: lazy
+    layers: [TieOverlap, TieOverlapOpened]
+  # LU.c/d reference only a tie's own contacts, to stay sparse.
+  - name: ContOnNWellTie
+    op: intersection
+    mode: lazy
+    layers: [Cont, NActivInNWell]
+
+  # P+/N+ Activ in the PWell (substrate) region, for PWB.e/e1/f/f1.
+  - name: PsdActiv
+    op: intersection
+    mode: lazy
+    layers: [Activ, pSD]
+  - name: NsdActivInPWell
+    op: difference
+    mode: lazy
+    layers: [NsdActiv, NWell]
+  - name: NsdActivInPWellTGO
+    op: intersection
+    mode: lazy
+    layers: [NsdActivInPWell, ThickGateOx]
+  - name: NsdActivInPWellNoTGO
+    op: difference
+    mode: lazy
+    layers: [NsdActivInPWell, ThickGateOx]
+  - name: PsdActivInPWell
+    op: difference
+    mode: lazy
+    layers: [PsdActiv, NWell]
+  - name: ContOnSubstrateTie
+    op: intersection
+    mode: lazy
+    layers: [Cont, PsdActivInPWell]
+  - name: PsdActivInPWellTGO
+    op: intersection
+    mode: lazy
+    layers: [PsdActivInPWell, ThickGateOx]
+  - name: PsdActivInPWellNoTGO
+    op: difference
+    mode: lazy
+    layers: [PsdActivInPWell, ThickGateOx]
+
+  # pSD.f: an abutted NWell-tie N-tap must extend ≥0.30 past the P+ abutment at ONE
+  # position. grow(0.0) turns the zero-area abutment into an overlap (grow's 5 dbu
+  # margin); grow(0.29) reaches 0.295, so a surviving NTapDeep sliver means >0.295 deep.
+  - name: NActivX1
+    op: intersection
+    mode: lazy
+    layers: [NActiv, NWellOrPWellBlk]
+  - name: PsdActivX1
+    op: intersection
+    mode: lazy
+    layers: [PsdActiv, NWellOrPWellBlk]
+  - name: PsdActivX1Touch
+    op: grow
+    mode: lazy
+    radius: 0.0
+    layers: [PsdActivX1]
+  - name: AbuttedNTap
+    op: interacting
+    mode: lazy
+    layers: [NActivX1, PsdActivX1Touch]
+  - name: PsdActivX1Grown
+    op: grow
+    mode: lazy
+    radius: 0.29
+    layers: [PsdActivX1]
+  - name: NTapDeep
+    op: difference
+    mode: lazy
+    layers: [AbuttedNTap, PsdActivX1Grown]
+  - name: PsdFBad
+    op: not_interacting
+    mode: lazy
+    layers: [AbuttedNTap, NTapDeep]
+  # pSD.c1: Activ touching pSD, clipped to the implicit PWell (chip minus NWell/
+  # PWell:block), outside the edge seal.
+  - name: ActivTouchPsd
+    op: interacting
+    mode: lazy
+    layers: [Activ, pSD]
+  - name: PsdC1Target
+    op: difference
+    mode: lazy
+    layers: [ActivTouchPsd, NWell, PWell.block, EdgeSeal]
+
+  # --- Poly-resistor recognition (chapter 6, §6.x) ---
+  # Resistor body: GatPoly or the dedicated PolyRes layer.
+  - name: GatPolyRes
+    op: union
+    mode: lazy
+    layers: [GatPoly, PolyRes]
+  - name: SalBlockClean
+    op: difference
+    mode: lazy
+    layers: [SalBlock, Recog.esd, nSD.block]
+  # pSD ∩ nSD marks the Rhigh body (nSD is drawn only inside Rhigh resistors).
+  - name: pSDnSD
+    op: intersection
+    mode: lazy
+    layers: [pSD, nSD]
+  - name: RhighA
+    op: intersection
+    mode: lazy
+    layers: [GatPolyRes, pSDnSD, SalBlockClean]
+  - name: SalBlockRhigh
+    op: intersection
+    mode: lazy
+    layers: [SalBlock, RhighA]
+  # Rsil (RES/silicide resistor): drops bodies touching NWell or nBuLay.
+  - name: RsilBase
+    op: intersection
+    mode: lazy
+    layers: [GatPolyRes, RES, EXTBlock]
+  - name: RsilAll
+    op: not_interacting
+    mode: lazy
+    layers: [RsilBase, SalBlock]
+  - name: RsilNotNWell
+    op: not_interacting
+    mode: lazy
+    layers: [RsilAll, NWell]
+  - name: Rsil
+    op: not_interacting
+    mode: lazy
+    layers: [RsilNotNWell, nBuLay]
+  - name: GPRsilExtended
+    op: covering
+    mode: lazy
+    layers: [GatPolyRes, Rsil]
+  # Rsil.c: RES (a back-annotation marker) must not extend past the resistor's GatPoly
+  # body at all, except where a Cont lands on the protrusion. Direction confirmed against
+  # the real tool: RES past GatPoly flags; GatPoly past RES does not.
+  - name: RsilResProtrusion
+    op: difference
+    mode: lazy
+    layers: [RES, GPRsilExtended]
+  - name: RsilResProtrusionNoCont
+    op: not_interacting
+    mode: lazy
+    layers: [RsilResProtrusion, Cont]
+  # Rppd (P+ poly resistor): GatPoly under pSD+SalBlock not touching diffusion/nSD.
+  - name: Rppd0
+    op: intersection
+    mode: lazy
+    layers: [GatPolyRes, pSD, SalBlockClean]
+  - name: ActivOrNsd
+    op: union
+    mode: lazy
+    layers: [Activ, nSD]
+  - name: RppdAll
+    op: not_interacting
+    mode: lazy
+    layers: [Rppd0, ActivOrNsd]
+  - name: GPRppdExtended
+    op: covering
+    mode: lazy
+    layers: [GatPolyRes, RppdAll]
+  - name: SalBlockRppd
+    op: intersection
+    mode: lazy
+    layers: [SalBlock, RppdAll]
+  # Rppd.c: the relevant Cont is only the one on the resistor's own GatPoly end-cap, not
+  # any Cont merely within the EXTBlock.
+  - name: RppdCont
+    op: intersection
+    mode: lazy
+    layers: [Cont, GPRppdExtended]
+  # Rppd.c's max-space half ("Cont within 0.20 of SalBlock") is a whole-region touch test,
+  # not an area-coverage test: grow SalBlockRppd by the rule value, flag Conts that still
+  # don't touch it.
+  - name: SalBlockRppdGrown
+    op: grow
+    mode: lazy
+    radius: 0.20
+    layers: [SalBlockRppd]
+  - name: RppdContTooFar
+    op: not_interacting
+    mode: lazy
+    layers: [RppdCont, SalBlockRppdGrown]
+  - name: GPRhighExtended
+    op: covering
+    mode: lazy
+    layers: [GatPolyRes, RhighA]
+  # Rhi.d: same Cont-on-GatPoly pattern as Rppd.c, for the Rhigh body.
+  - name: RhighCont
+    op: intersection
+    mode: lazy
+    layers: [Cont, GPRhighExtended]
+  - name: SalBlockRhighGrown
+    op: grow
+    mode: lazy
+    radius: 0.20
+    layers: [SalBlockRhigh]
+  - name: RhighContTooFar
+    op: not_interacting
+    mode: lazy
+    layers: [RhighCont, SalBlockRhighGrown]
+  # Rhi.b: drawn nSD sticking out past pSD, flagged where it touches the Rhigh
+  # recognition (grown a hair so zero-area abutment is detectable).
+  - name: NsdMismatch
+    op: difference
+    mode: lazy
+    layers: [nSD, pSD]
+  - name: RhighRecogBase
+    op: intersection
+    mode: lazy
+    layers: [EXTBlock, pSDnSD]
+  - name: RhighRecog
+    op: covering
+    mode: lazy
+    layers: [RhighRecogBase, GatPoly]
+  - name: RhighRecogGrown
+    op: grow
+    mode: lazy
+    radius: 0.0
+    layers: [RhighRecog]
+  - name: NsdMismatchAtRhigh
+    op: interacting
+    mode: lazy
+    layers: [NsdMismatch, RhighRecogGrown]
+
+  # --- Bipolar npn (chapter 6.1) recognition ---
+  # NPN substrate tie: the interior (`holes`) of its pSD ring, labelled "npn*".  radius =
+  # max expected tie-ring extent (the hole only materialises where the whole ring
+  # assembles in one tile bucket).
+  - name: PsdRingHole
+    op: holes
+    mode: lazy
+    radius: 10.0
+    layers: [pSD]
+  - name: NpnTieHole
+    op: with_text
+    mode: lazy
+    layers: [PsdRingHole, TEXT]
+    text: "npn*"
+  - name: NpnTieNoTrans
+    op: not_interacting
+    mode: lazy
+    layers: [NpnTieHole, TRANS]
+  - name: TransInTie
+    op: interacting
+    mode: lazy
+    layers: [TRANS, NpnTieHole]
+  - name: NpnTieHoleGrown
+    op: grow
+    mode: lazy
+    radius: 0.5
+    layers: [NpnTieHole]
+  - name: NpnTieRingActiv
+    op: interacting
+    mode: lazy
+    layers: [PsdActiv, NpnTieHoleGrown]
+  - name: GatPolyNoSRAM
+    op: difference
+    mode: lazy
+    layers: [GatPoly, SRAM]
+  # Device flavours by exact TRANS text label.
+  - name: TransG2
+    op: with_text
+    mode: lazy
+    layers: [TRANS, TEXT]
+    text: "npn13G2"
+  - name: TransG2L
+    op: with_text
+    mode: lazy
+    layers: [TRANS, TEXT]
+    text: "npn13G2L"
+  - name: TransG2V
+    op: with_text
+    mode: lazy
+    layers: [TRANS, TEXT]
+    text: "npn13G2V"
+  - name: EmitG2
+    op: interacting
+    mode: lazy
+    layers: [EmWind, TransG2]
+  - name: EmitG2L
+    op: interacting
+    mode: lazy
+    layers: [EmWind, TransG2L]
+  - name: EmitG2V
+    op: interacting
+    mode: lazy
+    layers: [EmWind, TransG2V]
+
+  # --- Schottky diode (chapter 6.7) recognition ---
+  # schottky_nbl1 = ContBar enclosed by (SalBlock and nSD:block and PWell:block and nBuLay).
+  - name: SchottkyBlock
+    op: intersection
+    mode: lazy
+    layers: [SalBlock, nSD.block, PWell.block, nBuLay]
+  - name: SchottkyContBar
+    op: interacting
+    mode: lazy
+    layers: [ContBar, SchottkyBlock]
+
+  # --- Isolated-NMOS (nmosi) recognition (chapter 6) ---
+  # Iso-PWell-Activ = Activ inside the buried layer but outside any NWell / PWell:block.
+  - name: NWellOrPWellBlk
+    op: union
+    mode: lazy
+    layers: [NWell, PWell.block]
+  - name: ActivInNBuLay
+    op: intersection
+    mode: lazy
+    layers: [Activ, nBuLay]
+  - name: IsoPWellAct
+    op: difference
+    mode: lazy
+    layers: [ActivInNBuLay, NWellOrPWellBlk]
+  - name: NWellNBuLay
+    op: intersection
+    mode: lazy
+    layers: [NWell, nBuLay]
+  - name: nSDBlockIso
+    op: interacting
+    mode: lazy
+    layers: [nSD.block, IsoPWellAct]
+  # nmosi.c anchor: only ring-shaped NWells count — a plain NWell near some iso-PWell
+  # Activ is not the isolation ring.
+  - name: NWellRing
+    op: with_holes
+    mode: lazy
+    radius: 10.0
+    layers: [NWell]
+  # nmosi.g: SalBlock must extend ≥0.15 past nSD:block wherever the adjacent ground is
+  # still Activ. grow radius 0.145 + its 5 dbu margin = an effective 0.150 band, so a
+  # compliant 0.15 extension yields an empty band while 0.145 leaves a sliver.
+  - name: SalBlockIso
+    op: interacting
+    mode: lazy
+    layers: [SalBlock, IsoPWellAct]
+  - name: NSDBlockIsoGrown
+    op: grow
+    mode: lazy
+    radius: 0.145
+    layers: [nSDBlockIso]
+  - name: NSDBlockUncov
+    op: difference
+    mode: lazy
+    layers: [NSDBlockIsoGrown, SalBlockIso]
+  - name: NmosiGBad
+    op: intersection
+    mode: lazy
+    layers: [NSDBlockUncov, Activ]
+
+  # AFil.j: Activ:filler inside PWell:block, enclosed by (nSD:block ∩ SalBlock) by 0.25 µm.
+  - name: ActivFillerInPWellBlock
+    op: intersection
+    mode: lazy
+    layers: [Activ.filler, PWell.block]
+  - name: nSDBlockAndSalBlock
+    op: intersection
+    mode: lazy
+    layers: [nSD.block, SalBlock]
+
+  # ThickGateOx helpers, for the TGO.b/d "space … outside TGO" rules.
+  - name: GatPolyOverActiv
+    op: intersection
+    mode: lazy
+    layers: [GatPoly, Activ]
+  - name: ThickGateOxOverActiv
+    op: intersection
+    mode: lazy
+    layers: [ThickGateOx, Activ]
+  - name: ActivOutsideTGO
+    op: difference
+    mode: lazy
+    layers: [Activ, ThickGateOx]
+  - name: GatPolyOverActivOutsideTGO
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverActiv, ThickGateOx]
+  - name: GatPolyOverActivTGO
+    op: intersection
+    mode: lazy
+    layers: [GatPolyOverActiv, ThickGateOx]
+
+  # Same-net merge for NW.b/NBL.b "different net" spacing: a morphological close joins
+  # regions whose gap is below the same-net distance (half the close radius), so
+  # min_space on the result only flags genuinely separate (different-net) regions.
+  - name: NWellMerged
+    op: close
+    mode: lazy
+    radius: 0.31
+    layers: [NWell]
+  - name: NWellNoSRAM
+    op: difference
+    mode: lazy
+    layers: [NWell, SRAM]
+  - name: NWellMergedNoSRAM
+    op: close
+    mode: lazy
+    radius: 0.31
+    layers: [NWellNoSRAM]
+  - name: PsdActivInNWellNoTGONoSRAM
+    op: not_interacting
+    mode: lazy
+    layers: [PsdActivInNWellNoTGO, SRAM]
+  - name: nBuLayMerged
+    op: close
+    mode: lazy
+    radius: 0.75
+    layers: [nBuLay]
+
+  # Seal-ring rings: each conductor inside the EdgeSeal frame. Seal.a/c/c1/c2/c3 check
+  # their width; Seal.d the Activ-ring enclosure of the via rings.
+  - name: SealActiv
+    op: intersection
+    mode: lazy
+    layers: [Activ, EdgeSeal]
+  - name: SealpSD
+    op: intersection
+    mode: lazy
+    layers: [pSD, EdgeSeal]
+  - name: SealMetal1
+    op: intersection
+    mode: lazy
+    layers: [Metal1, EdgeSeal]
+  - name: SealMetal2
+    op: intersection
+    mode: lazy
+    layers: [Metal2, EdgeSeal]
+  - name: SealMetal3
+    op: intersection
+    mode: lazy
+    layers: [Metal3, EdgeSeal]
+  - name: SealMetal4
+    op: intersection
+    mode: lazy
+    layers: [Metal4, EdgeSeal]
+  - name: SealMetal5
+    op: intersection
+    mode: lazy
+    layers: [Metal5, EdgeSeal]
+  - name: SealTopMetal1
+    op: intersection
+    mode: lazy
+    layers: [TopMetal1, EdgeSeal]
+  - name: SealTopMetal2
+    op: intersection
+    mode: lazy
+    layers: [TopMetal2, EdgeSeal]
+  - name: SealCont
+    op: intersection
+    mode: lazy
+    layers: [Cont, EdgeSeal]
+  - name: SealVia1
+    op: intersection
+    mode: lazy
+    layers: [Via1, EdgeSeal]
+  - name: SealVia2
+    op: intersection
+    mode: lazy
+    layers: [Via2, EdgeSeal]
+  - name: SealVia3
+    op: intersection
+    mode: lazy
+    layers: [Via3, EdgeSeal]
+  - name: SealVia4
+    op: intersection
+    mode: lazy
+    layers: [Via4, EdgeSeal]
+  - name: SealTopVia1
+    op: intersection
+    mode: lazy
+    layers: [TopVia1, EdgeSeal]
+  - name: SealTopVia2
+    op: intersection
+    mode: lazy
+    layers: [TopVia2, EdgeSeal]
+
+  # Passivation ring outside the seal (Seal.e/f), approximated as Passiv not interacting
+  # EdgeSeal since `with_holes` can't be a virtual layer here (a chip-perimeter hole isn't
+  # tile-local). Caveat: a thin non-ring Passiv shape outside the seal would over-flag.
+  - name: RingPassiv
+    op: not_interacting
+    mode: lazy
+    layers: [Passiv, EdgeSeal]
+
+  # Pad opening, for Pad.a1/d width/space rules.
+  - name: PassivDfpad
+    op: intersection
+    mode: lazy
+    layers: [Passiv, dfpad]
+  # Pad.i: a dfpad opening drawn without TopMetal2 underneath is a forbidden marker error.
+  - name: DfpadNoTopMetal2
+    op: difference
+    mode: lazy
+    layers: [dfpad, TopMetal2]
+
+  # Gate-length-by-device helpers (Gat.a1–a4): split by S/D implant and ThickGateOx.
+  - name: GatPolyOverNsdActiv
+    op: intersection
+    mode: lazy
+    layers: [GatPoly, Activ, nSD]
+  - name: GatPolyOverNsdActivTGO
+    op: intersection
+    mode: lazy
+    layers: [GatPolyOverNsdActiv, ThickGateOx]
+  - name: GatPolyOverNsdActivNoTGO
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverNsdActiv, ThickGateOx]
+  - name: GatPolyOverPsdActiv
+    op: intersection
+    mode: lazy
+    layers: [GatPoly, Activ, pSD]
+  - name: GatPolyOverPsdActivTGO
+    op: intersection
+    mode: lazy
+    layers: [GatPolyOverPsdActiv, ThickGateOx]
+  - name: GatPolyOverPsdActivNoTGO
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverPsdActiv, ThickGateOx]
+
+  # Metal with the slit-exempt regions removed (pads/MIM/IND), for Slt.c/Slt.i.
+  - name: Metal1NoExempt
+    op: difference
+    mode: lazy
+    layers: [Metal1, Passiv, MIM, IND]
+  - name: Metal2NoExempt
+    op: difference
+    mode: lazy
+    layers: [Metal2, Passiv, MIM, IND]
+  - name: Metal3NoExempt
+    op: difference
+    mode: lazy
+    layers: [Metal3, Passiv, MIM, IND]
+  - name: Metal4NoExempt
+    op: difference
+    mode: lazy
+    layers: [Metal4, Passiv, MIM, IND]
+  - name: Metal5NoExempt
+    op: difference
+    mode: lazy
+    layers: [Metal5, Passiv, MIM, IND]
+  - name: TopMetal1NoExempt
+    op: difference
+    mode: lazy
+    layers: [TopMetal1, Passiv, MIM, IND]
+  - name: TopMetal2NoExempt
+    op: difference
+    mode: lazy
+    layers: [TopMetal2, Passiv, MIM, IND]
+  # Slt.e: drawn slits must not land on a pad (every dfpad shape touching a Passiv opening).
+  - name: PadDfpad
+    op: interacting
+    mode: lazy
+    layers: [dfpad, Passiv]
+  - name: Metal1SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [Metal1.slit, PadDfpad]
+  - name: Metal2SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [Metal2.slit, PadDfpad]
+  - name: Metal3SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [Metal3.slit, PadDfpad]
+  - name: Metal4SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [Metal4.slit, PadDfpad]
+  - name: Metal5SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [Metal5.slit, PadDfpad]
+  - name: TopMetal1SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [TopMetal1.slit, PadDfpad]
+  - name: TopMetal2SlitOnPad
+    op: intersection
+    mode: lazy
+    layers: [TopMetal2.slit, PadDfpad]
+
+  # --- Antenna (§7.1) ---
+  # P+ diffusion contact area (Activ that is not gate, and is pSD). Ant.i flags a diode on
+  # it landing in the PWell (neither NWell nor an explicit PWell.block) — a p-diode may
+  # only sit in an NWell.
+  - name: ActivNotGat
+    op: difference
+    mode: lazy
+    layers: [Activ, GatPoly]
+  - name: PActivCon
+    op: intersection
+    mode: lazy
+    layers: [ActivNotGat, pSD]
+  - name: AntDpDiode
+    op: intersection
+    mode: lazy
+    layers: [PActivCon, Recog.diode]
+  - name: AntIError
+    op: difference
+    mode: lazy
+    layers: [AntDpDiode, Recog.esd, NWell, PWell.block]
+
+  # Antenna ratio helpers (Ant.b/e, Ant.d/f): a net's diffusion diode is any non-gate
+  # Activ contact, the discharge path that relaxes the ratio limit.
+  - name: NActivCon
+    op: difference
+    mode: lazy
+    layers: [Activ, GatPoly, pSD, nSD.block]
+  - name: AntDiode
+    op: union
+    mode: lazy
+    layers: [NActivCon, PActivCon]
+  # Ant.a: GatPoly routed over field oxide (not over Activ).
+  - name: AntPolyField
+    op: difference
+    mode: lazy
+    layers: [GatPoly, Activ]
+
+  # Protection-diode devices (Ant.g): an n-diode is an n-diffusion under a diode marker
+  # outside the NWell; a p-diode is a p-diffusion marker inside the NWell.
+  - name: AntDnDiode
+    op: intersection
+    mode: lazy
+    layers: [NActivCon, Recog.diode]
+  - name: AntDantenna
+    op: difference
+    mode: lazy
+    layers: [AntDnDiode, NWell]
+  - name: AntDpantenna
+    op: intersection
+    mode: lazy
+    layers: [PActivCon, Recog.diode, NWell]
+
+layers:
+  # --- Front-end ---
+  - name: Activ
+    gds_layer: 1
+    gds_datatype: 0
+  - name: Activ.label
+    gds_layer: 1
+    gds_datatype: 1
+  - name: Activ.pin
+    gds_layer: 1
+    gds_datatype: 2
+  - name: Activ.net
+    gds_layer: 1
+    gds_datatype: 3
+  - name: Activ.boundary
+    gds_layer: 1
+    gds_datatype: 4
+  - name: Activ.lvs
+    gds_layer: 1
+    gds_datatype: 19
+  - name: Activ.mask
+    gds_layer: 1
+    gds_datatype: 20
+  - name: Activ.filler
+    gds_layer: 1
+    gds_datatype: 22
+  - name: Activ.nofill
+    gds_layer: 1
+    gds_datatype: 23
+  - name: Activ.OPC
+    gds_layer: 1
+    gds_datatype: 26
+  - name: Activ.iOPC
+    gds_layer: 1
+    gds_datatype: 27
+  - name: Activ.noqrc
+    gds_layer: 1
+    gds_datatype: 28
+
+  - name: GatPoly
+    gds_layer: 5
+    gds_datatype: 0
+  - name: GatPoly.label
+    gds_layer: 5
+    gds_datatype: 1
+  - name: GatPoly.pin
+    gds_layer: 5
+    gds_datatype: 2
+  - name: GatPoly.net
+    gds_layer: 5
+    gds_datatype: 3
+  - name: GatPoly.boundary
+    gds_layer: 5
+    gds_datatype: 4
+  - name: GatPoly.filler
+    gds_layer: 5
+    gds_datatype: 22
+  - name: GatPoly.nofill
+    gds_layer: 5
+    gds_datatype: 23
+  - name: GatPoly.OPC
+    gds_layer: 5
+    gds_datatype: 26
+  - name: GatPoly.iOPC
+    gds_layer: 5
+    gds_datatype: 27
+  - name: GatPoly.noqrc
+    gds_layer: 5
+    gds_datatype: 28
+
+  - name: PolyRes
+    gds_layer: 128
+    gds_datatype: 0
+  - name: PolyRes.label
+    gds_layer: 128
+    gds_datatype: 1
+  - name: PolyRes.pin
+    gds_layer: 128
+    gds_datatype: 2
+  - name: PolyRes.net
+    gds_layer: 128
+    gds_datatype: 3
+  - name: PolyRes.boundary
+    gds_layer: 128
+    gds_datatype: 4
+
+  - name: NWell
+    gds_layer: 31
+    gds_datatype: 0
+  - name: NWell.label
+    gds_layer: 31
+    gds_datatype: 1
+  - name: NWell.pin
+    gds_layer: 31
+    gds_datatype: 2
+  - name: NWell.net
+    gds_layer: 31
+    gds_datatype: 3
+  - name: NWell.boundary
+    gds_layer: 31
+    gds_datatype: 4
+  - name: NWell.text
+    gds_layer: 31
+    gds_datatype: 25
+
+  - name: nBuLay
+    gds_layer: 32
+    gds_datatype: 0
+  - name: nBuLay.label
+    gds_layer: 32
+    gds_datatype: 1
+  - name: nBuLay.pin
+    gds_layer: 32
+    gds_datatype: 2
+  - name: nBuLay.net
+    gds_layer: 32
+    gds_datatype: 3
+  - name: nBuLay.boundary
+    gds_layer: 32
+    gds_datatype: 4
+  - name: nBuLay.block
+    gds_layer: 32
+    gds_datatype: 21
+  - name: nBuLayCut
+    gds_layer: 131
+    gds_datatype: 0
+
+  - name: PWell
+    gds_layer: 46
+    gds_datatype: 0
+  - name: PWell.label
+    gds_layer: 46
+    gds_datatype: 1
+  - name: PWell.pin
+    gds_layer: 46
+    gds_datatype: 2
+  - name: PWell.net
+    gds_layer: 46
+    gds_datatype: 3
+  - name: PWell.boundary
+    gds_layer: 46
+    gds_datatype: 4
+  - name: PWell.block
+    gds_layer: 46
+    gds_datatype: 21
+
+  - name: pSD
+    gds_layer: 14
+    gds_datatype: 0
+  - name: nSD
+    gds_layer: 7
+    gds_datatype: 0
+  - name: nSD.block
+    gds_layer: 7
+    gds_datatype: 21
+  - name: SalBlock
+    gds_layer: 28
+    gds_datatype: 0
+  - name: ThickGateOx
+    gds_layer: 44
+    gds_datatype: 0
+  - name: NLDB
+    gds_layer: 15
+    gds_datatype: 0
+  - name: PLDB
+    gds_layer: 45
+    gds_datatype: 0
+  - name: NLDD
+    gds_layer: 112
+    gds_datatype: 0
+  - name: PLDD
+    gds_layer: 113
+    gds_datatype: 0
+  - name: NExt
+    gds_layer: 114
+    gds_datatype: 0
+  - name: PExt
+    gds_layer: 115
+    gds_datatype: 0
+  - name: NExtHV
+    gds_layer: 116
+    gds_datatype: 0
+  - name: PExtHV
+    gds_layer: 117
+    gds_datatype: 0
+
+  # --- Contacts ---
+  - name: Cont
+    gds_layer: 6
+    gds_datatype: 0
+  - name: Cont.net
+    gds_layer: 6
+    gds_datatype: 3
+  - name: Cont.boundary
+    gds_layer: 6
+    gds_datatype: 4
+  - name: Cont.OPC
+    gds_layer: 6
+    gds_datatype: 26
+
+  # --- Metal stack ---
+  - name: Metal1
+    gds_layer: 8
+    gds_datatype: 0
+  - name: Metal1.label
+    gds_layer: 8
+    gds_datatype: 1
+  - name: Metal1.pin
+    gds_layer: 8
+    gds_datatype: 2
+  - name: Metal1.net
+    gds_layer: 8
+    gds_datatype: 3
+  - name: Metal1.boundary
+    gds_layer: 8
+    gds_datatype: 4
+  - name: Metal1.mask
+    gds_layer: 8
+    gds_datatype: 20
+  - name: Metal1.filler
+    gds_layer: 8
+    gds_datatype: 22
+  - name: Metal1.nofill
+    gds_layer: 8
+    gds_datatype: 23
+  - name: Metal1.slit
+    gds_layer: 8
+    gds_datatype: 24
+  - name: Metal1.text
+    gds_layer: 8
+    gds_datatype: 25
+  - name: Metal1.OPC
+    gds_layer: 8
+    gds_datatype: 26
+  - name: Metal1.noqrc
+    gds_layer: 8
+    gds_datatype: 28
+  - name: Metal1.res
+    gds_layer: 8
+    gds_datatype: 29
+  - name: Metal1.iprobe
+    gds_layer: 8
+    gds_datatype: 33
+  - name: Metal1.diffprb
+    gds_layer: 8
+    gds_datatype: 34
+
+  - name: Via1
+    gds_layer: 19
+    gds_datatype: 0
+  - name: Via1.net
+    gds_layer: 19
+    gds_datatype: 3
+  - name: Via1.boundary
+    gds_layer: 19
+    gds_datatype: 4
+
+  - name: Metal2
+    gds_layer: 10
+    gds_datatype: 0
+  - name: Metal2.label
+    gds_layer: 10
+    gds_datatype: 1
+  - name: Metal2.pin
+    gds_layer: 10
+    gds_datatype: 2
+  - name: Metal2.net
+    gds_layer: 10
+    gds_datatype: 3
+  - name: Metal2.boundary
+    gds_layer: 10
+    gds_datatype: 4
+  - name: Metal2.mask
+    gds_layer: 10
+    gds_datatype: 20
+  - name: Metal2.filler
+    gds_layer: 10
+    gds_datatype: 22
+  - name: Metal2.nofill
+    gds_layer: 10
+    gds_datatype: 23
+  - name: Metal2.slit
+    gds_layer: 10
+    gds_datatype: 24
+  - name: Metal2.text
+    gds_layer: 10
+    gds_datatype: 25
+  - name: Metal2.OPC
+    gds_layer: 10
+    gds_datatype: 26
+  - name: Metal2.noqrc
+    gds_layer: 10
+    gds_datatype: 28
+  - name: Metal2.res
+    gds_layer: 10
+    gds_datatype: 29
+  - name: Metal2.iprobe
+    gds_layer: 10
+    gds_datatype: 33
+  - name: Metal2.diffprb
+    gds_layer: 10
+    gds_datatype: 34
+
+  - name: Via2
+    gds_layer: 29
+    gds_datatype: 0
+  - name: Via2.net
+    gds_layer: 29
+    gds_datatype: 3
+  - name: Via2.boundary
+    gds_layer: 29
+    gds_datatype: 4
+
+  - name: Metal3
+    gds_layer: 30
+    gds_datatype: 0
+  - name: Metal3.label
+    gds_layer: 30
+    gds_datatype: 1
+  - name: Metal3.pin
+    gds_layer: 30
+    gds_datatype: 2
+  - name: Metal3.net
+    gds_layer: 30
+    gds_datatype: 3
+  - name: Metal3.boundary
+    gds_layer: 30
+    gds_datatype: 4
+  - name: Metal3.mask
+    gds_layer: 30
+    gds_datatype: 20
+  - name: Metal3.filler
+    gds_layer: 30
+    gds_datatype: 22
+  - name: Metal3.nofill
+    gds_layer: 30
+    gds_datatype: 23
+  - name: Metal3.slit
+    gds_layer: 30
+    gds_datatype: 24
+  - name: Metal3.text
+    gds_layer: 30
+    gds_datatype: 25
+  - name: Metal3.OPC
+    gds_layer: 30
+    gds_datatype: 26
+  - name: Metal3.noqrc
+    gds_layer: 30
+    gds_datatype: 28
+  - name: Metal3.res
+    gds_layer: 30
+    gds_datatype: 29
+  - name: Metal3.iprobe
+    gds_layer: 30
+    gds_datatype: 33
+  - name: Metal3.diffprb
+    gds_layer: 30
+    gds_datatype: 34
+
+  - name: MIM
+    gds_layer: 36
+    gds_datatype: 0
+  - name: MIM.net
+    gds_layer: 36
+    gds_datatype: 3
+  - name: MIM.boundary
+    gds_layer: 36
+    gds_datatype: 4
+  - name: Vmim
+    gds_layer: 129
+    gds_datatype: 0
+
+  - name: Via3
+    gds_layer: 49
+    gds_datatype: 0
+  - name: Via3.net
+    gds_layer: 49
+    gds_datatype: 3
+  - name: Via3.boundary
+    gds_layer: 49
+    gds_datatype: 4
+
+  - name: Metal4
+    gds_layer: 50
+    gds_datatype: 0
+  - name: Metal4.label
+    gds_layer: 50
+    gds_datatype: 1
+  - name: Metal4.pin
+    gds_layer: 50
+    gds_datatype: 2
+  - name: Metal4.net
+    gds_layer: 50
+    gds_datatype: 3
+  - name: Metal4.boundary
+    gds_layer: 50
+    gds_datatype: 4
+  - name: Metal4.mask
+    gds_layer: 50
+    gds_datatype: 20
+  - name: Metal4.filler
+    gds_layer: 50
+    gds_datatype: 22
+  - name: Metal4.nofill
+    gds_layer: 50
+    gds_datatype: 23
+  - name: Metal4.slit
+    gds_layer: 50
+    gds_datatype: 24
+  - name: Metal4.text
+    gds_layer: 50
+    gds_datatype: 25
+  - name: Metal4.OPC
+    gds_layer: 50
+    gds_datatype: 26
+  - name: Metal4.noqrc
+    gds_layer: 50
+    gds_datatype: 28
+  - name: Metal4.res
+    gds_layer: 50
+    gds_datatype: 29
+  - name: Metal4.iprobe
+    gds_layer: 50
+    gds_datatype: 33
+  - name: Metal4.diffprb
+    gds_layer: 50
+    gds_datatype: 34
+
+  - name: Via4
+    gds_layer: 66
+    gds_datatype: 0
+  - name: Via4.net
+    gds_layer: 66
+    gds_datatype: 3
+  - name: Via4.boundary
+    gds_layer: 66
+    gds_datatype: 4
+
+  - name: Metal5
+    gds_layer: 67
+    gds_datatype: 0
+  - name: Metal5.label
+    gds_layer: 67
+    gds_datatype: 1
+  - name: Metal5.pin
+    gds_layer: 67
+    gds_datatype: 2
+  - name: Metal5.net
+    gds_layer: 67
+    gds_datatype: 3
+  - name: Metal5.boundary
+    gds_layer: 67
+    gds_datatype: 4
+  - name: Metal5.mask
+    gds_layer: 67
+    gds_datatype: 20
+  - name: Metal5.filler
+    gds_layer: 67
+    gds_datatype: 22
+  - name: Metal5.nofill
+    gds_layer: 67
+    gds_datatype: 23
+  - name: Metal5.slit
+    gds_layer: 67
+    gds_datatype: 24
+  - name: Metal5.text
+    gds_layer: 67
+    gds_datatype: 25
+  - name: Metal5.OPC
+    gds_layer: 67
+    gds_datatype: 26
+  - name: Metal5.noqrc
+    gds_layer: 67
+    gds_datatype: 28
+  - name: Metal5.res
+    gds_layer: 67
+    gds_datatype: 29
+  - name: Metal5.iprobe
+    gds_layer: 67
+    gds_datatype: 33
+  - name: Metal5.diffprb
+    gds_layer: 67
+    gds_datatype: 34
+
+  # --- Top metals ---
+  - name: TopVia1
+    gds_layer: 125
+    gds_datatype: 0
+  - name: TopVia1.net
+    gds_layer: 125
+    gds_datatype: 3
+  - name: TopVia1.boundary
+    gds_layer: 125
+    gds_datatype: 4
+
+  - name: TopMetal1
+    gds_layer: 126
+    gds_datatype: 0
+  - name: TopMetal1.label
+    gds_layer: 126
+    gds_datatype: 1
+  - name: TopMetal1.pin
+    gds_layer: 126
+    gds_datatype: 2
+  - name: TopMetal1.net
+    gds_layer: 126
+    gds_datatype: 3
+  - name: TopMetal1.boundary
+    gds_layer: 126
+    gds_datatype: 4
+  - name: TopMetal1.mask
+    gds_layer: 126
+    gds_datatype: 20
+  - name: TopMetal1.filler
+    gds_layer: 126
+    gds_datatype: 22
+  - name: TopMetal1.nofill
+    gds_layer: 126
+    gds_datatype: 23
+  - name: TopMetal1.slit
+    gds_layer: 126
+    gds_datatype: 24
+  - name: TopMetal1.text
+    gds_layer: 126
+    gds_datatype: 25
+  - name: TopMetal1.noqrc
+    gds_layer: 126
+    gds_datatype: 28
+  - name: TopMetal1.res
+    gds_layer: 126
+    gds_datatype: 29
+  - name: TopMetal1.iprobe
+    gds_layer: 126
+    gds_datatype: 33
+  - name: TopMetal1.diffprb
+    gds_layer: 126
+    gds_datatype: 34
+  - name: TopMetal1.dt30
+    gds_layer: 126
+    gds_datatype: 30
+    # seal-periphery (unspecified by IHP)
+
+  - name: TopVia2
+    gds_layer: 133
+    gds_datatype: 0
+  - name: TopVia2.net
+    gds_layer: 133
+    gds_datatype: 3
+  - name: TopVia2.boundary
+    gds_layer: 133
+    gds_datatype: 4
+
+  - name: TopMetal2
+    gds_layer: 134
+    gds_datatype: 0
+  - name: TopMetal2.label
+    gds_layer: 134
+    gds_datatype: 1
+  - name: TopMetal2.pin
+    gds_layer: 134
+    gds_datatype: 2
+  - name: TopMetal2.net
+    gds_layer: 134
+    gds_datatype: 3
+  - name: TopMetal2.boundary
+    gds_layer: 134
+    gds_datatype: 4
+  - name: TopMetal2.mask
+    gds_layer: 134
+    gds_datatype: 20
+  - name: TopMetal2.filler
+    gds_layer: 134
+    gds_datatype: 22
+  - name: TopMetal2.nofill
+    gds_layer: 134
+    gds_datatype: 23
+  - name: TopMetal2.slit
+    gds_layer: 134
+    gds_datatype: 24
+  - name: TopMetal2.text
+    gds_layer: 134
+    gds_datatype: 25
+  - name: TopMetal2.noqrc
+    gds_layer: 134
+    gds_datatype: 28
+  - name: TopMetal2.res
+    gds_layer: 134
+    gds_datatype: 29
+  - name: TopMetal2.iprobe
+    gds_layer: 134
+    gds_datatype: 33
+  - name: TopMetal2.diffprb
+    gds_layer: 134
+    gds_datatype: 34
+  - name: TopMetal2.dt30
+    gds_layer: 134
+    gds_datatype: 30
+    # seal-periphery (unspecified by IHP)
+
+  # --- Passivation ---
+  - name: Passiv
+    gds_layer: 9
+    gds_datatype: 0
+  - name: Passiv.label
+    gds_layer: 9
+    gds_datatype: 1
+  - name: Passiv.pin
+    gds_layer: 9
+    gds_datatype: 2
+  - name: Passiv.net
+    gds_layer: 9
+    gds_datatype: 3
+  - name: Passiv.boundary
+    gds_layer: 9
+    gds_datatype: 4
+  - name: Passiv.pillar
+    gds_layer: 9
+    gds_datatype: 35
+  - name: Passiv.sbump
+    gds_layer: 9
+    gds_datatype: 36
+  - name: Passiv.pdl
+    gds_layer: 9
+    gds_datatype: 40
+
+  - name: NoMetFiller
+    gds_layer: 160
+    gds_datatype: 0
+  - name: ThinFilmRes
+    gds_layer: 146
+    gds_datatype: 0
+
+  # --- Bipolar ---
+  - name: BiWind
+    gds_layer: 3
+    gds_datatype: 0
+  - name: BiWind.OPC
+    gds_layer: 3
+    gds_datatype: 26
+  - name: EmWind
+    gds_layer: 33
+    gds_datatype: 0
+  - name: EmWind.OPC
+    gds_layer: 33
+    gds_datatype: 26
+  - name: EmWind3
+    gds_layer: 90
+    gds_datatype: 0
+  - name: EmWiHV
+    gds_layer: 156
+    gds_datatype: 0
+  - name: EmWiHV3
+    gds_layer: 91
+    gds_datatype: 0
+  - name: EmPoly
+    gds_layer: 55
+    gds_datatype: 0
+  - name: BasPoly
+    gds_layer: 13
+    gds_datatype: 0
+  - name: BasPoly.label
+    gds_layer: 13
+    gds_datatype: 1
+  - name: BasPoly.pin
+    gds_layer: 13
+    gds_datatype: 2
+  - name: BasPoly.net
+    gds_layer: 13
+    gds_datatype: 3
+  - name: BasPoly.boundary
+    gds_layer: 13
+    gds_datatype: 4
+  - name: ColOpen
+    gds_layer: 101
+    gds_datatype: 0
+  - name: ColWind
+    gds_layer: 139
+    gds_datatype: 0
+  - name: CtrGat
+    gds_layer: 154
+    gds_datatype: 0
+  - name: DeepCo
+    gds_layer: 35
+    gds_datatype: 0
+
+  # --- HV / special ---
+  - name: IND
+    gds_layer: 27
+    gds_datatype: 0
+  - name: IND.pin
+    gds_layer: 27
+    gds_datatype: 2
+  - name: IND.boundary
+    gds_layer: 27
+    gds_datatype: 4
+  - name: IND.text
+    gds_layer: 27
+    gds_datatype: 25
+  - name: RES
+    gds_layer: 24
+    gds_datatype: 0
+  - name: RES.label
+    gds_layer: 24
+    gds_datatype: 1
+  - name: Varicap
+    gds_layer: 70
+    gds_datatype: 0
+  - name: RadHard
+    gds_layer: 68
+    gds_datatype: 0
+  - name: SRAM
+    gds_layer: 25
+    gds_datatype: 0
+  - name: SRAM.label
+    gds_layer: 25
+    gds_datatype: 1
+  - name: SRAM.boundary
+    gds_layer: 25
+    gds_datatype: 4
+  - name: SMOS
+    gds_layer: 93
+    gds_datatype: 0
+  - name: RedBuLay
+    gds_layer: 92
+    gds_datatype: 0
+  - name: IC
+    gds_layer: 48
+    gds_datatype: 0
+  - name: INLDPWL
+    gds_layer: 127
+    gds_datatype: 0
+  - name: NoDRC
+    gds_layer: 62
+    gds_datatype: 0
+  - name: FBE
+    gds_layer: 54
+    gds_datatype: 0
+  - name: LBE
+    gds_layer: 157
+    gds_datatype: 0
+  - name: FLM
+    gds_layer: 142
+    gds_datatype: 0
+  - name: HafniumOx
+    gds_layer: 143
+    gds_datatype: 0
+  - name: HeatRes
+    gds_layer: 52
+    gds_datatype: 0
+  - name: HeatTrans
+    gds_layer: 51
+    gds_datatype: 0
+  - name: EXTBlock
+    gds_layer: 111
+    gds_datatype: 0
+  - name: FGEtch
+    gds_layer: 153
+    gds_datatype: 0
+  - name: FGImp
+    gds_layer: 155
+    gds_datatype: 0
+  - name: DeepVia
+    gds_layer: 152
+    gds_datatype: 0
+
+  # --- Bond / packaging ---
+  - name: dfpad
+    gds_layer: 41
+    gds_datatype: 0
+  - name: dfpad.pillar
+    gds_layer: 41
+    gds_datatype: 35
+  - name: dfpad.sbump
+    gds_layer: 41
+    gds_datatype: 36
+  - name: DevBondMet
+    gds_layer: 75
+    gds_datatype: 0
+  - name: DevBondVia
+    gds_layer: 74
+    gds_datatype: 0
+  - name: DevTrench
+    gds_layer: 76
+    gds_datatype: 0
+  - name: IntBondMet
+    gds_layer: 73
+    gds_datatype: 0
+  - name: IntBondVia
+    gds_layer: 72
+    gds_datatype: 0
+  - name: Redist
+    gds_layer: 77
+    gds_datatype: 0
+  - name: Polimide
+    gds_layer: 98
+    gds_datatype: 0
+  - name: Polimide.label
+    gds_layer: 98
+    gds_datatype: 1
+  - name: Polimide.pin
+    gds_layer: 98
+    gds_datatype: 2
+  - name: Polimide.net
+    gds_layer: 98
+    gds_datatype: 3
+  - name: AlCuStop
+    gds_layer: 159
+    gds_datatype: 0
+  - name: BackMetal1
+    gds_layer: 20
+    gds_datatype: 0
+  - name: BackMetal1.label
+    gds_layer: 20
+    gds_datatype: 1
+  - name: BackMetal1.pin
+    gds_layer: 20
+    gds_datatype: 2
+  - name: BackMetal1.net
+    gds_layer: 20
+    gds_datatype: 3
+  - name: BackMetal1.boundary
+    gds_layer: 20
+    gds_datatype: 4
+  - name: BackMetal1.mask
+    gds_layer: 20
+    gds_datatype: 20
+  - name: BackMetal1.filler
+    gds_layer: 20
+    gds_datatype: 22
+  - name: BackMetal1.nofill
+    gds_layer: 20
+    gds_datatype: 23
+  - name: BackMetal1.slit
+    gds_layer: 20
+    gds_datatype: 24
+  - name: BackMetal1.text
+    gds_layer: 20
+    gds_datatype: 25
+  - name: BackMetal1.OPC
+    gds_layer: 20
+    gds_datatype: 26
+  - name: BackMetal1.noqrc
+    gds_layer: 20
+    gds_datatype: 28
+  - name: BackMetal1.res
+    gds_layer: 20
+    gds_datatype: 29
+  - name: BackMetal1.iprobe
+    gds_layer: 20
+    gds_datatype: 33
+  - name: BackMetal1.diffprb
+    gds_layer: 20
+    gds_datatype: 34
+  - name: BackPassiv
+    gds_layer: 23
+    gds_datatype: 0
+
+  # --- Photonics ---
+  - name: GraphBot
+    gds_layer: 78
+    gds_datatype: 0
+  - name: GraphCont
+    gds_layer: 85
+    gds_datatype: 0
+  - name: GraphGate
+    gds_layer: 118
+    gds_datatype: 0
+  - name: GraphMetal1
+    gds_layer: 109
+    gds_datatype: 0
+  - name: GraphMetal1.filler
+    gds_layer: 109
+    gds_datatype: 22
+  - name: GraphMetal1.nofill
+    gds_layer: 109
+    gds_datatype: 23
+  - name: GraphMetal1.OPC
+    gds_layer: 109
+    gds_datatype: 26
+  - name: GraphMetal1.slit
+    gds_layer: 109
+    gds_datatype: 24
+  - name: GraphMet1L
+    gds_layer: 110
+    gds_datatype: 0
+  - name: GraphMet1L.filler
+    gds_layer: 110
+    gds_datatype: 22
+  - name: GraphMet1L.nofill
+    gds_layer: 110
+    gds_datatype: 23
+  - name: GraphMet1L.OPC
+    gds_layer: 110
+    gds_datatype: 26
+  - name: GraphMet1L.slit
+    gds_layer: 110
+    gds_datatype: 24
+  - name: GraphPad
+    gds_layer: 97
+    gds_datatype: 0
+  - name: GraphPas
+    gds_layer: 89
+    gds_datatype: 0
+  - name: GraphTop
+    gds_layer: 79
+    gds_datatype: 0
+  - name: SiGrating
+    gds_layer: 87
+    gds_datatype: 0
+  - name: SiNGrating
+    gds_layer: 88
+    gds_datatype: 0
+  - name: SiNWG
+    gds_layer: 119
+    gds_datatype: 0
+  - name: SiNWG.filler
+    gds_layer: 119
+    gds_datatype: 22
+  - name: SiNWG.nofill
+    gds_layer: 119
+    gds_datatype: 23
+  - name: SiWG
+    gds_layer: 86
+    gds_datatype: 0
+  - name: SiWG.filler
+    gds_layer: 86
+    gds_datatype: 22
+  - name: SiWG.nofill
+    gds_layer: 86
+    gds_datatype: 23
+
+  # --- SNS ---
+  - name: SNSArms
+    gds_layer: 137
+    gds_datatype: 0
+  - name: SNSBotVia
+    gds_layer: 149
+    gds_datatype: 0
+  - name: SNSCMOSVia
+    gds_layer: 138
+    gds_datatype: 0
+  - name: SNSRing
+    gds_layer: 135
+    gds_datatype: 0
+  - name: SNSTopVia
+    gds_layer: 151
+    gds_datatype: 0
+  - name: Sensor
+    gds_layer: 136
+    gds_datatype: 0
+  - name: MemCap
+    gds_layer: 69
+    gds_datatype: 0
+  - name: MEMPAD
+    gds_layer: 124
+    gds_datatype: 0
+  - name: MEMVia
+    gds_layer: 145
+    gds_datatype: 0
+  - name: RFMEM
+    gds_layer: 147
+    gds_datatype: 0
+
+  # --- Antenna / auxiliary metals ---
+  - name: AntMetal1
+    gds_layer: 132
+    gds_datatype: 0
+  - name: AntMetal2
+    gds_layer: 84
+    gds_datatype: 0
+  - name: AntVia1
+    gds_layer: 83
+    gds_datatype: 0
+
+  # --- NoRCX exclusions ---
+  - name: NoRCX.m1sub
+    gds_layer: 148
+    gds_datatype: 123
+  - name: NoRCX.m2m3
+    gds_layer: 148
+    gds_datatype: 41
+  - name: NoRCX.m2m4
+    gds_layer: 148
+    gds_datatype: 42
+  - name: NoRCX.m2m5
+    gds_layer: 148
+    gds_datatype: 43
+  - name: NoRCX.m2sub
+    gds_layer: 148
+    gds_datatype: 124
+  - name: NoRCX.m2tm1
+    gds_layer: 148
+    gds_datatype: 44
+  - name: NoRCX.m2tm2
+    gds_layer: 148
+    gds_datatype: 45
+  - name: NoRCX.m3m4
+    gds_layer: 148
+    gds_datatype: 46
+  - name: NoRCX.m3m5
+    gds_layer: 148
+    gds_datatype: 47
+  - name: NoRCX.m3sub
+    gds_layer: 148
+    gds_datatype: 125
+  - name: NoRCX.m3tm1
+    gds_layer: 148
+    gds_datatype: 48
+  - name: NoRCX.m3tm2
+    gds_layer: 148
+    gds_datatype: 49
+  - name: NoRCX.m4m5
+    gds_layer: 148
+    gds_datatype: 50
+  - name: NoRCX.m4sub
+    gds_layer: 148
+    gds_datatype: 126
+  - name: NoRCX.m4tm1
+    gds_layer: 148
+    gds_datatype: 51
+  - name: NoRCX.m4tm2
+    gds_layer: 148
+    gds_datatype: 52
+  - name: NoRCX.m5sub
+    gds_layer: 148
+    gds_datatype: 127
+  - name: NoRCX.m5tm1
+    gds_layer: 148
+    gds_datatype: 53
+  - name: NoRCX.m5tm2
+    gds_layer: 148
+    gds_datatype: 54
+  - name: NoRCX.tm1sub
+    gds_layer: 148
+    gds_datatype: 300
+  - name: NoRCX.tm1tm2
+    gds_layer: 148
+    gds_datatype: 55
+  - name: NoRCX.tm2sub
+    gds_layer: 148
+    gds_datatype: 301
+
+  # --- Exchange / PDK exchange layers ---
+  - name: Exchange0
+    gds_layer: 190
+    gds_datatype: 0
+  - name: Exchange0.label
+    gds_layer: 190
+    gds_datatype: 1
+  - name: Exchange0.pin
+    gds_layer: 190
+    gds_datatype: 2
+  - name: Exchange0.text
+    gds_layer: 190
+    gds_datatype: 25
+  - name: Exchange1
+    gds_layer: 191
+    gds_datatype: 0
+  - name: Exchange1.label
+    gds_layer: 191
+    gds_datatype: 1
+  - name: Exchange1.pin
+    gds_layer: 191
+    gds_datatype: 2
+  - name: Exchange1.text
+    gds_layer: 191
+    gds_datatype: 25
+  - name: Exchange2
+    gds_layer: 192
+    gds_datatype: 0
+  - name: Exchange2.label
+    gds_layer: 192
+    gds_datatype: 1
+  - name: Exchange2.pin
+    gds_layer: 192
+    gds_datatype: 2
+  - name: Exchange2.text
+    gds_layer: 192
+    gds_datatype: 25
+  - name: Exchange3
+    gds_layer: 193
+    gds_datatype: 0
+  - name: Exchange3.label
+    gds_layer: 193
+    gds_datatype: 1
+  - name: Exchange3.pin
+    gds_layer: 193
+    gds_datatype: 2
+  - name: Exchange3.text
+    gds_layer: 193
+    gds_datatype: 25
+  - name: Exchange4
+    gds_layer: 194
+    gds_datatype: 0
+  - name: Exchange4.label
+    gds_layer: 194
+    gds_datatype: 1
+  - name: Exchange4.pin
+    gds_layer: 194
+    gds_datatype: 2
+  - name: Exchange4.text
+    gds_layer: 194
+    gds_datatype: 25
+
+  # --- Miscellaneous ---
+  - name: TRANS
+    gds_layer: 26
+    gds_datatype: 0
+  - name: EdgeSeal
+    gds_layer: 39
+    gds_datatype: 0
+  - name: EdgeSeal.boundary
+    gds_layer: 39
+    gds_datatype: 4
+  - name: TEXT
+    gds_layer: 63
+    gds_datatype: 0
+  - name: Recog
+    gds_layer: 99
+    gds_datatype: 0
+  - name: Recog.pin
+    gds_layer: 99
+    gds_datatype: 2
+  - name: Recog.esd
+    gds_layer: 99
+    gds_datatype: 30
+  - name: Recog.diode
+    gds_layer: 99
+    gds_datatype: 31
+  - name: Recog.tsv
+    gds_layer: 99
+    gds_datatype: 32
+  - name: Recog.iprobe
+    gds_layer: 99
+    gds_datatype: 33
+  - name: Recog.diffprb
+    gds_layer: 99
+    gds_datatype: 34
+  - name: Recog.pillar
+    gds_layer: 99
+    gds_datatype: 35
+  - name: Recog.sbump
+    gds_layer: 99
+    gds_datatype: 36
+  - name: Recog.otp
+    gds_layer: 99
+    gds_datatype: 37
+  - name: Recog.pdiode
+    gds_layer: 99
+    gds_datatype: 38
+  - name: Recog.mom
+    gds_layer: 99
+    gds_datatype: 39
+  - name: Recog.pcm
+    gds_layer: 99
+    gds_datatype: 100
+  - name: DigiBnd
+    gds_layer: 16
+    gds_datatype: 0
+  - name: DigiBnd.drawing0
+    gds_layer: 16
+    gds_datatype: 10
+  - name: Substrate
+    gds_layer: 40
+    gds_datatype: 0
+  - name: Substrate.text
+    gds_layer: 40
+    gds_datatype: 25
+  - name: isoNWell
+    gds_layer: 257
+    gds_datatype: 0
+  - name: prBoundary
+    gds_layer: 189
+    gds_datatype: 0
+  - name: prBoundary.label
+    gds_layer: 189
+    gds_datatype: 1
+  - name: prBoundary.boundary
+    gds_layer: 189
+    gds_datatype: 4
+
+  # --- Miscellaneous ---
+  - name: PEmWind
+    gds_layer: 11
+    gds_datatype: 0
+  - name: PEmPoly
+    gds_layer: 53
+    gds_datatype: 0
+  - name: LDMOS
+    gds_layer: 57
+    gds_datatype: 0
+  - name: PBiWind
+    gds_layer: 58
+    gds_datatype: 0
+  - name: Flash
+    gds_layer: 71
+    gds_datatype: 0

@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Sal.a
+    check: min_width
+    layers: [SalBlock]
+    value: 0.42
+  - id: Sal.b
+    check: min_space
+    layers: [SalBlock]
+    value: 0.42
+  - id: Sal.b
+    check: min_notch
+    layers: [SalBlock]
+    value: 0.42
+  - id: Sal.c
+    check: min_extension
+    layers: [SalBlock, ActivOrGatPoly]
+    value: 0.20
+  - id: Sal.d
+    check: min_space
+    layers: [SalBlock, ActivOrGatPoly]
+    value: 0.20
+  - id: Sal.e
+    check: min_space
+    layers: [SalBlock, Cont]
+    value: 0.20

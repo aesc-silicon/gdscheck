@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Ant.a
+    check: antenna_ratio
+    layers: [GatPolyOverActiv, AntPolyField]
+    value: 200.0
+    params:
+      antenna_layers: 1
+      gate_net_layer: 5
+      antenna_net_layer: 5
+      level: 2
+  - id: Ant.b
+    check: antenna_ratio
+    layers: [GatPolyOverActiv, Metal1, Metal2, Metal3, Metal4, TopMetal1, AntDiode]
+    value: 200.0
+    params:
+      antenna_layers: 5
+      gate_net_layer: 5
+      diode_net_layer: 1
+      require_diode: 0
+  - id: Ant.c
+    check: antenna_ratio
+    layers: [GatPolyOverActiv, Cont]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      gate_net_layer: 5
+      level: 2
+  - id: Ant.d
+    check: antenna_ratio
+    layers: [GatPolyOverActiv, Via1, Via2, Via3, TopVia1, AntDiode]
+    value: 20.0
+    params:
+      antenna_layers: 4
+      gate_net_layer: 5
+      diode_net_layer: 1
+      require_diode: 0
+  - id: Ant.e
+    check: antenna_ratio
+    layers: [GatPolyOverActiv, Metal1, Metal2, Metal3, Metal4, TopMetal1, AntDiode]
+    value: 20000.0
+    params:
+      antenna_layers: 5
+      gate_net_layer: 5
+      diode_net_layer: 1
+      require_diode: 1
+  - id: Ant.f
+    check: antenna_ratio
+    layers: [GatPolyOverActiv, Via1, Via2, Via3, TopVia1, AntDiode]
+    value: 500.0
+    params:
+      antenna_layers: 4
+      gate_net_layer: 5
+      diode_net_layer: 1
+      require_diode: 1
+  - id: Ant.g
+    check: gate_connected_min_area
+    layers: [GatPolyOverActiv, AntDantenna, AntDpantenna]
+    value: 0.16
+    params:
+      gate_net_layer: 5
+      marker_net_layer: 1
+  - id: Ant.h
+    check: forbidden_unless_labeled
+    layers: [Activ, GatPoly, pSD, nSD.block, Recog.diode, Recog.esd, NWell, PWell.block, nBuLay, TEXT]
+    value: 0.0
+    text: isolbox
+  - id: Ant.i
+    check: nonempty
+    layers: [AntIError]
+    value: 0.0
