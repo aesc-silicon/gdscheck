@@ -7,9 +7,9 @@ name = "gdscheck"
 version = "0.1.0"
 edition = "2024"
 authors = ["Daniel Schultz <dnltz@aesc-silicon.de>"]
-description = "Open-source, geometry-only DRC (Design Rule Check) engine for GDSII layouts."
+description = "Open-source DRC (Design Rule Check) engine for GDSII layouts."
 license = "AGPL-3.0-or-later"
-readme = "README.rst"
+readme = "README.md"
 repository = "https://github.com/aesc-silicon/gdscheck"
 keywords = ["gds", "eda", "vlsi", "drc", "layout"]
 categories = ["command-line-utilities", "science"]
@@ -18,7 +18,7 @@ include = [
     "build.rs",
     "pdks/**/*.yml",
     "gen/**/*.rs",
-    "/README.rst",
+    "/README.md",
     "/LICENSE",
 ]
 
