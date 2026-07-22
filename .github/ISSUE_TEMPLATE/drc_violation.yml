@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: DRC violation report
+description: Report a wrong, missing, or misplaced DRC violation
+title: "[DRC] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a DRC issue. The more of this you can fill in, the
+        faster it can be triaged — especially a small GDS that reproduces it.
+
+  - type: dropdown
+    id: process
+    attributes:
+      label: Process / PDK
+      options:
+        - ihp-sg13g2
+        - ihp-sg13cmos5l
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: gdscheck version
+      description: Output of `gdscheck --version`, or the git commit/tag you built from.
+      placeholder: e.g. gdscheck 0.1.1 (commit 9915050)
+    validations:
+      required: true
+
+  - type: input
+    id: topcell
+    attributes:
+      label: Top cell
+      description: The `--topcell` value used.
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command line
+      description: The full `gdscheck run ...` invocation (deck/suite, and any other flags).
+      render: shell
+      placeholder: |
+        gdscheck run --input design.gds.gz --process ihp-sg13g2 --suite main --topcell TOP --report report.lyrdb
+    validations:
+      required: true
+
+  - type: dropdown
+    id: violation-type
+    attributes:
+      label: What's wrong?
+      options:
+        - False positive (a violation is reported but the layout is correct)
+        - False negative (a real violation is not reported)
+        - Wrong location, layer, or message on a real violation
+        - Crash or error while running gdscheck
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: rule-ids
+    attributes:
+      label: Rule ID(s)
+      description: The rule ID(s) involved (e.g. `NW.e`, `Seal.d`), if known.
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What did you expect, and what actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: GDS file and marker database
+      description: |
+        Please try to reduce the layout to the smallest cell that still reproduces the
+        issue — full chips are slow to download and hard to debug.
+
+        Zip the GDS (`.gds.gz`) together with the KLayout marker database (`.lyrdb`,
+        from `--report`) into a single `.zip` and drag it into this box. GitHub only
+        accepts a fixed list of file extensions for direct attachment and `.lyrdb`
+        isn't one of them, so zip it rather than dropping the raw file in.
+
+        GitHub's attachment limit is 25 MB per file. If your zip is bigger than that,
+        paste a link to it instead (e.g. a Gist, or any file host you control).
+      placeholder: Drop the .zip here, or paste a link.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I have the right to share this layout publicly (this is a public repository under AGPL-3.0-or-later).
+          required: true
+        - label: I tried to reduce the GDS to the smallest reproducer I could.
+          required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, and how you installed/built gdscheck (release binary, `cargo build`, etc.)
+    validations:
+      required: false
