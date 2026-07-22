@@ -9,11 +9,14 @@ suites:
   - name: main
     path: suites/main.yml
     description: Full DRC - every per-layer deck
+  - name: core
+    path: suites/core.yml
+    description: Geometric DRC - main minus antenna and density/fill
   - name: precheck
     path: suites/precheck.yml
     description: IHP open-source precheck subset
-  - name: fill
-    path: suites/fill.yml
+  - name: density
+    path: suites/density.yml
     description: Dummy-fill density checks
 
 decks:

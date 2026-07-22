@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Geometric DRC: `main` minus the antenna deck and minus every density/fill rule
+# (the `density` suite).  Use this on blocks that aren't dummy-filled yet — e.g. a
+# hardened macro handed to a top-level flow — so min-density checks don't false-fail
+# on the missing fill.  The excluded ids on each deck below mirror `density.yml`.
+include:
+  - deck: offgrid
+  - deck: forbidden
+  - deck: pin
+  - deck: lbe
+  - deck: pad
+  - deck: activ
+    exclude: [AFil.g, AFil.g1, AFil.g2, AFil.g3]
+  - deck: tgo
+  - deck: gatpoly
+    exclude: [GFil.g]
+  - deck: extblock
+  - deck: cont
+  - deck: contbar
+  - deck: salblock
+  - deck: nsdblock
+  - deck: psd
+  - deck: resistor
+  - deck: nwell
+  - deck: pwellblock
+  - deck: metal1
+    exclude: [M1.j, M1.k, M1Fil.h, M1Fil.k]
+  - deck: metal2
+    exclude: [M2.j, M2.k, M2Fil.h, M2Fil.k]
+  - deck: metal3
+    exclude: [M3.j, M3.k, M3Fil.h, M3Fil.k]
+  - deck: metal4
+    exclude: [M4.j, M4.k, M4Fil.h, M4Fil.k]
+  - deck: via1
+  - deck: via2
+  - deck: via3
+  - deck: topvia1
+  - deck: topmetal1
+    exclude: [TM1.c, TM1.d]
+  - deck: passiv
+  - deck: sealring
+  - deck: slit
+  - deck: lu

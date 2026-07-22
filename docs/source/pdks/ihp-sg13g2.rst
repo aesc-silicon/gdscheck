@@ -21,9 +21,13 @@ seal-ring, bond-pad and the §7.1 antenna rule family. Ships three suites:
      - Coverage
    * - ``main``
      - Every per-layer deck.
+   * - ``core``
+     - Geometric DRC only: ``main`` minus the antenna deck and every density/fill
+       rule. Use on blocks that aren't dummy-filled yet so min-density checks don't
+       false-fail on the missing fill.
    * - ``precheck``
      - IHP's published open-source precheck subset.
-   * - ``fill``
+   * - ``density``
      - Dummy-fill density checks only.
 
 Cross-checked throughout development against IHP's own KLayout reference decks (the
