@@ -148,6 +148,24 @@ fn suite_whitelist_keeps_all_entries_of_an_id() {
 }
 
 #[test]
+fn suite_exclude_drops_all_entries_of_an_id() {
+    // `exclude` imports deckA minus A.1 — both A.2 entries survive, A.1 is gone.
+    assert_eq!(suite_ids("exclude"), ["A.2", "A.2"]);
+}
+
+#[test]
+fn suite_with_unknown_exclude_id_errors() {
+    let pdk = PdkConfig::load(SYNTH).expect("load synthetic pdk");
+    let err = pdk
+        .load_suite("badexclude")
+        .expect_err("unknown exclude id should error");
+    assert!(
+        err.to_string().contains("A.9"),
+        "error should name the offending id: {err}"
+    );
+}
+
+#[test]
 fn unknown_deck_is_an_error() {
     let pdk = PdkConfig::load(SYNTH).expect("load synthetic pdk");
     assert!(pdk.load_deck("does-not-exist").is_err());

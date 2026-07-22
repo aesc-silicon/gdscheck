@@ -175,6 +175,11 @@ struct SuiteIncludeRaw {
     /// Whitelist of rule ids to keep; omit to import the whole deck.
     #[serde(default)]
     pub rules: Option<Vec<String>>,
+    /// Blacklist of rule ids to drop after the whitelist is applied; omit to keep
+    /// everything.  Useful for "whole deck minus a handful" imports (e.g. a `core`
+    /// suite that takes every rule except the density checks).
+    #[serde(default)]
+    pub exclude: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -605,24 +610,31 @@ impl PdkConfig {
 
         let mut rules = Vec::new();
         for inc in &raw.include {
-            rules.extend(self.load_deck_filtered(&inc.deck, inc.rules.as_deref())?);
+            rules.extend(self.load_deck_filtered(
+                &inc.deck,
+                inc.rules.as_deref(),
+                inc.exclude.as_deref(),
+            )?);
         }
         Ok(rules)
     }
 
     pub fn load_deck(&self, deck_name: &str) -> Result<Vec<RuleDefinition>, Box<dyn std::error::Error>> {
-        self.load_deck_filtered(deck_name, None)
+        self.load_deck_filtered(deck_name, None, None)
     }
 
-    /// Load a deck's rules, optionally restricted to a whitelist of rule ids (a suite
-    /// import).  Every id in `only` must match at least one rule in the deck — an
-    /// unknown id errors loudly so a suite typo can't silently drop a check.  An id
-    /// may match several rules (e.g. `M1.b` is both `min_space` and `min_notch`);
-    /// all matching entries are kept.
+    /// Load a deck's rules, optionally restricted to a whitelist of rule ids (`only`)
+    /// and/or with a blacklist of ids removed (`exclude`).  The whitelist is applied
+    /// first, then the blacklist.  Every id in either list must match at least one
+    /// rule in the deck — an unknown id errors loudly so a suite typo can't silently
+    /// drop or fail to drop a check.  An id may match several rules (e.g. `M1.b` is
+    /// both `min_space` and `min_notch`); all matching entries are kept or dropped
+    /// together.
     fn load_deck_filtered(
         &self,
         deck_name: &str,
         only: Option<&[String]>,
+        exclude: Option<&[String]>,
     ) -> Result<Vec<RuleDefinition>, Box<dyn std::error::Error>> {
         let deck_ref = self
             .decks
@@ -642,6 +654,17 @@ impl PdkConfig {
                 .into());
             }
             raw.rules.retain(|r| ids.iter().any(|w| w == &r.id));
+        }
+
+        if let Some(ids) = exclude {
+            let present: HashSet<&str> = raw.rules.iter().map(|r| r.id.as_str()).collect();
+            if let Some(missing) = ids.iter().find(|w| !present.contains(w.as_str())) {
+                return Err(format!(
+                    "Suite excludes rule '{missing}' not found in deck '{deck_name}'"
+                )
+                .into());
+            }
+            raw.rules.retain(|r| !ids.iter().any(|w| w == &r.id));
         }
 
         let rules = raw
