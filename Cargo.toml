@@ -4,7 +4,7 @@
 
 [package]
 name = "gdscheck"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Daniel Schultz <dnltz@aesc-silicon.de>"]
 description = "Open-source DRC (Design Rule Check) engine for GDSII layouts."
