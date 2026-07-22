@@ -12,8 +12,12 @@ suites:
     path: suites/full.yml
   - name: subset
     path: suites/subset.yml
+  - name: exclude
+    path: suites/exclude.yml
   - name: badrule
     path: suites/badrule.yml
+  - name: badexclude
+    path: suites/badexclude.yml
   - name: baddeck
     path: suites/baddeck.yml
 

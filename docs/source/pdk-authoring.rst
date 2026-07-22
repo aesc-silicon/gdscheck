@@ -102,7 +102,8 @@ Suites
 ------
 
 A suite (``suites/<name>.yml``) imports rules from one or more decks by name, optionally
-restricted to a whitelist of ids, without duplicating rule definitions:
+restricted to a whitelist of ids (``rules``) and/or with a blacklist removed
+(``exclude``), without duplicating rule definitions:
 
 .. code-block:: yaml
 
@@ -110,11 +111,15 @@ restricted to a whitelist of ids, without duplicating rule definitions:
      - deck: metal1
        rules: [M1.a, M1.b, M1.j, M1.k]   # only these ids from metal1
      - deck: cont                        # no `rules:` → the whole cont deck
+     - deck: metal2
+       exclude: [M2.j, M2.k]             # the whole metal2 deck *except* these
 
-An id in a whitelist that doesn't exist in the named deck is a load-time **error** (a
-suite typo can never silently drop a check). A whitelisted id that matches several
-entries in the deck (see *Decks* above) keeps all of them. A suite only *selects* rules —
-it can never override a rule's ``value`` or ``params``, which live solely in the deck.
+``rules`` is applied first, then ``exclude`` — so an include may combine both. An id in
+either list that doesn't exist in the named deck is a load-time **error** (a suite typo
+can never silently drop a check, nor silently fail to drop one). An id that matches
+several entries in the deck (see *Decks* above) keeps or drops all of them together. A
+suite only *selects* rules — it can never override a rule's ``value`` or ``params``,
+which live solely in the deck.
 
 
 Virtual layers

@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Whole-deck import with a blacklist: everything in deckA except A.1 — should leave
+# BOTH A.2 entries (min_space + min_notch) and drop A.1.
+include:
+  - deck: deckA
+    exclude: [A.1]

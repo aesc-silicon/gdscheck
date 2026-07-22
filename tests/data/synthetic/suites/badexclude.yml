@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Excludes a rule id that does not exist in deckA — must error loudly so a typo
+# can't silently fail to drop a check.
+include:
+  - deck: deckA
+    exclude: [A.9]
