@@ -29,6 +29,8 @@ seal-ring, bond-pad and the §7.1 antenna rule family. Ships three suites:
      - IHP's published open-source precheck subset.
    * - ``density``
      - Dummy-fill density checks only.
+   * - ``antenna``
+     - Antenna checks only (§7.1, ``Ant.a``–``Ant.i``). Needs net extraction.
 
 Cross-checked throughout development against IHP's own KLayout reference decks (the
 per-topic ``.lydrc`` scripts and the combined "maximal" deck) run in a container, and

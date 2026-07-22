@@ -15,6 +15,7 @@ fn deck_ids(pdk: &PdkConfig, deck: &str) -> Vec<String> {
 
 #[test]
 fn core_equals_main_minus_antenna_minus_density() {
+    let mut antenna_by_proc: Vec<HashSet<String>> = Vec::new();
     for proc in ["ihp-sg13g2", "ihp-sg13cmos5l"] {
         let pdk = PdkConfig::for_process(proc).unwrap();
         let main: HashSet<String> = ids(&pdk, "main").into_iter().collect();
@@ -32,6 +33,14 @@ fn core_equals_main_minus_antenna_minus_density() {
         assert!(core.is_disjoint(&density), "[{proc}] core still has density rules");
         assert!(core.is_disjoint(&antenna), "[{proc}] core still has antenna rules");
         assert!(!core.is_empty());
-        println!("[{proc}] main={} core={} density={} antenna(deck)={}", main.len(), core.len(), density.len(), antenna.len());
+
+        // the `antenna` suite is exactly the antenna deck
+        let antenna_suite: HashSet<String> = ids(&pdk, "antenna").into_iter().collect();
+        assert_eq!(antenna_suite, antenna, "[{proc}] antenna suite != antenna deck");
+
+        println!("[{proc}] main={} core={} density={} antenna={}", main.len(), core.len(), density.len(), antenna.len());
+        antenna_by_proc.push(antenna);
     }
+    // Antenna rule ids are identical between SG13G2 and SG13CMOS5L.
+    assert_eq!(antenna_by_proc[0], antenna_by_proc[1], "antenna ids differ between processes");
 }
