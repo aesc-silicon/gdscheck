@@ -16,8 +16,8 @@ TopMetal1-2 stack. It's declared as a genuine derived PDK (``extends:
 between the two processes, so most decks are reused verbatim, and only the handful that
 actually differ have their own local files under ``pdks/ihp-sg13cmos5l/decks/``.
 
-Ships the same four suites as SG13G2 (``main``, ``core``, ``precheck``, ``density``),
-scoped to the CMOS5L deck list.
+Ships the same five suites as SG13G2 (``main``, ``core``, ``precheck``, ``density``,
+``antenna``), scoped to the CMOS5L deck list.
 
 
 Differences from SG13G2

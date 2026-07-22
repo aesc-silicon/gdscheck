@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Antenna checks only (§7.1, Ant.a–Ant.i): the net-aware gate-antenna ratio rules and
+# their helpers.  Split out so a flow can run the antenna sign-off on its own — this is
+# exactly the set `core` and `main` differ by on the antenna axis.  Net extraction must
+# be enabled (do not pass --no-connectivity) for the ratio rules to run.
+include:
+  - deck: antenna

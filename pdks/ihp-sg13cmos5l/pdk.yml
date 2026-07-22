@@ -19,6 +19,9 @@ suites:
   - name: density
     path: suites/density.yml
     description: Dummy-fill density checks
+  - name: antenna
+    path: suites/antenna.yml
+    description: Antenna checks only
 
 decks:
   - name: offgrid
