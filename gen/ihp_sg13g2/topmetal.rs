@@ -71,7 +71,7 @@ fn topmetal_c(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("TopMetal{}", index));
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let mask = layer(pdk, &format!("TopMetal{}.mask", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // min_density: bottom TopMetal stripe drops below the 25 % floor when too short.
     let stripes = |h: f64| [(met, 0.0, h), (fill, 500.0, 600.0), (mask, 900.0, 1000.0)];
 
@@ -86,7 +86,7 @@ fn topmetal_d(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("TopMetal{}", index));
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let mask = layer(pdk, &format!("TopMetal{}.mask", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // max_density: bottom TopMetal stripe rises above the 70 % ceiling when too tall.
     let stripes = |h: f64| [(met, 0.0, h), (fill, 400.0, 600.0), (mask, 800.0, 1000.0)];
 

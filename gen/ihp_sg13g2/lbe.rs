@@ -151,7 +151,7 @@ fn lbe_h_open(pdk: &PdkConfig) {
 
 fn lbe_i(pdk: &PdkConfig) {
     let l = layer(pdk, "LBE");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // max_density: the single LBE stripe rises above the 20 % ceiling when too tall.
     let elems = density_pattern(boundary, 1000.0, &[(l, 0.0, 200.0)]);
     write_gz(&format!("{DIR}/LBE.i.gds.gz"), library("TOP", elems));

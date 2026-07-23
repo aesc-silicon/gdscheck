@@ -277,7 +277,7 @@ fn gfil_d(pdk: &PdkConfig) {
 fn gfil_g(pdk: &PdkConfig) {
     let gat = layer(pdk, "GatPoly");
     let gfil = layer(pdk, "GatPoly.filler");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // min_density: bottom GatPoly stripe drops below the 15 % floor when too short.
     let stripes = |h: f64| [(gat, 0.0, h), (gfil, 925.0, 1000.0)];
 
@@ -298,7 +298,7 @@ fn gfil_g(pdk: &PdkConfig) {
 /// 900x900 seal at 20% GatPoly density, comfortably above the 15% floor.
 fn gfil_g_boundary(pdk: &PdkConfig) {
     let gat = layer(pdk, "GatPoly");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
 
     let elems = vec![

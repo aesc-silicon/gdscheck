@@ -57,12 +57,14 @@ rules:
     value: 35.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
   - id: M1.k
     check: max_density
     layers: [Metal1, Metal1.filler, Metal1.mask]
     value: 60.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
 
   - id: M1Fil.a1
     check: min_width
@@ -91,6 +93,7 @@ rules:
     params:
       window: 800.0
       boundary_layer: 39
+      boundary_datatype: 4
   - id: M1Fil.k
     check: max_windowed_density
     layers: [Metal1, Metal1.filler, Metal1.mask]
@@ -98,3 +101,4 @@ rules:
     params:
       window: 800.0
       boundary_layer: 39
+      boundary_datatype: 4

@@ -70,12 +70,14 @@ rules:
     value: 35.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
   - id: AFil.g1
     check: max_density
     layers: [Activ, Activ.filler, Activ.mask]
     value: 55.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
   - id: AFil.g2
     check: min_windowed_density
     layers: [Activ, Activ.filler, Activ.mask]
@@ -83,6 +85,7 @@ rules:
     params:
       window: 800.0
       boundary_layer: 39
+      boundary_datatype: 4
   - id: AFil.g3
     check: max_windowed_density
     layers: [Activ, Activ.filler, Activ.mask]
@@ -90,6 +93,7 @@ rules:
     params:
       window: 800.0
       boundary_layer: 39
+      boundary_datatype: 4
   - id: AFil.i
     check: min_space
     layers: [Activ.filler, PWell.block]
