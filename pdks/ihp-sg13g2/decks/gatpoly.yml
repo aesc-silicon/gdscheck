@@ -111,6 +111,7 @@ rules:
     value: 15.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
   - id: GFil.i
     check: max_area
     layers: [GatPoly.nofill]

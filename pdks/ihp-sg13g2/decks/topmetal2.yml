@@ -28,12 +28,14 @@ rules:
     value: 25.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
   - id: TM2.d
     check: max_density
     layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]
     value: 70.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4
 
   - id: TM2Fil.a
     check: min_width

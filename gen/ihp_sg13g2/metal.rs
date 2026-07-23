@@ -242,7 +242,7 @@ fn metal_j(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let mask = layer(pdk, &format!("Metal{}.mask", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // min_density: bottom Metal stripe drops below the 35 % floor when too short.
     let stripes = |h: f64| [(met, 0.0, h), (fill, 500.0, 600.0), (mask, 900.0, 1000.0)];
 
@@ -257,7 +257,7 @@ fn metal_k(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let mask = layer(pdk, &format!("Metal{}.mask", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // max_density: top Metal stripe rises above the 60 % ceiling when too tall.
     let stripes = |h: f64| [(met, 0.0, h), (fill, 400.0, 600.0), (mask, 800.0, 1000.0)];
 
@@ -283,7 +283,7 @@ fn mfil_c_space(pdk: &PdkConfig, index: i32, dir: &str) {
 
 fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // min_windowed_density: every 800 µm window must stay above the floor; the
     // shapes are split per window rather than spanning the full width.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
@@ -332,7 +332,7 @@ fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
 /// violation in an edge/corner tile.
 fn mfil_h_boundary(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
 
     let mut elems = vec![rect(boundary, 0.0, 0.0, 900.0, 900.0), rect(trans, 950.0, 950.0, 1000.0, 1000.0)];
@@ -363,7 +363,7 @@ fn mfil_h_boundary(pdk: &PdkConfig, index: i32, dir: &str) {
 /// expect a clean DRC exactly as with a solid boundary square.
 fn mfil_h_boundary_ring(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
     let frame = 20.0;
 
@@ -383,7 +383,7 @@ fn mfil_h_boundary_ring(pdk: &PdkConfig, index: i32, dir: &str) {
 
 fn mfil_k(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // max_windowed_density: every 800 µm window must stay below the ceiling.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([

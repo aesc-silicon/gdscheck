@@ -53,3 +53,4 @@ rules:
     value: 20.00
     params:
       boundary_layer: 39
+      boundary_datatype: 4

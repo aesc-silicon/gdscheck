@@ -218,7 +218,7 @@ fn afil_g(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
     let afil = layer(pdk, "Activ.filler");
     let amask = layer(pdk, "Activ.mask");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // min_density: bottom Activ stripe drops below the 35 % floor when too short.
     let stripes = |h: f64| [(act, 0.0, h), (afil, 500.0, 600.0), (amask, 900.0, 1000.0)];
 
@@ -233,7 +233,7 @@ fn afil_g1(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
     let afil = layer(pdk, "Activ.filler");
     let amask = layer(pdk, "Activ.mask");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // max_density: bottom Activ stripe rises above the 55 % ceiling when too tall.
     let stripes = |h: f64| [(act, 0.0, h), (afil, 400.0, 600.0), (amask, 800.0, 1000.0)];
 
@@ -246,7 +246,7 @@ fn afil_g1(pdk: &PdkConfig) {
 
 fn afil_g2(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // min_windowed_density: shapes split per 800 µm window rather than full-width.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([
@@ -269,7 +269,7 @@ fn afil_g2(pdk: &PdkConfig) {
 
 fn afil_g3(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     // max_windowed_density: shapes split per 800 µm window rather than full-width.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([
@@ -303,7 +303,7 @@ fn afil_g3(pdk: &PdkConfig) {
 /// underfill.
 fn afil_g2_boundary(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
 
     let mut elems = vec![rect(boundary, 0.0, 0.0, 900.0, 900.0), rect(trans, 950.0, 950.0, 1000.0, 1000.0)];
@@ -324,7 +324,7 @@ fn afil_g2_boundary(pdk: &PdkConfig) {
 /// boundary square.
 fn afil_g2_boundary_ring(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
-    let boundary = layer(pdk, "EdgeSeal");
+    let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
     let frame = 20.0;
 
