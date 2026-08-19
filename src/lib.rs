@@ -36,13 +36,14 @@ pub fn load_gds(path: &str) -> Result<GdsLibrary, Box<dyn std::error::Error>> {
 /// Checks that need electrical connectivity (net extraction).  When connectivity is
 /// disabled (`connectivity == false`) these are skipped rather than run on no nets.
 /// Populated as net-aware checks land (e.g. the antenna ratio rules).
-pub const NET_AWARE_CHECKS: &[&str] = &["antenna_ratio", "gate_connected_min_area"];
+pub const NET_AWARE_CHECKS: &[&str] =
+    &["antenna_ratio", "gate_connected_min_area", "min_space_different_net"];
 
 /// Parse a lazy virtual layer's `op` string to a [`merge::VirtualOp`], converting its
 /// radius (µm) to DBU where the op takes one.  An unsupported op or a missing radius is
 /// an error: the layer would otherwise silently register as empty and every rule
 /// referencing it would become a no-op false-clean.
-fn parse_virtual_op(
+pub fn parse_virtual_op(
     op: &str,
     radius: Option<f64>,
     dbu_to_um: f64,

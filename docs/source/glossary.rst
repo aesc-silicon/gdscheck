@@ -68,8 +68,9 @@ Glossary
 
    Net-aware check
       A check that needs electrical connectivity (which shapes are the same net), e.g.
-      the antenna-ratio family. Requires the PDK's ``connectivity:`` graph and runs unless
-      ``--no-connectivity`` is passed. See :doc:`checks/antenna_ratio`.
+      the antenna-ratio family and ``min_space_different_net``. Requires the PDK's
+      ``connectivity:`` graph and runs unless ``--no-connectivity`` is passed. See
+      :doc:`checks/antenna_ratio`, :doc:`checks/min_space_different_net`.
 
    Connectivity graph
       A PDK's declared list of connector (via/contact) layers and the conductor layers

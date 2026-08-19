@@ -18,5 +18,5 @@ pub fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    super::helper::run_gated(rule, layout, dbu_to_um, merged, |_, _| true)
+    super::helper::run_gated(rule, layout, dbu_to_um, merged, |_, _, _, _| true)
 }

@@ -42,7 +42,7 @@ pub fn run(
     // Both conditions are evaluated from the real facing edges, not the bounding boxes:
     // a stepped IO pad's box overlaps a neighbour for tens of microns and an L-shaped
     // narrow trace's box looks wide, yet neither is a long wide parallel run.
-    run_gated(rule, layout, dbu_to_um, merged, move |a: &Poly, b: &Poly| {
+    run_gated(rule, layout, dbu_to_um, merged, move |a: &Poly, b: &Poly, _, _| {
         a.prl_applies(b, max_gap, wide_width, parallel_run)
     })
 }
