@@ -244,6 +244,10 @@ const DECK_NBL: &str = "nbulay";
 #[case::nbl_b("nbulay/NBL.b.gds.gz", "TOP", vec!["NBL.b"], vec![])]
 // The 1.00 "merged" pair now also legitimately draws the new NBL.b — ignored here.
 #[case::nbl_c("nbulay/NBL.c.gds.gz", "TOP", vec!["NBL.c"], vec!["NBL.b"])]
+// Same-net regression, the nBuLay twin of NW.b1.same_net: two pairs at a 2.00 µm gap,
+// only the bare one different-net.  The second pair's buried layers are shorted through
+// their NWell sinkers, taps and a Metal1 strap, so NBL.c fires exactly once.
+#[case::nbl_c_same_net("nbulay/NBL.c.same_net.gds.gz", "TOP", vec!["NBL.c"], vec![])]
 #[case::nbl_d("nbulay/NBL.d.gds.gz", "TOP", vec!["NBL.d", "NBL.d"], vec![])]
 #[case::nbl_e("nbulay/NBL.e.gds.gz", "TOP", vec!["NBL.e", "NBL.e"], vec![])]
 #[case::nbl_f("nbulay/NBL.f.gds.gz", "TOP", vec!["NBL.f", "NBL.f"], vec![])]

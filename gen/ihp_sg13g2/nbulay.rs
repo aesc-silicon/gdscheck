@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, min_width_pattern, rect, space_pattern, write_gz};
+use crate::helpers::{layer, library, min_width_pattern, rect, space_pattern, strap, tap, write_gz};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/nbulay";
@@ -13,6 +13,7 @@ pub fn generate(pdk: &PdkConfig) {
     nbl_a(pdk);
     nbl_b(pdk);
     nbl_c(pdk);
+    nbl_c_same_net(pdk);
     nbl_d(pdk);
     nbl_e(pdk);
     nbl_f(pdk);
@@ -48,6 +49,50 @@ fn nbl_c(pdk: &PdkConfig) {
     elems.extend(pair(o + 6.0, 2.00)); // NBL.c
     elems.extend(pair(o + 12.0, 4.00)); // clean
     write_gz(&format!("{DIR}/NBL.c.gds.gz"), library("TOP", elems));
+}
+
+/// NBL.c same-net regression — the nBuLay twin of `NW.b1.same_net`.  Two nBuLay pairs,
+/// both with a 2.00 µm gap (inside the 1.50–3.20 µm band that nBuLayMerged's close,
+/// radius 0.75, cannot bridge):
+///
+/// - left pair: bare buried layers, nothing tying them → different net → NBL.c is correct;
+/// - right pair: each buried layer carries an NWell sinker on top (the NWell ∩ nBuLay
+///   overlap that nmosi.d sizes), each sinker holds an N+Activ tap with a Cont, and one
+///   Metal1 strap spans both — so the two buried layers are electrically one net.
+///
+/// Kept clear of the neighbouring rules on purpose: the sinkers are 3.60 µm apart (NW.b1
+/// needs 1.80), each is fully inside its own nBuLay and 2.80 µm from the other (NBL.d
+/// needs 2.20), and each tap sits inside a sinker so it never becomes IsoPWellAct.
+fn nbl_c_same_net(pdk: &PdkConfig) {
+    let nb = layer(pdk, "nBuLay");
+    let nw = layer(pdk, "NWell");
+    let activ = layer(pdk, "Activ");
+    let cont = layer(pdk, "Cont");
+    let metal1 = layer(pdk, "Metal1");
+    let o = OFFSET;
+
+    // One 2.00 µm-gap nBuLay pair at x-origin `x`.  `tied` adds the sinker/tap/Cont stack
+    // in each buried layer plus the Metal1 strap that shorts the two.
+    let pair = |x: f64, tied: bool| {
+        let mut e = vec![
+            rect(nb, x, o, x + 3.0, o + 3.0),
+            rect(nb, x, o + 5.0, x + 3.0, o + 8.0), // gap 2.00 µm
+        ];
+        if tied {
+            let centres = [(x + 1.5, o + 1.5), (x + 1.5, o + 6.5)];
+            for &(cx, cy) in &centres {
+                // Sinker 1.40 across (nmosi.d needs 0.62), tap enclosed by it by 0.40.
+                e.push(rect(nw, cx - 0.7, cy - 0.7, cx + 0.7, cy + 0.7));
+                e.extend(tap(activ, cont, cx, cy, 0.60));
+            }
+            e.push(strap(metal1, &centres));
+        }
+        e
+    };
+
+    let mut elems = pair(o, false);
+    elems.extend(pair(o + 8.0, true)); // 5.00 µm clear of the left pair (NBL.c needs 3.20)
+    write_gz(&format!("{DIR}/NBL.c.same_net.gds.gz"), library("TOP", elems));
 }
 
 /// NBL.a — min. nBuLay width 1.00 µm.
