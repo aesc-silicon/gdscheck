@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, min_width_pattern, write_gz};
+use crate::helpers::{layer, library, min_width_pattern, rect, strap, tap, write_gz};
 use gdscheck::pdk::PdkConfig;
 use gds21::GdsElement;
 
@@ -15,6 +15,7 @@ pub fn generate(pdk: &PdkConfig) {
     nw_a(pdk);
     nw_b(pdk);
     nw_b1(pdk);
+    nw_b1_same_net(pdk);
     nw_c(pdk);
     nw_c1(pdk);
     nw_d(pdk);
@@ -73,6 +74,46 @@ fn nw_b1(pdk: &PdkConfig) {
     elems.extend(pair(o + 5.0, 1.00)); // NW.b1
     elems.extend(pair(o + 10.0, 2.00)); // clean
     write_gz(&format!("{DIR}/NW.b1.gds.gz"), library("TOP", elems));
+}
+
+/// NW.b1 same-net regression — the GitHub report behind the documented net-blindness of
+/// this rule.  Two identical NWell pairs, both with a 1.00 µm gap (inside the 0.62–1.80 µm
+/// band the `close` merge cannot bridge):
+///
+/// - left pair: bare wells, nothing tying them → genuinely different net → NW.b1 is correct;
+/// - right pair: each well carries an N+Activ tie with a Cont, and one Metal1 strap spans
+///   both conts, so the two wells are electrically *one* net → NW.b1 must not fire.
+///
+/// gdscheck currently reports both, because `min_space` is geometric and NWell is absent
+/// from the connectivity model — see `docs/source/pdks/ihp-sg13g2.rst`.
+fn nw_b1_same_net(pdk: &PdkConfig) {
+    let nw = layer(pdk, "NWell");
+    let activ = layer(pdk, "Activ");
+    let cont = layer(pdk, "Cont");
+    let metal1 = layer(pdk, "Metal1");
+    let o = OFFSET;
+
+    // One 1.00 µm-gap NWell pair at x-origin `x`.  `tied` adds the well ties (plain Activ,
+    // no pSD → N+) and the Metal1 strap that shorts the two wells.
+    let pair = |x: f64, tied: bool| {
+        let mut e = vec![
+            rect(nw, x, o, x + 1.0, o + 1.0),
+            rect(nw, x, o + 2.0, x + 1.0, o + 3.0), // gap 1.00 µm
+        ];
+        if tied {
+            // Tie 0.40 across, so the NWell encloses it by 0.30 (NW.e needs 0.24).
+            let centres = [(x + 0.5, o + 0.5), (x + 0.5, o + 2.5)];
+            for &(cx, cy) in &centres {
+                e.extend(tap(activ, cont, cx, cy, 0.40));
+            }
+            e.push(strap(metal1, &centres));
+        }
+        e
+    };
+
+    let mut elems = pair(o, false);
+    elems.extend(pair(o + 4.0, true)); // 3.00 µm clear of the left pair
+    write_gz(&format!("{DIR}/NW.b1.same_net.gds.gz"), library("TOP", elems));
 }
 
 /// NW.c — min. NWell enclosure of P+Activ (PMOS S/D) not in ThickGateOx, 0.31 µm.  One
