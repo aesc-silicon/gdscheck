@@ -42,6 +42,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_region_density
    min_space
    min_space_bent
+   min_space_different_net
    min_space_prl
    min_width
    min_windowed_density

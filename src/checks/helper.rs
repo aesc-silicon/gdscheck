@@ -660,7 +660,7 @@ fn closest(a: &Poly, b: &Poly, half_dbu: f64) -> (f64, (f64, f64), (f64, f64)) {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn check_tile<G: Fn(&Poly, &Poly) -> bool>(
+fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     a_polys: &[MergedPoly],
     b_polys: &[MergedPoly],
     same_layer: bool,
@@ -673,17 +673,20 @@ fn check_tile<G: Fn(&Poly, &Poly) -> bool>(
     gate: &G,
 ) -> Vec<Violation> {
     let half = dbu_to_um * 0.5;
-    let pa: Vec<Poly> = a_polys.iter().filter_map(|m| poly_from_merged(m, dbu_to_um)).collect();
-    let pb: Vec<Poly> = if same_layer {
+    // Each polygon keeps its source region's DBU marker: `poly_from_merged` can drop a
+    // polygon, so zipping here is what keeps `Poly` and `MergedPoly` aligned for the gate.
+    let conv = |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, merged_centroid_dbu(m)));
+    let pa: Vec<(Poly, Marker)> = a_polys.iter().filter_map(conv).collect();
+    let pb: Vec<(Poly, Marker)> = if same_layer {
         Vec::new()
     } else {
-        b_polys.iter().filter_map(|m| poly_from_merged(m, dbu_to_um)).collect()
+        b_polys.iter().filter_map(conv).collect()
     };
-    let bs: &[Poly] = if same_layer { &pa } else { &pb };
+    let bs: &[(Poly, Marker)] = if same_layer { &pa } else { &pb };
 
     let mut out = Vec::new();
-    for (i, a) in pa.iter().enumerate() {
-        for (j, b) in bs.iter().enumerate() {
+    for (i, (a, ma)) in pa.iter().enumerate() {
+        for (j, (b, mb)) in bs.iter().enumerate() {
             if same_layer && j <= i {
                 continue;
             }
@@ -699,7 +702,7 @@ fn check_tile<G: Fn(&Poly, &Poly) -> bool>(
                 continue;
             }
             if min_dist < value - half {
-                if !gate(a, b) {
+                if !gate(a, b, *ma, *mb) {
                     continue;
                 }
                 // Own the violation by the gap midpoint; mark the gap itself.
@@ -723,11 +726,15 @@ fn check_tile<G: Fn(&Poly, &Poly) -> bool>(
     out
 }
 
+/// A merged region's marker point in DBU — its [`merged_centroid_dbu`].  Passed to the
+/// gate so a net-aware rule can resolve each region to a net without a second merge.
+pub type Marker = (f64, f64);
+
 /// Tiled region-pair spacing over the cached merge.  A pair within `value` is
-/// reported only if `gate(a, b)` holds, letting conditional spacing rules add
-/// width / parallel-run conditions without duplicating the merge, tiling and
-/// edge-distance work.
-pub fn run_gated<G: Fn(&Poly, &Poly) -> bool + Sync>(
+/// reported only if `gate(a, b, marker_a, marker_b)` holds, letting conditional spacing
+/// rules add width / parallel-run / same-net conditions without duplicating the merge,
+/// tiling and edge-distance work.
+pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,

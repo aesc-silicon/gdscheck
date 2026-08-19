@@ -25,9 +25,8 @@ use crate::layout::FlatLayout;
 use crate::merge::{
     point_in_merged, stitch_labeled, stitch_regions, LabeledRegions, MergedCache, UnionFind,
 };
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub type LayerKey = (i16, i16);
 
@@ -76,11 +75,13 @@ pub struct Connectivity {
     layers: HashMap<LayerKey, LayerData>,
     specs: Vec<ConnectSpec>,
     n_nodes: usize,
-    /// Memoised partitions keyed by prefix length, so a prefix shared across rules (e.g.
-    /// the Metal levels used by both Ant.b and Ant.e) is computed only once.
-    partitions: RefCell<HashMap<usize, Rc<Partition>>>,
+    /// Every prefix's partition, keyed by prefix length — computed once in [`build`], so
+    /// a prefix shared across rules (e.g. the Metal levels used by both Ant.b and Ant.e)
+    /// costs nothing extra.  Plain (not interior-mutable) so `Connectivity` stays `Sync`
+    /// and a gate can resolve nets from inside a rayon-parallel check.
+    partitions: HashMap<usize, Arc<Partition>>,
     /// Partition over *all* steps (the full net), for net_at / net_count.
-    full: Rc<Partition>,
+    full: Arc<Partition>,
 }
 
 impl Connectivity {
@@ -127,31 +128,28 @@ impl Connectivity {
             layers,
             specs: specs.to_vec(),
             n_nodes: next_base,
-            partitions: RefCell::new(HashMap::new()),
-            full: Rc::new(Partition { node_net: Vec::new(), net_count: 0 }),
+            partitions: HashMap::new(),
+            full: Arc::new(Partition { node_net: Vec::new(), net_count: 0 }),
         };
-        conn.full = conn.partition(specs.len());
+        conn.partitions = conn.compute_partitions();
+        conn.full = Arc::clone(&conn.partitions[&specs.len()]);
         conn
     }
 
     /// Net partition using only the first `up_to` connect steps (`up_to == specs.len()` is
     /// the full net).  All prefixes are precomputed once in a single incremental union-find
     /// pass (the expensive connector point-lookups happen only once total), then memoised.
-    pub fn partition(&self, up_to: usize) -> Rc<Partition> {
+    pub fn partition(&self, up_to: usize) -> Arc<Partition> {
         let up_to = up_to.min(self.specs.len());
-        self.ensure_partitions();
-        Rc::clone(self.partitions.borrow().get(&up_to).expect("prefix precomputed"))
+        Arc::clone(self.partitions.get(&up_to).expect("prefix precomputed"))
     }
 
-    /// Precompute the partition at every prefix `0..=specs.len()` incrementally: one
+    /// Compute the partition at every prefix `0..=specs.len()` incrementally: one
     /// union-find, applying one connect step at a time and snapshotting after each.
-    fn ensure_partitions(&self) {
-        if !self.partitions.borrow().is_empty() {
-            return;
-        }
+    fn compute_partitions(&self) -> HashMap<usize, Arc<Partition>> {
         let mut uf = UnionFind::new(self.n_nodes);
-        let mut cache = self.partitions.borrow_mut();
-        cache.insert(0, Rc::new(self.snapshot(&mut uf)));
+        let mut cache = HashMap::new();
+        cache.insert(0, Arc::new(self.snapshot(&mut uf)));
         for (k, s) in self.specs.iter().enumerate() {
             if let Some(conn) = self.layers.get(&s.connector) {
                 for (r, region) in conn.labeled.regions.iter().enumerate() {
@@ -164,8 +162,9 @@ impl Connectivity {
                     }
                 }
             }
-            cache.insert(k + 1, Rc::new(self.snapshot(&mut uf)));
+            cache.insert(k + 1, Arc::new(self.snapshot(&mut uf)));
         }
+        cache
     }
 
     /// Compact the current union-find roots into a dense net id per node.

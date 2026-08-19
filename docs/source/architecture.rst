@@ -122,7 +122,8 @@ is constructed.
 Net extraction
 ---------------
 
-Net-aware checks (the antenna-ratio family, gate-connected minimum area) need to know
+Net-aware checks (the antenna-ratio family, gate-connected minimum area, different-net
+spacing) need to know
 which shapes are electrically the same net. ``connectivity.rs`` extracts nets from
 geometry alone: the PDK declares a list of connect specs, each a *connector* layer (a via
 or contact) and the conductor layers it bridges. A layer's own connected regions are

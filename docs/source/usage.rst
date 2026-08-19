@@ -106,7 +106,8 @@ Connectivity and net-aware checks
 ----------------------------------
 
 A handful of checks are *net-aware* — they need to know which shapes are electrically
-the same net (antenna-ratio rules, gate-connected protection-diode sizing). For these,
+the same net (antenna-ratio rules, gate-connected protection-diode sizing, different-net
+spacing such as IHP's NW.b1). For these,
 ``gdscheck`` extracts nets from geometry alone, driven by the PDK's declared
 ``connectivity:`` graph (which connector layers — vias, contacts — bridge which
 conductor layers). Net extraction is lazy: it only runs if the deck actually contains a
