@@ -61,6 +61,44 @@ pub fn rect(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64) -> GdsElement
     })
 }
 
+/// Cont side (Cnt.a is an exact 0.16 µm square) and the Metal1 margin the same-net test
+/// patterns leave around one.  M1.c asks only that Metal1 cover the Cont, so the margin is
+/// really there to keep a two-Cont strap comfortably above M1.a's 0.16 µm minimum width.
+const CONT_SIDE: f64 = 0.16;
+const STRAP_MARGIN: f64 = 0.06;
+
+/// A single Cont centred on `(cx, cy)`.
+pub fn cont_at(cont: (i16, i16), cx: f64, cy: f64) -> GdsElement {
+    let h = CONT_SIDE * 0.5;
+    rect(cont, cx - h, cy - h, cx + h, cy + h)
+}
+
+/// A square Activ tap of `size`, centred on `(cx, cy)`, with a Cont centred in it.  Used
+/// by the same-net patterns to take a well, a buried layer or a diffusion region up to
+/// Metal1; `size` is chosen per pattern so the tap clears whatever encloses it.
+pub fn tap(activ: (i16, i16), cont: (i16, i16), cx: f64, cy: f64, size: f64) -> Vec<GdsElement> {
+    let h = size * 0.5;
+    vec![
+        rect(activ, cx - h, cy - h, cx + h, cy + h),
+        cont_at(cont, cx, cy),
+    ]
+}
+
+/// One Metal1 plate covering every Cont centre in `centres` — the strap that shorts the
+/// regions under test into a single net.
+pub fn strap(metal: (i16, i16), centres: &[(f64, f64)]) -> GdsElement {
+    let m = CONT_SIDE * 0.5 + STRAP_MARGIN;
+    let (mut x0, mut y0) = (f64::MAX, f64::MAX);
+    let (mut x1, mut y1) = (f64::MIN, f64::MIN);
+    for &(x, y) in centres {
+        x0 = x0.min(x);
+        y0 = y0.min(y);
+        x1 = x1.max(x);
+        y1 = y1.max(y);
+    }
+    rect(metal, x0 - m, y0 - m, x1 + m, y1 + m)
+}
+
 /// Generate a 3-shape min-width test pattern.
 ///
 /// Layout (shapes placed along x, starting at `offset`):
