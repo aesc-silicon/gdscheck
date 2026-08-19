@@ -32,9 +32,14 @@ Differences from SG13G2
 * Bond pads and the passivation opening are enclosed by **TopMetal1**, the process's top
   metal, instead of TopMetal2 — ``Pad.i`` uses a ``DfpadNoTopMetal1`` virtual layer;
   ``Padb.c``/``Padc.c`` enclose in TopMetal1. Values are unchanged from SG13G2.
-* The antenna connect graph ends at TopVia1↔Metal4/TopMetal1 (one fewer metal level than
-  SG13G2's chain) — the first five connect steps are identical, so net-prefix-derived
-  parameters are unaffected.
+* The connect graph's metal chain ends at TopVia1↔Metal4/TopMetal1 (one fewer metal level
+  than SG13G2's) — the first five connect steps are identical, so net-prefix-derived
+  parameters are unaffected. The ``NActivInNWell`` well-tie step that NW.b1 needs is
+  shared with SG13G2; the step SG13G2 appends after it (``NWellNBuLay``, for the nBuLay
+  rules) has no counterpart here, because nBuLay is forbidden.
+* **NW.b1** is net-aware here exactly as in SG13G2 — see :doc:`ihp-sg13g2` for the
+  mechanism. So the ``core`` suite extracts nets for this process too, and
+  ``--no-connectivity`` skips the rule.
 * Chapter 8 ``DigiBnd`` splitting extends slightly further than SG13G2: **``Cnt.c``**
   gets an explicit digital variant (``Cnt.c.Digi``, 0.05 µm vs. the analog 0.07 µm) and
   **``NW.f1``** gets a ``.dig`` variant (0.24 µm vs. 0.62 µm analog) — both via the same

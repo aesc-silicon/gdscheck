@@ -290,6 +290,12 @@ const DECK_NW: &str = "nwell";
 #[case::nw_b("nwell/NW.b.gds.gz", "TOP", vec!["NW.b"], vec![])]
 // The 0.50 "merged" pair now also legitimately draws the new NW.b — ignored here.
 #[case::nw_b1("nwell/NW.b1.gds.gz", "TOP", vec!["NW.b1"], vec!["NW.b"])]
+// Same-net regression (GitHub report): two NWell pairs, both at a 1.00 µm gap.  Only the
+// bare pair is different-net; the second pair's wells are shorted by an N+Activ tie →
+// Cont → Metal1 strap → Cont → tie, so NW.b1 must fire exactly once.  Currently fires
+// twice: `min_space` is geometric and NWell is absent from the connectivity model, so the
+// `close`-based same-net merge (radius 0.31) cannot see a tie beyond a 0.62 µm gap.
+#[case::nw_b1_same_net("nwell/NW.b1.same_net.gds.gz", "TOP", vec!["NW.b1"], vec![])]
 // NW.e is back (projection-metric enclosure + skip_clipped): the 0.20-margin tie fires
 // (exact same edge pair as KLayout), the 0.30 tie is clean, and the NWell-crossing tie is
 // skipped — not "surrounded entirely by NWell" per the PDF (KLayout additionally flags the

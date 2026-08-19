@@ -12,7 +12,7 @@ rules:
     layers: [NWell]
     value: 0.62
   - id: NW.b1
-    check: min_space
+    check: min_space_different_net
     layers: [NWellMergedNoSRAM]
     value: 1.80
   - id: NW.c

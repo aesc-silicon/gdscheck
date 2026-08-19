@@ -149,10 +149,23 @@ KLayout script, where the two disagree:
   containment (``self.covering(other.inside(self))``) — safe wherever containment is
   structurally guaranteed (most of the resistor-recognition chain), and the mechanism
   behind the Rhi.b divergence above. See :doc:`../virtual-ops`.
-* **NW.b1** (different-net well spacing) is net-blind: the geometric superset gdscheck
-  implements can over-fire outside SRAM macros where legitimate same-net well gaps in
-  the 0.62–1.80 µm range would otherwise be excluded by net awareness. A documented,
-  accepted gap rather than a silent one.
+* **NW.b / NW.b1** (well spacing at the same / at different potential) are not in the
+  shipped KLayout script at all — it omits both potential-dependent rules rather than
+  approximate them. gdscheck implements both: NW.b as a plain geometric
+  :doc:`../checks/min_space` at 0.62 µm, and NW.b1 as
+  :doc:`../checks/min_space_different_net` at 1.80 µm, gated on extracted nets. The
+  ``NActivInNWell`` connect step ties a well to the tap sitting in it (and from there
+  through Cont to Metal1), so wells strapped together no longer read as different-net.
+  It has to be N+Activ rather than plain ``Activ``: P+Activ in an NWell is a PMOS
+  source/drain, which must not tie the well to the diffusion net. ``NWellMergedNoSRAM``
+  is in the connect graph beside ``NWell`` because the rule is checked on the merged
+  layer, whose marker can land in a gap the ``close`` filled in — inside the merged
+  layer, but outside any drawn NWell. That ``close`` still stands in for wells
+  physically merged by diffusion, below the NW.b minimum. Note this makes NW.b1 a net-aware rule, so the
+  ``core`` suite now runs net extraction; ``--no-connectivity`` skips it (and NW.b1).
+  Both well steps are appended after the metal stack, so the prefix indices the antenna
+  levels resolve through ``connect_prefix`` keep their meaning — anything added to the
+  connect graph later belongs at the end for the same reason.
 
 
 Known upstream deck issues

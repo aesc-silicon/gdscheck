@@ -141,6 +141,8 @@ connectivity:
     layers: [Metal4]
   - connector: TopVia1
     layers: [TopMetal1]
+  - connector: NActivInNWell
+    layers: [NWell, NWellMergedNoSRAM, Activ]
 
 virtual_layers:
   - name: DfpadNoTopMetal1

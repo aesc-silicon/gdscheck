@@ -66,6 +66,19 @@ fn parity_with_sg13g2_on_shared_decks() {
     assert!(checked > 100, "only {checked} fixtures checked — walker broken?");
 }
 
+/// Same-net NW.b1 regression, on the shared SG13G2 fixture (CMOS5L forks the nwell deck
+/// for its DigiBnd splits, so it needs its own assertion — the parity test above only
+/// requires both PDKs to agree, which a shared false positive satisfies).
+///
+/// Two NWell pairs at a 1.00 µm gap; the second is shorted well-to-well through an
+/// N+Activ tie → Cont → Metal1 strap, so exactly one pair is different-net.  Currently
+/// fires twice under both PDKs — see the SG13G2 case for the mechanism.
+#[test]
+fn nw_b1_same_net() {
+    let path = format!("{G2_DATA}/nwell/NW.b1.same_net.gds.gz");
+    assert_eq!(drc(C5L, &path, "nwell", &[]), vec!["NW.b1"]);
+}
+
 // --- CMOS5L-specific rules ---
 
 #[rstest]
