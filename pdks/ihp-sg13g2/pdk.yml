@@ -181,6 +181,8 @@ connectivity:
     layers: [TopMetal1]
   - connector: TopVia2
     layers: [TopMetal2]
+  - connector: NActivInNWell
+    layers: [NWell, NWellMergedNoSRAM, Activ]
 
 virtual_layers:
   - name: Pad

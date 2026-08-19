@@ -143,6 +143,8 @@ connectivity:
     layers: [Metal4]
   - connector: TopVia1
     layers: [TopMetal1]
+  - connector: NActivInNWell
+    layers: [NWell, NWellMergedNoSRAM, Activ]
 
 # CMOS5L-only recognition (appended after the inherited SG13G2 virtual layers).
 virtual_layers:
