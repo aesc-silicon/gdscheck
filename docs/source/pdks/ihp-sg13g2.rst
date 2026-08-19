@@ -166,6 +166,13 @@ KLayout script, where the two disagree:
   Both well steps are appended after the metal stack, so the prefix indices the antenna
   levels resolve through ``connect_prefix`` keep their meaning — anything added to the
   connect graph later belongs at the end for the same reason.
+* **NBL.b / NBL.c** are the buried-layer twins of the pair above, and upstream omits them
+  for the same reason. gdscheck implements NBL.b as a plain 1.50 µm
+  :doc:`../checks/min_space` and NBL.c as a 3.20 µm
+  :doc:`../checks/min_space_different_net`. The ``NWellNBuLay`` connect step carries the
+  net down the sinker — the NWell-ring/nBuLay overlap that nmosi.d sizes at 0.62 µm — so
+  a buried layer takes the net of the well above it, and through the tap step, of
+  whatever ties that well.
 
 
 Known upstream deck issues
