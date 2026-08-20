@@ -16,7 +16,7 @@ rules:
     layers: [nBuLayMerged]
     value: 3.20
   - id: NBL.d
-    check: min_space
+    check: min_space_different_net
     layers: [nBuLay, NWell]
     value: 2.20
   - id: NBL.e

@@ -251,6 +251,10 @@ const DECK_NBL: &str = "nbulay";
 #[case::nbl_d("nbulay/NBL.d.gds.gz", "TOP", vec!["NBL.d", "NBL.d"], vec![])]
 #[case::nbl_e("nbulay/NBL.e.gds.gz", "TOP", vec!["NBL.e", "NBL.e"], vec![])]
 #[case::nbl_f("nbulay/NBL.f.gds.gz", "TOP", vec!["NBL.f", "NBL.f"], vec![])]
+// NBL.d is the two-layer "different net" rule: a bare row, and a row where the NWell is
+// strapped to the buried layer through its sinker, a tap and a Metal1 plate — so only the
+// bare row fires.
+#[case::nbl_d_same_net("nbulay/NBL.d.same_net.gds.gz", "TOP", vec!["NBL.d"], vec![])]
 fn test_nbulay(
     #[case] gds: &str,
     #[case] topcell: &str,

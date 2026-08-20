@@ -17,6 +17,7 @@ pub fn generate(pdk: &PdkConfig) {
     nbl_d(pdk);
     nbl_e(pdk);
     nbl_f(pdk);
+    nbl_d_same_net(pdk);
 }
 
 /// NBL.b — min. nBuLay space or notch 1.50: a pair at 1.20 (< 1.50 → fires) and at
@@ -93,6 +94,42 @@ fn nbl_c_same_net(pdk: &PdkConfig) {
     let mut elems = pair(o, false);
     elems.extend(pair(o + 8.0, true)); // 5.00 µm clear of the left pair (NBL.c needs 3.20)
     write_gz(&format!("{DIR}/NBL.c.same_net.gds.gz"), library("TOP", elems));
+}
+
+/// NBL.d same-net regression — the two-layer twin of `NBL.c.same_net`.  A bare row (y+0)
+/// and a strapped row (y+8), each an nBuLay with an NWell 2.00 µm away (NBL.d is 2.20).
+///
+/// In the strapped row the buried layer carries an NWell sinker, a tap and a Cont, the
+/// partner NWell carries its own tap and Cont, and one Metal1 plate joins the two — so
+/// partner and buried layer are one net and the rule must not fire.  The bare row is the
+/// same geometry with nothing tying it, and must fire once.
+///
+/// Kept clear of its neighbours on purpose: the two nBuLay boxes are 5.00 µm apart (NBL.c
+/// needs 3.20), sinker to partner NWell is 2.80 µm (NW.b1 needs 1.80), and each tap sits
+/// inside a well so it never becomes IsoPWellAct.
+fn nbl_d_same_net(pdk: &PdkConfig) {
+    let nb = layer(pdk, "nBuLay");
+    let nw = layer(pdk, "NWell");
+    let activ = layer(pdk, "Activ");
+    let cont = layer(pdk, "Cont");
+    let metal1 = layer(pdk, "Metal1");
+    let o = OFFSET;
+
+    let mut elems = Vec::new();
+    for tied in [false, true] {
+        let y = if tied { o + 8.0 } else { o };
+        elems.push(rect(nb, o, y, o + 3.0, y + 3.0));
+        elems.push(rect(nw, o + 5.0, y + 0.5, o + 6.0, y + 1.5)); // gap 2.00 µm
+        if tied {
+            // Sinker 1.40 across (nmosi.d needs 0.62); its tap is enclosed by 0.40, the
+            // partner well's by 0.30 (NW.e needs 0.24).
+            elems.push(rect(nw, o + 0.8, y + 0.8, o + 2.2, y + 2.2));
+            elems.extend(tap(activ, cont, o + 1.5, y + 1.5, 0.60));
+            elems.extend(tap(activ, cont, o + 5.5, y + 1.0, 0.40));
+            elems.push(strap(metal1, &[(o + 1.5, y + 1.5), (o + 5.5, y + 1.0)]));
+        }
+    }
+    write_gz(&format!("{DIR}/NBL.d.same_net.gds.gz"), library("TOP", elems));
 }
 
 /// NBL.a — min. nBuLay width 1.00 µm.
