@@ -118,8 +118,6 @@ decks:
     path: decks/antenna.yml
     description: Antenna rules (M1-M4 + TopMetal1 stack)
 
-# The M1–M4 + TopVia1 + TopMetal1 stack: TopVia1 lands on Metal4 (no Metal5/Via4,
-# no TopVia2/TopMetal2).
 connectivity:
   - connector: Cont
     layers: [GatPoly]
@@ -144,14 +142,11 @@ connectivity:
   - connector: TopVia1
     layers: [TopMetal1]
 
-# CMOS5L-only recognition (appended after the inherited SG13G2 virtual layers).
 virtual_layers:
-  # Pad.i: a dfpad opening without TopMetal1 underneath (TM1 is the pad metal here).
   - name: DfpadNoTopMetal1
     op: difference
     mode: lazy
     layers: [dfpad, TopMetal1]
-  # Chapter 8 digital splits: Cnt.c and NW.f1 relax inside a DigiBnd region.
   - name: ContOnActivAna
     op: not_interacting
     mode: lazy
