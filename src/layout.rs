@@ -26,7 +26,10 @@ impl FlatLayout {
     }
 
     pub fn insert(&mut self, layer: i16, datatype: i16, boundary: GdsBoundary) {
-        self.layers.entry((layer, datatype)).or_default().push(boundary);
+        self.layers
+            .entry((layer, datatype))
+            .or_default()
+            .push(boundary);
     }
 
     pub fn insert_text(&mut self, layer: i16, texttype: i16, text: Text) {
@@ -35,12 +38,16 @@ impl FlatLayout {
 
     /// All text labels on the given layer/texttype.
     pub fn texts(&self, layer: i16, texttype: i16) -> &[Text] {
-        self.texts.get(&(layer, texttype)).map_or(&[], Vec::as_slice)
+        self.texts
+            .get(&(layer, texttype))
+            .map_or(&[], Vec::as_slice)
     }
 
     /// All boundaries on the given layer/datatype.
     pub fn get(&self, layer: i16, datatype: i16) -> &[GdsBoundary] {
-        self.layers.get(&(layer, datatype)).map_or(&[], Vec::as_slice)
+        self.layers
+            .get(&(layer, datatype))
+            .map_or(&[], Vec::as_slice)
     }
 
     /// Iterate all boundaries across all layers.

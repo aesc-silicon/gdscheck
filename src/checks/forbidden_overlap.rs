@@ -35,7 +35,10 @@ pub fn run(
         .join(" over ")
         + " not allowed";
     run_boolean_residual(
-        rule, layout, dbu_to_um, merged,
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
         VirtualOp::Intersection,
         "Forbidden overlap",
         &descr,

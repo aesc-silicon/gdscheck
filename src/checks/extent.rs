@@ -18,25 +18,85 @@ use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
 /// Width (short side) must be at least `value`.
-pub fn run_min_width(rule: &RuleDefinition, layout: &FlatLayout, dbu: f64, merged: &mut MergedCache) -> Vec<Violation> {
+pub fn run_min_width(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
     let v = rule.value / dbu;
-    run_extent(rule, layout, dbu, merged, "min_dim", ">=", "Minimum width violation", false, move |d| d < v - 0.5)
+    run_extent(
+        rule,
+        layout,
+        dbu,
+        merged,
+        "min_dim",
+        ">=",
+        "Minimum width violation",
+        false,
+        move |d| d < v - 0.5,
+    )
 }
 
 /// Width (short side) must be at most `value`.
-pub fn run_max_width(rule: &RuleDefinition, layout: &FlatLayout, dbu: f64, merged: &mut MergedCache) -> Vec<Violation> {
+pub fn run_max_width(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
     let v = rule.value / dbu;
-    run_extent(rule, layout, dbu, merged, "max_dim", "<=", "Maximum width violation", false, move |d| d > v + 0.5)
+    run_extent(
+        rule,
+        layout,
+        dbu,
+        merged,
+        "max_dim",
+        "<=",
+        "Maximum width violation",
+        false,
+        move |d| d > v + 0.5,
+    )
 }
 
 /// Length (long side) must be at least `value`.
-pub fn run_min_length(rule: &RuleDefinition, layout: &FlatLayout, dbu: f64, merged: &mut MergedCache) -> Vec<Violation> {
+pub fn run_min_length(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
     let v = rule.value / dbu;
-    run_extent(rule, layout, dbu, merged, "min_length", ">=", "Minimum length violation", true, move |d| d < v - 0.5)
+    run_extent(
+        rule,
+        layout,
+        dbu,
+        merged,
+        "min_length",
+        ">=",
+        "Minimum length violation",
+        true,
+        move |d| d < v - 0.5,
+    )
 }
 
 /// Length (long side) must be at most `value`.
-pub fn run_max_length(rule: &RuleDefinition, layout: &FlatLayout, dbu: f64, merged: &mut MergedCache) -> Vec<Violation> {
+pub fn run_max_length(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
     let v = rule.value / dbu;
-    run_extent(rule, layout, dbu, merged, "max_length", "<=", "Maximum length violation", true, move |d| d > v + 0.5)
+    run_extent(
+        rule,
+        layout,
+        dbu,
+        merged,
+        "max_length",
+        "<=",
+        "Maximum length violation",
+        true,
+        move |d| d > v + 0.5,
+    )
 }

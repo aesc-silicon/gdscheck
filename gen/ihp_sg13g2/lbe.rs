@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, max_width_pattern, notch_pattern, density_pattern, write_gz};
+use crate::helpers::{
+    density_pattern, layer, library, max_width_pattern, min_width_pattern, notch_pattern, rect,
+    space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/lbe";
@@ -32,8 +35,8 @@ fn lbe_b2(pdk: &PdkConfig) {
     let l = layer(pdk, "LBE");
     let o = OFFSET;
     let elems = vec![
-        rect(l, o, o, o + 200.0, o + 200.0),            // 40000 µm² → clean
-        rect(l, o + 300.0, o, o + 450.0, o + 150.0),    // 22500 µm² → LBE.b2
+        rect(l, o, o, o + 200.0, o + 200.0),         // 40000 µm² → clean
+        rect(l, o + 300.0, o, o + 450.0, o + 150.0), // 22500 µm² → LBE.b2
     ];
     write_gz(&format!("{DIR}/LBE.b2.gds.gz"), library("TOP", elems));
 }
@@ -47,8 +50,8 @@ fn lbe_e(pdk: &PdkConfig) {
     let o = OFFSET;
     let elems = vec![
         rect(l, o, o, o + 200.0, o + 200.0),
-        rect(dfpad, o + 249.0, o, o + 349.0, o + 200.0),          // 49 µm gap → LBE.e
-        rect(passiv, o, o + 249.0, o + 200.0, o + 349.0),         // 49 µm gap → LBE.e
+        rect(dfpad, o + 249.0, o, o + 349.0, o + 200.0), // 49 µm gap → LBE.e
+        rect(passiv, o, o + 249.0, o + 200.0, o + 349.0), // 49 µm gap → LBE.e
     ];
     write_gz(&format!("{DIR}/LBE.e.gds.gz"), library("TOP", elems));
 }
@@ -60,7 +63,7 @@ fn lbe_f(pdk: &PdkConfig) {
     let o = OFFSET;
     let elems = vec![
         rect(l, o, o, o + 200.0, o + 200.0),
-        rect(activ, o + 229.0, o, o + 329.0, o + 200.0),          // 29 µm gap → LBE.f
+        rect(activ, o + 229.0, o, o + 329.0, o + 200.0), // 29 µm gap → LBE.f
     ];
     write_gz(&format!("{DIR}/LBE.f.gds.gz"), library("TOP", elems));
 }
@@ -143,7 +146,7 @@ fn lbe_h_open(pdk: &PdkConfig) {
         rect(l, 0.0, 0.0, 500.00, 100.00),   // bottom
         rect(l, 0.0, 100.0, 100.00, 500.00), // left arm
         rect(l, 400.0, 100.0, 500.00, 500.00), // right arm
-        // no top piece → open
+                                             // no top piece → open
     ];
 
     write_gz(&format!("{DIR}/LBE.h.open.gds.gz"), library("TOP", elems));
@@ -157,5 +160,8 @@ fn lbe_i(pdk: &PdkConfig) {
     write_gz(&format!("{DIR}/LBE.i.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &[(l, 0.0, 200.01)]);
-    write_gz(&format!("{DIR}/LBE.i.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{DIR}/LBE.i.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }

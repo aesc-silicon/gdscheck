@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, min_width_pattern, rect, space_pattern, strap, tap, write_gz};
+use crate::helpers::{
+    layer, library, min_width_pattern, rect, space_pattern, strap, tap, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/nbulay";
@@ -93,7 +95,10 @@ fn nbl_c_same_net(pdk: &PdkConfig) {
 
     let mut elems = pair(o, false);
     elems.extend(pair(o + 8.0, true)); // 5.00 µm clear of the left pair (NBL.c needs 3.20)
-    write_gz(&format!("{DIR}/NBL.c.same_net.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/NBL.c.same_net.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// NBL.d same-net regression — the two-layer twin of `NBL.c.same_net`.  A bare row (y+0)
@@ -129,7 +134,10 @@ fn nbl_d_same_net(pdk: &PdkConfig) {
             elems.push(strap(metal1, &[(o + 1.5, y + 1.5), (o + 5.5, y + 1.0)]));
         }
     }
-    write_gz(&format!("{DIR}/NBL.d.same_net.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/NBL.d.same_net.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// NBL.a — min. nBuLay width 1.00 µm.
@@ -141,21 +149,48 @@ fn nbl_a(pdk: &PdkConfig) {
 
 /// NBL.d — min. nBuLay to NWell space 2.20 µm.
 fn nbl_d(pdk: &PdkConfig) {
-    let elems = space_pattern(layer(pdk, "nBuLay"), layer(pdk, "NWell"), 3.0, 2.20, OFFSET, SPACE_DELTA);
+    let elems = space_pattern(
+        layer(pdk, "nBuLay"),
+        layer(pdk, "NWell"),
+        3.0,
+        2.20,
+        OFFSET,
+        SPACE_DELTA,
+    );
     write_gz(&format!("{DIR}/NBL.d.gds.gz"), library("TOP", elems));
 }
 
 /// NBL.e — min. nBuLay to N+Activ (Activ without pSD → NActiv) space 1.00 µm.
 fn nbl_e(pdk: &PdkConfig) {
-    let elems = space_pattern(layer(pdk, "nBuLay"), layer(pdk, "Activ"), 2.0, 1.00, OFFSET, SPACE_DELTA);
+    let elems = space_pattern(
+        layer(pdk, "nBuLay"),
+        layer(pdk, "Activ"),
+        2.0,
+        1.00,
+        OFFSET,
+        SPACE_DELTA,
+    );
     write_gz(&format!("{DIR}/NBL.e.gds.gz"), library("TOP", elems));
 }
 
 /// NBL.f — min. nBuLay to P+Activ (Activ ∩ pSD → PsdActiv) space 0.50 µm.  pSD covers the
 /// whole pattern so every Activ neighbour reads as P+Activ rather than N+Activ.
 fn nbl_f(pdk: &PdkConfig) {
-    let mut elems = space_pattern(layer(pdk, "nBuLay"), layer(pdk, "Activ"), 2.0, 0.50, OFFSET, SPACE_DELTA);
+    let mut elems = space_pattern(
+        layer(pdk, "nBuLay"),
+        layer(pdk, "Activ"),
+        2.0,
+        0.50,
+        OFFSET,
+        SPACE_DELTA,
+    );
     let o = OFFSET;
-    elems.push(rect(layer(pdk, "pSD"), o - 5.0, o - 5.0, o + 10.0, o + 10.0));
+    elems.push(rect(
+        layer(pdk, "pSD"),
+        o - 5.0,
+        o - 5.0,
+        o + 10.0,
+        o + 10.0,
+    ));
     write_gz(&format!("{DIR}/NBL.f.gds.gz"), library("TOP", elems));
 }

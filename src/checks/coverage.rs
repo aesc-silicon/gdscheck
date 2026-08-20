@@ -24,7 +24,10 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] coverage needs a target layer plus at least one cover layer", rule.id);
+        eprintln!(
+            "[{}] coverage needs a target layer plus at least one cover layer",
+            rule.id
+        );
         return vec![];
     }
     let target = rule.layers[0].name.as_str();
@@ -35,7 +38,10 @@ pub fn run(
         .join(" or ");
     let descr = format!("{target} not covered by {covers}");
     run_boolean_residual(
-        rule, layout, dbu_to_um, merged,
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
         VirtualOp::Difference,
         "Coverage violation",
         &descr,

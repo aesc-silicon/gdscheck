@@ -29,7 +29,11 @@ use std::collections::HashMap;
 
 fn net_key(rule: &RuleDefinition, name: &str) -> Option<LayerKey> {
     let l = *rule.params.get(name)? as i16;
-    let d = rule.params.get(&format!("{name}_dt")).map(|v| *v as i16).unwrap_or(0);
+    let d = rule
+        .params
+        .get(&format!("{name}_dt"))
+        .map(|v| *v as i16)
+        .unwrap_or(0);
     Some((l, d))
 }
 
@@ -49,11 +53,18 @@ pub fn run(
         return vec![];
     };
     if rule.layers.len() < 2 {
-        eprintln!("[{}] antenna_ratio needs a gate layer and at least one antenna layer", rule.id);
+        eprintln!(
+            "[{}] antenna_ratio needs a gate layer and at least one antenna layer",
+            rule.id
+        );
         return vec![];
     }
 
-    let n_ant = rule.params.get("antenna_layers").map(|v| *v as usize).unwrap_or(rule.layers.len() - 1);
+    let n_ant = rule
+        .params
+        .get("antenna_layers")
+        .map(|v| *v as usize)
+        .unwrap_or(rule.layers.len() - 1);
     let gate = &rule.layers[0];
     let antenna = &rule.layers[1..1 + n_ant];
     let diode = rule.layers.get(1 + n_ant);
@@ -68,7 +79,11 @@ pub fn run(
     println!(
         "[{}] Checking antenna_ratio: cumulative {} area / {} gate area ≥ {limit}{}",
         rule.id,
-        antenna.iter().map(|l| l.name.as_str()).collect::<Vec<_>>().join("+"),
+        antenna
+            .iter()
+            .map(|l| l.name.as_str())
+            .collect::<Vec<_>>()
+            .join("+"),
         gate.name,
         match require_diode {
             Some(true) => " (nets with a protection diode)",
@@ -84,7 +99,8 @@ pub fn run(
         .regions(layout, gate.gds_layer as i16, gate.gds_datatype as i16)
         .iter()
         .filter_map(|r| {
-            conn.node_at(gate_net, r.marker.0, r.marker.1).map(|n| (r.area_dbu * d2, r.marker, n))
+            conn.node_at(gate_net, r.marker.0, r.marker.1)
+                .map(|n| (r.area_dbu * d2, r.marker, n))
         })
         .collect();
     if gates.is_empty() {
@@ -102,7 +118,9 @@ pub fn run(
     let mut cum = vec![0.0f64; gates.len()];
     for l in antenna {
         let lkey = key(l);
-        let Some(prefix) = fixed_level.or_else(|| conn.connect_prefix(lkey)) else { continue };
+        let Some(prefix) = fixed_level.or_else(|| conn.connect_prefix(lkey)) else {
+            continue;
+        };
         let part = conn.partition(prefix);
 
         // Gate area per net at this level (O(1) per gate via the precomputed node).
@@ -142,7 +160,10 @@ pub fn run(
     let full = conn.partition(usize::MAX);
     let mut diode_area: HashMap<usize, f64> = HashMap::new();
     if let (Some(diode), Some(dnet)) = (diode, diode_net) {
-        for r in merged.regions(layout, diode.gds_layer as i16, diode.gds_datatype as i16).to_vec() {
+        for r in merged
+            .regions(layout, diode.gds_layer as i16, diode.gds_datatype as i16)
+            .to_vec()
+        {
             if let Some(node) = conn.node_at(dnet, r.marker.0, r.marker.1) {
                 *diode_area.entry(full.net_of(node)).or_default() += r.area_dbu * d2;
             }

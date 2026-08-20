@@ -4,8 +4,8 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{layer, library, min_width_pattern, rect, strap, tap, write_gz};
-use gdscheck::pdk::PdkConfig;
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/nwell";
 
@@ -29,12 +29,18 @@ pub fn generate(pdk: &PdkConfig) {
 
 /// P+Activ footprint (Activ ∩ pSD) at `(x, y)`.
 fn pact(activ: (i16, i16), psd: (i16, i16), x: f64, y: f64, w: f64, h: f64) -> Vec<GdsElement> {
-    vec![rect(activ, x, y, x + w, y + h), rect(psd, x, y, x + w, y + h)]
+    vec![
+        rect(activ, x, y, x + w, y + h),
+        rect(psd, x, y, x + w, y + h),
+    ]
 }
 
 /// N+Activ footprint (Activ ∩ nSD) at `(x, y)`.
 fn nact(activ: (i16, i16), nsd: (i16, i16), x: f64, y: f64, w: f64, h: f64) -> Vec<GdsElement> {
-    vec![rect(activ, x, y, x + w, y + h), rect(nsd, x, y, x + w, y + h)]
+    vec![
+        rect(activ, x, y, x + w, y + h),
+        rect(nsd, x, y, x + w, y + h),
+    ]
 }
 
 fn nw_a(pdk: &PdkConfig) {
@@ -113,7 +119,10 @@ fn nw_b1_same_net(pdk: &PdkConfig) {
 
     let mut elems = pair(o, false);
     elems.extend(pair(o + 4.0, true)); // 3.00 µm clear of the left pair
-    write_gz(&format!("{DIR}/NW.b1.same_net.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/NW.b1.same_net.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// NW.c — min. NWell enclosure of P+Activ (PMOS S/D) not in ThickGateOx, 0.31 µm.  One
@@ -166,7 +175,13 @@ fn nw_d(pdk: &PdkConfig) {
     // Activ under nSD:block, no drawn nSD (default implant suppressed) at 0.30 → clean.
     elems.push(rect(nw, o + 12.0, o, o + 13.0, o + 1.0));
     elems.push(rect(activ, o + 13.0 + 0.30, o, o + 13.8, o + 0.5));
-    elems.push(rect(layer(pdk, "nSD.block"), o + 13.0 + 0.30, o, o + 13.8, o + 0.5));
+    elems.push(rect(
+        layer(pdk, "nSD.block"),
+        o + 13.0 + 0.30,
+        o,
+        o + 13.8,
+        o + 0.5,
+    ));
     write_gz(&format!("{DIR}/NW.d.gds.gz"), library("TOP", elems));
 }
 
@@ -236,12 +251,24 @@ fn nw_dig(pdk: &PdkConfig) {
     let psd = layer(pdk, "pSD");
     let tgo = layer(pdk, "ThickGateOx");
     let o = OFFSET;
-    let mut elems = vec![rect(layer(pdk, "DigiBnd"), o - 2.0, o - 2.0, o + 25.0, o + 3.0)];
+    let mut elems = vec![rect(
+        layer(pdk, "DigiBnd"),
+        o - 2.0,
+        o - 2.0,
+        o + 25.0,
+        o + 3.0,
+    )];
     // d1.dig fires (gap 0.30) / relaxed-clean (gap 0.45).
     let d1 = |x: f64, gap: f64, e: &mut Vec<GdsElement>| {
         e.push(rect(nw, x, o, x + 1.0, o + 1.0));
         e.extend(nact(activ, nsd, x + 1.0 + gap, o, 0.5, 0.5));
-        e.push(rect(tgo, x + 1.0 + gap - 0.1, o - 0.1, x + 1.0 + gap + 0.6, o + 0.6));
+        e.push(rect(
+            tgo,
+            x + 1.0 + gap - 0.1,
+            o - 0.1,
+            x + 1.0 + gap + 0.6,
+            o + 0.6,
+        ));
     };
     d1(o, 0.30, &mut elems);
     d1(o + 4.0, 0.45, &mut elems);
@@ -249,7 +276,13 @@ fn nw_dig(pdk: &PdkConfig) {
     let c1 = |x: f64, left: f64, e: &mut Vec<GdsElement>| {
         e.push(rect(nw, x, o, x + left + 0.5 + 0.45, o + 1.4));
         e.extend(pact(activ, psd, x + left, o + 0.45, 0.5, 0.5));
-        e.push(rect(tgo, x + left - 0.1, o + 0.35, x + left + 0.6, o + 1.05));
+        e.push(rect(
+            tgo,
+            x + left - 0.1,
+            o + 0.35,
+            x + left + 0.6,
+            o + 1.05,
+        ));
     };
     c1(o + 8.0, 0.25, &mut elems);
     c1(o + 12.0, 0.45, &mut elems);
@@ -257,7 +290,13 @@ fn nw_dig(pdk: &PdkConfig) {
     let e1 = |x: f64, left: f64, e: &mut Vec<GdsElement>| {
         e.push(rect(nw, x, o, x + left + 0.5 + 0.30, o + 1.1));
         e.push(rect(activ, x + left, o + 0.30, x + left + 0.5, o + 0.80));
-        e.push(rect(tgo, x + left - 0.1, o + 0.20, x + left + 0.6, o + 0.90));
+        e.push(rect(
+            tgo,
+            x + left - 0.1,
+            o + 0.20,
+            x + left + 0.6,
+            o + 0.90,
+        ));
     };
     e1(o + 16.0, 0.20, &mut elems);
     e1(o + 20.0, 0.30, &mut elems);

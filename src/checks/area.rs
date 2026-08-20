@@ -21,7 +21,17 @@ pub fn run_min(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, "min_area", ">=", "Minimum", "<", |a, v| a < v)
+    run(
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        "min_area",
+        ">=",
+        "Minimum",
+        "<",
+        |a, v| a < v,
+    )
 }
 
 /// Region area must be at most `value` (µm²).
@@ -31,7 +41,17 @@ pub fn run_max(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, "max_area", "<=", "Maximum", ">", |a, v| a > v)
+    run(
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        "max_area",
+        "<=",
+        "Maximum",
+        ">",
+        |a, v| a > v,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -67,9 +87,15 @@ fn run(
                         &format!("{bound} area violation"),
                         format!(
                             "region area {:.4} µm² {} {:.4} µm² on layer {} at ({:.4}, {:.4}) µm",
-                            area, cmp, rule.value, layer.name, cx * dbu_to_um, cy * dbu_to_um
+                            area,
+                            cmp,
+                            rule.value,
+                            layer.name,
+                            cx * dbu_to_um,
+                            cy * dbu_to_um
                         ),
-                        cx * dbu_to_um, cy * dbu_to_um,
+                        cx * dbu_to_um,
+                        cy * dbu_to_um,
                     ))
                 } else {
                     None

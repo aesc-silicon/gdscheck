@@ -21,9 +21,15 @@ pub fn run(
 ) -> Vec<Violation> {
     let val_dbu = rule.value / dbu_to_um;
     run_width(
-        rule, layout, dbu_to_um, merged,
-        "exact_width", "==", "Exact width violation",
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        "exact_width",
+        "==",
+        "Exact width violation",
         move |w| (w - val_dbu).abs() > 0.5,
-        false, 0.5,
+        false,
+        0.5,
     )
 }

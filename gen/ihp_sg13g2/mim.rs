@@ -4,8 +4,8 @@
 
 use super::OFFSET;
 use crate::helpers::{layer, library, rect, write_gz};
-use gdscheck::pdk::PdkConfig;
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/mim";
 
@@ -23,7 +23,15 @@ fn mim_gr(pdk: &PdkConfig) {
     let mut e = Vec::new();
     for i in 0..8 {
         for j in 0..4 {
-            e.extend(cap(pdk, o + i as f64 * 80.0, o + j as f64 * 80.0, 74.0, 74.0, 0.5, true));
+            e.extend(cap(
+                pdk,
+                o + i as f64 * 80.0,
+                o + j as f64 * 80.0,
+                74.0,
+                74.0,
+                0.5,
+                true,
+            ));
         }
     }
     write_gz(&format!("{DIR}/MIM.gR.gds.gz"), library("TOP", e));
@@ -31,14 +39,34 @@ fn mim_gr(pdk: &PdkConfig) {
 
 /// A MIM cap at `(x, y)`, `w`×`h` µm: Metal5 bottom plate enclosing by 0.70, a TopVia1 at
 /// `via_margin` from the MIM corner (omitted if `via == false`).
-fn cap(pdk: &PdkConfig, x: f64, y: f64, w: f64, h: f64, via_margin: f64, via: bool) -> Vec<GdsElement> {
+fn cap(
+    pdk: &PdkConfig,
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+    via_margin: f64,
+    via: bool,
+) -> Vec<GdsElement> {
     let mut e = vec![
         rect(layer(pdk, "MIM"), x, y, x + w, y + h),
-        rect(layer(pdk, "Metal5"), x - 0.7, y - 0.7, x + w + 0.7, y + h + 0.7),
+        rect(
+            layer(pdk, "Metal5"),
+            x - 0.7,
+            y - 0.7,
+            x + w + 0.7,
+            y + h + 0.7,
+        ),
     ];
     if via {
         let v = layer(pdk, "TopVia1");
-        e.push(rect(v, x + via_margin, y + via_margin, x + via_margin + 0.3, y + via_margin + 0.3));
+        e.push(rect(
+            v,
+            x + via_margin,
+            y + via_margin,
+            x + via_margin + 0.3,
+            y + via_margin + 0.3,
+        ));
     }
     e
 }

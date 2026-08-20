@@ -36,10 +36,32 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
 /// splits are inert without DigiBnd).  Excluded because they genuinely differ:
 /// forbidden, pad, passiv, topvia1, antenna.
 const SHARED_DECKS: &[&str] = &[
-    "offgrid", "pin", "lbe", "activ", "tgo", "gatpoly", "extblock", "cont",
-    "contbar", "salblock", "nsdblock", "psd", "resistor", "nwell", "pwellblock",
-    "metal1", "metal2", "metal3", "metal4", "via1", "via2", "via3", "topmetal1",
-    "sealring", "slit", "lu",
+    "offgrid",
+    "pin",
+    "lbe",
+    "activ",
+    "tgo",
+    "gatpoly",
+    "extblock",
+    "cont",
+    "contbar",
+    "salblock",
+    "nsdblock",
+    "psd",
+    "resistor",
+    "nwell",
+    "pwellblock",
+    "metal1",
+    "metal2",
+    "metal3",
+    "metal4",
+    "via1",
+    "via2",
+    "via3",
+    "topmetal1",
+    "sealring",
+    "slit",
+    "lu",
 ];
 
 /// Run every SG13G2 fixture of every shared deck under both PDKs and require
@@ -63,7 +85,10 @@ fn parity_with_sg13g2_on_shared_decks() {
             checked += 1;
         }
     }
-    assert!(checked > 100, "only {checked} fixtures checked — walker broken?");
+    assert!(
+        checked > 100,
+        "only {checked} fixtures checked — walker broken?"
+    );
 }
 
 /// Same-net NW.b1 regression, on the shared SG13G2 fixture (CMOS5L forks the nwell deck

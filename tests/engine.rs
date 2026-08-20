@@ -7,11 +7,11 @@
 //! independent of any foundry, so they use a tiny synthetic PDK (tests/data/
 //! synthetic) or programmatically-built geometry rather than the IHP fixtures.
 
-use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStrans, GdsStruct};
 use gds21::{GdsArrayRef, GdsStructRef};
+use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStrans, GdsStruct};
 use gdscheck::flatten::flatten_to_elems;
 use gdscheck::layout::FlatLayout;
-use gdscheck::merge::{difference_layers, merged_area_dbu, MergedCache, VirtualOp};
+use gdscheck::merge::{MergedCache, VirtualOp, difference_layers, merged_area_dbu};
 use gdscheck::pdk::PdkConfig;
 use gdscheck::run_drc;
 use std::collections::HashMap;
@@ -67,7 +67,11 @@ fn hierarchy_lib() -> GdsLibrary {
     // 3. 3 cols × 2 rows array: 200 DBU column pitch, 50 DBU row pitch.
     top.elems.push(GdsElement::GdsArrayRef(GdsArrayRef {
         name: "CHILD".into(),
-        xy: [GdsPoint::new(0, 0), GdsPoint::new(600, 0), GdsPoint::new(0, 100)],
+        xy: [
+            GdsPoint::new(0, 0),
+            GdsPoint::new(600, 0),
+            GdsPoint::new(0, 100),
+        ],
         cols: 3,
         rows: 2,
         ..Default::default()
@@ -89,13 +93,22 @@ fn flatten_resolves_refs_arrays_and_rotation() {
     assert_eq!(boxes.len(), 8, "expected 8 flattened shapes, got {boxes:?}");
 
     // Plain placement: child translated by (1000, 0).
-    assert!(boxes.contains(&(1000, 0, 1100, 20)), "missing plain ref: {boxes:?}");
+    assert!(
+        boxes.contains(&(1000, 0, 1100, 20)),
+        "missing plain ref: {boxes:?}"
+    );
 
     // 90° rotation swaps the 100×20 footprint to 20×100, here at (0,1000).
-    assert!(boxes.contains(&(-20, 1000, 0, 1100)), "missing rotated ref: {boxes:?}");
+    assert!(
+        boxes.contains(&(-20, 1000, 0, 1100)),
+        "missing rotated ref: {boxes:?}"
+    );
 
     // Array corner instance (col 2, row 1): origin + (2·200, 1·50) = (400, 50).
-    assert!(boxes.contains(&(400, 50, 500, 70)), "missing array instance: {boxes:?}");
+    assert!(
+        boxes.contains(&(400, 50, 500, 70)),
+        "missing array instance: {boxes:?}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -177,7 +190,9 @@ fn unknown_deck_is_an_error() {
 #[test]
 fn suite_with_unknown_rule_id_errors() {
     let pdk = PdkConfig::load(SYNTH).expect("load synthetic pdk");
-    let err = pdk.load_suite("badrule").expect_err("unknown rule id should error");
+    let err = pdk
+        .load_suite("badrule")
+        .expect_err("unknown rule id should error");
     assert!(
         err.to_string().contains("A.9"),
         "error should name the offending id: {err}"
@@ -217,7 +232,9 @@ fn marker(layer: i16, datatype: i16, x: i32) -> GdsBoundary {
 fn virtual_layers_ops() {
     let pdk = PdkConfig::for_process("ihp-sg13g2").expect("load pdk");
     let put = |layout: &mut FlatLayout, name: &str, x: i32| {
-        let l = pdk.layer(name).unwrap_or_else(|| panic!("missing layer {name}"));
+        let l = pdk
+            .layer(name)
+            .unwrap_or_else(|| panic!("missing layer {name}"));
         let (gl, gd) = (l.gds_layer as i16, l.gds_datatype as i16);
         layout.insert(gl, gd, marker(gl, gd, x));
     };
@@ -288,8 +305,18 @@ fn lazy_tiled_union_intersection_difference() {
     // One giant tile and zero halo so per-tile areas don't double-count across halos.
     let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
     cache.register_virtual((30000, 0), VirtualOp::Union, vec![(1, 0), (2, 0)], None);
-    cache.register_virtual((30001, 0), VirtualOp::Intersection, vec![(1, 0), (2, 0)], None);
-    cache.register_virtual((30002, 0), VirtualOp::Difference, vec![(1, 0), (2, 0)], None);
+    cache.register_virtual(
+        (30001, 0),
+        VirtualOp::Intersection,
+        vec![(1, 0), (2, 0)],
+        None,
+    );
+    cache.register_virtual(
+        (30002, 0),
+        VirtualOp::Difference,
+        vec![(1, 0), (2, 0)],
+        None,
+    );
 
     cache.ensure(&layout, 30000, 0);
     cache.ensure(&layout, 30001, 0);
@@ -314,12 +341,21 @@ fn eager_global_difference_materialises_lazy_does_not() {
 
     let gd = pdk.layer("GlobalDiff").expect("GlobalDiff registered");
     let shapes = layout.get(gd.gds_layer as i16, gd.gds_datatype as i16);
-    let area: f64 = difference_layers(shapes, &[]).iter().map(merged_area_dbu).sum();
-    assert_eq!(area, A_AREA - OVERLAP, "GlobalDiff should be LayerA minus LayerB");
+    let area: f64 = difference_layers(shapes, &[])
+        .iter()
+        .map(merged_area_dbu)
+        .sum();
+    assert_eq!(
+        area,
+        A_AREA - OVERLAP,
+        "GlobalDiff should be LayerA minus LayerB"
+    );
 
     let ld = pdk.layer("LazyDiff").expect("LazyDiff registered");
     assert!(
-        layout.get(ld.gds_layer as i16, ld.gds_datatype as i16).is_empty(),
+        layout
+            .get(ld.gds_layer as i16, ld.gds_datatype as i16)
+            .is_empty(),
         "lazy layer must not be materialised into the layout"
     );
 }
@@ -344,8 +380,15 @@ fn inside_op_fills_ring_and_keeps_only_enclosed() {
 
     let r = pdk.layer("InsideRing").expect("InsideRing registered");
     let shapes = layout.get(r.gds_layer as i16, r.gds_datatype as i16);
-    let area: f64 = difference_layers(shapes, &[]).iter().map(merged_area_dbu).sum();
-    assert_eq!(area, 10.0 * 10.0, "only the 10×10 shape inside the ring should remain");
+    let area: f64 = difference_layers(shapes, &[])
+        .iter()
+        .map(merged_area_dbu)
+        .sum();
+    assert_eq!(
+        area,
+        10.0 * 10.0,
+        "only the 10×10 shape inside the ring should remain"
+    );
 }
 
 /// #2 — a lazy virtual layer under a whole-layout check (inside_boundary) is rejected
@@ -355,5 +398,8 @@ fn lazy_layer_in_inside_boundary_is_rejected() {
     let err = run_drc("unused.gds", SYNTH, &["badlazy"], None, "TOP", true)
         .err()
         .expect("lazy layer under inside_boundary must error");
-    assert!(err.contains("lazy virtual layer"), "unexpected error: {err}");
+    assert!(
+        err.contains("lazy virtual layer"),
+        "unexpected error: {err}"
+    );
 }

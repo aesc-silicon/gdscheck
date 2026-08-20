@@ -21,7 +21,10 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] gate_length needs a poly layer and a gate-region mask", rule.id);
+        eprintln!(
+            "[{}] gate_length needs a poly layer and a gate-region mask",
+            rule.id
+        );
         return vec![];
     }
     run_gate_length(rule, layout, dbu_to_um, merged)

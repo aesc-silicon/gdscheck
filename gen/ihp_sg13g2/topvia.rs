@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, space_pattern, exact_width_sealring_pattern, enclosure_pattern, write_gz};
+use crate::helpers::{
+    enclosure_pattern, exact_width_sealring_pattern, layer, library, space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 pub fn generate(pdk: &PdkConfig) {
@@ -22,7 +24,11 @@ pub fn generate(pdk: &PdkConfig) {
 /// TopMetal1 for TopVia2).  `enclosure_pattern` emits one clean pair plus four with
 /// a short margin on each side.
 fn topvia_c(pdk: &PdkConfig, index: i32, dir: &str) {
-    let (metal, enc) = if index == 1 { ("Metal5", 0.10) } else { ("TopMetal1", 0.50) };
+    let (metal, enc) = if index == 1 {
+        ("Metal5", 0.10)
+    } else {
+        ("TopMetal1", 0.50)
+    };
     let via_w = if index == 1 { 0.42 } else { 0.90 };
     let m = layer(pdk, metal);
     let v = layer(pdk, &format!("TopVia{}", index));
@@ -33,7 +39,11 @@ fn topvia_c(pdk: &PdkConfig, index: i32, dir: &str) {
 /// `TV{n}.d` — enclosure of the via by the upper metal (TopMetal1 for TopVia1,
 /// TopMetal2 for TopVia2).
 fn topvia_d(pdk: &PdkConfig, index: i32, dir: &str) {
-    let (metal, enc) = if index == 1 { ("TopMetal1", 0.42) } else { ("TopMetal2", 0.50) };
+    let (metal, enc) = if index == 1 {
+        ("TopMetal1", 0.42)
+    } else {
+        ("TopMetal2", 0.50)
+    };
     let via_w = if index == 1 { 0.42 } else { 0.90 };
     let m = layer(pdk, metal);
     let v = layer(pdk, &format!("TopVia{}", index));

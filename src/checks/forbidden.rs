@@ -12,9 +12,7 @@ fn centroid(pts: &[GdsPoint], dbu_to_um: f64) -> (f64, f64) {
     let n = pts.len().saturating_sub(1);
     let (sx, sy) = pts[..n.max(1)]
         .iter()
-        .fold((0.0, 0.0), |(sx, sy), p| {
-            (sx + p.x as f64, sy + p.y as f64)
-        });
+        .fold((0.0, 0.0), |(sx, sy), p| (sx + p.x as f64, sy + p.y as f64));
     let count = n.max(1) as f64;
     (sx / count * dbu_to_um, sy / count * dbu_to_um)
 }
@@ -37,7 +35,8 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
                     "forbidden shape on layer {} at ({:.4}, {:.4}) µm",
                     layer.name, cx, cy
                 ),
-                cx, cy,
+                cx,
+                cy,
             ));
         }
     }

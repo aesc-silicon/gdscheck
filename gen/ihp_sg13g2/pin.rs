@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, enclosure_pattern, write_gz};
+use crate::helpers::{enclosure_pattern, layer, library, write_gz};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/pin";
@@ -46,7 +46,10 @@ fn pin_f(pdk: &PdkConfig, index: i32) {
     let main = layer(pdk, &format!("Metal{index}"));
     let pin = layer(pdk, &format!("Metal{index}.pin"));
     let elems = enclosure_pattern(main, pin, 0.0, 0.5, 5.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{DIR}/Pin.f.m{index}.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/Pin.f.m{index}.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn pin_g(pdk: &PdkConfig) {

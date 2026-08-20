@@ -23,7 +23,7 @@
 
 use crate::layout::FlatLayout;
 use crate::merge::{
-    point_in_merged, stitch_labeled, stitch_regions, LabeledRegions, MergedCache, UnionFind,
+    LabeledRegions, MergedCache, UnionFind, point_in_merged, stitch_labeled, stitch_regions,
 };
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -104,8 +104,10 @@ impl Connectivity {
         // resolves a point into it) or queried by `node_at`.  Connector-only layers (Cont,
         // the vias) are never looked into — Ant.c/d/f read their area by region index — so
         // we skip cloning their (often very dense) polygons into a per-tile index.
-        let needs_index: HashSet<LayerKey> =
-            specs.iter().flat_map(|s| s.layers.iter().copied()).collect();
+        let needs_index: HashSet<LayerKey> = specs
+            .iter()
+            .flat_map(|s| s.layers.iter().copied())
+            .collect();
 
         // Build labeled regions per layer and assign a contiguous block of node ids.
         let mut layers: HashMap<LayerKey, LayerData> = HashMap::new();
@@ -116,7 +118,10 @@ impl Connectivity {
             let labeled = if needs_index.contains(&key) {
                 stitch_labeled(tiles, tile_dbu)
             } else {
-                LabeledRegions { regions: stitch_regions(tiles, tile_dbu), by_tile: HashMap::new() }
+                LabeledRegions {
+                    regions: stitch_regions(tiles, tile_dbu),
+                    by_tile: HashMap::new(),
+                }
             };
             let base = next_base;
             next_base += labeled.regions.len();
@@ -129,7 +134,10 @@ impl Connectivity {
             specs: specs.to_vec(),
             n_nodes: next_base,
             partitions: HashMap::new(),
-            full: Arc::new(Partition { node_net: Vec::new(), net_count: 0 }),
+            full: Arc::new(Partition {
+                node_net: Vec::new(),
+                net_count: 0,
+            }),
         };
         conn.partitions = conn.compute_partitions();
         conn.full = Arc::clone(&conn.partitions[&specs.len()]);
@@ -156,7 +164,8 @@ impl Connectivity {
                     let conn_node = conn.base + r;
                     let (mx, my) = region.marker;
                     for &lk in &s.layers {
-                        if let Some(node) = region_node_at(&self.layers, lk, mx, my, self.tile_dbu) {
+                        if let Some(node) = region_node_at(&self.layers, lk, mx, my, self.tile_dbu)
+                        {
                             uf.union(conn_node, node);
                         }
                     }
@@ -183,18 +192,27 @@ impl Connectivity {
             };
             *slot = net;
         }
-        Partition { node_net, net_count: root_net.len() }
+        Partition {
+            node_net,
+            net_count: root_net.len(),
+        }
     }
 
     /// The first connect step index at which `layer` becomes connected (its `*_ratio` net),
     /// i.e. the prefix length to pass to [`partition`].  `None` if it never connects.
     pub fn connect_prefix(&self, layer: LayerKey) -> Option<usize> {
-        self.specs.iter().position(|s| s.layers.contains(&layer)).map(|i| i + 1)
+        self.specs
+            .iter()
+            .position(|s| s.layers.contains(&layer))
+            .map(|i| i + 1)
     }
 
     /// Regions (area + marker) of `layer`, as built for connectivity.
     pub fn regions_of(&self, layer: LayerKey) -> &[crate::merge::Region] {
-        self.layers.get(&layer).map(|d| d.labeled.regions.as_slice()).unwrap_or(&[])
+        self.layers
+            .get(&layer)
+            .map(|d| d.labeled.regions.as_slice())
+            .unwrap_or(&[])
     }
 
     /// Global node id of `layer`'s region 0, if the layer is in the connect graph; region

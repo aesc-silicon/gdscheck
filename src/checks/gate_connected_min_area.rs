@@ -20,7 +20,13 @@ use std::collections::HashSet;
 
 fn net_key(rule: &RuleDefinition, name: &str, default: LayerKey) -> LayerKey {
     match rule.params.get(name) {
-        Some(l) => (*l as i16, rule.params.get(&format!("{name}_dt")).map(|v| *v as i16).unwrap_or(0)),
+        Some(l) => (
+            *l as i16,
+            rule.params
+                .get(&format!("{name}_dt"))
+                .map(|v| *v as i16)
+                .unwrap_or(0),
+        ),
         None => default,
     }
 }
@@ -37,12 +43,19 @@ pub fn run(
         return vec![];
     };
     if rule.layers.len() < 2 {
-        eprintln!("[{}] gate_connected_min_area needs a gate layer and a marker layer", rule.id);
+        eprintln!(
+            "[{}] gate_connected_min_area needs a gate layer and a marker layer",
+            rule.id
+        );
         return vec![];
     }
     let gate = &rule.layers[0];
     let markers = &rule.layers[1..];
-    let gate_net = net_key(rule, "gate_net_layer", (gate.gds_layer as i16, gate.gds_datatype as i16));
+    let gate_net = net_key(
+        rule,
+        "gate_net_layer",
+        (gate.gds_layer as i16, gate.gds_datatype as i16),
+    );
     let marker_net = net_key(rule, "marker_net_layer", (0, 0));
     let d2 = dbu_to_um * dbu_to_um;
 
@@ -50,12 +63,19 @@ pub fn run(
         "[{}] Checking gate_connected_min_area >= {:.4} µm² on {}",
         rule.id,
         rule.value,
-        markers.iter().map(|l| l.name.as_str()).collect::<Vec<_>>().join(", "),
+        markers
+            .iter()
+            .map(|l| l.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", "),
     );
 
     // Nets that carry a gate.
     let mut gate_nets: HashSet<usize> = HashSet::new();
-    for r in merged.regions(layout, gate.gds_layer as i16, gate.gds_datatype as i16).to_vec() {
+    for r in merged
+        .regions(layout, gate.gds_layer as i16, gate.gds_datatype as i16)
+        .to_vec()
+    {
         if let Some(net) = conn.net_at(gate_net, r.marker.0, r.marker.1) {
             gate_nets.insert(net);
         }
@@ -63,12 +83,17 @@ pub fn run(
 
     let mut out = Vec::new();
     for ml in markers {
-        for r in merged.regions(layout, ml.gds_layer as i16, ml.gds_datatype as i16).to_vec() {
+        for r in merged
+            .regions(layout, ml.gds_layer as i16, ml.gds_datatype as i16)
+            .to_vec()
+        {
             let area = r.area_dbu * d2;
             if area >= rule.value {
                 continue;
             }
-            let Some(net) = conn.net_at(marker_net, r.marker.0, r.marker.1) else { continue };
+            let Some(net) = conn.net_at(marker_net, r.marker.0, r.marker.1) else {
+                continue;
+            };
             if gate_nets.contains(&net) {
                 let (x, y) = (r.marker.0 * dbu_to_um, r.marker.1 * dbu_to_um);
                 out.push(Violation::point(

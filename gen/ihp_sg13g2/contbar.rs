@@ -4,8 +4,8 @@
 
 use super::OFFSET;
 use crate::helpers::{layer, library, rect, write_gz};
-use gdscheck::pdk::PdkConfig;
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/contbar";
 
@@ -87,7 +87,13 @@ fn cntb_c(pdk: &PdkConfig) {
         bar(c, o, o, 0.16, 0.40),
         rect(a, o - 0.07, o - 0.07, o + 0.16 + 0.07, o + 0.40 + 0.07), // 0.07 all round → clean
         bar(c, o + 2.0, o, 0.16, 0.40),
-        rect(a, o + 2.0 - 0.06, o - 0.07, o + 2.0 + 0.16 + 0.07, o + 0.40 + 0.07), // 0.06 left → fail
+        rect(
+            a,
+            o + 2.0 - 0.06,
+            o - 0.07,
+            o + 2.0 + 0.16 + 0.07,
+            o + 0.40 + 0.07,
+        ), // 0.06 left → fail
     ];
     write_gz(&format!("{DIR}/CntB.c.gds.gz"), library("TOP", elems));
 }
@@ -103,7 +109,13 @@ fn cntb_h1(pdk: &PdkConfig) {
         bar(c, o, o, 0.16, 0.40),
         rect(m, o - 0.05, o - 0.05, o + 0.16 + 0.05, o + 0.40 + 0.05),
         bar(c, o + 2.0, o, 0.16, 0.40),
-        rect(m, o + 2.0 - 0.04, o - 0.05, o + 2.0 + 0.16 + 0.05, o + 0.40 + 0.05),
+        rect(
+            m,
+            o + 2.0 - 0.04,
+            o - 0.05,
+            o + 2.0 + 0.16 + 0.05,
+            o + 0.40 + 0.05,
+        ),
     ];
     write_gz(&format!("{DIR}/CntB.h1.gds.gz"), library("TOP", elems));
 }
@@ -135,8 +147,8 @@ fn cntb_j(pdk: &PdkConfig) {
     let elems = vec![
         rect(gp, o, o, o + 2.0, o + 1.0),
         rect(a, o + 0.8, o, o + 2.0, o + 1.0), // overlaps GatPoly for x ≥ o+0.8
-        bar(c, o + 0.3, o + 0.3, 0.16, 0.40), // on GatPoly only → clean
-        bar(c, o + 1.2, o + 0.3, 0.16, 0.40), // on GatPoly and over Activ → violation
+        bar(c, o + 0.3, o + 0.3, 0.16, 0.40),  // on GatPoly only → clean
+        bar(c, o + 1.2, o + 0.3, 0.16, 0.40),  // on GatPoly and over Activ → violation
     ];
     write_gz(&format!("{DIR}/CntB.j.gds.gz"), library("TOP", elems));
 }

@@ -13,7 +13,7 @@
 //! Params: `wide_width` (µm) and `parallel_run` (µm), both required.  Width and run
 //! are measured from the regions' bounding boxes (exact for axis-aligned metal).
 
-use super::helper::{run_gated, Poly};
+use super::helper::{Poly, run_gated};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -28,7 +28,10 @@ pub fn run(
     let wide_width = rule.params.get("wide_width").copied();
     let parallel_run = rule.params.get("parallel_run").copied();
     let (Some(wide_width), Some(parallel_run)) = (wide_width, parallel_run) else {
-        eprintln!("[{}] min_space_prl needs `wide_width` and `parallel_run` params", rule.id);
+        eprintln!(
+            "[{}] min_space_prl needs `wide_width` and `parallel_run` params",
+            rule.id
+        );
         return vec![];
     };
 
@@ -42,7 +45,11 @@ pub fn run(
     // Both conditions are evaluated from the real facing edges, not the bounding boxes:
     // a stepped IO pad's box overlaps a neighbour for tens of microns and an L-shaped
     // narrow trace's box looks wide, yet neither is a long wide parallel run.
-    run_gated(rule, layout, dbu_to_um, merged, move |a: &Poly, b: &Poly, _, _| {
-        a.prl_applies(b, max_gap, wide_width, parallel_run)
-    })
+    run_gated(
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        move |a: &Poly, b: &Poly, _, _| a.prl_applies(b, max_gap, wide_width, parallel_run),
+    )
 }

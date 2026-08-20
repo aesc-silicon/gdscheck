@@ -33,7 +33,11 @@ struct Transform {
 
 impl Transform {
     fn identity() -> Self {
-        Transform { a: [[1.0, 0.0], [0.0, 1.0]], tx: 0.0, ty: 0.0 }
+        Transform {
+            a: [[1.0, 0.0], [0.0, 1.0]],
+            tx: 0.0,
+            ty: 0.0,
+        }
     }
 
     /// Build from an optional `GdsStrans` and a translation (tx, ty) in DBU.
@@ -58,7 +62,7 @@ impl Transform {
         Transform {
             a: [
                 [mag * cos_a, -mag * ry * sin_a],
-                [mag * sin_a,  mag * ry * cos_a],
+                [mag * sin_a, mag * ry * cos_a],
             ],
             tx: tx as f64,
             ty: ty as f64,
@@ -118,12 +122,16 @@ fn flatten_cell(
             GdsElement::GdsBoundary(b) if wanted(needed, b.layer, b.datatype) => {
                 let new_xy: Vec<GdsPoint> =
                     b.xy.iter().map(|p| transform.apply(p.x, p.y)).collect();
-                out.insert(b.layer, b.datatype, GdsBoundary {
-                    layer: b.layer,
-                    datatype: b.datatype,
-                    xy: new_xy,
-                    ..Default::default()
-                });
+                out.insert(
+                    b.layer,
+                    b.datatype,
+                    GdsBoundary {
+                        layer: b.layer,
+                        datatype: b.datatype,
+                        xy: new_xy,
+                        ..Default::default()
+                    },
+                );
             }
             GdsElement::GdsPath(p) if wanted(needed, p.layer, p.datatype) => {
                 add_path(p, transform, out)
@@ -131,16 +139,19 @@ fn flatten_cell(
             GdsElement::GdsBox(b) if wanted(needed, b.layer, b.boxtype) => {
                 // A BOX is a rectangle; BOXTYPE plays the role of the datatype.
                 let xy: Vec<GdsPoint> = b.xy.iter().map(|p| transform.apply(p.x, p.y)).collect();
-                out.insert(b.layer, b.boxtype, GdsBoundary {
-                    layer: b.layer,
-                    datatype: b.boxtype,
-                    xy,
-                    ..Default::default()
-                });
+                out.insert(
+                    b.layer,
+                    b.boxtype,
+                    GdsBoundary {
+                        layer: b.layer,
+                        datatype: b.boxtype,
+                        xy,
+                        ..Default::default()
+                    },
+                );
             }
             GdsElement::GdsStructRef(sr) => {
-                let child_tr =
-                    Transform::from_strans(sr.strans.as_ref(), sr.xy.x, sr.xy.y);
+                let child_tr = Transform::from_strans(sr.strans.as_ref(), sr.xy.x, sr.xy.y);
                 let composed = transform.compose(&child_tr);
                 flatten_cell(&sr.name, cell_map, &composed, depth + 1, needed, out);
             }
@@ -158,8 +169,7 @@ fn flatten_cell(
                     for r in 0..rows {
                         let ix = ar.xy[0].x + c * col_dx + r * row_dx;
                         let iy = ar.xy[0].y + c * col_dy + r * row_dy;
-                        let child_tr =
-                            Transform::from_strans(ar.strans.as_ref(), ix, iy);
+                        let child_tr = Transform::from_strans(ar.strans.as_ref(), ix, iy);
                         let composed = transform.compose(&child_tr);
                         flatten_cell(&ar.name, cell_map, &composed, depth + 1, needed, out);
                     }
@@ -167,11 +177,15 @@ fn flatten_cell(
             }
             GdsElement::GdsTextElem(t) if wanted(needed, t.layer, t.texttype) => {
                 let p = transform.apply(t.xy.x, t.xy.y);
-                out.insert_text(t.layer, t.texttype, crate::layout::Text {
-                    string: t.string.clone(),
-                    x: p.x,
-                    y: p.y,
-                });
+                out.insert_text(
+                    t.layer,
+                    t.texttype,
+                    crate::layout::Text {
+                        string: t.string.clone(),
+                        x: p.x,
+                        y: p.y,
+                    },
+                );
             }
             _ => {} // node, or an element on an unwanted layer
         }
@@ -198,7 +212,11 @@ fn add_path(path: &GdsPath, transform: &Transform, out: &mut FlatLayout) {
         match ptype {
             1 | 2 => hw,
             4 => {
-                let e = if is_begin { path.begin_extn } else { path.end_extn };
+                let e = if is_begin {
+                    path.begin_extn
+                } else {
+                    path.end_extn
+                };
                 e.unwrap_or(0) as f64
             }
             _ => 0.0,
@@ -232,12 +250,16 @@ fn add_path(path: &GdsPath, transform: &Transform, out: &mut FlatLayout) {
             .chain(std::iter::once(&corners[0]))
             .map(|&(x, y)| transform.apply(x.round() as i32, y.round() as i32))
             .collect();
-        out.insert(path.layer, path.datatype, GdsBoundary {
-            layer: path.layer,
-            datatype: path.datatype,
-            xy,
-            ..Default::default()
-        });
+        out.insert(
+            path.layer,
+            path.datatype,
+            GdsBoundary {
+                layer: path.layer,
+                datatype: path.datatype,
+                xy,
+                ..Default::default()
+            },
+        );
     }
 }
 
@@ -250,6 +272,13 @@ pub fn flatten_to_elems(topcell: &str, lib: &GdsLibrary, needed: Needed) -> Flat
         lib.structs.iter().map(|s| (s.name.as_str(), s)).collect();
 
     let mut out = FlatLayout::new();
-    flatten_cell(topcell, &cell_map, &Transform::identity(), 0, needed, &mut out);
+    flatten_cell(
+        topcell,
+        &cell_map,
+        &Transform::identity(),
+        0,
+        needed,
+        &mut out,
+    );
     out
 }

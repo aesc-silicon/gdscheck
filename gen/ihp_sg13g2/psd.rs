@@ -29,7 +29,13 @@ pub fn generate(pdk: &PdkConfig) {
 fn tie(pdk: &PdkConfig, x: f64, y: f64, h: f64, ov: f64) -> Vec<gds21::GdsElement> {
     vec![
         rect(layer(pdk, "Activ"), x, y, x + 1.5, y + h),
-        rect(layer(pdk, "pSD"), x + 1.5 - ov, y - 0.1, x + 3.0, y + h + 0.1),
+        rect(
+            layer(pdk, "pSD"),
+            x + 1.5 - ov,
+            y - 0.1,
+            x + 3.0,
+            y + h + 0.1,
+        ),
     ]
 }
 
@@ -46,7 +52,13 @@ fn psd_e(pdk: &PdkConfig) {
     e.extend(tie(pdk, o + 8.0, o, 1.0, 0.20)); // B
     e.extend(tie(pdk, o + 16.0, o, 1.0, 0.20)); // C base...
     // ...plus the wide pocket: pSD reaching 0.40 into the Activ over 0.5 of its height.
-    e.push(rect(layer(pdk, "pSD"), o + 16.0 + 1.5 - 0.40, o + 0.25, o + 16.0 + 3.0, o + 0.75));
+    e.push(rect(
+        layer(pdk, "pSD"),
+        o + 16.0 + 1.5 - 0.40,
+        o + 0.25,
+        o + 16.0 + 3.0,
+        o + 0.75,
+    ));
     e.extend(tie(pdk, o + 24.0, o, 0.5, 0.20)); // D (sliver area 0.10 ≥ 0.09 keeps pSD.g quiet)
     write_gz(&format!("{DIR}/pSD.e.gds.gz"), library("TOP", e));
 }
@@ -57,7 +69,13 @@ fn psd_e(pdk: &PdkConfig) {
 fn nwell_tie(pdk: &PdkConfig, cx: f64, cy: f64, w: f64, d: f64) -> Vec<gds21::GdsElement> {
     let mut e = nwell_tie_base(pdk, cx, cy);
     let tx = cx + 5.0 - w / 2.0;
-    e.push(rect(layer(pdk, "Activ"), tx, cy + 6.0, tx + w, cy + 6.0 + d));
+    e.push(rect(
+        layer(pdk, "Activ"),
+        tx,
+        cy + 6.0,
+        tx + w,
+        cy + 6.0 + d,
+    ));
     e.push(rect(layer(pdk, "nSD"), tx, cy + 6.0, tx + w, cy + 6.0 + d));
     e
 }
@@ -89,10 +107,34 @@ fn psd_f(pdk: &PdkConfig) {
     e.extend(nwell_tie(pdk, o + 80.0, o, 2.0, 0.20)); // fires
     let cx = o + 100.0;
     e.extend(nwell_tie_base(pdk, cx, o)); // L-shape: fires (ours only)
-    e.push(rect(layer(pdk, "Activ"), cx + 4.9, o + 6.0, cx + 5.1, o + 6.1)); // stem
-    e.push(rect(layer(pdk, "Activ"), cx + 4.9, o + 6.1, cx + 5.9, o + 6.2)); // arm
-    e.push(rect(layer(pdk, "nSD"), cx + 4.9, o + 6.0, cx + 5.1, o + 6.1));
-    e.push(rect(layer(pdk, "nSD"), cx + 4.9, o + 6.1, cx + 5.9, o + 6.2));
+    e.push(rect(
+        layer(pdk, "Activ"),
+        cx + 4.9,
+        o + 6.0,
+        cx + 5.1,
+        o + 6.1,
+    )); // stem
+    e.push(rect(
+        layer(pdk, "Activ"),
+        cx + 4.9,
+        o + 6.1,
+        cx + 5.9,
+        o + 6.2,
+    )); // arm
+    e.push(rect(
+        layer(pdk, "nSD"),
+        cx + 4.9,
+        o + 6.0,
+        cx + 5.1,
+        o + 6.1,
+    ));
+    e.push(rect(
+        layer(pdk, "nSD"),
+        cx + 4.9,
+        o + 6.1,
+        cx + 5.9,
+        o + 6.2,
+    ));
     write_gz(&format!("{DIR}/pSD.f.gds.gz"), library("TOP", e));
 }
 
@@ -109,7 +151,13 @@ fn psd_c1(pdk: &PdkConfig) {
     let m = |cx: f64, margin: f64| -> Vec<gds21::GdsElement> {
         vec![
             rect(layer(pdk, "pSD"), cx, o, cx + 4.0, o + 4.0),
-            rect(layer(pdk, "Activ"), cx + margin, o + margin, cx + 4.0 - margin, o + 4.0 - margin),
+            rect(
+                layer(pdk, "Activ"),
+                cx + margin,
+                o + margin,
+                cx + 4.0 - margin,
+                o + 4.0 - margin,
+            ),
         ]
     };
     let mut e = m(o, 0.02); // fires
@@ -117,15 +165,39 @@ fn psd_c1(pdk: &PdkConfig) {
     e.extend(m(o + 40.0, 0.03)); // clean (boundary)
     let cx = o + 60.0; // crossing tie, margins 0.10 → clean
     e.push(rect(layer(pdk, "pSD"), cx, o, cx + 4.0, o + 4.0));
-    e.push(rect(layer(pdk, "Activ"), cx + 0.1, o + 0.1, cx + 3.9, o + 4.5));
-    e.push(rect(layer(pdk, "nSD"), cx + 0.1, o + 4.0, cx + 3.9, o + 4.5));
+    e.push(rect(
+        layer(pdk, "Activ"),
+        cx + 0.1,
+        o + 0.1,
+        cx + 3.9,
+        o + 4.5,
+    ));
+    e.push(rect(
+        layer(pdk, "nSD"),
+        cx + 0.1,
+        o + 4.0,
+        cx + 3.9,
+        o + 4.5,
+    ));
     let cx = o + 80.0; // flush left edge → fires
     e.push(rect(layer(pdk, "pSD"), cx, o, cx + 4.0, o + 4.0));
     e.push(rect(layer(pdk, "Activ"), cx, o + 0.1, cx + 3.9, o + 3.9));
     let cx = o + 100.0; // crossing tie, bad 0.02 lateral margin → fires
     e.push(rect(layer(pdk, "pSD"), cx, o, cx + 4.0, o + 4.0));
-    e.push(rect(layer(pdk, "Activ"), cx + 0.02, o + 0.1, cx + 3.9, o + 4.5));
-    e.push(rect(layer(pdk, "nSD"), cx + 0.02, o + 4.0, cx + 3.9, o + 4.5));
+    e.push(rect(
+        layer(pdk, "Activ"),
+        cx + 0.02,
+        o + 0.1,
+        cx + 3.9,
+        o + 4.5,
+    ));
+    e.push(rect(
+        layer(pdk, "nSD"),
+        cx + 0.02,
+        o + 4.0,
+        cx + 3.9,
+        o + 4.5,
+    ));
     write_gz(&format!("{DIR}/pSD.c1.gds.gz"), library("TOP", e));
 }
 
@@ -156,8 +228,8 @@ fn psd_k(pdk: &PdkConfig) {
     let p = layer(pdk, "pSD");
     let o = OFFSET;
     let elems = vec![
-        rect(p, o, o, o + 0.4, o + 0.4),               // 0.16 µm² → violation
-        rect(p, o + 5.0, o, o + 5.6, o + 0.6),         // 0.36 µm² → clean
+        rect(p, o, o, o + 0.4, o + 0.4),       // 0.16 µm² → violation
+        rect(p, o + 5.0, o, o + 5.6, o + 0.6), // 0.36 µm² → clean
     ];
     write_gz(&format!("{DIR}/pSD.k.gds.gz"), library("TOP", elems));
 }
@@ -168,10 +240,10 @@ fn psd_l(pdk: &PdkConfig) {
     let o = OFFSET;
     // Frame around the hole (o+1, o+1)-(o+1.4, o+1.4); thickness 1.0.
     let elems = vec![
-        rect(p, o, o, o + 2.4, o + 1.0),               // bottom
-        rect(p, o, o + 1.4, o + 2.4, o + 2.4),         // top
-        rect(p, o, o + 1.0, o + 1.0, o + 1.4),         // left
-        rect(p, o + 1.4, o + 1.0, o + 2.4, o + 1.4),   // right
+        rect(p, o, o, o + 2.4, o + 1.0),             // bottom
+        rect(p, o, o + 1.4, o + 2.4, o + 2.4),       // top
+        rect(p, o, o + 1.0, o + 1.0, o + 1.4),       // left
+        rect(p, o + 1.4, o + 1.0, o + 2.4, o + 1.4), // right
     ];
     write_gz(&format!("{DIR}/pSD.l.gds.gz"), library("TOP", elems));
 }

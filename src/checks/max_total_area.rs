@@ -42,7 +42,8 @@ pub fn run(
                     "total {} area {:.4} µm² > {:.4} µm²",
                     layer.name, total, rule.value
                 ),
-                cx * dbu_to_um, cy * dbu_to_um,
+                cx * dbu_to_um,
+                cy * dbu_to_um,
             ));
         }
     }

@@ -4,8 +4,8 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{layer, library, rect, space_pattern, write_gz};
-use gdscheck::pdk::PdkConfig;
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/cont";
 
@@ -70,8 +70,8 @@ fn cnt_g(pdk: &PdkConfig) {
         rect(activ, 0.0, 0.0, 1.0, 1.0),
         cont16(cont, 0.4, 0.4), // inside Activ
         rect(gp, 2.0, 0.0, 3.0, 1.0),
-        cont16(cont, 2.4, 0.4),  // inside GatPoly
-        cont16(cont, 5.0, 0.4),  // outside both → violation
+        cont16(cont, 2.4, 0.4), // inside GatPoly
+        cont16(cont, 5.0, 0.4), // outside both → violation
     ];
     write_gz(&format!("{DIR}/Cnt.g.gds.gz"), library("TOP", elems));
 }
@@ -134,8 +134,8 @@ fn cnt_j(pdk: &PdkConfig) {
     let elems = vec![
         rect(gp, 0.0, 0.0, 2.0, 1.0),
         rect(activ, 0.8, 0.0, 2.0, 1.0), // overlaps GatPoly for x ∈ [0.8, 2.0]
-        cont16(cont, 0.3, 0.42), // on GatPoly, not over Activ → clean
-        cont16(cont, 1.2, 0.42), // on GatPoly and over Activ → violation
+        cont16(cont, 0.3, 0.42),         // on GatPoly, not over Activ → clean
+        cont16(cont, 1.2, 0.42),         // on GatPoly and over Activ → violation
     ];
     write_gz(&format!("{DIR}/Cnt.j.gds.gz"), library("TOP", elems));
 }

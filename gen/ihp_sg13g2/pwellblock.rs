@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, notch_pattern, write_gz};
-use gdscheck::pdk::PdkConfig;
+use crate::helpers::{
+    layer, library, min_width_pattern, notch_pattern, rect, space_pattern, write_gz,
+};
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/pwellblock";
 
@@ -24,15 +26,23 @@ pub fn generate(pdk: &PdkConfig) {
 
 /// An implanted Activ footprint (Activ ∩ `imp`) at `(x, y)` — N+Activ with nSD or
 /// P+Activ with pSD.
-fn impl_activ(activ: (i16, i16), imp: (i16, i16), x: f64, y: f64, w: f64, h: f64) -> Vec<GdsElement> {
-    vec![rect(activ, x, y, x + w, y + h), rect(imp, x, y, x + w, y + h)]
+fn impl_activ(
+    activ: (i16, i16),
+    imp: (i16, i16),
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+) -> Vec<GdsElement> {
+    vec![
+        rect(activ, x, y, x + w, y + h),
+        rect(imp, x, y, x + w, y + h),
+    ]
 }
 
 /// PWell:block-to-(implanted Activ "in PWell") spacing fixture: a clean pair at exactly
 /// `value` and a violating pair at `value - 0.01`.  `tgo` (if set) covers the Activ.
-fn pwb_space_to_activ(
-    pdk: &PdkConfig, name: &str, imp_name: &str, value: f64, tgo: bool,
-) {
+fn pwb_space_to_activ(pdk: &PdkConfig, name: &str, imp_name: &str, value: f64, tgo: bool) {
     let blk = layer(pdk, "PWell.block");
     let activ = layer(pdk, "Activ");
     let imp = layer(pdk, imp_name);

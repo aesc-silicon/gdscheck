@@ -13,7 +13,7 @@
 //! Other common check utilities can move here as they're factored out.
 
 use crate::layout::FlatLayout;
-use crate::merge::{compose_tile, merged_centroid_dbu, Core, MergedCache, MergedPoly, VirtualOp};
+use crate::merge::{Core, MergedCache, MergedPoly, VirtualOp, compose_tile, merged_centroid_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use i_overlay::i_float::int::point::IntPoint;
@@ -21,11 +21,26 @@ use rayon::prelude::*;
 use std::collections::HashSet;
 
 /// Vertical edge: `left_wall` true ⇒ metal to its right (edge directed down).
-pub(crate) struct VEdge { pub x: i32, pub ylo: i32, pub yhi: i32, pub left_wall: bool }
+pub(crate) struct VEdge {
+    pub x: i32,
+    pub ylo: i32,
+    pub yhi: i32,
+    pub left_wall: bool,
+}
 /// Horizontal edge: `bottom_wall` true ⇒ metal above it (edge directed right).
-pub(crate) struct HEdge { pub y: i32, pub xlo: i32, pub xhi: i32, pub bottom_wall: bool }
+pub(crate) struct HEdge {
+    pub y: i32,
+    pub xlo: i32,
+    pub xhi: i32,
+    pub bottom_wall: bool,
+}
 /// An oblique directed edge `a → b`; metal is on its left.
-pub(crate) struct OEdge { pub ax: i32, pub ay: i32, pub bx: i32, pub by: i32 }
+pub(crate) struct OEdge {
+    pub ax: i32,
+    pub ay: i32,
+    pub bx: i32,
+    pub by: i32,
+}
 
 /// Split a merged region's contours (outer + holes) into axis-aligned and oblique
 /// directed edges — the shared input of the width scan and its notch dual.
@@ -37,18 +52,35 @@ pub(crate) fn collect_edges(
 ) {
     let mut add = |contour: &[IntPoint]| {
         let n = contour.len();
-        if n < 3 { return; }
+        if n < 3 {
+            return;
+        }
         for i in 0..n {
             let a = contour[i];
             let b = contour[if i + 1 == n { 0 } else { i + 1 }];
             let dx = b.x - a.x;
             let dy = b.y - a.y;
             if dx == 0 && dy != 0 {
-                vedges.push(VEdge { x: a.x, ylo: a.y.min(b.y), yhi: a.y.max(b.y), left_wall: dy < 0 });
+                vedges.push(VEdge {
+                    x: a.x,
+                    ylo: a.y.min(b.y),
+                    yhi: a.y.max(b.y),
+                    left_wall: dy < 0,
+                });
             } else if dy == 0 && dx != 0 {
-                hedges.push(HEdge { y: a.y, xlo: a.x.min(b.x), xhi: a.x.max(b.x), bottom_wall: dx > 0 });
+                hedges.push(HEdge {
+                    y: a.y,
+                    xlo: a.x.min(b.x),
+                    xhi: a.x.max(b.x),
+                    bottom_wall: dx > 0,
+                });
             } else if dx != 0 && dy != 0 {
-                oedges.push(OEdge { ax: a.x, ay: a.y, bx: b.x, by: b.y });
+                oedges.push(OEdge {
+                    ax: a.x,
+                    ay: a.y,
+                    bx: b.x,
+                    by: b.y,
+                });
             }
         }
     };
@@ -105,60 +137,79 @@ fn scan_widths(
             label,
             format!(
                 "{}: width {:.4} µm {} {:.4} µm at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
-                layer, w, cmp, limit_um,
-                x1 * dbu_to_um, y1 * dbu_to_um, x2 * dbu_to_um, y2 * dbu_to_um
+                layer,
+                w,
+                cmp,
+                limit_um,
+                x1 * dbu_to_um,
+                y1 * dbu_to_um,
+                x2 * dbu_to_um,
+                y2 * dbu_to_um
             ),
-            x1 * dbu_to_um, y1 * dbu_to_um, x2 * dbu_to_um, y2 * dbu_to_um,
+            x1 * dbu_to_um,
+            y1 * dbu_to_um,
+            x2 * dbu_to_um,
+            y2 * dbu_to_um,
         ));
     };
 
     // Rectilinear widths (skipped for oblique-only rules such as a 45° width check).
     if !oblique_only {
-    // Horizontal widths: scan y bands, pair vertical edges across x.
-    let y_events = sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect());
-    for w in y_events.windows(2) {
-        let (yb, yb1) = (w[0], w[1]);
-        if yb1 <= yb { continue; }
-        let mut active: Vec<&VEdge> = vedges.iter().filter(|e| e.ylo <= yb && e.yhi >= yb1).collect();
-        active.sort_unstable_by_key(|e| (e.x, e.left_wall));
-        for pair in active.windows(2) {
-            let (l, r) = (pair[0], pair[1]);
-            if l.left_wall && !r.left_wall {
-                let width = r.x - l.x;
-                if width > 0 && viol(width as f64) {
-                    let cx = (l.x as f64 + r.x as f64) * 0.5;
-                    let cy = (yb as f64 + yb1 as f64) * 0.5;
-                    if core.contains(cx, cy) && in_mask(cx, cy) {
-                        push_edge(l.x as f64, yb as f64, l.x as f64, yb1 as f64, width as f64);
-                        push_edge(r.x as f64, yb as f64, r.x as f64, yb1 as f64, width as f64);
+        // Horizontal widths: scan y bands, pair vertical edges across x.
+        let y_events = sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect());
+        for w in y_events.windows(2) {
+            let (yb, yb1) = (w[0], w[1]);
+            if yb1 <= yb {
+                continue;
+            }
+            let mut active: Vec<&VEdge> = vedges
+                .iter()
+                .filter(|e| e.ylo <= yb && e.yhi >= yb1)
+                .collect();
+            active.sort_unstable_by_key(|e| (e.x, e.left_wall));
+            for pair in active.windows(2) {
+                let (l, r) = (pair[0], pair[1]);
+                if l.left_wall && !r.left_wall {
+                    let width = r.x - l.x;
+                    if width > 0 && viol(width as f64) {
+                        let cx = (l.x as f64 + r.x as f64) * 0.5;
+                        let cy = (yb as f64 + yb1 as f64) * 0.5;
+                        if core.contains(cx, cy) && in_mask(cx, cy) {
+                            push_edge(l.x as f64, yb as f64, l.x as f64, yb1 as f64, width as f64);
+                            push_edge(r.x as f64, yb as f64, r.x as f64, yb1 as f64, width as f64);
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Vertical widths: scan x bands, pair horizontal edges across y.
-    let x_events = sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect());
-    for w in x_events.windows(2) {
-        let (xb, xb1) = (w[0], w[1]);
-        if xb1 <= xb { continue; }
-        let mut active: Vec<&HEdge> = hedges.iter().filter(|e| e.xlo <= xb && e.xhi >= xb1).collect();
-        active.sort_unstable_by_key(|e| (e.y, e.bottom_wall));
-        for pair in active.windows(2) {
-            let (b, t) = (pair[0], pair[1]);
-            if b.bottom_wall && !t.bottom_wall {
-                let height = t.y - b.y;
-                if height > 0 && viol(height as f64) {
-                    let cx = (xb as f64 + xb1 as f64) * 0.5;
-                    let cy = (b.y as f64 + t.y as f64) * 0.5;
-                    if core.contains(cx, cy) && in_mask(cx, cy) {
-                        push_edge(xb as f64, b.y as f64, xb1 as f64, b.y as f64, height as f64);
-                        push_edge(xb as f64, t.y as f64, xb1 as f64, t.y as f64, height as f64);
+        // Vertical widths: scan x bands, pair horizontal edges across y.
+        let x_events = sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect());
+        for w in x_events.windows(2) {
+            let (xb, xb1) = (w[0], w[1]);
+            if xb1 <= xb {
+                continue;
+            }
+            let mut active: Vec<&HEdge> = hedges
+                .iter()
+                .filter(|e| e.xlo <= xb && e.xhi >= xb1)
+                .collect();
+            active.sort_unstable_by_key(|e| (e.y, e.bottom_wall));
+            for pair in active.windows(2) {
+                let (b, t) = (pair[0], pair[1]);
+                if b.bottom_wall && !t.bottom_wall {
+                    let height = t.y - b.y;
+                    if height > 0 && viol(height as f64) {
+                        let cx = (xb as f64 + xb1 as f64) * 0.5;
+                        let cy = (b.y as f64 + t.y as f64) * 0.5;
+                        if core.contains(cx, cy) && in_mask(cx, cy) {
+                            push_edge(xb as f64, b.y as f64, xb1 as f64, b.y as f64, height as f64);
+                            push_edge(xb as f64, t.y as f64, xb1 as f64, t.y as f64, height as f64);
+                        }
                     }
                 }
             }
         }
-    }
     } // end !oblique_only
 
     oblique_widths(&oedges, core, &mut push_edge, viol, min_run);
@@ -180,7 +231,9 @@ fn oblique_widths(
         let ei = &oedges[i];
         let (dix, diy) = ((ei.bx - ei.ax) as f64, (ei.by - ei.ay) as f64);
         let li = dix.hypot(diy);
-        if li == 0.0 { continue; }
+        if li == 0.0 {
+            continue;
+        }
         let (ux, uy) = (dix / li, diy / li);
         let (nx, ny) = (-diy / li, dix / li);
         for ej in &oedges[i + 1..] {
@@ -196,21 +249,29 @@ fn oblique_widths(
             let tbj = (ej.bx - ei.ax) as f64 * ux + (ej.by - ei.ay) as f64 * uy;
             let lo = taj.min(tbj).max(0.0);
             let hi = taj.max(tbj).min(li);
-            if hi - lo <= min_run { continue; }
+            if hi - lo <= min_run {
+                continue;
+            }
             let mid = (lo + hi) * 0.5;
             let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
             let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
-            if !core.contains(mx, my) { continue; }
+            if !core.contains(mx, my) {
+                continue;
+            }
             push_edge(
-                ei.ax as f64 + lo * ux, ei.ay as f64 + lo * uy,
-                ei.ax as f64 + hi * ux, ei.ay as f64 + hi * uy,
+                ei.ax as f64 + lo * ux,
+                ei.ay as f64 + lo * uy,
+                ei.ax as f64 + hi * ux,
+                ei.ay as f64 + hi * uy,
                 dist,
             );
             let span = tbj - taj;
             let (f_lo, f_hi) = ((lo - taj) / span, (hi - taj) / span);
             push_edge(
-                ej.ax as f64 + f_lo * djx, ej.ay as f64 + f_lo * djy,
-                ej.ax as f64 + f_hi * djx, ej.ay as f64 + f_hi * djy,
+                ej.ax as f64 + f_lo * djx,
+                ej.ay as f64 + f_lo * djy,
+                ej.ax as f64 + f_hi * djx,
+                ej.ay as f64 + f_hi * djy,
                 dist,
             );
         }
@@ -258,15 +319,29 @@ pub fn run_width(
             .par_iter()
             .flat_map_iter(|(&(tx, ty), polys)| {
                 let core = Core {
-                    x0: tx as i64 * tile, y0: ty as i64 * tile,
-                    x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                    x0: tx as i64 * tile,
+                    y0: ty as i64 * tile,
+                    x1: (tx as i64 + 1) * tile,
+                    y1: (ty as i64 + 1) * tile,
                 };
                 polys
                     .iter()
-                    .flat_map(move |poly| scan_widths(
-                        poly, core, dbu_to_um, rid, label, lname, limit, cmp,
-                        viol, oblique_only, min_run_dbu, None,
-                    ))
+                    .flat_map(move |poly| {
+                        scan_widths(
+                            poly,
+                            core,
+                            dbu_to_um,
+                            rid,
+                            label,
+                            lname,
+                            limit,
+                            cmp,
+                            viol,
+                            oblique_only,
+                            min_run_dbu,
+                            None,
+                        )
+                    })
                     .collect::<Vec<_>>()
                     .into_iter()
             })
@@ -313,8 +388,10 @@ pub fn run_gate_length(
     pmap.par_iter()
         .flat_map_iter(move |(&(tx, ty), polys)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             let mps: Vec<Poly> = mmap
                 .get(&(tx, ty))
@@ -328,8 +405,18 @@ pub fn run_gate_length(
             }
             for p in polys {
                 out.extend(scan_widths(
-                    p, core, dbu_to_um, rid, "Minimum gate-length violation",
-                    pname, limit, "<", viol, false, 0.5, Some(&mps),
+                    p,
+                    core,
+                    dbu_to_um,
+                    rid,
+                    "Minimum gate-length violation",
+                    pname,
+                    limit,
+                    "<",
+                    viol,
+                    false,
+                    0.5,
+                    Some(&mps),
                 ));
             }
             out.into_iter()
@@ -349,7 +436,14 @@ pub fn run_gate_length(
 // ===========================================================================
 
 /// Distance from `p` to segment `a-b`, plus the closest point on the segment.
-fn point_to_segment_closest(px: f64, py: f64, ax: f64, ay: f64, bx: f64, by: f64) -> (f64, f64, f64) {
+fn point_to_segment_closest(
+    px: f64,
+    py: f64,
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+) -> (f64, f64, f64) {
     let dx = bx - ax;
     let dy = by - ay;
     let len_sq = dx * dx + dy * dy;
@@ -368,8 +462,14 @@ fn cross2(px: f64, py: f64, qx: f64, qy: f64, rx: f64, ry: f64) -> f64 {
 
 #[allow(clippy::too_many_arguments)]
 fn segments_intersect(
-    ax: f64, ay: f64, bx: f64, by: f64,
-    cx: f64, cy: f64, dx: f64, dy: f64,
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+    cx: f64,
+    cy: f64,
+    dx: f64,
+    dy: f64,
 ) -> bool {
     let d1 = cross2(cx, cy, dx, dy, ax, ay);
     let d2 = cross2(cx, cy, dx, dy, bx, by);
@@ -384,8 +484,14 @@ fn segments_intersect(
 /// the gap rather than along one region's edge.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn segment_closest_points(
-    ax: f64, ay: f64, bx: f64, by: f64,
-    cx: f64, cy: f64, dx: f64, dy: f64,
+    ax: f64,
+    ay: f64,
+    bx: f64,
+    by: f64,
+    cx: f64,
+    cy: f64,
+    dx: f64,
+    dy: f64,
 ) -> (f64, (f64, f64), (f64, f64)) {
     if segments_intersect(ax, ay, bx, by, cx, cy, dx, dy) {
         return (0.0, (ax, ay), (ax, ay));
@@ -395,9 +501,15 @@ pub(crate) fn segment_closest_points(
     let (d3, p3x, p3y) = point_to_segment_closest(cx, cy, ax, ay, bx, by);
     let (d4, p4x, p4y) = point_to_segment_closest(dx, dy, ax, ay, bx, by);
     let mut best = (d1, (ax, ay), (q1x, q1y));
-    if d2 < best.0 { best = (d2, (bx, by), (q2x, q2y)); }
-    if d3 < best.0 { best = (d3, (p3x, p3y), (cx, cy)); }
-    if d4 < best.0 { best = (d4, (p4x, p4y), (dx, dy)); }
+    if d2 < best.0 {
+        best = (d2, (bx, by), (q2x, q2y));
+    }
+    if d3 < best.0 {
+        best = (d3, (p3x, p3y), (cx, cy));
+    }
+    if d4 < best.0 {
+        best = (d4, (p4x, p4y), (dx, dy));
+    }
     best
 }
 
@@ -429,7 +541,12 @@ fn overlapping(a: &Poly, b: &Poly) -> bool {
 }
 
 #[derive(Clone, Copy)]
-pub struct BBox { xmin: f64, ymin: f64, xmax: f64, ymax: f64 }
+pub struct BBox {
+    xmin: f64,
+    ymin: f64,
+    xmax: f64,
+    ymax: f64,
+}
 
 impl BBox {
     fn from_pts(pts: &[(f64, f64)]) -> Option<Self> {
@@ -443,13 +560,26 @@ impl BBox {
             xmax = xmax.max(x);
             ymax = ymax.max(y);
         }
-        if xmin == f64::INFINITY { None } else { Some(BBox { xmin, ymin, xmax, ymax }) }
+        if xmin == f64::INFINITY {
+            None
+        } else {
+            Some(BBox {
+                xmin,
+                ymin,
+                xmax,
+                ymax,
+            })
+        }
     }
 
     /// True if the boxes could be within `threshold` (L∞ lower bound).
     fn possibly_within(&self, other: &BBox, threshold: f64) -> bool {
-        let gap_x = (self.xmin - other.xmax).max(other.xmin - self.xmax).max(0.0);
-        let gap_y = (self.ymin - other.ymax).max(other.ymin - self.ymax).max(0.0);
+        let gap_x = (self.xmin - other.xmax)
+            .max(other.xmin - self.xmax)
+            .max(0.0);
+        let gap_y = (self.ymin - other.ymax)
+            .max(other.ymin - self.ymax)
+            .max(0.0);
         gap_x < threshold && gap_y < threshold
     }
 
@@ -609,7 +739,9 @@ impl Poly {
 
 fn poly_from_merged(m: &MergedPoly, dbu_to_um: f64) -> Option<Poly> {
     let scale = |ring: &[i_overlay::i_float::int::point::IntPoint]| -> Vec<(f64, f64)> {
-        ring.iter().map(|p| (p.x as f64 * dbu_to_um, p.y as f64 * dbu_to_um)).collect()
+        ring.iter()
+            .map(|p| (p.x as f64 * dbu_to_um, p.y as f64 * dbu_to_um))
+            .collect()
     };
     let ring_edges = |pts: &[(f64, f64)], edges: &mut Vec<(f64, f64, f64, f64)>| {
         let n = pts.len();
@@ -628,12 +760,21 @@ fn poly_from_merged(m: &MergedPoly, dbu_to_um: f64) -> Option<Poly> {
     let bbox = BBox::from_pts(&pts)?;
     let mut edges = Vec::new();
     ring_edges(&pts, &mut edges);
-    let holes: Vec<Vec<(f64, f64)>> =
-        m.holes.iter().map(|h| scale(h)).filter(|h| h.len() >= 3).collect();
+    let holes: Vec<Vec<(f64, f64)>> = m
+        .holes
+        .iter()
+        .map(|h| scale(h))
+        .filter(|h| h.len() >= 3)
+        .collect();
     for h in &holes {
         ring_edges(h, &mut edges);
     }
-    Some(Poly { pts, holes, bbox, edges })
+    Some(Poly {
+        pts,
+        holes,
+        bbox,
+        edges,
+    })
 }
 
 /// Closest edge-to-edge distance between two regions, with the closest point on
@@ -763,7 +904,11 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     let name_a = layer_a.name.as_str();
     let name_b = layer_b.name.as_str();
     let map_a = merged.tiles(al, ad);
-    let map_b = if same_layer { map_a } else { merged.tiles(bl, bd) };
+    let map_b = if same_layer {
+        map_a
+    } else {
+        merged.tiles(bl, bd)
+    };
 
     // Every spacing violation has an `a`-region within the halo of the tile that
     // owns its gap, so that tile is an `a` key — iterating `a`'s tiles covers all
@@ -774,13 +919,17 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     keys.par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             let a_polys = &map_a[&(tx, ty)];
             let b_polys = map_b.get(&(tx, ty)).unwrap_or(&empty);
-            check_tile(a_polys, b_polys, same_layer, core, value, dbu_to_um, rid, name_a, name_b, &gate)
-                .into_iter()
+            check_tile(
+                a_polys, b_polys, same_layer, core, value, dbu_to_um, rid, name_a, name_b, &gate,
+            )
+            .into_iter()
         })
         .collect()
 }
@@ -820,7 +969,8 @@ pub fn run_boolean_residual(
     for &(l, d) in &keys_l {
         merged.ensure(layout, l, d);
     }
-    let maps: Vec<&crate::merge::TileMap> = keys_l.iter().map(|&(l, d)| merged.tiles(l, d)).collect();
+    let maps: Vec<&crate::merge::TileMap> =
+        keys_l.iter().map(|&(l, d)| merged.tiles(l, d)).collect();
 
     // Tiles that can yield output: bounded by the base for Difference, by the shared
     // keys for Intersection.
@@ -861,8 +1011,10 @@ pub fn run_boolean_residual(
         .par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             let sources: Vec<&[MergedPoly]> = maps
                 .iter()
@@ -880,7 +1032,8 @@ pub fn run_boolean_residual(
                         rid,
                         label,
                         format!("{descr} at ({ux:.4}, {uy:.4}) µm"),
-                        ux, uy,
+                        ux,
+                        uy,
                     ))
                 })
                 .collect::<Vec<_>>()
@@ -938,8 +1091,10 @@ pub fn run_extension(
     tmap.par_iter()
         .flat_map_iter(move |(&(tx, ty), tps)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             let sps: Vec<Poly> = cmap
                 .get(&(tx, ty))
@@ -953,7 +1108,9 @@ pub fn run_extension(
             }
             let covered = |x: f64, y: f64| sps.iter().any(|s| s.contains_point(x, y));
             for tm in tps {
-                let Some(a) = poly_from_merged(tm, dbu_to_um) else { continue };
+                let Some(a) = poly_from_merged(tm, dbu_to_um) else {
+                    continue;
+                };
                 if !sps.iter().any(|s| a.bbox.possibly_within(&s.bbox, value)) {
                     continue;
                 }
@@ -1003,7 +1160,10 @@ pub fn run_extension(
                                  (needs {value:.2} µm) at \
                                  ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
                             ),
-                            x1, y1, x2, y2,
+                            x1,
+                            y1,
+                            x2,
+                            y2,
                         ))
                     };
                     let n = (len / step).ceil().max(1.0) as usize;
@@ -1063,7 +1223,9 @@ fn ring_area_centroid(c: &[IntPoint]) -> (f64, f64, f64) {
     }
     let area = sum.abs() / 2.0;
     if sum.abs() < 1e-9 {
-        let (sx, sy) = c.iter().fold((0.0, 0.0), |(sx, sy), p| (sx + p.x as f64, sy + p.y as f64));
+        let (sx, sy) = c
+            .iter()
+            .fold((0.0, 0.0), |(sx, sy), p| (sx + p.x as f64, sy + p.y as f64));
         let m = n.max(1) as f64;
         return (area, sx / m, sy / m);
     }
@@ -1147,8 +1309,14 @@ pub fn run_no_angle(
     let tol = rule.params.get("tolerance").copied().unwrap_or(1.0);
 
     match forbidden {
-        Some(a) => println!("[{}] Checking no_angle: {} edges at {:.1}°", rule.id, layer.name, a),
-        None => println!("[{}] Checking no_angle: non-orthogonal {} edges", rule.id, layer.name),
+        Some(a) => println!(
+            "[{}] Checking no_angle: {} edges at {:.1}°",
+            rule.id, layer.name, a
+        ),
+        None => println!(
+            "[{}] Checking no_angle: non-orthogonal {} edges",
+            rule.id, layer.name
+        ),
     }
 
     let tile = merged.tile_dbu() as i64;
@@ -1161,19 +1329,24 @@ pub fn run_no_angle(
     gmap.par_iter()
         .flat_map_iter(move |(&(tx, ty), ps)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             let mut out = Vec::new();
             for pm in ps {
-                let Some(p) = poly_from_merged(pm, dbu_to_um) else { continue };
+                let Some(p) = poly_from_merged(pm, dbu_to_um) else {
+                    continue;
+                };
                 for &(ax, ay, bx, by) in &p.edges {
                     let (dx, dy) = (bx - ax, by - ay);
                     if dx == 0.0 && dy == 0.0 {
                         continue;
                     }
                     let ang = dy.atan2(dx).to_degrees().rem_euclid(180.0);
-                    let near = |a: f64, b: f64| (a - b).abs() <= tol || (a - b).abs() >= 180.0 - tol;
+                    let near =
+                        |a: f64, b: f64| (a - b).abs() <= tol || (a - b).abs() >= 180.0 - tol;
                     let flag = match target {
                         Some(t) => near(ang, t),
                         None => !(near(ang, 0.0) || near(ang, 90.0)),
@@ -1192,7 +1365,10 @@ pub fn run_no_angle(
                             "{ln}: forbidden ({ang:.1}°) edge at \
                              ({ax:.4}, {ay:.4})-({bx:.4}, {by:.4}) µm"
                         ),
-                        ax, ay, bx, by,
+                        ax,
+                        ay,
+                        bx,
+                        by,
                     ));
                 }
             }
@@ -1251,8 +1427,10 @@ pub fn run_extent(
         .par_iter()
         .flat_map_iter(move |(&(tx, ty), polys)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             polys
                 .iter()
@@ -1260,8 +1438,10 @@ pub fn run_extent(
                     let (mut x0, mut y0) = (i32::MAX, i32::MAX);
                     let (mut x1, mut y1) = (i32::MIN, i32::MIN);
                     for p in &m.outer {
-                        x0 = x0.min(p.x); y0 = y0.min(p.y);
-                        x1 = x1.max(p.x); y1 = y1.max(p.y);
+                        x0 = x0.min(p.x);
+                        y0 = y0.min(p.y);
+                        x1 = x1.max(p.x);
+                        y1 = y1.max(p.y);
                     }
                     let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
                     let extent = if long { w.max(h) } else { w.min(h) };
@@ -1278,9 +1458,16 @@ pub fn run_extent(
                         label,
                         format!(
                             "{}: {} {:.4} µm {} {:.4} µm at ({:.4}, {:.4}) µm",
-                            lname, word, extent * dbu_to_um, cmp, limit, ux, uy
+                            lname,
+                            word,
+                            extent * dbu_to_um,
+                            cmp,
+                            limit,
+                            ux,
+                            uy
                         ),
-                        ux, uy,
+                        ux,
+                        uy,
                     ))
                 })
                 .collect::<Vec<_>>()
@@ -1309,11 +1496,16 @@ fn point_to_segment_dist(px: f64, py: f64, ax: f64, ay: f64, bx: f64, by: f64) -
 /// which include the hole contours, still grant the on-boundary tolerance).
 fn vertex_inside_or_on(px: f64, py: f64, outer: &Poly, tol: f64) -> bool {
     outer.contains_point(px, py)
-        || outer.edges.iter().any(|&(ax, ay, bx, by)| point_to_segment_dist(px, py, ax, ay, bx, by) <= tol)
+        || outer
+            .edges
+            .iter()
+            .any(|&(ax, ay, bx, by)| point_to_segment_dist(px, py, ax, ay, bx, by) <= tol)
 }
 
 fn all_vertices_inside(inner: &Poly, outer: &Poly, tol: f64) -> bool {
-    inner.vertices().all(|&(x, y)| vertex_inside_or_on(x, y, outer, tol))
+    inner
+        .vertices()
+        .all(|&(x, y)| vertex_inside_or_on(x, y, outer, tol))
 }
 
 /// Whether two polygons overlap (one has a vertex inside the other).  A cheap bbox prefilter
@@ -1436,8 +1628,11 @@ fn point_in_layer_at_own_tile(
         (px / tile_dbu as f64).floor() as i32,
         (py / tile_dbu as f64).floor() as i32,
     );
-    map.get(&(tx, ty))
-        .is_some_and(|polys| polys.iter().any(|m| crate::merge::point_in_merged(px, py, m)))
+    map.get(&(tx, ty)).is_some_and(|polys| {
+        polys
+            .iter()
+            .any(|m| crate::merge::point_in_merged(px, py, m))
+    })
 }
 
 /// Enclosure margin of `inner` within `outer` for the **endcap** reduction only: the
@@ -1460,8 +1655,14 @@ pub fn run_enclosure(
 ) -> Vec<Violation> {
     let enclosing_layer = &rule.layers[0];
     let enclosed_layer = &rule.layers[1];
-    let (al, ad) = (enclosing_layer.gds_layer as i16, enclosing_layer.gds_datatype as i16);
-    let (bl, bd) = (enclosed_layer.gds_layer as i16, enclosed_layer.gds_datatype as i16);
+    let (al, ad) = (
+        enclosing_layer.gds_layer as i16,
+        enclosing_layer.gds_datatype as i16,
+    );
+    let (bl, bd) = (
+        enclosed_layer.gds_layer as i16,
+        enclosed_layer.gds_datatype as i16,
+    );
 
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
@@ -1480,12 +1681,18 @@ pub fn run_enclosure(
     // KLayout's `enclosed` only checks enclosed shapes that actually overlap an enclosing
     // region (a via far from any MIM is not a MIM via).  Opt-in via the `interacting_only`
     // param so the default "must be inside" behaviour (e.g. Cont within Metal1) is unchanged.
-    let interacting_only = rule.params.get("interacting_only").is_some_and(|v| *v != 0.0);
+    let interacting_only = rule
+        .params
+        .get("interacting_only")
+        .is_some_and(|v| *v != 0.0);
     // Ignore inner edges coincident with the enclosing contour (clip artifacts of an
     // `intersection`-derived enclosed layer) — mirrors KLayout's `consider_intersecting_
     // edges: false` / `without_distance(0)` rule flags.  Off by default: a genuinely flush
     // edge is a real 0-margin violation (e.g. Rppd.b).
-    let skip_coincident = rule.params.get("skip_coincident").is_some_and(|v| *v != 0.0);
+    let skip_coincident = rule
+        .params
+        .get("skip_coincident")
+        .is_some_and(|v| *v != 0.0);
     // Stronger, region-level variant: skip the *whole* enclosed region if any of its edges
     // is coincident with the enclosing contour — i.e. the region reaches the boundary and
     // is not "surrounded entirely by" the enclosing layer.  NW.e's title says exactly that:
@@ -1656,8 +1863,14 @@ pub fn run_max_enclosure(
 ) -> Vec<Violation> {
     let enclosing_layer = &rule.layers[0];
     let enclosed_layer = &rule.layers[1];
-    let (al, ad) = (enclosing_layer.gds_layer as i16, enclosing_layer.gds_datatype as i16);
-    let (bl, bd) = (enclosed_layer.gds_layer as i16, enclosed_layer.gds_datatype as i16);
+    let (al, ad) = (
+        enclosing_layer.gds_layer as i16,
+        enclosing_layer.gds_datatype as i16,
+    );
+    let (bl, bd) = (
+        enclosed_layer.gds_layer as i16,
+        enclosed_layer.gds_datatype as i16,
+    );
 
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
@@ -1683,8 +1896,10 @@ pub fn run_max_enclosure(
         .par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
-                x0: tx as i64 * tile, y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
             };
             let b_polys = &map_b[&(tx, ty)];
             let a_conv: Vec<Poly> = map_a
@@ -1700,7 +1915,9 @@ pub fn run_max_enclosure(
                 if !core.contains(cxd, cyd) {
                     continue;
                 }
-                let Some(bp) = poly_from_merged(bm, dbu_to_um) else { continue };
+                let Some(bp) = poly_from_merged(bm, dbu_to_um) else {
+                    continue;
+                };
 
                 let mut best_dist = f64::NEG_INFINITY;
                 let mut best_edge = None;
@@ -1736,7 +1953,10 @@ pub fn run_max_enclosure(
                             "enclosure {best_dist:.4} µm > {value:.2} µm of {bname} within {aname} \
                              at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
                         ),
-                        x1, y1, x2, y2,
+                        x1,
+                        y1,
+                        x2,
+                        y2,
                     ));
                 }
             }
@@ -1749,10 +1969,17 @@ pub fn run_max_enclosure(
 mod tests {
     use super::*;
 
-    fn pt(x: i32, y: i32) -> IntPoint { IntPoint::new(x, y) }
+    fn pt(x: i32, y: i32) -> IntPoint {
+        IntPoint::new(x, y)
+    }
 
     fn core() -> Core {
-        Core { x0: -1_000_000, y0: -1_000_000, x1: 1_000_000, y1: 1_000_000 }
+        Core {
+            x0: -1_000_000,
+            y0: -1_000_000,
+            x1: 1_000_000,
+            y1: 1_000_000,
+        }
     }
 
     /// Thin 45° trace (~99 DBU walls) flagged by a `< 160` (min-width) predicate:
@@ -1763,7 +1990,20 @@ mod tests {
             outer: vec![pt(0, 0), pt(1000, 1000), pt(1000, 1140), pt(0, 140)],
             holes: vec![],
         };
-        let v = scan_widths(&poly, core(), 0.001, "T", "min", "L", 0.16, "<", |w| w < 160.0 - 0.5, false, 0.5, None);
+        let v = scan_widths(
+            &poly,
+            core(),
+            0.001,
+            "T",
+            "min",
+            "L",
+            0.16,
+            "<",
+            |w| w < 160.0 - 0.5,
+            false,
+            0.5,
+            None,
+        );
         assert_eq!(v.len(), 2, "got {}", v.len());
     }
 
@@ -1773,7 +2013,20 @@ mod tests {
             outer: vec![pt(0, 0), pt(1000, 1000), pt(1000, 2400), pt(0, 1400)],
             holes: vec![],
         };
-        let v = scan_widths(&poly, core(), 0.001, "T", "min", "L", 0.16, "<", |w| w < 160.0 - 0.5, false, 0.5, None);
+        let v = scan_widths(
+            &poly,
+            core(),
+            0.001,
+            "T",
+            "min",
+            "L",
+            0.16,
+            "<",
+            |w| w < 160.0 - 0.5,
+            false,
+            0.5,
+            None,
+        );
         assert!(v.is_empty(), "got {}", v.len());
     }
 
@@ -1785,7 +2038,20 @@ mod tests {
             outer: vec![pt(0, 0), pt(200, 0), pt(200, 200), pt(0, 200)],
             holes: vec![],
         };
-        let v = scan_widths(&poly, core(), 0.001, "T", "max", "L", 0.15, ">", |w| w > 150.0 + 0.5, false, 0.5, None);
+        let v = scan_widths(
+            &poly,
+            core(),
+            0.001,
+            "T",
+            "max",
+            "L",
+            0.15,
+            ">",
+            |w| w > 150.0 + 0.5,
+            false,
+            0.5,
+            None,
+        );
         assert_eq!(v.len(), 4, "got {}", v.len());
     }
 }

@@ -122,7 +122,11 @@ fn ant_merge(pdk: &PdkConfig) {
     // G1: 5×5 = 25 µm² Metal1 antenna, Via1 at its right edge.
     let mut elems = gate_stack(o, (o, o + 0.6, o + 5.0, o + 5.6), o + 4.4);
     // G2: thin 0.5 µm² Metal1, Via1 near it.
-    elems.extend(gate_stack(o + 9.0, (o + 9.0, o + 0.6, o + 9.5, o + 1.6), o + 9.05));
+    elems.extend(gate_stack(
+        o + 9.0,
+        (o + 9.0, o + 0.6, o + 9.5, o + 1.6),
+        o + 9.05,
+    ));
     // Metal2 plate over both Via1s → merges the two gates at the Metal2 level.
     elems.push(rect(metal2, o + 4.2, o + 0.8, o + 9.6, o + 1.4));
     write_gz(&format!("{DIR}/Ant.merge.gds.gz"), library("TOP", elems));

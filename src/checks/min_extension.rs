@@ -22,7 +22,10 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] min_extension needs a cover layer and a target layer", rule.id);
+        eprintln!(
+            "[{}] min_extension needs a cover layer and a target layer",
+            rule.id
+        );
         return vec![];
     }
     run_extension(rule, layout, dbu_to_um, merged)

@@ -738,8 +738,6 @@ fn test_passiv(
     assert_eq!(drc(PDK_IHP, DECK_PAS, gds, topcell, &ignore), expected);
 }
 
-
-
 // --- Pin ---
 
 const DECK_PIN: &str = "pin";
@@ -1130,7 +1128,10 @@ fn test_forbidden(
     #[case] ignore: Vec<&str>,
 ) {
     expected.sort();
-    assert_eq!(drc(PDK_IHP, DECK_FORBIDDEN, gds, topcell, &ignore), expected);
+    assert_eq!(
+        drc(PDK_IHP, DECK_FORBIDDEN, gds, topcell, &ignore),
+        expected
+    );
 }
 
 // --- offgrid ---
@@ -1143,19 +1144,88 @@ const DECK_OFFGRID: &str = "offgrid";
 
 /// Primary layer of every offgrid rule; the rule id is `<layer>.offgrid`.
 const OFFGRID_LAYERS: &[&str] = &[
-    "Activ", "GatPoly", "PolyRes", "Cont", "nSD", "pSD", "SalBlock", "ThickGateOx",
-    "NLDB", "PLDB", "NLDD", "PLDD", "NExt", "PExt", "NExtHV", "PExtHV", "EXTBlock",
-    "NWell", "PWell", "nBuLay", "nBuLayCut", "isoNWell", "INLDPWL", "IC", "Substrate",
-    "Metal1", "Metal2", "Metal3", "Metal4", "Metal5",
-    "Via1", "Via2", "Via3", "Via4", "MIM", "Vmim",
-    "TopVia1", "TopMetal1", "TopVia2", "TopMetal2", "Passiv", "AntMetal1",
-    "BackMetal1", "BackPassiv", "AlCuStop", "DeepVia", "LBE",
-    "BiWind", "PEmWind", "BasPoly", "EmWind", "EmWiHV", "EmPoly", "PEmPoly",
-    "PBiWind", "DeepCo", "ColOpen", "ColWind", "CtrGat", "LDMOS",
-    "FBE", "FGEtch", "FGImp", "FLM", "HafniumOx", "ThinFilmRes",
-    "GraphGate", "MEMPAD", "MEMVia", "RFMEM", "SNSRing", "Sensor", "SNSArms",
-    "SNSCMOSVia", "SNSBotVia", "SNSTopVia",
-    "prBoundary", "Exchange0", "Exchange1", "Exchange2", "Exchange3", "Exchange4",
+    "Activ",
+    "GatPoly",
+    "PolyRes",
+    "Cont",
+    "nSD",
+    "pSD",
+    "SalBlock",
+    "ThickGateOx",
+    "NLDB",
+    "PLDB",
+    "NLDD",
+    "PLDD",
+    "NExt",
+    "PExt",
+    "NExtHV",
+    "PExtHV",
+    "EXTBlock",
+    "NWell",
+    "PWell",
+    "nBuLay",
+    "nBuLayCut",
+    "isoNWell",
+    "INLDPWL",
+    "IC",
+    "Substrate",
+    "Metal1",
+    "Metal2",
+    "Metal3",
+    "Metal4",
+    "Metal5",
+    "Via1",
+    "Via2",
+    "Via3",
+    "Via4",
+    "MIM",
+    "Vmim",
+    "TopVia1",
+    "TopMetal1",
+    "TopVia2",
+    "TopMetal2",
+    "Passiv",
+    "AntMetal1",
+    "BackMetal1",
+    "BackPassiv",
+    "AlCuStop",
+    "DeepVia",
+    "LBE",
+    "BiWind",
+    "PEmWind",
+    "BasPoly",
+    "EmWind",
+    "EmWiHV",
+    "EmPoly",
+    "PEmPoly",
+    "PBiWind",
+    "DeepCo",
+    "ColOpen",
+    "ColWind",
+    "CtrGat",
+    "LDMOS",
+    "FBE",
+    "FGEtch",
+    "FGImp",
+    "FLM",
+    "HafniumOx",
+    "ThinFilmRes",
+    "GraphGate",
+    "MEMPAD",
+    "MEMVia",
+    "RFMEM",
+    "SNSRing",
+    "Sensor",
+    "SNSArms",
+    "SNSCMOSVia",
+    "SNSBotVia",
+    "SNSTopVia",
+    "prBoundary",
+    "Exchange0",
+    "Exchange1",
+    "Exchange2",
+    "Exchange3",
+    "Exchange4",
 ];
 
 #[test]

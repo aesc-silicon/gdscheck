@@ -36,8 +36,11 @@ pub fn load_gds(path: &str) -> Result<GdsLibrary, Box<dyn std::error::Error>> {
 /// Checks that need electrical connectivity (net extraction).  When connectivity is
 /// disabled (`connectivity == false`) these are skipped rather than run on no nets.
 /// Populated as net-aware checks land (e.g. the antenna ratio rules).
-pub const NET_AWARE_CHECKS: &[&str] =
-    &["antenna_ratio", "gate_connected_min_area", "min_space_different_net"];
+pub const NET_AWARE_CHECKS: &[&str] = &[
+    "antenna_ratio",
+    "gate_connected_min_area",
+    "min_space_different_net",
+];
 
 /// Parse a lazy virtual layer's `op` string to a [`merge::VirtualOp`], converting its
 /// radius (µm) to DBU where the op takes one.  An unsupported op or a missing radius is
@@ -145,51 +148,59 @@ pub fn run_drc(
     // too big to instantiate in full.  `inside_boundary` inspects *every* layer,
     // so any deck using it must flatten everything.
     const ALL_LAYER_CHECKS: &[&str] = &["inside_boundary"];
-    let needed: Option<std::collections::HashSet<(i16, i16)>> =
-        if rules.iter().any(|r| ALL_LAYER_CHECKS.contains(&r.check.as_str())) {
-            None
-        } else {
-            let mut n: std::collections::HashSet<(i16, i16)> = std::collections::HashSet::new();
-            for rule in &rules {
-                for l in rule.layers.iter().chain(rule.ignore.iter()) {
-                    n.insert((l.gds_layer as i16, l.gds_datatype as i16));
-                }
-                if let Some(&bl) = rule.params.get("boundary_layer") {
-                    let dt = rule.params.get("boundary_datatype").copied().unwrap_or(0.0);
-                    n.insert((bl as i16, dt as i16));
-                }
+    let needed: Option<std::collections::HashSet<(i16, i16)>> = if rules
+        .iter()
+        .any(|r| ALL_LAYER_CHECKS.contains(&r.check.as_str()))
+    {
+        None
+    } else {
+        let mut n: std::collections::HashSet<(i16, i16)> = std::collections::HashSet::new();
+        for rule in &rules {
+            for l in rule.layers.iter().chain(rule.ignore.iter()) {
+                n.insert((l.gds_layer as i16, l.gds_datatype as i16));
             }
-            // Net extraction (if it will run) reads the connect-graph layers, which the
-            // rules themselves may not name — pull them in so they are flattened too.
-            if connectivity && rules.iter().any(|r| NET_AWARE_CHECKS.contains(&r.check.as_str())) {
-                for spec in &pdk.connectivity {
-                    n.insert(spec.connector);
-                    n.extend(spec.layers.iter().copied());
-                }
+            if let Some(&bl) = rule.params.get("boundary_layer") {
+                let dt = rule.params.get("boundary_datatype").copied().unwrap_or(0.0);
+                n.insert((bl as i16, dt as i16));
             }
-            // A referenced virtual layer is built from its source layers, which must
-            // therefore be flattened too — transitively, since a virtual layer may feed
-            // another (e.g. ContOnActiv → ContSquare → ContNoSealring → Cont/EdgeSeal).
-            // Iterate to a fixpoint so every layer in the chain is pulled in.
-            loop {
-                let mut added = false;
-                for vl in &pdk.virtual_layers {
-                    let Some(vlayer) = pdk.layer(&vl.name) else { continue };
-                    if !n.contains(&(vlayer.gds_layer as i16, vlayer.gds_datatype as i16)) {
-                        continue;
+        }
+        // Net extraction (if it will run) reads the connect-graph layers, which the
+        // rules themselves may not name — pull them in so they are flattened too.
+        if connectivity
+            && rules
+                .iter()
+                .any(|r| NET_AWARE_CHECKS.contains(&r.check.as_str()))
+        {
+            for spec in &pdk.connectivity {
+                n.insert(spec.connector);
+                n.extend(spec.layers.iter().copied());
+            }
+        }
+        // A referenced virtual layer is built from its source layers, which must
+        // therefore be flattened too — transitively, since a virtual layer may feed
+        // another (e.g. ContOnActiv → ContSquare → ContNoSealring → Cont/EdgeSeal).
+        // Iterate to a fixpoint so every layer in the chain is pulled in.
+        loop {
+            let mut added = false;
+            for vl in &pdk.virtual_layers {
+                let Some(vlayer) = pdk.layer(&vl.name) else {
+                    continue;
+                };
+                if !n.contains(&(vlayer.gds_layer as i16, vlayer.gds_datatype as i16)) {
+                    continue;
+                }
+                for src in &vl.layers {
+                    if let Some(s) = pdk.layer(src) {
+                        added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
                     }
-                    for src in &vl.layers {
-                        if let Some(s) = pdk.layer(src) {
-                            added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
-                        }
-                    }
-                }
-                if !added {
-                    break;
                 }
             }
-            Some(n)
-        };
+            if !added {
+                break;
+            }
+        }
+        Some(n)
+    };
 
     let mut layout = flatten::flatten_to_elems(topcell, &lib, needed.as_ref());
     pdk.compute_virtual_layers(&mut layout, dbu_to_um);
@@ -197,8 +208,15 @@ pub fn run_drc(
     // One tiled-merge cache shared by all geometric checks.  The halo must cover
     // the largest geometric rule distance in the deck so a single cached merge
     // serves every width/space/notch/etc. rule.
-    const DIST_CHECKS: &[&str] =
-        &["min_width", "max_width", "exact_width", "min_space", "min_notch", "min_enclosure", "max_enclosure"];
+    const DIST_CHECKS: &[&str] = &[
+        "min_width",
+        "max_width",
+        "exact_width",
+        "min_space",
+        "min_notch",
+        "min_enclosure",
+        "max_enclosure",
+    ];
     let tile_dbu = (merge::TILE_UM / dbu_to_um).round() as i32;
     let halo_dbu = (merge::MIN_HALO_UM / dbu_to_um).ceil() as i32;
 
@@ -218,8 +236,12 @@ pub fn run_drc(
         let key = (l.gds_layer as i16, l.gds_datatype as i16);
         !lazy_keys.contains(&key) && layout.get(key.0, key.1).is_empty()
     };
-    let mut halo_by_layer: std::collections::HashMap<(i16, i16), i32> = std::collections::HashMap::new();
-    for rule in rules.iter().filter(|r| DIST_CHECKS.contains(&r.check.as_str())) {
+    let mut halo_by_layer: std::collections::HashMap<(i16, i16), i32> =
+        std::collections::HashMap::new();
+    for rule in rules
+        .iter()
+        .filter(|r| DIST_CHECKS.contains(&r.check.as_str()))
+    {
         if matches!(rule.check.as_str(), "min_space" | "min_notch")
             && rule.layers.iter().any(is_empty_base)
         {
@@ -232,7 +254,6 @@ pub fn run_drc(
             *e = (*e).max(h);
         }
     }
-
 
     // A lazy virtual layer is composed from its sources' tiles, so each source must
     // tile with a halo at least as large as the virtual layer's own (the result
@@ -249,9 +270,10 @@ pub fn run_drc(
             // For `holes`/`with_holes`, radius declares the maximum expected ring
             // extent: a hole only materialises in a tile whose bucket assembles the
             // WHOLE ring, so the source needs the full ring within reach.
-            merge::VirtualOp::Holes | merge::VirtualOp::WithHoles => {
-                spec.radius.map(|r| (r / dbu_to_um).ceil() as i32).unwrap_or(0)
-            }
+            merge::VirtualOp::Holes | merge::VirtualOp::WithHoles => spec
+                .radius
+                .map(|r| (r / dbu_to_um).ceil() as i32)
+                .unwrap_or(0),
             _ => 0,
         };
         let need = halo_by_layer.get(&spec.key).copied().unwrap_or(0) + extra;
@@ -268,7 +290,13 @@ pub fn run_drc(
         hv.sort_by_key(|(_, h)| std::cmp::Reverse(**h));
         eprintln!("--- per-layer halo (dbu), top 30 ---");
         for ((l, d), h) in hv.iter().take(30) {
-            eprintln!("  halo {:>9} dbu ({:.1} um)  layer {}/{}", h, **h as f64 * dbu_to_um, l, d);
+            eprintln!(
+                "  halo {:>9} dbu ({:.1} um)  layer {}/{}",
+                h,
+                **h as f64 * dbu_to_um,
+                l,
+                d
+            );
         }
     }
 
@@ -283,7 +311,8 @@ pub fn run_drc(
     // once does not fit in memory.  Record the last rule index that references
     // each layer, then free that layer's cached tiles/regions once the deck moves
     // past it.  Decks are grouped by layer, so only a few stay resident at a time.
-    let mut last_use: std::collections::HashMap<(i16, i16), usize> = std::collections::HashMap::new();
+    let mut last_use: std::collections::HashMap<(i16, i16), usize> =
+        std::collections::HashMap::new();
     for (i, rule) in rules.iter().enumerate() {
         for l in &rule.layers {
             last_use.insert((l.gds_layer as i16, l.gds_datatype as i16), i);
@@ -293,7 +322,9 @@ pub fn run_drc(
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
     let net = if connectivity
-        && rules.iter().any(|r| NET_AWARE_CHECKS.contains(&r.check.as_str()))
+        && rules
+            .iter()
+            .any(|r| NET_AWARE_CHECKS.contains(&r.check.as_str()))
         && !pdk.connectivity.is_empty()
     {
         use std::io::Write;
