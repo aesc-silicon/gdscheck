@@ -173,6 +173,21 @@ KLayout script, where the two disagree:
   net down the sinker — the NWell-ring/nBuLay overlap that nmosi.d sizes at 0.62 µm — so
   a buried layer takes the net of the well above it, and through the tap step, of
   whatever ties that well.
+* **NBL.d** is net-dependent too — "Min. PWell width between nBuLay and NWell (different
+  net)" — and is :doc:`../checks/min_space_different_net` in its two-layer form. It needs
+  nothing new in the connect graph; nBuLay and NWell are both in it for NBL.c.
+* **"unrelated" is not net language.** NBL.e/f ("space to *unrelated* N+/P+Activ") read as
+  though they were, but §4.1 defines *unrelated* as "two regions which do not touch each
+  other" — geometric. Plain :doc:`../checks/min_space` already implements exactly that,
+  since the engine skips overlapping and touching pairs, so NBL.e/f stay geometric, as do
+  Gat.b1, pSD.d, Sal.d and NBLB.d. Only "(different net)" in a rule's text means nets.
+* **NBL.c / NBL.d and NW.b1 measure a gap, not PWell width.** The PDF words all three as
+  "Min. PWell width between …", where PWell is the derived ``NOT (NWell OR PWell:block)
+  OR PWell:drawing``. gdscheck measures the plain region-to-region gap instead. The two
+  agree whenever the intervening space really is PWell, and diverge when something else
+  sits in the gap — an NWell between two different-net nBuLay regions leaves less PWell
+  than the raw gap suggests, so gdscheck can under-report there. NBL.d covers the
+  nBuLay-to-NWell distance separately.
 
 
 Known upstream deck issues
