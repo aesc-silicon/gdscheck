@@ -10,7 +10,7 @@
 //! pass as width, but the pairing is inverted (an empty gap between facing walls
 //! instead of metal), and each notch is reported once.
 
-use super::helper::{collect_edges, segment_closest_points, sorted_unique, HEdge, OEdge, VEdge};
+use super::helper::{HEdge, OEdge, VEdge, collect_edges, segment_closest_points, sorted_unique};
 use crate::layout::FlatLayout;
 use crate::merge::{Core, MergedCache, MergedPoly};
 use crate::pdk::RuleDefinition;
@@ -40,10 +40,18 @@ fn check_poly(
             "Minimum notch violation",
             format!(
                 "{}: notch {:.4} µm < {:.2} µm at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
-                layer, g, limit_um,
-                x1 * dbu_to_um, y1 * dbu_to_um, x2 * dbu_to_um, y2 * dbu_to_um
+                layer,
+                g,
+                limit_um,
+                x1 * dbu_to_um,
+                y1 * dbu_to_um,
+                x2 * dbu_to_um,
+                y2 * dbu_to_um
             ),
-            x1 * dbu_to_um, y1 * dbu_to_um, x2 * dbu_to_um, y2 * dbu_to_um,
+            x1 * dbu_to_um,
+            y1 * dbu_to_um,
+            x2 * dbu_to_um,
+            y2 * dbu_to_um,
         ));
     };
 
@@ -52,8 +60,13 @@ fn check_poly(
     let y_events = sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect());
     for w in y_events.windows(2) {
         let (yb, yb1) = (w[0], w[1]);
-        if yb1 <= yb { continue; }
-        let mut active: Vec<&VEdge> = vedges.iter().filter(|e| e.ylo <= yb && e.yhi >= yb1).collect();
+        if yb1 <= yb {
+            continue;
+        }
+        let mut active: Vec<&VEdge> = vedges
+            .iter()
+            .filter(|e| e.ylo <= yb && e.yhi >= yb1)
+            .collect();
         active.sort_unstable_by_key(|e| (e.x, e.left_wall));
         for pair in active.windows(2) {
             let (l, r) = (pair[0], pair[1]);
@@ -74,8 +87,13 @@ fn check_poly(
     let x_events = sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect());
     for w in x_events.windows(2) {
         let (xb, xb1) = (w[0], w[1]);
-        if xb1 <= xb { continue; }
-        let mut active: Vec<&HEdge> = hedges.iter().filter(|e| e.xlo <= xb && e.xhi >= xb1).collect();
+        if xb1 <= xb {
+            continue;
+        }
+        let mut active: Vec<&HEdge> = hedges
+            .iter()
+            .filter(|e| e.xlo <= xb && e.xhi >= xb1)
+            .collect();
         active.sort_unstable_by_key(|e| (e.y, e.bottom_wall));
         for pair in active.windows(2) {
             let (b, t) = (pair[0], pair[1]);
@@ -103,7 +121,10 @@ fn check_poly(
 /// safe (no arithmetic has been done on them yet).
 #[allow(clippy::too_many_arguments)]
 fn shares_endpoint(ax: f64, ay: f64, bx: f64, by: f64, cx: f64, cy: f64, dx: f64, dy: f64) -> bool {
-    (ax == cx && ay == cy) || (ax == dx && ay == dy) || (bx == cx && by == cy) || (bx == dx && by == dy)
+    (ax == cx && ay == cy)
+        || (ax == dx && ay == dy)
+        || (bx == cx && by == cy)
+        || (bx == dx && by == dy)
 }
 
 /// Notches between a rectilinear edge (vertical or horizontal) and an oblique edge of
@@ -195,7 +216,9 @@ fn oblique_notches(
         let ei = &oedges[i];
         let (dix, diy) = ((ei.bx - ei.ax) as f64, (ei.by - ei.ay) as f64);
         let li = dix.hypot(diy);
-        if li == 0.0 { continue; }
+        if li == 0.0 {
+            continue;
+        }
         let (ux, uy) = (dix / li, diy / li);
         let (nx, ny) = (-diy / li, dix / li); // left (metal-side) normal
         for ej in &oedges[i + 1..] {
@@ -256,8 +279,10 @@ pub fn run(
             .par_iter()
             .flat_map_iter(|(&(tx, ty), polys)| {
                 let core = Core {
-                    x0: tx as i64 * tile, y0: ty as i64 * tile,
-                    x1: (tx as i64 + 1) * tile, y1: (ty as i64 + 1) * tile,
+                    x0: tx as i64 * tile,
+                    y0: ty as i64 * tile,
+                    x1: (tx as i64 + 1) * tile,
+                    y1: (ty as i64 + 1) * tile,
                 };
                 polys
                     .iter()

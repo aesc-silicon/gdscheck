@@ -40,10 +40,18 @@ fn dir(sub: &str) -> String {
 /// the tests ignore TV1.d, exactly like the SG13G2 TV1.c fixture does.
 fn tv1_c(pdk: &PdkConfig) {
     let elems = enclosure_pattern(
-        layer(pdk, "Metal4"), layer(pdk, "TopVia1"),
-        0.10, 0.42, 5.0, OFFSET, DELTA,
+        layer(pdk, "Metal4"),
+        layer(pdk, "TopVia1"),
+        0.10,
+        0.42,
+        5.0,
+        OFFSET,
+        DELTA,
     );
-    write_gz(&format!("{}/TV1.c.gds.gz", dir("topvia1")), library("TOP", elems));
+    write_gz(
+        &format!("{}/TV1.c.gds.gz", dir("topvia1")),
+        library("TOP", elems),
+    );
 }
 
 /// Pas.c — min. TopMetal1 enclosure of Passiv inside the seal (2.10).  Same
@@ -67,8 +75,19 @@ fn pas_c(pdk: &PdkConfig) {
     elems.push(rect(es, x0, y1 - 2.0, x1, y1)); // top
     elems.push(rect(es, x0, y0 + 2.0, x0 + 2.0, y1 - 2.0)); // left
     elems.push(rect(es, x1 - 2.0, y0 + 2.0, x1, y1 - 2.0)); // right
-    elems.extend(enclosure_pattern(tm1, passiv, enc, width, dist, OFFSET + span + 50.0, DELTA));
-    write_gz(&format!("{}/Pas.c.gds.gz", dir("passiv")), library("TOP", elems));
+    elems.extend(enclosure_pattern(
+        tm1,
+        passiv,
+        enc,
+        width,
+        dist,
+        OFFSET + span + 50.0,
+        DELTA,
+    ));
+    write_gz(
+        &format!("{}/Pas.c.gds.gz", dir("passiv")),
+        library("TOP", elems),
+    );
 }
 
 /// Pad.i — a dfpad opening needs TopMetal1 underneath (TM1 is the CMOS5L pad
@@ -81,7 +100,10 @@ fn pad_i(pdk: &PdkConfig) {
         rect(layer(pdk, "Passiv"), o + 10.0, o + 10.0, o + 80.0, o + 80.0),
         rect(layer(pdk, "dfpad"), o + 120.0, o, o + 140.0, o + 20.0), // no TM1 → Pad.i
     ];
-    write_gz(&format!("{}/Pad.i.gds.gz", dir("pad")), library("TOP", elems));
+    write_gz(
+        &format!("{}/Pad.i.gds.gz", dir("pad")),
+        library("TOP", elems),
+    );
 }
 
 /// The §3.2 CMOS5L-forbidden layers: one shape each on Metal5, TRANS, nBuLay and
@@ -103,7 +125,13 @@ fn cont_at(pdk: &PdkConfig, x: f64, y: f64, m: f64) -> Vec<GdsElement> {
     vec![
         rect(layer(pdk, "Activ"), x, y, x + a, y + a),
         rect(layer(pdk, "Cont"), x + m, y + m, x + m + 0.16, y + m + 0.16),
-        rect(layer(pdk, "Metal1"), x + m - 0.1, y + m - 0.1, x + m + 0.26, y + m + 0.26),
+        rect(
+            layer(pdk, "Metal1"),
+            x + m - 0.1,
+            y + m - 0.1,
+            x + m + 0.26,
+            y + m + 0.26,
+        ),
     ]
 }
 
@@ -116,8 +144,17 @@ fn cnt_digi(pdk: &PdkConfig) {
     let mut elems = cont_at(pdk, o, o, 0.065); // analog → Cnt.c
     elems.extend(cont_at(pdk, o + 10.0, o, 0.065)); // digital, relaxed → clean
     elems.extend(cont_at(pdk, o + 14.0, o, 0.045)); // digital → Cnt.c.Digi
-    elems.push(rect(layer(pdk, "DigiBnd"), o + 8.0, o - 2.0, o + 18.0, o + 3.0));
-    write_gz(&format!("{}/Cnt.c.digi.gds.gz", dir("cont")), library("TOP", elems));
+    elems.push(rect(
+        layer(pdk, "DigiBnd"),
+        o + 8.0,
+        o - 2.0,
+        o + 18.0,
+        o + 3.0,
+    ));
+    write_gz(
+        &format!("{}/Cnt.c.digi.gds.gz", dir("cont")),
+        library("TOP", elems),
+    );
 }
 
 /// One HV substrate tie: a P+Activ (Activ+pSD) under ThickGateOx at `gap` from a
@@ -128,7 +165,13 @@ fn hv_tie_at(pdk: &PdkConfig, x: f64, y: f64, gap: f64) -> Vec<GdsElement> {
         rect(layer(pdk, "NWell"), x, y, x + 1.0, y + 1.0),
         rect(layer(pdk, "Activ"), tx, y, tx + 0.5, y + 0.5),
         rect(layer(pdk, "pSD"), tx, y, tx + 0.5, y + 0.5),
-        rect(layer(pdk, "ThickGateOx"), tx - 0.1, y - 0.1, tx + 0.6, y + 0.6),
+        rect(
+            layer(pdk, "ThickGateOx"),
+            tx - 0.1,
+            y - 0.1,
+            tx + 0.6,
+            y + 0.6,
+        ),
     ]
 }
 
@@ -141,6 +184,15 @@ fn nw_f1_digi(pdk: &PdkConfig) {
     let mut elems = hv_tie_at(pdk, o, o, 0.30); // analog → NW.f1
     elems.extend(hv_tie_at(pdk, o + 10.0, o, 0.30)); // digital, relaxed → clean
     elems.extend(hv_tie_at(pdk, o + 14.0, o, 0.20)); // digital → NW.f1.dig
-    elems.push(rect(layer(pdk, "DigiBnd"), o + 9.0, o - 2.0, o + 18.0, o + 3.0));
-    write_gz(&format!("{}/NW.f1.digi.gds.gz", dir("nwell")), library("TOP", elems));
+    elems.push(rect(
+        layer(pdk, "DigiBnd"),
+        o + 9.0,
+        o - 2.0,
+        o + 18.0,
+        o + 3.0,
+    ));
+    write_gz(
+        &format!("{}/NW.f1.digi.gds.gz", dir("nwell")),
+        library("TOP", elems),
+    );
 }

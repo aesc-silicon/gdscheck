@@ -33,8 +33,14 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
     }
 
     // Build sorted, deduplicated lists of all x and y coordinates from polygon vertices.
-    let mut xs: Vec<f64> = polys.iter().flat_map(|p| p.iter().map(|&(x, _)| x)).collect();
-    let mut ys: Vec<f64> = polys.iter().flat_map(|p| p.iter().map(|&(_, y)| y)).collect();
+    let mut xs: Vec<f64> = polys
+        .iter()
+        .flat_map(|p| p.iter().map(|&(x, _)| x))
+        .collect();
+    let mut ys: Vec<f64> = polys
+        .iter()
+        .flat_map(|p| p.iter().map(|&(_, y)| y))
+        .collect();
 
     xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
     xs.dedup_by(|a, b| (*a - *b).abs() < 1e-9);
@@ -121,8 +127,16 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
 
             // Report at the centroid of the hole region.
             let n = component.len() as f64;
-            let cx = component.iter().map(|&(i, _)| (xs[i] + xs[i + 1]) / 2.0).sum::<f64>() / n;
-            let cy = component.iter().map(|&(_, j)| (ys[j] + ys[j + 1]) / 2.0).sum::<f64>() / n;
+            let cx = component
+                .iter()
+                .map(|&(i, _)| (xs[i] + xs[i + 1]) / 2.0)
+                .sum::<f64>()
+                / n;
+            let cy = component
+                .iter()
+                .map(|&(_, j)| (ys[j] + ys[j + 1]) / 2.0)
+                .sum::<f64>()
+                / n;
 
             violations.push(Violation::point(
                 &rule.id,
@@ -131,7 +145,8 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
                     "{} forms a closed ring (enclosed empty region) at ({:.4}, {:.4}) µm",
                     layer.name, cx, cy
                 ),
-                cx, cy,
+                cx,
+                cy,
             ));
         }
     }

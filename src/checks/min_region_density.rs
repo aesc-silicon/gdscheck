@@ -24,7 +24,10 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] min_region_density needs a base layer and a feature layer", rule.id);
+        eprintln!(
+            "[{}] min_region_density needs a base layer and a feature layer",
+            rule.id
+        );
         return vec![];
     }
     let base = &rule.layers[0];
@@ -59,9 +62,15 @@ pub fn run(
                 "Minimum region-density violation",
                 format!(
                     "{} density {:.2}% < {:.2}% in a {} region at ({:.4}, {:.4}) µm",
-                    feature.name, pct, min_pct, base.name, cx * dbu_to_um, cy * dbu_to_um
+                    feature.name,
+                    pct,
+                    min_pct,
+                    base.name,
+                    cx * dbu_to_um,
+                    cy * dbu_to_um
                 ),
-                cx * dbu_to_um, cy * dbu_to_um,
+                cx * dbu_to_um,
+                cy * dbu_to_um,
             ))
         })
         .collect()

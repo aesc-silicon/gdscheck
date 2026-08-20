@@ -8,7 +8,7 @@
 
 use crate::cache::Cache;
 use crate::layout::FlatLayout;
-use crate::merge::{clipped_area_dbu, MergedCache};
+use crate::merge::{MergedCache, clipped_area_dbu};
 use crate::pdk::{Layer, RuleDefinition};
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -21,7 +21,18 @@ pub fn run_min(
     cache: &mut Cache,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, cache, merged, "min_density", ">=", "Minimum", "<", |d, v| d < v)
+    run(
+        rule,
+        layout,
+        dbu_to_um,
+        cache,
+        merged,
+        "min_density",
+        ">=",
+        "Minimum",
+        "<",
+        |d, v| d < v,
+    )
 }
 
 /// Combined density must be at most `value` (%).
@@ -32,7 +43,18 @@ pub fn run_max(
     cache: &mut Cache,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, cache, merged, "max_density", "<=", "Maximum", ">", |d, v| d > v)
+    run(
+        rule,
+        layout,
+        dbu_to_um,
+        cache,
+        merged,
+        "max_density",
+        "<=",
+        "Maximum",
+        ">",
+        |d, v| d > v,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -51,7 +73,11 @@ fn run(
     let layer_names: Vec<&str> = rule.layers.iter().map(|l| l.name.as_str()).collect();
     println!(
         "[{}] Checking {} {} {:.2}% on layer(s) [{}]",
-        rule.id, check_name, op, rule.value, layer_names.join(", ")
+        rule.id,
+        check_name,
+        op,
+        rule.value,
+        layer_names.join(", ")
     );
 
     let boundary_layer = rule.params.get("boundary_layer").map(|&l| {
@@ -59,7 +85,14 @@ fn run(
         (l as i16, dt as i16)
     });
 
-    let density = match compute_density(&rule.layers, layout, dbu_to_um, cache, merged, boundary_layer) {
+    let density = match compute_density(
+        &rule.layers,
+        layout,
+        dbu_to_um,
+        cache,
+        merged,
+        boundary_layer,
+    ) {
         Some(d) => d,
         None => {
             eprintln!("[{}] Could not compute density", rule.id);
@@ -75,7 +108,10 @@ fn run(
             &format!("{bound} density violation"),
             format!(
                 "density {:.2}% {} {:.2}% on layer(s) [{}]",
-                density, cmp, rule.value, layer_names.join(", ")
+                density,
+                cmp,
+                rule.value,
+                layer_names.join(", ")
             ),
         )]
     } else {
@@ -85,7 +121,10 @@ fn run(
 
 /// Chip bounding box in DBU.  Uses the boundary layer if given and present,
 /// otherwise the bounding box of all shapes.
-fn chip_bbox(layout: &FlatLayout, boundary_layer: Option<(i16, i16)>) -> Option<(i32, i32, i32, i32)> {
+fn chip_bbox(
+    layout: &FlatLayout,
+    boundary_layer: Option<(i16, i16)>,
+) -> Option<(i32, i32, i32, i32)> {
     let mut min_x = i32::MAX;
     let mut min_y = i32::MAX;
     let mut max_x = i32::MIN;
@@ -106,7 +145,11 @@ fn chip_bbox(layout: &FlatLayout, boundary_layer: Option<(i16, i16)>) -> Option<
         }
     }
 
-    if min_x == i32::MAX { None } else { Some((min_x, min_y, max_x, max_y)) }
+    if min_x == i32::MAX {
+        None
+    } else {
+        Some((min_x, min_y, max_x, max_y))
+    }
 }
 
 /// Merged area (µm²) of one layer, summed over its cached tiles.  Each merged
@@ -133,7 +176,10 @@ fn layer_merged_area_um2(
             let y0 = (ty as i64 * tile) as f64;
             let x1 = ((tx as i64 + 1) * tile) as f64;
             let y1 = ((ty as i64 + 1) * tile) as f64;
-            polys.iter().map(|p| clipped_area_dbu(p, x0, y0, x1, y1)).sum::<f64>()
+            polys
+                .iter()
+                .map(|p| clipped_area_dbu(p, x0, y0, x1, y1))
+                .sum::<f64>()
         })
         .sum();
     let area = area_dbu * dbu_to_um * dbu_to_um;

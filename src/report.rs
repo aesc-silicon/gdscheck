@@ -133,7 +133,13 @@ mod tests {
     #[test]
     fn multi_dot_rule_ids_nest_fully() {
         let v = vec![
-            Violation::point("Cnt.c.Digi", "Minimum enclosure violation", "m".into(), 1.0, 2.0),
+            Violation::point(
+                "Cnt.c.Digi",
+                "Minimum enclosure violation",
+                "m".into(),
+                1.0,
+                2.0,
+            ),
             Violation::point("Cnt.c", "Minimum enclosure violation", "m".into(), 1.0, 2.0),
             Violation::global("forbidden", "Forbidden layer", "m".into()),
         ];

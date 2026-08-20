@@ -3,9 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, poly, rect, space_pattern, min_width_pattern, max_width_pattern, notch_pattern, density_pattern, write_gz};
-use gdscheck::pdk::PdkConfig;
+use crate::helpers::{
+    density_pattern, layer, library, max_width_pattern, min_width_pattern, notch_pattern, poly,
+    rect, space_pattern, write_gz,
+};
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 use std::f64::consts::SQRT_2;
 
 const DIR: &str = "tests/data/ihp-sg13g2/gatpoly";
@@ -73,7 +76,10 @@ fn gfil_e_nbulay(pdk: &PdkConfig) {
     let l = layer(pdk, "GatPoly.filler");
     let nbl = layer(pdk, "nBuLay");
     let elems = space_pattern(l, nbl, 2.0, 1.10, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{DIR}/GFil.e.nbulay.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/GFil.e.nbulay.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// GFil.f — min. GatPoly:filler space to TRANS 1.10 µm.
@@ -90,7 +96,7 @@ fn gfil_i(pdk: &PdkConfig) {
     let l = layer(pdk, "GatPoly.nofill");
     let o = OFFSET;
     let elems = vec![
-        rect(l, o, o, o + 410.0, o + 410.0),                 // 168100 µm² → violation
+        rect(l, o, o, o + 410.0, o + 410.0), // 168100 µm² → violation
         rect(l, o + 500.0, o, o + 500.0 + 399.0, o + 399.0), // 159201 µm² → clean
     ];
     write_gz(&format!("{DIR}/GFil.i.gds.gz"), library("TOP", elems));
@@ -137,7 +143,13 @@ fn gat_b1(pdk: &PdkConfig) {
     let o = OFFSET;
     let elems = vec![
         rect(layer(pdk, "Activ"), o, o, o + 3.0, o + 1.0),
-        rect(layer(pdk, "ThickGateOx"), o - 0.2, o - 0.2, o + 3.2, o + 1.2),
+        rect(
+            layer(pdk, "ThickGateOx"),
+            o - 0.2,
+            o - 0.2,
+            o + 3.2,
+            o + 1.2,
+        ),
         rect(layer(pdk, "GatPoly"), o + 1.0, o - 0.3, o + 1.3, o + 1.3),
         rect(layer(pdk, "GatPoly"), o + 1.5, o - 0.3, o + 1.8, o + 1.3),
     ];
@@ -163,7 +175,13 @@ fn gate_device(pdk: &PdkConfig, imp: &str, x: f64, gl: f64, tgo: bool) -> Vec<Gd
         rect(layer(pdk, "GatPoly"), gx, o - 0.3, gx + gl, o + 1.3),
     ];
     if tgo {
-        e.push(rect(layer(pdk, "ThickGateOx"), x - 0.1, o - 0.4, x + 2.1, o + 1.4));
+        e.push(rect(
+            layer(pdk, "ThickGateOx"),
+            x - 0.1,
+            o - 0.4,
+            x + 2.1,
+            o + 1.4,
+        ));
     }
     e
 }
@@ -217,8 +235,8 @@ fn gat_e(pdk: &PdkConfig) {
     let l = layer(pdk, "GatPoly");
     let o = OFFSET;
     let elems = vec![
-        rect(l, o, o, o + 0.2, o + 0.2),         // 0.04 µm² → violation
-        rect(l, o + 2.0, o, o + 2.4, o + 0.4),   // 0.16 µm² → clean
+        rect(l, o, o, o + 0.2, o + 0.2),       // 0.04 µm² → violation
+        rect(l, o + 2.0, o, o + 2.4, o + 0.4), // 0.16 µm² → clean
     ];
     write_gz(&format!("{DIR}/Gat.e.gds.gz"), library("TOP", elems));
 }
@@ -247,7 +265,10 @@ fn band(l: (i16, i16), x: f64, y: f64, w: f64, run: f64) -> GdsElement {
     let snap = |v: f64| (v / GRID).round() * GRID;
     let wt = snap(w * SQRT_2);
     let h = snap(run / SQRT_2);
-    poly(l, &[(x, y), (x + wt, y), (x + wt + h, y + h), (x + h, y + h)])
+    poly(
+        l,
+        &[(x, y), (x + wt, y), (x + wt + h, y + h), (x + h, y + h)],
+    )
 }
 
 /// Gat.g — min. 45°-bent GatPoly width 0.16 µm where the bent run > 0.39 µm.  A 0.15 µm
@@ -257,8 +278,8 @@ fn gat_g(pdk: &PdkConfig) {
     let l = layer(pdk, "GatPoly");
     let o = OFFSET;
     let elems = vec![
-        band(l, o, o, 0.15, 0.6),        // narrow + long run → 2 violations
-        band(l, o + 5.0, o, 0.20, 0.6),  // wide enough → clean
+        band(l, o, o, 0.15, 0.6),         // narrow + long run → 2 violations
+        band(l, o + 5.0, o, 0.20, 0.6),   // wide enough → clean
         band(l, o + 10.0, o, 0.15, 0.30), // short run → clean (bent-length gate)
     ];
     write_gz(&format!("{DIR}/Gat.g.gds.gz"), library("TOP", elems));
@@ -269,7 +290,14 @@ fn gfil_d(pdk: &PdkConfig) {
     let mut elems = vec![];
     let layers = vec!["Activ", "GatPoly", "Cont", "pSD", "nSD.block", "SalBlock"];
     for (i, name) in layers.into_iter().enumerate() {
-        elems.append(&mut space_pattern(l, layer(pdk, name), 1.0, 1.10, i as f64 * OFFSET, SPACE_DELTA));
+        elems.append(&mut space_pattern(
+            l,
+            layer(pdk, name),
+            1.0,
+            1.10,
+            i as f64 * OFFSET,
+            SPACE_DELTA,
+        ));
     }
     write_gz(&format!("{DIR}/GFil.d.gds.gz"), library("TOP", elems));
 }
@@ -285,7 +313,10 @@ fn gfil_g(pdk: &PdkConfig) {
     write_gz(&format!("{DIR}/GFil.g.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(74.99));
-    write_gz(&format!("{DIR}/GFil.g.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{DIR}/GFil.g.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 /// GFil.g boundary handling: an unrelated marker (TRANS) sits outside EdgeSeal and
@@ -306,7 +337,10 @@ fn gfil_g_boundary(pdk: &PdkConfig) {
         rect(trans, 950.0, 950.0, 1000.0, 1000.0),
         rect(gat, 0.0, 0.0, 900.0, 180.0),
     ];
-    write_gz(&format!("{DIR}/GFil.g.boundary_ok.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/GFil.g.boundary_ok.gds.gz"),
+        library("TOP", elems),
+    );
 
     let frame = 20.0;
     let elems_ring = vec![
@@ -317,5 +351,8 @@ fn gfil_g_boundary(pdk: &PdkConfig) {
         rect(trans, 950.0, 950.0, 1000.0, 1000.0),
         rect(gat, 0.0, 0.0, 900.0, 180.0),
     ];
-    write_gz(&format!("{DIR}/GFil.g.boundary_ring.gds.gz"), library("TOP", elems_ring));
+    write_gz(
+        &format!("{DIR}/GFil.g.boundary_ring.gds.gz"),
+        library("TOP", elems_ring),
+    );
 }

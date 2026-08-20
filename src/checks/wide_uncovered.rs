@@ -21,7 +21,10 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] wide_uncovered needs a base layer and a feature layer", rule.id);
+        eprintln!(
+            "[{}] wide_uncovered needs a base layer and a feature layer",
+            rule.id
+        );
         return vec![];
     }
     let base = &rule.layers[0];
@@ -51,9 +54,14 @@ pub fn run(
                 "Wide-area without feature violation",
                 format!(
                     "{} wider than {:.2} µm has no {} at ({:.4}, {:.4}) µm",
-                    base.name, rule.value, feature.name, cx * dbu_to_um, cy * dbu_to_um
+                    base.name,
+                    rule.value,
+                    feature.name,
+                    cx * dbu_to_um,
+                    cy * dbu_to_um
                 ),
-                cx * dbu_to_um, cy * dbu_to_um,
+                cx * dbu_to_um,
+                cy * dbu_to_um,
             )
         })
         .collect()

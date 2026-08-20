@@ -10,7 +10,10 @@ use crate::violation::Violation;
 pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Violation> {
     let grid_dbu = (rule.value / dbu_to_um).round() as i32;
     if grid_dbu < 1 {
-        eprintln!("[{}] Grid size {:.4} µm is smaller than 1 DBU", rule.id, rule.value);
+        eprintln!(
+            "[{}] Grid size {:.4} µm is smaller than 1 DBU",
+            rule.id, rule.value
+        );
         return vec![];
     }
 
@@ -35,7 +38,8 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
                             "{}: off-grid vertex (grid = {:.4} µm) at ({:.4}, {:.4}) µm",
                             layer.name, rule.value, x, y
                         ),
-                        x, y,
+                        x,
+                        y,
                     ));
                 }
             }

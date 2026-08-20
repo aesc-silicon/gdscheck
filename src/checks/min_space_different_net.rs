@@ -58,13 +58,19 @@ pub fn run(
         }
     }
 
-    super::helper::run_gated(rule, layout, dbu_to_um, merged, |_, _, ma: Marker, mb: Marker| {
-        let na = conn.net_at(key_a, ma.0, ma.1);
-        let nb = conn.net_at(key_b, mb.0, mb.1);
-        match (na, nb) {
-            // Both resolved and equal: one net, so the different-net rule does not apply.
-            (Some(a), Some(b)) => a != b,
-            _ => true,
-        }
-    })
+    super::helper::run_gated(
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        |_, _, ma: Marker, mb: Marker| {
+            let na = conn.net_at(key_a, ma.0, ma.1);
+            let nb = conn.net_at(key_b, mb.0, mb.1);
+            match (na, nb) {
+                // Both resolved and equal: one net, so the different-net rule does not apply.
+                (Some(a), Some(b)) => a != b,
+                _ => true,
+            }
+        },
+    )
 }

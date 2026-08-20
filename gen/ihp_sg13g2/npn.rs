@@ -31,12 +31,32 @@ fn ring(pdk: &PdkConfig, name: &str, cx: f64, cy: f64, oh: f64, w: f64) -> Vec<G
 /// its flavour text label, an emitter window `ww`×`wl` and the E-labelled Metal2 pin
 /// (which KLayout's flavour recognition additionally requires; ours doesn't need it but
 /// the fixture carries it so the container cross-check exercises the real rules).
-fn core(pdk: &PdkConfig, cx: f64, cy: f64, th: f64, label: &str, ww: f64, wl: f64) -> Vec<GdsElement> {
+fn core(
+    pdk: &PdkConfig,
+    cx: f64,
+    cy: f64,
+    th: f64,
+    label: &str,
+    ww: f64,
+    wl: f64,
+) -> Vec<GdsElement> {
     vec![
         rect(layer(pdk, "TRANS"), cx - th, cy - th, cx + th, cy + th),
         text(layer(pdk, "TEXT"), label, cx - th + 0.1, cy - th + 0.1),
-        rect(layer(pdk, "EmWind"), cx - ww / 2.0, cy - wl / 2.0, cx + ww / 2.0, cy + wl / 2.0),
-        rect(layer(pdk, "Metal2.pin"), cx - 0.1, cy - 0.1, cx + 0.1, cy + 0.1),
+        rect(
+            layer(pdk, "EmWind"),
+            cx - ww / 2.0,
+            cy - wl / 2.0,
+            cx + ww / 2.0,
+            cy + wl / 2.0,
+        ),
+        rect(
+            layer(pdk, "Metal2.pin"),
+            cx - 0.1,
+            cy - 0.1,
+            cx + 0.1,
+            cy + 0.1,
+        ),
         text(layer(pdk, "TEXT"), "E", cx, cy),
     ]
 }
@@ -67,8 +87,20 @@ fn npn_ties(pdk: &PdkConfig) {
     e.extend(ring(pdk, "pSD", cx, cy, 4.5, 1.0));
     e.extend(ring(pdk, "Activ", cx, cy, 4.3, 0.6));
     e.extend(core(pdk, cx, cy, 1.5, "npn13G2", 0.07, 0.9));
-    e.push(rect(layer(pdk, "NWell"), cx + 2.5, cy - 1.0, cx + 3.3, cy + 1.0)); // 1.00 < 1.21
-    e.push(rect(layer(pdk, "Cont"), cx - 0.08, cy - 1.5 - 0.2 - 0.16, cx + 0.08, cy - 1.5 - 0.2)); // 0.20 < 0.27
+    e.push(rect(
+        layer(pdk, "NWell"),
+        cx + 2.5,
+        cy - 1.0,
+        cx + 3.3,
+        cy + 1.0,
+    )); // 1.00 < 1.21
+    e.push(rect(
+        layer(pdk, "Cont"),
+        cx - 0.08,
+        cy - 1.5 - 0.2 - 0.16,
+        cx + 0.08,
+        cy - 1.5 - 0.2,
+    )); // 0.20 < 0.27
 
     // npnG2.c: Activ ring margins 0.05 (< 0.20) inside the pSD ring.  TRANS exactly
     // fills the hole (flush with the pSD ring's inner edge) because KLayout anchors

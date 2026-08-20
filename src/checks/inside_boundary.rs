@@ -66,10 +66,7 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
         let outside = b.xy.iter().find(|p| {
             let x = p.x as f64 * dbu_to_um;
             let y = p.y as f64 * dbu_to_um;
-            x < bnd_x_min - tol
-                || x > bnd_x_max + tol
-                || y < bnd_y_min - tol
-                || y > bnd_y_max + tol
+            x < bnd_x_min - tol || x > bnd_x_max + tol || y < bnd_y_min - tol || y > bnd_y_max + tol
         });
 
         if let Some(op) = outside {
@@ -82,7 +79,8 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
                     "shape on GDS layer {}/{} outside boundary at ({:.4}, {:.4}) µm",
                     b.layer, b.datatype, vx, vy
                 ),
-                vx, vy,
+                vx,
+                vy,
             ));
         }
     }

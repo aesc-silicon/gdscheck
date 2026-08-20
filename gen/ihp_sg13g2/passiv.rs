@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, notch_pattern, enclosure_pattern, write_gz};
+use crate::helpers::{
+    enclosure_pattern, layer, library, min_width_pattern, notch_pattern, rect, space_pattern,
+    write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/passiv";
@@ -51,11 +54,33 @@ fn pas_c(pdk: &PdkConfig) {
 
     let mut elems = Vec::new();
     // Inside the seal: fully covered by an EdgeSeal box → checked.
-    elems.append(&mut enclosure_pattern(tm2, passiv, enc, width, dist, OFFSET, SPACE_DELTA));
-    elems.push(rect(edgeseal, OFFSET - 1.0, -1.0, OFFSET + span + 1.0, outer + 1.0));
+    elems.append(&mut enclosure_pattern(
+        tm2,
+        passiv,
+        enc,
+        width,
+        dist,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.push(rect(
+        edgeseal,
+        OFFSET - 1.0,
+        -1.0,
+        OFFSET + span + 1.0,
+        outer + 1.0,
+    ));
     // Outside the seal: identical pattern, no EdgeSeal → exempt, no violations.
     let off2 = OFFSET + span + 50.0;
-    elems.append(&mut enclosure_pattern(tm2, passiv, enc, width, dist, off2, SPACE_DELTA));
+    elems.append(&mut enclosure_pattern(
+        tm2,
+        passiv,
+        enc,
+        width,
+        dist,
+        off2,
+        SPACE_DELTA,
+    ));
 
     write_gz(&format!("{DIR}/Pas.c.gds.gz"), library("TOP", elems));
 }

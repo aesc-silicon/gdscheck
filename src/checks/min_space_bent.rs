@@ -12,7 +12,7 @@
 //! long net may run at 45° in one place and Manhattan elsewhere, and only the angled
 //! stretch should attract the wider spacing.
 
-use super::helper::{run_gated, Poly};
+use super::helper::{Poly, run_gated};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -25,7 +25,13 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     let max_gap = rule.value - 0.5 * dbu_to_um;
-    run_gated(rule, layout, dbu_to_um, merged, move |a: &Poly, b: &Poly, _, _| {
-        a.has_diagonal_near(b, max_gap) || b.has_diagonal_near(a, max_gap)
-    })
+    run_gated(
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        move |a: &Poly, b: &Poly, _, _| {
+            a.has_diagonal_near(b, max_gap) || b.has_diagonal_near(a, max_gap)
+        },
+    )
 }

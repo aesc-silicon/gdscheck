@@ -28,7 +28,10 @@ fn main() {
         }
     };
 
-    println!("Generating test patterns for: {} ({})", pdk.name, pdk.version);
+    println!(
+        "Generating test patterns for: {} ({})",
+        pdk.name, pdk.version
+    );
 
     match pdk.name.as_str() {
         "IHP SG13G2" => ihp_sg13g2::generate(&pdk),

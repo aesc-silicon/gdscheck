@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, notch_pattern, write_gz};
+use crate::helpers::{
+    layer, library, min_width_pattern, notch_pattern, rect, space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/nsdblock";

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::layout::FlatLayout;
-use crate::merge::{merge_boundaries, MergedPoly};
+use crate::merge::{MergedPoly, merge_boundaries};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use i_overlay::i_float::int::point::IntPoint;
@@ -49,16 +49,17 @@ fn enclosed_by_ring(px: i64, py: i64, ring: &[MergedPoly]) -> bool {
 /// exterior and the exposed boundary vertices are flagged.
 pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] ring_covers_boundary requires 2 layers (ring, boundary)", rule.id);
+        eprintln!(
+            "[{}] ring_covers_boundary requires 2 layers (ring, boundary)",
+            rule.id
+        );
         return vec![];
     }
     let ring_layer = &rule.layers[0];
     let boundary_layer = &rule.layers[1];
 
-    let ring = merge_boundaries(layout.get(
-        ring_layer.gds_layer as i16,
-        ring_layer.gds_datatype as i16,
-    ));
+    let ring =
+        merge_boundaries(layout.get(ring_layer.gds_layer as i16, ring_layer.gds_datatype as i16));
     let seal = merge_boundaries(layout.get(
         boundary_layer.gds_layer as i16,
         boundary_layer.gds_datatype as i16,

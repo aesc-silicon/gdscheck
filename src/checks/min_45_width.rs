@@ -24,9 +24,15 @@ pub fn run(
     let bent_um = rule.params.get("bent_length").copied().unwrap_or(0.5);
     let min_run_dbu = bent_um / dbu_to_um;
     run_width(
-        rule, layout, dbu_to_um, merged,
-        "min_45_width", ">=", "Minimum 45° width violation",
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        "min_45_width",
+        ">=",
+        "Minimum 45° width violation",
         move |w| w < min_w_dbu - 0.5,
-        true, min_run_dbu,
+        true,
+        min_run_dbu,
     )
 }

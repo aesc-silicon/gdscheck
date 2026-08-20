@@ -3,14 +3,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, max_width_pattern, notch_pattern, density_pattern, write_gz};
+use crate::helpers::{
+    density_pattern, layer, library, max_width_pattern, min_width_pattern, notch_pattern, rect,
+    space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/activ";
 
 pub fn generate(pdk: &PdkConfig) {
-    std::fs::create_dir_all(DIR)
-        .expect("failed to create output directory");
+    std::fs::create_dir_all(DIR).expect("failed to create output directory");
 
     act_a(pdk);
     act_b_space(pdk);
@@ -150,7 +152,10 @@ fn afil_c_gatpoly(pdk: &PdkConfig) {
     let l = layer(pdk, "Activ.filler");
     let gp = layer(pdk, "GatPoly");
     let elems = space_pattern(l, gp, 2.0, 1.10, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{DIR}/AFil.c.gatpoly.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/AFil.c.gatpoly.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn afil_c1(pdk: &PdkConfig) {
@@ -173,7 +178,10 @@ fn afil_d_nbulay(pdk: &PdkConfig) {
     let l = layer(pdk, "Activ.filler");
     let nbl = layer(pdk, "nBuLay");
     let elems = space_pattern(l, nbl, 2.0, 1.00, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{DIR}/AFil.d.nbulay.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/AFil.d.nbulay.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// AFil.e — min. Activ:filler space to TRANS (1.00 µm).
@@ -226,7 +234,10 @@ fn afil_g(pdk: &PdkConfig) {
     write_gz(&format!("{DIR}/AFil.g.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(149.99));
-    write_gz(&format!("{DIR}/AFil.g.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{DIR}/AFil.g.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn afil_g1(pdk: &PdkConfig) {
@@ -241,7 +252,10 @@ fn afil_g1(pdk: &PdkConfig) {
     write_gz(&format!("{DIR}/AFil.g1.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(150.01));
-    write_gz(&format!("{DIR}/AFil.g1.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{DIR}/AFil.g1.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn afil_g2(pdk: &PdkConfig) {
@@ -264,7 +278,10 @@ fn afil_g2(pdk: &PdkConfig) {
         rect(act, 0.0, 800.0, 800.0, 849.99),
         rect(act, 800.0, 800.0, 1000.0, 849.9),
     ]);
-    write_gz(&format!("{DIR}/AFil.g2.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{DIR}/AFil.g2.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn afil_g3(pdk: &PdkConfig) {
@@ -287,7 +304,10 @@ fn afil_g3(pdk: &PdkConfig) {
         rect(act, 0.0, 800.0, 800.0, 930.01),
         rect(act, 800.0, 800.0, 1000.0, 930.01),
     ]);
-    write_gz(&format!("{DIR}/AFil.g3.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{DIR}/AFil.g3.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 /// AFil.g2/g3 boundary handling: the chip's raw bounding box (from *all* shapes)
@@ -306,12 +326,18 @@ fn afil_g2_boundary(pdk: &PdkConfig) {
     let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
 
-    let mut elems = vec![rect(boundary, 0.0, 0.0, 900.0, 900.0), rect(trans, 950.0, 950.0, 1000.0, 1000.0)];
+    let mut elems = vec![
+        rect(boundary, 0.0, 0.0, 900.0, 900.0),
+        rect(trans, 950.0, 950.0, 1000.0, 1000.0),
+    ];
     for k in 0..=8 {
         let y0 = k as f64 * 100.0;
         elems.push(rect(act, 0.0, y0, 900.0, y0 + 40.0));
     }
-    write_gz(&format!("{DIR}/AFil.g2.boundary_ok.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/AFil.g2.boundary_ok.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// Same as [`afil_g2_boundary`], but EdgeSeal is drawn as a hollow ring (4 strips)
@@ -339,5 +365,8 @@ fn afil_g2_boundary_ring(pdk: &PdkConfig) {
         let y0 = k as f64 * 100.0;
         elems.push(rect(act, 0.0, y0, 900.0, y0 + 40.0));
     }
-    write_gz(&format!("{DIR}/AFil.g2.boundary_ring.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{DIR}/AFil.g2.boundary_ring.gds.gz"),
+        library("TOP", elems),
+    );
 }

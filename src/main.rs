@@ -150,7 +150,10 @@ fn show_deck(process: &str, deck: &str) {
     // Pre-format every field, then pad each column to its widest entry so values and
     // parameters line up regardless of how long the layer list is.
     let layer_list = |ls: &[gdscheck::pdk::Layer]| {
-        ls.iter().map(|l| l.name.as_str()).collect::<Vec<_>>().join(", ")
+        ls.iter()
+            .map(|l| l.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
     };
     let cols: Vec<[String; 6]> = rules
         .iter()
@@ -195,8 +198,17 @@ fn show_deck(process: &str, deck: &str) {
     for row in &cols {
         let line = format!(
             "  {:w0$}  {:w1$}  {:w2$}  {:w3$}  {:w4$}  {}",
-            row[0], row[1], row[2], row[3], row[4], row[5],
-            w0 = w[0], w1 = w[1], w2 = w[2], w3 = w[3], w4 = w[4],
+            row[0],
+            row[1],
+            row[2],
+            row[3],
+            row[4],
+            row[5],
+            w0 = w[0],
+            w1 = w[1],
+            w2 = w[2],
+            w3 = w[3],
+            w4 = w[4],
         );
         println!("{}", line.trim_end());
     }

@@ -29,9 +29,9 @@ fn lr(pdk: &PdkConfig, name: &str, x0: f64, y0: f64, x1: f64, y1: f64) -> GdsEle
 fn rsil(pdk: &PdkConfig) {
     let o = OFFSET;
     let e: Vec<GdsElement> = vec![
-        lr(pdk, "RES", o, o, o + 0.40, o + 3.0),                       // Rsil.f (narrow RES)
-        lr(pdk, "RES", o + 5.0, o, o + 5.60, o + 3.0),                 // clean RES, Cont 0.10 away
-        lr(pdk, "Cont", o + 5.70, o, o + 5.86, o + 0.16),             // → Rsil.b
+        lr(pdk, "RES", o, o, o + 0.40, o + 3.0), // Rsil.f (narrow RES)
+        lr(pdk, "RES", o + 5.0, o, o + 5.60, o + 3.0), // clean RES, Cont 0.10 away
+        lr(pdk, "Cont", o + 5.70, o, o + 5.86, o + 0.16), // → Rsil.b
     ];
     write_gz(&format!("{DIR}/Rsil.gds.gz"), library("TOP", e));
 }
@@ -95,7 +95,14 @@ fn rppd_c_instance(pdk: &PdkConfig, x: f64, y: f64, w: f64, gap: f64) -> Vec<Gds
         lr(pdk, "pSD", x, y, x + w, y + 3.0),
         lr(pdk, "GatPoly", x - 1.0, y, x + w + 1.0, y + 3.0),
         lr(pdk, "EXTBlock", x - 1.3, y - 0.3, x + w + 1.3, y + 3.3),
-        lr(pdk, "Cont", x + w + gap, y + 1.0, x + w + gap + 0.16, y + 1.16),
+        lr(
+            pdk,
+            "Cont",
+            x + w + gap,
+            y + 1.0,
+            x + w + gap + 0.16,
+            y + 1.16,
+        ),
     ]
 }
 
@@ -136,7 +143,14 @@ fn rhi_d_instance(pdk: &PdkConfig, x: f64, y: f64, w: f64, gap: f64) -> Vec<GdsE
         lr(pdk, "nSD", x, y, x + w, y + 3.0),
         lr(pdk, "GatPoly", x - 1.0, y, x + w + 1.0, y + 3.0),
         lr(pdk, "EXTBlock", x - 1.3, y - 0.3, x + w + 1.3, y + 3.3),
-        lr(pdk, "Cont", x + w + gap, y + 1.0, x + w + gap + 0.16, y + 1.16),
+        lr(
+            pdk,
+            "Cont",
+            x + w + gap,
+            y + 1.0,
+            x + w + gap + 0.16,
+            y + 1.16,
+        ),
     ]
 }
 

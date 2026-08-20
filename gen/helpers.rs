@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use flate2::{write::GzEncoder, Compression};
+use flate2::{Compression, write::GzEncoder};
 use gds21::{
     GdsBoundary, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct, GdsTextElem, GdsUnits,
 };
@@ -119,9 +119,21 @@ pub fn min_width_pattern(
         // clean: exactly at the limit
         rect(layer, offset, 0.0, offset + width, height),
         // too narrow in X
-        rect(layer, offset + distance, 0.0, offset + distance + width + delta, height),
+        rect(
+            layer,
+            offset + distance,
+            0.0,
+            offset + distance + width + delta,
+            height,
+        ),
         // too narrow in Y
-        rect(layer, offset + 2.0 * distance, 0.0, offset + 2.0 * distance + width, height + delta),
+        rect(
+            layer,
+            offset + 2.0 * distance,
+            0.0,
+            offset + 2.0 * distance + width,
+            height + delta,
+        ),
     ]
 }
 
@@ -145,9 +157,21 @@ pub fn max_width_pattern(
         // clean: exactly at the limit
         rect(layer, offset, 0.0, offset + width, height),
         // too wide in X
-        rect(layer, offset + distance, 0.0, offset + distance + width - delta, height),
+        rect(
+            layer,
+            offset + distance,
+            0.0,
+            offset + distance + width - delta,
+            height,
+        ),
         // too wide in Y
-        rect(layer, offset + 2.0 * distance, 0.0, offset + 2.0 * distance + width, height - delta),
+        rect(
+            layer,
+            offset + 2.0 * distance,
+            0.0,
+            offset + 2.0 * distance + width,
+            height - delta,
+        ),
     ]
 }
 
@@ -172,11 +196,35 @@ pub fn exact_width_pattern(
 ) -> Vec<GdsElement> {
     let step = width.max(height) + distance;
     vec![
-        rect(layer, offset,               0.0, offset + width,               height),
-        rect(layer, offset + step,        0.0, offset + step + width + delta, height),
-        rect(layer, offset + 2.0 * step,  0.0, offset + 2.0 * step + width,  height + delta),
-        rect(layer, offset + 3.0 * step,  0.0, offset + 3.0 * step + width - delta, height),
-        rect(layer, offset + 4.0 * step,  0.0, offset + 4.0 * step + width,  height - delta),
+        rect(layer, offset, 0.0, offset + width, height),
+        rect(
+            layer,
+            offset + step,
+            0.0,
+            offset + step + width + delta,
+            height,
+        ),
+        rect(
+            layer,
+            offset + 2.0 * step,
+            0.0,
+            offset + 2.0 * step + width,
+            height + delta,
+        ),
+        rect(
+            layer,
+            offset + 3.0 * step,
+            0.0,
+            offset + 3.0 * step + width - delta,
+            height,
+        ),
+        rect(
+            layer,
+            offset + 4.0 * step,
+            0.0,
+            offset + 4.0 * step + width,
+            height - delta,
+        ),
     ]
 }
 
@@ -201,8 +249,16 @@ pub fn exact_width_sealring_pattern(
 
     // 2. Identical structure 10 µm clear of the first, fully under EdgeSeal.
     let seal_off = offset + span + 10.0;
-    elems.append(&mut exact_width_pattern(layer, width, width, distance, seal_off, delta));
-    elems.push(rect(edgeseal, seal_off - 1.0, -1.0, seal_off + span + 1.0, width + 1.0));
+    elems.append(&mut exact_width_pattern(
+        layer, width, width, distance, seal_off, delta,
+    ));
+    elems.push(rect(
+        edgeseal,
+        seal_off - 1.0,
+        -1.0,
+        seal_off + span + 1.0,
+        width + 1.0,
+    ));
     elems
 }
 
@@ -291,37 +347,43 @@ pub fn notch_pattern(
 
     // Notch cut from the right side; arms run horizontally.
     let h_shape = |nd: f64, ox: f64| -> GdsElement {
-        poly(layer, &[
-            (ox,              0.0),
-            (ox + size,       0.0),
-            (ox + size,       thickness),
-            (ox + size / 2.0, thickness),
-            (ox + size / 2.0, thickness + nd),
-            (ox + size,       thickness + nd),
-            (ox + size,       size),
-            (ox,              size),
-        ])
+        poly(
+            layer,
+            &[
+                (ox, 0.0),
+                (ox + size, 0.0),
+                (ox + size, thickness),
+                (ox + size / 2.0, thickness),
+                (ox + size / 2.0, thickness + nd),
+                (ox + size, thickness + nd),
+                (ox + size, size),
+                (ox, size),
+            ],
+        )
     };
 
     // Notch cut from the top side; arms run vertically (90° rotation of h_shape).
     let v_shape = |nd: f64, ox: f64| -> GdsElement {
-        poly(layer, &[
-            (ox,                  0.0),
-            (ox + size,           0.0),
-            (ox + size,           size),
-            (ox + thickness + nd, size),
-            (ox + thickness + nd, size / 2.0),
-            (ox + thickness,      size / 2.0),
-            (ox + thickness,      size),
-            (ox,                  size),
-        ])
+        poly(
+            layer,
+            &[
+                (ox, 0.0),
+                (ox + size, 0.0),
+                (ox + size, size),
+                (ox + thickness + nd, size),
+                (ox + thickness + nd, size / 2.0),
+                (ox + thickness, size / 2.0),
+                (ox + thickness, size),
+                (ox, size),
+            ],
+        )
     };
 
     vec![
         h_shape(notch_dist + delta, offset),
-        h_shape(notch_dist,         offset + step),
+        h_shape(notch_dist, offset + step),
         v_shape(notch_dist + delta, offset + 2.0 * step),
-        v_shape(notch_dist,         offset + 3.0 * step),
+        v_shape(notch_dist, offset + 3.0 * step),
     ]
 }
 
@@ -362,38 +424,44 @@ pub fn mixed_notch_pattern(
     // Straight wall runs along y = thickness (leftward from the outer edge); the
     // diagonal wall runs from the top of the `nd`-tall step back out to the right.
     let h_shape = |nd: f64, ox: f64| -> GdsElement {
-        poly(layer, &[
-            (ox,              0.0),
-            (ox + size,       0.0),
-            (ox + size,       thickness),
-            (ox + size / 2.0, thickness),
-            (ox + size / 2.0, thickness + nd),
-            (ox + size,       thickness + nd + diag_rise),
-            (ox + size,       size),
-            (ox,              size),
-        ])
+        poly(
+            layer,
+            &[
+                (ox, 0.0),
+                (ox + size, 0.0),
+                (ox + size, thickness),
+                (ox + size / 2.0, thickness),
+                (ox + size / 2.0, thickness + nd),
+                (ox + size, thickness + nd + diag_rise),
+                (ox + size, size),
+                (ox, size),
+            ],
+        )
     };
 
     // 90° rotation of h_shape (same [ox, ox+size] × [0, size] footprint and x-offset
     // convention): the straight wall is now vertical, facing a diagonal wall.
     let v_shape = |nd: f64, ox: f64| -> GdsElement {
-        poly(layer, &[
-            (ox,                              0.0),
-            (ox + thickness,                  0.0),
-            (ox + thickness,                  size / 2.0),
-            (ox + thickness + nd,              size / 2.0),
-            (ox + thickness + nd + diag_rise,  0.0),
-            (ox + size,                       0.0),
-            (ox + size,                       size),
-            (ox,                              size),
-        ])
+        poly(
+            layer,
+            &[
+                (ox, 0.0),
+                (ox + thickness, 0.0),
+                (ox + thickness, size / 2.0),
+                (ox + thickness + nd, size / 2.0),
+                (ox + thickness + nd + diag_rise, 0.0),
+                (ox + size, 0.0),
+                (ox + size, size),
+                (ox, size),
+            ],
+        )
     };
 
     vec![
         h_shape(notch_dist + delta, offset),
-        h_shape(notch_dist,         offset + step),
+        h_shape(notch_dist, offset + step),
         v_shape(notch_dist + delta, offset + 2.0 * step),
-        v_shape(notch_dist,         offset + 3.0 * step),
+        v_shape(notch_dist, offset + 3.0 * step),
     ]
 }
 
@@ -423,8 +491,14 @@ pub fn enclosure_pattern(
     // Produce one (outer, width) rect pair. enc_* are the four enclosure margins.
     let pair = |ox: f64, enc_l: f64, enc_r: f64, enc_b: f64, enc_t: f64| {
         vec![
-            rect(enclosing_layer, ox,           0.0,       ox + outer,           outer      ),
-            rect(enclosed_layer,  ox + enc_l,   enc_b,     ox + outer - enc_r,   outer - enc_t),
+            rect(enclosing_layer, ox, 0.0, ox + outer, outer),
+            rect(
+                enclosed_layer,
+                ox + enc_l,
+                enc_b,
+                ox + outer - enc_r,
+                outer - enc_t,
+            ),
         ]
     };
 
@@ -432,11 +506,11 @@ pub fn enclosure_pattern(
     let v = enclosure + delta;
 
     let mut elems = vec![];
-    elems.extend(pair(offset,                e, e, e, e)); // clean
-    elems.extend(pair(offset +       step,   v, e, e, e)); // left violation
-    elems.extend(pair(offset + 2.0 * step,   e, v, e, e)); // right violation
-    elems.extend(pair(offset + 3.0 * step,   e, e, v, e)); // bottom violation
-    elems.extend(pair(offset + 4.0 * step,   e, e, e, v)); // top violation
+    elems.extend(pair(offset, e, e, e, e)); // clean
+    elems.extend(pair(offset + step, v, e, e, e)); // left violation
+    elems.extend(pair(offset + 2.0 * step, e, v, e, e)); // right violation
+    elems.extend(pair(offset + 3.0 * step, e, e, v, e)); // bottom violation
+    elems.extend(pair(offset + 4.0 * step, e, e, e, v)); // top violation
     elems
 }
 

@@ -18,15 +18,31 @@ pub fn generate(pdk: &PdkConfig) {
 /// since it isn't square) centered at `(cx, cy)`, enclosed by PWell:block/nSD:block/SalBlock
 /// at the given margins, inside a generous nBuLay.
 fn device(
-    pdk: &PdkConfig, cx: f64, cy: f64, w: f64, h: f64,
+    pdk: &PdkConfig,
+    cx: f64,
+    cy: f64,
+    w: f64,
+    h: f64,
     margins: (f64, f64, f64), // (pwb, nsd, sal)
 ) -> Vec<GdsElement> {
     let (pwb_margin, nsd_margin, sal_margin) = margins;
     let ring = |name: &str, margin: f64| {
-        rect(layer(pdk, name), cx - w / 2.0 - margin, cy - h / 2.0 - margin, cx + w / 2.0 + margin, cy + h / 2.0 + margin)
+        rect(
+            layer(pdk, name),
+            cx - w / 2.0 - margin,
+            cy - h / 2.0 - margin,
+            cx + w / 2.0 + margin,
+            cy + h / 2.0 + margin,
+        )
     };
     vec![
-        rect(layer(pdk, "Cont"), cx - w / 2.0, cy - h / 2.0, cx + w / 2.0, cy + h / 2.0),
+        rect(
+            layer(pdk, "Cont"),
+            cx - w / 2.0,
+            cy - h / 2.0,
+            cx + w / 2.0,
+            cy + h / 2.0,
+        ),
         ring("PWell.block", pwb_margin),
         ring("nSD.block", nsd_margin),
         ring("SalBlock", sal_margin),

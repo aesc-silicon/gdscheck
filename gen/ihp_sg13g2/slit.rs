@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::OFFSET;
-use crate::helpers::{layer, rect, write_gz, library};
-use gdscheck::pdk::PdkConfig;
+use crate::helpers::{layer, library, rect, write_gz};
 use gds21::GdsElement;
+use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/slit";
 
@@ -22,12 +22,26 @@ pub fn generate(pdk: &PdkConfig) {
 
 /// A square Metal1 plate with one slit slot inside it.  `sw`×`sh` slit centred in a
 /// `plate`×`plate` plate (≥ 1 µm enclosure as long as the slit is small enough).
-fn plated_slit(m: (i16, i16), s: (i16, i16), ox: f64, oy: f64, plate: f64, sw: f64, sh: f64) -> Vec<GdsElement> {
+fn plated_slit(
+    m: (i16, i16),
+    s: (i16, i16),
+    ox: f64,
+    oy: f64,
+    plate: f64,
+    sw: f64,
+    sh: f64,
+) -> Vec<GdsElement> {
     let cx = ox + plate / 2.0;
     let cy = oy + plate / 2.0;
     vec![
         rect(m, ox, oy, ox + plate, oy + plate),
-        rect(s, cx - sw / 2.0, cy - sh / 2.0, cx + sw / 2.0, cy + sh / 2.0),
+        rect(
+            s,
+            cx - sw / 2.0,
+            cy - sh / 2.0,
+            cx + sw / 2.0,
+            cy + sh / 2.0,
+        ),
     ]
 }
 
@@ -95,13 +109,24 @@ fn slt_e(pdk: &PdkConfig) {
         rect(ts, c - 20.0, c - 5.0, c - 17.0, c + 5.0), // on the pad → fires
     ];
     elems.extend(plated_slit(
-        layer(pdk, "Metal1"), layer(pdk, "Metal1.slit"),
-        c + 5.0, c - 12.5, 25.0, 3.0, 10.0,
+        layer(pdk, "Metal1"),
+        layer(pdk, "Metal1.slit"),
+        c + 5.0,
+        c - 12.5,
+        25.0,
+        3.0,
+        10.0,
     )); // under the same pad → fires
     elems.extend(plated_slit(tm2, ts, o + 120.0, o, 25.0, 3.0, 10.0)); // no pad → clean
     let bx = o + 160.0;
     elems.extend(plated_slit(tm2, ts, bx, o, 25.0, 3.0, 10.0));
-    elems.push(rect(layer(pdk, "dfpad"), bx + 2.5, o + 2.5, bx + 22.5, o + 22.5)); // no Passiv → clean
+    elems.push(rect(
+        layer(pdk, "dfpad"),
+        bx + 2.5,
+        o + 2.5,
+        bx + 22.5,
+        o + 22.5,
+    )); // no Passiv → clean
     write_gz(&format!("{DIR}/Slt.e.gds.gz"), library("TOP", elems));
 }
 
@@ -115,7 +140,13 @@ fn slt_f(pdk: &PdkConfig) {
     // Plate 6 wide, slit 2.8 wide pushed right so right enclosure = 0.995 < 1.00.
     let bx = o + 20.0;
     elems.push(rect(m, bx, o, bx + 6.0, o + 8.0));
-    elems.push(rect(s, bx + 6.0 - 0.995 - 2.8, o + 1.0, bx + 6.0 - 0.995, o + 7.0));
+    elems.push(rect(
+        s,
+        bx + 6.0 - 0.995 - 2.8,
+        o + 1.0,
+        bx + 6.0 - 0.995,
+        o + 7.0,
+    ));
     write_gz(&format!("{DIR}/Slt.f.gds.gz"), library("TOP", elems));
 }
 
@@ -129,7 +160,13 @@ fn slt_h1(pdk: &PdkConfig) {
     // Via1 just 0.295 µm to the right of the slit's right edge (slit right = cx + 1.4).
     let cx = o + 8.0;
     let sright = cx + 1.4;
-    elems.push(rect(v, sright + 0.295, o + 6.0, sright + 0.295 + 0.19, o + 6.19));
+    elems.push(rect(
+        v,
+        sright + 0.295,
+        o + 6.0,
+        sright + 0.295 + 0.19,
+        o + 6.19,
+    ));
     write_gz(&format!("{DIR}/Slt.h1.gds.gz"), library("TOP", elems));
 }
 

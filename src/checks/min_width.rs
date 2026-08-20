@@ -20,9 +20,15 @@ pub fn run(
 ) -> Vec<Violation> {
     let min_w_dbu = rule.value / dbu_to_um;
     run_width(
-        rule, layout, dbu_to_um, merged,
-        "min_width", ">=", "Minimum width violation",
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        "min_width",
+        ">=",
+        "Minimum width violation",
         move |w| w < min_w_dbu - 0.5,
-        false, 0.5,
+        false,
+        0.5,
     )
 }

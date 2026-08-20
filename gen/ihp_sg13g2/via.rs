@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, exact_width_sealring_pattern, enclosure_pattern, write_gz};
+use crate::helpers::{
+    enclosure_pattern, exact_width_sealring_pattern, layer, library, rect, space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 pub fn generate(pdk: &PdkConfig) {
@@ -35,8 +37,14 @@ fn via_b1(pdk: &PdkConfig, index: i32, dir: &str) {
         }
         e
     };
-    write_gz(&format!("{dir}/V{index}.b1.fail.gds.gz"), library("TOP", array(0.44, 0.44)));
-    write_gz(&format!("{dir}/V{index}.b1.gds.gz"), library("TOP", array(0.50, 0.44)));
+    write_gz(
+        &format!("{dir}/V{index}.b1.fail.gds.gz"),
+        library("TOP", array(0.44, 0.44)),
+    );
+    write_gz(
+        &format!("{dir}/V{index}.b1.gds.gz"),
+        library("TOP", array(0.50, 0.44)),
+    );
     // A bond-pad style via RING (one via thick, tight 0.44 pitch along the ring) is
     // not a 2-D array: long tight runs exist, but never more than two stacked, so
     // V{n}.b1 must stay clean (this was a real false-positive class on bondpad cells).
@@ -52,7 +60,10 @@ fn via_b1(pdk: &PdkConfig, index: i32, dir: &str) {
             ring.push(rect(v, far, t, far + w, t + w)); // right
         }
     }
-    write_gz(&format!("{dir}/V{index}.b1.ring.gds.gz"), library("TOP", ring));
+    write_gz(
+        &format!("{dir}/V{index}.b1.ring.gds.gz"),
+        library("TOP", ring),
+    );
 }
 
 /// V{n}.c — Metal{n} encloses Via{n} on all sides (`enclosure_pattern`: one clean

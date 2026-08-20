@@ -16,27 +16,96 @@ const OFF: f64 = 0.003;
 /// twice, since the shifted right edge has two off-grid vertices.
 const LAYERS: &[&str] = &[
     // Front-end: poly / active / implants
-    "Activ", "GatPoly", "PolyRes", "Cont", "nSD", "pSD", "SalBlock", "ThickGateOx",
-    "NLDB", "PLDB", "NLDD", "PLDD", "NExt", "PExt", "NExtHV", "PExtHV", "EXTBlock",
+    "Activ",
+    "GatPoly",
+    "PolyRes",
+    "Cont",
+    "nSD",
+    "pSD",
+    "SalBlock",
+    "ThickGateOx",
+    "NLDB",
+    "PLDB",
+    "NLDD",
+    "PLDD",
+    "NExt",
+    "PExt",
+    "NExtHV",
+    "PExtHV",
+    "EXTBlock",
     // Wells / buried layers / substrate
-    "NWell", "PWell", "nBuLay", "nBuLayCut", "isoNWell", "INLDPWL", "IC", "Substrate",
+    "NWell",
+    "PWell",
+    "nBuLay",
+    "nBuLayCut",
+    "isoNWell",
+    "INLDPWL",
+    "IC",
+    "Substrate",
     // Metal stack
-    "Metal1", "Metal2", "Metal3", "Metal4", "Metal5",
-    "Via1", "Via2", "Via3", "Via4", "MIM", "Vmim",
+    "Metal1",
+    "Metal2",
+    "Metal3",
+    "Metal4",
+    "Metal5",
+    "Via1",
+    "Via2",
+    "Via3",
+    "Via4",
+    "MIM",
+    "Vmim",
     // Top metals / passivation
-    "TopVia1", "TopMetal1", "TopVia2", "TopMetal2", "Passiv", "AntMetal1",
+    "TopVia1",
+    "TopMetal1",
+    "TopVia2",
+    "TopMetal2",
+    "Passiv",
+    "AntMetal1",
     // Backside
-    "BackMetal1", "BackPassiv", "AlCuStop", "DeepVia", "LBE",
+    "BackMetal1",
+    "BackPassiv",
+    "AlCuStop",
+    "DeepVia",
+    "LBE",
     // Bipolar / HV devices
-    "BiWind", "PEmWind", "BasPoly", "EmWind", "EmWiHV", "EmPoly", "PEmPoly",
-    "PBiWind", "DeepCo", "ColOpen", "ColWind", "CtrGat", "LDMOS",
+    "BiWind",
+    "PEmWind",
+    "BasPoly",
+    "EmWind",
+    "EmWiHV",
+    "EmPoly",
+    "PEmPoly",
+    "PBiWind",
+    "DeepCo",
+    "ColOpen",
+    "ColWind",
+    "CtrGat",
+    "LDMOS",
     // Flash / special process
-    "FBE", "FGEtch", "FGImp", "FLM", "HafniumOx", "ThinFilmRes",
+    "FBE",
+    "FGEtch",
+    "FGImp",
+    "FLM",
+    "HafniumOx",
+    "ThinFilmRes",
     // Photonics / SNS / MEMS
-    "GraphGate", "MEMPAD", "MEMVia", "RFMEM", "SNSRing", "Sensor", "SNSArms",
-    "SNSCMOSVia", "SNSBotVia", "SNSTopVia",
+    "GraphGate",
+    "MEMPAD",
+    "MEMVia",
+    "RFMEM",
+    "SNSRing",
+    "Sensor",
+    "SNSArms",
+    "SNSCMOSVia",
+    "SNSBotVia",
+    "SNSTopVia",
     // Boundaries / exchange
-    "prBoundary", "Exchange0", "Exchange1", "Exchange2", "Exchange3", "Exchange4",
+    "prBoundary",
+    "Exchange0",
+    "Exchange1",
+    "Exchange2",
+    "Exchange3",
+    "Exchange4",
 ];
 
 pub fn generate(pdk: &PdkConfig) {
@@ -45,6 +114,9 @@ pub fn generate(pdk: &PdkConfig) {
     for name in LAYERS {
         let l = layer(pdk, name);
         let elems = offgrid_pattern(l, 1.0, 5.0, OFFSET, OFF);
-        write_gz(&format!("{DIR}/{name}.offgrid.gds.gz"), library("TOP", elems));
+        write_gz(
+            &format!("{DIR}/{name}.offgrid.gds.gz"),
+            library("TOP", elems),
+        );
     }
 }

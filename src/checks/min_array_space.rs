@@ -100,11 +100,15 @@ pub fn run(
     // Hash grid: a connectible neighbour (edge gap < value, axis-aligned) has its
     // centroid within `value + via extent` in one axis and overlaps in the other, so
     // a cell of that size puts every neighbour in the 3×3 block around a via.
-    let max_extent = vias.iter().fold(0.0_f64, |a, v| a.max(v.x1 - v.x0).max(v.y1 - v.y0));
+    let max_extent = vias
+        .iter()
+        .fold(0.0_f64, |a, v| a.max(v.x1 - v.x0).max(v.y1 - v.y0));
     let cell = (value + max_extent).max(dbu_to_um);
     let mut grid: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
     for (i, v) in vias.iter().enumerate() {
-        grid.entry(((v.cx / cell).floor() as i64, (v.cy / cell).floor() as i64)).or_default().push(i);
+        grid.entry(((v.cx / cell).floor() as i64, (v.cy / cell).floor() as i64))
+            .or_default()
+            .push(i);
     }
 
     // Discover the horizontally tight via pairs in parallel (the grid and via list
@@ -118,7 +122,9 @@ pub fn run(
             let mut local = Vec::new();
             for dx in -1..=1 {
                 for dy in -1..=1 {
-                    let Some(bucket) = grid.get(&(gx + dx, gy + dy)) else { continue };
+                    let Some(bucket) = grid.get(&(gx + dx, gy + dy)) else {
+                        continue;
+                    };
                     for &j in bucket {
                         if j <= i {
                             continue;
@@ -167,7 +173,13 @@ pub fn run(
                 x1 = x1.max(vias[i].x1);
                 y1 = y1.max(vias[i].y1);
             }
-            Run { members, x0, y0, x1, y1 }
+            Run {
+                members,
+                x0,
+                y0,
+                x1,
+                y1,
+            }
         })
         .collect();
 
@@ -196,7 +208,11 @@ pub fn run(
         if stack.len() <= rows_thr {
             continue;
         }
-        let min_cols = stack.iter().map(|&r| runs[r].members.len()).min().unwrap_or(0);
+        let min_cols = stack
+            .iter()
+            .map(|&r| runs[r].members.len())
+            .min()
+            .unwrap_or(0);
         let (mut sx, mut sy, mut cnt) = (0.0, 0.0, 0.0);
         for &r in stack {
             for &i in &runs[r].members {
@@ -211,9 +227,15 @@ pub fn run(
             "Via array spacing violation",
             format!(
                 "{}×{} {} array tighter than {:.2} µm in both directions at ({:.4}, {:.4}) µm",
-                stack.len(), min_cols, layer.name, value, cx, cy
+                stack.len(),
+                min_cols,
+                layer.name,
+                value,
+                cx,
+                cy
             ),
-            cx, cy,
+            cx,
+            cy,
         ));
     }
     out

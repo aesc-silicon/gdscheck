@@ -33,7 +33,10 @@ fn normalize_path(p: &str) -> String {
 /// Look up an embedded PDK file by its path relative to `pdks/`.
 fn embedded_file(rel: &str) -> Option<&'static str> {
     let rel = normalize_path(rel);
-    EMBEDDED_PDKS.iter().find(|(k, _)| *k == rel).map(|(_, v)| *v)
+    EMBEDDED_PDKS
+        .iter()
+        .find(|(k, _)| *k == rel)
+        .map(|(_, v)| *v)
 }
 
 /// Where a PDK's files come from, so deck files resolve the same way whether the
@@ -258,14 +261,20 @@ impl PdkConfig {
         let content = std::fs::read_to_string(spec).map_err(|e| {
             format!("'{spec}' is not a known process and not a readable pdk.yml: {e}")
         })?;
-        let dir = Path::new(spec).parent().unwrap_or(Path::new(".")).to_path_buf();
+        let dir = Path::new(spec)
+            .parent()
+            .unwrap_or(Path::new("."))
+            .to_path_buf();
         Self::from_yaml(&content, PdkSource::Fs(dir))
     }
 
     /// Load a PDK from a filesystem `pdk.yml` path.
     pub fn load(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(path)?;
-        let dir = Path::new(path).parent().unwrap_or(Path::new(".")).to_path_buf();
+        let dir = Path::new(path)
+            .parent()
+            .unwrap_or(Path::new("."))
+            .to_path_buf();
         Self::from_yaml(&content, PdkSource::Fs(dir))
     }
 
@@ -304,24 +313,35 @@ impl PdkConfig {
         // Register virtual layers in the layer map with synthetic GDS numbers
         // so that rules can reference them by name just like real layers.
         for (i, vl) in raw.virtual_layers.iter().enumerate() {
-            layer_map.insert(vl.name.clone(), Layer {
-                name: vl.name.clone(),
-                gds_layer: VIRTUAL_LAYER_BASE + i as u16,
-                gds_datatype: 0,
-            });
+            layer_map.insert(
+                vl.name.clone(),
+                Layer {
+                    name: vl.name.clone(),
+                    gds_layer: VIRTUAL_LAYER_BASE + i as u16,
+                    gds_datatype: 0,
+                },
+            );
         }
 
         // Deck paths stay relative to the PDK; the source resolves them at load.
         let decks = raw
             .decks
             .into_iter()
-            .map(|d| DeckRef { name: d.name, path: d.path, description: d.description })
+            .map(|d| DeckRef {
+                name: d.name,
+                path: d.path,
+                description: d.description,
+            })
             .collect();
 
         let suites = raw
             .suites
             .into_iter()
-            .map(|s| DeckRef { name: s.name, path: s.path, description: s.description })
+            .map(|s| DeckRef {
+                name: s.name,
+                path: s.path,
+                description: s.description,
+            })
             .collect();
 
         // Resolve the connect graph's layer names to (layer, datatype) keys.  A spec
@@ -339,7 +359,8 @@ impl PdkConfig {
                 let connector = resolve(&c.connector)?;
                 let layers: Vec<_> = c.layers.iter().filter_map(|n| resolve(n)).collect();
                 // A step joins the connector to the layers it overlaps; need at least one.
-                (!layers.is_empty()).then_some(crate::connectivity::ConnectSpec { connector, layers })
+                (!layers.is_empty())
+                    .then_some(crate::connectivity::ConnectSpec { connector, layers })
             })
             .collect();
 
@@ -375,12 +396,20 @@ impl PdkConfig {
                 m.holes.len()
             );
         }
-        let mut xy: Vec<gds21::GdsPoint> =
-            m.outer.iter().map(|p| gds21::GdsPoint::new(p.x, p.y)).collect();
+        let mut xy: Vec<gds21::GdsPoint> = m
+            .outer
+            .iter()
+            .map(|p| gds21::GdsPoint::new(p.x, p.y))
+            .collect();
         if let Some(first) = xy.first().cloned() {
             xy.push(first); // close the ring (GDS convention)
         }
-        GdsBoundary { layer, datatype: dt, xy, ..Default::default() }
+        GdsBoundary {
+            layer,
+            datatype: dt,
+            xy,
+            ..Default::default()
+        }
     }
 
     /// Compute virtual layers from the layout and insert them into the layout.
@@ -398,7 +427,7 @@ impl PdkConfig {
                 continue;
             };
             let vl_gds = vl_layer.gds_layer as i16;
-            let vl_dt  = vl_layer.gds_datatype as i16;
+            let vl_dt = vl_layer.gds_datatype as i16;
 
             match vl_def.op.as_str() {
                 "union" => {
@@ -416,21 +445,24 @@ impl PdkConfig {
                             continue;
                         };
                         let src_gds = src.gds_layer as i16;
-                        let src_dt  = src.gds_datatype as i16;
+                        let src_dt = src.gds_datatype as i16;
                         if !seen_layers.insert((src_gds, src_dt)) {
                             continue;
                         }
 
                         for b in layout.get(src_gds, src_dt) {
-                            let key: Vec<(i32, i32)> =
-                                b.xy.iter().map(|p| (p.x, p.y)).collect();
+                            let key: Vec<(i32, i32)> = b.xy.iter().map(|p| (p.x, p.y)).collect();
                             if seen_shapes.insert(key) {
-                                to_insert.push((vl_gds, vl_dt, GdsBoundary {
-                                    layer: vl_gds,
-                                    datatype: vl_dt,
-                                    xy: b.xy.clone(),
-                                    ..Default::default()
-                                }));
+                                to_insert.push((
+                                    vl_gds,
+                                    vl_dt,
+                                    GdsBoundary {
+                                        layer: vl_gds,
+                                        datatype: vl_dt,
+                                        xy: b.xy.clone(),
+                                        ..Default::default()
+                                    },
+                                ));
                             }
                         }
                     }
@@ -454,8 +486,11 @@ impl PdkConfig {
                     }
                     if ok {
                         for m in crate::merge::intersect_layers(&srcs) {
-                            to_insert.push((vl_gds, vl_dt,
-                                Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name))));
+                            to_insert.push((
+                                vl_gds,
+                                vl_dt,
+                                Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name)),
+                            ));
                         }
                     }
                 }
@@ -463,11 +498,17 @@ impl PdkConfig {
                     // Geometric NOT: the first layer minus all the rest (e.g.
                     // `ContNoSealring = Cont NOT EdgeSeal` removes the seal ring).
                     let Some((base_name, clip_names)) = vl_def.layers.split_first() else {
-                        eprintln!("Virtual layer '{}': difference needs at least one layer", vl_def.name);
+                        eprintln!(
+                            "Virtual layer '{}': difference needs at least one layer",
+                            vl_def.name
+                        );
                         continue;
                     };
                     let Some(base) = self.layer_map.get(base_name) else {
-                        eprintln!("Virtual layer '{}': source layer '{}' not found", vl_def.name, base_name);
+                        eprintln!(
+                            "Virtual layer '{}': source layer '{}' not found",
+                            vl_def.name, base_name
+                        );
                         continue;
                     };
                     let base_b = layout.get(base.gds_layer as i16, base.gds_datatype as i16);
@@ -476,7 +517,10 @@ impl PdkConfig {
                     let mut ok = true;
                     for name in clip_names {
                         let Some(c) = self.layer_map.get(name) else {
-                            eprintln!("Virtual layer '{}': source layer '{}' not found", vl_def.name, name);
+                            eprintln!(
+                                "Virtual layer '{}': source layer '{}' not found",
+                                vl_def.name, name
+                            );
                             ok = false;
                             break;
                         };
@@ -484,8 +528,11 @@ impl PdkConfig {
                     }
                     if ok {
                         for m in crate::merge::difference_layers(base_b, &clips) {
-                            to_insert.push((vl_gds, vl_dt,
-                                Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name))));
+                            to_insert.push((
+                                vl_gds,
+                                vl_dt,
+                                Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name)),
+                            ));
                         }
                     }
                 }
@@ -497,14 +544,20 @@ impl PdkConfig {
                     // Both sources are real layers, so no virtual layer references
                     // another (which `compute_virtual_layers` does not support).
                     if vl_def.layers.len() < 2 {
-                        eprintln!("Virtual layer '{}': inside needs 2 layers (target, ring)", vl_def.name);
+                        eprintln!(
+                            "Virtual layer '{}': inside needs 2 layers (target, ring)",
+                            vl_def.name
+                        );
                         continue;
                     }
                     let (Some(target), Some(ring)) = (
                         self.layer_map.get(&vl_def.layers[0]),
                         self.layer_map.get(&vl_def.layers[1]),
                     ) else {
-                        eprintln!("Virtual layer '{}': a source layer was not found", vl_def.name);
+                        eprintln!(
+                            "Virtual layer '{}': a source layer was not found",
+                            vl_def.name
+                        );
                         continue;
                     };
                     // Fill the ring: each merged region's outer contour as a solid
@@ -518,8 +571,11 @@ impl PdkConfig {
 
                     let target_b = layout.get(target.gds_layer as i16, target.gds_datatype as i16);
                     for m in crate::merge::intersect_layers(&[target_b, &ring_solid]) {
-                        to_insert.push((vl_gds, vl_dt,
-                            Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name))));
+                        to_insert.push((
+                            vl_gds,
+                            vl_dt,
+                            Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name)),
+                        ));
                     }
                 }
                 "close" => {
@@ -529,11 +585,17 @@ impl PdkConfig {
                     // sees the true gap between distinct (merged) regions.
                     let (Some(src_name), Some(radius_um)) = (vl_def.layers.first(), vl_def.radius)
                     else {
-                        eprintln!("Virtual layer '{}': close needs one layer and a radius", vl_def.name);
+                        eprintln!(
+                            "Virtual layer '{}': close needs one layer and a radius",
+                            vl_def.name
+                        );
                         continue;
                     };
                     let Some(src) = self.layer_map.get(src_name) else {
-                        eprintln!("Virtual layer '{}': source layer '{}' not found", vl_def.name, src_name);
+                        eprintln!(
+                            "Virtual layer '{}': source layer '{}' not found",
+                            vl_def.name, src_name
+                        );
                         continue;
                     };
                     let merged = crate::merge::merge_boundaries(
@@ -541,8 +603,11 @@ impl PdkConfig {
                     );
                     let radius_dbu = radius_um / dbu_to_um;
                     for m in crate::merge::closing(&merged, radius_dbu) {
-                        to_insert.push((vl_gds, vl_dt,
-                            Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name))));
+                        to_insert.push((
+                            vl_gds,
+                            vl_dt,
+                            Self::merged_outer_boundary(&m, vl_gds, vl_dt, Some(&vl_def.name)),
+                        ));
                     }
                 }
                 other => {
@@ -563,7 +628,11 @@ impl PdkConfig {
     /// source keys)`.  `run_drc` registers these with the merge cache so they are
     /// built per tile on demand.  Sources/keys that don't resolve are skipped.
     pub fn tiled_virtual_layers(&self) -> Vec<TiledVirtualSpec> {
-        let key = |name: &str| self.layer_map.get(name).map(|l| (l.gds_layer as i16, l.gds_datatype as i16));
+        let key = |name: &str| {
+            self.layer_map
+                .get(name)
+                .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
+        };
         let mut out = Vec::new();
         for vl in &self.virtual_layers {
             if vl.mode != VirtualMode::Lazy {
@@ -576,7 +645,10 @@ impl PdkConfig {
                 match key(s) {
                     Some(k) => sources.push(k),
                     None => {
-                        eprintln!("Lazy virtual layer '{}': source layer '{}' not found", vl.name, s);
+                        eprintln!(
+                            "Lazy virtual layer '{}': source layer '{}' not found",
+                            vl.name, s
+                        );
                         ok = false;
                         break;
                     }
@@ -598,7 +670,10 @@ impl PdkConfig {
 
     /// Expand a suite into the concatenated rules of the decks it imports, keeping
     /// only the whitelisted rule ids where an include specifies them.
-    pub fn load_suite(&self, suite_name: &str) -> Result<Vec<RuleDefinition>, Box<dyn std::error::Error>> {
+    pub fn load_suite(
+        &self,
+        suite_name: &str,
+    ) -> Result<Vec<RuleDefinition>, Box<dyn std::error::Error>> {
         let suite_ref = self
             .suites
             .iter()
@@ -619,7 +694,10 @@ impl PdkConfig {
         Ok(rules)
     }
 
-    pub fn load_deck(&self, deck_name: &str) -> Result<Vec<RuleDefinition>, Box<dyn std::error::Error>> {
+    pub fn load_deck(
+        &self,
+        deck_name: &str,
+    ) -> Result<Vec<RuleDefinition>, Box<dyn std::error::Error>> {
         self.load_deck_filtered(deck_name, None, None)
     }
 
@@ -674,19 +752,23 @@ impl PdkConfig {
                 if r.layers.is_empty() {
                     return Err(format!("Rule '{}' must define at least one layer", r.id));
                 }
-                let layers = r.layers
+                let layers = r
+                    .layers
                     .iter()
                     .map(|name| {
                         self.layer_map
                             .get(name)
-                            .ok_or_else(|| format!("Rule '{}' references unknown layer '{}'", r.id, name))
+                            .ok_or_else(|| {
+                                format!("Rule '{}' references unknown layer '{}'", r.id, name)
+                            })
                             .cloned()
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
                 // `ignore` is best-effort: each entry is a layer name or a raw
                 // `layer/datatype` pair (for GDS layers the PDK doesn't name).
-                let ignore = r.ignore
+                let ignore = r
+                    .ignore
                     .iter()
                     .filter_map(|name| {
                         if let Some(l) = self.layer_map.get(name) {

@@ -16,7 +16,10 @@ use crate::violation::Violation;
 
 pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] must_interact needs a target layer and at least one partner", rule.id);
+        eprintln!(
+            "[{}] must_interact needs a target layer and at least one partner",
+            rule.id
+        );
         return vec![];
     }
     let target = merge_boundaries(boundaries_on(layout, &rule.layers[0]));
@@ -29,7 +32,11 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
         "[{}] Checking every {} overlaps one of {}",
         rule.id,
         rule.layers[0].name,
-        rule.layers[1..].iter().map(|l| l.name.as_str()).collect::<Vec<_>>().join(", "),
+        rule.layers[1..]
+            .iter()
+            .map(|l| l.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", "),
     );
 
     // Keep target regions that do NOT interact any partner.
@@ -44,9 +51,14 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
                 format!(
                     "{} has no {} at ({x:.4}, {y:.4}) µm",
                     rule.layers[0].name,
-                    rule.layers[1..].iter().map(|l| l.name.as_str()).collect::<Vec<_>>().join("/"),
+                    rule.layers[1..]
+                        .iter()
+                        .map(|l| l.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join("/"),
                 ),
-                x, y,
+                x,
+                y,
             )
         })
         .collect()

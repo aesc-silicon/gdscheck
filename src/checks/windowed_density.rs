@@ -26,7 +26,7 @@
 //! violation).
 
 use crate::layout::FlatLayout;
-use crate::merge::{clipped_area_dbu, MergedCache, TileMap};
+use crate::merge::{MergedCache, TileMap, clipped_area_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -45,7 +45,11 @@ fn chip_bbox_dbu(layout: &FlatLayout) -> Option<(i64, i64, i64, i64)> {
             y1 = y1.max(p.y as i64);
         }
     }
-    if x0 == i64::MAX { None } else { Some((x0, y0, x1, y1)) }
+    if x0 == i64::MAX {
+        None
+    } else {
+        Some((x0, y0, x1, y1))
+    }
 }
 
 /// Bounding box (DBU) of one layer's raw shapes — used for `boundary_layer`, where the
@@ -64,7 +68,11 @@ fn layer_bbox_dbu(layout: &FlatLayout, gl: i16, gd: i16) -> Option<(i64, i64, i6
             y1 = y1.max(p.y as i64);
         }
     }
-    if x0 == i64::MAX { None } else { Some((x0, y0, x1, y1)) }
+    if x0 == i64::MAX {
+        None
+    } else {
+        Some((x0, y0, x1, y1))
+    }
 }
 
 /// Merged coverage (DBU²) of `layer_maps` inside the window `[wx0,wx1] × [wy0,wy1]`.
@@ -73,7 +81,10 @@ fn layer_bbox_dbu(layout: &FlatLayout, gl: i16, gd: i16) -> Option<(i64, i64, i6
 fn window_coverage(
     layer_maps: &[&TileMap],
     tile: i64,
-    wx0: i64, wy0: i64, wx1: i64, wy1: i64,
+    wx0: i64,
+    wy0: i64,
+    wx1: i64,
+    wy1: i64,
 ) -> f64 {
     let tx0 = wx0.div_euclid(tile);
     let tx1 = (wx1 - 1).div_euclid(tile);
@@ -84,7 +95,9 @@ fn window_coverage(
     for map in layer_maps {
         for ty in ty0..=ty1 {
             for tx in tx0..=tx1 {
-                let Some(polys) = map.get(&(tx as i32, ty as i32)) else { continue };
+                let Some(polys) = map.get(&(tx as i32, ty as i32)) else {
+                    continue;
+                };
                 // core ∩ window
                 let cx0 = (tx * tile).max(wx0) as f64;
                 let cy0 = (ty * tile).max(wy0) as f64;
@@ -99,11 +112,21 @@ fn window_coverage(
     covered
 }
 
-pub fn run_min(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64, merged: &mut MergedCache) -> Vec<Violation> {
+pub fn run_min(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
     run(rule, layout, dbu_to_um, merged, false)
 }
 
-pub fn run_max(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64, merged: &mut MergedCache) -> Vec<Violation> {
+pub fn run_max(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
     run(rule, layout, dbu_to_um, merged, true)
 }
 
@@ -122,12 +145,22 @@ fn run(
         }
     };
 
-    let check = if is_max { "max_windowed_density" } else { "min_windowed_density" };
+    let check = if is_max {
+        "max_windowed_density"
+    } else {
+        "min_windowed_density"
+    };
     let op = if is_max { "<=" } else { ">=" };
     let layer_names: Vec<&str> = rule.layers.iter().map(|l| l.name.as_str()).collect();
     println!(
         "[{}] Checking {} {} {:.2}% on layer(s) [{}] (window: {:.0}x{:.0} µm²)",
-        rule.id, check, op, rule.value, layer_names.join(", "), window, window
+        rule.id,
+        check,
+        op,
+        rule.value,
+        layer_names.join(", "),
+        window,
+        window
     );
 
     let (cx0, cy0, cx1, cy1) = match chip_bbox_dbu(layout) {
@@ -156,7 +189,9 @@ fn run(
 
     let cols = ((cx1 - cx0).max(0) / win + 1) as usize;
     let rows = ((cy1 - cy0).max(0) / win + 1) as usize;
-    let tiles: Vec<(usize, usize)> = (0..rows).flat_map(|r| (0..cols).map(move |c| (r, c))).collect();
+    let tiles: Vec<(usize, usize)> = (0..rows)
+        .flat_map(|r| (0..cols).map(move |c| (r, c)))
+        .collect();
     let value = rule.value;
     let rid = rule.id.as_str();
 
@@ -188,23 +223,42 @@ fn run(
 
             let covered = window_coverage(&layer_maps, tile, wx0, wy0, wx1, wy1);
             let density = covered / area * 100.0;
-            let violated = if is_max { density > value } else { density < value };
+            let violated = if is_max {
+                density > value
+            } else {
+                density < value
+            };
             if !violated {
                 return None;
             }
 
             let (ux0, uy0, ux1, uy1) = (
-                wx0 as f64 * dbu_to_um, wy0 as f64 * dbu_to_um,
-                wx1 as f64 * dbu_to_um, wy1 as f64 * dbu_to_um,
+                wx0 as f64 * dbu_to_um,
+                wy0 as f64 * dbu_to_um,
+                wx1 as f64 * dbu_to_um,
+                wy1 as f64 * dbu_to_um,
             );
             Some(Violation::edge(
                 rid,
-                if is_max { "Maximum windowed density violation" } else { "Minimum windowed density violation" },
+                if is_max {
+                    "Maximum windowed density violation"
+                } else {
+                    "Minimum windowed density violation"
+                },
                 format!(
                     "windowed density {:.2}% {} {:.2}% in tile ({:.2}, {:.2})-({:.2}, {:.2}) µm",
-                    density, if is_max { ">" } else { "<" }, value, ux0, uy0, ux1, uy1,
+                    density,
+                    if is_max { ">" } else { "<" },
+                    value,
+                    ux0,
+                    uy0,
+                    ux1,
+                    uy1,
                 ),
-                ux0, uy0, ux1, uy1,
+                ux0,
+                uy0,
+                ux1,
+                uy1,
             ))
         })
         .collect()

@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, max_width_pattern, notch_pattern, mixed_notch_pattern, density_pattern, write_gz};
+use crate::helpers::{
+    density_pattern, layer, library, max_width_pattern, min_width_pattern, mixed_notch_pattern,
+    notch_pattern, rect, space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 pub fn generate(pdk: &PdkConfig) {
@@ -42,7 +45,10 @@ fn topmetal_b_space(pdk: &PdkConfig, index: i32, dir: &str) {
     let space = if index == 1 { 1.64 } else { 2.00 };
     let l = layer(pdk, &format!("TopMetal{}", index));
     let elems = space_pattern(l, l, width, space, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}.b.space.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}.b.space.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn topmetal_b_notch(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -50,7 +56,10 @@ fn topmetal_b_notch(pdk: &PdkConfig, index: i32, dir: &str) {
     let notch = if index == 1 { 1.64 } else { 2.00 };
     let l = layer(pdk, &format!("TopMetal{}", index));
     let elems = notch_pattern(l, width, notch, 5.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}.b.notch.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}.b.notch.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// TM{n}.b, mixed-orientation notch: a straight wall facing a *diagonal* wall of the
@@ -64,7 +73,10 @@ fn topmetal_b_mixed_notch(pdk: &PdkConfig, index: i32, dir: &str) {
     let notch = if index == 1 { 1.64 } else { 2.00 };
     let l = layer(pdk, &format!("TopMetal{}", index));
     let elems = mixed_notch_pattern(l, width, notch, width, 5.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}.b.mixed_notch.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}.b.mixed_notch.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn topmetal_c(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -79,7 +91,10 @@ fn topmetal_c(pdk: &PdkConfig, index: i32, dir: &str) {
     write_gz(&format!("{dir}/TM{index}.c.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(49.99));
-    write_gz(&format!("{dir}/TM{index}.c.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/TM{index}.c.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn topmetal_d(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -94,28 +109,40 @@ fn topmetal_d(pdk: &PdkConfig, index: i32, dir: &str) {
     write_gz(&format!("{dir}/TM{index}.d.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(300.01));
-    write_gz(&format!("{dir}/TM{index}.d.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/TM{index}.d.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn tmfil_c(pdk: &PdkConfig, index: i32, dir: &str) {
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let met = layer(pdk, &format!("TopMetal{}", index));
     let elems = space_pattern(fill, met, 5.0, 3.00, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}Fil.c.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}Fil.c.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn tmfil_a(pdk: &PdkConfig, index: i32, dir: &str) {
     // TM{n}Fil.a: min_width 5.0 — filler features must be at least 5 µm wide.
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let elems = min_width_pattern(fill, 5.0, 5.0, 20.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}Fil.a.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}Fil.a.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn tmfil_a1(pdk: &PdkConfig, index: i32, dir: &str) {
     // TM{n}Fil.a1: max_width 10.0 — filler features must be at most 10 µm wide.
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let elems = max_width_pattern(fill, 10.0, 10.0, 20.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}Fil.a1.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}Fil.a1.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn tmfil_b(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -123,7 +150,10 @@ fn tmfil_b(pdk: &PdkConfig, index: i32, dir: &str) {
     // of the filler width limits (5..10), so only the spacing rule fires.
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let elems = space_pattern(fill, fill, 6.0, 3.00, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}Fil.b.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}Fil.b.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn tmfil_d(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -131,7 +161,10 @@ fn tmfil_d(pdk: &PdkConfig, index: i32, dir: &str) {
     let fill = layer(pdk, &format!("TopMetal{}.filler", index));
     let trans = layer(pdk, "TRANS");
     let elems = space_pattern(fill, trans, 6.0, 4.90, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/TM{index}Fil.d.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/TM{index}Fil.d.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 /// TM2.bR: wide-line spacing — 5 µm min space when a line is wider than 5 µm and the
@@ -154,7 +187,7 @@ fn tm2_br(pdk: &PdkConfig, dir: &str) {
         // parallel run exactly 50 µm (not *more than* 50) — wide, 4 µm gap
         rect(m, 200.0, 0.0, 206.0, 50.0),
         rect(m, 210.0, 0.0, 216.0, 50.0),
-       // parallel run exactly 50 µm (not *more than* 50) — wide, 4 µm gap
+        // parallel run exactly 50 µm (not *more than* 50) — wide, 4 µm gap
         rect(m, 300.0, 0.0, 306.0, 50.1),
         rect(m, 310.0, 0.0, 316.0, 50.0),
         // spacing exactly 5 µm (not *less than* 5) — wide, 60 µm run

@@ -28,19 +28,35 @@ fn seal_d(pdk: &PdkConfig) {
         let (x0, y0, x1, y1) = (o + dx, o, o + dx + 40.0, o + 40.0);
         e.extend(ring(pdk, "EdgeSeal", x0, y0, x1, y1, 4.0));
         e.extend(ring(pdk, "Activ", x0, y0, x1, y1, 4.0));
-        e.extend(ring(pdk, "Cont", x0 + inset, y0 + inset, x1 - inset, y1 - inset, 0.16));
+        e.extend(ring(
+            pdk,
+            "Cont",
+            x0 + inset,
+            y0 + inset,
+            x1 - inset,
+            y1 - inset,
+            0.16,
+        ));
     }
     write_gz(&format!("{DIR}/Seal.d.gds.gz"), library("TOP", e));
 }
 
 /// A rectangular ring (frame with a hole) on `layer_name`, as four overlapping strips.
-fn ring(pdk: &PdkConfig, name: &str, x0: f64, y0: f64, x1: f64, y1: f64, w: f64) -> Vec<GdsElement> {
+fn ring(
+    pdk: &PdkConfig,
+    name: &str,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    w: f64,
+) -> Vec<GdsElement> {
     let l = layer(pdk, name);
     vec![
-        rect(l, x0, y0, x1, y0 + w),         // bottom
-        rect(l, x0, y1 - w, x1, y1),         // top
-        rect(l, x0, y0, x0 + w, y1),         // left
-        rect(l, x1 - w, y0, x1, y1),         // right
+        rect(l, x0, y0, x1, y0 + w), // bottom
+        rect(l, x0, y1 - w, x1, y1), // top
+        rect(l, x0, y0, x0 + w, y1), // left
+        rect(l, x1 - w, y0, x1, y1), // right
     ]
 }
 

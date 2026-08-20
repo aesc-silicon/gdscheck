@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, poly, rect, space_pattern, exact_width_pattern, enclosure_pattern, write_gz};
+use crate::helpers::{
+    enclosure_pattern, exact_width_pattern, layer, library, poly, rect, space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 use std::f64::consts::TAU;
 
@@ -48,10 +50,14 @@ fn octagon(layer: (i16, i16), cx: f64, cy: f64, s: f64, chamfer: f64) -> gds21::
     let h = s / 2.0;
     let c = chamfer;
     let pts = [
-        (cx - h + c, cy - h), (cx + h - c, cy - h),
-        (cx + h, cy - h + c), (cx + h, cy + h - c),
-        (cx + h - c, cy + h), (cx - h + c, cy + h),
-        (cx - h, cy + h - c), (cx - h, cy - h + c),
+        (cx - h + c, cy - h),
+        (cx + h - c, cy - h),
+        (cx + h, cy - h + c),
+        (cx + h, cy + h - c),
+        (cx + h - c, cy + h),
+        (cx - h + c, cy + h),
+        (cx - h, cy + h - c),
+        (cx - h, cy - h + c),
     ];
     poly(layer, &pts)
 }
@@ -64,7 +70,15 @@ fn padb_f(pdk: &PdkConfig) {
     let dfpad = layer(pdk, "dfpad");
     let tm2 = layer(pdk, "TopMetal2");
     let o = OFFSET;
-    let cover = |cx: f64, cy: f64, r: f64| rect(tm2, cx - r - 15.0, cy - r - 15.0, cx + r + 15.0, cy + r + 15.0);
+    let cover = |cx: f64, cy: f64, r: f64| {
+        rect(
+            tm2,
+            cx - r - 15.0,
+            cy - r - 15.0,
+            cx + r + 15.0,
+            cy + r + 15.0,
+        )
+    };
 
     // Square — violation.
     let (cx, cy) = (o, o);
@@ -94,7 +108,15 @@ fn padc_f(pdk: &PdkConfig) {
     let dfpad = layer(pdk, "dfpad");
     let tm2 = layer(pdk, "TopMetal2");
     let o = OFFSET + 400.0;
-    let cover = |cx: f64, cy: f64, r: f64| rect(tm2, cx - r - 15.0, cy - r - 15.0, cx + r + 15.0, cy + r + 15.0);
+    let cover = |cx: f64, cy: f64, r: f64| {
+        rect(
+            tm2,
+            cx - r - 15.0,
+            cy - r - 15.0,
+            cx + r + 15.0,
+            cy + r + 15.0,
+        )
+    };
 
     // Square — violation.
     let (cx, cy) = (o, o);
@@ -169,7 +191,13 @@ fn padb_d(pdk: &PdkConfig) {
         rect(layer(pdk, "EdgeSeal"), o, o, o + 10.0, o + 10.0),
         rect(layer(pdk, "Passiv.sbump"), x0, o, x1, o + 60.0),
         rect(layer(pdk, "dfpad"), x0, o, x1, o + 60.0),
-        rect(layer(pdk, "TopMetal2"), x0 - 15.0, o - 15.0, x1 + 15.0, o + 60.0 + 15.0),
+        rect(
+            layer(pdk, "TopMetal2"),
+            x0 - 15.0,
+            o - 15.0,
+            x1 + 15.0,
+            o + 60.0 + 15.0,
+        ),
     ];
     write_gz(&format!("{DIR}/Padb.d.gds.gz"), library("TOP", elems));
 }
@@ -192,7 +220,13 @@ fn padc_d(pdk: &PdkConfig) {
         for l in ["Passiv.pillar", "dfpad", "Passiv", "dfpad.pillar"] {
             elems.push(rect(layer(pdk, l), x0, y0, x0 + 35.0, y0 + 35.0));
         }
-        elems.push(rect(layer(pdk, "TopMetal2"), x0 - 10.0, y0 - 10.0, x0 + 45.0, y0 + 45.0));
+        elems.push(rect(
+            layer(pdk, "TopMetal2"),
+            x0 - 10.0,
+            y0 - 10.0,
+            x0 + 45.0,
+            y0 + 45.0,
+        ));
     }
     write_gz(&format!("{DIR}/Padc.d.gds.gz"), library("TOP", elems));
 }
@@ -201,8 +235,22 @@ fn padb_a(pdk: &PdkConfig) {
     let sbump = layer(pdk, "Passiv.sbump");
     let dfpad = layer(pdk, "dfpad");
     let mut elems = vec![];
-    elems.append(&mut exact_width_pattern(sbump, 60.0, 60.0, 160.0, OFFSET, SPACE_DELTA));
-    elems.append(&mut exact_width_pattern(dfpad, 60.0, 60.0, 160.0, OFFSET, SPACE_DELTA));
+    elems.append(&mut exact_width_pattern(
+        sbump,
+        60.0,
+        60.0,
+        160.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.append(&mut exact_width_pattern(
+        dfpad,
+        60.0,
+        60.0,
+        160.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
     write_gz(&format!("{DIR}/Padb.a.gds.gz"), library("TOP", elems));
 }
 
@@ -210,8 +258,22 @@ fn padb_b(pdk: &PdkConfig) {
     let sbump = layer(pdk, "Passiv.sbump");
     let dfpad = layer(pdk, "dfpad");
     let mut elems = vec![];
-    elems.append(&mut space_pattern(sbump, sbump, 60.0, 70.0, OFFSET, SPACE_DELTA));
-    elems.append(&mut space_pattern(dfpad, dfpad, 60.0, 70.0, OFFSET, SPACE_DELTA));
+    elems.append(&mut space_pattern(
+        sbump,
+        sbump,
+        60.0,
+        70.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.append(&mut space_pattern(
+        dfpad,
+        dfpad,
+        60.0,
+        70.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
     write_gz(&format!("{DIR}/Padb.b.gds.gz"), library("TOP", elems));
 }
 
@@ -220,8 +282,24 @@ fn padb_c(pdk: &PdkConfig) {
     let dfpad = layer(pdk, "dfpad");
     let tm = layer(pdk, "TopMetal2");
     let mut elems = vec![];
-    elems.append(&mut enclosure_pattern(tm, sbump, 10.0, 60.0, 70.0, OFFSET, SPACE_DELTA));
-    elems.append(&mut enclosure_pattern(tm, dfpad, 10.0, 60.0, 70.0, OFFSET, SPACE_DELTA));
+    elems.append(&mut enclosure_pattern(
+        tm,
+        sbump,
+        10.0,
+        60.0,
+        70.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.append(&mut enclosure_pattern(
+        tm,
+        dfpad,
+        10.0,
+        60.0,
+        70.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
     write_gz(&format!("{DIR}/Padb.c.gds.gz"), library("TOP", elems));
 }
 
@@ -229,8 +307,22 @@ fn padc_a(pdk: &PdkConfig) {
     let pillar = layer(pdk, "Passiv.pillar");
     let dfpad = layer(pdk, "dfpad");
     let mut elems = vec![];
-    elems.append(&mut exact_width_pattern(pillar, 35.0, 35.0, 160.0, OFFSET, SPACE_DELTA));
-    elems.append(&mut exact_width_pattern(dfpad, 35.0, 35.0, 160.0, OFFSET, SPACE_DELTA));
+    elems.append(&mut exact_width_pattern(
+        pillar,
+        35.0,
+        35.0,
+        160.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.append(&mut exact_width_pattern(
+        dfpad,
+        35.0,
+        35.0,
+        160.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
     write_gz(&format!("{DIR}/Padc.a.gds.gz"), library("TOP", elems));
 }
 
@@ -238,8 +330,22 @@ fn padc_b(pdk: &PdkConfig) {
     let pillar = layer(pdk, "Passiv.pillar");
     let dfpad = layer(pdk, "dfpad");
     let mut elems = vec![];
-    elems.append(&mut space_pattern(pillar, pillar, 35.0, 40.0, OFFSET, SPACE_DELTA));
-    elems.append(&mut space_pattern(dfpad, dfpad, 35.0, 40.0, OFFSET, SPACE_DELTA));
+    elems.append(&mut space_pattern(
+        pillar,
+        pillar,
+        35.0,
+        40.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.append(&mut space_pattern(
+        dfpad,
+        dfpad,
+        35.0,
+        40.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
     write_gz(&format!("{DIR}/Padc.b.gds.gz"), library("TOP", elems));
 }
 
@@ -248,7 +354,23 @@ fn padc_c(pdk: &PdkConfig) {
     let dfpad = layer(pdk, "dfpad");
     let tm = layer(pdk, "TopMetal2");
     let mut elems = vec![];
-    elems.append(&mut enclosure_pattern(tm, pillar, 7.5, 35.0, 70.0, OFFSET, SPACE_DELTA));
-    elems.append(&mut enclosure_pattern(tm, dfpad, 7.5, 35.0, 70.0, OFFSET, SPACE_DELTA));
+    elems.append(&mut enclosure_pattern(
+        tm,
+        pillar,
+        7.5,
+        35.0,
+        70.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
+    elems.append(&mut enclosure_pattern(
+        tm,
+        dfpad,
+        7.5,
+        35.0,
+        70.0,
+        OFFSET,
+        SPACE_DELTA,
+    ));
     write_gz(&format!("{DIR}/Padc.c.gds.gz"), library("TOP", elems));
 }

@@ -42,7 +42,8 @@ pub fn run(
                 &rule.id,
                 "Forbidden region",
                 format!("{} present at ({:.4}, {:.4}) µm", layer.name, x, y),
-                x, y,
+                x,
+                y,
             )
         })
         .collect()

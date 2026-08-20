@@ -20,7 +20,10 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
-        eprintln!("[{}] max_space needs two layers (target, reference)", rule.id);
+        eprintln!(
+            "[{}] max_space needs two layers (target, reference)",
+            rule.id
+        );
         return vec![];
     }
     let target = &rule.layers[0];
@@ -48,7 +51,8 @@ pub fn run(
                     "{} more than {:.2} µm from {} at ({:.4}, {:.4}) µm",
                     target.name, rule.value, reference.name, x, y
                 ),
-                x, y,
+                x,
+                y,
             )
         })
         .collect()

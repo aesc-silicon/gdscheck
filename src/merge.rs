@@ -269,12 +269,16 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
                     if clipped_area_dbu(p, cx0, cy0, cx1, cy1) <= 0.5 {
                         continue;
                     }
-                    let a_core = merged_to_shape(p)
-                        .overlay(&core_box, OverlayRule::Intersect, FillRule::NonZero);
+                    let a_core = merged_to_shape(p).overlay(
+                        &core_box,
+                        OverlayRule::Intersect,
+                        FillRule::NonZero,
+                    );
                     if a_core.is_empty() {
                         continue;
                     }
-                    let (mut qx0, mut qy0, mut qx1, mut qy1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+                    let (mut qx0, mut qy0, mut qx1, mut qy1) =
+                        (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
                     for s in &a_core {
                         for c in s {
                             for pt in c {
@@ -291,17 +295,29 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
                     // `sized`.  We deliberately do NOT use i_overlay's `outline` offset here:
                     // it is unreliable when the offset (e.g. 6 µm) dwarfs the feature size
                     // (0.16 µm contacts), under-covering and producing false gaps.
-                    let grown: Vec<Vec<Vec<[f64; 2]>>> = (((qy0 / t as f64).floor() as i32)..=((qy1 / t as f64).floor() as i32))
-                        .flat_map(|qy| (((qx0 / t as f64).floor() as i32)..=((qx1 / t as f64).floor() as i32)).map(move |qx| (qx, qy)))
+                    let grown: Vec<Vec<Vec<[f64; 2]>>> = (((qy0 / t as f64).floor() as i32)
+                        ..=((qy1 / t as f64).floor() as i32))
+                        .flat_map(|qy| {
+                            (((qx0 / t as f64).floor() as i32)..=((qx1 / t as f64).floor() as i32))
+                                .map(move |qx| (qx, qy))
+                        })
                         .filter_map(|(qx, qy)| b.get(&(qx, qy)))
                         .flat_map(|ps| ps.iter())
                         .filter_map(|bp| {
                             let (bx0, by0, bx1, by1) = bp.outer.iter().fold(
                                 (f64::MAX, f64::MAX, f64::MIN, f64::MIN),
-                                |(x0, y0, x1, y1), p| (x0.min(p.x as f64), y0.min(p.y as f64), x1.max(p.x as f64), y1.max(p.y as f64)),
+                                |(x0, y0, x1, y1), p| {
+                                    (
+                                        x0.min(p.x as f64),
+                                        y0.min(p.y as f64),
+                                        x1.max(p.x as f64),
+                                        y1.max(p.y as f64),
+                                    )
+                                },
                             );
                             if bx1 >= qx0 && bx0 <= qx1 && by1 >= qy0 && by0 <= qy1 {
-                                let (gx0, gy0, gx1, gy1) = (bx0 - value, by0 - value, bx1 + value, by1 + value);
+                                let (gx0, gy0, gx1, gy1) =
+                                    (bx0 - value, by0 - value, bx1 + value, by1 + value);
                                 Some(vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]])
                             } else {
                                 None
@@ -319,7 +335,8 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
                             break;
                         }
                         let cov = batch.to_vec().simplify_shape(FillRule::NonZero);
-                        remaining = remaining.overlay(&cov, OverlayRule::Difference, FillRule::NonZero);
+                        remaining =
+                            remaining.overlay(&cov, OverlayRule::Difference, FillRule::NonZero);
                     }
                     let gaps = remaining;
                     for g in shapes_to_merged(gaps) {
@@ -335,12 +352,18 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
 
     // Sparse reference (ties — a few hundred polygons even if large): dilate it ONCE globally
     // (cheap for i_overlay), bucket the result, and difference `a` against it per tile.
-    let all_b: Vec<Vec<Vec<[f64; 2]>>> =
-        b.values().flat_map(|ps| ps.iter().map(merged_to_shape)).collect();
+    let all_b: Vec<Vec<Vec<[f64; 2]>>> = b
+        .values()
+        .flat_map(|ps| ps.iter().map(merged_to_shape))
+        .collect();
     let covered_polys: Vec<MergedPoly> = if all_b.is_empty() {
         Vec::new()
     } else {
-        shapes_to_merged(all_b.simplify_shape(FillRule::NonZero).outline(&OutlineStyle::new(value)))
+        shapes_to_merged(
+            all_b
+                .simplify_shape(FillRule::NonZero)
+                .outline(&OutlineStyle::new(value)),
+        )
     };
     // Bucket each dilated-`b` polygon into the tiles its bbox covers.
     let mut covered_tiles: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
@@ -354,7 +377,10 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
         }
         for ty in y0.div_euclid(t)..=y1.div_euclid(t) {
             for tx in x0.div_euclid(t)..=x1.div_euclid(t) {
-                covered_tiles.entry((tx as i32, ty as i32)).or_default().push(i);
+                covered_tiles
+                    .entry((tx as i32, ty as i32))
+                    .or_default()
+                    .push(i);
             }
         }
     }
@@ -379,15 +405,22 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
             }
             let gaps = match covered_tiles.get(&(tx, ty)) {
                 Some(idxs) => {
-                    let cov: Vec<Vec<Vec<[f64; 2]>>> =
-                        idxs.iter().map(|&i| merged_to_shape(&covered_polys[i])).collect();
+                    let cov: Vec<Vec<Vec<[f64; 2]>>> = idxs
+                        .iter()
+                        .map(|&i| merged_to_shape(&covered_polys[i]))
+                        .collect();
                     a_shapes.overlay(&cov, OverlayRule::Difference, FillRule::NonZero)
                 }
                 None => a_shapes.simplify_shape(FillRule::NonZero),
             };
             for g in shapes_to_merged(gaps) {
                 let (mx, my) = merged_centroid_dbu(&g);
-                if mx >= cx0 && mx < cx1 && my >= cy0 && my < cy1 && clipped_area_dbu(&g, cx0, cy0, cx1, cy1) > 0.5 {
+                if mx >= cx0
+                    && mx < cx1
+                    && my >= cy0
+                    && my < cy1
+                    && clipped_area_dbu(&g, cx0, cy0, cx1, cy1) > 0.5
+                {
                     out.push((mx, my));
                 }
             }
@@ -453,7 +486,10 @@ impl VirtualOp {
     /// Region-level selectors are evaluated on stitched whole regions in
     /// [`MergedCache::ensure`], not composed per tile like the boolean ops.
     fn is_selection(self) -> bool {
-        matches!(self, VirtualOp::Interacting | VirtualOp::NotInteracting | VirtualOp::Covering)
+        matches!(
+            self,
+            VirtualOp::Interacting | VirtualOp::NotInteracting | VirtualOp::Covering
+        )
     }
 }
 
@@ -608,14 +644,26 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
             shapes_to_merged(acc)
         }
         // Unary shape filters: keep the source regions that are / aren't squares.
-        VirtualOp::Square => sources[0].iter().filter(|m| is_square(m)).cloned().collect(),
-        VirtualOp::NotSquare => sources[0].iter().filter(|m| !is_square(m)).cloned().collect(),
+        VirtualOp::Square => sources[0]
+            .iter()
+            .filter(|m| is_square(m))
+            .cloned()
+            .collect(),
+        VirtualOp::NotSquare => sources[0]
+            .iter()
+            .filter(|m| !is_square(m))
+            .cloned()
+            .collect(),
         VirtualOp::NotCircleOrOctagon => sources[0]
             .iter()
             .filter(|m| !is_circle(m) && !is_octagon(m))
             .cloned()
             .collect(),
-        VirtualOp::NotCircle => sources[0].iter().filter(|m| !is_circle(m)).cloned().collect(),
+        VirtualOp::NotCircle => sources[0]
+            .iter()
+            .filter(|m| !is_circle(m))
+            .cloned()
+            .collect(),
         // The hole areas of each region, as filled polygons.  Hole contours are stored
         // clockwise (see MergedPoly); reverse to CCW so downstream ops see solid regions.
         VirtualOp::Holes => sources[0]
@@ -624,13 +672,18 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
                 m.holes.iter().map(|h| {
                     let mut outer = h.clone();
                     outer.reverse();
-                    MergedPoly { outer, holes: Vec::new() }
+                    MergedPoly {
+                        outer,
+                        holes: Vec::new(),
+                    }
                 })
             })
             .collect(),
-        VirtualOp::WithHoles => {
-            sources[0].iter().filter(|m| !m.holes.is_empty()).cloned().collect()
-        }
+        VirtualOp::WithHoles => sources[0]
+            .iter()
+            .filter(|m| !m.holes.is_empty())
+            .cloned()
+            .collect(),
         // Text selection is routed to `build_text_selection_tiles` in `ensure`.
         VirtualOp::WithText => Vec::new(),
         // Morphological close of the single source by `r` DBU.  The source tile carries a
@@ -758,25 +811,47 @@ fn clip_halfplane(
 /// Clip a DBU contour to the axis-aligned rect `[x0,x1] × [y0,y1]`.
 fn clip_rect(pts: &[IntPoint], x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<(f64, f64)> {
     let mut p: Vec<(f64, f64)> = pts.iter().map(|q| (q.x as f64, q.y as f64)).collect();
-    p = clip_halfplane(&p, |x, _| x >= x0, |a, b| {
-        let t = (x0 - a.0) / (b.0 - a.0);
-        (x0, a.1 + t * (b.1 - a.1))
-    });
-    if p.is_empty() { return p; }
-    p = clip_halfplane(&p, |x, _| x <= x1, |a, b| {
-        let t = (x1 - a.0) / (b.0 - a.0);
-        (x1, a.1 + t * (b.1 - a.1))
-    });
-    if p.is_empty() { return p; }
-    p = clip_halfplane(&p, |_, y| y >= y0, |a, b| {
-        let t = (y0 - a.1) / (b.1 - a.1);
-        (a.0 + t * (b.0 - a.0), y0)
-    });
-    if p.is_empty() { return p; }
-    clip_halfplane(&p, |_, y| y <= y1, |a, b| {
-        let t = (y1 - a.1) / (b.1 - a.1);
-        (a.0 + t * (b.0 - a.0), y1)
-    })
+    p = clip_halfplane(
+        &p,
+        |x, _| x >= x0,
+        |a, b| {
+            let t = (x0 - a.0) / (b.0 - a.0);
+            (x0, a.1 + t * (b.1 - a.1))
+        },
+    );
+    if p.is_empty() {
+        return p;
+    }
+    p = clip_halfplane(
+        &p,
+        |x, _| x <= x1,
+        |a, b| {
+            let t = (x1 - a.0) / (b.0 - a.0);
+            (x1, a.1 + t * (b.1 - a.1))
+        },
+    );
+    if p.is_empty() {
+        return p;
+    }
+    p = clip_halfplane(
+        &p,
+        |_, y| y >= y0,
+        |a, b| {
+            let t = (y0 - a.1) / (b.1 - a.1);
+            (a.0 + t * (b.0 - a.0), y0)
+        },
+    );
+    if p.is_empty() {
+        return p;
+    }
+    clip_halfplane(
+        &p,
+        |_, y| y <= y1,
+        |a, b| {
+            let t = (y1 - a.1) / (b.1 - a.1);
+            (a.0 + t * (b.0 - a.0), y1)
+        },
+    )
 }
 
 /// Area (DBU²) of a merged region clipped to the rect `[x0,x1] × [y0,y1]`.
@@ -814,7 +889,10 @@ pub fn merged_area_dbu(m: &MergedPoly) -> f64 {
 /// point for per-region violations.
 pub fn merged_centroid_dbu(m: &MergedPoly) -> (f64, f64) {
     let n = m.outer.len().max(1) as f64;
-    let (sx, sy) = m.outer.iter().fold((0.0, 0.0), |(sx, sy), p| (sx + p.x as f64, sy + p.y as f64));
+    let (sx, sy) = m
+        .outer
+        .iter()
+        .fold((0.0, 0.0), |(sx, sy), p| (sx + p.x as f64, sy + p.y as f64));
     (sx / n, sy / n)
 }
 
@@ -847,13 +925,17 @@ fn coverage_y(m: &MergedPoly, xs: f64, ylo: f64, yhi: f64) -> Vec<(f64, f64)> {
         }
     };
     scan(&m.outer);
-    for h in &m.holes { scan(h); }
+    for h in &m.holes {
+        scan(h);
+    }
     ys.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let mut out = Vec::new();
     let mut i = 0;
     while i + 1 < ys.len() {
         let (lo, hi) = (ys[i].max(ylo), ys[i + 1].min(yhi));
-        if hi > lo { out.push((lo, hi)); }
+        if hi > lo {
+            out.push((lo, hi));
+        }
         i += 2;
     }
     out
@@ -877,30 +959,43 @@ fn coverage_x(m: &MergedPoly, ys: f64, xlo: f64, xhi: f64) -> Vec<(f64, f64)> {
         }
     };
     scan(&m.outer);
-    for h in &m.holes { scan(h); }
+    for h in &m.holes {
+        scan(h);
+    }
     xs.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let mut out = Vec::new();
     let mut i = 0;
     while i + 1 < xs.len() {
         let (lo, hi) = (xs[i].max(xlo), xs[i + 1].min(xhi));
-        if hi > lo { out.push((lo, hi)); }
+        if hi > lo {
+            out.push((lo, hi));
+        }
         i += 2;
     }
     out
 }
 
 fn intervals_overlap(a: &[(f64, f64)], b: &[(f64, f64)]) -> bool {
-    a.iter().any(|&(a0, a1)| b.iter().any(|&(b0, b1)| a0 < b1 && b0 < a1))
+    a.iter()
+        .any(|&(a0, a1)| b.iter().any(|&(b0, b1)| a0 < b1 && b0 < a1))
 }
 
 /// Minimal union-find with path compression (shared by the region stitching here,
 /// net extraction and the array-space clustering).
-pub(crate) struct UnionFind { parent: Vec<usize> }
+pub(crate) struct UnionFind {
+    parent: Vec<usize>,
+}
 impl UnionFind {
-    pub(crate) fn new(n: usize) -> Self { Self { parent: (0..n).collect() } }
+    pub(crate) fn new(n: usize) -> Self {
+        Self {
+            parent: (0..n).collect(),
+        }
+    }
     pub(crate) fn find(&mut self, x: usize) -> usize {
         let mut r = x;
-        while self.parent[r] != r { r = self.parent[r]; }
+        while self.parent[r] != r {
+            r = self.parent[r];
+        }
         let mut c = x;
         while self.parent[c] != r {
             let next = self.parent[c];
@@ -911,7 +1006,9 @@ impl UnionFind {
     }
     pub(crate) fn union(&mut self, a: usize, b: usize) {
         let (ra, rb) = (self.find(a), self.find(b));
-        if ra != rb { self.parent[ra] = rb; }
+        if ra != rb {
+            self.parent[ra] = rb;
+        }
     }
 }
 
@@ -1028,7 +1125,9 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
         let cx1 = ((tx as i64 + 1) * t) as f64;
         let cy1 = ((ty as i64 + 1) * t) as f64;
         for poly in polys {
-            let Some(piece) = Piece::of(poly, cx0, cy0, cx1, cy1) else { continue };
+            let Some(piece) = Piece::of(poly, cx0, cy0, cx1, cy1) else {
+                continue;
+            };
             let id = pieces.len();
             pieces.push(piece);
             if record_polys {
@@ -1050,7 +1149,10 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
     for (id, p) in pieces.iter().enumerate() {
         let root = uf.find(id);
         let region = *root_to_region.entry(root).or_insert_with(|| {
-            regions.push(Region { area_dbu: 0.0, marker: p.marker });
+            regions.push(Region {
+                area_dbu: 0.0,
+                marker: p.marker,
+            });
             largest.push(0.0);
             regions.len() - 1
         });
@@ -1128,7 +1230,8 @@ fn polys_overlap(a: &MergedPoly, b: &MergedPoly) -> bool {
     }
     let av = vec![merged_to_shape(a)];
     let bv = vec![merged_to_shape(b)];
-    !av.overlay(&bv, OverlayRule::Intersect, FillRule::NonZero).is_empty()
+    !av.overlay(&bv, OverlayRule::Intersect, FillRule::NonZero)
+        .is_empty()
 }
 
 /// Build a selection virtual's tiles: keep whole *regions* of the candidate layer
@@ -1330,7 +1433,9 @@ pub fn analyze_regions(
             for dx in -ring..=ring {
                 for dy in -ring..=ring {
                     let (nx, ny) = (tx + dx, ty + dy);
-                    let Some(ps) = metal.get(&(nx, ny)) else { continue };
+                    let Some(ps) = metal.get(&(nx, ny)) else {
+                        continue;
+                    };
                     let bx0 = (nx as i64 * t) as f64;
                     let by0 = (ny as i64 * t) as f64;
                     let bx1 = ((nx as i64 + 1) * t) as f64;
@@ -1363,7 +1468,10 @@ pub fn analyze_regions(
                 if !leftover.is_empty() {
                     continue;
                 }
-                if let Some(i) = local_polys.iter().position(|p| point_in_merged(ecx, ecy, p)) {
+                if let Some(i) = local_polys
+                    .iter()
+                    .position(|p| point_in_merged(ecx, ecy, p))
+                {
                     local[i].wide = true;
                     local[i].wide_at = (ecx, ecy);
                 }
@@ -1442,7 +1550,11 @@ fn bbox_of(b: &GdsBoundary) -> Option<(i32, i32, i32, i32)> {
         x1 = x1.max(p.x);
         y1 = y1.max(p.y);
     }
-    if x0 == i32::MAX { None } else { Some((x0, y0, x1, y1)) }
+    if x0 == i32::MAX {
+        None
+    } else {
+        Some((x0, y0, x1, y1))
+    }
 }
 
 /// Tiled merge of one layer on the global grid (origin (0,0), `tile_dbu`).
@@ -1454,17 +1566,15 @@ fn bbox_of(b: &GdsBoundary) -> Option<(i32, i32, i32, i32)> {
 /// for a *local* rule (width/space/notch ≤ halo) each tile's geometry is
 /// identical to a global merge within its core, because both walls of a thin
 /// feature and any shape that would merge with near-core geometry lie in the halo.
-fn build_tiled_merge(
-    boundaries: &[GdsBoundary],
-    tile_dbu: i32,
-    halo_dbu: i32,
-) -> TileMap {
+fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -> TileMap {
     let tile = tile_dbu.max(1) as i64;
     let halo = halo_dbu.max(0) as i64;
 
     let mut buckets: HashMap<(i32, i32), Vec<&GdsBoundary>> = HashMap::new();
     for b in boundaries {
-        let Some((x0, y0, x1, y1)) = bbox_of(b) else { continue };
+        let Some((x0, y0, x1, y1)) = bbox_of(b) else {
+            continue;
+        };
         let tx0 = (x0 as i64 - halo).div_euclid(tile) as i32;
         let tx1 = (x1 as i64 + halo).div_euclid(tile) as i32;
         let ty0 = (y0 as i64 - halo).div_euclid(tile) as i32;
@@ -1524,7 +1634,8 @@ impl MergedCache {
         sources: Vec<(i16, i16)>,
         text: Option<String>,
     ) {
-        self.virtual_defs.insert(key, TiledVirtual { op, sources, text });
+        self.virtual_defs
+            .insert(key, TiledVirtual { op, sources, text });
     }
 
     /// Whole-layer connected regions (areas + markers), built by stitching the
@@ -1579,7 +1690,12 @@ impl MergedCache {
     /// Core rectangle of tile `(tx, ty)` on the global grid.
     pub fn core(&self, tx: i32, ty: i32) -> Core {
         let t = self.tile_dbu as i64;
-        Core { x0: tx as i64 * t, y0: ty as i64 * t, x1: (tx as i64 + 1) * t, y1: (ty as i64 + 1) * t }
+        Core {
+            x0: tx as i64 * t,
+            y0: ty as i64 * t,
+            x1: (tx as i64 + 1) * t,
+            y1: (ty as i64 + 1) * t,
+        }
     }
 
     /// Merge `(layer, datatype)` and cache it if not already done.  A registered
@@ -1620,20 +1736,27 @@ impl MergedCache {
                 // candidate = source[0], filter = source[1] (empty if absent).
                 let empty = TileMap::new();
                 let cand = &self.layers[&def.sources[0]];
-                let filt = def.sources.get(1).map(|s| &self.layers[s]).unwrap_or(&empty);
+                let filt = def
+                    .sources
+                    .get(1)
+                    .map(|s| &self.layers[s])
+                    .unwrap_or(&empty);
                 let keep = !matches!(def.op, VirtualOp::NotInteracting);
                 let tiles = build_selection_tiles(cand, filt, keep, self.tile_dbu);
                 self.layers.insert(key, tiles);
                 return;
             }
-            let src_maps: Vec<&TileMap> =
-                def.sources.iter().map(|s| &self.layers[s]).collect();
+            let src_maps: Vec<&TileMap> = def.sources.iter().map(|s| &self.layers[s]).collect();
             let tiles = build_virtual_tiles(def.op, &src_maps);
             self.layers.insert(key, tiles);
             return;
         }
         let tile = self.tile_dbu;
-        let halo = self.halo_by_layer.get(&key).copied().unwrap_or(self.halo_dbu);
+        let halo = self
+            .halo_by_layer
+            .get(&key)
+            .copied()
+            .unwrap_or(self.halo_dbu);
         let tiles = build_tiled_merge(layout.get(layer, datatype), tile, halo);
         self.layers.insert(key, tiles);
     }
@@ -1661,7 +1784,12 @@ mod tests {
 
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
-            outer: vec![IntPoint::new(x0, y0), IntPoint::new(x1, y0), IntPoint::new(x1, y1), IntPoint::new(x0, y1)],
+            outer: vec![
+                IntPoint::new(x0, y0),
+                IntPoint::new(x1, y0),
+                IntPoint::new(x1, y1),
+                IntPoint::new(x0, y1),
+            ],
             holes: vec![],
         }
     }
@@ -1676,7 +1804,11 @@ mod tests {
         tiles.insert((1, 0), vec![rect(0, 0, 60_000, 20_000)]);
         let regions = stitch_regions(&tiles, 50_000);
         assert_eq!(regions.len(), 1, "spanning region should be one");
-        assert!((regions[0].area_dbu - 1.2e9).abs() < 1.0, "area = {}", regions[0].area_dbu);
+        assert!(
+            (regions[0].area_dbu - 1.2e9).abs() < 1.0,
+            "area = {}",
+            regions[0].area_dbu
+        );
     }
 
     /// Two regions separated by a gap across the border stay distinct.
@@ -1694,8 +1826,12 @@ mod tests {
     fn lshape() -> MergedPoly {
         MergedPoly {
             outer: vec![
-                IntPoint::new(0, 0), IntPoint::new(100, 0), IntPoint::new(100, 50),
-                IntPoint::new(50, 50), IntPoint::new(50, 100), IntPoint::new(0, 100),
+                IntPoint::new(0, 0),
+                IntPoint::new(100, 0),
+                IntPoint::new(100, 50),
+                IntPoint::new(50, 50),
+                IntPoint::new(50, 100),
+                IntPoint::new(0, 100),
             ],
             holes: vec![],
         }
@@ -1703,14 +1839,25 @@ mod tests {
 
     #[test]
     fn is_square_classifies_shapes() {
-        assert!(is_square(&rect(0, 0, 160, 160)), "equal-sided rectangle is a square");
-        assert!(!is_square(&rect(0, 0, 160, 400)), "unequal-sided rectangle is a bar");
-        assert!(!is_square(&lshape()), "L-shape with a square bbox is not a square");
+        assert!(
+            is_square(&rect(0, 0, 160, 160)),
+            "equal-sided rectangle is a square"
+        );
+        assert!(
+            !is_square(&rect(0, 0, 160, 400)),
+            "unequal-sided rectangle is a bar"
+        );
+        assert!(
+            !is_square(&lshape()),
+            "L-shape with a square bbox is not a square"
+        );
         // A square outline with a hole is not a (filled) square.
         let mut holed = rect(0, 0, 200, 200);
         holed.holes.push(vec![
-            IntPoint::new(50, 50), IntPoint::new(50, 150),
-            IntPoint::new(150, 150), IntPoint::new(150, 50),
+            IntPoint::new(50, 50),
+            IntPoint::new(50, 150),
+            IntPoint::new(150, 150),
+            IntPoint::new(150, 50),
         ]);
         assert!(!is_square(&holed), "holed square is not a filled square");
     }

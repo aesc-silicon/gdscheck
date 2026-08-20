@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, poly, rect, space_pattern, min_width_pattern, max_width_pattern, notch_pattern, density_pattern, enclosure_pattern, write_gz};
+use crate::helpers::{
+    density_pattern, enclosure_pattern, layer, library, max_width_pattern, min_width_pattern,
+    notch_pattern, poly, rect, space_pattern, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 use std::f64::consts::SQRT_2;
 
@@ -22,7 +25,10 @@ fn snap(v: f64) -> f64 {
 fn band(l: (i16, i16), x: f64, y: f64, w: f64, run: f64) -> gds21::GdsElement {
     let wt = snap(w * SQRT_2); // horizontal edge so the perpendicular wall spacing is w
     let h = snap(run / SQRT_2); // slant so the diagonal run length is `run`
-    poly(l, &[(x, y), (x + wt, y), (x + wt + h, y + h), (x + h, y + h)])
+    poly(
+        l,
+        &[(x, y), (x + wt, y), (x + wt + h, y + h), (x + h, y + h)],
+    )
 }
 
 pub fn generate(pdk: &PdkConfig) {
@@ -94,7 +100,7 @@ fn m_c1(pdk: &PdkConfig, index: i32, dir: &str) {
 fn m_d(pdk: &PdkConfig, index: i32, dir: &str) {
     let l = layer(pdk, &format!("Metal{}", index));
     let elems = vec![
-        rect(l, OFFSET, OFFSET, OFFSET + 0.40, OFFSET + 0.40),       // 0.160 µm² -> clean
+        rect(l, OFFSET, OFFSET, OFFSET + 0.40, OFFSET + 0.40), // 0.160 µm² -> clean
         rect(l, OFFSET, OFFSET + 5.0, OFFSET + 0.40, OFFSET + 5.35), // 0.140 µm² -> violation
     ];
     write_gz(&format!("{dir}/M{index}.d.gds.gz"), library("TOP", elems));
@@ -117,7 +123,10 @@ fn m_e(pdk: &PdkConfig, index: i32, dir: &str) {
         rect(m, 5.0, 0.0, 7.0, 0.5),
         rect(m, 5.0, 0.72, 7.0, 1.22),
     ];
-    write_gz(&format!("{dir}/M{index}.e.fail.gds.gz"), library("TOP", fail));
+    write_gz(
+        &format!("{dir}/M{index}.e.fail.gds.gz"),
+        library("TOP", fail),
+    );
 
     let clean = vec![
         // line 0.385 µm wide (one grid step under the 0.39 µm "wide" threshold, so
@@ -140,8 +149,14 @@ fn m_e(pdk: &PdkConfig, index: i32, dir: &str) {
 fn m_f(pdk: &PdkConfig, index: i32, dir: &str) {
     let m = layer(pdk, &format!("Metal{}", index));
 
-    let fail = vec![rect(m, 0.0, 0.0, 12.0, 12.0), rect(m, 12.5, 0.0, 24.5, 12.0)];
-    write_gz(&format!("{dir}/M{index}.f.fail.gds.gz"), library("TOP", fail));
+    let fail = vec![
+        rect(m, 0.0, 0.0, 12.0, 12.0),
+        rect(m, 12.5, 0.0, 24.5, 12.0),
+    ];
+    write_gz(
+        &format!("{dir}/M{index}.f.fail.gds.gz"),
+        library("TOP", fail),
+    );
 
     let clean = vec![
         // line exactly 10 µm wide (not *wider than* 10) — 0.5 µm gap, 12 µm run
@@ -163,7 +178,7 @@ fn m_f(pdk: &PdkConfig, index: i32, dir: &str) {
 fn m_g(pdk: &PdkConfig, index: i32, dir: &str) {
     let l = layer(pdk, &format!("Metal{}", index));
     let elems = vec![
-        band(l, OFFSET, OFFSET, 0.20, 1.00),       // narrow + long run  -> 2 violations
+        band(l, OFFSET, OFFSET, 0.20, 1.00), // narrow + long run  -> 2 violations
         band(l, OFFSET + 5.0, OFFSET, 0.30, 1.00), // wide enough        -> clean
         band(l, OFFSET + 10.0, OFFSET, 0.20, 0.40), // narrow but short  -> clean (run gate)
     ];
@@ -180,10 +195,7 @@ fn m_i(pdk: &PdkConfig, index: i32, dir: &str) {
     let gap = 0.20;
     let x0 = OFFSET;
     let x1 = OFFSET + snap(w * SQRT_2) + snap(gap * SQRT_2); // shift band B perpendicular by the gap
-    let elems = vec![
-        band(l, x0, OFFSET, w, 1.00),
-        band(l, x1, OFFSET, w, 1.00),
-    ];
+    let elems = vec![band(l, x0, OFFSET, w, 1.00), band(l, x1, OFFSET, w, 1.00)];
     write_gz(&format!("{dir}/M{index}.i.gds.gz"), library("TOP", elems));
 }
 
@@ -191,14 +203,20 @@ fn mfil_a1(pdk: &PdkConfig, index: i32, dir: &str) {
     // M{n}Fil.a1: min_width 1.0 — filler features must be at least 1 µm wide.
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let elems = min_width_pattern(fill, 1.0, 1.0, 20.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}Fil.a1.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.a1.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn mfil_a2(pdk: &PdkConfig, index: i32, dir: &str) {
     // M{n}Fil.a2: max_width 5.0 — filler features must be at most 5 µm wide.
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let elems = max_width_pattern(fill, 5.0, 5.0, 20.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}Fil.a2.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.a2.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn mfil_b(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -206,7 +224,10 @@ fn mfil_b(pdk: &PdkConfig, index: i32, dir: &str) {
     // of the width limits (1..5), so only the spacing rule fires.
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let elems = space_pattern(fill, fill, 2.0, 0.42, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}Fil.b.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.b.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn mfil_d(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -214,7 +235,10 @@ fn mfil_d(pdk: &PdkConfig, index: i32, dir: &str) {
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let trans = layer(pdk, "TRANS");
     let elems = space_pattern(fill, trans, 2.0, 1.00, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}Fil.d.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.d.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn metal_a(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -228,14 +252,20 @@ fn metal_b_space(pdk: &PdkConfig, index: i32, dir: &str) {
     let space = if index == 1 { 0.18 } else { 0.21 };
     let l = layer(pdk, &format!("Metal{}", index));
     let elems = space_pattern(l, l, 1.0, space, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}.b.space.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}.b.space.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn metal_b_notch(pdk: &PdkConfig, index: i32, dir: &str) {
     let notch = if index == 1 { 0.18 } else { 0.21 };
     let l = layer(pdk, &format!("Metal{}", index));
     let elems = notch_pattern(l, 0.25, notch, 1.0, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}.b.notch.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}.b.notch.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn metal_j(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -250,7 +280,10 @@ fn metal_j(pdk: &PdkConfig, index: i32, dir: &str) {
     write_gz(&format!("{dir}/M{index}.j.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(149.99));
-    write_gz(&format!("{dir}/M{index}.j.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/M{index}.j.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn metal_k(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -271,14 +304,20 @@ fn metal_k(pdk: &PdkConfig, index: i32, dir: &str) {
     write_gz(&format!("{dir}/M{index}.k.gds.gz"), library("TOP", elems));
 
     let elems_fail = density_pattern(boundary, 1000.0, &stripes(200.01));
-    write_gz(&format!("{dir}/M{index}.k.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/M{index}.k.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 fn mfil_c_space(pdk: &PdkConfig, index: i32, dir: &str) {
     let fill = layer(pdk, &format!("Metal{}.filler", index));
     let met = layer(pdk, &format!("Metal{}", index));
     let elems = space_pattern(fill, met, 1.0, 0.42, OFFSET, SPACE_DELTA);
-    write_gz(&format!("{dir}/M{index}Fil.c.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.c.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -299,7 +338,10 @@ fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
         rect(met, 100.0, 810.0, 700.0, 840.0),
         rect(met, 850.0, 810.0, 950.0, 840.0),
     ]);
-    write_gz(&format!("{dir}/M{index}Fil.h.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.h.gds.gz"),
+        library("TOP", elems),
+    );
 
     let mut elems_fail = density_pattern(boundary, 1000.0, &[]);
     elems_fail.extend([
@@ -308,7 +350,10 @@ fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
         rect(met, 0.0, 800.0, 800.0, 849.99),
         rect(met, 800.0, 800.0, 1000.0, 849.9),
     ]);
-    write_gz(&format!("{dir}/M{index}Fil.h.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/M{index}Fil.h.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 /// M{n}Fil.h/k boundary handling: the chip's raw bounding box (from *all* shapes)
@@ -335,14 +380,23 @@ fn mfil_h_boundary(pdk: &PdkConfig, index: i32, dir: &str) {
     let boundary = layer(pdk, "EdgeSeal.boundary");
     let trans = layer(pdk, "TRANS");
 
-    let mut elems = vec![rect(boundary, 0.0, 0.0, 900.0, 900.0), rect(trans, 950.0, 950.0, 1000.0, 1000.0)];
+    let mut elems = vec![
+        rect(boundary, 0.0, 0.0, 900.0, 900.0),
+        rect(trans, 950.0, 950.0, 1000.0, 1000.0),
+    ];
     for k in 0..=8 {
         let y0 = k as f64 * 100.0;
         elems.push(rect(met, 0.0, y0, 900.0, y0 + 40.0));
     }
-    write_gz(&format!("{dir}/M{index}Fil.h.boundary_ok.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.h.boundary_ok.gds.gz"),
+        library("TOP", elems),
+    );
 
-    let mut elems_fail = vec![rect(boundary, 0.0, 0.0, 900.0, 900.0), rect(trans, 950.0, 950.0, 1000.0, 1000.0)];
+    let mut elems_fail = vec![
+        rect(boundary, 0.0, 0.0, 900.0, 900.0),
+        rect(trans, 950.0, 950.0, 1000.0, 1000.0),
+    ];
     for k in 0..=7 {
         let y0 = k as f64 * 100.0;
         elems_fail.push(rect(met, 0.0, y0, 900.0, y0 + 40.0));
@@ -351,7 +405,10 @@ fn mfil_h_boundary(pdk: &PdkConfig, index: i32, dir: &str) {
     // column, which gets only a small starved block instead of the usual stripe.
     elems_fail.push(rect(met, 0.0, 800.0, 800.0, 840.0));
     elems_fail.push(rect(met, 800.0, 800.0, 820.0, 820.0));
-    write_gz(&format!("{dir}/M{index}Fil.h.boundary_fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/M{index}Fil.h.boundary_fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }
 
 /// M{n}Fil.h/k boundary handling, ring-shaped: a real EdgeSeal is a hollow frame around
@@ -378,7 +435,10 @@ fn mfil_h_boundary_ring(pdk: &PdkConfig, index: i32, dir: &str) {
         let y0 = k as f64 * 100.0;
         elems.push(rect(met, 0.0, y0, 900.0, y0 + 40.0));
     }
-    write_gz(&format!("{dir}/M{index}Fil.h.boundary_ring.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.h.boundary_ring.gds.gz"),
+        library("TOP", elems),
+    );
 }
 
 fn mfil_k(pdk: &PdkConfig, index: i32, dir: &str) {
@@ -398,7 +458,10 @@ fn mfil_k(pdk: &PdkConfig, index: i32, dir: &str) {
         rect(met, 100.0, 810.0, 700.0, 940.0),
         rect(met, 850.0, 810.0, 950.0, 940.0),
     ]);
-    write_gz(&format!("{dir}/M{index}Fil.k.gds.gz"), library("TOP", elems));
+    write_gz(
+        &format!("{dir}/M{index}Fil.k.gds.gz"),
+        library("TOP", elems),
+    );
 
     let mut elems_fail = density_pattern(boundary, 1000.0, &[]);
     elems_fail.extend([
@@ -407,5 +470,8 @@ fn mfil_k(pdk: &PdkConfig, index: i32, dir: &str) {
         rect(met, 0.0, 800.0, 800.0, 950.01),
         rect(met, 800.0, 800.0, 1000.0, 950.01),
     ]);
-    write_gz(&format!("{dir}/M{index}Fil.k.fail.gds.gz"), library("TOP", elems_fail));
+    write_gz(
+        &format!("{dir}/M{index}Fil.k.fail.gds.gz"),
+        library("TOP", elems_fail),
+    );
 }

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::{OFFSET, SPACE_DELTA};
-use crate::helpers::{layer, library, rect, space_pattern, min_width_pattern, write_gz};
+use crate::helpers::{layer, library, min_width_pattern, rect, space_pattern, write_gz};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/tgo";
@@ -36,7 +36,13 @@ fn tgo_a(pdk: &PdkConfig) {
         rect(activ, o + 0.3, o + 0.3, o + 1.3, o + 1.3),
         rect(tgo, o + 0.03, o + 0.03, o + 1.57, o + 1.57), // 0.27 all round → clean
         rect(activ, o + 4.0, o + 4.0, o + 5.0, o + 5.0),
-        rect(tgo, o + 4.0 - 0.26, o + 4.0 - 0.27, o + 5.0 + 0.27, o + 5.0 + 0.27), // 0.26 left → fail
+        rect(
+            tgo,
+            o + 4.0 - 0.26,
+            o + 4.0 - 0.27,
+            o + 5.0 + 0.27,
+            o + 5.0 + 0.27,
+        ), // 0.26 left → fail
     ];
     write_gz(&format!("{DIR}/TGO.a.gds.gz"), library("TOP", elems));
 }
@@ -51,7 +57,13 @@ fn tgo_b(pdk: &PdkConfig) {
 
 /// A transistor (Activ + a gate crossing it) at `(x, y)`, Activ `aw`×1 µm, gate 0.4 µm
 /// wide centred, extending 0.5 µm past the Activ top/bottom.
-fn transistor(activ: (i16, i16), gp: (i16, i16), x: f64, y: f64, aw: f64) -> Vec<gds21::GdsElement> {
+fn transistor(
+    activ: (i16, i16),
+    gp: (i16, i16),
+    x: f64,
+    y: f64,
+    aw: f64,
+) -> Vec<gds21::GdsElement> {
     let gx = x + aw / 2.0 - 0.2;
     vec![
         rect(activ, x, y, x + aw, y + 1.0),
