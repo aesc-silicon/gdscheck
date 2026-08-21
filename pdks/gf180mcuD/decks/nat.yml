@@ -2,8 +2,65 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Native-VT device.
+# Native-VT NMOS.  Ported from rule_decks/nat.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/nat.rb in the gf180mcu PDK.
-rules: []
+# NAT.6 and NAT.9 are not ported: both select by *how many times* a region meets
+# another - `covering(comp, 2)` and `interacting(ngate, 2)` - and this engine's
+# selectors are boolean.
+#
+# NAT.4 and NAT.5 look like edge rules - `poly.edges.and(ngate.edges).width(...)` - but
+# that is the gate-length shape: measure the poly's own width, masked to where it forms
+# the device gate.  gate_length does exactly that, and exists because the IHP port hit
+# the same shape in Gat.a1-a4.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 28 of 42, no false positives.  NAT.4 is exact (8 of 8) and NAT.5
+# gets 3 of 6; the remaining 14 misses are NAT.6 and NAT.9, which are not ported.
+rules:
+  - id: NAT.1
+    check: min_enclosure
+    layers: [nat, nat_ncomp]
+    value: 2.0
+    params:
+      interacting_only: 1
+  - id: NAT.2
+    check: min_space
+    layers: [nat, comp_outside_nat]
+    value: 0.3
+  - id: NAT.3
+    check: min_space
+    layers: [nat, nwell]
+    value: 0.5
+  - id: NAT.4
+    check: gate_length
+    layers: [poly_nat_lv, ngate_no_nwell]
+    value: 1.8
+  - id: NAT.5
+    check: gate_length
+    layers: [poly_nat_mv, ngate_no_nwell]
+    value: 1.8
+  - id: NAT.7
+    check: min_space
+    layers: [nat]
+    value: 0.74
+  - id: NAT.7
+    check: min_notch
+    layers: [nat]
+    value: 0.74
+  # A NAT that meets a dualgate must be wholly inside it.
+  - id: NAT.8
+    check: nonempty
+    layers: [nat8_viol]
+    value: 0.0
+  - id: NAT.10
+    check: nonempty
+    layers: [nat10_viol]
+    value: 0.0
+  - id: NAT.11
+    check: nonempty
+    layers: [nat11_viol]
+    value: 0.0
+  - id: NAT.12
+    check: nonempty
+    layers: [nat12_viol]
+    value: 0.0

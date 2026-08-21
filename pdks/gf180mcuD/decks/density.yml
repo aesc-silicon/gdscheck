@@ -2,8 +2,85 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Global layer density (COMP, Poly2, Metal).
+# Global layer density.  Ported from rule_decks/density.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/density.rb in the gf180mcu PDK.
-rules: []
+# Each rule is a coverage ratio over the die.  Upstream divides by `extent`, the whole
+# layout's bounding box.  This engine's fallback is the bounding box of the shapes it
+# flattened, and the flatten is scoped to the layers the deck names - so on a
+# density-only run that fallback collapses to the measured layer's own extent and every
+# ratio reads 100%.  Naming pr_bndry avoids it: a named boundary layer is pulled into
+# the flatten, and it is the right denominator anyway.
+#
+# The consequence is that these rules are NOT validated.  The cases the PDK ships draw
+# no pr_bndry - their die outline is an annotation shape on a layer no rule names - so
+# there is nothing to measure against.  What was checked is that the pass fixtures
+# produce exactly the reference's rule set; the fail fixtures cannot be, because the
+# denominator differs.
+#
+# MT30.7 is absent: it applies only to a 30K top metal, which this variant is not.
+# MT.3 measures the same layer as M5.4 on a 5LM stack - both are kept, as upstream has
+# them, because a 6LM variant would separate them.
+rules:
+  - id: DCF.1b
+    check: min_density
+    layers: [comp, comp_dummy]
+    value: 25.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: DCF.1d
+    check: max_density
+    layers: [comp, comp_dummy]
+    value: 70.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: PL.8
+    check: min_density
+    layers: [poly2_drawn, poly2_dummy]
+    value: 14.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M1.4
+    check: min_density
+    layers: [metal1_drawn, metal1_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M2.4
+    check: min_density
+    layers: [metal2_drawn, metal2_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M3.4
+    check: min_density
+    layers: [metal3_drawn, metal3_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M4.4
+    check: min_density
+    layers: [metal4_drawn, metal4_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M5.4
+    check: min_density
+    layers: [metal5_drawn, metal5_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: MT.3
+    check: min_density
+    layers: [metal5_drawn, metal5_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0

@@ -2,8 +2,99 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Via 1-4.
+# Via 1-4.  Ported from rule_decks/via.rb, which runs one rule set per via below the
+# top metal; on this 5LM stack that is Via1 to Via4.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/via.rb in the gf180mcu PDK.
-rules: []
+# Five of the nine rules per level are not ported.  V#.2b is the 4x4-array spacing,
+# selected by interaction count and measured with projection limits.  V#.3c, V#.3d,
+# V#.4b and V#.4c all work on edge layers - an end-of-line overlap and an adjacent-edge
+# corner test against the metal above and below.
+#
+# V#.1 is a min/max size, which exact_width measures on a square via.  V1.3a differs
+# from V#.3b on the other levels only in having no margin, so both are the same
+# enclosure rule with the level's own value.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: on the via1 case every ported rule is exact - 5 of 5 logical
+# violations, no false positives, and all six misses are the rules above.
+rules:
+  - id: V1.1
+    check: exact_width
+    layers: [via1]
+    value: 0.26
+  - id: V1.2a
+    check: min_space
+    layers: [via1]
+    value: 0.26
+  - id: V1.2a
+    check: min_notch
+    layers: [via1]
+    value: 0.26
+  - id: V1.3a
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.0
+  - id: V1.4a
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.01
+  - id: V2.1
+    check: exact_width
+    layers: [via2]
+    value: 0.26
+  - id: V2.2a
+    check: min_space
+    layers: [via2]
+    value: 0.26
+  - id: V2.2a
+    check: min_notch
+    layers: [via2]
+    value: 0.26
+  - id: V2.3b
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.01
+  - id: V2.4a
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.01
+  - id: V3.1
+    check: exact_width
+    layers: [via3]
+    value: 0.26
+  - id: V3.2a
+    check: min_space
+    layers: [via3]
+    value: 0.26
+  - id: V3.2a
+    check: min_notch
+    layers: [via3]
+    value: 0.26
+  - id: V3.3b
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.01
+  - id: V3.4a
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.01
+  - id: V4.1
+    check: exact_width
+    layers: [via4]
+    value: 0.26
+  - id: V4.2a
+    check: min_space
+    layers: [via4]
+    value: 0.26
+  - id: V4.2a
+    check: min_notch
+    layers: [via4]
+    value: 0.26
+  - id: V4.3b
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.01
+  - id: V4.4a
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.01

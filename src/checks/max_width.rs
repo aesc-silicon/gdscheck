@@ -29,6 +29,7 @@ pub fn run(
         "Maximum width violation",
         move |w| w > max_w_dbu + 0.5,
         false,
+        false,
         0.5,
     )
 }

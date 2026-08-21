@@ -29,6 +29,7 @@ pub fn run(
         "Minimum width violation",
         move |w| w < min_w_dbu - 0.5,
         false,
+        true,
         0.5,
     )
 }

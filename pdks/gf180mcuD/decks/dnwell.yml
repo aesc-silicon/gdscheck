@@ -2,8 +2,34 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Deep N-well.
+# Deep N-well.  Ported from rule_decks/dnwell.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/dnwell.rb in the gf180mcu PDK.
-rules: []
+# DN.3 is not ported: "each DNWELL shall be surrounded by a PCOMP guard ring" is built
+# from `holes`, `extents` and `interacting(other, 1..1)` - a selector counting how many
+# times a region meets another, which this engine does not have.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 167 of 272 logical violations, 12 false positives.
+# 104 of the 105 misses are DN.3, which is not ported. Excluding it the deck
+# flags 167 of 168, with 12 false positives - the same same-net approximation NW.2a
+# carries: DN.2a runs as a plain geometric space, so it also fires on a different-net
+# pair below 2.5 um, which is a DN.2b violation anyway.
+rules:
+  - id: DN.1
+    check: min_width
+    layers: [dnwell]
+    value: 1.7
+  # DN.2a is the equi-potential minimum, DN.2b the different-potential one; as in NW.2a
+  # the single-layer space rule needs a notch companion.
+  - id: DN.2a
+    check: min_space
+    layers: [dnwell]
+    value: 2.5
+  - id: DN.2a
+    check: min_notch
+    layers: [dnwell]
+    value: 2.5
+  - id: DN.2b
+    check: min_space_different_net
+    layers: [dnwell]
+    value: 5.42

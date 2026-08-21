@@ -2,8 +2,69 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# ESD implant.
+# ESD implant.  Ported from rule_decks/esd.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/esd.rb in the gf180mcu PDK.
-rules: []
+# Three rules are not ported.  ESD.4a and ESD.6 measure an extension on an edge layer,
+# and ESD.4b uses KLayout's `overlap`, the width of the region two layers share, which
+# has no equivalent here.
+#
+# ESD.pl reads as an edge rule - `poly.edges.and(tgate_edges).width(0.8)` - but that is
+# the gate-length shape: the poly's own width, masked to where it forms a device gate.
+# gate_length measures exactly that.
+#
+# ESD.3b and ESD.7 are the same expression upstream - an ESD implant meeting a PCOMP -
+# reported under two ids, and are kept that way.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 23 of 26, no false positives; the three misses are ESD.4a, ESD.4b
+# and ESD.6, which are not ported.
+rules:
+  - id: ESD.1
+    check: min_width
+    layers: [esd]
+    value: 0.6
+  - id: ESD.2
+    check: min_space
+    layers: [esd]
+    value: 0.6
+  - id: ESD.2
+    check: min_notch
+    layers: [esd]
+    value: 0.6
+  - id: ESD.3a
+    check: min_space
+    layers: [esd, ncomp]
+    value: 0.6
+  - id: ESD.3b
+    check: nonempty
+    layers: [esd_on_pcomp]
+    value: 0.0
+  - id: ESD.pl
+    check: gate_length
+    layers: [poly_esd, tgate]
+    value: 0.8
+  - id: ESD.5a
+    check: min_area
+    layers: [esd]
+    value: 0.49
+  - id: ESD.5b
+    check: min_enclosed_area
+    layers: [esd]
+    value: 0.49
+  - id: ESD.7
+    check: nonempty
+    layers: [esd_on_pcomp]
+    value: 0.0
+  - id: ESD.8
+    check: min_space
+    layers: [esd, nplus_or_pplus]
+    value: 0.3
+  # The ESD implant is a 5/6 V option, so it must lie under a dualgate.
+  - id: ESD.9
+    check: nonempty
+    layers: [esd_no_dualgate]
+    value: 0.0
+  - id: ESD.10
+    check: nonempty
+    layers: [esd10_viol]
+    value: 0.0

@@ -2,8 +2,105 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# N-well.
+# N-well.  Ported from libs.tech/klayout/tech/drc/rule_decks/nwell.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/nwell.rb in the gf180mcu PDK.
-rules: []
+# Every rule comes in an _LV and an _MV form: the low-voltage well is one that
+# touches neither v5_xtor nor dualgate anywhere, the medium-voltage well is one that
+# overlaps dualgate.  NW.6_MV and NW.7_* are not DRC checks upstream.
+#
+# Validated against the PDK's own drc/testing/unit/nwell.{gds,lyrdb} with
+# tools/compare-lyrdb.py, which counts *logical* violations - markers clustered by
+# proximity, since the two engines report at different granularity and matching
+# KLayout's marker count is not the goal.
+#
+# All 13 rules fire.  The reference finds 220 logical violations, we flag 152, and we
+# report nothing it does not - 68 false cleans, no false positives.  Where the gap sits:
+#
+#   NW.5     27 of the 68.  min_enclosure marks the deficient margin; upstream also
+#            emits the whole protruding area, and there are spots we miss entirely.
+#   NW.1a    12.  Chamfered wells, mostly closed already by the oblique/axis-aligned
+#            width pass; what is left is corner geometry.
+#   NW.2a/b  27.  Two wells meeting at a single shared vertex account for much of it:
+#            touching shapes dissolve into one merged region here, so the zero-width
+#            contact is inside a region rather than between two and there is no facing
+#            pair to measure.
+#
+# An earlier note here blamed the euclidian metric.  That was wrong - min_space already
+# measures euclidian, including point-to-45-degree-edge.  The real defect was min_width
+# not pairing an oblique edge with an axis-aligned one, since fixed.
+
+rules:
+  - id: NW.1a_LV
+    check: min_width
+    layers: [nw_lv]
+    value: 0.86
+  - id: NW.1a_MV
+    check: min_width
+    layers: [nw_mv]
+    value: 0.86
+  - id: NW.1b_LV
+    check: min_width
+    layers: [nw_res_lv]
+    value: 2.0
+  - id: NW.1b_MV
+    check: min_width
+    layers: [nw_res_mv]
+    value: 2.0
+  # NW.2a is the equi-potential minimum and NW.2b the different-potential one.
+  # Upstream splits the pairs by net; this engine has no same-net-only spacing check,
+  # so NW.2a runs as a plain geometric space and also fires on a different-net pair
+  # below 0.6 um - which is a NW.2b violation as well, never a clean design.
+  # Region#space covers notches as well as inter-polygon gaps, so each single-layer
+  # space rule needs a notch companion; separation(other) does not and NW.3 has none.
+  - id: NW.2a_LV
+    check: min_space
+    layers: [nw_lv_no_ymtp]
+    value: 0.6
+  - id: NW.2a_LV
+    check: min_notch
+    layers: [nw_lv_no_ymtp]
+    value: 0.6
+  - id: NW.2a_MV
+    check: min_space
+    layers: [nw_mv_no_ymtp]
+    value: 0.74
+  - id: NW.2a_MV
+    check: min_notch
+    layers: [nw_mv_no_ymtp]
+    value: 0.74
+  - id: NW.2b_LV
+    check: min_space_different_net
+    layers: [nw_lv]
+    value: 1.4
+  - id: NW.2b_MV
+    check: min_space_different_net
+    layers: [nw_mv]
+    value: 1.7
+  - id: NW.3
+    check: min_space
+    layers: [nwell, dnwell]
+    value: 3.1
+  - id: NW.4
+    check: nonempty
+    layers: [nwell_on_lvpwell]
+    value: 0.0
+  # Upstream measures the enclosure only where the well actually meets a deep well
+  # (`nw_lv.enclosed(dnwell, ...)`), then adds the wells that overlap the deep well
+  # but reach outside it. A well nowhere near a deep well is not a NW.5 candidate at
+  # all, which is what interacting_only says here.
+  - id: NW.5_LV
+    check: min_enclosure
+    layers: [dnwell, nw_lv]
+    value: 0.5
+    params:
+      interacting_only: 1
+  - id: NW.5_MV
+    check: min_enclosure
+    layers: [dnwell, nw_mv]
+    value: 0.5
+    params:
+      interacting_only: 1
+  - id: NW.6
+    check: nonempty
+    layers: [nwell_res_in_dnwell]
+    value: 0.0

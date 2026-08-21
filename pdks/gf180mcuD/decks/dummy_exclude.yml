@@ -2,8 +2,30 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Dummy-fill exclude marker.
+# Dummy-fill exclude markers.  Ported from rule_decks/dummy_exclude.rb - all three.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/dummy_exclude.rb in the gf180mcu PDK.
-rules: []
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 5 of 8 logical violations, 1 false positive.
+# DE.3's gap is an artifact of the comparison, not the rule: upstream marks every
+# edge of an oversized NDMY, and on a shape this large those edges cluster into four
+# separate spots where we emit one marker for the region.
+rules:
+  - id: DE.2
+    check: min_width
+    layers: [ndmy_or_pmndmy]
+    value: 0.8
+  # Upstream builds DE.3 as "edges of NDMY over 15000 um2" joined with "those edges
+  # longer than 80 um".  The second set is a subset of the first, so the join is just
+  # the first: any NDMY above the area cap is the violation.
+  - id: DE.3
+    check: max_area
+    layers: [ndmy]
+    value: 15000.0
+  - id: DE.4
+    check: min_space
+    layers: [ndmy]
+    value: 20.0
+  - id: DE.4
+    check: min_notch
+    layers: [ndmy]
+    value: 20.0
