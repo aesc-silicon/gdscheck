@@ -30,6 +30,7 @@ pub fn run(
         "Exact width violation",
         move |w| (w - val_dbu).abs() > 0.5,
         false,
+        false,
         0.5,
     )
 }

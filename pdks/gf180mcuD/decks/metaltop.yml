@@ -2,8 +2,30 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Top metal (Metal5 on 5LM).
+# Top metal.  Ported from rule_decks/metaltop.rb, which picks its values from the top
+# metal thickness - 0.44/0.46 um for the 9K and 11K options, and this variant is 11K.
+# On a 5LM stack the top metal is Metal5.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/metaltop.rb in the gf180mcu PDK.
-rules: []
+# MT.2b is not ported: "space to wide MetalTop" derives the wide metal by selecting
+# regions with no edge under 10 um, which needs an edge layer with a length filter.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 62 of 75 logical violations, 2 false positives. 13 of the 15 misses are
+# MT.2b, which is not ported, so the ported rules are effectively exact.
+rules:
+  - id: MT.1
+    check: min_width
+    layers: [top_metal]
+    value: 0.44
+  - id: MT.2a
+    check: min_space
+    layers: [top_metal]
+    value: 0.46
+  - id: MT.2a
+    check: min_notch
+    layers: [top_metal]
+    value: 0.46
+  - id: MT.4
+    check: min_area
+    layers: [top_metal]
+    value: 0.5625

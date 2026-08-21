@@ -8,22 +8,6 @@ SPDX-FileCopyrightText = "2026 aesc silicon"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
-path = "tests/data/*/*gds.gz"
-SPDX-FileCopyrightText = "2026 aesc silicon"
-SPDX-License-Identifier = "AGPL-3.0-or-later"
-
-
-[[annotations]]
-path = "tests/data/*/*/*gds.gz"
-SPDX-FileCopyrightText = "2026 aesc silicon"
-SPDX-License-Identifier = "AGPL-3.0-or-later"
-
-[[annotations]]
-path = "tests/data/*/*/*/*gds.gz"
-SPDX-FileCopyrightText = "2026 aesc silicon"
-SPDX-License-Identifier = "AGPL-3.0-or-later"
-
-[[annotations]]
 path = "Cargo.lock"
 SPDX-FileCopyrightText = "2026 aesc silicon"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
@@ -37,3 +21,35 @@ SPDX-License-Identifier = "AGPL-3.0-or-later"
 path = "images/**"
 SPDX-FileCopyrightText = "2026 aesc silicon"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+
+[[annotations]]
+path = "tests/data/*/*gds.gz"
+SPDX-FileCopyrightText = "2026 aesc silicon"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = "tests/data/*/*/*gds.gz"
+SPDX-FileCopyrightText = "2026 aesc silicon"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = "tests/data/*/*/*/*gds.gz"
+SPDX-FileCopyrightText = "2026 aesc silicon"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+# DRC test cases from the GF180MCU PDK (libs.tech/klayout/tech/drc/testing/unit),
+# vendored unchanged apart from gzip.  Listed after the generic tests/data globs so
+# this more specific entry takes precedence over them.
+path = "tests/data/gf180mcuD/static/*.gds.gz"
+SPDX-FileCopyrightText = "2023 GlobalFoundries PDK Authors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+# Sealring corner cases, generated with the IHP Open PDK's P-Cell generator, so the
+# geometry derives from the PDK rather than from us.  Listed after the generic
+# tests/data globs so this more specific entry takes precedence over them.
+path = "tests/data/ihp-sg13g2/static/sealring/*.gds.gz"
+SPDX-FileCopyrightText = "IHP PDK Authors"
+SPDX-License-Identifier = "Apache-2.0"

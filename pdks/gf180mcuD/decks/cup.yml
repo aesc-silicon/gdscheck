@@ -2,8 +2,52 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Cu pillar.
+# Cu pillar.  Ported from rule_decks/cup.rb, which applies the same two rules to every
+# metal level present - Metal1 to Metal5 on this variant.  Both are about the metal
+# carrying a bond pad, so the layer is filtered to metal that meets a pad and is not
+# part of a guard ring.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/cup.rb in the gf180mcu PDK.
-rules: []
+# Not validated: the PDK ships no test case for this deck, so there is no reference
+# .lyrdb to diff against. The rules are a direct port of the upstream expressions and
+# nothing more - treat them as unverified until a fixture exists.
+rules:
+  - id: CUP.2
+    check: min_width
+    layers: [metal1_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal1_pad_nogr]
+    value: 1.0
+  - id: CUP.2
+    check: min_width
+    layers: [metal2_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal2_pad_nogr]
+    value: 1.0
+  - id: CUP.2
+    check: min_width
+    layers: [metal3_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal3_pad_nogr]
+    value: 1.0
+  - id: CUP.2
+    check: min_width
+    layers: [metal4_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal4_pad_nogr]
+    value: 1.0
+  - id: CUP.2
+    check: min_width
+    layers: [metal5_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal5_pad_nogr]
+    value: 1.0

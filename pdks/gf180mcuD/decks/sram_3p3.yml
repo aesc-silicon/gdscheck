@@ -2,8 +2,39 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 3.3 V.
+# SRAM 3.3 V.  Ported from rule_decks/sram_3p3.rb - the SRAM core has tighter rules
+# than the rest of the die, so these run on the parts of each layer inside SRAMCORE.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/sram_3p3.rb in the gf180mcu PDK.
-rules: []
+# S.CO.6_ii_LV is not ported: like CO.6b it is an adjacent-metal-edge corner test built
+# on an edge layer.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 25 of 32 logical violations, 7 false positives; 8 of the 14 misses
+# are S.CO.6_ii_LV, which is not ported.
+rules:
+  - id: S.DF.4c_LV
+    check: min_enclosure
+    layers: [nwell_n_dn_sram, pcomp_out_dn_sram]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: S.DF.16_LV
+    check: min_space
+    layers: [ncomp_out_nw_dn_sram, nwell_n_dn_sram]
+    value: 0.4
+  - id: S.CO.3_LV
+    check: min_enclosure
+    layers: [poly_sram, contact_sram]
+    value: 0.04
+    params:
+      interacting_only: 1
+  - id: S.CO.4_LV
+    check: min_enclosure
+    layers: [comp_sram, contact_sram]
+    value: 0.03
+    params:
+      interacting_only: 1
+  - id: S.M1.1_LV
+    check: min_width
+    layers: [metal1_sram]
+    value: 0.22

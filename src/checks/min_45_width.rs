@@ -33,6 +33,7 @@ pub fn run(
         "Minimum 45° width violation",
         move |w| w < min_w_dbu - 0.5,
         true,
+        false,
         min_run_dbu,
     )
 }

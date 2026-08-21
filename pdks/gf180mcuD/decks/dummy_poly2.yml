@@ -2,8 +2,72 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Poly2 dummy fill.
+# Poly2 dummy fill.  Ported from rule_decks/dummy_poly2.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/dummy_poly2.rb in the gf180mcu PDK.
-rules: []
+# DPF.12 and DPF.13 are commented out upstream - they only apply to a flow that moves
+# fill onto the active metal layers - so they are absent here too.
+#
+# Not validated: the PDK ships no test case for this deck, so there is no reference
+# .lyrdb to diff against.
+rules:
+  # Dummy poly is only ever placed on top of dummy COMP; one that is not is the error.
+  - id: DPF.1
+    check: nonempty
+    layers: [dpf1_viol]
+    value: 0.0
+  - id: DPF.2b
+    check: min_space
+    layers: [poly2_dummy]
+    value: 1.1
+  - id: DPF.2b
+    check: min_notch
+    layers: [poly2_dummy]
+    value: 1.1
+  - id: DPF.4
+    check: min_space
+    layers: [poly2_dummy, comp]
+    value: 3.2
+  - id: DPF.5
+    check: min_space
+    layers: [poly2_dummy, poly2_drawn]
+    value: 5.0
+  - id: DPF.6a
+    check: min_space
+    layers: [poly2_dummy, nwell]
+    value: 1.0
+  - id: DPF.6b
+    check: min_space
+    layers: [poly2_dummy, dnwell]
+    value: 2.0
+  - id: DPF.6c
+    check: min_space
+    layers: [poly2_dummy, lvpwell]
+    value: 1.0
+  - id: DPF.6d
+    check: min_space
+    layers: [poly2_dummy, dualgate]
+    value: 1.0
+  - id: DPF.8
+    check: min_space
+    layers: [poly2_dummy, res_mk]
+    value: 19.7
+  - id: DPF.9
+    check: min_space
+    layers: [poly2_dummy, pad]
+    value: 6.7
+  - id: DPF.11
+    check: min_space
+    layers: [poly2_dummy, ndmy]
+    value: 29.7
+  - id: DPF.14
+    check: min_space
+    layers: [poly2_dummy, ind_mk]
+    value: 3.0
+  - id: DPF.16
+    check: min_space
+    layers: [poly2_dummy, mtpmark]
+    value: 3.0
+  - id: DPF.19
+    check: min_space
+    layers: [poly2_dummy, pmndmy]
+    value: 8.0

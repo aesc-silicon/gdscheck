@@ -2,8 +2,77 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Guard ring.
+# Guard ring.  Ported from rule_decks/guard_ring.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb in the gf180mcu PDK.
-rules: []
+# GR.1 and GR.3 are not ported.  Both use KLayout's `not_in`, which compares whole
+# polygons for set membership rather than measuring geometry - "this marker is not one
+# of those shapes".  There is no equivalent here, and approximating it with a boolean
+# would mean something different.
+#
+# Not validated: the PDK ships no test case for this deck, so there is no reference
+# .lyrdb to diff against. The rules are a direct port of the upstream expressions and
+# nothing more - treat them as unverified until a fixture exists.
+rules:
+  # GR.2 keeps the guard-ring marker clear of everything on the prime die.  Upstream
+  # emits one rule per layer under a shared id; so does this.
+  - id: GR.2
+    check: min_space
+    layers: [comp, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [nwell, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [poly2, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal1, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal2, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal3, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal4, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal5, guard_ring_mk]
+    value: 10.0
+  - id: GR.4
+    check: min_width
+    layers: [metal1_in_guard_ring]
+    value: 12.0
+  - id: GR.4
+    check: min_width
+    layers: [metal2_in_guard_ring]
+    value: 12.0
+  - id: GR.4
+    check: min_width
+    layers: [metal3_in_guard_ring]
+    value: 12.0
+  - id: GR.4
+    check: min_width
+    layers: [metal4_in_guard_ring]
+    value: 12.0
+  - id: GR.4
+    check: min_width
+    layers: [metal5_in_guard_ring]
+    value: 12.0
+  - id: GR.6
+    check: min_width
+    layers: [comp_in_guard_ring]
+    value: 16.0
+  # A guard ring must have a pad opening over it.
+  - id: GR.11
+    check: nonempty
+    layers: [guard_ring_no_pad]
+    value: 0.0

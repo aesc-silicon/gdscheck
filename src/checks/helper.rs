@@ -112,6 +112,11 @@ fn scan_widths(
     cmp: &str,
     viol: impl Fn(f64) -> bool,
     oblique_only: bool,
+    // Also measure an oblique edge against an axis-aligned one (see `mixed_widths`).
+    // Minimum-width rules only: the distance across such a pair varies along the edges,
+    // so only its minimum is well defined, which is what a "at least" rule needs and what
+    // an "at most" or "exactly" rule cannot use.
+    mixed: bool,
     min_run: f64,
     // Optional mask: a rectilinear width pair is only reported when its centre lies inside
     // one of these regions (µm).  Used by gate-length rules to measure the poly width but
@@ -212,8 +217,116 @@ fn scan_widths(
         }
     } // end !oblique_only
 
+    if mixed {
+        mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, &viol);
+    }
     oblique_widths(&oedges, core, &mut push_edge, viol, min_run);
     out
+}
+
+/// Closest points of two segments and the distance between them, all in DBU.  Segments
+/// here are polygon edges that never properly cross, so the minimum always sits at an
+/// endpoint of one of them projected onto the other (or at a shared endpoint, distance 0).
+fn seg_seg_closest(
+    a0: (f64, f64),
+    a1: (f64, f64),
+    b0: (f64, f64),
+    b1: (f64, f64),
+) -> (f64, (f64, f64), (f64, f64)) {
+    // Closest point to `p` on the segment `q0→q1`, clamped to the segment.
+    let on = |p: (f64, f64), q0: (f64, f64), q1: (f64, f64)| -> (f64, f64) {
+        let (dx, dy) = (q1.0 - q0.0, q1.1 - q0.1);
+        let len2 = dx * dx + dy * dy;
+        if len2 == 0.0 {
+            return q0;
+        }
+        let t = (((p.0 - q0.0) * dx + (p.1 - q0.1) * dy) / len2).clamp(0.0, 1.0);
+        (q0.0 + t * dx, q0.1 + t * dy)
+    };
+    let mut best = (f64::INFINITY, a0, b0);
+    for (p, q, flip) in [
+        (a0, on(a0, b0, b1), false),
+        (a1, on(a1, b0, b1), false),
+        (b0, on(b0, a0, a1), true),
+        (b1, on(b1, a0, a1), true),
+    ] {
+        let d = (p.0 - q.0).hypot(p.1 - q.1);
+        if d < best.0 {
+            best = if flip { (d, q, p) } else { (d, p, q) };
+        }
+    }
+    best
+}
+
+/// Widths bounded by an **oblique edge facing an axis-aligned one** — the chamfered
+/// corner of a well against the straight edge opposite it.
+///
+/// The three passes above each pair edges of one kind: vertical with vertical, horizontal
+/// with horizontal, oblique with anti-parallel oblique.  A 45° edge facing a vertical one
+/// belongs to none of them, so the narrow strip between a chamfer and the opposite wall
+/// was measured by nothing at all — a silent miss, and a common shape, since chamfering
+/// is how a layout avoids acute angles in the first place.
+///
+/// Unlike a parallel pair the separation varies along the edges, so what is measured is
+/// the **minimum** distance between the two segments (KLayout's `euclidian` metric) and
+/// the marker is the connecting span itself rather than two facing walls.
+///
+/// A pair only bounds material when each edge's interior lies toward the other, which the
+/// two interior normals decide: for an oblique edge `a → b` the interior is to its left,
+/// and for an axis-aligned edge it is the side its wall flag names.  Adjacent edges share
+/// a vertex and so measure zero, which the `dist <= 0.5` guard drops along with the
+/// coincident-edge noise the other passes filter the same way.
+fn mixed_widths(
+    oedges: &[OEdge],
+    vedges: &[VEdge],
+    hedges: &[HEdge],
+    core: Core,
+    push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
+    viol: impl Fn(f64) -> bool,
+) {
+    for o in oedges {
+        let (ax, ay) = (o.ax as f64, o.ay as f64);
+        let (bx, by) = (o.bx as f64, o.by as f64);
+        let len = (bx - ax).hypot(by - ay);
+        if len == 0.0 {
+            continue;
+        }
+        // Interior normal of the oblique edge: metal is on the left of a → b.
+        let (nox, noy) = (-(by - ay) / len, (bx - ax) / len);
+
+        // (segment endpoints, interior normal) for every axis-aligned edge.
+        let axis = vedges
+            .iter()
+            .map(|v| {
+                let n = if v.left_wall { (1.0, 0.0) } else { (-1.0, 0.0) };
+                ((v.x as f64, v.ylo as f64), (v.x as f64, v.yhi as f64), n)
+            })
+            .chain(hedges.iter().map(|h| {
+                let n = if h.bottom_wall {
+                    (0.0, 1.0)
+                } else {
+                    (0.0, -1.0)
+                };
+                ((h.xlo as f64, h.y as f64), (h.xhi as f64, h.y as f64), n)
+            }));
+
+        for (q0, q1, (nax, nay)) in axis {
+            let (dist, po, pa) = seg_seg_closest((ax, ay), (bx, by), q0, q1);
+            if dist <= 0.5 || !viol(dist) {
+                continue;
+            }
+            // Each edge's interior must face the other, or the gap is outside the shape.
+            let (vx, vy) = (pa.0 - po.0, pa.1 - po.1);
+            if vx * nox + vy * noy <= 0.0 || -vx * nax - vy * nay <= 0.0 {
+                continue;
+            }
+            let (mx, my) = ((po.0 + pa.0) * 0.5, (po.1 + pa.1) * 0.5);
+            if !core.contains(mx, my) {
+                continue;
+            }
+            push_edge(po.0, po.1, pa.0, pa.1, dist);
+        }
+    }
 }
 
 /// Oblique widths: anti-parallel edge pairs with metal between them.  A pair is only
@@ -291,6 +404,7 @@ pub fn run_width(
     label: &str,
     viol: impl Fn(f64) -> bool + Copy + Sync,
     oblique_only: bool,
+    mixed: bool,
     min_run_dbu: f64,
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
@@ -338,6 +452,7 @@ pub fn run_width(
                             cmp,
                             viol,
                             oblique_only,
+                            mixed,
                             min_run_dbu,
                             None,
                         )
@@ -414,6 +529,9 @@ pub fn run_gate_length(
                     limit,
                     "<",
                     viol,
+                    false,
+                    // Gate length measures the poly's facing-wall width under a mask; a
+                    // mixed pair has no single width to attribute to a mask region.
                     false,
                     0.5,
                     Some(&mps),
@@ -1988,6 +2106,7 @@ mod tests {
             "<",
             |w| w < 160.0 - 0.5,
             false,
+            true,
             0.5,
             None,
         );
@@ -2011,10 +2130,60 @@ mod tests {
             "<",
             |w| w < 160.0 - 0.5,
             false,
+            true,
             0.5,
             None,
         );
         assert!(v.is_empty(), "got {}", v.len());
+    }
+
+    /// A well with a 45° chamfer across one corner: the strip above the chamfer is only
+    /// 500 DBU wide, bounded by the chamfer on one side and the vertical edge on the
+    /// other.  No pass pairs those two — vertical-with-vertical, horizontal-with-
+    /// horizontal, oblique-with-anti-parallel-oblique — so before `mixed_widths` this
+    /// shape came back clean at any rule value.  Taken from the gf180mcu nwell test case,
+    /// where it is the single most common miss.
+    #[test]
+    fn chamfered_corner_narrows_against_the_opposite_wall() {
+        let poly = MergedPoly {
+            outer: vec![
+                pt(0, 0),
+                pt(1000, 0),
+                pt(1000, 2000),
+                pt(500, 2000),
+                pt(0, 1500),
+            ],
+            holes: vec![],
+        };
+        let scan = |limit_dbu: f64, mixed: bool| {
+            scan_widths(
+                &poly,
+                core(),
+                0.001,
+                "T",
+                "min",
+                "L",
+                limit_dbu / 1000.0,
+                "<",
+                |w| w < limit_dbu - 0.5,
+                false,
+                mixed,
+                0.5,
+                None,
+            )
+        };
+        // 860 DBU rule: the 500-wide strip violates, and the marker spans the gap.
+        let v = scan(860.0, true);
+        assert_eq!(v.len(), 1, "got {}", v.len());
+        assert!(
+            v[0].message.contains("width 0.5000"),
+            "measured the wrong span: {}",
+            v[0].message
+        );
+        // Below the narrow strip the shape is a clean 1000 wide, so a 500 rule passes.
+        assert!(scan(500.0, true).is_empty());
+        // And without the mixed pass the violation is invisible — the regression itself.
+        assert!(scan(860.0, false).is_empty());
     }
 
     /// A 200×200 DBU square flagged by a `> 150` (max-width) predicate: both
@@ -2035,6 +2204,7 @@ mod tests {
             0.15,
             ">",
             |w| w > 150.0 + 0.5,
+            false,
             false,
             0.5,
             None,

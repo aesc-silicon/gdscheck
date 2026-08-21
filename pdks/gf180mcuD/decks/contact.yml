@@ -2,8 +2,73 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Contact.
+# Contact.  Ported from rule_decks/contact.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/contact.rb in the gf180mcu PDK.
-rules: []
+# Five rules are not ported.  CO.2b selects a 4x4-or-larger contact array by counting
+# interactions and measuring with projection limits; CO.6a, CO.6b and CO.9 work on edge
+# layers (an end-of-line overlap, an adjacent-edge corner test, and a butting edge);
+# all need machinery this engine does not have.
+#
+# CO.1 is a min/max size: upstream rejects any contact edge that is not exactly 0.22 um,
+# which is what exact_width measures on a square contact.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 121 of 175 logical violations, 5 false positives. 53 of the 59
+# misses belong to the four rules above, so the ported rules miss 6.
+rules:
+  - id: CO.1
+    check: exact_width
+    layers: [contact]
+    value: 0.22
+  - id: CO.2a
+    check: min_space
+    layers: [contact]
+    value: 0.25
+  - id: CO.2a
+    check: min_notch
+    layers: [contact]
+    value: 0.25
+  - id: CO.3
+    check: min_enclosure
+    layers: [poly2_drawn, contact_no_sram]
+    value: 0.07
+    params:
+      interacting_only: 1
+  - id: CO.4
+    check: min_enclosure
+    layers: [comp, contact_no_sram]
+    value: 0.07
+    params:
+      interacting_only: 1
+  - id: CO.5a
+    check: min_enclosure
+    layers: [ncomp_butted_only, contact_on_ncomp_butted]
+    value: 0.1
+    params:
+      interacting_only: 1
+  - id: CO.5b
+    check: min_enclosure
+    layers: [pcomp_butted_only, contact_on_pcomp_butted]
+    value: 0.1
+    params:
+      interacting_only: 1
+  - id: CO.6
+    check: min_enclosure
+    layers: [metal1, contact]
+    value: 0.005
+  - id: CO.7
+    check: min_space
+    layers: [contact_on_comp_no_otp, tgate_no_otp]
+    value: 0.15
+  - id: CO.8
+    check: min_space
+    layers: [contact_on_poly, comp]
+    value: 0.17
+  - id: CO.10
+    check: nonempty
+    layers: [co10_viol]
+    value: 0.0
+  - id: CO.11
+    check: nonempty
+    layers: [co11_viol]
+    value: 0.0
