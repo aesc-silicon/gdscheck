@@ -113,6 +113,58 @@ pub fn parse_virtual_op(
     })
 }
 
+/// Parse an edge layer's `op` string to a [`merge::EdgeOp`].  `min`/`max` carry the
+/// op's bounds — µm for the length filters, degrees for the angle ones.
+pub fn parse_edge_op(
+    op: &str,
+    min: Option<f64>,
+    max: Option<f64>,
+    dbu_to_um: f64,
+) -> Result<merge::EdgeOp, String> {
+    use merge::EdgeOp::*;
+    let to_dbu = |v: Option<f64>| v.map(|x| (x / dbu_to_um).round() as i32);
+    let bounds = || -> Result<(Option<i32>, Option<i32>), String> {
+        if min.is_none() && max.is_none() {
+            return Err(format!(
+                "edge op '{op}' requires a `min` and/or `max` bound"
+            ));
+        }
+        Ok((to_dbu(min), to_dbu(max)))
+    };
+    let angles = || -> Result<(i32, i32), String> {
+        match (min, max) {
+            (Some(a), Some(b)) => Ok((a.round() as i32, b.round() as i32)),
+            _ => Err(format!(
+                "edge op '{op}' requires both `min` and `max` in degrees"
+            )),
+        }
+    };
+    Ok(match op {
+        "edges" => Edges,
+        "and" => And,
+        "not" => Not,
+        "inside_part" => InsidePart,
+        "outside_part" => OutsidePart,
+        "with_length" => {
+            let (lo, hi) = bounds()?;
+            WithLength(lo, hi)
+        }
+        "without_length" => {
+            let (lo, hi) = bounds()?;
+            WithoutLength(lo, hi)
+        }
+        "with_angle" => {
+            let (lo, hi) = angles()?;
+            WithAngle(lo, hi)
+        }
+        "without_angle" => {
+            let (lo, hi) = angles()?;
+            WithoutAngle(lo, hi)
+        }
+        other => return Err(format!("unsupported edge op '{other}'")),
+    })
+}
+
 /// Run DRC for a selection of rules: either one or more decks (`decks`, suite-free
 /// per-layer rule files) or exactly one `suite` (a curated rule selection). The two are
 /// mutually exclusive — `suite` takes precedence if both are somehow supplied, and it is
@@ -217,6 +269,19 @@ pub fn run_drc(
         // Iterate to a fixpoint so every layer in the chain is pulled in.
         loop {
             let mut added = false;
+            for el in &pdk.edge_layers {
+                let Some(elayer) = pdk.layer(&el.name) else {
+                    continue;
+                };
+                if !n.contains(&(elayer.gds_layer as i16, elayer.gds_datatype as i16)) {
+                    continue;
+                }
+                for src in &el.layers {
+                    if let Some(s) = pdk.layer(src) {
+                        added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
+                    }
+                }
+            }
             for vl in &pdk.virtual_layers {
                 let Some(vlayer) = pdk.layer(&vl.name) else {
                     continue;
@@ -344,6 +409,11 @@ pub fn run_drc(
     let mut merged = merge::MergedCache::new(tile_dbu, halo_dbu, halo_by_layer);
     for (spec, op) in tiled_virtuals {
         merged.register_virtual(spec.key, op, spec.sources, spec.text);
+    }
+    for spec in pdk.tiled_edge_layers() {
+        let op = parse_edge_op(&spec.op, spec.min, spec.max, dbu_to_um)
+            .map_err(|e| format!("Edge layer '{}': {e}", spec.name))?;
+        merged.register_edge(spec.key, op, spec.sources);
     }
     let mut violations = vec![];
 

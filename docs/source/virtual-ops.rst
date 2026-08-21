@@ -265,3 +265,74 @@ layers; ``inside_ring`` does not support one virtual layer feeding another.
 
 Not to be confused with the ``inside`` *selector* above: this one clips and fills, that
 one keeps or drops whole regions.
+
+
+Edge layers
+-----------
+
+A polygon layer's atom is a filled region: booleans combine areas, selectors keep or drop
+whole regions, and the checks measure between facing walls. That leaves a class of rules
+unsayable, because they are about *one piece of a boundary* rather than about a region. A
+transistor's channel width is the length of the Activ boundary running under the gate; no
+region has that length, and the source/drain region's own width is a different quantity.
+
+``edge_layers:`` declares layers whose elements are boundary **segments**. They are
+declared beside ``virtual_layers:``, take synthetic layer numbers from the same range, and
+are referenced by rules exactly like any other layer — a check that accepts one says so,
+and rejects a polygon layer rather than silently reporting nothing.
+
+.. code-block:: yaml
+
+   edge_layers:
+     - name: sd.edges
+       op: edges
+       layers: [SourceDrain]
+     - name: gate.edges
+       op: edges
+       layers: [GatPoly]
+     - name: channel_edges
+       op: and
+       layers: [sd.edges, gate.edges]
+
+The ops:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 20 56
+
+   * - Op
+     - Sources
+     - Result
+   * - ``edges``
+     - one polygon layer
+     - every contour segment, holes included.
+   * - ``and``
+     - two edge layers
+     - the stretches they share **collinearly**. Not an area intersection: two layers
+       that overlap in area but share no wall have no common edge at all, and a partial
+       overlap yields the fragment rather than either whole segment.
+   * - ``not``
+     - two edge layers
+     - the first with every shared stretch removed, so one segment can become two.
+   * - ``inside_part`` / ``outside_part``
+     - edge layer, polygon layer
+     - the parts lying inside (or outside) the polygon, **cut** at its boundary. Every
+       polygon selector keeps or drops a region whole; these keep a piece of a segment.
+   * - ``with_length`` / ``without_length``
+     - one edge layer
+     - segments whose length is in the half-open range ``[min, max)`` µm, or the
+       complement.
+   * - ``with_angle`` / ``without_angle``
+     - one edge layer
+     - segments whose orientation in degrees is in ``[min, max]``, normalised to
+       ``[0, 180)`` so a wall reads the same whichever way its contour is walked.
+
+Checks that take an edge layer: ``min_edge_length`` and ``max_edge_length``.
+
+.. note::
+
+   An edge *expression* upstream is not always an edge *problem*. ``poly.edges.and(
+   gate.edges).width(v)`` is the gate-length shape — the poly's own width, measured only
+   where it forms a gate — which ``gate_length`` answers with a masked measurement and no
+   edge layer at all. Reach for an edge layer when the rule measures a property of the
+   boundary itself: a segment's length, or which edge of a shape is the line end.

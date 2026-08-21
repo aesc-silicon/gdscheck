@@ -1017,6 +1017,342 @@ impl Core {
 /// Merged geometry of one layer, indexed by global tile `(tx, ty)`.
 pub type TileMap = HashMap<(i32, i32), Vec<MergedPoly>>;
 
+// ===========================================================================
+// Edge layers
+//
+// A polygon layer's atom is a filled region: booleans combine areas, selectors keep or
+// drop whole regions, and the checks measure between facing walls.  That leaves a class
+// of rules unsayable, because they are about *one piece of a boundary* rather than about
+// a region.  A transistor's channel width is the length of the Activ boundary that runs
+// under the gate; no region has that length, and the source/drain region's own width is
+// a different quantity entirely.
+//
+// So edges get their own layer type, whose elements are individual boundary segments.
+// The same tiling applies — a segment belongs to the tile holding its midpoint — so edge
+// layers compose with polygon layers in the merge cache and inherit its memory bound.
+// ===========================================================================
+
+/// A directed boundary segment, in DBU.  Direction carries the same convention as the
+/// contour it came from: material lies to the left of `a → b`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Edge {
+    pub a: IntPoint,
+    pub b: IntPoint,
+}
+
+impl Edge {
+    pub fn length(&self) -> f64 {
+        (((self.b.x - self.a.x) as f64).powi(2) + ((self.b.y - self.a.y) as f64).powi(2)).sqrt()
+    }
+
+    pub fn midpoint(&self) -> (f64, f64) {
+        (
+            (self.a.x as f64 + self.b.x as f64) * 0.5,
+            (self.a.y as f64 + self.b.y as f64) * 0.5,
+        )
+    }
+
+    /// Angle of `a → b` in degrees, normalised to `[0, 180)` — an edge's orientation is
+    /// the same whichever way it is walked, so 270° and 90° are one answer.
+    pub fn angle_deg(&self) -> f64 {
+        let d = ((self.b.y - self.a.y) as f64).atan2((self.b.x - self.a.x) as f64);
+        let mut deg = d.to_degrees();
+        while deg < 0.0 {
+            deg += 180.0;
+        }
+        while deg >= 180.0 {
+            deg -= 180.0;
+        }
+        deg
+    }
+}
+
+/// Edge geometry of one layer, indexed by global tile `(tx, ty)`.
+pub type EdgeTileMap = HashMap<(i32, i32), Vec<Edge>>;
+
+/// Every contour segment of a merged region — outer ring and holes alike.
+pub fn region_edges(m: &MergedPoly) -> Vec<Edge> {
+    let mut out = Vec::new();
+    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+        let n = ring.len();
+        if n < 3 {
+            continue;
+        }
+        for i in 0..n {
+            let (a, b) = (ring[i], ring[if i + 1 == n { 0 } else { i + 1 }]);
+            if a != b {
+                out.push(Edge { a, b });
+            }
+        }
+    }
+    out
+}
+
+/// The portion of `e` that lies on `f`, if the two are collinear and overlap in more
+/// than a point.  This is what an edge-layer `and` means: not the area two layers share,
+/// but the stretch of boundary they have in common.
+fn edge_overlap(e: &Edge, f: &Edge) -> Option<Edge> {
+    let (ex, ey) = (e.b.x as i64 - e.a.x as i64, e.b.y as i64 - e.a.y as i64);
+    let (fx, fy) = (f.b.x as i64 - f.a.x as i64, f.b.y as i64 - f.a.y as i64);
+    // Parallel, and f's start on e's line: the two are collinear.
+    if ex * fy - ey * fx != 0 {
+        return None;
+    }
+    if ex * (f.a.y as i64 - e.a.y as i64) - ey * (f.a.x as i64 - e.a.x as i64) != 0 {
+        return None;
+    }
+    // Project both onto e's direction and intersect the parameter ranges.
+    let len2 = ex * ex + ey * ey;
+    if len2 == 0 {
+        return None;
+    }
+    let t = |p: IntPoint| (p.x as i64 - e.a.x as i64) * ex + (p.y as i64 - e.a.y as i64) * ey;
+    let (t0, t1) = (0, len2);
+    let (mut u0, mut u1) = (t(f.a), t(f.b));
+    if u0 > u1 {
+        std::mem::swap(&mut u0, &mut u1);
+    }
+    let (lo, hi) = (t0.max(u0), t1.min(u1));
+    if hi <= lo {
+        return None; // disjoint, or touching at a single point
+    }
+    let at = |s: i64| IntPoint {
+        x: (e.a.x as i64 + ex * s / len2) as i32,
+        y: (e.a.y as i64 + ey * s / len2) as i32,
+    };
+    Some(Edge {
+        a: at(lo),
+        b: at(hi),
+    })
+}
+
+/// `a` with every stretch it shares with any edge of `b` removed.
+fn subtract_edges(a: &Edge, b: &[Edge]) -> Vec<Edge> {
+    let (dx, dy) = (a.b.x as i64 - a.a.x as i64, a.b.y as i64 - a.a.y as i64);
+    let len2 = dx * dx + dy * dy;
+    if len2 == 0 {
+        return Vec::new();
+    }
+    // Collect the covered parameter ranges along `a`, then keep the gaps.
+    let mut cuts: Vec<(i64, i64)> = Vec::new();
+    for f in b {
+        if let Some(o) = edge_overlap(a, f) {
+            let t =
+                |p: IntPoint| (p.x as i64 - a.a.x as i64) * dx + (p.y as i64 - a.a.y as i64) * dy;
+            let (mut s, mut e) = (t(o.a), t(o.b));
+            if s > e {
+                std::mem::swap(&mut s, &mut e);
+            }
+            cuts.push((s, e));
+        }
+    }
+    if cuts.is_empty() {
+        return vec![*a];
+    }
+    cuts.sort_unstable();
+    let at = |s: i64| IntPoint {
+        x: (a.a.x as i64 + dx * s / len2) as i32,
+        y: (a.a.y as i64 + dy * s / len2) as i32,
+    };
+    let mut out = Vec::new();
+    let mut pos = 0i64;
+    for (s, e) in cuts {
+        if s > pos {
+            out.push(Edge {
+                a: at(pos),
+                b: at(s),
+            });
+        }
+        pos = pos.max(e);
+    }
+    if pos < len2 {
+        out.push(Edge {
+            a: at(pos),
+            b: at(len2),
+        });
+    }
+    out.retain(|e| e.a != e.b);
+    out
+}
+
+/// Split `e` where it crosses the boundary of `polys`, keeping the parts whose midpoint
+/// is inside (`keep_inside`) or outside it.  This is KLayout's `inside_part` /
+/// `outside_part`: an edge is not kept or dropped whole, it is cut.
+fn edge_vs_polygons(e: &Edge, polys: &[MergedPoly], keep_inside: bool) -> Vec<Edge> {
+    let (dx, dy) = (e.b.x as i64 - e.a.x as i64, e.b.y as i64 - e.a.y as i64);
+    let len2 = dx * dx + dy * dy;
+    if len2 == 0 {
+        return Vec::new();
+    }
+    // Cut parameters: the ends, plus every crossing of a polygon contour.
+    let mut ts: Vec<f64> = vec![0.0, 1.0];
+    for m in polys {
+        for f in region_edges(m) {
+            if let Some(t) = seg_cross_param(e, &f) {
+                ts.push(t);
+            }
+        }
+    }
+    ts.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    ts.dedup_by(|a, b| (*a - *b).abs() < 1e-12);
+
+    let at = |t: f64| IntPoint {
+        x: (e.a.x as f64 + dx as f64 * t).round() as i32,
+        y: (e.a.y as f64 + dy as f64 * t).round() as i32,
+    };
+    let mut out = Vec::new();
+    for w in ts.windows(2) {
+        let mid = (w[0] + w[1]) * 0.5;
+        let (mx, my) = (
+            e.a.x as f64 + dx as f64 * mid,
+            e.a.y as f64 + dy as f64 * mid,
+        );
+        let inside = polys.iter().any(|m| point_in_merged(mx, my, m));
+        if inside == keep_inside {
+            let (p, q) = (at(w[0]), at(w[1]));
+            if p != q {
+                out.push(Edge { a: p, b: q });
+            }
+        }
+    }
+    out
+}
+
+/// Parameter along `e` (in `0..=1`) where it properly crosses `f`, if it does.
+fn seg_cross_param(e: &Edge, f: &Edge) -> Option<f64> {
+    let (ex, ey) = (e.b.x as f64 - e.a.x as f64, e.b.y as f64 - e.a.y as f64);
+    let (fx, fy) = (f.b.x as f64 - f.a.x as f64, f.b.y as f64 - f.a.y as f64);
+    let den = ex * fy - ey * fx;
+    if den.abs() < 1e-12 {
+        return None; // parallel or collinear: no single crossing point
+    }
+    let (gx, gy) = (f.a.x as f64 - e.a.x as f64, f.a.y as f64 - e.a.y as f64);
+    let t = (gx * fy - gy * fx) / den;
+    let u = (gx * ey - gy * ex) / den;
+    ((0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)).then_some(t)
+}
+
+/// Operator for a tiled edge layer.  `Edges` is the bridge from polygons; the rest
+/// combine or filter edge layers, and `InsidePart`/`OutsidePart` cut an edge layer
+/// against a polygon layer.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum EdgeOp {
+    /// Every contour segment of the source *polygon* layer (KLayout `.edges`).
+    Edges,
+    /// The stretches two edge layers have in common (KLayout edge `.and`).  Collinear
+    /// overlap, not shared area.
+    And,
+    /// The first edge layer with every stretch it shares with the second removed
+    /// (KLayout edge `.not`).
+    Not,
+    /// The parts of the edge layer lying inside the *polygon* layer, cut at the
+    /// boundary (KLayout `.inside_part`).
+    InsidePart,
+    /// The parts lying outside it (KLayout `.outside_part`).
+    OutsidePart,
+    /// Keep edges whose length is in `[min, max)` DBU; an absent bound is open
+    /// (KLayout `.with_length(a..b)`).  `WithoutLength` keeps the complement.
+    WithLength(Option<i32>, Option<i32>),
+    WithoutLength(Option<i32>, Option<i32>),
+    /// Keep edges whose orientation in degrees is in `[min, max)`, normalised to
+    /// `[0, 180)` (KLayout `.with_angle`).  `WithoutAngle` keeps the complement.
+    WithAngle(i32, i32),
+    WithoutAngle(i32, i32),
+}
+
+impl EdgeOp {
+    /// True if the op's sources are polygon layers rather than edge layers.
+    fn takes_polygons(self) -> bool {
+        matches!(self, EdgeOp::Edges)
+    }
+    /// True if source[1] is a polygon layer while source[0] is an edge layer.
+    fn mixes(self) -> bool {
+        matches!(self, EdgeOp::InsidePart | EdgeOp::OutsidePart)
+    }
+}
+
+/// Apply an edge op to one tile's geometry.
+fn compose_edge_tile(op: EdgeOp, edge_srcs: &[&[Edge]], poly_srcs: &[&[MergedPoly]]) -> Vec<Edge> {
+    match op {
+        EdgeOp::Edges => poly_srcs
+            .first()
+            .map(|ps| ps.iter().flat_map(region_edges).collect())
+            .unwrap_or_default(),
+        EdgeOp::And => {
+            let (Some(a), Some(b)) = (edge_srcs.first(), edge_srcs.get(1)) else {
+                return Vec::new();
+            };
+            a.iter()
+                .flat_map(|e| b.iter().filter_map(move |f| edge_overlap(e, f)))
+                .collect()
+        }
+        EdgeOp::Not => {
+            let (Some(a), Some(b)) = (edge_srcs.first(), edge_srcs.get(1)) else {
+                return Vec::new();
+            };
+            a.iter().flat_map(|e| subtract_edges(e, b)).collect()
+        }
+        EdgeOp::InsidePart | EdgeOp::OutsidePart => {
+            let (Some(a), Some(p)) = (edge_srcs.first(), poly_srcs.first()) else {
+                return Vec::new();
+            };
+            let keep_inside = op == EdgeOp::InsidePart;
+            a.iter()
+                .flat_map(|e| edge_vs_polygons(e, p, keep_inside))
+                .collect()
+        }
+        EdgeOp::WithLength(min, max) | EdgeOp::WithoutLength(min, max) => {
+            let want = matches!(op, EdgeOp::WithLength(_, _));
+            edge_srcs
+                .first()
+                .map(|a| {
+                    a.iter()
+                        .filter(|e| {
+                            let l = e.length();
+                            let in_range = min.is_none_or(|v| l >= v as f64 - 0.5)
+                                && max.is_none_or(|v| l < v as f64 - 0.5);
+                            in_range == want
+                        })
+                        .copied()
+                        .collect()
+                })
+                .unwrap_or_default()
+        }
+        EdgeOp::WithAngle(min, max) | EdgeOp::WithoutAngle(min, max) => {
+            let want = matches!(op, EdgeOp::WithAngle(_, _));
+            edge_srcs
+                .first()
+                .map(|a| {
+                    a.iter()
+                        .filter(|e| {
+                            let d = e.angle_deg();
+                            let in_range = d >= min as f64 - 1e-9 && d <= max as f64 + 1e-9;
+                            in_range == want
+                        })
+                        .copied()
+                        .collect()
+                })
+                .unwrap_or_default()
+        }
+    }
+}
+
+/// Bucket edges by the tile holding their midpoint, so an edge layer tiles the same way
+/// a polygon layer does and a check can read one tile at a time.
+fn bucket_edges(edges: Vec<Edge>, tile_dbu: i32) -> EdgeTileMap {
+    let t = tile_dbu.max(1) as i64;
+    let mut out: EdgeTileMap = HashMap::new();
+    for e in edges {
+        let (mx, my) = e.midpoint();
+        let key = (
+            (mx as i64).div_euclid(t) as i32,
+            (my as i64).div_euclid(t) as i32,
+        );
+        out.entry(key).or_default().push(e);
+    }
+    out
+}
+
 /// Shoelace area of a simple polygon (absolute value).
 fn shoelace(p: &[(f64, f64)]) -> f64 {
     let n = p.len();
@@ -1967,6 +2303,18 @@ pub struct MergedCache {
     /// Lazy virtual layers, keyed by their synthetic (layer, datatype); built on
     /// first `ensure` from their source layers' tiles instead of the layout.
     virtual_defs: HashMap<(i16, i16), TiledVirtual>,
+    /// Edge layers, keyed the same way and built the same way, but holding boundary
+    /// segments rather than regions.  Kept apart from `layers` because the element type
+    /// differs — a check asks for one or the other, never both under one key.
+    edge_layers: HashMap<(i16, i16), EdgeTileMap>,
+    edge_defs: HashMap<(i16, i16), TiledEdge>,
+}
+
+/// A registered edge layer: its op and the source keys it is built from.
+#[derive(Clone, Debug)]
+struct TiledEdge {
+    op: EdgeOp,
+    sources: Vec<(i16, i16)>,
 }
 
 impl MergedCache {
@@ -1982,6 +2330,8 @@ impl MergedCache {
             layers: HashMap::new(),
             regions: HashMap::new(),
             virtual_defs: HashMap::new(),
+            edge_layers: HashMap::new(),
+            edge_defs: HashMap::new(),
         }
     }
 
@@ -1996,6 +2346,89 @@ impl MergedCache {
     ) {
         self.virtual_defs
             .insert(key, TiledVirtual { op, sources, text });
+    }
+
+    /// Register an edge layer, built on first [`MergedCache::edges`] from its sources.
+    pub fn register_edge(&mut self, key: (i16, i16), op: EdgeOp, sources: Vec<(i16, i16)>) {
+        self.edge_defs.insert(key, TiledEdge { op, sources });
+    }
+
+    /// True if `key` names an edge layer rather than a polygon one.
+    pub fn is_edge_layer(&self, key: (i16, i16)) -> bool {
+        self.edge_defs.contains_key(&key)
+    }
+
+    /// Build `key`'s edge tiles if not already done, resolving its sources first —
+    /// polygon sources through `ensure`, edge sources recursively through here.
+    pub fn ensure_edges(&mut self, layout: &FlatLayout, key: (i16, i16)) {
+        if self.edge_layers.contains_key(&key) {
+            return;
+        }
+        let Some(def) = self.edge_defs.get(&key).cloned() else {
+            self.edge_layers.insert(key, EdgeTileMap::new());
+            return;
+        };
+        // An op's sources are polygons, edges, or one of each; resolve accordingly.
+        for (i, &src) in def.sources.iter().enumerate() {
+            let is_poly = def.op.takes_polygons() || (def.op.mixes() && i == 1);
+            if is_poly {
+                self.ensure(layout, src.0, src.1);
+            } else {
+                self.ensure_edges(layout, src);
+            }
+        }
+
+        let empty_e: Vec<Edge> = Vec::new();
+        let empty_p: Vec<MergedPoly> = Vec::new();
+        // Compose per tile, over every tile any source touches.
+        let mut keys: HashSet<(i32, i32)> = HashSet::new();
+        for (i, &src) in def.sources.iter().enumerate() {
+            let is_poly = def.op.takes_polygons() || (def.op.mixes() && i == 1);
+            if is_poly {
+                keys.extend(self.layers[&src].keys().copied());
+            } else {
+                keys.extend(self.edge_layers[&src].keys().copied());
+            }
+        }
+        let mut out: EdgeTileMap = HashMap::new();
+        for tile in keys {
+            let mut es: Vec<&[Edge]> = Vec::new();
+            let mut ps: Vec<&[MergedPoly]> = Vec::new();
+            for (i, &src) in def.sources.iter().enumerate() {
+                let is_poly = def.op.takes_polygons() || (def.op.mixes() && i == 1);
+                if is_poly {
+                    ps.push(
+                        self.layers[&src]
+                            .get(&tile)
+                            .map(Vec::as_slice)
+                            .unwrap_or(&empty_p),
+                    );
+                } else {
+                    es.push(
+                        self.edge_layers[&src]
+                            .get(&tile)
+                            .map(Vec::as_slice)
+                            .unwrap_or(&empty_e),
+                    );
+                }
+            }
+            let composed = compose_edge_tile(def.op, &es, &ps);
+            if !composed.is_empty() {
+                // Re-bucket: an op can move an edge's midpoint out of the tile it was
+                // composed in (a cut piece sits elsewhere than its parent).
+                for (k, v) in bucket_edges(composed, self.tile_dbu) {
+                    out.entry(k).or_default().extend(v);
+                }
+            }
+        }
+        self.edge_layers.insert(key, out);
+    }
+
+    /// Per-tile edges of an edge layer.  Must be `ensure_edges`d first.
+    pub fn edges(&self, key: (i16, i16)) -> &EdgeTileMap {
+        self.edge_layers
+            .get(&key)
+            .expect("MergedCache::edges called before ensure_edges")
     }
 
     /// Whole-layer connected regions (areas + markers), built by stitching the
