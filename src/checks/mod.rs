@@ -6,6 +6,7 @@ pub mod antenna_ratio;
 pub mod area;
 pub mod coverage;
 pub mod density;
+pub mod edge_length;
 pub mod exact_width;
 pub mod extent;
 pub mod forbidden;
@@ -73,6 +74,8 @@ pub fn run_rule(
         "forbidden" => forbidden::run(rule, layout, dbu_to_um),
         "forbidden_overlap" => forbidden_overlap::run(rule, layout, dbu_to_um, merged),
         "coverage" => coverage::run(rule, layout, dbu_to_um, merged),
+        "min_edge_length" => edge_length::run_min(rule, layout, dbu_to_um, merged),
+        "max_edge_length" => edge_length::run_max(rule, layout, dbu_to_um, merged),
         "min_dim" => extent::run_min_width(rule, layout, dbu_to_um, merged),
         "max_dim" => extent::run_max_width(rule, layout, dbu_to_um, merged),
         "min_length" => extent::run_min_length(rule, layout, dbu_to_um, merged),

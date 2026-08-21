@@ -110,6 +110,33 @@ pub struct VirtualLayerDef {
     pub max: Option<f64>,
 }
 
+/// A derived *edge* layer: boundary segments rather than regions.  Declared in
+/// `pdk.yml` under `edge_layers:` and referenced by rules exactly like any other layer.
+///
+/// `min`/`max` carry the op's bounds — µm for the length filters, degrees for the angle
+/// ones — and are ignored by the ops that take none.
+#[derive(Debug, Deserialize, Clone)]
+pub struct EdgeLayerDef {
+    pub name: String,
+    pub op: String,
+    pub layers: Vec<String>,
+    #[serde(default)]
+    pub min: Option<f64>,
+    #[serde(default)]
+    pub max: Option<f64>,
+}
+
+/// An edge layer resolved to GDS numbers, ready for the merge cache.
+#[derive(Debug)]
+pub struct TiledEdgeSpec {
+    pub name: String,
+    pub key: (i16, i16),
+    pub op: String,
+    pub sources: Vec<(i16, i16)>,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+}
+
 /// A lazy virtual layer resolved to GDS numbers, ready for the merge cache.
 #[derive(Debug)]
 pub struct TiledVirtualSpec {
@@ -216,6 +243,9 @@ struct PdkRaw {
     pub suites: Vec<DeckRefRaw>,
     #[serde(default)]
     pub virtual_layers: Vec<VirtualLayerDef>,
+    /// Derived edge layers (boundary segments rather than regions).
+    #[serde(default)]
+    pub edge_layers: Vec<EdgeLayerDef>,
     /// Electrical connect graph for net extraction (used by net-aware checks).
     #[serde(default)]
     pub connectivity: Vec<ConnectivityRaw>,
@@ -256,6 +286,8 @@ pub struct PdkConfig {
     /// Suites (curated rule selections) resolved by `load_suite`, alongside decks.
     pub suites: Vec<DeckRef>,
     pub virtual_layers: Vec<VirtualLayerDef>,
+    /// Derived edge layers, referenced by rules like any other layer.
+    pub edge_layers: Vec<EdgeLayerDef>,
     /// Resolved connect graph for net extraction; empty if the PDK declares none.
     pub connectivity: Vec<crate::connectivity::ConnectSpec>,
     layer_map: HashMap<String, Layer>,
@@ -318,6 +350,9 @@ impl PdkConfig {
             raw.layers = layers;
             // Base virtuals first, the child's appended; a child entry with the same
             // name *replaces* the base one (keep the last of each name).
+            let mut edges = base.edge_layers;
+            edges.extend(raw.edge_layers);
+            raw.edge_layers = edges;
             let mut virtuals = base.virtual_layers;
             virtuals.extend(raw.virtual_layers);
             virtuals.reverse();
@@ -341,6 +376,19 @@ impl PdkConfig {
                 Layer {
                     name: vl.name.clone(),
                     gds_layer: VIRTUAL_LAYER_BASE + i as u16,
+                    gds_datatype: 0,
+                },
+            );
+        }
+        // Edge layers continue the same synthetic range, so a rule names one exactly as
+        // it names a drawn or virtual layer; the cache decides which kind it is.
+        let edge_base = VIRTUAL_LAYER_BASE + raw.virtual_layers.len() as u16;
+        for (i, el) in raw.edge_layers.iter().enumerate() {
+            layer_map.insert(
+                el.name.clone(),
+                Layer {
+                    name: el.name.clone(),
+                    gds_layer: edge_base + i as u16,
                     gds_datatype: 0,
                 },
             );
@@ -393,6 +441,7 @@ impl PdkConfig {
             decks,
             suites,
             virtual_layers: raw.virtual_layers,
+            edge_layers: raw.edge_layers,
             connectivity,
             layer_map,
             source,
@@ -645,6 +694,43 @@ impl PdkConfig {
         for (layer, dt, b) in to_insert {
             layout.insert(layer, dt, b);
         }
+    }
+
+    /// Edge layers resolved to GDS numbers, ready for the merge cache.  A source that
+    /// does not resolve is a hard skip, same as for virtual layers.
+    pub fn tiled_edge_layers(&self) -> Vec<TiledEdgeSpec> {
+        let key = |name: &str| {
+            self.layer_map
+                .get(name)
+                .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
+        };
+        let mut out = Vec::new();
+        for el in &self.edge_layers {
+            let Some(ekey) = key(&el.name) else { continue };
+            let mut sources = Vec::with_capacity(el.layers.len());
+            let mut ok = true;
+            for s in &el.layers {
+                match key(s) {
+                    Some(k) => sources.push(k),
+                    None => {
+                        eprintln!("Edge layer '{}': source layer '{}' not found", el.name, s);
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            if ok {
+                out.push(TiledEdgeSpec {
+                    name: el.name.clone(),
+                    key: ekey,
+                    op: el.op.clone(),
+                    sources,
+                    min: el.min,
+                    max: el.max,
+                });
+            }
+        }
+        out
     }
 
     /// Lazy (tiled) virtual layers, resolved to GDS numbers: `(synthetic key, op,

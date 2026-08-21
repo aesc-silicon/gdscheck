@@ -136,6 +136,14 @@ automatically (starting at 30000) and can be referenced by rules exactly like a 
 layer.
 
 
+``edge_layers:`` declares derived layers whose elements are boundary *segments* rather
+than regions — needed by rules that measure a piece of a boundary, such as a transistor's
+channel width. Each entry takes ``name``, ``op`` and ``layers``; ``min``/``max`` carry the
+op's bounds, in µm for the length filters and degrees for the angle ones. They share the
+synthetic layer-number range with ``virtual_layers`` and are referenced by rules the same
+way. See :doc:`virtual-ops`.
+
+
 The connectivity graph
 -------------------------
 

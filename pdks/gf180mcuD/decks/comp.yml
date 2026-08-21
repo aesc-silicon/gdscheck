@@ -9,14 +9,10 @@
 # whether the COMP touches v5_xtor/dualgate anywhere.  DF.1b_LV and DF.1b_MV are not
 # DRC checks upstream, and DF.15 does not exist.
 #
-# Six of the 44 rules are deliberately not ported; each needs something the engine
+# Four of the 44 rules are deliberately not ported; each needs something the engine
 # does not have yet, and a rule that silently matches nothing is worse than an absent
 # one:
 #
-#   DF.2a_LV, DF.2a_MV   Min channel width.  Measured on an edge layer -
-#                        `comp.not(poly2).edges.and(tgate.edges).with_length(...)` -
-#                        which needs edge algebra: edge extraction, an edge-to-edge
-#                        boolean, and a length filter over the result.
 #   DF.3c_MV             `drc_bjt.interacting(comp_56v, 2)` selects regions meeting
 #                        the other layer at least twice.  Our selectors are boolean;
 #                        there is no interaction count.
@@ -42,7 +38,7 @@
 # out of this very fixture are five edge-pairs there and two here, both pointing at the
 # same structure.
 #
-# All 40 ported rules fire.  The reference finds 800 logical violations and we flag 687.
+# All 42 ported rules fire.  The reference finds 800 logical violations and we flag 687.
 # 142 are missed, 33 of them belonging to the four rules above that are deliberately
 # absent, so 109 come from ported rules.  18 are false positives: 6 across DF.13/DF.14
 # where the "within reach of a tap" boundary is drawn slightly differently, 4 on DF.9,
@@ -68,6 +64,16 @@ rules:
     check: min_width
     layers: [comp_moscap]
     value: 1.0
+  # Minimum channel width: the length of the source/drain boundary running under the
+  # gate.  See `edge_layers:` in pdk.yml for how that segment is built.
+  - id: DF.2a_LV
+    check: min_edge_length
+    layers: [channel_edges_3p3v]
+    value: 0.22
+  - id: DF.2a_MV
+    check: min_edge_length
+    layers: [channel_edges_56v]
+    value: 0.3
   - id: DF.2b
     check: nonempty
     layers: [comp_over_100um]

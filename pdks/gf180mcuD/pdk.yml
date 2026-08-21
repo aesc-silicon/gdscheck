@@ -1328,6 +1328,15 @@ virtual_layers:
     mode: lazy
     layers: [metal1_drawn, sramcore]
 
+  - name: comp_3p3v_no_poly
+    op: difference
+    mode: lazy
+    layers: [comp_3p3v, poly2_drawn]
+  - name: comp_56v_no_poly
+    op: difference
+    mode: lazy
+    layers: [comp_56v, poly2_drawn]
+
   # ---- Connect-graph bridges ---------------------------------------------
   # Derived stand-ins for upstream's connector-less `connect(a, b)` pairs; see the
   # connectivity block above.
@@ -1641,3 +1650,25 @@ layers:
   - name: metal5_res
     gds_layer: 110
     gds_datatype: 15
+
+# Derived edge layers: boundary segments rather than regions.  A rule names one exactly
+# as it names any other layer; the checks that accept one say so.
+edge_layers:
+  # DF.2a, minimum channel width.  W is the length of the source/drain boundary that
+  # runs under the gate - a property of that segment, not of any region, which is why
+  # it needs an edge layer at all.
+  - name: comp_3p3v_no_poly.edges
+    op: edges
+    layers: [comp_3p3v_no_poly]
+  - name: comp_56v_no_poly.edges
+    op: edges
+    layers: [comp_56v_no_poly]
+  - name: tgate.edges
+    op: edges
+    layers: [tgate]
+  - name: channel_edges_3p3v
+    op: and
+    layers: [comp_3p3v_no_poly.edges, tgate.edges]
+  - name: channel_edges_56v
+    op: and
+    layers: [comp_56v_no_poly.edges, tgate.edges]

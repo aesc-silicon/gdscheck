@@ -104,6 +104,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
         ("DF.1a_LV", 97),
         ("DF.1a_MV", 167),
         ("DF.1c", 9),
+        ("DF.2a_LV", 4),
+        ("DF.2a_MV", 4),
         ("DF.2b", 2),
         ("DF.3a_LV", 23),
         ("DF.3a_MV", 23),
