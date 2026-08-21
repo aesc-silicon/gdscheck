@@ -29,15 +29,15 @@ Each entry in ``virtual_layers:`` takes an optional ``mode``:
   inserted into the flattened layout under the virtual layer's synthetic ``(gds_layer,
   gds_datatype)``. Every downstream check reads it exactly like a drawn layer, with no
   further cost. Only five ops are supported eagerly: ``union``, ``intersection``
-  (``and``), ``difference`` (``not``), ``inside``, and ``close``.
+  (``and``), ``difference`` (``not``), ``inside_ring``, and ``close``.
 * **Lazy (``mode: lazy``)** — registered with the tiled :doc:`merge cache
   <architecture>` instead: a synthetic key built per tile, on first use, from its
   (recursively resolved) source layers' *tiles*. Costs nothing until a rule actually needs
   it, and its memory profile is the same tile+halo bound as a drawn layer — required for
   any derivation chain that touches a dense, chip-wide layer (``Activ``, ``GatPoly``,
   metals), since eager evaluation unions the *whole chip* in one shot and does not scale
-  to those. All fifteen ops below are available lazily; only the five above are available
-  eagerly.
+  to those. Every op below except ``inside_ring`` is available lazily; only the five
+  above are available eagerly.
 
 A rule can only reference a lazily-evaluated layer once the deck actually runs a check
 against it — see :doc:`faq` if a lazy virtual layer produces no results or an unexpected
@@ -72,30 +72,49 @@ The first source layer minus every other source layer (e.g.
 *Eager and lazy.*
 
 
-``interacting``
------------------
+Region selectors
+----------------
 
-Lazy only. Keeps whole regions of ``layers[0]`` that touch (overlap) any region of
-``layers[1]``, region membership resolved by stitching each source's tile-local pieces
-into whole connected regions first (see :doc:`architecture`) so a region is kept or
-dropped as a unit, never split by a tile boundary. Mirrors KLayout's
-``Region#interacting``.
+Six ops keep or drop *whole regions* of ``layers[0]`` according to how they relate to
+``layers[1]``. All are lazy only, and all resolve region membership by stitching each
+source's tile-local pieces into whole connected regions first (see :doc:`architecture`),
+so a region is kept or dropped as a unit and never split by a tile boundary. Each has a
+negated form that keeps exactly the regions the positive form drops.
 
+The names follow KLayout's, including its distinction between *overlapping* and
+*interacting* — they differ only on zero-area contact, and choosing the wrong one is a
+silent error, so both exist under the names a rule author reading a foundry deck expects:
 
-``not_interacting``
-----------------------
+.. list-table::
+   :header-rows: 1
+   :widths: 22 22 56
 
-Lazy only. The complement of ``interacting``: keeps whole regions of ``layers[0]`` that
-touch *no* region of ``layers[1]``. Mirrors KLayout's
-``interacting(..., inverted: true)``.
+   * - Op
+     - Negated form
+     - Keeps a region of ``layers[0]`` when it…
+   * - ``overlapping``
+     - ``not_overlapping``
+     - shares **positive area** with ``layers[1]``. Edge contact alone does *not* count.
+   * - ``interacting``
+     - ``not_interacting``
+     - shares area **or merely touches** ``layers[1]`` — coincident edges and shared
+       corners count.
+   * - ``inside``
+     - ``not_inside``
+     - lies **entirely within** ``layers[1]``; no part of it may fall outside.
+   * - ``covering``
+     - ``not_covering``
+     - **fully contains** at least one whole region of ``layers[1]``.
 
+``overlapping`` is also spelled ``not_outside`` and ``not_overlapping`` is also spelled
+``outside``, matching KLayout's aliases for the same two relations.
 
-``covering``
-------------
+An empty ``layers[1]`` matches nothing, so the four positive ops yield an empty layer and
+the four negated ops pass ``layers[0]`` through unchanged — ``inside`` included, since
+nothing is contained in nothing.
 
-Lazy only. Keeps whole regions of ``layers[0]`` that fully contain a region of
-``layers[1]``. Computed the same way as ``interacting`` — every real use in the bundled
-PDKs has ``layers[1] ⊆ layers[0]`` already, where "covers" and "interacts" coincide.
+``inside`` is the one selector that reduces with **and** across a region's pieces: every
+piece must be covered, where the others need only one piece to match.
 
 
 ``grow``
@@ -180,11 +199,69 @@ circle — e.g. flagging disallowed bond-pad shapes.
 Lazy only. Like ``not_circle``, but also excludes regular octagons.
 
 
-``inside``
-----------
+``rectangle``
+-------------
+
+Lazy only. Unary shape filter: keeps regions whose outline is a filled axis-aligned
+rectangle. ``square`` is the stricter special case with equal sides; a region with a hole
+is not filled and so is not a rectangle.
+
+
+``not_rectangle``
+-----------------
+
+Lazy only. The complement of ``rectangle`` — e.g. GF180's "slot is not a rectangle".
+
+
+``with_bbox_min`` / ``with_bbox_max``
+----------------------------------------
+
+Lazy only. Unary filters on a region's bounding box: ``with_bbox_min`` tests the
+**shorter** side, ``with_bbox_max`` the **longer** one. Both take the def's ``min`` and
+``max`` fields (µm) as a half-open range ``[min, max)`` — a side sitting exactly on
+``min`` is kept, one sitting exactly on ``max`` is not. Either bound may be omitted for
+an open end, but omitting both is an error rather than a filter that keeps everything.
+
+.. code-block:: yaml
+
+   - name: NarrowSlots
+     op: with_bbox_min
+     mode: lazy
+     layers: [MetalSlot]
+     max: 2.0            # short side < 2 µm
+
+Mirrors KLayout's ``with_bbox_min(a..b)`` / ``with_bbox_max(a..b)``.
+
+
+``grow_x`` / ``grow_y`` / ``shrink_x`` / ``shrink_y``
+--------------------------------------------------------
+
+Lazy only. Directional sizing by the def's ``radius`` µm along one axis, leaving the
+perpendicular extent exactly as drawn — unlike ``grow``/``open``/``close``, which size in
+every direction. Mirrors KLayout's ``sized(r, 0)``, ``sized(0, r)``, ``sized(-r, 0)`` and
+``sized(0, -r)``.
+
+A region narrower than ``2 × radius`` along the shrink axis disappears entirely, which
+makes the erode usable as a "narrower than X" test. Chaining all four is a morphological
+opening with a box structuring element — the standard wide-metal idiom, keeping only
+regions at least ``2 × radius`` across in *both* axes:
+
+.. code-block:: yaml
+
+   - {name: WideM1a, op: shrink_x, mode: lazy, radius: 5.0, layers: [Metal1]}
+   - {name: WideM1b, op: shrink_y, mode: lazy, radius: 5.0, layers: [WideM1a]}
+   - {name: WideM1c, op: grow_x,   mode: lazy, radius: 5.0, layers: [WideM1b]}
+   - {name: WideM1,  op: grow_y,   mode: lazy, radius: 5.0, layers: [WideM1c]}
+
+
+``inside_ring``
+---------------
 
 Eager only, two layers exactly: ``layers[0]`` (the target) and ``layers[1]`` (a ring).
 The part of the target that lies within the area *enclosed* by the ring — the ring's own
 holes are filled first (so a seal frame becomes "frame + interior"), since there is
 usually no drawn layer for that interior region. Both sources must be real (drawn)
-layers; ``inside`` does not support one virtual layer feeding another.
+layers; ``inside_ring`` does not support one virtual layer feeding another.
+
+Not to be confused with the ``inside`` *selector* above: this one clips and fills, that
+one keeps or drops whole regions.

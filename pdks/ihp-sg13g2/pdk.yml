@@ -253,7 +253,7 @@ virtual_layers:
     layers: [TopVia2, EdgeSeal]
 
   - name: PassivInSeal
-    op: inside
+    op: inside_ring
     layers: [Passiv, EdgeSeal]
 
   - name: TopMetal2NotIND
@@ -284,7 +284,7 @@ virtual_layers:
     mode: lazy
     layers: [ContSquare, Activ]
   - name: ContOnActivNoSRAM
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [ContOnActiv, SRAM]
   - name: ContOnNsdActiv
@@ -374,27 +374,27 @@ virtual_layers:
     mode: lazy
     layers: [NActiv, NWell]
   - name: PsdActivInNWellTGOAna
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [PsdActivInNWellTGO, DigiBnd]
   - name: PsdActivInNWellTGODig
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [PsdActivInNWellTGO, DigiBnd]
   - name: NActFullTGOAna
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [NActFullTGO, DigiBnd]
   - name: NActFullTGODig
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [NActFullTGO, DigiBnd]
   - name: NActivInNWellTGOAna
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [NActivInNWellTGO, DigiBnd]
   - name: NActivInNWellTGODig
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [NActivInNWellTGO, DigiBnd]
   - name: ActivInNWell
@@ -418,11 +418,11 @@ virtual_layers:
     mode: lazy
     layers: [PsdActivInPWell, Gate]
   - name: NTapNoGateOutSRAM
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [NTapNoGate, SRAM]
   - name: PTapNoGateOutSRAM
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [PTapNoGate, SRAM]
   - name: ActivNoSRAM
@@ -434,11 +434,11 @@ virtual_layers:
     mode: lazy
     layers: [ActivNoSRAM, pSD]
   - name: ActivStraddlePsd
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [ActivNoSRAM, ActivOutsidePsd]
   - name: TieCandidate
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [ActivStraddlePsd, pSD]
   - name: TieOverlap
@@ -451,7 +451,7 @@ virtual_layers:
     radius: 0.149
     layers: [TieOverlap]
   - name: TieTooNarrow
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [TieOverlap, TieOverlapOpened]
   - name: ContOnNWellTie
@@ -506,7 +506,7 @@ virtual_layers:
     radius: 0.0
     layers: [PsdActivX1]
   - name: AbuttedNTap
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [NActivX1, PsdActivX1Touch]
   - name: PsdActivX1Grown
@@ -519,11 +519,11 @@ virtual_layers:
     mode: lazy
     layers: [AbuttedNTap, PsdActivX1Grown]
   - name: PsdFBad
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [AbuttedNTap, NTapDeep]
   - name: ActivTouchPsd
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [Activ, pSD]
   - name: PsdC1Target
@@ -556,19 +556,19 @@ virtual_layers:
     mode: lazy
     layers: [GatPolyRes, RES, EXTBlock]
   - name: RsilAll
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [RsilBase, SalBlock]
   - name: RsilNotNWell
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [RsilAll, NWell]
   - name: Rsil
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [RsilNotNWell, nBuLay]
   - name: GPRsilExtended
-    op: covering
+    op: overlapping
     mode: lazy
     layers: [GatPolyRes, Rsil]
   - name: RsilResProtrusion
@@ -576,7 +576,7 @@ virtual_layers:
     mode: lazy
     layers: [RES, GPRsilExtended]
   - name: RsilResProtrusionNoCont
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [RsilResProtrusion, Cont]
   - name: Rppd0
@@ -588,11 +588,11 @@ virtual_layers:
     mode: lazy
     layers: [Activ, nSD]
   - name: RppdAll
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [Rppd0, ActivOrNsd]
   - name: GPRppdExtended
-    op: covering
+    op: overlapping
     mode: lazy
     layers: [GatPolyRes, RppdAll]
   - name: SalBlockRppd
@@ -609,11 +609,11 @@ virtual_layers:
     radius: 0.20
     layers: [SalBlockRppd]
   - name: RppdContTooFar
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [RppdCont, SalBlockRppdGrown]
   - name: GPRhighExtended
-    op: covering
+    op: overlapping
     mode: lazy
     layers: [GatPolyRes, RhighA]
   - name: RhighCont
@@ -626,7 +626,7 @@ virtual_layers:
     radius: 0.20
     layers: [SalBlockRhigh]
   - name: RhighContTooFar
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [RhighCont, SalBlockRhighGrown]
   - name: NsdMismatch
@@ -638,7 +638,7 @@ virtual_layers:
     mode: lazy
     layers: [EXTBlock, pSDnSD]
   - name: RhighRecog
-    op: covering
+    op: overlapping
     mode: lazy
     layers: [RhighRecogBase, GatPoly]
   - name: RhighRecogGrown
@@ -647,7 +647,7 @@ virtual_layers:
     radius: 0.0
     layers: [RhighRecog]
   - name: NsdMismatchAtRhigh
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [NsdMismatch, RhighRecogGrown]
 
@@ -662,11 +662,11 @@ virtual_layers:
     layers: [PsdRingHole, TEXT]
     text: "npn*"
   - name: NpnTieNoTrans
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [NpnTieHole, TRANS]
   - name: TransInTie
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [TRANS, NpnTieHole]
   - name: NpnTieHoleGrown
@@ -675,7 +675,7 @@ virtual_layers:
     radius: 0.5
     layers: [NpnTieHole]
   - name: NpnTieRingActiv
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [PsdActiv, NpnTieHoleGrown]
   - name: GatPolyNoSRAM
@@ -698,15 +698,15 @@ virtual_layers:
     layers: [TRANS, TEXT]
     text: "npn13G2V"
   - name: EmitG2
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [EmWind, TransG2]
   - name: EmitG2L
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [EmWind, TransG2L]
   - name: EmitG2V
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [EmWind, TransG2V]
 
@@ -715,7 +715,7 @@ virtual_layers:
     mode: lazy
     layers: [SalBlock, nSD.block, PWell.block, nBuLay]
   - name: SchottkyContBar
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [ContBar, SchottkyBlock]
 
@@ -736,7 +736,7 @@ virtual_layers:
     mode: lazy
     layers: [NWell, nBuLay]
   - name: nSDBlockIso
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [nSD.block, IsoPWellAct]
   - name: NWellRing
@@ -745,7 +745,7 @@ virtual_layers:
     radius: 10.0
     layers: [NWell]
   - name: SalBlockIso
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [SalBlock, IsoPWellAct]
   - name: NSDBlockIsoGrown
@@ -807,7 +807,7 @@ virtual_layers:
     radius: 0.31
     layers: [NWellNoSRAM]
   - name: PsdActivInNWellNoTGONoSRAM
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [PsdActivInNWellNoTGO, SRAM]
   - name: nBuLayMerged
@@ -882,7 +882,7 @@ virtual_layers:
     layers: [TopVia2, EdgeSeal]
 
   - name: RingPassiv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [Passiv, EdgeSeal]
 
@@ -949,7 +949,7 @@ virtual_layers:
     mode: lazy
     layers: [TopMetal2, Passiv, MIM, IND]
   - name: PadDfpad
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [dfpad, Passiv]
   - name: Metal1SlitOnPad

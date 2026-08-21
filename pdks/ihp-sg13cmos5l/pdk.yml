@@ -150,18 +150,18 @@ virtual_layers:
     mode: lazy
     layers: [dfpad, TopMetal1]
   - name: ContOnActivAna
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [ContOnActivNoSRAM, DigiBnd]
   - name: ContOnActivDig
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [ContOnActivNoSRAM, DigiBnd]
   - name: PsdActivInPWellTGOAna
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [PsdActivInPWellTGO, DigiBnd]
   - name: PsdActivInPWellTGODig
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [PsdActivInPWellTGO, DigiBnd]
