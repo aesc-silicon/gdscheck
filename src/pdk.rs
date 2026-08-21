@@ -100,6 +100,14 @@ pub struct VirtualLayerDef {
     /// Text pattern for the `with_text` op (exact match, or prefix if it ends in `*`).
     #[serde(default)]
     pub text: Option<String>,
+    /// Inclusive lower bound (µm) for the `with_bbox_min`/`with_bbox_max` filters;
+    /// absent means unbounded below.
+    #[serde(default)]
+    pub min: Option<f64>,
+    /// Exclusive upper bound (µm) for the `with_bbox_min`/`with_bbox_max` filters;
+    /// absent means unbounded above.
+    #[serde(default)]
+    pub max: Option<f64>,
 }
 
 /// A lazy virtual layer resolved to GDS numbers, ready for the merge cache.
@@ -118,6 +126,9 @@ pub struct TiledVirtualSpec {
     pub radius: Option<f64>,
     /// Text pattern for the `with_text` op.
     pub text: Option<String>,
+    /// Bounding-box side bounds (µm) for the `with_bbox_min`/`with_bbox_max` filters.
+    pub min: Option<f64>,
+    pub max: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -536,8 +547,8 @@ impl PdkConfig {
                         }
                     }
                 }
-                "inside" => {
-                    // `inside(target, ring)` = the part of `target` (layers[0]) that
+                "inside_ring" => {
+                    // `inside_ring(target, ring)` = the part of `target` (layers[0]) that
                     // lies within the area enclosed by `ring` (layers[1]).  The ring's
                     // holes are filled, so a seal *frame* becomes "seal + interior" —
                     // there is no drawn layer for that region, so we derive it here.
@@ -545,7 +556,7 @@ impl PdkConfig {
                     // another (which `compute_virtual_layers` does not support).
                     if vl_def.layers.len() < 2 {
                         eprintln!(
-                            "Virtual layer '{}': inside needs 2 layers (target, ring)",
+                            "Virtual layer '{}': inside_ring needs 2 layers (target, ring)",
                             vl_def.name
                         );
                         continue;
@@ -612,7 +623,7 @@ impl PdkConfig {
                 }
                 other => {
                     eprintln!(
-                        "Virtual layer '{}': unsupported op '{}' (supported: union, intersection, difference, inside, close)",
+                        "Virtual layer '{}': unsupported op '{}' (supported: union, intersection, difference, inside_ring, close)",
                         vl_def.name, other
                     );
                 }
@@ -662,6 +673,8 @@ impl PdkConfig {
                     sources,
                     radius: vl.radius,
                     text: vl.text.clone(),
+                    min: vl.min,
+                    max: vl.max,
                 });
             }
         }

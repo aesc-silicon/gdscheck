@@ -983,20 +983,7 @@ pub fn run_boolean_residual(
             }
             acc.into_iter().collect()
         }
-        VirtualOp::Union
-        | VirtualOp::Square
-        | VirtualOp::NotSquare
-        | VirtualOp::Close(_)
-        | VirtualOp::Open(_)
-        | VirtualOp::Grow(_)
-        | VirtualOp::Interacting
-        | VirtualOp::NotInteracting
-        | VirtualOp::Covering
-        | VirtualOp::NotCircleOrOctagon
-        | VirtualOp::NotCircle
-        | VirtualOp::Holes
-        | VirtualOp::WithHoles
-        | VirtualOp::WithText => maps
+        _ => maps
             .iter()
             .flat_map(|m| m.keys().copied())
             .collect::<HashSet<_>>()

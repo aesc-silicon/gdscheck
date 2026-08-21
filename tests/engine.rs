@@ -360,11 +360,13 @@ fn eager_global_difference_materialises_lazy_does_not() {
     );
 }
 
-/// The `inside` op fills a ring (drops its hole) and intersects the target with it,
+/// The `inside_ring` op fills a ring (drops its hole) and intersects the target with it,
 /// so a target shape inside the ring is kept and one outside is dropped — there is no
-/// drawn layer for "the area a seal ring encloses", so the op derives it.
+/// drawn layer for "the area a seal ring encloses", so the op derives it.  Distinct from
+/// the `inside` *selector*, which keeps whole regions of one layer contained in another
+/// (see tests/virtual_ops.rs); this one clips and fills.
 #[test]
-fn inside_op_fills_ring_and_keeps_only_enclosed() {
+fn inside_ring_op_fills_ring_and_keeps_only_enclosed() {
     let pdk = PdkConfig::load(SYNTH).expect("load synthetic pdk");
     let mut layout = FlatLayout::new();
     // LayerB (2/0) drawn as a ring frame; filled it is the solid 0..100 square.

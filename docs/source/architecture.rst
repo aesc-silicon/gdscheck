@@ -89,11 +89,13 @@ geometry: each tile independently computes the piece of every region that falls 
 whenever their shared core edge shows continuous coverage. A region's aggregate property
 — total area, a representative marker point, or a caller's boolean predicate ("does any
 piece touch layer B") — is then just an OR/sum reduction over its pieces, which stays cheap
-however many tiles a real-world region spans.
+however many tiles a real-world region spans. The ``inside`` selector is the one that
+reduces with AND instead: every piece must be covered, not just one.
 
-This is what lets checks like windowed-density's plate analysis, or the
-``interacting``/``not_interacting``/``with_text`` virtual-layer selectors, run correctly
-on chip-spanning regions while only ever touching tile-local, halo-bounded geometry.
+This is what lets checks like windowed-density's plate analysis, or the region selectors
+behind the ``overlapping``/``interacting``/``inside``/``covering`` virtual layers (and
+``with_text``), run correctly on chip-spanning regions while only ever touching
+tile-local, halo-bounded geometry.
 
 
 Lazy virtual layers

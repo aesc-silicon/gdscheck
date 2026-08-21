@@ -128,8 +128,10 @@ Virtual layers
 ``virtual_layers:`` declares derived layers computed from drawn (or other virtual) ones —
 see :doc:`virtual-ops` for the full operator reference and the eager/lazy evaluation
 trade-off. Each entry needs ``name``, ``op`` and ``layers`` (the sources); ``mode: lazy``,
-``radius`` (for ``close``/``open``/``grow``) and ``text`` (for ``with_text``) are
-optional, op-specific. A virtual layer is assigned a synthetic GDS layer number
+``radius`` (for ``close``/``open``/``grow`` and the directional
+``grow_x``/``grow_y``/``shrink_x``/``shrink_y``), ``text`` (for ``with_text``) and
+``min``/``max`` (for ``with_bbox_min``/``with_bbox_max``) are optional, op-specific. All
+distances are in µm. A virtual layer is assigned a synthetic GDS layer number
 automatically (starting at 30000) and can be referenced by rules exactly like a drawn
 layer.
 

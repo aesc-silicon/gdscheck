@@ -242,6 +242,119 @@ pub fn grow(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(radius + 5.0)))
 }
 
+/// Directional dilate: the Minkowski sum of `polys` with the segment from `-d` to `+d`,
+/// where `d` is `(radius, 0)` for the x axis and `(0, radius)` for the y axis (KLayout
+/// `sized(r, 0)` / `sized(0, r)`).  [`grow`] offsets every edge outward by `radius` in
+/// all directions; this one leaves the perpendicular extent exactly as drawn, which is
+/// what the wide-metal rules (`M#.2b`) need.
+///
+/// Exact by construction: a point is in `P ⊕ seg` iff some translate of it along the
+/// segment lands in `P`.  The set of such offsets is a union of closed intervals, so it
+/// either reaches an endpoint of the segment (covered by the two translated copies) or
+/// has an interior endpoint sitting on `∂P` (covered by sweeping that edge).  Sweeping
+/// every contour edge — holes included, since dilating a region also shrinks its holes —
+/// therefore closes the union.
+fn size_directional(polys: &[MergedPoly], radius: f64, along_x: bool) -> Vec<MergedPoly> {
+    if polys.is_empty() || radius <= 0.0 {
+        return polys.to_vec();
+    }
+    let (dx, dy) = if along_x {
+        (radius, 0.0)
+    } else {
+        (0.0, radius)
+    };
+    let mut shapes: Vec<Vec<Vec<[f64; 2]>>> = Vec::new();
+
+    for m in polys {
+        // The two endpoint translates, holes preserved.
+        for sign in [-1.0, 1.0] {
+            let mut s = merged_to_shape(m);
+            for ring in &mut s {
+                for p in ring.iter_mut() {
+                    p[0] += sign * dx;
+                    p[1] += sign * dy;
+                }
+            }
+            shapes.push(s);
+        }
+        // The swept band of every contour edge, as a parallelogram wound CCW so the
+        // NonZero union adds it rather than cancelling against a clockwise hole ring.
+        for (a, b) in poly_edges(m) {
+            let (ax, ay) = (a.x as f64, a.y as f64);
+            let (bx, by) = (b.x as f64, b.y as f64);
+            let mut quad = vec![
+                [ax - dx, ay - dy],
+                [bx - dx, by - dy],
+                [bx + dx, by + dy],
+                [ax + dx, ay + dy],
+            ];
+            let area2: f64 = (0..4)
+                .map(|i| {
+                    let (p, q) = (quad[i], quad[(i + 1) % 4]);
+                    p[0] * q[1] - q[0] * p[1]
+                })
+                .sum();
+            if area2.abs() < 0.5 {
+                continue; // edge parallel to the sweep: nothing swept
+            }
+            if area2 < 0.0 {
+                quad.reverse();
+            }
+            shapes.push(vec![quad]);
+        }
+    }
+    shapes_to_merged(shapes.simplify_shape(FillRule::NonZero))
+}
+
+/// Directional dilate along x by `radius` DBU.  See [`size_directional`].
+pub fn grow_x(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    size_directional(polys, radius, true)
+}
+
+/// Directional dilate along y by `radius` DBU.  See [`size_directional`].
+pub fn grow_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    size_directional(polys, radius, false)
+}
+
+/// Directional erode: the dual of [`size_directional`] — dilate the complement, then
+/// complement back.  The complement is taken inside a frame comfortably larger than the
+/// geometry's bounding box (`2·radius` plus a margin), so the frame's own edges can never
+/// dilate into the result and every real edge is eroded exactly.
+fn erode_directional(polys: &[MergedPoly], radius: f64, along_x: bool) -> Vec<MergedPoly> {
+    if polys.is_empty() || radius <= 0.0 {
+        return polys.to_vec();
+    }
+    let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
+    for m in polys {
+        let (a, b, c, d) = poly_bbox(m);
+        x0 = x0.min(a);
+        y0 = y0.min(b);
+        x1 = x1.max(c);
+        y1 = y1.max(d);
+    }
+    let pad = 2.0 * radius + 10.0;
+    let (fx0, fy0) = (x0 as f64 - pad, y0 as f64 - pad);
+    let (fx1, fy1) = (x1 as f64 + pad, y1 as f64 + pad);
+    let frame: Vec<Vec<Vec<[f64; 2]>>> =
+        vec![vec![vec![[fx0, fy0], [fx1, fy0], [fx1, fy1], [fx0, fy1]]]];
+
+    let solid = tile_shapes(polys).simplify_shape(FillRule::NonZero);
+    let hole = frame.overlay(&solid, OverlayRule::Difference, FillRule::NonZero);
+    let grown = size_directional(&shapes_to_merged(hole), radius, along_x);
+    let grown_shapes = tile_shapes(&grown).simplify_shape(FillRule::NonZero);
+    shapes_to_merged(frame.overlay(&grown_shapes, OverlayRule::Difference, FillRule::NonZero))
+}
+
+/// Directional erode along x by `radius` DBU (KLayout `sized(-r, 0)`).
+pub fn shrink_x(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    erode_directional(polys, radius, true)
+}
+
+/// Directional erode along y by `radius` DBU (KLayout `sized(0, -r)`).
+pub fn shrink_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    erode_directional(polys, radius, false)
+}
+
 /// Maximum-space / proximity-coverage gaps (latch-up LU.a–d): every part of `a` must lie
 /// within `value` (DBU) of `b`.  Returns a point inside each part of `a` that is *not* —
 /// i.e. the residue of `a − dilate(b, value)`.  Tiled: `b` is read and dilated only within
@@ -449,16 +562,47 @@ pub enum VirtualOp {
     Open(i32),
     /// Morphological grow (one-directional dilate) by `radius` DBU; single source.
     Grow(i32),
-    /// Region-level selection: keep whole regions of source[0] that touch source[1]
-    /// (KLayout `interacting` / `not_outside`).
+    /// Morphological grow along **x only** by `radius` DBU: Minkowski sum with the
+    /// horizontal segment `[-r, +r] × {0}` (KLayout `sized(r, 0)`).  Unlike [`Grow`],
+    /// which dilates isotropically, this leaves the y extent untouched.
+    GrowX(i32),
+    /// Morphological grow along **y only** by `radius` DBU (KLayout `sized(0, r)`).
+    GrowY(i32),
+    /// Morphological shrink along **x only** by `radius` DBU (KLayout `sized(-r, 0)`).
+    /// Erosion is the dual of [`GrowX`]: grow the complement, then complement back.
+    ShrinkX(i32),
+    /// Morphological shrink along **y only** by `radius` DBU (KLayout `sized(0, -r)`).
+    ShrinkY(i32),
+    /// Region-level selection: keep whole regions of source[0] that share positive
+    /// *overlap area* with source[1] (KLayout `overlapping` / `not_outside`).  An
+    /// edge-touching region is **not** kept — for that, use [`Interacting`].
+    Overlapping,
+    /// Keep whole regions of source[0] that share no overlap area with source[1]
+    /// (KLayout `not_overlapping` / `outside`).  An edge-touching region *is* kept.
+    NotOverlapping,
+    /// Region-level selection: keep whole regions of source[0] that overlap **or merely
+    /// touch** a region of source[1] (KLayout `interacting`).  Differs from
+    /// [`Overlapping`] only on zero-area contact: coincident edges and shared vertices
+    /// count here and don't there.
     Interacting,
-    /// Keep whole regions of source[0] that touch *no* region of source[1]
-    /// (KLayout `ext_interacting(..., inverted: true)`).
+    /// Keep whole regions of source[0] that neither overlap nor touch source[1]
+    /// (KLayout `not_interacting`).
     NotInteracting,
-    /// Keep whole regions of source[0] that fully contain a region of source[1]
-    /// (KLayout `ext_covering`).  Our uses always have source[1] ⊆ source[0], so
-    /// "covers" coincides with "interacts"; computed the same way.
+    /// Keep whole regions of source[0] that lie entirely within source[1] (KLayout
+    /// `inside`) — no part of the region may fall outside the filter.  Unlike the other
+    /// selectors this reduces with AND over the region's tile pieces, so *every* piece
+    /// must be covered.
+    Inside,
+    /// Keep whole regions of source[0] that are **not** entirely within source[1]
+    /// (KLayout `not_inside`).
+    NotInside,
+    /// Keep whole regions of source[0] that fully contain at least one whole region of
+    /// source[1] (KLayout `covering`).  Containment is tested region-to-region, so a
+    /// filter region straddling the candidate's edge does not count.
     Covering,
+    /// Keep whole regions of source[0] that fully contain no region of source[1]
+    /// (KLayout `not_covering`).
+    NotCovering,
     /// Unary shape filter: keep regions that are neither a circle nor a regular octagon
     /// (KLayout `.not(get_circle).not(get_octagon)`, e.g. Padb.f's disallowed shapes).
     NotCircleOrOctagon,
@@ -475,6 +619,19 @@ pub enum VirtualOp {
     /// tile-locality limitation as [`VirtualOp::Holes`]: the ring must assemble whole
     /// within one tile bucket (declare the max ring extent via the def's `radius`).
     WithHoles,
+    /// Unary shape filter: keep regions whose outline is a filled axis-aligned rectangle
+    /// (KLayout `rectangles`).  [`Square`] is the special case with equal sides.
+    Rectangle,
+    /// Unary shape filter: keep regions that are not filled axis-aligned rectangles
+    /// (KLayout `non_rectangles`, e.g. MSLOT`#`.0 "slot is not a rectangle").
+    NotRectangle,
+    /// Unary shape filter on the **shorter** bounding-box side, in DBU: keep regions whose
+    /// short side is `>= min` (if set) and `< max` (if set) — KLayout `with_bbox_min(a..b)`.
+    /// Both bounds open means "keep everything".
+    WithBBoxMin(Option<i32>, Option<i32>),
+    /// Unary shape filter on the **longer** bounding-box side, in DBU (KLayout
+    /// `with_bbox_max(a..b)`); same half-open `[min, max)` convention as [`WithBBoxMin`].
+    WithBBoxMax(Option<i32>, Option<i32>),
     /// Region-level selection: keep whole regions of source[0] containing a text label
     /// on source[1] (a text layer) matching the def's pattern (KLayout
     /// `ext_interacting_with_text`).  Routed specially in `ensure` (needs the layout's
@@ -482,15 +639,66 @@ pub enum VirtualOp {
     WithText,
 }
 
+/// How a region-level selector decides whether to keep a candidate region.  Each maps
+/// to a predicate over the region's tile pieces and the filter geometry sharing those
+/// tiles; see [`build_selection_tiles`].
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum SelectionKind {
+    /// Any piece shares positive overlap area with the filter.
+    Overlaps,
+    /// Any piece overlaps or touches the filter (zero-area contact counts).
+    Touches,
+    /// *Every* piece is fully covered by the filter — the one AND-reducing predicate.
+    Inside,
+    /// Any piece fully contains a whole filter region.
+    Covers,
+}
+
 impl VirtualOp {
     /// Region-level selectors are evaluated on stitched whole regions in
-    /// [`MergedCache::ensure`], not composed per tile like the boolean ops.
-    fn is_selection(self) -> bool {
-        matches!(
-            self,
-            VirtualOp::Interacting | VirtualOp::NotInteracting | VirtualOp::Covering
-        )
+    /// [`MergedCache::ensure`], not composed per tile like the boolean ops.  Returns the
+    /// predicate and whether a matching region is kept (`true`) or dropped (`false`).
+    fn selection(self) -> Option<(SelectionKind, bool)> {
+        use SelectionKind as K;
+        match self {
+            VirtualOp::Overlapping => Some((K::Overlaps, true)),
+            VirtualOp::NotOverlapping => Some((K::Overlaps, false)),
+            VirtualOp::Interacting => Some((K::Touches, true)),
+            VirtualOp::NotInteracting => Some((K::Touches, false)),
+            VirtualOp::Inside => Some((K::Inside, true)),
+            VirtualOp::NotInside => Some((K::Inside, false)),
+            VirtualOp::Covering => Some((K::Covers, true)),
+            VirtualOp::NotCovering => Some((K::Covers, false)),
+            _ => None,
+        }
     }
+}
+
+/// True if a merged region is a filled axis-aligned rectangle: no holes, and its outline
+/// encloses exactly its bounding box.  Coordinates are integer DBU, so the area test is
+/// exact (the 0.5 slack only absorbs the f64 arithmetic in [`ring_area2`]).
+fn is_rectangle(m: &MergedPoly) -> bool {
+    if !m.holes.is_empty() || m.outer.is_empty() {
+        return false;
+    }
+    let (x0, y0, x1, y1) = outer_bbox(&m.outer);
+    let (w, h) = (x1 - x0, y1 - y0);
+    if w <= 0 || h <= 0 {
+        return false;
+    }
+    (ring_area2(&m.outer) - 2.0 * (w * h) as f64).abs() < 0.5
+}
+
+/// The (shorter, longer) bounding-box side of a region, in DBU.
+fn bbox_sides(m: &MergedPoly) -> (i64, i64) {
+    let (x0, y0, x1, y1) = outer_bbox(&m.outer);
+    let (w, h) = (x1 - x0, y1 - y0);
+    (w.min(h), w.max(h))
+}
+
+/// Whether `side` falls in the half-open range `[min, max)`; an absent bound is open.
+fn side_in_range(side: i64, min: Option<i32>, max: Option<i32>) -> bool {
+    min.is_none_or(|v| side >= v as i64) && max.is_none_or(|v| side < v as i64)
 }
 
 /// True if a merged region is a filled axis-aligned square: no holes, and a rectangle
@@ -684,6 +892,26 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
             .filter(|m| !m.holes.is_empty())
             .cloned()
             .collect(),
+        VirtualOp::Rectangle => sources[0]
+            .iter()
+            .filter(|m| is_rectangle(m))
+            .cloned()
+            .collect(),
+        VirtualOp::NotRectangle => sources[0]
+            .iter()
+            .filter(|m| !is_rectangle(m))
+            .cloned()
+            .collect(),
+        VirtualOp::WithBBoxMin(min, max) => sources[0]
+            .iter()
+            .filter(|m| side_in_range(bbox_sides(m).0, min, max))
+            .cloned()
+            .collect(),
+        VirtualOp::WithBBoxMax(min, max) => sources[0]
+            .iter()
+            .filter(|m| side_in_range(bbox_sides(m).1, min, max))
+            .cloned()
+            .collect(),
         // Text selection is routed to `build_text_selection_tiles` in `ensure`.
         VirtualOp::WithText => Vec::new(),
         // Morphological close of the single source by `r` DBU.  The source tile carries a
@@ -691,9 +919,20 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
         VirtualOp::Close(r) => closing(sources[0], r as f64),
         VirtualOp::Open(r) => opening(sources[0], r as f64),
         VirtualOp::Grow(r) => grow(sources[0], r as f64),
+        VirtualOp::GrowX(r) => grow_x(sources[0], r as f64),
+        VirtualOp::GrowY(r) => grow_y(sources[0], r as f64),
+        VirtualOp::ShrinkX(r) => shrink_x(sources[0], r as f64),
+        VirtualOp::ShrinkY(r) => shrink_y(sources[0], r as f64),
         // Region selectors are not composable per tile — `ensure` routes them to
         // `build_selection_tiles` before this point.
-        VirtualOp::Interacting | VirtualOp::NotInteracting | VirtualOp::Covering => Vec::new(),
+        VirtualOp::Overlapping
+        | VirtualOp::NotOverlapping
+        | VirtualOp::Interacting
+        | VirtualOp::NotInteracting
+        | VirtualOp::Inside
+        | VirtualOp::NotInside
+        | VirtualOp::Covering
+        | VirtualOp::NotCovering => Vec::new(),
     }
 }
 
@@ -719,17 +958,30 @@ fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
         // source's halo already covers the tiles a close can bridge into.
         VirtualOp::Square
         | VirtualOp::NotSquare
+        | VirtualOp::Rectangle
+        | VirtualOp::NotRectangle
+        | VirtualOp::WithBBoxMin(_, _)
+        | VirtualOp::WithBBoxMax(_, _)
         | VirtualOp::Close(_)
         | VirtualOp::Open(_)
         | VirtualOp::Grow(_)
+        | VirtualOp::GrowX(_)
+        | VirtualOp::GrowY(_)
+        | VirtualOp::ShrinkX(_)
+        | VirtualOp::ShrinkY(_)
         | VirtualOp::NotCircleOrOctagon
         | VirtualOp::NotCircle
         | VirtualOp::Holes
         | VirtualOp::WithHoles => first.keys().copied().collect(),
         // Selection ops never reach here (handled in `ensure`).
-        VirtualOp::Interacting
+        VirtualOp::Overlapping
+        | VirtualOp::NotOverlapping
+        | VirtualOp::Interacting
         | VirtualOp::NotInteracting
+        | VirtualOp::Inside
+        | VirtualOp::NotInside
         | VirtualOp::Covering
+        | VirtualOp::NotCovering
         | VirtualOp::WithText => first.keys().copied().collect(),
     };
 
@@ -1234,30 +1486,138 @@ fn polys_overlap(a: &MergedPoly, b: &MergedPoly) -> bool {
         .is_empty()
 }
 
+/// Whether two integer segments `p→p2` and `q→q2` intersect, endpoints and collinear
+/// overlap included.  Exact: all arithmetic is i64 cross products on DBU coordinates.
+fn segs_intersect(p: IntPoint, p2: IntPoint, q: IntPoint, q2: IntPoint) -> bool {
+    let cross = |o: IntPoint, a: IntPoint, b: IntPoint| -> i64 {
+        (a.x as i64 - o.x as i64) * (b.y as i64 - o.y as i64)
+            - (a.y as i64 - o.y as i64) * (b.x as i64 - o.x as i64)
+    };
+    // A point of a degenerate/collinear segment lies on the other iff it is within the
+    // other's bounding box (collinearity already established by a zero cross product).
+    let on = |o: IntPoint, a: IntPoint, b: IntPoint| -> bool {
+        b.x.min(o.x) <= a.x && a.x <= b.x.max(o.x) && b.y.min(o.y) <= a.y && a.y <= b.y.max(o.y)
+    };
+    let (d1, d2) = (cross(p, p2, q), cross(p, p2, q2));
+    let (d3, d4) = (cross(q, q2, p), cross(q, q2, p2));
+    if ((d1 > 0) != (d2 > 0) || (d1 < 0) != (d2 < 0))
+        && ((d3 > 0) != (d4 > 0) || (d3 < 0) != (d4 < 0))
+    {
+        return true;
+    }
+    (d1 == 0 && on(p, q, p2))
+        || (d2 == 0 && on(p, q2, p2))
+        || (d3 == 0 && on(q, p, q2))
+        || (d4 == 0 && on(q, p2, q2))
+}
+
+/// Every edge of a region's contours (outer ring and holes), as point pairs.
+fn poly_edges(m: &MergedPoly) -> impl Iterator<Item = (IntPoint, IntPoint)> + '_ {
+    std::iter::once(&m.outer)
+        .chain(m.holes.iter())
+        .flat_map(|ring| {
+            ring.iter()
+                .zip(ring.iter().cycle().skip(1))
+                .take(ring.len())
+                .map(|(a, b)| (*a, *b))
+        })
+}
+
+/// Whether two merged polygons overlap **or merely touch** — the KLayout `interacting`
+/// relation.  [`polys_overlap`] misses zero-area contact (coincident edges, a shared
+/// vertex) because `Intersect` yields an empty region for it, so test the boundaries
+/// directly as well.
+fn polys_interact(a: &MergedPoly, b: &MergedPoly) -> bool {
+    let (ax0, ay0, ax1, ay1) = poly_bbox(a);
+    let (bx0, by0, bx1, by1) = poly_bbox(b);
+    if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
+        return false;
+    }
+    if polys_overlap(a, b) {
+        return true;
+    }
+    let bedges: Vec<(IntPoint, IntPoint)> = poly_edges(b).collect();
+    poly_edges(a).any(|(p, p2)| bedges.iter().any(|&(q, q2)| segs_intersect(p, p2, q, q2)))
+}
+
+/// Whether `a` lies entirely within the area covered by `others` — i.e. `a` minus their
+/// union is empty.  Used by the `inside` selector, which (unlike the others) must hold
+/// for *every* piece of a region rather than any one of them.
+fn poly_within(a: &MergedPoly, others: &[MergedPoly]) -> bool {
+    if others.is_empty() {
+        return false;
+    }
+    let av = vec![merged_to_shape(a)];
+    let bv: Vec<Vec<Vec<[f64; 2]>>> = others.iter().map(merged_to_shape).collect();
+    let clip = bv.simplify_shape(FillRule::NonZero);
+    if clip.is_empty() {
+        return false;
+    }
+    av.overlay(&clip, OverlayRule::Difference, FillRule::NonZero)
+        .is_empty()
+}
+
 /// Build a selection virtual's tiles: keep whole *regions* of the candidate layer
-/// (`cand`) by whether they interact with the filter layer (`filt`), preserving the
-/// candidate's original tiling.  Region membership is recovered with [`stitch_labeled`],
-/// so a region spanning tiles is kept or dropped as a unit (a per-tile test would split
-/// a region that only touches the filter in one of its tiles).  `keep` is true for
-/// `Interacting`/`Covering`, false for `NotInteracting`.
-fn build_selection_tiles(cand: &TileMap, filt: &TileMap, keep: bool, tile_dbu: i32) -> TileMap {
-    // An empty filter means nothing interacts: `Interacting`/`Covering` keep nothing,
-    // `NotInteracting` keeps everything.  Short-circuiting here avoids stitching a dense
-    // candidate (e.g. `covering [GatPolyRes, Rsil]` on a chip with no resistors).
+/// (`cand`) by how they relate to the filter layer (`filt`), preserving the candidate's
+/// original tiling.  Region membership is recovered with [`stitch_labeled`], so a region
+/// spanning tiles is kept or dropped as a unit (a per-tile test would split a region that
+/// only meets the filter in one of its tiles).  `keep` selects whether matching regions
+/// are the ones retained or the ones discarded.
+///
+/// All predicates are evaluated tile-locally: a candidate piece is tested only against
+/// the filter polygons stored under the *same* tile key.  That is exact for
+/// [`SelectionKind::Overlaps`]/[`Touches`] (a piece can only meet the filter where they
+/// share a tile) and for [`Covers`] as long as the filter region assembles within one
+/// tile bucket.  [`SelectionKind::Inside`] additionally needs the covering filter
+/// geometry present in each of the candidate's tiles, which the source halo provides.
+fn build_selection_tiles(
+    cand: &TileMap,
+    filt: &TileMap,
+    kind: SelectionKind,
+    keep: bool,
+    tile_dbu: i32,
+) -> TileMap {
+    // An empty filter means no region matches any predicate — `inside` included, since
+    // nothing can be contained in nothing.  Short-circuiting here avoids stitching a
+    // dense candidate (e.g. `covering [GatPolyRes, Rsil]` on a chip with no resistors).
     if filt.values().all(|v| v.is_empty()) {
         return if keep { TileMap::new() } else { cand.clone() };
     }
 
     let labeled = stitch_labeled(cand, tile_dbu);
-    let mut interacts = vec![false; labeled.regions.len()];
+    // `Inside` reduces with AND over a region's pieces, so it starts true and is cleared
+    // by the first uncovered piece; the others start false and are set by the first match.
+    let and_reduce = kind == SelectionKind::Inside;
+    let mut matches = vec![and_reduce; labeled.regions.len()];
 
-    // A candidate piece overlaps the filter only where they share a tile, so testing
-    // against the same tile's filter polys is both sufficient and cheap.
     for (tile, polys) in &labeled.by_tile {
         let fpolys = filt.get(tile).map(Vec::as_slice).unwrap_or(&[]);
         for (poly, rid) in polys {
-            if !interacts[*rid] && fpolys.iter().any(|fp| polys_overlap(poly, fp)) {
-                interacts[*rid] = true;
+            match kind {
+                SelectionKind::Inside => {
+                    if matches[*rid] && !poly_within(poly, fpolys) {
+                        matches[*rid] = false;
+                    }
+                }
+                SelectionKind::Overlaps => {
+                    if !matches[*rid] && fpolys.iter().any(|fp| polys_overlap(poly, fp)) {
+                        matches[*rid] = true;
+                    }
+                }
+                SelectionKind::Touches => {
+                    if !matches[*rid] && fpolys.iter().any(|fp| polys_interact(poly, fp)) {
+                        matches[*rid] = true;
+                    }
+                }
+                SelectionKind::Covers => {
+                    if !matches[*rid]
+                        && fpolys
+                            .iter()
+                            .any(|fp| poly_within(fp, std::slice::from_ref(poly)))
+                    {
+                        matches[*rid] = true;
+                    }
+                }
             }
         }
     }
@@ -1265,7 +1625,7 @@ fn build_selection_tiles(cand: &TileMap, filt: &TileMap, keep: bool, tile_dbu: i
     let mut out: TileMap = HashMap::new();
     for (tile, polys) in labeled.by_tile {
         for (poly, rid) in polys {
-            if interacts[rid] == keep {
+            if matches[rid] == keep {
                 out.entry(tile).or_default().push(poly);
             }
         }
@@ -1732,7 +2092,7 @@ impl MergedCache {
             for &(sg, sd) in &def.sources {
                 self.ensure(layout, sg, sd);
             }
-            if def.op.is_selection() {
+            if let Some((kind, keep)) = def.op.selection() {
                 // candidate = source[0], filter = source[1] (empty if absent).
                 let empty = TileMap::new();
                 let cand = &self.layers[&def.sources[0]];
@@ -1741,8 +2101,7 @@ impl MergedCache {
                     .get(1)
                     .map(|s| &self.layers[s])
                     .unwrap_or(&empty);
-                let keep = !matches!(def.op, VirtualOp::NotInteracting);
-                let tiles = build_selection_tiles(cand, filt, keep, self.tile_dbu);
+                let tiles = build_selection_tiles(cand, filt, kind, keep, self.tile_dbu);
                 self.layers.insert(key, tiles);
                 return;
             }

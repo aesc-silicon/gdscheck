@@ -43,12 +43,19 @@ pub const NET_AWARE_CHECKS: &[&str] = &[
 ];
 
 /// Parse a lazy virtual layer's `op` string to a [`merge::VirtualOp`], converting its
-/// radius (µm) to DBU where the op takes one.  An unsupported op or a missing radius is
-/// an error: the layer would otherwise silently register as empty and every rule
+/// distances (µm) to DBU where the op takes them.  An unsupported op or a missing radius
+/// is an error: the layer would otherwise silently register as empty and every rule
 /// referencing it would become a no-op false-clean.
+///
+/// Op names follow KLayout's, including its distinction between `overlapping` (shares
+/// positive area) and `interacting` (shares area *or* merely touches) — they differ only
+/// on zero-area contact, and picking the wrong one is a silent correctness bug, so both
+/// exist under the names a rule author reading the foundry deck will expect.
 pub fn parse_virtual_op(
     op: &str,
     radius: Option<f64>,
+    min: Option<f64>,
+    max: Option<f64>,
     dbu_to_um: f64,
 ) -> Result<merge::VirtualOp, String> {
     use merge::VirtualOp::*;
@@ -57,23 +64,51 @@ pub fn parse_virtual_op(
             .map(|r| (r / dbu_to_um).round() as i32)
             .ok_or_else(|| format!("op '{op}' requires a radius"))
     };
+    let to_dbu = |v: Option<f64>| v.map(|x| (x / dbu_to_um).round() as i32);
+    let bounds = || -> Result<(Option<i32>, Option<i32>), String> {
+        if min.is_none() && max.is_none() {
+            return Err(format!("op '{op}' requires a `min` and/or `max` bound"));
+        }
+        Ok((to_dbu(min), to_dbu(max)))
+    };
     Ok(match op {
         "union" => Union,
         "intersection" | "and" => Intersection,
         "difference" | "not" => Difference,
         "square" => Square,
         "not_square" => NotSquare,
+        "rectangle" => Rectangle,
+        "not_rectangle" => NotRectangle,
+        // KLayout `overlapping` / `not_outside` — positive shared area only.
+        "overlapping" | "not_outside" => Overlapping,
+        "not_overlapping" | "outside" => NotOverlapping,
+        // KLayout `interacting` — shared area *or* zero-area contact.
         "interacting" => Interacting,
         "not_interacting" => NotInteracting,
+        "inside" => Inside,
+        "not_inside" => NotInside,
         "covering" => Covering,
+        "not_covering" => NotCovering,
         "not_circle_or_octagon" => NotCircleOrOctagon,
         "not_circle" => NotCircle,
         "holes" => Holes,
         "with_holes" => WithHoles,
         "with_text" => WithText,
+        "with_bbox_min" => {
+            let (lo, hi) = bounds()?;
+            WithBBoxMin(lo, hi)
+        }
+        "with_bbox_max" => {
+            let (lo, hi) = bounds()?;
+            WithBBoxMax(lo, hi)
+        }
         "close" => Close(radius_dbu()?),
         "open" => Open(radius_dbu()?),
         "grow" => Grow(radius_dbu()?),
+        "grow_x" => GrowX(radius_dbu()?),
+        "grow_y" => GrowY(radius_dbu()?),
+        "shrink_x" => ShrinkX(radius_dbu()?),
+        "shrink_y" => ShrinkY(radius_dbu()?),
         other => return Err(format!("unsupported op '{other}'")),
     })
 }
@@ -136,7 +171,7 @@ pub fn run_drc(
     let tiled_virtuals: Vec<(pdk::TiledVirtualSpec, merge::VirtualOp)> = tiled_virtuals
         .into_iter()
         .map(|spec| {
-            let op = parse_virtual_op(&spec.op, spec.radius, dbu_to_um)
+            let op = parse_virtual_op(&spec.op, spec.radius, spec.min, spec.max, dbu_to_um)
                 .map_err(|e| format!("Lazy virtual layer '{}': {e}", spec.name))?;
             Ok((spec, op))
         })
@@ -266,7 +301,12 @@ pub fn run_drc(
     for (spec, op) in &tiled_virtuals {
         let extra = match op {
             merge::VirtualOp::Close(r) | merge::VirtualOp::Open(r) => 2 * r,
-            merge::VirtualOp::Grow(r) => *r,
+            merge::VirtualOp::Grow(r) | merge::VirtualOp::GrowX(r) | merge::VirtualOp::GrowY(r) => {
+                *r
+            }
+            // A directional erode reads geometry up to `r` away along its axis (the
+            // complement is dilated by that much), so the source needs the same reach.
+            merge::VirtualOp::ShrinkX(r) | merge::VirtualOp::ShrinkY(r) => *r,
             // For `holes`/`with_holes`, radius declares the maximum expected ring
             // extent: a hole only materialises in a tile whose bucket assembles the
             // WHOLE ring, so the source needs the full ring within reach.
@@ -370,15 +410,48 @@ pub fn run_drc(
 mod tests {
     use super::*;
 
-    /// A typo'd op or a missing radius must be a hard error, not a silently empty
+    /// A typo'd op or a missing parameter must be a hard error, not a silently empty
     /// layer (which would turn every rule referencing it into a false-clean).
     #[test]
     fn parse_virtual_op_rejects_bad_config() {
-        assert!(parse_virtual_op("interacting", None, 0.001).is_ok());
-        assert!(parse_virtual_op("grow", Some(0.5), 0.001).is_ok());
-        let e = parse_virtual_op("interactign", None, 0.001).unwrap_err();
+        assert!(parse_virtual_op("interacting", None, None, None, 0.001).is_ok());
+        assert!(parse_virtual_op("grow", Some(0.5), None, None, 0.001).is_ok());
+        let e = parse_virtual_op("interactign", None, None, None, 0.001).unwrap_err();
         assert!(e.contains("unsupported op"), "{e}");
-        let e = parse_virtual_op("close", None, 0.001).unwrap_err();
+        let e = parse_virtual_op("close", None, None, None, 0.001).unwrap_err();
         assert!(e.contains("requires a radius"), "{e}");
+        let e = parse_virtual_op("shrink_x", None, None, None, 0.001).unwrap_err();
+        assert!(e.contains("requires a radius"), "{e}");
+        // A bbox filter with neither bound would keep everything — almost certainly a
+        // mistyped key rather than an intentional no-op filter.
+        let e = parse_virtual_op("with_bbox_min", None, None, None, 0.001).unwrap_err();
+        assert!(e.contains("`min` and/or `max`"), "{e}");
+    }
+
+    /// `overlapping` and `interacting` must resolve to *different* ops: they differ only
+    /// on zero-area contact, and silently aliasing them would be a correctness bug.
+    #[test]
+    fn parse_virtual_op_separates_overlapping_from_interacting() {
+        let over = parse_virtual_op("overlapping", None, None, None, 0.001).unwrap();
+        let inter = parse_virtual_op("interacting", None, None, None, 0.001).unwrap();
+        assert_ne!(over, inter);
+        // KLayout's `not_outside` / `outside` are the same relation under other names.
+        assert_eq!(
+            over,
+            parse_virtual_op("not_outside", None, None, None, 0.001).unwrap()
+        );
+        assert_eq!(
+            parse_virtual_op("not_overlapping", None, None, None, 0.001).unwrap(),
+            parse_virtual_op("outside", None, None, None, 0.001).unwrap()
+        );
+    }
+
+    /// Bounds are converted from µm to DBU with the library's own scale.
+    #[test]
+    fn parse_virtual_op_converts_bbox_bounds_to_dbu() {
+        let op = parse_virtual_op("with_bbox_min", None, Some(2.0), Some(10.0), 0.001).unwrap();
+        assert_eq!(op, merge::VirtualOp::WithBBoxMin(Some(2000), Some(10_000)));
+        let op = parse_virtual_op("with_bbox_max", None, None, Some(0.5), 0.001).unwrap();
+        assert_eq!(op, merge::VirtualOp::WithBBoxMax(None, Some(500)));
     }
 }
