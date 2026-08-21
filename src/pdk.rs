@@ -263,6 +263,18 @@ pub struct PdkConfig {
 }
 
 impl PdkConfig {
+    /// Every embedded process name, i.e. every directory under `pdks/` holding a
+    /// `pdk.yml`.  Sorted, so callers that iterate are deterministic.
+    pub fn embedded_processes() -> Vec<&'static str> {
+        let mut v: Vec<&'static str> = EMBEDDED_PDKS
+            .iter()
+            .filter_map(|(path, _)| path.strip_suffix("/pdk.yml"))
+            .filter(|p| !p.contains('/'))
+            .collect();
+        v.sort_unstable();
+        v
+    }
+
     /// Load a PDK by process name (embedded, e.g. `"ihp-sg13g2"`) or by path to a
     /// `pdk.yml` (for custom/out-of-tree PDKs).
     pub fn for_process(spec: &str) -> Result<Self, Box<dyn std::error::Error>> {

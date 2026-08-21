@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# SRAM 3.3 V.
+#
+# Skeleton: the rule set is not written yet.  Upstream reference is
+# libs.tech/klayout/tech/drc/rule_decks/sram_3p3.rb in the gf180mcu PDK.
+rules: []

@@ -1,0 +1,808 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GlobalFoundries 180 nm MCU (gf180mcu), variant D: 5 metal layers, 11K top metal,
+# MIM option B.  Upstream ships one KLayout deck for every variant and selects
+# behaviour from those three options at run time, so the rule set below is the
+# variant-D projection of it, not a different rule set: decks that only apply to
+# another variant (mim_a on option A, metaltop_30k on a 30K top metal) are absent,
+# and the per-level metal/via decks stop at the 5LM stack.
+#
+# Skeleton.  The layer table, derived layers, connect graph, decks and suites are
+# in place; the decks themselves are still empty.
+name: GlobalFoundries GF180MCU (variant D)
+version: "0.1"
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every deck
+  - name: core
+    path: suites/core.yml
+    description: Geometric DRC - main minus antenna and density
+  - name: density
+    path: suites/density.yml
+    description: Global coverage checks
+  - name: antenna
+    path: suites/antenna.yml
+    description: Antenna checks only
+
+decks:
+  - name: geom
+    path: decks/geom.yml
+    description: Off-grid vertices and non-45 degree angles
+  - name: density
+    path: decks/density.yml
+    description: Global layer density (COMP, Poly2, Metal)
+  - name: dnwell
+    path: decks/dnwell.yml
+    description: Deep N-well
+  - name: nwell
+    path: decks/nwell.yml
+    description: N-well
+  - name: lvpwell
+    path: decks/lvpwell.yml
+    description: Low-voltage P-well
+  - name: comp
+    path: decks/comp.yml
+    description: Active area (COMP)
+  - name: dualgate
+    path: decks/dualgate.yml
+    description: Dual gate oxide (5/6 V devices)
+  - name: poly2
+    path: decks/poly2.yml
+    description: Gate poly
+  - name: nplus
+    path: decks/nplus.yml
+    description: N+ implant
+  - name: pplus
+    path: decks/pplus.yml
+    description: P+ implant
+  - name: contact
+    path: decks/contact.yml
+    description: Contact
+  - name: metal
+    path: decks/metal.yml
+    description: Metal 1-4
+  - name: via
+    path: decks/via.yml
+    description: Via 1-4
+  - name: metaltop
+    path: decks/metaltop.yml
+    description: Top metal (Metal5 on 5LM)
+  - name: mslot
+    path: decks/mslot.yml
+    description: Metal slots
+  - name: dummy_comp
+    path: decks/dummy_comp.yml
+    description: COMP dummy fill
+  - name: dummy_poly2
+    path: decks/dummy_poly2.yml
+    description: Poly2 dummy fill
+  - name: dummy_metal
+    path: decks/dummy_metal.yml
+    description: Metal dummy fill
+  - name: dummy_exclude
+    path: decks/dummy_exclude.yml
+    description: Dummy-fill exclude marker
+  - name: guard_ring
+    path: decks/guard_ring.yml
+    description: Guard ring
+  - name: esd
+    path: decks/esd.yml
+    description: ESD implant
+  - name: sab
+    path: decks/sab.yml
+    description: Salicide block
+  - name: nat
+    path: decks/nat.yml
+    description: Native-VT device
+  - name: mim_b
+    path: decks/mim_b.yml
+    description: MIM capacitor (option B)
+  - name: hres
+    path: decks/hres.yml
+    description: High-sheet poly resistor
+  - name: lres
+    path: decks/lres.yml
+    description: Low-sheet poly resistor
+  - name: pres
+    path: decks/pres.yml
+    description: P+ poly resistor
+  - name: ldnmos
+    path: decks/ldnmos.yml
+    description: LDMOS NFET
+  - name: ldpmos
+    path: decks/ldpmos.yml
+    description: LDMOS PFET
+  - name: efuse
+    path: decks/efuse.yml
+    description: eFuse
+  - name: otp_mk
+    path: decks/otp_mk.yml
+    description: OTP marker
+  - name: ymtp_mk
+    path: decks/ymtp_mk.yml
+    description: YMTP marker
+  - name: mcell
+    path: decks/mcell.yml
+    description: Memory cell
+  - name: sram_3p3
+    path: decks/sram_3p3.yml
+    description: SRAM 3.3 V
+  - name: sram_5p0
+    path: decks/sram_5p0.yml
+    description: SRAM 5.0 V
+  - name: drc_bjt
+    path: decks/drc_bjt.yml
+    description: BJT geometry
+  - name: lvs_bjt
+    path: decks/lvs_bjt.yml
+    description: BJT LVS marker
+  - name: cup
+    path: decks/cup.yml
+    description: Cu pillar
+  - name: antenna
+    path: decks/antenna.yml
+    description: Antenna ratios
+
+# Net extraction.  Upstream states connectivity as bare `connect(a, b)` pairs; this
+# engine is connector-based - a via/contact layer bridges the conductors it sits
+# inside - so the pairs that have no drawn connector (a well tie, an LDMOS drain)
+# get one derived for them below, named `*_tap`.  One conductor per entry, ordered
+# bottom-up, so an antenna rule can cut the stack at a given level.
+connectivity:
+  - connector: contact
+    layers: [poly2_drawn]
+  - connector: contact
+    layers: [ncomp_con]
+  - connector: contact
+    layers: [pcomp_con]
+  - connector: contact
+    layers: [natcomp_con]
+  - connector: contact
+    layers: [metal1_drawn]
+  - connector: via1
+    layers: [metal1_drawn]
+  - connector: via1
+    layers: [metal2_drawn]
+  - connector: via2
+    layers: [metal2_drawn]
+  - connector: via2
+    layers: [metal3_drawn]
+  - connector: via3
+    layers: [metal3_drawn]
+  - connector: via3
+    layers: [metal4_drawn]
+  - connector: via4
+    layers: [metal4_drawn]
+  - connector: via4
+    layers: [metal5_drawn]
+  # Well ties and device bodies: the tap diffusion is the connector between the well
+  # and the contacted active it straps.
+  - connector: ntap
+    layers: [nwell, ncomp_con]
+  - connector: ntap_dn
+    layers: [dnwell_n, ncomp_con]
+  - connector: ptap
+    layers: [lvpwell, pcomp_con]
+  - connector: mvsd_tap
+    layers: [mvsd, ncomp_con]
+  - connector: mvpsd_tap
+    layers: [mvpsd, pcomp_con]
+  # MIM option B ties the cap's top plate to the top metal (`connect(top_metal_drawn,
+  # fusetop)` upstream).  Reconfirm against the MIM device model before the antenna
+  # deck relies on it - the bridge is derived here rather than drawn.
+  - connector: mimcap_top_tap
+    layers: [fusetop, metal5_drawn]
+
+# The derived "generic" layer table every deck is written against, ported from
+# generic_layers.rb (STATIC_LAYERS plus the metal aliases).  Upstream chains these
+# several levels deep - psd_dn rests on pgate_dn on pgate on pactive on pcomp on
+# comp - and only `mode: lazy` layers may reference another virtual layer, so the
+# whole table is lazy.  A deck needing one of these under a whole-layout check
+# (inside_boundary) must mark that entry `mode: global` and flatten the chain.
+#
+# Where upstream composes several operations in one expression, the intermediate
+# steps are named here rather than inlined; they carry the suffix that says what is
+# still to be removed (`_all`, `_touching`).
+virtual_layers:
+  # ---- Wells --------------------------------------------------------------
+  - name: dnwell_n
+    op: difference
+    mode: lazy
+    layers: [dnwell, lvpwell]
+  - name: dnwell_p
+    op: intersection
+    mode: lazy
+    layers: [dnwell, lvpwell]
+  - name: all_nwell
+    op: union
+    mode: lazy
+    layers: [dnwell_n, nwell]
+
+  # ---- Comps and gates ----------------------------------------------------
+  - name: ncomp
+    op: intersection
+    mode: lazy
+    layers: [comp, nplus]
+  - name: pcomp
+    op: intersection
+    mode: lazy
+    layers: [comp, pplus]
+  - name: ncomp_con
+    op: difference
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: pcomp_con
+    op: difference
+    mode: lazy
+    layers: [pcomp, poly2_drawn]
+  - name: tgate_all
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, comp]
+  - name: tgate
+    op: difference
+    mode: lazy
+    layers: [tgate_all, res_mk]
+
+  # ---- N devices ----------------------------------------------------------
+  - name: nactive
+    op: difference
+    mode: lazy
+    layers: [ncomp, all_nwell]
+  - name: n_diode
+    op: difference
+    mode: lazy
+    layers: [ncomp_con, nwell]
+  - name: ngate
+    op: intersection
+    mode: lazy
+    layers: [nactive, tgate]
+  # Source/drain: the active regions that meet a gate, gate itself removed.  Upstream
+  # uses KLayout `interacting`, so a region abutting the gate with no overlap counts.
+  - name: nsd_touching
+    op: interacting
+    mode: lazy
+    layers: [nactive, ngate]
+  - name: nsd
+    op: difference
+    mode: lazy
+    layers: [nsd_touching, ngate, res_mk]
+  - name: ptap
+    op: difference
+    mode: lazy
+    layers: [pcomp, all_nwell, res_mk]
+
+  # ---- P devices ----------------------------------------------------------
+  - name: pactive
+    op: intersection
+    mode: lazy
+    layers: [pcomp, all_nwell]
+  - name: p_diode
+    op: intersection
+    mode: lazy
+    layers: [pcomp_con, nwell]
+  - name: pgate
+    op: intersection
+    mode: lazy
+    layers: [pactive, tgate]
+  - name: psd_touching
+    op: interacting
+    mode: lazy
+    layers: [pactive, pgate]
+  - name: psd
+    op: difference
+    mode: lazy
+    layers: [psd_touching, pgate, res_mk]
+  - name: ntap_all
+    op: intersection
+    mode: lazy
+    layers: [ncomp, all_nwell]
+  - name: ntap
+    op: difference
+    mode: lazy
+    layers: [ntap_all, res_mk]
+
+  # ---- Inside the deep N-well --------------------------------------------
+  - name: ngate_dn
+    op: intersection
+    mode: lazy
+    layers: [ngate, dnwell_p]
+  - name: ptap_dn_all
+    op: intersection
+    mode: lazy
+    layers: [ptap, dnwell_p]
+  - name: ptap_dn
+    op: not_overlapping
+    mode: lazy
+    layers: [ptap_dn_all, well_diode_mk]
+  - name: pgate_dn
+    op: intersection
+    mode: lazy
+    layers: [pgate, dnwell_n]
+  - name: ntap_dn
+    op: intersection
+    mode: lazy
+    layers: [ntap, dnwell_n]
+  - name: pcomp_dn
+    op: intersection
+    mode: lazy
+    layers: [pcomp, dnwell_n]
+  - name: psd_dn_touching
+    op: interacting
+    mode: lazy
+    layers: [pcomp_dn, pgate_dn]
+  - name: psd_dn
+    op: difference
+    mode: lazy
+    layers: [psd_dn_touching, pgate_dn, res_mk]
+  - name: ncomp_dn
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell_p]
+  - name: nsd_dn_touching
+    op: interacting
+    mode: lazy
+    layers: [ncomp_dn, ngate_dn]
+  - name: nsd_dn
+    op: difference
+    mode: lazy
+    layers: [nsd_dn_touching, ngate_dn, res_mk]
+
+  # ---- Native-VT device ---------------------------------------------------
+  - name: natcomp
+    op: intersection
+    mode: lazy
+    layers: [nat, comp]
+  - name: natcomp_con
+    op: difference
+    mode: lazy
+    layers: [natcomp, poly2_drawn]
+
+  # ---- Gate voltage classes ----------------------------------------------
+  # dualgate marks the thick-oxide (5/6 V) devices; v5_xtor then splits those into
+  # 5 V (inside it) and 6 V (outside it).
+  - name: nom_gate
+    op: difference
+    mode: lazy
+    layers: [tgate, dualgate]
+  - name: thick_gate
+    op: intersection
+    mode: lazy
+    layers: [tgate, dualgate]
+  - name: ngate_56v
+    op: intersection
+    mode: lazy
+    layers: [ngate, dualgate]
+  - name: pgate_56v
+    op: intersection
+    mode: lazy
+    layers: [pgate, dualgate]
+  - name: ngate_5v
+    op: intersection
+    mode: lazy
+    layers: [ngate_56v, v5_xtor]
+  - name: pgate_5v
+    op: intersection
+    mode: lazy
+    layers: [pgate_56v, v5_xtor]
+  - name: ngate_6v
+    op: difference
+    mode: lazy
+    layers: [ngate_56v, v5_xtor]
+  - name: pgate_6v
+    op: difference
+    mode: lazy
+    layers: [pgate_56v, v5_xtor]
+
+  # ---- Deep N-well voltage classes ---------------------------------------
+  # Whole-region selectors, not booleans: a deep well is 3.3 V only if it touches
+  # neither marker anywhere, and 5/6 V if it overlaps dualgate anywhere.
+  - name: dnwell_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [dnwell, v5_xtor]
+  - name: dnwell_3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [dnwell_no_v5, dualgate]
+  - name: dnwell_56v
+    op: overlapping
+    mode: lazy
+    layers: [dnwell, dualgate]
+
+  # ---- LVPWELL ------------------------------------------------------------
+  - name: lvpwell_dn
+    op: interacting
+    mode: lazy
+    layers: [lvpwell, dnwell]
+  - name: lvpwell_out
+    op: not_interacting
+    mode: lazy
+    layers: [lvpwell, dnwell]
+  - name: lvpwell_dn3p3v
+    op: intersection
+    mode: lazy
+    layers: [lvpwell, dnwell_3p3v]
+  - name: lvpwell_dn56v
+    op: intersection
+    mode: lazy
+    layers: [lvpwell, dnwell_56v]
+
+  # ---- NWELL --------------------------------------------------------------
+  - name: nwell_dn
+    op: interacting
+    mode: lazy
+    layers: [nwell, dnwell]
+  - name: nwell_n_dn
+    op: not_interacting
+    mode: lazy
+    layers: [nwell, dnwell]
+
+  # ---- Drawn plus dummy ---------------------------------------------------
+  # Most rules run on the conductor as fabricated, which includes the fill.
+  - name: poly2
+    op: union
+    mode: lazy
+    layers: [poly2_drawn, poly2_dummy]
+  - name: metal1
+    op: union
+    mode: lazy
+    layers: [metal1_drawn, metal1_dummy]
+  - name: metal2
+    op: union
+    mode: lazy
+    layers: [metal2_drawn, metal2_dummy]
+  - name: metal3
+    op: union
+    mode: lazy
+    layers: [metal3_drawn, metal3_dummy]
+  - name: metal4
+    op: union
+    mode: lazy
+    layers: [metal4_drawn, metal4_dummy]
+  - name: metal5
+    op: union
+    mode: lazy
+    layers: [metal5_drawn, metal5_dummy]
+
+  # ---- Top-of-stack aliases ----------------------------------------------
+  # On a 5LM stack the top metal is Metal5, so the metaltop deck runs against it.
+  # A single-source union is the alias: it renames without copying a rule set.
+  - name: top_metal_drawn
+    op: union
+    mode: lazy
+    layers: [metal5_drawn]
+  - name: top_metal
+    op: union
+    mode: lazy
+    layers: [metal5]
+  - name: topmin1_metal
+    op: union
+    mode: lazy
+    layers: [metal4]
+  - name: top_via
+    op: union
+    mode: lazy
+    layers: [via4]
+  - name: topmin1_via
+    op: union
+    mode: lazy
+    layers: [via3]
+
+  # ---- Connect-graph bridges ---------------------------------------------
+  # Derived stand-ins for upstream's connector-less `connect(a, b)` pairs; see the
+  # connectivity block above.
+  - name: mvsd_tap
+    op: intersection
+    mode: lazy
+    layers: [mvsd, ncomp_con]
+  - name: mvpsd_tap
+    op: intersection
+    mode: lazy
+    layers: [mvpsd, pcomp_con]
+  - name: mimcap_top_tap
+    op: intersection
+    mode: lazy
+    layers: [fusetop, metal5_drawn]
+
+# The drawn layer table, from generic_layers.rb.  Variant D is a 5LM stack, so the
+# 6LM-only layers (via5 and the metaltop family) are absent.
+layers:
+  - name: comp
+    gds_layer: 22
+    gds_datatype: 0
+  - name: dnwell
+    gds_layer: 12
+    gds_datatype: 0
+  - name: nwell
+    gds_layer: 21
+    gds_datatype: 0
+  - name: lvpwell
+    gds_layer: 204
+    gds_datatype: 0
+  - name: dualgate
+    gds_layer: 55
+    gds_datatype: 0
+  - name: poly2_drawn
+    gds_layer: 30
+    gds_datatype: 0
+  - name: nplus
+    gds_layer: 32
+    gds_datatype: 0
+  - name: pplus
+    gds_layer: 31
+    gds_datatype: 0
+  - name: sab
+    gds_layer: 49
+    gds_datatype: 0
+  - name: esd
+    gds_layer: 24
+    gds_datatype: 0
+  - name: resistor
+    gds_layer: 62
+    gds_datatype: 0
+  - name: fhres
+    gds_layer: 227
+    gds_datatype: 0
+  - name: fusetop
+    gds_layer: 75
+    gds_datatype: 0
+  - name: fusewindow_d
+    gds_layer: 96
+    gds_datatype: 1
+  - name: polyfuse
+    gds_layer: 220
+    gds_datatype: 0
+  - name: mvsd
+    gds_layer: 210
+    gds_datatype: 0
+  - name: mvpsd
+    gds_layer: 11
+    gds_datatype: 39
+  - name: nat
+    gds_layer: 5
+    gds_datatype: 0
+  - name: comp_dummy
+    gds_layer: 22
+    gds_datatype: 4
+  - name: poly2_dummy
+    gds_layer: 30
+    gds_datatype: 4
+  - name: schottky_diode
+    gds_layer: 241
+    gds_datatype: 0
+  - name: zener
+    gds_layer: 178
+    gds_datatype: 0
+  - name: res_mk
+    gds_layer: 110
+    gds_datatype: 5
+  - name: opc_drc
+    gds_layer: 124
+    gds_datatype: 5
+  - name: v5_xtor
+    gds_layer: 112
+    gds_datatype: 1
+  - name: cap_mk
+    gds_layer: 117
+    gds_datatype: 5
+  - name: mos_cap_mk
+    gds_layer: 166
+    gds_datatype: 5
+  - name: ind_mk
+    gds_layer: 151
+    gds_datatype: 5
+  - name: diode_mk
+    gds_layer: 115
+    gds_datatype: 5
+  - name: drc_bjt
+    gds_layer: 127
+    gds_datatype: 5
+  - name: lvs_bjt
+    gds_layer: 118
+    gds_datatype: 5
+  - name: mim_l_mk
+    gds_layer: 117
+    gds_datatype: 10
+  - name: latchup_mk
+    gds_layer: 137
+    gds_datatype: 5
+  - name: guard_ring_mk
+    gds_layer: 167
+    gds_datatype: 5
+  - name: otp_mk
+    gds_layer: 173
+    gds_datatype: 5
+  - name: mtpmark
+    gds_layer: 122
+    gds_datatype: 5
+  - name: neo_ee_mk
+    gds_layer: 88
+    gds_datatype: 17
+  - name: sramcore
+    gds_layer: 108
+    gds_datatype: 5
+  - name: lvs_rf
+    gds_layer: 100
+    gds_datatype: 5
+  - name: lvs_drain
+    gds_layer: 100
+    gds_datatype: 7
+  - name: hvpolyrs
+    gds_layer: 123
+    gds_datatype: 5
+  - name: lvs_io
+    gds_layer: 119
+    gds_datatype: 5
+  - name: probe_mk
+    gds_layer: 13
+    gds_datatype: 17
+  - name: esd_mk
+    gds_layer: 24
+    gds_datatype: 5
+  - name: lvs_source
+    gds_layer: 100
+    gds_datatype: 8
+  - name: well_diode_mk
+    gds_layer: 153
+    gds_datatype: 51
+  - name: ldmos_xtor
+    gds_layer: 226
+    gds_datatype: 0
+  - name: plfuse
+    gds_layer: 125
+    gds_datatype: 5
+  - name: efuse_mk
+    gds_layer: 80
+    gds_datatype: 5
+  - name: mcell_feol_mk
+    gds_layer: 11
+    gds_datatype: 17
+  - name: ymtp_mk
+    gds_layer: 86
+    gds_datatype: 17
+  - name: dev_wf_mk
+    gds_layer: 128
+    gds_datatype: 17
+  - name: comp_label
+    gds_layer: 22
+    gds_datatype: 10
+  - name: poly2_label
+    gds_layer: 30
+    gds_datatype: 10
+  - name: mdiode
+    gds_layer: 116
+    gds_datatype: 5
+  - name: ndmy
+    gds_layer: 111
+    gds_datatype: 5
+  - name: pmndmy
+    gds_layer: 152
+    gds_datatype: 5
+  - name: pad
+    gds_layer: 37
+    gds_datatype: 0
+  - name: ubmpperi
+    gds_layer: 183
+    gds_datatype: 0
+  - name: ubmparray
+    gds_layer: 184
+    gds_datatype: 0
+  - name: ubmeplate
+    gds_layer: 185
+    gds_datatype: 0
+  - name: pr_bndry
+    gds_layer: 0
+    gds_datatype: 0
+  - name: border
+    gds_layer: 63
+    gds_datatype: 0
+  - name: contact
+    gds_layer: 33
+    gds_datatype: 0
+  - name: metal1_drawn
+    gds_layer: 34
+    gds_datatype: 0
+  - name: metal1_slot
+    gds_layer: 34
+    gds_datatype: 3
+  - name: metal1_dummy
+    gds_layer: 34
+    gds_datatype: 4
+  - name: metal1_label
+    gds_layer: 34
+    gds_datatype: 10
+  - name: metal1_blk
+    gds_layer: 34
+    gds_datatype: 5
+  - name: metal1_res
+    gds_layer: 110
+    gds_datatype: 11
+  - name: via1
+    gds_layer: 35
+    gds_datatype: 0
+  - name: metal2_drawn
+    gds_layer: 36
+    gds_datatype: 0
+  - name: metal2_slot
+    gds_layer: 36
+    gds_datatype: 3
+  - name: metal2_dummy
+    gds_layer: 36
+    gds_datatype: 4
+  - name: metal2_blk
+    gds_layer: 36
+    gds_datatype: 5
+  - name: metal2_label
+    gds_layer: 36
+    gds_datatype: 10
+  - name: metal2_res
+    gds_layer: 110
+    gds_datatype: 12
+  - name: via2
+    gds_layer: 38
+    gds_datatype: 0
+  - name: metal3_drawn
+    gds_layer: 42
+    gds_datatype: 0
+  - name: metal3_slot
+    gds_layer: 42
+    gds_datatype: 3
+  - name: metal3_dummy
+    gds_layer: 42
+    gds_datatype: 4
+  - name: metal3_blk
+    gds_layer: 42
+    gds_datatype: 5
+  - name: metal3_label
+    gds_layer: 42
+    gds_datatype: 10
+  - name: metal3_res
+    gds_layer: 110
+    gds_datatype: 13
+  - name: via3
+    gds_layer: 40
+    gds_datatype: 0
+  - name: metal4_drawn
+    gds_layer: 46
+    gds_datatype: 0
+  - name: metal4_slot
+    gds_layer: 46
+    gds_datatype: 3
+  - name: metal4_dummy
+    gds_layer: 46
+    gds_datatype: 4
+  - name: metal4_blk
+    gds_layer: 46
+    gds_datatype: 5
+  - name: metal4_label
+    gds_layer: 46
+    gds_datatype: 10
+  - name: metal4_res
+    gds_layer: 110
+    gds_datatype: 14
+  - name: via4
+    gds_layer: 41
+    gds_datatype: 0
+  - name: metal5_drawn
+    gds_layer: 81
+    gds_datatype: 0
+  - name: metal5_slot
+    gds_layer: 81
+    gds_datatype: 3
+  - name: metal5_dummy
+    gds_layer: 81
+    gds_datatype: 4
+  - name: metal5_blk
+    gds_layer: 81
+    gds_datatype: 5
+  - name: metal5_label
+    gds_layer: 81
+    gds_datatype: 10
+  - name: metal5_res
+    gds_layer: 110
+    gds_datatype: 15
