@@ -174,3 +174,59 @@ fn every_connect_graph_layer_resolves() {
         );
     }
 }
+
+/// The gf180mcuD antenna rules select a net by *prefix* of the connect list, so each
+/// rule carries the index it needs as a `level`. That makes the list's order part of the
+/// deck's meaning: inserting or reordering a step silently moves every antenna rule to
+/// the wrong point in the process stack, and no geometry test would notice. Pin it.
+#[test]
+fn gf180_connect_order_is_pinned_for_the_antenna_levels() {
+    // (connector, first bridged layer) per step, with the antenna rule each index feeds.
+    const WANT: &[(&str, &str)] = &[
+        ("contact", "poly2_drawn"),    // 0
+        ("contact", "ncomp_con"),      // 1
+        ("contact", "pcomp_con"),      // 2
+        ("contact", "natcomp_con"),    // 3
+        ("ntap", "nwell"),             // 4
+        ("ntap_dn", "dnwell_n"),       // 5
+        ("ptap", "lvpwell"),           // 6
+        ("mvsd_tap", "mvsd"),          // 7
+        ("ntap", "nwell"),             // 8
+        ("mvpsd_tap", "mvpsd"),        // 9
+        ("contact", "metal1_drawn"),   // 10 -> ANT.8
+        ("via1", "metal1_drawn"),      // 11 -> ANT.16_*_ANT.2
+        ("via1", "metal2_drawn"),      // 12 -> ANT.16_*_ANT.9
+        ("via2", "metal2_drawn"),      // 13 -> ANT.16_*_ANT.3
+        ("via2", "metal3_drawn"),      // 14 -> ANT.16_*_ANT.10
+        ("via3", "metal3_drawn"),      // 15 -> ANT.16_*_ANT.4
+        ("via3", "fusetop"),           // 16
+        ("via3", "metal4_drawn"),      // 17 -> ANT.16_*_ANT.11
+        ("via4", "metal4_drawn"),      // 18 -> ANT.16_*_ANT.5
+        ("via4", "metal5_drawn"),      // 19 -> ANT.16_*_ANT.12
+        ("mimcap_top_tap", "fusetop"), // 20 -> ANT.16_*_ANT.6
+    ];
+    let pdk = PdkConfig::for_process("gf180mcuD").expect("gf180mcuD loads");
+    assert_eq!(
+        pdk.connectivity.len(),
+        WANT.len(),
+        "connect list length changed; antenna `level`s now point elsewhere"
+    );
+    for (i, (spec, (conn, first))) in pdk.connectivity.iter().zip(WANT).enumerate() {
+        let key = |n: &str| {
+            let l = pdk
+                .layer(n)
+                .unwrap_or_else(|| panic!("step {i}: unknown layer '{n}'"));
+            (l.gds_layer as i16, l.gds_datatype as i16)
+        };
+        assert_eq!(
+            spec.connector,
+            key(conn),
+            "connect step {i}: connector moved"
+        );
+        assert_eq!(
+            spec.layers.first().copied(),
+            Some(key(first)),
+            "connect step {i}: bridged layer moved"
+        );
+    }
+}

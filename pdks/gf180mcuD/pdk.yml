@@ -153,50 +153,62 @@ decks:
 # get one derived for them below, named `*_tap`.  One conductor per entry, ordered
 # bottom-up, so an antenna rule can cut the stack at a given level.
 connectivity:
-  - connector: contact
+  # ORDERED.  The antenna deck selects a net by *prefix* of this list - the stack as it
+  # exists partway through processing - so the index of every step is load-bearing and
+  # the order mirrors rule_decks/antenna.rb's `connect` blocks: gates and diffusions
+  # first, then the wells, then the metal stack one level at a time.  Inserting a step
+  # shifts every level above it; tests/pdk_integrity.rs pins the list so that breaks
+  # loudly.  Indices are noted where an antenna rule names them.
+  - connector: contact           # 0
     layers: [poly2_drawn]
-  - connector: contact
+  - connector: contact           # 1
     layers: [ncomp_con]
-  - connector: contact
+  - connector: contact           # 2
     layers: [pcomp_con]
-  - connector: contact
+  - connector: contact           # 3
     layers: [natcomp_con]
-  - connector: contact
-    layers: [metal1_drawn]
-  - connector: via1
-    layers: [metal1_drawn]
-  - connector: via1
-    layers: [metal2_drawn]
-  - connector: via2
-    layers: [metal2_drawn]
-  - connector: via2
-    layers: [metal3_drawn]
-  - connector: via3
-    layers: [metal3_drawn]
-  - connector: via3
-    layers: [metal4_drawn]
-  - connector: via4
-    layers: [metal4_drawn]
-  - connector: via4
-    layers: [metal5_drawn]
   # Well ties and device bodies: the tap diffusion is the connector between the well
-  # and the contacted active it straps.
-  - connector: ntap
+  # and the contacted active it straps.  These sit ahead of the metal stack because
+  # upstream's antenna phases have the wells connected from the contact level up.
+  - connector: ntap              # 4
     layers: [nwell, nw_lv, nw_mv, ncomp_con]
-  - connector: ntap_dn
+  - connector: ntap_dn           # 5
     layers: [dnwell_n, ncomp_con]
-  - connector: ptap
+  - connector: ptap              # 6
     layers: [lvpwell, lvpwell_dn_lv, lvpwell_dn_mv, pcomp_con]
-  - connector: mvsd_tap
+  - connector: mvsd_tap          # 7
     layers: [mvsd, ncomp_con]
-  - connector: ntap
+  - connector: ntap              # 8
     layers: [nwell, mvsd]
-  - connector: mvpsd_tap
+  - connector: mvpsd_tap         # 9
     layers: [mvpsd, pcomp_con]
-  # MIM option B ties the cap's top plate to the top metal (`connect(top_metal_drawn,
-  # fusetop)` upstream).  Reconfirm against the MIM device model before the antenna
-  # deck relies on it - the bridge is derived here rather than drawn.
-  - connector: mimcap_top_tap
+  - connector: contact           # 10 - end of the pre-metal net (ANT.8)
+    layers: [metal1_drawn]
+  - connector: via1              # 11
+    layers: [metal1_drawn]
+  - connector: via1              # 12
+    layers: [metal2_drawn]
+  - connector: via2              # 13
+    layers: [metal2_drawn]
+  - connector: via2              # 14
+    layers: [metal3_drawn]
+  - connector: via3              # 15
+    layers: [metal3_drawn]
+  # MIM option B ties the cap plate in at the Via3 phase (`connect(via3, fusetop)` in
+  # antenna.rb).  It sits inside the Via3 phase, before Via3 reaches Metal4, so the
+  # MIM antenna rules see the plate on the same net as the via that lands on it.
+  - connector: via3              # 16
+    layers: [fusetop]
+  - connector: via3              # 17
+    layers: [metal4_drawn]
+  - connector: via4              # 18
+    layers: [metal4_drawn]
+  - connector: via4              # 19
+    layers: [metal5_drawn]
+  # Outside every antenna phase: the electrical bridge from the MIM plate to the top
+  # metal, which the geometry decks' net-aware checks need but the antenna phases,
+  # following upstream, do not have.
+  - connector: mimcap_top_tap    # 20
     layers: [fusetop, metal5_drawn]
 
 # The derived "generic" layer table every deck is written against, ported from

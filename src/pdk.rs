@@ -174,6 +174,13 @@ struct RuleRaw {
     /// `forbidden_unless_labeled`).  `params` only carries numbers.
     #[serde(default)]
     pub text: Option<String>,
+    /// Params whose value is a *layer*, given by name.  `params` holds only numbers, so
+    /// a check that takes a layer as a parameter (rather than as one of `layers`) would
+    /// otherwise need its GDS number written into the deck - impossible for a derived
+    /// layer, whose number is assigned by position in `virtual_layers`.  Each entry is
+    /// resolved at load time into `params` as `<name>` and `<name>_dt`.
+    #[serde(default)]
+    pub layer_params: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -893,12 +900,24 @@ impl PdkConfig {
                     })
                     .collect();
 
+                let mut params = r.params;
+                for (key, name) in &r.layer_params {
+                    let l = self.layer_map.get(name).ok_or_else(|| {
+                        format!(
+                            "Rule '{}' layer_param '{key}' references unknown layer '{name}'",
+                            r.id
+                        )
+                    })?;
+                    params.insert(key.clone(), l.gds_layer as f64);
+                    params.insert(format!("{key}_dt"), l.gds_datatype as f64);
+                }
+
                 Ok(RuleDefinition {
                     id: r.id,
                     check: r.check,
                     layers,
                     value: r.value,
-                    params: r.params,
+                    params,
                     ignore,
                     text: r.text,
                 })

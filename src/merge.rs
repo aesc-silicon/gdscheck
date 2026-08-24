@@ -1505,7 +1505,64 @@ pub fn merged_centroid_dbu(m: &MergedPoly) -> (f64, f64) {
 #[derive(Clone, Copy)]
 pub struct Region {
     pub area_dbu: f64,
+    /// Total boundary length (DBU), outer ring plus holes.  Tile-correct: only the
+    /// polygon's own edges count, clipped to each tile core, so the cuts the tiling
+    /// introduces along tile lines are never included and no edge is counted twice.
+    pub perimeter_dbu: f64,
     pub marker: (f64, f64),
+}
+
+/// Length of the part of segment `a`-`b` lying inside the rectangle, by Liang-Barsky.
+/// Used to attribute a polygon edge to the tile core it runs through.
+fn clipped_seg_len(a: IntPoint, b: IntPoint, x0: f64, y0: f64, x1: f64, y1: f64) -> f64 {
+    let (px, py) = ((b.x - a.x) as f64, (b.y - a.y) as f64);
+    let (mut t0, mut t1) = (0.0f64, 1.0f64);
+    for (p, q) in [
+        (-px, a.x as f64 - x0),
+        (px, x1 - a.x as f64),
+        (-py, a.y as f64 - y0),
+        (py, y1 - a.y as f64),
+    ] {
+        if p == 0.0 {
+            // Parallel to this boundary and outside it: nothing survives.
+            if q < 0.0 {
+                return 0.0;
+            }
+            continue;
+        }
+        let r = q / p;
+        if p < 0.0 {
+            if r > t1 {
+                return 0.0;
+            }
+            t0 = t0.max(r);
+        } else {
+            if r < t0 {
+                return 0.0;
+            }
+            t1 = t1.min(r);
+        }
+    }
+    ((t1 - t0).max(0.0)) * (px * px + py * py).sqrt()
+}
+
+/// Boundary length of `m` lying inside the tile core, counting only the polygon's own
+/// edges.  Summed over every core a region touches, this is the region's true perimeter:
+/// the tiling's cut edges run along the core rectangle and are never polygon edges, and
+/// each real edge falls in exactly one core.
+pub fn poly_perimeter_in_core(m: &MergedPoly, x0: f64, y0: f64, x1: f64, y1: f64) -> f64 {
+    let mut total = 0.0;
+    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+        let n = ring.len();
+        if n < 3 {
+            continue;
+        }
+        for i in 0..n {
+            let (a, b) = (ring[i], ring[if i + 1 == n { 0 } else { i + 1 }]);
+            total += clipped_seg_len(a, b, x0, y0, x1, y1);
+        }
+    }
+    total
 }
 
 /// Metal `y`-intervals where the region covers the vertical line `x = xs`,
@@ -1641,6 +1698,7 @@ impl Sides {
 /// One tile piece: its core-clipped area, a marker, and its stitching [`Sides`].
 struct Piece {
     area: f64,
+    perimeter: f64,
     marker: (f64, f64),
     sides: Sides,
 }
@@ -1652,6 +1710,7 @@ impl Piece {
         let area = clipped_area_dbu(poly, cx0, cy0, cx1, cy1);
         (area > 0.0).then(|| Piece {
             area,
+            perimeter: poly_perimeter_in_core(poly, cx0, cy0, cx1, cy1),
             marker: merged_centroid_dbu(poly),
             sides: Sides::of(poly, cx0, cy0, cx1, cy1),
         })
@@ -1756,12 +1815,14 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
         let region = *root_to_region.entry(root).or_insert_with(|| {
             regions.push(Region {
                 area_dbu: 0.0,
+                perimeter_dbu: 0.0,
                 marker: p.marker,
             });
             largest.push(0.0);
             regions.len() - 1
         });
         regions[region].area_dbu += p.area;
+        regions[region].perimeter_dbu += p.perimeter;
         if p.area > largest[region] {
             largest[region] = p.area;
             regions[region].marker = p.marker;
