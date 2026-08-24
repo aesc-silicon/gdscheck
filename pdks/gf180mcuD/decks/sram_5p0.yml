@@ -2,8 +2,53 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 5.0 V.
+# SRAM 5.0 V.  Ported from rule_decks/sram_5p0.rb - all 8 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/sram_5p0.rb in the gf180mcu PDK.
-rules: []
+# Like sram_3p3, the SRAM core has tighter rules than the rest of the die; here the
+# core is the part of SRAMCORE that overlaps v5_xtor.
+#
+# S.PL.5b_MV is absent.  It measures the space from poly that *overlaps* COMP to COMP,
+# and written that way here it fired on nothing at all - every pair it would measure is
+# a pair that overlaps, which the spacing engine skips by construction.  Upstream must
+# resolve the overlapping pair differently.  Left out rather than shipped empty, which
+# reads as a clean design; the every-rule-fires test is what surfaced it.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 29 of 44, 2 false positives.
+rules:
+  - id: S.DF.4c_MV
+    check: min_enclosure
+    layers: [nw_n_dn_sram_mv, pcomp_out_dn_sram_mv]
+    value: 0.45
+    params:
+      interacting_only: 1
+  - id: S.DF.6_MV
+    check: min_enclosure
+    layers: [comp_sram_mv, poly_sram_mv]
+    value: 0.32
+    params:
+      interacting_only: 1
+  - id: S.DF.7_MV
+    check: min_space
+    layers: [pcomp_dn_sram_mv, lvpwell_dn_sram_mv]
+    value: 0.45
+  - id: S.DF.8_MV
+    check: min_enclosure
+    layers: [lvpwell_dn_sram_mv, ncomp_dn_sram]
+    value: 0.45
+    params:
+      interacting_only: 1
+  - id: S.DF.16_MV
+    check: min_space
+    layers: [ncomp_out_nw_dn_sram_mv, nw_n_dn_sram_mv]
+    value: 0.45
+  - id: S.PL.5a_MV
+    check: min_space
+    layers: [poly_sram_field, comp_sram_mv]
+    value: 0.12
+  - id: S.CO.4_MV
+    check: min_enclosure
+    layers: [comp_sram_mv, contact_sram_mv]
+    value: 0.04
+    params:
+      interacting_only: 1

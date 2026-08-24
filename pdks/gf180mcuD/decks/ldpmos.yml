@@ -2,8 +2,148 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS PFET.
+# LDMOS PFET.  Ported from rule_decks/ldpmos.rb - 24 of its 38 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/ldpmos.rb in the gf180mcu PDK.
-rules: []
+# Structurally the mirror of ldnmos with MVPSD marking the drain, but the rule ids and
+# much of the shape differ, so none of the derived layers are shared.
+#
+# Fourteen rules are not ported, in the same three kinds as ldnmos:
+#
+#   MDP.1a, MDP.2, MDP.3d, MDP.4, MDP.9b, MDP.9c, MDP.11
+#       Channel length and width, guard-ring metal continuity, and the poly extension
+#       beyond COMP - all measured on edge subsets.
+#   MDP.3, MDP.9f, MDP.13b, MDP.13c
+#       Selection by interaction count.
+#   MDP.3c, MDP.4b, MDP.10, MDP.17a
+#       `.drc(...)` expressions, `centers`, and `separation(..., transparent)`.
+#
+# MDP.9d is a fifteenth, dropped for a different reason: it was written and measured,
+# and both of its terms over-fire badly - 100 violations against a reference 15, 89 of
+# them false positives, with the first term alone accounting for all of it.  Whatever
+# `poly2 AND dualgate AND LDMOS_XTOR overlapping the grown drain` selects upstream, it
+# is not what the same expression selects here.  A rule wrong 85% of the time is worse
+# than an absent one, so it stays out until the discrepancy is understood.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 192 of 336, 2 false positives.  MDP.1, MDP.3ai, MDP.5, MDP.6,
+# MDP.7, MDP.8, MDP.12, MDP.15, MDP.16a, MDP.16b and MDP.17c are exact.
+rules:
+  - id: MDP.1
+    check: min_enclosure
+    layers: [poly_mdp, mvpsd]
+    value: 0.6
+    params:
+      interacting_only: 1
+  # MDP.3a: the N+ guard ring must keep clear of the drain and not touch it. The limit
+  # is looser when the tap is butted to the source.
+  - id: MDP.3ai
+    check: min_space
+    layers: [ncomp_mdp3ai, mvpsd]
+    value: 1.0
+  - id: MDP.3ai
+    check: nonempty
+    layers: [mdp3ai_touch]
+    value: 0.0
+  - id: MDP.3aii
+    check: min_space
+    layers: [ncomp_mdp3aii, mvpsd]
+    value: 0.92
+  - id: MDP.3aii
+    check: nonempty
+    layers: [mdp3aii_touch]
+    value: 0.0
+  - id: MDP.3b
+    check: min_space
+    layers: [ncomp_mdp3b, pcomp_mdp3b]
+    value: 0.4
+  - id: MDP.4a
+    check: min_space
+    layers: [pcomp_ld_dg, dnwell_mdp]
+    value: 2.5
+  # MDP.5 / MDP.6 / MDP.6a: the marker layers must cover the device and each other.
+  - id: MDP.5
+    check: nonempty
+    layers: [mdp5_viol]
+    value: 0.0
+  - id: MDP.5a
+    check: min_enclosure
+    layers: [ldmos_dualgate, pcomp_mdp5a]
+    value: 0.5
+    params:
+      interacting_only: 1
+  - id: MDP.6
+    check: nonempty
+    layers: [mdp6_viol]
+    value: 0.0
+  - id: MDP.6a
+    check: nonempty
+    layers: [mdp6a_viol]
+    value: 0.0
+  - id: MDP.7
+    check: min_space
+    layers: [ldmos_xtor, nwell_out_ldmos]
+    value: 2.0
+  - id: MDP.8
+    check: min_space
+    layers: [ldmos_xtor, ncomp_out_ldmos]
+    value: 1.5
+  - id: MDP.9a
+    check: min_width
+    layers: [poly_in_dnwell_mdp]
+    value: 1.2
+  - id: MDP.9ei
+    check: min_space
+    layers: [ldpmos_gate_mdp, ncomp_not_butted]
+    value: 0.4
+  - id: MDP.9ei
+    check: nonempty
+    layers: [mdp9ei_touch]
+    value: 0.0
+  - id: MDP.9eii
+    check: min_space
+    layers: [ldpmos_gate_mdp, ncomp_at_pcomp]
+    value: 0.32
+  - id: MDP.9eii
+    check: nonempty
+    layers: [mdp9eii_touch]
+    value: 0.0
+  # MDP.10a is the different-potential minimum, MDP.10b the same-potential one.
+  - id: MDP.10a
+    check: min_space_different_net
+    layers: [mvpsd]
+    value: 2.0
+  - id: MDP.10b
+    check: min_space
+    layers: [mvpsd]
+    value: 1.0
+  - id: MDP.10b
+    check: min_notch
+    layers: [mvpsd]
+    value: 1.0
+  - id: MDP.12
+    check: min_enclosure
+    layers: [dnwell_mdp, ncomp_guard]
+    value: 0.66
+    params:
+      interacting_only: 1
+  - id: MDP.13a
+    check: max_length
+    layers: [ldpmos_body]
+    value: 50.0
+  - id: MDP.15
+    check: min_space
+    layers: [dnwell, dnwell_mvpsd_mdp]
+    value: 6.0
+  - id: MDP.16a
+    check: min_width
+    layers: [comp_drain_mdp]
+    value: 0.22
+  - id: MDP.16b
+    check: nonempty
+    layers: [mdp16b_viol]
+    value: 0.0
+  # The DNWELL guard ring needs an NCOMP tab to tie it to the highest potential.
+  - id: MDP.17c
+    check: nonempty
+    layers: [mdp17c_viol]
+    value: 0.0

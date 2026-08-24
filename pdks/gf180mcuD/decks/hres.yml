@@ -2,8 +2,74 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# High-sheet poly resistor.
+# High-sheet poly resistor.  Ported from rule_decks/hres.rb - 8 of its 12 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/hres.rb in the gf180mcu PDK.
-rules: []
+# HRES.10, HRES.12a and HRES.12b are absent: the first is a `.drc(width != ...)` over
+# an extended edge layer, the other two are the RES_MK marking checks, both edge work.
+#
+# HRES.9 is ported as its enclosure term only.  Upstream joins that with two more -
+# a SAB edge inside the resistor, and a SAB hole over it - which need edge extension
+# and hole-vs-layer intersection.  The 0.28 um overlap is the headline measurement and
+# is what runs here; the other two terms are simply absent, not approximated.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 95 of 165, 3 false positives.
+rules:
+  - id: HRES.1
+    check: min_space
+    layers: [hres_resistor]
+    value: 0.4
+  - id: HRES.1
+    check: min_notch
+    layers: [hres_resistor]
+    value: 0.4
+  - id: HRES.2
+    check: min_width
+    layers: [hres_poly]
+    value: 1.0
+  - id: HRES.3
+    check: min_space
+    layers: [hres_poly]
+    value: 0.4
+  - id: HRES.3
+    check: min_notch
+    layers: [hres_poly]
+    value: 0.4
+  - id: HRES.4
+    check: min_enclosure
+    layers: [resistor, hres_poly]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: HRES.5
+    check: min_space
+    layers: [hres_resistor, poly2_unrelated]
+    value: 0.3
+  - id: HRES.6
+    check: min_space
+    layers: [hres_resistor, comp]
+    value: 0.3
+  - id: HRES.6
+    check: nonempty
+    layers: [comp_on_hres]
+    value: 0.0
+  - id: HRES.7
+    check: min_enclosure
+    layers: [pplus, hres_contact]
+    value: 0.2
+    params:
+      interacting_only: 1
+  - id: HRES.8
+    check: min_space
+    layers: [hres_contact, sab]
+    value: 0.22
+  - id: HRES.8
+    check: nonempty
+    layers: [hres_cont_on_sab]
+    value: 0.0
+  - id: HRES.9
+    check: min_enclosure
+    layers: [hres9_sab, hres_poly]
+    value: 0.28
+    params:
+      interacting_only: 1

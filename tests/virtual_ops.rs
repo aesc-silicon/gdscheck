@@ -377,6 +377,21 @@ fn grow_x_stays_connected_on_a_narrow_region() {
     );
 }
 
+/// `shrink` erodes in every direction at once, where `shrink_x`/`shrink_y` take one
+/// axis.  A region narrower than twice the radius vanishes entirely - there is no
+/// dilate back, which is what separates it from `open`.
+#[test]
+fn shrink_erodes_isotropically() {
+    let a = vec![rect(A, 0, 0, 1000, 800)];
+    assert_eq!(
+        run(VirtualOp::Shrink(100), &a, &[]),
+        vec![(100, 100, 900, 700)]
+    );
+    // A shape thinner than 2 x radius in one axis disappears.
+    let thin = vec![rect(A, 0, 0, 150, 800)];
+    assert!(run(VirtualOp::Shrink(100), &thin, &[]).is_empty());
+}
+
 #[test]
 fn shrink_x_erodes_only_the_x_extent() {
     let a = vec![rect(A, 0, 0, 100, 50)];

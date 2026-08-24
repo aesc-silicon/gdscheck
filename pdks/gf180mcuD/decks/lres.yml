@@ -2,8 +2,57 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Low-sheet poly resistor.
+# Low-sheet (N+) poly resistor.  Ported from rule_decks/lres.rb - 7 of its 9 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/lres.rb in the gf180mcu PDK.
-rules: []
+# The two absent rules are the RES_MK marking checks (LRES.9a and .9b): both
+# work on edge subsets - "the marking's length shall coincide with the resistor's" is
+# an edge boolean against the poly-and-SAB outline, and the size rule filters marker
+# edges by length.
+#
+# `isolated` upstream is the space between separate regions of one layer, which is
+# what min_space measures here; the notch companion covers the same-polygon case.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 40 of 60, no false positives.
+rules:
+  - id: LRES.1
+    check: min_width
+    layers: [lres_poly]
+    value: 0.8
+  - id: LRES.2
+    check: min_space
+    layers: [lres_poly]
+    value: 0.4
+  - id: LRES.3
+    check: min_space
+    layers: [lres_poly, comp]
+    value: 0.6
+  - id: LRES.3
+    check: nonempty
+    layers: [comp_on_lres]
+    value: 0.0
+  - id: LRES.4
+    check: min_space
+    layers: [lres_poly, poly2_unrelated]
+    value: 0.6
+  - id: LRES.5
+    check: min_enclosure
+    layers: [nplus, lres_poly]
+    value: 0.3
+    params:
+      interacting_only: 1
+  - id: LRES.6
+    check: min_enclosure
+    layers: [sab, lres_poly]
+    value: 0.28
+    params:
+      interacting_only: 1
+  # A contact on the resistor must clear the salicide block, and not touch it at all.
+  - id: LRES.7
+    check: min_space
+    layers: [cont_lres, sab]
+    value: 0.22
+  - id: LRES.7
+    check: nonempty
+    layers: [cont_lres_on_sab]
+    value: 0.0

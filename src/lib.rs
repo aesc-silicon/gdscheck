@@ -105,6 +105,7 @@ pub fn parse_virtual_op(
         "close" => Close(radius_dbu()?),
         "open" => Open(radius_dbu()?),
         "grow" => Grow(radius_dbu()?),
+        "shrink" => Shrink(radius_dbu()?),
         "grow_x" => GrowX(radius_dbu()?),
         "grow_y" => GrowY(radius_dbu()?),
         "shrink_x" => ShrinkX(radius_dbu()?),
@@ -163,6 +164,55 @@ pub fn parse_edge_op(
         }
         other => return Err(format!("unsupported edge op '{other}'")),
     })
+}
+
+/// One relaxation pass of the virtual-layer halo propagation: push each tiled virtual's
+/// halo (plus whatever reach its own operator needs) down onto its sources.  Called to a
+/// fixed point by `run_drc`, because virtuals chain and a single pass moves a halo only
+/// one link along the chain.
+fn propagate_virtual_halos(
+    tiled_virtuals: &[(pdk::TiledVirtualSpec, merge::VirtualOp)],
+    in_scope: Option<&std::collections::HashSet<(i16, i16)>>,
+    halo_by_layer: &mut std::collections::HashMap<(i16, i16), i32>,
+    dbu_to_um: f64,
+) {
+    for (spec, op) in tiled_virtuals {
+        // A virtual the deck never reads costs nothing to build, but its halo would
+        // still be charged to its sources - and those sources may well be layers this
+        // deck does read.  GF180's slotting chain is eight sizing operators deep, so
+        // leaving it in scope would put a 120 um halo on the drawn metal of every deck
+        // in the PDK.  Only virtuals in the run's layer closure propagate.
+        if in_scope.is_some_and(|n| !n.contains(&spec.key)) {
+            continue;
+        }
+        let extra = match op {
+            merge::VirtualOp::Close(r) | merge::VirtualOp::Open(r) => 2 * r,
+            merge::VirtualOp::Grow(r) | merge::VirtualOp::GrowX(r) | merge::VirtualOp::GrowY(r) => {
+                *r
+            }
+            // A directional erode reads geometry up to `r` away along its axis (the
+            // complement is dilated by that much), so the source needs the same reach.
+            // An isotropic erode reads the same distance in every direction.
+            merge::VirtualOp::Shrink(r)
+            | merge::VirtualOp::ShrinkX(r)
+            | merge::VirtualOp::ShrinkY(r) => *r,
+            // For `holes`/`with_holes`, radius declares the maximum expected ring
+            // extent: a hole only materialises in a tile whose bucket assembles the
+            // WHOLE ring, so the source needs the full ring within reach.
+            merge::VirtualOp::Holes | merge::VirtualOp::WithHoles => spec
+                .radius
+                .map(|r| (r / dbu_to_um).ceil() as i32)
+                .unwrap_or(0),
+            _ => 0,
+        };
+        let need = halo_by_layer.get(&spec.key).copied().unwrap_or(0) + extra;
+        if need > 0 {
+            for s in &spec.sources {
+                let e = halo_by_layer.entry(*s).or_insert(0);
+                *e = (*e).max(need);
+            }
+        }
+    }
 }
 
 /// Run DRC for a selection of rules: either one or more decks (`decks`, suite-free
@@ -363,30 +413,23 @@ pub fn run_drc(
     // seeded even when no distance rule references the virtual (e.g. a grow feeding a
     // `nonempty` chain, like Padc.d's pad-anchored 30 µm reach): a morphological op
     // intrinsically needs source geometry within its radius to be correct per tile.
-    for (spec, op) in &tiled_virtuals {
-        let extra = match op {
-            merge::VirtualOp::Close(r) | merge::VirtualOp::Open(r) => 2 * r,
-            merge::VirtualOp::Grow(r) | merge::VirtualOp::GrowX(r) | merge::VirtualOp::GrowY(r) => {
-                *r
-            }
-            // A directional erode reads geometry up to `r` away along its axis (the
-            // complement is dilated by that much), so the source needs the same reach.
-            merge::VirtualOp::ShrinkX(r) | merge::VirtualOp::ShrinkY(r) => *r,
-            // For `holes`/`with_holes`, radius declares the maximum expected ring
-            // extent: a hole only materialises in a tile whose bucket assembles the
-            // WHOLE ring, so the source needs the full ring within reach.
-            merge::VirtualOp::Holes | merge::VirtualOp::WithHoles => spec
-                .radius
-                .map(|r| (r / dbu_to_um).ceil() as i32)
-                .unwrap_or(0),
-            _ => 0,
-        };
-        let need = halo_by_layer.get(&spec.key).copied().unwrap_or(0) + extra;
-        if need > 0 {
-            for s in &spec.sources {
-                let e = halo_by_layer.entry(*s).or_insert(0);
-                *e = (*e).max(need);
-            }
+    //
+    // Virtuals chain, and a chain's reach is the sum of its links: GF180's slotting
+    // derivation is four directional sizes in a row, so the drawn metal underneath needs
+    // 4·15 µm of halo, not 15.  A single pass in declaration order only ever moves a halo
+    // one link, and only when the deck happens to declare the consumer first, so this
+    // runs to a fixed point instead.  Halos only ever grow, and each pass that changes
+    // nothing ends it; the virtual graph is acyclic, so it terminates.
+    loop {
+        let before = halo_by_layer.clone();
+        propagate_virtual_halos(
+            &tiled_virtuals,
+            needed.as_ref(),
+            &mut halo_by_layer,
+            dbu_to_um,
+        );
+        if halo_by_layer == before {
+            break;
         }
     }
 

@@ -40,11 +40,20 @@ SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 # DRC test cases from the GF180MCU PDK (libs.tech/klayout/tech/drc/testing/unit),
-# vendored unchanged apart from gzip.  Listed after the generic tests/data globs so
+# vendored unchanged apart from gzip - except nplus and pplus, where four TEXT
+# elements carrying a zero-length label were removed from each so gds21 can read the
+# file at all (its read_str underflows on an empty string). No geometry was touched.  Listed after the generic tests/data globs so
 # this more specific entry takes precedence over them.
 path = "tests/data/gf180mcuD/static/*.gds.gz"
 SPDX-FileCopyrightText = "2023 GlobalFoundries PDK Authors"
 SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+# Written by tools/gen-mslot-pattern.py, not vendored: the GF180MCU PDK ships no test
+# case for metal slotting, so this pattern is ours.
+path = "tests/data/gf180mcuD/generated/*.gds.gz"
+SPDX-FileCopyrightText = "2026 aesc silicon"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
 
 [[annotations]]
 # Sealring corner cases, generated with the IHP Open PDK's P-Cell generator, so the

@@ -2,8 +2,85 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# OTP marker.
+# OTP marker.  Ported from rule_decks/otp_mk.rb - 12 of its 16 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/otp_mk.rb in the gf180mcu PDK.
-rules: []
+# The OTP region carries its own, tighter rule set; every layer here is the ordinary
+# one intersected with the marker.
+#
+# Four are absent.  O.SB.11 uses KLayout's `overlap`, the width of a shared region.
+# O.SB.4 joins a spacing minimum with an intersection the same way SB.4 does, but its
+# second term is `sab_otp AND contact`, which duplicates O.CO.7's geometry - left out
+# rather than guessed at.  O.PL.ORT restricts gate orientation with `without_angle` on
+# an edge layer, and O.PL.2 is a gate length measured the same way.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 68 of 128, 1 false positive.
+rules:
+  - id: O.DF.3a
+    check: min_space
+    layers: [comp_otp]
+    value: 0.24
+  - id: O.DF.3a
+    check: min_notch
+    layers: [comp_otp]
+    value: 0.24
+  - id: O.DF.6
+    check: min_enclosure
+    layers: [comp_otp, poly_otp]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: O.DF.9
+    check: min_area
+    layers: [comp_otp]
+    value: 0.1444
+  - id: O.PL.3a
+    check: min_space
+    layers: [opl3a_poly]
+    value: 0.18
+  - id: O.PL.3a
+    check: min_notch
+    layers: [opl3a_poly]
+    value: 0.18
+  - id: O.PL.4
+    check: min_enclosure
+    layers: [poly_otp, comp_otp]
+    value: 0.14
+    params:
+      interacting_only: 1
+  - id: O.SB.2
+    check: min_space
+    layers: [sab_otp]
+    value: 0.28
+  - id: O.SB.2
+    check: min_notch
+    layers: [sab_otp]
+    value: 0.28
+  - id: O.SB.3
+    check: min_space
+    layers: [sab_out_comp_otp, comp_out_sab]
+    value: 0.09
+  - id: O.SB.5b_LV
+    check: min_space
+    layers: [sab_otp_lv, tgate_out_sab]
+    value: 0.1
+  # O.SB.9 measures the SAB's extension beyond the *unsalicided* poly - the poly
+  # inside the block - so the enclosed layer has to be that intersection, not the
+  # whole OTP poly.  Written against poly_otp with interacting_only it fired on
+  # nothing at all, which the every-rule-fires test caught.
+  - id: O.SB.9
+    check: min_enclosure
+    layers: [sab_otp, poly_unsalicided_otp]
+    value: 0.1
+  - id: O.SB.13_LV
+    check: min_area
+    layers: [sab_otp_lv]
+    value: 1.488
+  - id: O.SB.13_MV
+    check: min_area
+    layers: [sab_otp_mv]
+    value: 2.0
+  - id: O.CO.7
+    check: min_space
+    layers: [contact_in_comp_otp, tgate_otp]
+    value: 0.13

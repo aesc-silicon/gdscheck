@@ -1412,6 +1412,10 @@ pub fn run_no_angle(
 
     let forbidden = rule.params.get("angle").copied(); // specific forbidden orientation
     let tol = rule.params.get("tolerance").copied().unwrap_or(1.0);
+    // Allowed orientations are multiples of `step` degrees; 90 (the default) permits
+    // only axis-aligned edges, 45 also permits the diagonals.  GF180's ACUTE rules want
+    // the latter - they allow 0, 45, 90 and -45 and flag everything else.
+    let step = rule.params.get("step").copied().unwrap_or(90.0);
 
     match forbidden {
         Some(a) => println!(
@@ -1454,7 +1458,12 @@ pub fn run_no_angle(
                         |a: f64, b: f64| (a - b).abs() <= tol || (a - b).abs() >= 180.0 - tol;
                     let flag = match target {
                         Some(t) => near(ang, t),
-                        None => !(near(ang, 0.0) || near(ang, 90.0)),
+                        None => {
+                            // Not on the allowed lattice: distance to the nearest
+                            // multiple of `step` exceeds the tolerance.
+                            let k = (ang / step).round() * step;
+                            !near(ang, k)
+                        }
                     };
                     if !flag {
                         continue;
