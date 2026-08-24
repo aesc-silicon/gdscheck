@@ -242,6 +242,17 @@ pub fn grow(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(radius + 5.0)))
 }
 
+/// Morphological erode (shrink) by `radius` DBU — the inverse of [`grow`], and KLayout's
+/// `sized(-r)`.  Unlike [`opening`] there is no dilate back: a region narrower than
+/// `2 * radius` disappears, and one that survives keeps its eroded outline, which is what
+/// a rule comparing against "the well minus 0.43 um" wants.
+pub fn shrink(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    if polys.is_empty() || radius <= 0.0 {
+        return polys.to_vec();
+    }
+    shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(-radius)))
+}
+
 /// Directional dilate: the Minkowski sum of `polys` with the segment from `-d` to `+d`,
 /// where `d` is `(radius, 0)` for the x axis and `(0, radius)` for the y axis (KLayout
 /// `sized(r, 0)` / `sized(0, r)`).  [`grow`] offsets every edge outward by `radius` in
@@ -562,6 +573,10 @@ pub enum VirtualOp {
     Open(i32),
     /// Morphological grow (one-directional dilate) by `radius` DBU; single source.
     Grow(i32),
+    /// Morphological erode by `radius` DBU; single source (KLayout `sized(-r)`).  No
+    /// dilate back, unlike [`Open`] — a region narrower than `2 * radius` vanishes and
+    /// the rest keep their eroded outline.
+    Shrink(i32),
     /// Morphological grow along **x only** by `radius` DBU: Minkowski sum with the
     /// horizontal segment `[-r, +r] × {0}` (KLayout `sized(r, 0)`).  Unlike [`Grow`],
     /// which dilates isotropically, this leaves the y extent untouched.
@@ -919,6 +934,7 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
         VirtualOp::Close(r) => closing(sources[0], r as f64),
         VirtualOp::Open(r) => opening(sources[0], r as f64),
         VirtualOp::Grow(r) => grow(sources[0], r as f64),
+        VirtualOp::Shrink(r) => shrink(sources[0], r as f64),
         VirtualOp::GrowX(r) => grow_x(sources[0], r as f64),
         VirtualOp::GrowY(r) => grow_y(sources[0], r as f64),
         VirtualOp::ShrinkX(r) => shrink_x(sources[0], r as f64),
@@ -965,6 +981,7 @@ fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
         | VirtualOp::Close(_)
         | VirtualOp::Open(_)
         | VirtualOp::Grow(_)
+        | VirtualOp::Shrink(_)
         | VirtualOp::GrowX(_)
         | VirtualOp::GrowY(_)
         | VirtualOp::ShrinkX(_)

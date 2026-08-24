@@ -28,6 +28,20 @@
 //! A count changing is therefore a prompt to look, not a failure on its own: confirm the
 //! new number against the reference, then update it here.
 //!
+//! The `nplus` and `pplus` fixtures are the only two vendored here that are not
+//! byte-identical to upstream: each carried four TEXT elements with a zero-length
+//! STRING (an empty label), which panics gds21's `read_str` — it indexes
+//! `data[len - 1]` without guarding `len == 0`. The four elements were removed, since
+//! an empty label carries no DRC information. The reader bug is still a bug: a real
+//! design with an empty text label would crash the same way.
+//!
+//! One deck is validated the other way round. The PDK ships no test case for metal
+//! slotting, so `tools/gen-mslot-pattern.py` writes one: nine Metal1 plates, each
+//! isolating a single MSLOT1 rule, with the expected result one violation per rule and
+//! nothing else. That is a stronger assertion than a count table — it says which plate
+//! each rule found — but it only covers the geometry we thought to draw, so it is a
+//! complement to a foundry case rather than a substitute.
+//!
 //! Only decks that have actually been ported appear below. The remaining fixtures are
 //! vendored and waiting — adding a case for a deck that is still `rules: []` would
 //! assert "no violations" and read as coverage while proving nothing.
@@ -37,6 +51,7 @@ use rstest::rstest;
 
 const PDK: &str = "gf180mcuD";
 const DATA: &str = "tests/data/gf180mcuD/static";
+const GENERATED: &str = "tests/data/gf180mcuD/generated";
 
 /// Violation count per rule id, sorted by id.
 fn counts(deck: &str, gds: &str, topcell: &str) -> Vec<(String, usize)> {
@@ -211,6 +226,123 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "via", "via1.gds.gz", "7_14_VIA",
     &[("V1.1", 4), ("V1.2a", 2), ("V1.3a", 3), ("V1.4a", 6)]
 )]
+#[case::poly2(
+    "poly2", "poly2.gds.gz", "7_7_Poly2",
+    &[
+        ("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 21), ("PL.1_MV", 21),
+        ("PL.1a_LV", 9), ("PL.1a_MV", 9), ("PL.2_LV", 90), ("PL.2_MV", 382),
+        ("PL.3a", 42), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 4),
+        ("PL.5a_MV", 4), ("PL.5b_LV", 4), ("PL.5b_MV", 4), ("PL.7_LV", 10),
+        ("PL.7_MV", 10), ("PL.9", 11),
+    ]
+)]
+#[case::sab(
+    "sab", "sab.gds.gz", "7_10_SB",
+    &[
+        ("SB.1", 15), ("SB.10", 20), ("SB.13", 135), ("SB.15a", 9), ("SB.15b", 5),
+        ("SB.16", 6), ("SB.2", 6), ("SB.3", 7), ("SB.4", 5), ("SB.5a", 7),
+        ("SB.5b", 5), ("SB.6", 4), ("SB.7", 8), ("SB.8", 3), ("SB.9", 29),
+    ]
+)]
+#[case::nplus(
+    "nplus", "nplus.gds.gz", "7_10_Nplus",
+    &[
+        ("NP.1", 392), ("NP.10", 3), ("NP.2", 83), ("NP.3a", 9), ("NP.3bi", 10),
+        ("NP.3bii", 4), ("NP.3ci", 17), ("NP.3cii", 2), ("NP.3d", 2), ("NP.3e", 2),
+        ("NP.5a", 6), ("NP.6", 72), ("NP.7", 4), ("NP.8a", 122), ("NP.8b", 2),
+        ("NP.9", 3),
+    ]
+)]
+#[case::pplus(
+    "pplus", "pplus.gds.gz", "7_11_Pplus",
+    &[
+        ("PP.1", 392), ("PP.10", 3), ("PP.2", 83), ("PP.3a", 21), ("PP.3bi", 2),
+        ("PP.3bii", 13), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2),
+        ("PP.5a", 6), ("PP.6", 72), ("PP.7", 4), ("PP.8a", 122), ("PP.8b", 2),
+        ("PP.9", 3),
+    ]
+)]
+#[case::ldnmos(
+    "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
+    &[
+        ("MDN.1", 40), ("MDN.10a", 64), ("MDN.10ei", 3), ("MDN.10eii", 2),
+        ("MDN.13a", 8), ("MDN.14", 29), ("MDN.15a", 44), ("MDN.15b", 2),
+        ("MDN.17", 75), ("MDN.2a", 15), ("MDN.2b", 27), ("MDN.3a", 9),
+        ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14),
+        ("MDN.6a", 6), ("MDN.7a", 283), ("MDN.8a", 7), ("MDN.8b", 13), ("MDN.9", 7),
+    ]
+)]
+#[case::ldpmos(
+    "ldpmos", "ldpmos.gds.gz", "10_12_2_MDP",
+    &[
+        ("MDP.1", 12), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.12", 3), ("MDP.13a", 1),
+        ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17c", 1), ("MDP.3ai", 91),
+        ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.4a", 8), ("MDP.5", 8), ("MDP.5a", 5),
+        ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38),
+        ("MDP.9ei", 6), ("MDP.9eii", 4),
+    ]
+)]
+#[case::lres(
+    "lres", "lres.gds.gz", "10_2_LRES",
+    &[
+        ("LRES.1", 26), ("LRES.2", 6), ("LRES.3", 8), ("LRES.4", 6), ("LRES.5", 7),
+        ("LRES.6", 37), ("LRES.7", 7),
+    ]
+)]
+#[case::pres(
+    "pres", "pres.gds.gz", "10_1_PRES",
+    &[
+        ("PRES.1", 26), ("PRES.2", 5), ("PRES.3", 8), ("PRES.4", 5), ("PRES.5", 7),
+        ("PRES.6", 37), ("PRES.7", 7),
+    ]
+)]
+#[case::hres(
+    "hres", "hres.gds.gz", "10_3_HRES",
+    &[
+        ("HRES.1", 5), ("HRES.2", 59), ("HRES.3", 6), ("HRES.4", 23), ("HRES.5", 5),
+        ("HRES.6", 5), ("HRES.7", 22), ("HRES.8", 27), ("HRES.9", 2),
+    ]
+)]
+#[case::otp_mk(
+    "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
+    &[
+        ("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 9), ("O.DF.9", 4), ("O.PL.3a", 10),
+        ("O.PL.4", 4), ("O.SB.13_LV", 55), ("O.SB.13_MV", 1), ("O.SB.2", 5),
+        ("O.SB.3", 4), ("O.SB.5b_LV", 4), ("O.SB.9", 2),
+    ]
+)]
+#[case::ymtp_mk(
+    "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
+    &[
+        ("Y.DF.16_LV", 4), ("Y.DF.16_MV", 4), ("Y.DF.6_MV", 14), ("Y.NW.2b_LV", 13),
+        ("Y.NW.2b_MV", 26), ("Y.PL.1_LV", 99), ("Y.PL.1_MV", 120), ("Y.PL.2_LV", 68),
+        ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 6), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 4),
+        ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 4),
+    ]
+)]
+#[case::sram_5p0(
+    "sram_5p0", "sram_5p0.gds.gz", "sram_5p0",
+    &[
+        ("S.CO.4_MV", 3), ("S.DF.16_MV", 4), ("S.DF.4c_MV", 3), ("S.DF.6_MV", 13),
+        ("S.DF.7_MV", 4), ("S.DF.8_MV", 3), ("S.PL.5a_MV", 4),
+    ]
+)]
+#[case::efuse(
+    "efuse", "efuse.gds.gz", "10_11_EFUSE",
+    &[
+        ("EF.01", 38), ("EF.04b", 78), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38),
+        ("EF.10", 38), ("EF.11", 5), ("EF.12", 19), ("EF.13", 4), ("EF.14", 6),
+        ("EF.15", 12), ("EF.17", 6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 50),
+    ]
+)]
+#[case::mim_b(
+    "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
+    &[
+        ("MIMTM.1", 4), ("MIMTM.10", 3), ("MIMTM.2", 7), ("MIMTM.3", 61),
+        ("MIMTM.4", 5), ("MIMTM.5", 6), ("MIMTM.6", 4), ("MIMTM.7", 2492),
+        ("MIMTM.8a", 62), ("MIMTM.8b", 1), ("MIMTM.9", 4),
+    ]
+)]
 fn static_fixture(
     #[case] deck: &str,
     #[case] gds: &str,
@@ -237,6 +369,20 @@ fn static_fixture(
 #[case::esd("esd", "esd.gds.gz", "7_11_ESD")]
 #[case::contact("contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump")]
 #[case::sram_3p3("sram_3p3", "sram_3p3.gds.gz", "sram_3p3")]
+#[case::poly2("poly2", "poly2.gds.gz", "7_7_Poly2")]
+#[case::sab("sab", "sab.gds.gz", "7_10_SB")]
+#[case::nplus("nplus", "nplus.gds.gz", "7_10_Nplus")]
+#[case::pplus("pplus", "pplus.gds.gz", "7_11_Pplus")]
+#[case::ldnmos("ldnmos", "ldnmos.gds.gz", "10_12_1_MDN")]
+#[case::ldpmos("ldpmos", "ldpmos.gds.gz", "10_12_2_MDP")]
+#[case::lres("lres", "lres.gds.gz", "10_2_LRES")]
+#[case::pres("pres", "pres.gds.gz", "10_1_PRES")]
+#[case::hres("hres", "hres.gds.gz", "10_3_HRES")]
+#[case::otp_mk("otp_mk", "otp_mk.gds.gz", "10_10_OTP")]
+#[case::ymtp_mk("ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP")]
+#[case::sram_5p0("sram_5p0", "sram_5p0.gds.gz", "sram_5p0")]
+#[case::efuse("efuse", "efuse.gds.gz", "10_11_EFUSE")]
+#[case::mim_b("mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB")]
 fn every_rule_in_the_deck_fires(#[case] deck: &str, #[case] gds: &str, #[case] topcell: &str) {
     let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
     let declared: std::collections::BTreeSet<String> = pdk
@@ -254,4 +400,59 @@ fn every_rule_in_the_deck_fires(#[case] deck: &str, #[case] gds: &str, #[case] t
         silent.is_empty(),
         "deck '{deck}' declares rules that never fire on {gds}: {silent:?}"
     );
+}
+
+/// `geom` is generated rather than written: the same two checks over 93 layers, 186
+/// rules. An expected list that long says nothing a reader can hold, so assert the
+/// shape instead — every rule present, and the totals that would move if a check or a
+/// layer changed underneath it.
+#[test]
+fn geom_expands_over_every_layer() {
+    let counts = counts("geom", "geom.gds.gz", "geom_testcases");
+    assert_eq!(
+        counts.len(),
+        186,
+        "one OFFGRID and one ACUTE rule per layer"
+    );
+    let total: usize = counts.iter().map(|(_, n)| n).sum();
+    assert_eq!(total, 4332);
+
+    let acute: usize = counts
+        .iter()
+        .filter(|(r, _)| r.ends_with("_ACUTE"))
+        .map(|(_, n)| n)
+        .sum();
+    let offgrid: usize = counts
+        .iter()
+        .filter(|(r, _)| r.ends_with("_OFFGRID"))
+        .map(|(_, n)| n)
+        .sum();
+    assert_eq!((acute, offgrid), (716, 3616));
+}
+
+// --- Metal slotting ---
+//
+// The one deck here with no foundry test case behind it; see the generator's docstring
+// for what each plate is meant to trip. Each of the nine rules fires exactly once, and
+// plate B - the one with a legal slot - is silent, which is what says the slot actually
+// broke the 30 um opening rather than the rule being unreachable.
+
+#[test]
+fn mslot_pattern_trips_each_metal1_rule_exactly_once() {
+    let path = format!("{GENERATED}/mslot.gds.gz");
+    let violations =
+        run_drc(&path, PDK, &["mslot"], None, "MSLOT_PATTERN", true).expect("DRC run failed");
+    let mut by_rule: std::collections::BTreeMap<String, usize> = Default::default();
+    for v in violations {
+        *by_rule.entry(v.rule_id).or_default() += 1;
+    }
+    let got: Vec<(String, usize)> = by_rule.into_iter().collect();
+    let want: Vec<(String, usize)> = [
+        "MSLOT1.0", "MSLOT1.1", "MSLOT1.2", "MSLOT1.3", "MSLOT1.4", "MSLOT1.5", "MSLOT1.7",
+        "MSLOT1.8", "MSLOT1.9",
+    ]
+    .iter()
+    .map(|r| ((*r).to_string(), 1))
+    .collect();
+    assert_eq!(got, want);
 }

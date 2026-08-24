@@ -2,8 +2,95 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# P+ implant.
+# Pplus implant.  Ported from rule_decks/pplus.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/pplus.rb in the gf180mcu PDK.
-rules: []
+# The rules left out are all edge work or a sizing this engine cannot express.  The
+# extension-beyond-COMP family (NP.4a/4b, NP.5b through NP.5dii and their PP twins)
+# measures from a subset of implant edges to a subset of COMP edges, selected by where
+# they sit; NP.11/PP.11 tests a butting edge the same way; NP.12/PP.12 needs KLayout's
+# `size_inside` with a step count.
+#
+# The 0.429 um sizings that split NP.3b/NP.3c into a near and a far case are `grow` and
+# the new `shrink`; a PCOMP within that distance of a well edge gets the looser limit.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 148 of 182 logical violations, 6 false positives.  PP.3a, PP.3ci,
+# PP.3cii, PP.3d, PP.3e, PP.6, PP.8a and PP.10 are exact.
+rules:
+  - id: PP.1
+    check: min_width
+    layers: [pplus]
+    value: 0.4
+  - id: PP.2
+    check: min_space
+    layers: [pplus]
+    value: 0.4
+  - id: PP.2
+    check: min_notch
+    layers: [pplus]
+    value: 0.4
+  - id: PP.3a
+    check: min_space
+    layers: [pp3_pplus, pp3a_ncomp]
+    value: 0.16
+  - id: PP.3bi
+    check: min_space
+    layers: [pp3_pplus_in_dn, pp3bi_ncomp]
+    value: 0.08
+  - id: PP.3bii
+    check: min_space
+    layers: [pp3_pplus_in_dn, pp3bii_ncomp]
+    value: 0.16
+  - id: PP.3ci
+    check: min_space
+    layers: [pp3_pplus_in_nwell, pp3ci_ncomp]
+    value: 0.08
+  - id: PP.3cii
+    check: min_space
+    layers: [pp3_pplus_in_nwell, pp3cii_ncomp]
+    value: 0.16
+  - id: PP.3d
+    check: nonempty
+    layers: [pp3d_viol]
+    value: 0.0
+  - id: PP.3e
+    check: nonempty
+    layers: [pp3e_viol]
+    value: 0.0
+  - id: PP.5a
+    check: min_enclosure
+    layers: [pplus, pgate]
+    value: 0.23
+    params:
+      interacting_only: 1
+  - id: PP.6
+    check: min_enclosure
+    layers: [comp_at_pplus, ncomp_at_pplus]
+    value: 0.22
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: PP.7
+    check: min_space
+    layers: [pplus, poly_sab_only]
+    value: 0.18
+  - id: PP.8a
+    check: min_area
+    layers: [pplus]
+    value: 0.35
+  - id: PP.8b
+    check: min_enclosed_area
+    layers: [pplus]
+    value: 0.35
+  - id: PP.9
+    check: min_enclosure
+    layers: [pplus, poly_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: PP.10
+    check: min_enclosure
+    layers: [pplus, comp_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1

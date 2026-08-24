@@ -2,8 +2,245 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal slots.
+# Metal slotting, ported from rule_decks/mslot.rb.  Wide metal has to be perforated so
+# it does not lift during processing; these rules say which metal needs slots and what a
+# legal slot looks like.  One rule set per level, Metal1 to Metal5 on this 5LM variant.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/mslot.rb in the gf180mcu PDK.
-rules: []
+# The PDK ships no test case for this deck, so unlike every other deck here the mapping
+# is not measured against a reference - it is read off mslot.rb directly and checked
+# against a pattern of our own, written by tools/gen-mslot-pattern.py: nine Metal1
+# plates, each drawn to trip exactly one MSLOT1 rule.  All nine fire once and nothing
+# else does.  That confirms every rule is reachable and lands on the geometry it is
+# about; it does not confirm agreement with the foundry's engine, which only a real test
+# case could.  Levels 2 to 5 are the same rules on the same derivations, so they are
+# covered by construction rather than by measurement.
+#
+# MSLOT#.0 and MSLOT#.1 are `nonempty` checks on a derived layer rather than measurements:
+# upstream outputs the derivation itself, so the geometry that reaches the layer *is* the
+# violation.
+#
+# MSLOT5.7 is absent.  It measures the space from the via *above* the metal to the slot,
+# and Metal5 is the top of a 5LM stack, so there is no such via - upstream substitutes an
+# empty layer and the rule can never fire.
+rules:
+  # ---- Metal1 ----------------------------------------------------------
+  - id: MSLOT1.0
+    check: nonempty
+    layers: [metal1_slot_not_rect]
+    value: 0.0
+    description: "MSLOT1.0: Slot is not a rectangle"
+  - id: MSLOT1.1
+    check: nonempty
+    layers: [metal1_needs_slot]
+    value: 0.0
+    description: "MSLOT1.1: Maximum metal width without slotting: 30 um"
+  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
+  - id: MSLOT1.2
+    check: min_dim
+    layers: [metal1_slot_rect]
+    value: 2.0
+  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
+  - id: MSLOT1.3
+    check: min_length
+    layers: [metal1_slot_rect]
+    value: 10.0
+  - id: MSLOT1.3
+    check: max_length
+    layers: [metal1_slot_rect]
+    value: 250.0
+  - id: MSLOT1.4
+    check: min_space
+    layers: [metal1_slot_rect]
+    value: 10.0
+  - id: MSLOT1.5
+    check: min_enclosure
+    layers: [metal1_drawn, metal1_slot_rect]
+    value: 10.0
+  - id: MSLOT1.7
+    check: min_space
+    layers: [metal1_slot_rect, via1]
+    value: 0.2
+  - id: MSLOT1.8
+    check: min_space
+    layers: [metal1_slot_rect, contact]
+    value: 0.2
+  - id: MSLOT1.9
+    check: min_space
+    layers: [metal1_slot_rect, dont_slot]
+    value: 5.0
+  # ---- Metal2 ----------------------------------------------------------
+  - id: MSLOT2.0
+    check: nonempty
+    layers: [metal2_slot_not_rect]
+    value: 0.0
+    description: "MSLOT2.0: Slot is not a rectangle"
+  - id: MSLOT2.1
+    check: nonempty
+    layers: [metal2_needs_slot]
+    value: 0.0
+    description: "MSLOT2.1: Maximum metal width without slotting: 30 um"
+  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
+  - id: MSLOT2.2
+    check: min_dim
+    layers: [metal2_slot_rect]
+    value: 2.0
+  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
+  - id: MSLOT2.3
+    check: min_length
+    layers: [metal2_slot_rect]
+    value: 10.0
+  - id: MSLOT2.3
+    check: max_length
+    layers: [metal2_slot_rect]
+    value: 250.0
+  - id: MSLOT2.4
+    check: min_space
+    layers: [metal2_slot_rect]
+    value: 10.0
+  - id: MSLOT2.5
+    check: min_enclosure
+    layers: [metal2_drawn, metal2_slot_rect]
+    value: 10.0
+  - id: MSLOT2.7
+    check: min_space
+    layers: [metal2_slot_rect, via2]
+    value: 0.2
+  - id: MSLOT2.8
+    check: min_space
+    layers: [metal2_slot_rect, via1]
+    value: 0.2
+  - id: MSLOT2.9
+    check: min_space
+    layers: [metal2_slot_rect, dont_slot]
+    value: 5.0
+  # ---- Metal3 ----------------------------------------------------------
+  - id: MSLOT3.0
+    check: nonempty
+    layers: [metal3_slot_not_rect]
+    value: 0.0
+    description: "MSLOT3.0: Slot is not a rectangle"
+  - id: MSLOT3.1
+    check: nonempty
+    layers: [metal3_needs_slot]
+    value: 0.0
+    description: "MSLOT3.1: Maximum metal width without slotting: 30 um"
+  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
+  - id: MSLOT3.2
+    check: min_dim
+    layers: [metal3_slot_rect]
+    value: 2.0
+  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
+  - id: MSLOT3.3
+    check: min_length
+    layers: [metal3_slot_rect]
+    value: 10.0
+  - id: MSLOT3.3
+    check: max_length
+    layers: [metal3_slot_rect]
+    value: 250.0
+  - id: MSLOT3.4
+    check: min_space
+    layers: [metal3_slot_rect]
+    value: 10.0
+  - id: MSLOT3.5
+    check: min_enclosure
+    layers: [metal3_drawn, metal3_slot_rect]
+    value: 10.0
+  - id: MSLOT3.7
+    check: min_space
+    layers: [metal3_slot_rect, via3]
+    value: 0.2
+  - id: MSLOT3.8
+    check: min_space
+    layers: [metal3_slot_rect, via2]
+    value: 0.2
+  - id: MSLOT3.9
+    check: min_space
+    layers: [metal3_slot_rect, dont_slot]
+    value: 5.0
+  # ---- Metal4 ----------------------------------------------------------
+  - id: MSLOT4.0
+    check: nonempty
+    layers: [metal4_slot_not_rect]
+    value: 0.0
+    description: "MSLOT4.0: Slot is not a rectangle"
+  - id: MSLOT4.1
+    check: nonempty
+    layers: [metal4_needs_slot]
+    value: 0.0
+    description: "MSLOT4.1: Maximum metal width without slotting: 30 um"
+  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
+  - id: MSLOT4.2
+    check: min_dim
+    layers: [metal4_slot_rect]
+    value: 2.0
+  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
+  - id: MSLOT4.3
+    check: min_length
+    layers: [metal4_slot_rect]
+    value: 10.0
+  - id: MSLOT4.3
+    check: max_length
+    layers: [metal4_slot_rect]
+    value: 250.0
+  - id: MSLOT4.4
+    check: min_space
+    layers: [metal4_slot_rect]
+    value: 10.0
+  - id: MSLOT4.5
+    check: min_enclosure
+    layers: [metal4_drawn, metal4_slot_rect]
+    value: 10.0
+  - id: MSLOT4.7
+    check: min_space
+    layers: [metal4_slot_rect, via4]
+    value: 0.2
+  - id: MSLOT4.8
+    check: min_space
+    layers: [metal4_slot_rect, via3]
+    value: 0.2
+  - id: MSLOT4.9
+    check: min_space
+    layers: [metal4_slot_rect, dont_slot]
+    value: 5.0
+  # ---- Metal5 ----------------------------------------------------------
+  - id: MSLOT5.0
+    check: nonempty
+    layers: [metal5_slot_not_rect]
+    value: 0.0
+    description: "MSLOT5.0: Slot is not a rectangle"
+  - id: MSLOT5.1
+    check: nonempty
+    layers: [metal5_needs_slot]
+    value: 0.0
+    description: "MSLOT5.1: Maximum metal width without slotting: 30 um"
+  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
+  - id: MSLOT5.2
+    check: min_dim
+    layers: [metal5_slot_rect]
+    value: 2.0
+  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
+  - id: MSLOT5.3
+    check: min_length
+    layers: [metal5_slot_rect]
+    value: 10.0
+  - id: MSLOT5.3
+    check: max_length
+    layers: [metal5_slot_rect]
+    value: 250.0
+  - id: MSLOT5.4
+    check: min_space
+    layers: [metal5_slot_rect]
+    value: 10.0
+  - id: MSLOT5.5
+    check: min_enclosure
+    layers: [metal5_drawn, metal5_slot_rect]
+    value: 10.0
+  - id: MSLOT5.8
+    check: min_space
+    layers: [metal5_slot_rect, via4]
+    value: 0.2
+  - id: MSLOT5.9
+    check: min_space
+    layers: [metal5_slot_rect, dont_slot]
+    value: 5.0

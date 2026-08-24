@@ -2,8 +2,98 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# N+ implant.
+# Nplus implant.  Ported from rule_decks/nplus.rb.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/nplus.rb in the gf180mcu PDK.
-rules: []
+# The rules left out are all edge work or a sizing this engine cannot express.  The
+# extension-beyond-COMP family (NP.4a/4b, NP.5b through NP.5dii and their PP twins)
+# measures from a subset of implant edges to a subset of COMP edges, selected by where
+# they sit; NP.11/PP.11 tests a butting edge the same way; NP.12/PP.12 needs KLayout's
+# `size_inside` with a step count.
+#
+# The 0.429 um sizings that split NP.3b/NP.3c into a near and a far case are `grow` and
+# the new `shrink`; a PCOMP within that distance of a well edge gets the looser limit.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 139 of 171 logical violations, 6 false positives.  NP.3a, NP.3d,
+# NP.3e, NP.6, NP.8a and NP.10 are exact.  Most of the 38 misses are the extension
+# family above.
+rules:
+  - id: NP.1
+    check: min_width
+    layers: [nplus]
+    value: 0.4
+  - id: NP.2
+    check: min_space
+    layers: [nplus]
+    value: 0.4
+  - id: NP.2
+    check: min_notch
+    layers: [nplus]
+    value: 0.4
+  - id: NP.3a
+    check: min_space
+    layers: [np3_nplus, np3a_pcomp]
+    value: 0.16
+  - id: NP.3bi
+    check: min_space
+    layers: [np3_nplus_in_lvpwell, np3bi_pcomp]
+    value: 0.16
+  - id: NP.3bii
+    check: min_space
+    layers: [np3_nplus_in_lvpwell, np3bii_pcomp]
+    value: 0.08
+  - id: NP.3ci
+    check: min_space
+    layers: [np3_nplus_out_dn, np3ci_pcomp]
+    value: 0.16
+  - id: NP.3cii
+    check: min_space
+    layers: [np3_nplus_out_dn, np3cii_pcomp]
+    value: 0.08
+  - id: NP.3d
+    check: nonempty
+    layers: [np3d_viol]
+    value: 0.0
+  - id: NP.3e
+    check: nonempty
+    layers: [np3e_viol]
+    value: 0.0
+  - id: NP.5a
+    check: min_enclosure
+    layers: [nplus, ngate]
+    value: 0.23
+    params:
+      interacting_only: 1
+  # The butted COMP shares an edge with its neighbour by construction, so a flush edge
+  # is the butting itself and not a zero-margin violation.
+  - id: NP.6
+    check: min_enclosure
+    layers: [comp_at_nplus, pcomp_at_nplus]
+    value: 0.22
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: NP.7
+    check: min_space
+    layers: [nplus, poly_sab_only]
+    value: 0.18
+  - id: NP.8a
+    check: min_area
+    layers: [nplus]
+    value: 0.35
+  - id: NP.8b
+    check: min_enclosed_area
+    layers: [nplus]
+    value: 0.35
+  - id: NP.9
+    check: min_enclosure
+    layers: [nplus, poly_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: NP.10
+    check: min_enclosure
+    layers: [nplus, comp_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1

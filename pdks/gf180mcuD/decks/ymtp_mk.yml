@@ -2,8 +2,86 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# YMTP marker.
+# YMTP marker.  Ported from rule_decks/ymtp_mk.rb - all 14 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/ymtp_mk.rb in the gf180mcu PDK.
-rules: []
+# The marker carries a tighter rule set than the rest of the die, split by voltage the
+# usual way: LV touches neither v5_xtor nor dualgate, MV overlaps dualgate.
+#
+# Y.PL.2 reads as edge work - `poly.edges.and(tgate.edges).width(v)` - but that is the
+# gate-length shape, the poly's own width measured only where it forms a gate, which
+# gate_length answers with a mask.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 133 of 156, 3 false positives - all 14 rules ported.
+rules:
+  - id: Y.NW.2b_LV
+    check: min_space
+    layers: [nwell_ymtp_lv]
+    value: 1.0
+  - id: Y.NW.2b_LV
+    check: min_notch
+    layers: [nwell_ymtp_lv]
+    value: 1.0
+  - id: Y.NW.2b_MV
+    check: min_space
+    layers: [nwell_ymtp_mv]
+    value: 1.0
+  - id: Y.NW.2b_MV
+    check: min_notch
+    layers: [nwell_ymtp_mv]
+    value: 1.0
+  - id: Y.DF.6_MV
+    check: min_enclosure
+    layers: [comp_no_otp_ymtp_mv, poly_ymtp_mv]
+    value: 0.15
+    params:
+      interacting_only: 1
+  - id: Y.DF.16_LV
+    check: min_space
+    layers: [ncomp_ymtp_lv_out, nwell_n_dn]
+    value: 0.27
+  - id: Y.DF.16_MV
+    check: min_space
+    layers: [ncomp_ymtp_mv_out, nwell_n_dn]
+    value: 0.23
+  - id: Y.PL.1_LV
+    check: min_width
+    layers: [poly_ymtp_lv_out_pf]
+    value: 0.13
+  # Y.PL.1_MV has no limit at 5 V; upstream outputs the layer itself, so any poly there
+  # is the violation.
+  - id: Y.PL.1_MV
+    check: nonempty
+    layers: [poly_ymtp_mv_out_pf]
+    value: 0.0
+  - id: Y.PL.2_LV
+    check: gate_length
+    layers: [poly_ymtp_lv, tgate_no_otp_ymtp]
+    value: 0.13
+  - id: Y.PL.2_MV
+    check: gate_length
+    layers: [poly_ymtp_mv, tgate_no_otp_ymtp]
+    value: 0.47
+  - id: Y.PL.4_MV
+    check: min_enclosure
+    layers: [poly_ymtp_mv, comp_ymtp_mv]
+    value: 0.16
+    params:
+      interacting_only: 1
+  # 5a is the unrelated case and 5b the related one; upstream measures both the same way.
+  - id: Y.PL.5a_LV
+    check: min_space
+    layers: [poly_ymtp_lv, comp_ymtp_lv]
+    value: 0.04
+  - id: Y.PL.5a_MV
+    check: min_space
+    layers: [poly_ymtp_mv, comp_ymtp_mv]
+    value: 0.2
+  - id: Y.PL.5b_LV
+    check: min_space
+    layers: [poly_ymtp_lv, comp_ymtp_lv]
+    value: 0.04
+  - id: Y.PL.5b_MV
+    check: min_space
+    layers: [poly_ymtp_mv, comp_ymtp_mv]
+    value: 0.2

@@ -2,8 +2,130 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Gate poly.
+# Gate poly.  Ported from rule_decks/poly2.rb - 18 of its 19 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/poly2.rb in the gf180mcu PDK.
-rules: []
+# PL.6 is not ported: "90 degree bends on COMP are not allowed" is built from
+# `poly2.corners(90).sized(0.1)`, and there is no corner extractor here.
+#
+# Three rules read as edge work upstream and are not:
+#
+#   PL.2   Gate width (channel length) is `tgate.edges.inside_part(comp).width(v)` -
+#          the poly's own width measured only where it forms a gate, which is what
+#          gate_length does with a mask.  PL.2_MV splits into four device classes with
+#          their own values, all reported under the one id, as upstream has it.
+#   PL.7   The 45-degree bent gate width selects gate edges by angle and measures
+#          across them; min_45_width is that measurement, restricted to the oblique
+#          runs and skipping the axis-aligned ones PL.2 already covers.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 137 of 288, 11 false positives.  99 of the 162 misses are PL.6,
+# which is not ported, leaving 63 from live rules.  PL.9, PL.11 and PL.12 are exact;
+# gate_length carries PL.2_MV to 35 of 38.
+rules:
+  # --- Interconnect width, outside and inside the poly fuse ---
+  - id: PL.1_LV
+    check: min_width
+    layers: [poly2_lv_out_plfuse]
+    value: 0.18
+  - id: PL.1_MV
+    check: min_width
+    layers: [poly2_mv_out_plfuse]
+    value: 0.2
+  - id: PL.1a_LV
+    check: min_width
+    layers: [poly2_lv_in_plfuse]
+    value: 0.18
+  - id: PL.1a_MV
+    check: min_width
+    layers: [poly2_mv_in_plfuse]
+    value: 0.18
+
+  # --- Gate width (channel length) ---
+  - id: PL.2_LV
+    check: gate_length
+    layers: [poly2_lv, tgate_pl2_lv]
+    value: 0.28
+  - id: PL.2_MV
+    check: gate_length
+    layers: [poly2_mv, ngate_5v]
+    value: 0.6
+  - id: PL.2_MV
+    check: gate_length
+    layers: [poly2_mv, pgate_5v]
+    value: 0.5
+  - id: PL.2_MV
+    check: gate_length
+    layers: [poly2_mv, ngate_6v]
+    value: 0.7
+  - id: PL.2_MV
+    check: gate_length
+    layers: [poly2_mv, pgate_6v]
+    value: 0.55
+
+  # --- Space on COMP and field ---
+  - id: PL.3a
+    check: min_space
+    layers: [pl3a_poly]
+    value: 0.24
+  - id: PL.3a
+    check: min_notch
+    layers: [pl3a_poly]
+    value: 0.24
+
+  # --- Poly2 end cap over COMP ---
+  - id: PL.4_LV
+    check: min_enclosure
+    layers: [poly_pl_lv, comp_pl]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: PL.4_MV
+    check: min_enclosure
+    layers: [poly_pl_mv, comp_pl]
+    value: 0.22
+    params:
+      interacting_only: 1
+
+  # --- Field poly to COMP ---
+  # PL.5a and PL.5b are the unrelated and related cases; upstream measures both the
+  # same way and separates them only by intent, so both are the same rule here.
+  - id: PL.5a_LV
+    check: min_space
+    layers: [poly_pl_lv, comp_pl]
+    value: 0.1
+  - id: PL.5a_MV
+    check: min_space
+    layers: [poly_pl_mv, comp_pl]
+    value: 0.3
+  - id: PL.5b_LV
+    check: min_space
+    layers: [poly_pl_lv, comp_pl]
+    value: 0.1
+  - id: PL.5b_MV
+    check: min_space
+    layers: [poly_pl_mv, comp_pl]
+    value: 0.3
+
+  # --- 45-degree bent gate width ---
+  - id: PL.7_LV
+    check: min_45_width
+    layers: [nom_gate]
+    value: 0.3
+  - id: PL.7_MV
+    check: min_45_width
+    layers: [thick_gate]
+    value: 0.7
+
+  # --- Marker enclosure ---
+  - id: PL.9
+    check: nonempty
+    layers: [pl9_viol]
+    value: 0.0
+  - id: PL.11
+    check: nonempty
+    layers: [pl11_viol]
+    value: 0.0
+  - id: PL.12
+    check: nonempty
+    layers: [pl12_viol]
+    value: 0.0

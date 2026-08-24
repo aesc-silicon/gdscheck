@@ -2,8 +2,92 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Salicide block.
+# Salicide block.  Ported from rule_decks/sab.rb - 15 of its 19 rules.
 #
-# Skeleton: the rule set is not written yet.  Upstream reference is
-# libs.tech/klayout/tech/drc/rule_decks/sab.rb in the gf180mcu PDK.
-rules: []
+# Four are not ported.  SB.11 and SB.12 use KLayout's `overlap`, the width of the
+# region two layers share, which has no equivalent here.  SB.14a and SB.14b measure
+# with the `square` metric - "must not fall within a 0.56 um square at the corner" -
+# where every spacing check here is euclidian, and SB.14a also needs an edge boolean.
+#
+# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
+# logical violations: 189 of 256 logical violations, 8 false positives.  SB.8, SB.13 and
+# SB.16 are exact; 6 of the 75 misses are the four rules above.
+rules:
+  - id: SB.1
+    check: min_width
+    layers: [sab]
+    value: 0.42
+  - id: SB.2
+    check: min_space
+    layers: [sab_out_otp]
+    value: 0.42
+  - id: SB.2
+    check: min_notch
+    layers: [sab_out_otp]
+    value: 0.42
+  - id: SB.3
+    check: min_space
+    layers: [sab_out_otp, comp_unrelated_sab]
+    value: 0.22
+  # SB.4 is a spacing minimum plus "and it must not touch one at all".
+  - id: SB.4
+    check: min_space
+    layers: [sab_out_otp, contact]
+    value: 0.15
+  - id: SB.4
+    check: nonempty
+    layers: [sab_on_contact]
+    value: 0.0
+  - id: SB.5a
+    check: min_space
+    layers: [sab_out_otp, poly_field_no_sab]
+    value: 0.3
+  - id: SB.5b
+    check: min_space
+    layers: [sab_out_otp, poly_on_comp]
+    value: 0.28
+  - id: SB.6
+    check: min_enclosure
+    layers: [sab, comp_sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: SB.7
+    check: min_enclosure
+    layers: [comp_sab, sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: SB.8
+    check: nonempty
+    layers: [contact_on_sab]
+    value: 0.0
+  - id: SB.9
+    check: min_enclosure
+    layers: [sab_out_otp, poly_sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: SB.10
+    check: min_enclosure
+    layers: [poly_sab, sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: SB.13
+    check: min_area
+    layers: [sab_out_otp]
+    value: 2.0
+  - id: SB.15a
+    check: min_space
+    layers: [sab_poly, implant_unrelated_sab]
+    value: 0.18
+  - id: SB.15b
+    check: min_space
+    layers: [sb15b_poly, sb15b_np]
+    value: 0.32
+  # SAB may not sit on a core transistor; only on ones marked LVS_IO, OTP_MK or ESD_MK.
+  - id: SB.16
+    check: nonempty
+    layers: [sb16_viol]
+    value: 0.0
