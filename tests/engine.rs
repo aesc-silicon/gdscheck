@@ -405,3 +405,73 @@ fn lazy_layer_in_inside_boundary_is_rejected() {
         "unexpected error: {err}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Region perimeter (src/merge.rs) — the antenna rules measure it
+// ---------------------------------------------------------------------------
+
+/// Perimeter has to survive tiling. A shape wider than one tile is merged in pieces, and
+/// the naive sum of piece boundaries counts the tile cuts — twice each, once from either
+/// side. Only the polygon's own edges are counted here, so the answer is the same
+/// whatever the tile size, which is what these two cases pin.
+#[test]
+fn region_perimeter_ignores_tile_cuts() {
+    for tile in [10_000_000, 30] {
+        region_perimeter_case(tile);
+    }
+}
+
+fn region_perimeter_case(tile: i32) {
+    let mut layout = FlatLayout::new();
+    layout.insert(
+        1,
+        0,
+        GdsBoundary {
+            layer: 1,
+            datatype: 0,
+            xy: GdsPoint::vec(&[(0, 0), (100, 0), (100, 20), (0, 20), (0, 0)]),
+            ..Default::default()
+        },
+    );
+    let mut cache = MergedCache::new(tile, 40, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1, "one shape, one region");
+    assert!(
+        (regions[0].perimeter_dbu - 240.0).abs() < 1e-6,
+        "expected 2*(100+20)=240, got {}",
+        regions[0].perimeter_dbu
+    );
+    assert!((regions[0].area_dbu - 2000.0).abs() < 1e-6);
+}
+
+/// A hole's wall is boundary too: the antenna metric counts the whole contour.
+#[test]
+fn region_perimeter_includes_holes() {
+    let mut layout = FlatLayout::new();
+    for (x0, y0, x1, y1) in [
+        (0, 0, 100, 20),
+        (0, 80, 100, 100),
+        (0, 0, 20, 100),
+        (80, 0, 100, 100),
+    ] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1);
+    // Outer 4*100 = 400, hole 4*60 = 240.
+    assert!(
+        (regions[0].perimeter_dbu - 640.0).abs() < 1e-6,
+        "expected 400 outer + 240 hole, got {}",
+        regions[0].perimeter_dbu
+    );
+}

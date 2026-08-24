@@ -343,6 +343,15 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
         ("MIMTM.8a", 62), ("MIMTM.8b", 1), ("MIMTM.9", 4),
     ]
 )]
+#[case::antenna(
+    "antenna", "antenna-1.gds.gz", "8_0_ANT",
+    &[
+        ("ANT.1", 1), ("ANT.16_i_ANT.10", 1), ("ANT.16_i_ANT.11", 1),
+        ("ANT.16_i_ANT.12", 1), ("ANT.16_i_ANT.2", 1), ("ANT.16_i_ANT.3", 1),
+        ("ANT.16_i_ANT.4", 1), ("ANT.16_i_ANT.5", 1), ("ANT.16_i_ANT.6", 4),
+        ("ANT.16_i_ANT.9", 1), ("ANT.8", 1),
+    ]
+)]
 fn static_fixture(
     #[case] deck: &str,
     #[case] gds: &str,

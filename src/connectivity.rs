@@ -200,10 +200,17 @@ impl Connectivity {
 
     /// The first connect step index at which `layer` becomes connected (its `*_ratio` net),
     /// i.e. the prefix length to pass to [`partition`].  `None` if it never connects.
+    ///
+    /// A layer can join the graph as either end of a step, and a via joins as the
+    /// *connector*: `Via1` bridges Metal1 to Metal2 and appears in no step's `layers`.
+    /// Matching only `layers` therefore left every via unresolvable, and an antenna rule
+    /// measuring via area silently contributed nothing at all - the failure mode this
+    /// engine works hardest to avoid.  A connector is connected from the step that
+    /// introduces it, which is the step it bridges its first pair at.
     pub fn connect_prefix(&self, layer: LayerKey) -> Option<usize> {
         self.specs
             .iter()
-            .position(|s| s.layers.contains(&layer))
+            .position(|s| s.layers.contains(&layer) || s.connector == layer)
             .map(|i| i + 1)
     }
 

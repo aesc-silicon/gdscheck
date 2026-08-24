@@ -41,6 +41,32 @@ fn key(l: &Layer) -> LayerKey {
     (l.gds_layer as i16, l.gds_datatype as i16)
 }
 
+/// Diode area (µm²) per net at `part`, summed over every diode layer.  Each layer's net
+/// is resolved through its own base layer, since a derived diode (n+ outside the well,
+/// p+ inside it) is not itself in the connect graph.
+#[allow(clippy::too_many_arguments)]
+fn diode_area_per_net(
+    diodes: &[Layer],
+    diode_nets: &[Option<LayerKey>],
+    conn: &Connectivity,
+    part: &crate::connectivity::Partition,
+    layout: &FlatLayout,
+    merged: &mut MergedCache,
+    d2: f64,
+) -> HashMap<usize, f64> {
+    let mut out: HashMap<usize, f64> = HashMap::new();
+    for (i, diode) in diodes.iter().enumerate() {
+        let dkey = key(diode);
+        let dnet = diode_nets.get(i).copied().flatten().unwrap_or(dkey);
+        for r in merged.regions(layout, dkey.0, dkey.1).to_vec() {
+            if let Some(net) = part.net_at(conn, dnet, r.marker.0, r.marker.1) {
+                *out.entry(net).or_default() += r.area_dbu * d2;
+            }
+        }
+    }
+    out
+}
+
 pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
@@ -67,11 +93,32 @@ pub fn run(
         .unwrap_or(rule.layers.len() - 1);
     let gate = &rule.layers[0];
     let antenna = &rule.layers[1..1 + n_ant];
-    let diode = rule.layers.get(1 + n_ant);
+    let diodes = &rule.layers[(1 + n_ant).min(rule.layers.len())..];
 
     let gate_net = net_key(rule, "gate_net_layer").unwrap_or(key(gate));
-    let diode_net = net_key(rule, "diode_net_layer");
     let require_diode = rule.params.get("require_diode").map(|v| *v != 0.0);
+    // Each diode layer resolves its net through its own base layer: GF180's n-diode is
+    // `ncomp_con` outside the well and its p-diode is `pcomp_con` inside one, so a single
+    // shared base layer would put both on the wrong net.  Index 0 keeps the unsuffixed
+    // name, so IHP's single-diode rules are unchanged.
+    let diode_nets: Vec<Option<LayerKey>> = (0..diodes.len())
+        .map(|i| {
+            if i == 0 {
+                net_key(rule, "diode_net_layer")
+            } else {
+                net_key(rule, &format!("diode_net_layer_{i}"))
+            }
+        })
+        .collect();
+
+    // GF180 measures a metal antenna by its sidewall area - perimeter times the metal's
+    // thickness - rather than by its plan area, and credits a protection diode by adding
+    // `diode_factor` times the diode area to the *denominator* instead of switching to a
+    // relaxed limit.  Both are off unless the rule asks for them, so IHP's rules keep
+    // their own model.
+    let by_perimeter = rule.params.get("metric").is_some_and(|v| *v != 0.0);
+    let thickness = rule.params.get("thickness").copied().unwrap_or(1.0);
+    let diode_factor = rule.params.get("diode_factor").copied();
 
     let d2 = dbu_to_um * dbu_to_um;
     let limit = rule.value;
@@ -129,46 +176,59 @@ pub fn run(
             *gate_area.entry(part.net_of(*node)).or_default() += area;
         }
 
-        // This-layer area per net.  If the antenna layer is itself in the connect graph
-        // (the common case — a metal/via/contact), walk its own regions and read each net
-        // directly; only a derived antenna layer (e.g. poly-on-field) needs point lookups.
+        // The antenna quantity per net: plan area, or sidewall area (perimeter times
+        // metal thickness) when the rule asks for it.  If the antenna layer is itself in
+        // the connect graph (the common case — a metal/via/contact), walk its own regions
+        // and read each net directly; only a derived antenna layer (e.g. poly-on-field)
+        // needs point lookups.
+        let metric = |r: &crate::merge::Region| {
+            if by_perimeter {
+                r.perimeter_dbu * dbu_to_um * thickness
+            } else {
+                r.area_dbu * d2
+            }
+        };
         let mut layer_area: HashMap<usize, f64> = HashMap::new();
         if let Some(base) = conn.node_base(lkey).filter(|_| antenna_net.is_none()) {
             for (idx, r) in conn.regions_of(lkey).iter().enumerate() {
-                *layer_area.entry(part.net_of(base + idx)).or_default() += r.area_dbu * d2;
+                *layer_area.entry(part.net_of(base + idx)).or_default() += metric(r);
             }
         }
         if layer_area.is_empty() {
             let ant_net = antenna_net.unwrap_or(lkey);
-            for r in merged.regions(layout, lkey.0, lkey.1).iter() {
+            for r in merged.regions(layout, lkey.0, lkey.1).to_vec() {
                 if let Some(net) = part.net_at(conn, ant_net, r.marker.0, r.marker.1) {
-                    *layer_area.entry(net).or_default() += r.area_dbu * d2;
+                    *layer_area.entry(net).or_default() += metric(&r);
                 }
             }
         }
 
+        // The diode credit, when the rule uses one, is evaluated on the *same* net as the
+        // antenna it offsets — a diode only protects a gate it is already connected to at
+        // this level of the stack.
+        let level_diode = diode_factor
+            .map(|_| diode_area_per_net(diodes, &diode_nets, conn, &part, layout, merged, d2));
+
         for (i, (_, _, node)) in gates.iter().enumerate() {
             let net = part.net_of(*node);
             let g = gate_area.get(&net).copied().unwrap_or(0.0);
-            if g > 0.0 {
-                cum[i] += layer_area.get(&net).copied().unwrap_or(0.0) / g;
+            let denom = match (diode_factor, &level_diode) {
+                (Some(mf), Some(d)) => g + mf * d.get(&net).copied().unwrap_or(0.0),
+                _ => g,
+            };
+            if denom > 0.0 {
+                cum[i] += layer_area.get(&net).copied().unwrap_or(0.0) / denom;
             }
         }
     }
 
     // Diode presence on the full net (relaxes the limit).  The full partition is cached.
     let full = conn.partition(usize::MAX);
-    let mut diode_area: HashMap<usize, f64> = HashMap::new();
-    if let (Some(diode), Some(dnet)) = (diode, diode_net) {
-        for r in merged
-            .regions(layout, diode.gds_layer as i16, diode.gds_datatype as i16)
-            .to_vec()
-        {
-            if let Some(node) = conn.node_at(dnet, r.marker.0, r.marker.1) {
-                *diode_area.entry(full.net_of(node)).or_default() += r.area_dbu * d2;
-            }
-        }
-    }
+    let diode_area: HashMap<usize, f64> = if require_diode.is_some() {
+        diode_area_per_net(diodes, &diode_nets, conn, &full, layout, merged, d2)
+    } else {
+        HashMap::new()
+    };
 
     let mut out = Vec::new();
     for (i, (gate_a, marker, node)) in gates.iter().enumerate() {
