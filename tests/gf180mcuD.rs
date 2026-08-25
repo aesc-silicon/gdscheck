@@ -228,8 +228,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::sram_3p3(
     "sram_3p3", "sram_3p3.gds.gz", "sram_3p3",
     &[
-        ("S.CO.3_LV", 3), ("S.CO.4_LV", 3), ("S.DF.16_LV", 4),
-        ("S.DF.4c_LV", 3), ("S.M1.1_LV", 31),
+        ("S.CO.3_LV", 3), ("S.CO.4_LV", 3), ("S.CO.6_ii_LV", 8),
+        ("S.DF.16_LV", 4), ("S.DF.4c_LV", 3), ("S.M1.1_LV", 31),
     ]
 )]
 // Like metal, the via deck carries one rule set per level and each fixture exercises
@@ -251,9 +251,10 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::sab(
     "sab", "sab.gds.gz", "7_10_SB",
     &[
-        ("SB.1", 15), ("SB.10", 47), ("SB.13", 132), ("SB.15a", 9), ("SB.15b", 5),
-        ("SB.16", 6), ("SB.2", 6), ("SB.3", 7), ("SB.4", 5), ("SB.5a", 7),
-        ("SB.5b", 5), ("SB.6", 14), ("SB.7", 16), ("SB.8", 3), ("SB.9", 28),
+        ("SB.1", 15), ("SB.10", 47), ("SB.11", 1), ("SB.12", 1), ("SB.13", 132),
+        ("SB.14a", 6), ("SB.14b", 6), ("SB.15a", 9), ("SB.15b", 5), ("SB.16", 6),
+        ("SB.2", 6), ("SB.3", 7), ("SB.4", 5), ("SB.5a", 7), ("SB.5b", 5),
+        ("SB.6", 14), ("SB.7", 16), ("SB.8", 3), ("SB.9", 28),
     ]
 )]
 #[case::nplus(
@@ -335,8 +336,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::sram_5p0(
     "sram_5p0", "sram_5p0.gds.gz", "sram_5p0",
     &[
-        ("S.CO.4_MV", 3), ("S.DF.16_MV", 4), ("S.DF.4c_MV", 3), ("S.DF.6_MV", 13),
-        ("S.DF.7_MV", 4), ("S.DF.8_MV", 3), ("S.PL.5a_MV", 4),
+        ("S.CO.4_MV", 5), ("S.DF.16_MV", 4), ("S.DF.4c_MV", 5), ("S.DF.6_MV", 15),
+        ("S.DF.7_MV", 4), ("S.DF.8_MV", 5), ("S.PL.5a_MV", 4), ("S.PL.5b_MV", 4),
     ]
 )]
 #[case::efuse(

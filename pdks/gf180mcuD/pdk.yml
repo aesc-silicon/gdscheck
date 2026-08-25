@@ -1526,6 +1526,10 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [sab_poly, nplus]
+  - name: sab_poly_pp
+    op: intersection
+    mode: lazy
+    layers: [sab_poly, pplus]
   - name: implant_np
     op: union
     mode: lazy
@@ -1550,6 +1554,10 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [sb15b_poly_all, sab_out_otp]
+  - name: sab_out_esd
+    op: not_overlapping
+    mode: lazy
+    layers: [sab_out_otp, esd_mk]
   - name: lvsio_or_esdmk
     op: union
     mode: lazy
