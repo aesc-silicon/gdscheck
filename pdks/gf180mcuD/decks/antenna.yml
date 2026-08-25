@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Antenna ratios, ported from rule_decks/antenna.rb.  The only net-aware deck here: a
+# Antenna ratios.  The only net-aware deck here: a
 # rule asks, for one net, how much conductor is attached to a gate relative to that
 # gate's own area, and flags the net when the ratio is too high.
 #
@@ -45,8 +45,8 @@
 #                          we mark on the gate, so the markers sit ~24 um apart)
 #   differs, as designed   ANT.16_i_ANT.6.  Metal5 is the top metal here and 1.19 um
 #                          thick; in the 6LM variant E it is an intermediate layer at
-#                          0.54.  The reference's 401.0 becomes 883.6 - exactly the
-#                          1.19/0.54 ratio - and two further nets cross 400 that did not.
+# 0.54.  The reference's 401.0 becomes 883.6 - exactly the
+# 1.19/0.54 ratio - and two further nets cross 400 that did not.
 #   not applicable         ANT.16_i_ANT.13, ANT.16_i_ANT.7, ANT.16_iii_ANT.14_MT_MIMB
 #                          are Via5 and Metaltop, which a 5LM stack does not have.
 #

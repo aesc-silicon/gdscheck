@@ -475,3 +475,99 @@ fn region_perimeter_includes_holes() {
         regions[0].perimeter_dbu
     );
 }
+
+/// Two shapes meeting at a single corner are **one** region, as they are in KLayout.
+/// A corner touch is not an overlap, so the tile boolean leaves two polygons and nothing
+/// dissolves them; the region stitcher has to join them itself. Getting this wrong is a
+/// false-positive generator for every area rule: GF180's `DF.9` read one 0.38 µm² active
+/// as a 0.11 and a 0.27, and failed both against a 0.2025 µm² minimum.
+#[test]
+fn shapes_touching_at_a_corner_are_one_region() {
+    let mut layout = FlatLayout::new();
+    for (x0, y0) in [(0, 0), (100, 100)] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[
+                    (x0, y0),
+                    (x0 + 100, y0),
+                    (x0 + 100, y0 + 100),
+                    (x0, y0 + 100),
+                    (x0, y0),
+                ]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1, "corner touch should be one region");
+    assert!((regions[0].area_dbu - 20000.0).abs() < 1e-6);
+}
+
+/// The converse: shapes that merely come close stay separate, so the fix above cannot
+/// quietly glue a layout together.
+#[test]
+fn shapes_that_do_not_touch_stay_separate() {
+    let mut layout = FlatLayout::new();
+    for (x0, y0) in [(0, 0), (101, 101)] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[
+                    (x0, y0),
+                    (x0 + 100, y0),
+                    (x0 + 100, y0 + 100),
+                    (x0, y0 + 100),
+                    (x0, y0),
+                ]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    assert_eq!(cache.regions(&layout, 1, 0).len(), 2);
+}
+
+/// A region's marker must be a point *on* the region. The centroid is not: a ring's
+/// centroid sits in its hole, and the marker is what a net-aware rule looks up to decide
+/// which net a shape is on. GF180's `DN.2b` fixture has a deep-well ring with an
+/// unrelated 1 µm island in that hole, 3.9 µm clear of it — resolving the ring through
+/// its centroid put both on the island's net, and the spacing rule went quiet on four
+/// real violations.
+#[test]
+fn a_rings_marker_lies_on_the_ring_not_in_its_hole() {
+    let mut layout = FlatLayout::new();
+    // A 100-wide square annulus: outer 0..300, hole 100..200.
+    for (x0, y0, x1, y1) in [
+        (0, 0, 300, 100),
+        (0, 200, 300, 300),
+        (0, 0, 100, 300),
+        (200, 0, 300, 300),
+    ] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1, "the annulus is one region");
+    let (x, y) = regions[0].marker;
+    let in_hole = (100.0..200.0).contains(&x) && (100.0..200.0).contains(&y);
+    assert!(!in_hole, "marker landed in the hole at ({x}, {y})");
+    let in_bbox = (0.0..=300.0).contains(&x) && (0.0..=300.0).contains(&y);
+    assert!(in_bbox, "marker escaped the shape at ({x}, {y})");
+}

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal 1-4.  Ported from rule_decks/metal.rb, which runs one rule set per level below
+# Metal 1-4.  The design rules give one rule set per level below
 # the top metal; on this 5LM variant that is Metal1 to Metal4, with Metal5 handled by
 # the metaltop deck.
 #

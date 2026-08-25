@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# N-well.  Ported from libs.tech/klayout/tech/drc/rule_decks/nwell.rb.
+# N-well.
 #
 # Every rule comes in an _LV and an _MV form: the low-voltage well is one that
 # touches neither v5_xtor nor dualgate anywhere, the medium-voltage well is one that

@@ -2,17 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# YMTP marker.  Ported from rule_decks/ymtp_mk.rb - all 14 rules.
+# YMTP marker.  All 14 rules.
 #
 # The marker carries a tighter rule set than the rest of the die, split by voltage the
 # usual way: LV touches neither v5_xtor nor dualgate, MV overlaps dualgate.
 #
-# Y.PL.2 reads as edge work - `poly.edges.and(tgate.edges).width(v)` - but that is the
-# gate-length shape, the poly's own width measured only where it forms a gate, which
-# gate_length answers with a mask.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 133 of 156, 3 false positives - all 14 rules ported.
 rules:
   - id: Y.NW.2b_LV
     check: min_space

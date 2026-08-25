@@ -29,9 +29,12 @@ suites:
     description: Antenna checks only
 
 decks:
-  - name: geom
-    path: decks/geom.yml
-    description: Off-grid vertices and non-45 degree angles
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Off-grid vertices
+  - name: acute
+    path: decks/acute.yml
+    description: Angles that are not a multiple of 45 degrees
   - name: density
     path: decks/density.yml
     description: Global layer density (COMP, Poly2, Metal)
@@ -155,7 +158,7 @@ decks:
 connectivity:
   # ORDERED.  The antenna deck selects a net by *prefix* of this list - the stack as it
   # exists partway through processing - so the index of every step is load-bearing and
-  # the order mirrors rule_decks/antenna.rb's `connect` blocks: gates and diffusions
+  # the order mirrors the antenna rules' own connect phases: gates and diffusions
   # first, then the wells, then the metal stack one level at a time.  Inserting a step
   # shifts every level above it; tests/pdk_integrity.rs pins the list so that breaks
   # loudly.  Indices are noted where an antenna rule names them.
@@ -172,8 +175,11 @@ connectivity:
   # upstream's antenna phases have the wells connected from the contact level up.
   - connector: ntap              # 4
     layers: [nwell, nw_lv, nw_mv, ncomp_con]
+  # `dnwell` itself is listed beside `dnwell_n` so the deep well has a net of its own:
+  # DN.2a/DN.2b are the same-potential/different-potential spacing pair, and without the
+  # drawn layer in the graph neither can resolve one.
   - connector: ntap_dn           # 5
-    layers: [dnwell_n, ncomp_con]
+    layers: [dnwell_n, ncomp_con, dnwell]
   - connector: ptap              # 6
     layers: [lvpwell, lvpwell_dn_lv, lvpwell_dn_mv, pcomp_con]
   - connector: mvsd_tap          # 7
@@ -211,8 +217,8 @@ connectivity:
   - connector: mimcap_top_tap    # 20
     layers: [fusetop, metal5_drawn]
 
-# The derived "generic" layer table every deck is written against, ported from
-# generic_layers.rb (STATIC_LAYERS plus the metal aliases).  Upstream chains these
+# The derived layer table every deck is written against (the design rules' generic
+# layers, plus the metal aliases).  Upstream chains these
 # several levels deep - psd_dn rests on pgate_dn on pgate on pactive on pcomp on
 # comp - and only `mode: lazy` layers may reference another virtual layer, so the
 # whole table is lazy.  A deck needing one of these under a whole-layout check
@@ -2990,7 +2996,42 @@ virtual_layers:
     mode: lazy
     layers: [topmin1_via, topmin1_metal, fusetop]
 
-# The drawn layer table, from generic_layers.rb.  Variant D is a 5LM stack, so the
+  # ---- DN.3: the PCOMP guard ring around a deep well --------------------
+  # A PCOMP ring shows up as a hole in the merged PCOMP layer; the hole minus PCOMP
+  # itself is the area the ring encloses.
+  - name: pcomp_ring_interior
+    op: difference
+    mode: lazy
+    layers: [pcomp_holes, pcomp]
+  # A deep well with no ring around it at all.
+  - name: dnwell_outside_ring
+    op: not_inside
+    mode: lazy
+    layers: [dnwell, pcomp_ring_interior]
+  # "Directly surrounded" also fails when the ring encloses somebody else's n-type
+  # geometry as well - the ring is then shared rather than this well's own.
+  - name: n_type_all
+    op: union
+    mode: lazy
+    layers: [nat, ncomp, nwell]
+  - name: foreign_n_type
+    op: not_interacting
+    mode: lazy
+    layers: [n_type_all, dnwell]
+  - name: pcomp_ring_shared
+    op: covering
+    mode: lazy
+    layers: [pcomp_ring_interior, foreign_n_type]
+  - name: dnwell_in_shared_ring
+    op: inside
+    mode: lazy
+    layers: [dnwell, pcomp_ring_shared]
+  - name: dn3_viol
+    op: union
+    mode: lazy
+    layers: [dnwell_outside_ring, dnwell_in_shared_ring]
+
+# The drawn layer table.  Variant D is a 5LM stack, so the
 # 6LM-only layers (via5 and the metaltop family) are absent.
 layers:
   - name: comp

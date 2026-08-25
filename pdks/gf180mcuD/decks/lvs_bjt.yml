@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# BJT LVS marker.  Ported from rule_decks/lvs_bjt.rb - its one rule.
+# BJT LVS marker.  The one rule in this section.
 #
 # The emitter COMP of an NPN (inside DNWELL) or a PNP (inside NWELL) must be fully
 # covered by LVS_BJT; whatever is left over after subtracting the marker is the error.

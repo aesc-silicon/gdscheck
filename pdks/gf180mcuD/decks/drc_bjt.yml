@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# BJT geometry.  Ported from rule_decks/drc_bjt.rb - all three rules.
+# BJT geometry.  All three rules.
 #
 # BJT.1 and BJT.2 are "must contain" rules: the marker has to cover what it marks, so
 # the violation is the marker that does not.  Both lean on the `covering` selector.

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# ESD implant.  Ported from rule_decks/esd.rb.
+# ESD implant.
 #
 # Three rules are not ported.  ESD.4a and ESD.6 measure an extension on an edge layer,
 # and ESD.4b uses KLayout's `overlap`, the width of the region two layers share, which

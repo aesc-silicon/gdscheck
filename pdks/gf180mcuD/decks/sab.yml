@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Salicide block.  Ported from rule_decks/sab.rb - 15 of its 19 rules.
+# Salicide block.  15 of the 19 rules in this section.
 #
 # Four are not ported.  SB.11 and SB.12 use KLayout's `overlap`, the width of the
 # region two layers share, which has no equivalent here.  SB.14a and SB.14b measure
@@ -10,8 +10,16 @@
 # where every spacing check here is euclidian, and SB.14a also needs an edge boolean.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 189 of 256 logical violations, 8 false positives.  SB.8, SB.13 and
-# SB.16 are exact; 6 of the 75 misses are the four rules above.
+# logical violations: 215 of 256, 2 by the clustered count and 3 by the per-marker one
+# (tools/unmatched-markers.py).  SB.8, SB.13 and SB.16 are exact; 6 of the 75 misses are
+# the four rules above.
+#
+# All three remaining false positives are SB.15b, and they are not the derivation: the
+# `sb15b_np`/`sb15b_poly` chain here is step for step what upstream builds.  Upstream
+# measures with `separation`, which scopes a pair differently from the closest-approach
+# `min_space` used here - the three sit at 0.171, 0.182 and 0.287 um on ordinary facing
+# edges that `separation` does not appear to pair, and the same rule misses two the
+# reference finds.  Wants a reduced case before anything is changed.
 rules:
   - id: SB.1
     check: min_width
@@ -52,12 +60,17 @@ rules:
     value: 0.22
     params:
       interacting_only: 1
+  # A flush edge is not an extension violation.  Where SAB is drawn to the COMP boundary
+  # and overhangs it - same x range, taller - there is no enclosure to measure, and
+  # upstream's `enclosed` reports nothing.  Without `skip_coincident` the coincident side
+  # walls read as a zero margin: two false positives on SB.7 and two on SB.9.
   - id: SB.7
     check: min_enclosure
     layers: [comp_sab, sab]
     value: 0.22
     params:
       interacting_only: 1
+      skip_coincident: 1
   - id: SB.8
     check: nonempty
     layers: [contact_on_sab]
@@ -68,6 +81,7 @@ rules:
     value: 0.22
     params:
       interacting_only: 1
+      skip_coincident: 1
   - id: SB.10
     check: min_enclosure
     layers: [poly_sab, sab]

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Memory cell marker.  Ported from rule_decks/mcell.rb - all four rules.
+# Memory cell marker.  All four rules.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
 # logical violations: 22 of 23 logical violations, 2 false positives.

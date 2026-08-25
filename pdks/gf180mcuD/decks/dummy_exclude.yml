@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Dummy-fill exclude markers.  Ported from rule_decks/dummy_exclude.rb - all three.
+# Dummy-fill exclude markers.  All three.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
 # logical violations: 5 of 8 logical violations, 1 false positive.

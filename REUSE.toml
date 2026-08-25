@@ -49,9 +49,10 @@ SPDX-FileCopyrightText = "2023 GlobalFoundries PDK Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-# Written by tools/gen-mslot-pattern.py, not vendored: the GF180MCU PDK ships no test
-# case for metal slotting, so this pattern is ours.
-path = "tests/data/gf180mcuD/generated/*.gds.gz"
+# Everything under generated/ is drawn here rather than vendored: the mslot pattern
+# (tools/gen-mslot-pattern.py, since the PDK ships no slotting case) and the per-rule
+# good/bad patterns for the offgrid and acute decks (gen/gf180mcuD/).
+path = ["tests/data/gf180mcuD/generated/*.gds.gz", "tests/data/gf180mcuD/generated/**/*.gds.gz"]
 SPDX-FileCopyrightText = "2026 aesc silicon"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
 

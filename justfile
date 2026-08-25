@@ -20,9 +20,12 @@ clippy:
 build:
     cargo build --release
 
-# Regenerate the IHP SG13G2 test fixtures from the generators.
-gen-testdata:
-    cargo run --release --features dev-tools --bin gen-testdata -- --pdk pdks/ihp-sg13g2/pdk.yml
+# Regenerate every PDK's generated test fixtures.
+gen-testdata: (gen-testdata-for "ihp-sg13g2") (gen-testdata-for "gf180mcuD")
+
+# Regenerate one PDK's generated test fixtures.
+gen-testdata-for pdk:
+    cargo run --release --features dev-tools --bin gen-testdata -- --pdk pdks/{{pdk}}/pdk.yml
 
 # Format, lint, and test — the pre-commit gate.
 check: clippy test

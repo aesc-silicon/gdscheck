@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Poly2 dummy fill.  Ported from rule_decks/dummy_poly2.rb.
+# Poly2 dummy fill.
 #
 # DPF.12 and DPF.13 are commented out upstream - they only apply to a flow that moves
 # fill onto the active metal layers - so they are absent here too.

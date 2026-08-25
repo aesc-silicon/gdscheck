@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Nplus implant.  Ported from rule_decks/nplus.rb.
+# Nplus implant.
 #
 # The rules left out are all edge work or a sizing this engine cannot express.  The
 # extension-beyond-COMP family (NP.4a/4b, NP.5b through NP.5dii and their PP twins)

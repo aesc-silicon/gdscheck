@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS NFET.  Ported from rule_decks/ldnmos.rb - 24 of its 35 rules.
+# LDMOS NFET.  24 of the 35 rules in this section.
 #
 # The HV device is recognised by LDMOS_XTOR over Dualgate, with MVSD marking the drain.
 #
@@ -20,7 +20,7 @@
 #                                     regions, and `enclosed(..., transparent)`.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 495 of 837, 9 false positives.  MDN.3a, MDN.7a, MDN.13a and
+# logical violations: 494 of 837, 7 false positives (1 by tools/unmatched-markers.py).  MDN.3a, MDN.7a, MDN.13a and
 # MDN.15b are exact; MDN.17 is within one of the reference's 62.  Most of the 351 misses belong to the eleven rules above.
 rules:
   - id: MDN.1
