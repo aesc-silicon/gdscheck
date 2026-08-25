@@ -236,7 +236,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 // one, so only the V1.* rules fire here.
 #[case::via1(
     "via", "via1.gds.gz", "7_14_VIA",
-    &[("V1.1", 4), ("V1.2a", 2), ("V1.3a", 3), ("V1.4a", 6)]
+    &[("V1.1", 4), ("V1.2a", 2), ("V1.2b", 7), ("V1.3", 3), ("V1.3.1", 2), ("V1.3.2", 13), ("V1.3.3", 38), ("V1.4", 6), ("V1.4.1", 2), ("V1.4.2", 13), ("V1.4.3", 39)]
 )]
 #[case::poly2(
     "poly2", "poly2.gds.gz", "7_7_Poly2",
@@ -602,4 +602,74 @@ fn pl6_corner_patterns() {
         vec![("PL.6".to_string(), 2)],
         "the L's two elbow corners are inside the COMP; its other four are not"
     );
+}
+
+// --- Via, generated ---
+//
+// Every rule in the deck, at every level. The levels were written by expanding a
+// template, which is exactly where a wrong layer slips into one of them — Via3 reaching
+// for Metal3 above instead of Metal4 — so generating all four turns that from a silent
+// wrong answer into a failing test.
+
+/// The two rules the foundry documents but does not check.
+fn is_guidance(suffix: &str) -> bool {
+    suffix == "3.3" || suffix == "4.3"
+}
+
+/// What the bad half of each pattern is drawn to contain, by rule suffix.
+///
+/// Mostly the rule itself, once. Two exceptions, both structural rather than sloppy
+/// drawing:
+///
+/// * `V#.1` reports per wall pair, so an oversized via is four.
+/// * `V#.3.1`/`V#.4.1` cannot avoid also tripping `V#.3.2`/`V#.4.2`. A 0.26 µm via in a
+///   track narrow enough to have a line end — under 0.34 µm — has sidewalls under 0.04,
+///   so a thin tip always leaves a short side whose neighbours are short too. The two
+///   rules genuinely overlap on that geometry; there is no way to draw one without the
+///   other.
+fn via_bad_expect(level: usize, suffix: &str) -> Vec<(String, usize)> {
+    let id = |sfx: &str| (format!("V{level}.{sfx}"), 1);
+    match suffix {
+        "1" => vec![(format!("V{level}.1"), 4)],
+        "3.1" => vec![id("3.1"), id("3.2")],
+        "4.1" => vec![id("4.1"), id("4.2")],
+        _ => vec![id(suffix)],
+    }
+}
+
+#[test]
+fn via_patterns_cover_every_rule() {
+    let mut ids: Vec<String> = rule_ids("via");
+    ids.sort();
+    ids.dedup(); // V#.2a is a space and a notch rule under one id
+    assert_eq!(ids.len(), 44, "eleven rules at each of four levels");
+
+    for id in ids {
+        let (level, suffix) = id.split_once('.').expect("V<n>.<rule>");
+        let level: usize = level[1..].parse().expect("V<n>");
+
+        // V#.3.3 and V#.4.3 ask for 0.12 µm where the rules require 0.01, so they fire on
+        // any via not drawn generously — including the *legal* half of patterns whose
+        // point is a small margin. `V#.3.1`'s good pattern is exactly that: it keeps the
+        // same 0.02 µm margin as its bad half and only widens the track, which is what
+        // says the rule is about the line end rather than the number. So the guidance
+        // rules are asserted by their own two fixtures and filtered out of every other,
+        // where they say nothing about the rule at hand. That they cannot be avoided here
+        // is the same property that keeps them out of `main`.
+        let drop_guidance = |c: &mut Vec<(String, usize)>| {
+            if !is_guidance(suffix) {
+                c.retain(|(r, _)| !is_guidance(r.split_once('.').expect("V<n>.<rule>").1));
+            }
+        };
+
+        let mut good = counts_at("via", &format!("{GENERATED}/via/{id}.good.gds.gz"), "TOP");
+        drop_guidance(&mut good);
+        assert!(good.is_empty(), "{id} fired on its good pattern: {good:?}");
+
+        let mut bad = counts_at("via", &format!("{GENERATED}/via/{id}.bad.gds.gz"), "TOP");
+        drop_guidance(&mut bad);
+        let mut want = via_bad_expect(level, suffix);
+        want.sort();
+        assert_eq!(bad, want, "{id} bad pattern");
+    }
 }

@@ -133,12 +133,30 @@ def cause(diagonal, degenerate):
 
 
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
-    verbose = "-v" in sys.argv
+    argv = sys.argv[1:]
+    verbose = "-v" in argv
+    # `--alias OURS=THEIRS` renames one of our rule ids to the reference's before the
+    # comparison. A deck is free to name a rule after the design manual where the
+    # reference deck names it after its own implementation - GF180's via overlap rule is
+    # `V#.3` in the manual and `V1.3a`/`V2.3b` in the reference, the letter there encoding
+    # the level rather than the rule. Without this the diff reports each such rule as a
+    # miss and an extra at once: the same violation under two names, which is exactly the
+    # phantom disagreement this tool exists to avoid.
+    aliases, consumed = {}, set()
+    for i, a in enumerate(argv):
+        if a == "--alias" and i + 1 < len(argv) and "=" in argv[i + 1]:
+            mine, theirs = argv[i + 1].split("=", 1)
+            aliases[mine] = theirs
+            consumed.add(i + 1)
+    args = [a for i, a in enumerate(argv) if not a.startswith("-") and i not in consumed]
     if len(args) != 2:
-        sys.exit("usage: compare-lyrdb.py <golden.lyrdb> <ours.lyrdb> [-v]")
+        sys.exit("usage: compare-lyrdb.py <golden.lyrdb> <ours.lyrdb> [-v] "
+                 "[--alias OURS=THEIRS]...")
 
     gold, ours = markers(args[0]), markers(args[1])
+    for mine, theirs in aliases.items():
+        if mine in ours:
+            ours.setdefault(theirs, []).extend(ours.pop(mine))
     RADIUS = 8.0
 
     print(f"{'rule':16}{'ref':>5}{'ours':>6}{'missed':>8}{'extra':>7}"

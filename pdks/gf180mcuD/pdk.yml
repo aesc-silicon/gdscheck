@@ -27,6 +27,9 @@ suites:
   - name: antenna
     path: suites/antenna.yml
     description: Antenna checks only
+  - name: recommended
+    path: suites/recommended.yml
+    description: Guidance the foundry documents but does not check
 
 decks:
   - name: offgrid
