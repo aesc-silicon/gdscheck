@@ -27,6 +27,7 @@ pub mod min_enclosure;
 pub mod min_endcap_enclosure;
 pub mod min_extension;
 pub mod min_notch;
+pub mod min_overlap;
 pub mod min_region_density;
 pub mod min_space;
 pub mod min_space_bent;
@@ -103,6 +104,7 @@ pub fn run_rule(
         "min_endcap_enclosure" => min_endcap_enclosure::run(rule, layout, dbu_to_um, merged),
         "min_extension" => min_extension::run(rule, layout, dbu_to_um, merged),
         "min_notch" => min_notch::run(rule, layout, dbu_to_um, merged),
+        "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
         "min_space" => min_space::run(rule, layout, dbu_to_um, merged),
         "min_space_different_net" => {
             min_space_different_net::run(rule, layout, dbu_to_um, merged, conn)

@@ -901,13 +901,91 @@ fn poly_from_merged(m: &MergedPoly, dbu_to_um: f64) -> Option<Poly> {
 /// Closest edge-to-edge distance between two regions, with the closest point on
 /// each (first on `a`, second on `b`) so the marker can span the gap.  Stops early
 /// once a touching pair is found (`< half_dbu`).
-fn closest(a: &Poly, b: &Poly, half_dbu: f64) -> (f64, (f64, f64), (f64, f64)) {
+/// Closest approach of two segments under KLayout's `square` metric — the L-infinity
+/// distance, `max(|dx|, |dy|)`, whose unit ball is a square rather than a circle.  That
+/// is what a rule worded "must not fall within a 0.56 x 0.56 um square at the corner"
+/// asks for, and it is a *weaker* separation than euclidian: two shapes 0.5 um apart
+/// diagonally are 0.71 apart euclidian but only 0.5 apart here, so measuring the wrong
+/// one goes quiet on real violations rather than inventing them.
+///
+/// Exact, not sampled.  Over the two segments' parameter square, `dx` and `dy` are
+/// affine, so `max(|dx|, |dy|)` is convex and piecewise linear with folds only along
+/// `dx = 0`, `dy = 0` and `dx = ±dy`.  A convex piecewise-linear function attains its
+/// minimum over a polygon at a vertex of the subdivision those folds induce, so
+/// evaluating the corners, the fold-boundary crossings and the fold-fold crossings
+/// finds it outright.
+fn seg_seg_closest_square(
+    a0: (f64, f64),
+    a1: (f64, f64),
+    b0: (f64, f64),
+    b1: (f64, f64),
+) -> (f64, (f64, f64), (f64, f64)) {
+    let (dax, day) = (a1.0 - a0.0, a1.1 - a0.1);
+    let (dbx, dby) = (b1.0 - b0.0, b1.1 - b0.1);
+    // dx(t, u) and dy(t, u) as `const + t*ct + u*cu`.
+    let dx = (a0.0 - b0.0, dax, -dbx);
+    let dy = (a0.1 - b0.1, day, -dby);
+    // The folds, each as `c + t*ct + u*cu = 0`.
+    let folds = [
+        dx,
+        dy,
+        (dx.0 - dy.0, dx.1 - dy.1, dx.2 - dy.2),
+        (dx.0 + dy.0, dx.1 + dy.1, dx.2 + dy.2),
+    ];
+
+    let mut cands: Vec<(f64, f64)> = vec![(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)];
+    // Where each fold crosses the parameter square's own sides.
+    for f in &folds {
+        for e in [0.0, 1.0] {
+            // t = e: solve for u.  u = e: solve for t.
+            if f.2.abs() > 1e-12 {
+                cands.push((e, -(f.0 + f.1 * e) / f.2));
+            }
+            if f.1.abs() > 1e-12 {
+                cands.push((-(f.0 + f.2 * e) / f.1, e));
+            }
+        }
+    }
+    // Where two folds cross each other.
+    for i in 0..folds.len() {
+        for j in i + 1..folds.len() {
+            let (p, q) = (folds[i], folds[j]);
+            let det = p.1 * q.2 - p.2 * q.1;
+            if det.abs() > 1e-12 {
+                cands.push((
+                    (-p.0 * q.2 + p.2 * q.0) / det,
+                    (-p.1 * q.0 + p.0 * q.1) / det,
+                ));
+            }
+        }
+    }
+
+    let mut best = (f64::INFINITY, (0.0, 0.0), (0.0, 0.0));
+    for (t, u) in cands {
+        if !(0.0..=1.0).contains(&t) || !(0.0..=1.0).contains(&u) {
+            continue;
+        }
+        let pa = (a0.0 + t * dax, a0.1 + t * day);
+        let pb = (b0.0 + u * dbx, b0.1 + u * dby);
+        let d = (pa.0 - pb.0).abs().max((pa.1 - pb.1).abs());
+        if d < best.0 {
+            best = (d, pa, pb);
+        }
+    }
+    best
+}
+
+fn closest(a: &Poly, b: &Poly, half_dbu: f64, square: bool) -> (f64, (f64, f64), (f64, f64)) {
     let mut min_dist = f64::INFINITY;
     let mut pa = (0.0, 0.0);
     let mut pb = (0.0, 0.0);
     'outer: for &(ax, ay, bx, by) in &a.edges {
         for &(cx, cy, dx, dy) in &b.edges {
-            let (d, qa, qb) = segment_closest_points(ax, ay, bx, by, cx, cy, dx, dy);
+            let (d, qa, qb) = if square {
+                seg_seg_closest_square((ax, ay), (bx, by), (cx, cy), (dx, dy))
+            } else {
+                segment_closest_points(ax, ay, bx, by, cx, cy, dx, dy)
+            };
             if d < min_dist {
                 min_dist = d;
                 pa = qa;
@@ -921,6 +999,19 @@ fn closest(a: &Poly, b: &Poly, half_dbu: f64) -> (f64, (f64, f64), (f64, f64)) {
     (min_dist, pa, pb)
 }
 
+/// Which pairs a spacing rule is about, in which direction, and in which metric.
+#[derive(Clone, Copy)]
+pub struct SpaceMode {
+    /// Scan pairs that share area for their narrowest empty gap, rather than pairs that
+    /// share none for their closest approach.  See [`facing_gaps`].
+    overlapping: bool,
+    /// Measure L-infinity rather than euclidian.  See [`seg_seg_closest_square`].
+    square: bool,
+    /// Measure how deeply the pair penetrates rather than how far apart it is - the
+    /// same facing-edge scan run inward.  Implies `overlapping`.
+    inward: bool,
+}
+
 #[allow(clippy::too_many_arguments)]
 fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     a_polys: &[MergedPoly],
@@ -932,6 +1023,7 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     rule_id: &str,
     name_a: &str,
     name_b: &str,
+    mode: SpaceMode,
     gate: &G,
 ) -> Vec<Violation> {
     let half = dbu_to_um * 0.5;
@@ -961,14 +1053,46 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
             if !a.bbox.possibly_within(&b.bbox, value) {
                 continue;
             }
-            if overlapping(a, b) {
-                continue;
+            let overlaps = overlapping(a, b);
+            if overlaps != mode.overlapping {
+                continue; // this rule is about the other kind of pair
             }
-            let (min_dist, (ax, ay), (bx, by)) = closest(a, b, half);
-            // Touching: shapes share a boundary -> no spacing.
-            if min_dist < half {
-                continue;
-            }
+            let (min_dist, (ax, ay), (bx, by)) = if mode.overlapping {
+                // The pair shares area, so its closest approach is zero and meaningless.
+                // Take the narrowest facing gap that is genuinely empty instead.
+                let mut best: Option<Gap> = None;
+                for (gap, p, q) in facing_gaps(a, b, value, half, mode.inward) {
+                    let (px, py) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
+                    let wrong = if mode.inward {
+                        // An overlap has to be material of both, or the "facing" pair
+                        // reaches across a notch in one of them.
+                        !(a.contains_point(px, py) && b.contains_point(px, py))
+                    } else {
+                        let (mx, my) = (px / dbu_to_um, py / dbu_to_um);
+                        a_polys
+                            .iter()
+                            .chain(b_polys)
+                            .any(|m| crate::merge::point_in_merged(mx, my, m))
+                    };
+                    if wrong {
+                        continue; // another arm of one of the shapes lies in the gap
+                    }
+                    if best.is_none_or(|(d, _, _)| gap < d) {
+                        best = Some((gap, p, q));
+                    }
+                }
+                match best {
+                    Some(v) => v,
+                    None => continue,
+                }
+            } else {
+                let m = closest(a, b, half, mode.square);
+                // Touching: shapes share a boundary -> no spacing.
+                if m.0 < half {
+                    continue;
+                }
+                m
+            };
             if min_dist < value - half {
                 if !gate(a, b, *ma, *mb) {
                     continue;
@@ -979,16 +1103,135 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
                 if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
                     continue;
                 }
+                let (title, what) = if mode.inward {
+                    ("Minimum overlap violation", "overlap")
+                } else {
+                    ("Minimum space violation", "space")
+                };
                 out.push(Violation::edge(
                     rule_id,
-                    "Minimum space violation",
+                    title,
                     format!(
-                        "space {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                        "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
                         min_dist, value, name_a, name_b, ax, ay, bx, by
                     ),
                     ax, ay, bx, by,
                 ));
             }
+        }
+    }
+    out
+}
+
+/// One facing gap: its width, and the two points that measure it.
+type Gap = (f64, (f64, f64), (f64, f64));
+
+/// The stretch of a segment lying strictly outside the halfplane boundary through `q`
+/// with outward normal `n`, as a parameter range of the segment, or `None` if none of it
+/// reaches there.  A segment that only *touches* the boundary yields an empty range, and
+/// so is rejected by the length test at the call site — which is the whole point: a
+/// corner resting on a wall is not a gap.
+fn halfplane_span(
+    (x0, y0, x1, y1): (f64, f64, f64, f64),
+    (qx, qy): (f64, f64),
+    (nx, ny): (f64, f64),
+) -> Option<(f64, f64)> {
+    let f0 = (x0 - qx) * nx + (y0 - qy) * ny;
+    let f1 = (x1 - qx) * nx + (y1 - qy) * ny;
+    match (f0 > 0.0, f1 > 0.0) {
+        (false, false) => None,
+        (true, true) => Some((0.0, 1.0)),
+        (true, false) => Some((0.0, f0 / (f0 - f1))),
+        (false, true) => Some((f0 / (f0 - f1), 1.0)),
+    }
+}
+
+/// Gaps between the facing edges of two regions, for a rule whose two shapes *overlap*.
+///
+/// The ordinary spacing scan measures a region pair's closest approach and skips any pair
+/// that overlaps or touches, which is right: two shapes that share area have no single
+/// "space" between them. But a rule can be about exactly that shape. GF180's `S.PL.5b_MV`
+/// asks the space from a poly to the COMP it *gates* — so the pair overlaps by
+/// definition, and the gap it means is somewhere else along the same two shapes.
+///
+/// A pair here is two anti-parallel edges facing each other across empty ground: their
+/// directions oppose, they project onto one another, and the second lies on the outward
+/// side of the first. Both outward normals therefore point into the gap, so the strip
+/// between them is outside both shapes locally — but only locally, since another arm of
+/// either shape can lie in it, which the caller's emptiness probe rules out.
+fn facing_gaps(a: &Poly, b: &Poly, value: f64, tol: f64, inward: bool) -> Vec<Gap> {
+    // Space and overlap are the same measurement in opposite directions: both pair two
+    // edges whose outward normals oppose, and differ only in whether the other edge sits
+    // on this one's outside (empty ground between them, a gap) or its inside (material of
+    // both between them, an overlap).  One sign carries that.
+    let sgn = if inward { -1.0 } else { 1.0 };
+    let mut out = Vec::new();
+    for &(ax, ay, bx, by) in &a.edges {
+        let (dax, day) = (bx - ax, by - ay);
+        let la = dax.hypot(day);
+        if la <= 0.0 {
+            continue;
+        }
+        let (ux, uy) = (dax / la, day / la);
+        let (nx, ny) = (uy, -ux); // outward for a CCW contour
+        for &(cx, cy, dx, dy) in &b.edges {
+            let (dbx, dby) = (dx - cx, dy - cy);
+            let lb = dbx.hypot(dby);
+            if lb <= 0.0 {
+                continue;
+            }
+            if (dax * dby - day * dbx).abs() > 1e-6 * la * lb {
+                // Not parallel, so there is no constant gap to project - the SRAM COMP is
+                // a five-point arrow whose 45° flank runs at the poly's wall, closing to
+                // nothing at the tip. Clip each edge to the other's outside halfplane and
+                // measure what is left. The clip is what separates this from a poly
+                // sitting *inside* a COMP with a coincident wall: there a corner rests on
+                // the wall, so one edge only touches the other's boundary line and never
+                // reaches its outside, and the pair drops out with an empty span.
+                let (nbx, nby) = (dby / lb, -dbx / lb);
+                if nx * nbx + ny * nby >= 0.0 {
+                    // The normals must oppose, or the edges are not facing each other
+                    // across the gap - this is the anti-parallel test above, generalised.
+                    // Perpendicular edges meeting at a point fail it, which is what keeps
+                    // an ordinary convex corner of empty space from reading as a gap.
+                    continue;
+                }
+                let (Some((sa0, sa1)), Some((sb0, sb1))) = (
+                    halfplane_span((ax, ay, bx, by), (cx, cy), (sgn * nbx, sgn * nby)),
+                    halfplane_span((cx, cy, dx, dy), (ax, ay), (sgn * nx, sgn * ny)),
+                ) else {
+                    continue;
+                };
+                if (sa1 - sa0) * la <= tol || (sb1 - sb0) * lb <= tol {
+                    continue;
+                }
+                let (gap, pa, pb) = seg_seg_closest(
+                    (ax + sa0 * dax, ay + sa0 * day),
+                    (ax + sa1 * dax, ay + sa1 * day),
+                    (cx + sb0 * dbx, cy + sb0 * dby),
+                    (cx + sb1 * dbx, cy + sb1 * dby),
+                );
+                if gap < value {
+                    out.push((gap, pa, pb));
+                }
+                continue;
+            }
+            if dax * dbx + day * dby >= 0.0 {
+                continue; // same direction: back to back, not facing
+            }
+            let gap = sgn * ((cx - ax) * nx + (cy - ay) * ny);
+            if gap <= tol || gap >= value {
+                continue; // touching, behind, or far enough apart
+            }
+            let t0 = (cx - ax) * ux + (cy - ay) * uy;
+            let t1 = (dx - ax) * ux + (dy - ay) * uy;
+            let (s0, s1) = (t0.min(t1).max(0.0), t0.max(t1).min(la));
+            if s1 - s0 <= tol {
+                continue; // no projected overlap: they do not face each other
+            }
+            let mid = (s0 + s1) * 0.5;
+            let (px, py) = (ax + mid * ux, ay + mid * uy);
+            out.push((gap, (px, py), (px + sgn * nx * gap, py + sgn * ny * gap)));
         }
     }
     out
@@ -1002,11 +1245,41 @@ pub type Marker = (f64, f64);
 /// reported only if `gate(a, b, marker_a, marker_b)` holds, letting conditional spacing
 /// rules add width / parallel-run / same-net conditions without duplicating the merge,
 /// tiling and edge-distance work.
+/// Depth of mutual penetration where two layers overlap - KLayout's `overlap` check.
+/// The facing-edge scan of [`run_gated`] run inward: see [`facing_gaps`].
+pub fn run_overlap(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    let mode = SpaceMode {
+        overlapping: true,
+        square: false,
+        inward: true,
+    };
+    run_gated_with(rule, layout, dbu_to_um, merged, Some(mode), |_, _, _, _| {
+        true
+    })
+}
+
 pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
+    gate: G,
+) -> Vec<Violation> {
+    run_gated_with(rule, layout, dbu_to_um, merged, None, gate)
+}
+
+/// `forced` overrides what `str_params` would say, for a check that *is* a mode.
+fn run_gated_with<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+    forced: Option<SpaceMode>,
     gate: G,
 ) -> Vec<Violation> {
     let layer_a = &rule.layers[0];
@@ -1026,6 +1299,43 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     }
 
     let value = rule.value;
+    // Which pairs the rule is about.  `disjoint` (the default) is the ordinary reading:
+    // two shapes that share no area, measured at their closest approach.  `overlapping`
+    // is for a rule whose two shapes overlap *by definition* - GF180's S.PL.5b_MV asks
+    // the space from a poly to the COMP it gates - where the closest approach is zero and
+    // the gap meant is between facing edges elsewhere along the same two shapes.
+    let overlapping_pairs = match rule.str_params.get("pairs").map(String::as_str) {
+        Some("overlapping") => true,
+        Some("disjoint") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown pairs '{other}' — expected disjoint or overlapping; \
+                 using disjoint",
+                rule.id
+            );
+            false
+        }
+    };
+    // `square` is KLayout's L-infinity metric, which a rule words as "must not fall
+    // within a d x d square at the corner".  It separates *less* than euclidian, so the
+    // default stays euclidian and only a rule that asks for it pays the wider net.
+    let square = match rule.str_params.get("metric").map(String::as_str) {
+        Some("square") => true,
+        Some("euclidian") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown metric '{other}' — expected euclidian or square; \
+                 using euclidian",
+                rule.id
+            );
+            false
+        }
+    };
+    let mode = forced.unwrap_or(SpaceMode {
+        overlapping: overlapping_pairs,
+        square,
+        inward: false,
+    });
     let tile = merged.tile_dbu() as i64;
     let rid = rule.id.as_str();
     let name_a = layer_a.name.as_str();
@@ -1054,7 +1364,8 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
             let a_polys = &map_a[&(tx, ty)];
             let b_polys = map_b.get(&(tx, ty)).unwrap_or(&empty);
             check_tile(
-                a_polys, b_polys, same_layer, core, value, dbu_to_um, rid, name_a, name_b, &gate,
+                a_polys, b_polys, same_layer, core, value, dbu_to_um, rid, name_a, name_b, mode,
+                &gate,
             )
             .into_iter()
         })
@@ -1631,9 +1942,6 @@ fn all_vertices_inside(inner: &Poly, outer: &Poly, tol: f64) -> bool {
         .all(|&(x, y)| vertex_inside_or_on(x, y, outer, tol))
 }
 
-/// Whether two polygons overlap (one has a vertex inside the other).  A cheap bbox prefilter
-/// guards the point-in-polygon tests; for the via-over-device case it cannot miss (a via
-/// crossing the device edge has vertices inside it).
 /// Whether two segments meet — properly crossing, or touching at a point.
 fn segs_meet(p0: Marker, p1: Marker, q0: Marker, q1: Marker) -> bool {
     let cross =
@@ -1713,11 +2021,33 @@ struct EnclosurePair {
 /// Facing-pair scan of `inner` against one containing `outer` candidate (see
 /// the module comment above on the projection metric and coincidence semantics).
 /// Returns the pairs with `dist < cutoff` plus whether any coincident segment was seen.
+/// Which metric an enclosure rule measures its margin in.
+///
+/// KLayout's own default is euclidian, and most of GF180's enclosure rules ask for it
+/// explicitly; `projection` restricts the measurement to facing parallel runs. The two
+/// agree on orthogonal geometry and part company at any corner that is not square.
+fn enclosure_is_euclidian(rule: &RuleDefinition) -> bool {
+    match rule.str_params.get("metric").map(String::as_str) {
+        Some("euclidian") => true,
+        Some("projection") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown metric '{other}' — expected euclidian or projection; \
+                 using projection",
+                rule.id
+            );
+            false
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn enclosure_pairs(
     inner: &Poly,
     outer: &Poly,
     cutoff: f64,
     skip_coincident: bool,
+    euclidian: bool,
     tol: f64,
 ) -> (Vec<EnclosurePair>, bool) {
     let mut pairs = Vec::new();
@@ -1734,8 +2064,55 @@ fn enclosure_pairs(
         for &(cx, cy, dx, dy) in &outer.edges {
             let (dox, doy) = (dx - cx, dy - cy);
             let lo = dox.hypot(doy);
-            if lo <= 0.0 || (dix * doy - diy * dox).abs() > 1e-6 * li * lo {
-                continue; // not parallel: no projection pairing
+            if lo <= 0.0 {
+                continue;
+            }
+            if (dix * doy - diy * dox).abs() > 1e-6 * li * lo {
+                // Not parallel, so there is no facing run to project onto. Under the
+                // projection metric that is the end of it; under the euclidian one the
+                // wall is still a wall, and the margin is the shortest distance to it.
+                // This is what an arrow's tip or a chamfered corner needs: GF180's SRAM
+                // case sets every orthogonal margin to exactly the limit and then cuts
+                // one corner at 45°, so the only deficit is one no parallel pair can see.
+                if !euclidian {
+                    continue;
+                }
+                let (d, near_in, near_out) =
+                    seg_seg_closest((ax, ay), (bx, by), (cx, cy), (dx, dy));
+                if d >= cutoff {
+                    continue;
+                }
+                // Outward test. Without it the search finds the far wall across a concave
+                // shape and reports a margin that is not an enclosure at all. A touch
+                // (d ~ 0) has no direction to test, and is the same clip artifact that
+                // `skip_coincident` governs on the parallel path.
+                if d <= tol {
+                    saw_coincident = true;
+                    if skip_coincident {
+                        continue;
+                    }
+                } else if (near_out.0 - near_in.0) * nx + (near_out.1 - near_in.1) * ny <= tol {
+                    continue;
+                }
+                let (px, py) = if d <= tol {
+                    (near_in.0 + nx * 2.0 * tol, near_in.1 + ny * 2.0 * tol)
+                } else {
+                    let inv = 1.0 / d;
+                    let (vx, vy) = (
+                        (near_out.0 - near_in.0) * inv,
+                        (near_out.1 - near_in.1) * inv,
+                    );
+                    (
+                        near_in.0 + vx * (d + 2.0 * tol),
+                        near_in.1 + vy * (d + 2.0 * tol),
+                    )
+                };
+                pairs.push(EnclosurePair {
+                    dist: d,
+                    edge: (near_in.0, near_in.1, near_out.0, near_out.1),
+                    probe: (px, py),
+                });
+                continue;
             }
             // Projected overlap of the outer edge onto the inner edge's span.
             let t0 = (cx - ax) * ux + (cy - ay) * uy;
@@ -2053,6 +2430,7 @@ pub fn run_enclosure(
         .copied()
         .unwrap_or(f64::INFINITY);
     let min_length = rule.params.get("min_length").copied().unwrap_or(0.0);
+    let euclidian = enclosure_is_euclidian(rule);
 
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
@@ -2096,7 +2474,7 @@ pub fn run_enclosure(
                         enclosure_dist_endcap(&bp, a)
                     } else {
                         let (pairs, coincident) =
-                            enclosure_pairs(&bp, a, value, skip_coincident, tol);
+                            enclosure_pairs(&bp, a, value, skip_coincident, euclidian, tol);
                         clipped |= coincident;
                         // Wall reality check: a pair measured against outer geometry
                         // beyond this bucket's reliable zone can see a fake wall where
@@ -2237,7 +2615,7 @@ pub fn run_enclosure(
                         let mut worst = f64::INFINITY;
                         let mut worst_edge = None;
                         for a in touching {
-                            let (pairs, _) = enclosure_pairs(&bp, a, value, skip_coincident, tol);
+                            let (pairs, _) = enclosure_pairs(&bp, a, value, skip_coincident, euclidian, tol);
                             for p in pairs {
                                 let (x1, y1, x2, y2) = p.edge;
                                 let (mx, my) = ((x1 + x2) * 0.5, (y1 + y2) * 0.5);
@@ -2305,6 +2683,7 @@ pub fn run_max_enclosure(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
+    let euclidian = enclosure_is_euclidian(rule);
     let enclosing_layer = &rule.layers[0];
     let enclosed_layer = &rule.layers[1];
     let (al, ad) = (
@@ -2373,7 +2752,7 @@ pub fn run_max_enclosure(
                     // skip flag is irrelevant here; keep them (false) for the worst-margin.
                     // No wall reality check either: a fake wall only *shrinks* the measured
                     // worst margin, which for a max bound errs toward passing — harmless.
-                    let (pairs, _) = enclosure_pairs(&bp, a, f64::INFINITY, false, tol);
+                    let (pairs, _) = enclosure_pairs(&bp, a, f64::INFINITY, false, euclidian, tol);
                     let mut dist = f64::INFINITY;
                     let mut edge = bp.edges.first().copied().unwrap_or_default();
                     for p in pairs {
@@ -2424,6 +2803,40 @@ mod tests {
             x1: 1_000_000,
             y1: 1_000_000,
         }
+    }
+
+    /// The square metric is L-infinity, so a purely diagonal separation reads as the
+    /// larger of the two axis distances and not the hypotenuse. Two collinear-facing
+    /// points 3 across and 4 up are 5 apart euclidian and 4 apart here — which is the
+    /// whole reason a rule worded as a square at a corner has to ask for it.
+    #[test]
+    fn square_metric_is_the_larger_axis_distance() {
+        let (d, _, _) = seg_seg_closest_square((0.0, 0.0), (0.0, 0.0), (3.0, 4.0), (3.0, 4.0));
+        assert!((d - 4.0).abs() < 1e-9, "expected 4, got {d}");
+        let (e, _, _) = segment_closest_points(0.0, 0.0, 0.0, 0.0, 3.0, 4.0, 3.0, 4.0);
+        assert!(
+            (e - 5.0).abs() < 1e-9,
+            "euclidian should still be 5, got {e}"
+        );
+    }
+
+    /// The minimum sits on the `|dx| = |dy|` fold, not at the euclidian closest approach,
+    /// and that is the case the fold-vertex search exists for. Two parallel 45° walls
+    /// offset by 6 in y are 4.243 apart euclidian; the largest square that fits between
+    /// them has side 3, reached by sliding along both until the axis distances match.
+    #[test]
+    fn square_metric_measures_across_the_diagonal_fold() {
+        let a = ((0.0, 0.0), (4.0, 4.0));
+        let b = ((0.0, 6.0), (4.0, 10.0));
+        let (d, pa, pb) = seg_seg_closest_square(a.0, a.1, b.0, b.1);
+        assert!((d - 3.0).abs() < 1e-9, "expected 3, got {d}");
+        // Both axis distances equal the result: that is what being on the fold means.
+        assert!((pa.0 - pb.0).abs() - 3.0 < 1e-9 && (pa.1 - pb.1).abs() - 3.0 < 1e-9);
+        let (e, _, _) = segment_closest_points(0.0, 0.0, 4.0, 4.0, 0.0, 6.0, 4.0, 10.0);
+        assert!(
+            (e - 6.0 / 2f64.sqrt()).abs() < 1e-9,
+            "euclidian is 4.243, got {e}"
+        );
     }
 
     /// Thin 45° trace (~99 DBU walls) flagged by a `< 160` (min-width) predicate:

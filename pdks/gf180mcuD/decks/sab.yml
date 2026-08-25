@@ -2,17 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Salicide block.  15 of the 19 rules in this section.
+# Salicide block.  All 19 rules in this section.
 #
-# Four are not ported.  SB.11 and SB.12 use KLayout's `overlap`, the width of the
-# region two layers share, which has no equivalent here.  SB.14a and SB.14b measure
-# with the `square` metric - "must not fall within a 0.56 um square at the corner" -
-# where every spacing check here is euclidian, and SB.14a also needs an edge boolean.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 215 of 256, 2 by the clustered count and 3 by the per-marker one
-# (tools/unmatched-markers.py).  SB.8, SB.13 and SB.16 are exact; 6 of the 75 misses are
-# the four rules above.
+# SB.11 and SB.12 are `min_overlap`, which is `min_space` measured the other way round:
+# the same facing edge pairs, but the rule is about the material of both between them
+# rather than the empty ground outside them.  SB.14a and SB.14b carry `metric: square`,
+# KLayout's L-infinity, which is what "must not fall within a 0.56 um square at the
+# corner" says.  SB.14a also drops pairs that abut at a butted N/P junction, and needs
+# nothing for it: a boundary touch is already not a spacing here.
 #
 # All three remaining false positives are SB.15b, and they are not the derivation: the
 # `sb15b_np`/`sb15b_poly` chain here is step for step what upstream builds.  Upstream
@@ -88,10 +85,30 @@ rules:
     value: 0.22
     params:
       interacting_only: 1
+  - id: SB.11
+    check: min_overlap
+    layers: [sab_out_otp, comp_sab]
+    value: 0.22
+  - id: SB.12
+    check: min_overlap
+    layers: [sab_out_esd, poly_sab]
+    value: 0.22
   - id: SB.13
     check: min_area
     layers: [sab_out_otp]
     value: 2.0
+  - id: SB.14a
+    check: min_space
+    layers: [sab_poly_np, sab_poly_pp]
+    value: 0.56
+    str_params:
+      metric: square
+  - id: SB.14b
+    check: min_space
+    layers: [sab_poly_np, pgate]
+    value: 0.56
+    str_params:
+      metric: square
   - id: SB.15a
     check: min_space
     layers: [sab_poly, implant_unrelated_sab]
