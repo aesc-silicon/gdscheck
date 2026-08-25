@@ -22,5 +22,5 @@ pub fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    super::helper::run_enclosure(rule, layout, dbu_to_um, merged, true)
+    super::helper::run_enclosure(rule, layout, dbu_to_um, merged, super::helper::Sides::Any)
 }

@@ -174,6 +174,11 @@ struct RuleRaw {
     /// `forbidden_unless_labeled`).  `params` only carries numbers.
     #[serde(default)]
     pub text: Option<String>,
+    /// Params whose value is a word rather than a number - a mode selector such as
+    /// `sides: adjacent`.  `params` holds only numbers, and a mode encoded as one would
+    /// be unreadable in the deck, which is the thing these files exist to be.
+    #[serde(default)]
+    pub str_params: HashMap<String, String>,
     /// Params whose value is a *layer*, given by name.  `params` holds only numbers, so
     /// a check that takes a layer as a parameter (rather than as one of `layers`) would
     /// otherwise need its GDS number written into the deck - impossible for a derived
@@ -190,6 +195,8 @@ pub struct RuleDefinition {
     pub layers: Vec<Layer>,
     pub value: f64,
     pub params: HashMap<String, f64>,
+    /// Word-valued params; see [`RuleRaw::str_params`].
+    pub str_params: HashMap<String, String>,
     pub ignore: Vec<Layer>,
     pub text: Option<String>,
 }
@@ -918,6 +925,7 @@ impl PdkConfig {
                     layers,
                     value: r.value,
                     params,
+                    str_params: r.str_params,
                     ignore,
                     text: r.text,
                 })

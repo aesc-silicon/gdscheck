@@ -5,18 +5,63 @@
 # Via 1-4.  The design rules give one rule set per via below the
 # top metal; on this 5LM stack that is Via1 to Via4.
 #
-# Five of the nine rules per level are not ported.  V#.2b is the 4x4-array spacing,
-# selected by interaction count and measured with projection limits.  V#.3c, V#.3d,
-# V#.4b and V#.4c all work on edge layers - an end-of-line overlap and an adjacent-edge
-# corner test against the metal above and below.
+# Rule ids follow the design manual, not the reference deck.  The manual has one
+# `V#.3` - "Metaln overlap of Vian" - with sub-rules written `V#.3 (i)`, `(ii)`, `(iii)`,
+# and the same shape again for `V#.4` against the metal above.  Those are numbered here
+# with a further dot:
 #
-# V#.1 is a min/max size, which exact_width measures on a square via.  V1.3a differs
-# from V#.3b on the other levels only in having no margin, so both are the same
-# enclosure rule with the level's own value.
+#   V#.3     Metaln overlap of Vian            0 um over Metal1, 0.01 above
+#   V#.3.1   Metaln (< 0.34 um) end-of-line overlap                    0.06
+#   V#.3.2   adjacent-edge overlap where one side is under 0.04        0.06
+#   V#.3.3   overlap on all sides, for resistance variation            0.12
+#   V#.4     Metal[n+1] overlap of Vian                                0.01
+#   V#.4.1   Metal[n+1] (< 0.34 um) end-of-line overlap                0.06
+#   V#.4.2   adjacent-edge overlap where one side is under 0.04        0.06
+#   V#.4.3   overlap on all sides, for resistance variation            0.12
+#   V#.5     via stack over contact is permitted                              -
 #
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: on the via1 case every ported rule is exact - 5 of 5 logical
-# violations, no false positives, and all six misses are the rules above.
+# The reference deck names these differently, and its names are worth knowing when
+# reading its output: it splits V#.3 into `3a` at Via1 and `3b` above - the letter there
+# encodes the *level*, which the `#` already does, and there is no `3b` rule in the
+# manual at all.  Its `3c`/`3d` are V#.3.1/V#.3.2 here, and `4a`/`4b`/`4c` are
+# V#.4/V#.4.1/V#.4.2.
+#
+# A diff against the reference keyed on rule id therefore needs those two told apart from
+# a real disagreement, which is what compare-lyrdb.py's `--alias` is for:
+#
+#   tools/compare-lyrdb.py via1.lyrdb ours.lyrdb --alias V1.3=V1.3a --alias V1.4=V1.4a
+#
+# Without it each reads as a phantom miss and a phantom extra at once - the same
+# violation under two names.  V#.1, V#.2a and V#.2b are unaffected, being the manual's
+# own ids.
+#
+# V#.5 - "Vian stack over contact is permitted" - is not implemented and cannot be.  It
+# is a permission, with no violation condition: it says no rule forbids stacking, and
+# nothing in the design rules does.  A check for it could only never fire, which reads as
+# coverage while proving nothing, or fire on geometry the manual allows.  Were some rule
+# to forbid stacking, the prohibition - not this - would be the thing to write, and
+# `forbidden_overlap` already says it.
+#
+# V#.3.3 and V#.4.3 are guidance rather than rules: the reference codes neither, and the
+# manual files them among the rules it does not check.  They ask for 0.12 um on every
+# side against a *required* 0.01, so they fire on the great majority of vias - 77
+# violations on the test case where the whole rest of the deck makes 49.  They are in the
+# `recommended` suite and out of `main` and `core`; a run mixing them with real
+# violations would hide the real ones.
+#
+# V#.3.1 and V#.4.1 use `sides: line_end`.  A narrow line's tip pulls back during
+# processing, so metal that reaches the via on paper may not reach it on silicon: at the
+# end of a track under `max_width` across and at least `min_length` long, the margin rises
+# from the ordinary 0 / 0.01 um to 0.06.  The sidewalls keep the ordinary rule.
+#
+# Those two cannot be violated without also violating V#.3.2 / V#.4.2: a 0.26 um via in a
+# track narrow enough to have a line end has sidewalls under 0.04, so a thin tip always
+# leaves a short side whose neighbours are short as well.  The rules overlap on that
+# geometry by construction.
+#
+# Validated against the design rules' own test case with tools/compare-lyrdb.py, counting
+# logical violations: every one of the reference's 11 found, plus one extra from V#.2b's
+# missing ragged-array guard.  Use the aliases listed above when comparing.
 rules:
   - id: V1.1
     check: exact_width
@@ -30,14 +75,66 @@ rules:
     check: min_notch
     layers: [via1]
     value: 0.26
-  - id: V1.3a
+  - id: V1.2b
+    check: min_array_space
+    layers: [via1]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+  - id: V1.3
     check: min_enclosure
     layers: [metal1, via1]
     value: 0.0
-  - id: V1.4a
+  - id: V1.3.1
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V1.3.2
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V1.3.3
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.12
+  - id: V1.4
     check: min_enclosure
     layers: [metal2, via1]
     value: 0.01
+  - id: V1.4.1
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V1.4.2
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V1.4.3
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.12
   - id: V2.1
     check: exact_width
     layers: [via2]
@@ -50,14 +147,66 @@ rules:
     check: min_notch
     layers: [via2]
     value: 0.26
-  - id: V2.3b
+  - id: V2.2b
+    check: min_array_space
+    layers: [via2]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+  - id: V2.3
     check: min_enclosure
     layers: [metal2, via2]
     value: 0.01
-  - id: V2.4a
+  - id: V2.3.1
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V2.3.2
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V2.3.3
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.12
+  - id: V2.4
     check: min_enclosure
     layers: [metal3, via2]
     value: 0.01
+  - id: V2.4.1
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V2.4.2
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V2.4.3
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.12
   - id: V3.1
     check: exact_width
     layers: [via3]
@@ -70,14 +219,66 @@ rules:
     check: min_notch
     layers: [via3]
     value: 0.26
-  - id: V3.3b
+  - id: V3.2b
+    check: min_array_space
+    layers: [via3]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+  - id: V3.3
     check: min_enclosure
     layers: [metal3, via3]
     value: 0.01
-  - id: V3.4a
+  - id: V3.3.1
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V3.3.2
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V3.3.3
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.12
+  - id: V3.4
     check: min_enclosure
     layers: [metal4, via3]
     value: 0.01
+  - id: V3.4.1
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V3.4.2
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V3.4.3
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.12
   - id: V4.1
     check: exact_width
     layers: [via4]
@@ -90,11 +291,63 @@ rules:
     check: min_notch
     layers: [via4]
     value: 0.26
-  - id: V4.3b
+  - id: V4.2b
+    check: min_array_space
+    layers: [via4]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+  - id: V4.3
     check: min_enclosure
     layers: [metal4, via4]
     value: 0.01
-  - id: V4.4a
+  - id: V4.3.1
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V4.3.2
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V4.3.3
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.12
+  - id: V4.4
     check: min_enclosure
     layers: [metal5, via4]
     value: 0.01
+  - id: V4.4.1
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V4.4.2
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V4.4.3
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.12
