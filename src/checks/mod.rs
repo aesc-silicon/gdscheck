@@ -36,6 +36,7 @@ pub mod min_space_same_net;
 pub mod min_width;
 pub mod must_interact;
 pub mod no_angle;
+pub mod no_corner;
 pub mod no_ring;
 pub mod nonempty;
 pub mod offgrid;
@@ -92,6 +93,7 @@ pub fn run_rule(
         "max_area" => area::run_max(rule, layout, dbu_to_um, merged),
         "max_total_area" => max_total_area::run(rule, layout, dbu_to_um, merged),
         "no_angle" => no_angle::run(rule, layout, dbu_to_um, merged),
+        "no_corner" => no_corner::run(rule, layout, dbu_to_um, merged),
         "gate_length" => gate_length::run(rule, layout, dbu_to_um, merged),
         "min_region_density" => min_region_density::run(rule, layout, dbu_to_um, merged),
         "wide_uncovered" => wide_uncovered::run(rule, layout, dbu_to_um, merged),

@@ -3031,6 +3031,15 @@ virtual_layers:
     mode: lazy
     layers: [dnwell_outside_ring, dnwell_in_shared_ring]
 
+  # ---- PL.6: right-angle poly bends over active ---------------------------
+  # The rule exempts YMTP_MK, and the exemption applies to the *corner*, not to the poly:
+  # subtracting the marker from poly2 first would invent new corners along the marker's
+  # own edge.  So poly2 is examined whole and the corner is filtered instead.
+  - name: comp_no_ymtp
+    op: difference
+    mode: lazy
+    layers: [comp, ymtp_mk]
+
 # The drawn layer table.  Variant D is a 5LM stack, so the
 # 6LM-only layers (via5 and the metaltop family) are absent.
 layers:

@@ -244,7 +244,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
         ("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 21), ("PL.1_MV", 21),
         ("PL.1a_LV", 9), ("PL.1a_MV", 9), ("PL.2_LV", 90), ("PL.2_MV", 382),
         ("PL.3a", 42), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 4),
-        ("PL.5a_MV", 4), ("PL.5b_LV", 4), ("PL.5b_MV", 4), ("PL.7_LV", 10),
+        ("PL.5a_MV", 4), ("PL.5b_LV", 4), ("PL.5b_MV", 4), ("PL.6", 720), ("PL.7_LV", 10),
         ("PL.7_MV", 10), ("PL.9", 11),
     ]
 )]
@@ -573,4 +573,33 @@ fn ymtp_bad_patterns_fire() {
             ),
         }
     }
+}
+
+// --- Gate poly, generated ---
+
+/// `PL.6` is the `no_corner` rule: poly may not turn a right angle over active area.
+///
+/// The good pattern says that from three sides at once — a right-angle bend clear of any
+/// COMP, a 45° turn on COMP, and a right-angle bend on COMP but inside a YMTP marker,
+/// which the rule exempts. A check that had collapsed to "any bend", or to "any bend on
+/// COMP", fails here rather than passing.
+#[test]
+fn pl6_corner_patterns() {
+    let good = counts_at(
+        "poly2",
+        &format!("{GENERATED}/poly2/PL.6.good.gds.gz"),
+        "TOP",
+    );
+    assert!(good.is_empty(), "PL.6 fired on its good pattern: {good:?}");
+
+    let bad = counts_at(
+        "poly2",
+        &format!("{GENERATED}/poly2/PL.6.bad.gds.gz"),
+        "TOP",
+    );
+    assert_eq!(
+        bad,
+        vec![("PL.6".to_string(), 2)],
+        "the L's two elbow corners are inside the COMP; its other four are not"
+    );
 }

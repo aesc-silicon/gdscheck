@@ -13,6 +13,7 @@
 
 mod acute;
 mod offgrid;
+mod poly2;
 mod ymtp_mk;
 
 use gdscheck::pdk::PdkConfig;
@@ -27,6 +28,7 @@ pub const GRID: f64 = 0.005;
 pub fn generate(pdk: &PdkConfig) {
     offgrid::generate(pdk);
     acute::generate(pdk);
+    poly2::generate(pdk);
     ymtp_mk::generate(pdk);
 }
 

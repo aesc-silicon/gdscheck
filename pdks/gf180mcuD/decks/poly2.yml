@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Gate poly.  18 of the 19 rules in this section.
-#
-# PL.6 is not ported: "90 degree bends on COMP are not allowed" is built from
-# `poly2.corners(90).sized(0.1)`, and there is no corner extractor here.
+# Gate poly.  All 19 rules in this section.
 #
 # Three rules read as edge work upstream and are not:
 #
@@ -18,9 +15,9 @@
 #          runs and skipping the axis-aligned ones PL.2 already covers.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 137 of 288, 11 false positives.  99 of the 162 misses are PL.6,
-# which is not ported, leaving 63 from live rules.  PL.9, PL.11 and PL.12 are exact;
-# gate_length carries PL.2_MV to 35 of 38.
+# logical violations: 236 of 288, 11 by the clustered count and none by the per-marker
+# one (tools/unmatched-markers.py).  PL.6, PL.9, PL.11 and PL.12 are exact; gate_length
+# carries PL.2_MV to 35 of 38.
 rules:
   # --- Interconnect width, outside and inside the poly fuse ---
   - id: PL.1_LV
@@ -129,3 +126,12 @@ rules:
     check: nonempty
     layers: [pl12_viol]
     value: 0.0
+  # PL.6: poly may not turn a right angle while it is over active area.  `no_corner`
+  # matches on the absolute turn, so a convex and a concave bend both count - the
+  # reference unions `corners(90)` with `corners(-90)`.
+  - id: PL.6
+    check: no_corner
+    layers: [poly2_drawn, comp_no_ymtp]
+    value: 90.0
+    layer_params:
+      outside_layer: ymtp_mk
