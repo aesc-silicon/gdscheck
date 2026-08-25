@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Guard ring.  Ported from rule_decks/guard_ring.rb.
+# Guard ring.
 #
 # GR.1 and GR.3 are not ported.  Both use KLayout's `not_in`, which compares whole
 # polygons for set membership rather than measuring geometry - "this marker is not one

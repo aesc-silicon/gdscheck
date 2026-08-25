@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Top metal.  Ported from rule_decks/metaltop.rb, which picks its values from the top
+# Top metal.  The design rules pick their values from the top
 # metal thickness - 0.44/0.46 um for the 9K and 11K options, and this variant is 11K.
 # On a 5LM stack the top metal is Metal5.
 #

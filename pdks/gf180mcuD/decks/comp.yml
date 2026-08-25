@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Active area (COMP).  Ported from
-# libs.tech/klayout/tech/drc/rule_decks/comp.rb.
+# Active area (COMP).
 #
 # As in the nwell deck, most rules come in an _LV and an _MV form, splitting on
 # whether the COMP touches v5_xtor/dualgate anywhere.  DF.1b_LV and DF.1b_MV are not
@@ -39,10 +38,19 @@
 # same structure.
 #
 # All 42 ported rules fire.  The reference finds 800 logical violations and we flag 687.
-# 142 are missed, 33 of them belonging to the four rules above that are deliberately
-# absent, so 109 come from ported rules.  18 are false positives: 6 across DF.13/DF.14
-# where the "within reach of a tap" boundary is drawn slightly differently, 4 on DF.9,
-# and 8 spread over DF.1a, DF.4d_LV and DF.5_LV.
+# 138 are missed, 29 of them belonging to the four rules above that are deliberately
+# absent, so 109 come from ported rules.
+#
+# Of the 14 the clustered comparison calls false positives, only 7 markers actually land
+# where the reference has nothing, and all 7 are DF.13/DF.14 (tools/unmatched-markers.py).
+# The rest are a measurement artefact: on DF.4d_LV the reference emits 22 markers and we
+# emit 6, every one of ours on a wall the reference also flags, but the 22 cluster into 2
+# and the 6 into 3.  DF.1a, DF.4d_LV, DF.5_LV and DF.9 have no false positives at all.
+#
+# DF.9's four are gone.  They were the merge, not the rule: a chamfered COMP touching its
+# neighbour at a single corner was two regions here and one in KLayout, so a 0.38 um^2
+# shape read as 0.11 and 0.27 and both halves failed the 0.2025 um^2 area rule.  Region
+# stitching now joins pieces that touch at a point (src/merge.rs).
 #
 # The 109 have no confirmed cause.  Ruled out: the derived layers (raw COMP misses the
 # same spots), the LV/MV split (the misses are not picked up by the other variant), and
@@ -221,6 +229,20 @@ rules:
   # --- Maximum distance to a well tap ---
   # Every device active must sit within reach of a tap; max_space reports the parts
   # of the first layer that do not.
+  # DF.13 and DF.14 are approximations, and the deck's only real false positives - 7
+  # markers between the four.  Upstream does not measure a distance for either.
+  #
+  # DF.13 grows the N-well tap in 0.5 um steps, clipping back to the well after each
+  # step, until it has travelled 20 um (15 MV), then flags any PCOMP that this guided
+  # reach never touches.  The reach follows the well, so a tap around a corner is
+  # further away than a straight line says.  DF.14 grows the substrate tap by 20 um in
+  # the *diamond* metric and then re-admits anything with a facing-edge separation under
+  # 20 um, which is a different boundary again from a plain radius.
+  #
+  # `max_space` measures the plain distance from each shape to the nearest tap.  It
+  # agrees with both nearly everywhere and disagrees at the edges of the tolerance, which
+  # is what those 7 markers are.  Porting them properly needs a guided-dilation operator
+  # and a metric parameter on the sizing; neither exists yet.
   - id: DF.13_LV
     check: max_space
     layers: [pactive_3p3v, ntap]

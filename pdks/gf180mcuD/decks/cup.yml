@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Cu pillar.  Ported from rule_decks/cup.rb, which applies the same two rules to every
+# Cu pillar.  The design rules apply the same two rules to every
 # metal level present - Metal1 to Metal5 on this variant.  Both are about the metal
 # carrying a bond pad, so the layer is filtered to metal that meets a pad and is not
 # part of a guard ring.

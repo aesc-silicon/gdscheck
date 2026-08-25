@@ -1711,7 +1711,7 @@ impl Piece {
         (area > 0.0).then(|| Piece {
             area,
             perimeter: poly_perimeter_in_core(poly, cx0, cy0, cx1, cy1),
-            marker: merged_centroid_dbu(poly),
+            marker: representative_point(poly),
             sides: Sides::of(poly, cx0, cy0, cx1, cy1),
         })
     }
@@ -1782,6 +1782,8 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
     let mut pieces: Vec<Piece> = Vec::new();
     let mut piece_loc: Vec<((i32, i32), MergedPoly)> = Vec::new();
     let mut tile_pieces: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+    // Every piece's source polygon, for the within-tile touch test below.
+    let mut piece_poly: Vec<&MergedPoly> = Vec::new();
 
     for (&(tx, ty), polys) in tiles {
         let cx0 = (tx as i64 * t) as f64;
@@ -1794,6 +1796,7 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
             };
             let id = pieces.len();
             pieces.push(piece);
+            piece_poly.push(poly);
             if record_polys {
                 piece_loc.push(((tx, ty), poly.clone()));
             }
@@ -1804,6 +1807,7 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
     let mut uf = UnionFind::new(pieces.len());
     let sides: Vec<&Sides> = pieces.iter().map(|p| &p.sides).collect();
     link_adjacent_pieces(&mut uf, &tile_pieces, &sides);
+    link_touching_pieces(&mut uf, &tile_pieces, &piece_poly);
 
     // Compact each union-find root to a dense region id and aggregate area/marker
     // (marker from the largest piece).
@@ -1853,6 +1857,40 @@ pub struct PlateInfo {
     pub is_wide: bool,
 }
 
+/// A point guaranteed to lie *inside* `m`, for use as a region's marker.
+///
+/// The centroid is the natural choice and is wrong for a ring: a guard ring's centroid
+/// sits in its hole. That is not cosmetic. A region's marker is what resolves the
+/// region's net (`Partition::net_at` is a point lookup), so a ring whose centroid lands
+/// on an island in its own hole takes the *island's* net — and a spacing rule between the
+/// two then reads them as one net and stays silent. GF180's `DN.2b` lost four violations
+/// exactly that way, a deep-well ring with a 1 µm island in its hole 3.9 µm clear.
+///
+/// The centroid is used when it is inside. Otherwise a vertical scanline is walked across
+/// the bounding box and the midpoint of the widest covered span is taken, which always
+/// lands in the interior for any non-degenerate polygon.
+pub fn representative_point(m: &MergedPoly) -> (f64, f64) {
+    let c = merged_centroid_dbu(m);
+    if m.holes.is_empty() || point_in_merged(c.0, c.1, m) {
+        return c;
+    }
+    let (x0, y0, x1, y1) = poly_bbox(m);
+    let (x0, y0, x1, y1) = (x0 as f64, y0 as f64, x1 as f64, y1 as f64);
+    let mut best: Option<(f64, f64, f64)> = None; // (span, x, y)
+    // Sample off the DBU grid so a scanline never runs along a vertical edge.
+    const SAMPLES: usize = 17;
+    for i in 1..SAMPLES {
+        let xs = x0 + (x1 - x0) * i as f64 / SAMPLES as f64 + 0.5;
+        for (a, b) in coverage_y(m, xs, y0, y1) {
+            let span = b - a;
+            if span > best.map_or(0.0, |(s, _, _)| s) {
+                best = Some((span, xs, (a + b) * 0.5));
+            }
+        }
+    }
+    best.map(|(_, x, y)| (x, y)).unwrap_or(c)
+}
+
 /// Even-odd ray cast over a ring (point sampled as given; callers offset off-grid).
 fn point_in_ring_i(px: f64, py: f64, ring: &[IntPoint]) -> bool {
     let n = ring.len();
@@ -1885,6 +1923,45 @@ fn poly_bbox(m: &MergedPoly) -> (i32, i32, i32, i32) {
         y1 = y1.max(p.y);
     }
     (x0, y0, x1, y1)
+}
+
+/// Union pieces *within* one tile whose polygons touch.  The tile boolean leaves two
+/// shapes meeting at a single vertex as two polygons — a corner touch is not an overlap,
+/// so there is nothing for a union to dissolve — but KLayout treats them as one region,
+/// and so must every region-level check here: a chamfered active touching its neighbour
+/// at one corner is one shape of 0.38 µm², not two of 0.11 and 0.27 that both fail a
+/// 0.2 µm² area rule.
+///
+/// Only same-tile pairs need this; pieces in different tiles are already linked by their
+/// shared core edge.  The bbox test rejects almost every pair before the exact
+/// segment-intersection test runs.
+fn link_touching_pieces(
+    uf: &mut UnionFind,
+    tile_pieces: &HashMap<(i32, i32), Vec<usize>>,
+    piece_poly: &[&MergedPoly],
+) {
+    for ids in tile_pieces.values() {
+        if ids.len() < 2 {
+            continue;
+        }
+        let boxes: Vec<(i32, i32, i32, i32)> =
+            ids.iter().map(|&i| poly_bbox(piece_poly[i])).collect();
+        for a in 0..ids.len() {
+            for b in (a + 1)..ids.len() {
+                let (ax0, ay0, ax1, ay1) = boxes[a];
+                let (bx0, by0, bx1, by1) = boxes[b];
+                if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
+                    continue;
+                }
+                if uf.find(ids[a]) == uf.find(ids[b]) {
+                    continue;
+                }
+                if polys_interact(piece_poly[ids[a]], piece_poly[ids[b]]) {
+                    uf.union(ids[a], ids[b]);
+                }
+            }
+        }
+    }
 }
 
 /// Whether two merged polygons share positive overlap area.

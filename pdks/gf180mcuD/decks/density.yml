@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Global layer density.  Ported from rule_decks/density.rb.
+# Global layer density.
 #
 # Each rule is a coverage ratio over the die.  Upstream divides by `extent`, the whole
 # layout's bounding box.  This engine's fallback is the bounding box of the shapes it

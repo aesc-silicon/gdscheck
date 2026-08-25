@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal slotting, ported from rule_decks/mslot.rb.  Wide metal has to be perforated so
+# Metal slotting.  Wide metal has to be perforated so
 # it does not lift during processing; these rules say which metal needs slots and what a
 # legal slot looks like.  One rule set per level, Metal1 to Metal5 on this 5LM variant.
 #

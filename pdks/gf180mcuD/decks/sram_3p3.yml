@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 3.3 V.  Ported from rule_decks/sram_3p3.rb - the SRAM core has tighter rules
+# SRAM 3.3 V - the SRAM core has tighter rules
 # than the rest of the die, so these run on the parts of each layer inside SRAMCORE.
 #
 # S.CO.6_ii_LV is not ported: like CO.6b it is an adjacent-metal-edge corner test built

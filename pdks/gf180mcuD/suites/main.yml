@@ -4,7 +4,8 @@
 
 # The full run: import every deck with no rule restriction.
 include:
-  - deck: geom
+  - deck: offgrid
+  - deck: acute
   - deck: density
   - deck: dnwell
   - deck: nwell

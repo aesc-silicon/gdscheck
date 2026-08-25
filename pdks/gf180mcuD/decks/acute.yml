@@ -2,949 +2,564 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Off-grid vertices and non-45-degree angles.  Ported from rule_decks/geom.rb, which
-# runs the same pair of checks over every drawn layer - two rule ids per layer, so the
-# deck's two upstream expressions expand to the list below.
+# Acute angles: every drawn layer may turn only by multiples of 45 degrees.
 #
-# The ACUTE half allows 0, 45, 90 and -45 degrees and flags everything else, which is
-# `no_angle` with `step: 45`; its default of 90 would flag every legitimate diagonal.
-#
-# Layers this 5LM variant does not have (via5 and the metaltop family, which are 6LM)
-# are absent, as they are from the layer table.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 2889 of 3579, and no false positives.  The OFFGRID half is very
-# nearly exact (2173 of 2328); nearly all of the 690 misses are ACUTE (716 of 1251).
-#
-# One likely cause for the ACUTE gap, not yet confirmed: upstream runs these on raw
-# polygons - its default run_mode is `deep`, which skips the merge - while every check
-# here reads the merged layer.  Merging dissolves the boundary between two touching
-# shapes, and an acute notch between them goes with it.
+# `no_angle` with `step: 45` - 0, 45, 90 and -45 are legal and everything else is not.
+# The check's default step of 90 would flag every legitimate diagonal, so the parameter
+# is the whole rule.  One rule per layer, the same 93 as the off-grid deck.
 rules:
-  - id: comp_OFFGRID
-    check: offgrid
-    layers: [comp]
-    value: 0.005
   - id: comp_ACUTE
     check: no_angle
     layers: [comp]
     value: 0.0
     params:
       step: 45
-  - id: dnwell_OFFGRID
-    check: offgrid
-    layers: [dnwell]
-    value: 0.005
   - id: dnwell_ACUTE
     check: no_angle
     layers: [dnwell]
     value: 0.0
     params:
       step: 45
-  - id: nwell_OFFGRID
-    check: offgrid
-    layers: [nwell]
-    value: 0.005
   - id: nwell_ACUTE
     check: no_angle
     layers: [nwell]
     value: 0.0
     params:
       step: 45
-  - id: lvpwell_OFFGRID
-    check: offgrid
-    layers: [lvpwell]
-    value: 0.005
   - id: lvpwell_ACUTE
     check: no_angle
     layers: [lvpwell]
     value: 0.0
     params:
       step: 45
-  - id: dualgate_OFFGRID
-    check: offgrid
-    layers: [dualgate]
-    value: 0.005
   - id: dualgate_ACUTE
     check: no_angle
     layers: [dualgate]
     value: 0.0
     params:
       step: 45
-  - id: poly2_OFFGRID
-    check: offgrid
-    layers: [poly2_drawn]
-    value: 0.005
   - id: poly2_ACUTE
     check: no_angle
     layers: [poly2_drawn]
     value: 0.0
     params:
       step: 45
-  - id: nplus_OFFGRID
-    check: offgrid
-    layers: [nplus]
-    value: 0.005
   - id: nplus_ACUTE
     check: no_angle
     layers: [nplus]
     value: 0.0
     params:
       step: 45
-  - id: pplus_OFFGRID
-    check: offgrid
-    layers: [pplus]
-    value: 0.005
   - id: pplus_ACUTE
     check: no_angle
     layers: [pplus]
     value: 0.0
     params:
       step: 45
-  - id: sab_OFFGRID
-    check: offgrid
-    layers: [sab]
-    value: 0.005
   - id: sab_ACUTE
     check: no_angle
     layers: [sab]
     value: 0.0
     params:
       step: 45
-  - id: esd_OFFGRID
-    check: offgrid
-    layers: [esd]
-    value: 0.005
   - id: esd_ACUTE
     check: no_angle
     layers: [esd]
     value: 0.0
     params:
       step: 45
-  - id: resistor_OFFGRID
-    check: offgrid
-    layers: [resistor]
-    value: 0.005
   - id: resistor_ACUTE
     check: no_angle
     layers: [resistor]
     value: 0.0
     params:
       step: 45
-  - id: fhres_OFFGRID
-    check: offgrid
-    layers: [fhres]
-    value: 0.005
   - id: fhres_ACUTE
     check: no_angle
     layers: [fhres]
     value: 0.0
     params:
       step: 45
-  - id: fusetop_OFFGRID
-    check: offgrid
-    layers: [fusetop]
-    value: 0.005
   - id: fusetop_ACUTE
     check: no_angle
     layers: [fusetop]
     value: 0.0
     params:
       step: 45
-  - id: fusewindow_d_OFFGRID
-    check: offgrid
-    layers: [fusewindow_d]
-    value: 0.005
   - id: fusewindow_d_ACUTE
     check: no_angle
     layers: [fusewindow_d]
     value: 0.0
     params:
       step: 45
-  - id: polyfuse_OFFGRID
-    check: offgrid
-    layers: [polyfuse]
-    value: 0.005
   - id: polyfuse_ACUTE
     check: no_angle
     layers: [polyfuse]
     value: 0.0
     params:
       step: 45
-  - id: mvsd_OFFGRID
-    check: offgrid
-    layers: [mvsd]
-    value: 0.005
   - id: mvsd_ACUTE
     check: no_angle
     layers: [mvsd]
     value: 0.0
     params:
       step: 45
-  - id: mvpsd_OFFGRID
-    check: offgrid
-    layers: [mvpsd]
-    value: 0.005
   - id: mvpsd_ACUTE
     check: no_angle
     layers: [mvpsd]
     value: 0.0
     params:
       step: 45
-  - id: nat_OFFGRID
-    check: offgrid
-    layers: [nat]
-    value: 0.005
   - id: nat_ACUTE
     check: no_angle
     layers: [nat]
     value: 0.0
     params:
       step: 45
-  - id: comp_dummy_OFFGRID
-    check: offgrid
-    layers: [comp_dummy]
-    value: 0.005
   - id: comp_dummy_ACUTE
     check: no_angle
     layers: [comp_dummy]
     value: 0.0
     params:
       step: 45
-  - id: poly2_dummy_OFFGRID
-    check: offgrid
-    layers: [poly2_dummy]
-    value: 0.005
   - id: poly2_dummy_ACUTE
     check: no_angle
     layers: [poly2_dummy]
     value: 0.0
     params:
       step: 45
-  - id: schottky_diode_OFFGRID
-    check: offgrid
-    layers: [schottky_diode]
-    value: 0.005
   - id: schottky_diode_ACUTE
     check: no_angle
     layers: [schottky_diode]
     value: 0.0
     params:
       step: 45
-  - id: zener_OFFGRID
-    check: offgrid
-    layers: [zener]
-    value: 0.005
   - id: zener_ACUTE
     check: no_angle
     layers: [zener]
     value: 0.0
     params:
       step: 45
-  - id: res_mk_OFFGRID
-    check: offgrid
-    layers: [res_mk]
-    value: 0.005
   - id: res_mk_ACUTE
     check: no_angle
     layers: [res_mk]
     value: 0.0
     params:
       step: 45
-  - id: opc_drc_OFFGRID
-    check: offgrid
-    layers: [opc_drc]
-    value: 0.005
   - id: opc_drc_ACUTE
     check: no_angle
     layers: [opc_drc]
     value: 0.0
     params:
       step: 45
-  - id: ndmy_OFFGRID
-    check: offgrid
-    layers: [ndmy]
-    value: 0.005
   - id: ndmy_ACUTE
     check: no_angle
     layers: [ndmy]
     value: 0.0
     params:
       step: 45
-  - id: pmndmy_OFFGRID
-    check: offgrid
-    layers: [pmndmy]
-    value: 0.005
   - id: pmndmy_ACUTE
     check: no_angle
     layers: [pmndmy]
     value: 0.0
     params:
       step: 45
-  - id: v5_xtor_OFFGRID
-    check: offgrid
-    layers: [v5_xtor]
-    value: 0.005
   - id: v5_xtor_ACUTE
     check: no_angle
     layers: [v5_xtor]
     value: 0.0
     params:
       step: 45
-  - id: cap_mk_OFFGRID
-    check: offgrid
-    layers: [cap_mk]
-    value: 0.005
   - id: cap_mk_ACUTE
     check: no_angle
     layers: [cap_mk]
     value: 0.0
     params:
       step: 45
-  - id: mos_cap_mk_OFFGRID
-    check: offgrid
-    layers: [mos_cap_mk]
-    value: 0.005
   - id: mos_cap_mk_ACUTE
     check: no_angle
     layers: [mos_cap_mk]
     value: 0.0
     params:
       step: 45
-  - id: ind_mk_OFFGRID
-    check: offgrid
-    layers: [ind_mk]
-    value: 0.005
   - id: ind_mk_ACUTE
     check: no_angle
     layers: [ind_mk]
     value: 0.0
     params:
       step: 45
-  - id: diode_mk_OFFGRID
-    check: offgrid
-    layers: [diode_mk]
-    value: 0.005
   - id: diode_mk_ACUTE
     check: no_angle
     layers: [diode_mk]
     value: 0.0
     params:
       step: 45
-  - id: drc_bjt_OFFGRID
-    check: offgrid
-    layers: [drc_bjt]
-    value: 0.005
   - id: drc_bjt_ACUTE
     check: no_angle
     layers: [drc_bjt]
     value: 0.0
     params:
       step: 45
-  - id: lvs_bjt_OFFGRID
-    check: offgrid
-    layers: [lvs_bjt]
-    value: 0.005
   - id: lvs_bjt_ACUTE
     check: no_angle
     layers: [lvs_bjt]
     value: 0.0
     params:
       step: 45
-  - id: mim_l_mk_OFFGRID
-    check: offgrid
-    layers: [mim_l_mk]
-    value: 0.005
   - id: mim_l_mk_ACUTE
     check: no_angle
     layers: [mim_l_mk]
     value: 0.0
     params:
       step: 45
-  - id: latchup_mk_OFFGRID
-    check: offgrid
-    layers: [latchup_mk]
-    value: 0.005
   - id: latchup_mk_ACUTE
     check: no_angle
     layers: [latchup_mk]
     value: 0.0
     params:
       step: 45
-  - id: guard_ring_mk_OFFGRID
-    check: offgrid
-    layers: [guard_ring_mk]
-    value: 0.005
   - id: guard_ring_mk_ACUTE
     check: no_angle
     layers: [guard_ring_mk]
     value: 0.0
     params:
       step: 45
-  - id: otp_mk_OFFGRID
-    check: offgrid
-    layers: [otp_mk]
-    value: 0.005
   - id: otp_mk_ACUTE
     check: no_angle
     layers: [otp_mk]
     value: 0.0
     params:
       step: 45
-  - id: mtpmark_OFFGRID
-    check: offgrid
-    layers: [mtpmark]
-    value: 0.005
   - id: mtpmark_ACUTE
     check: no_angle
     layers: [mtpmark]
     value: 0.0
     params:
       step: 45
-  - id: neo_ee_mk_OFFGRID
-    check: offgrid
-    layers: [neo_ee_mk]
-    value: 0.005
   - id: neo_ee_mk_ACUTE
     check: no_angle
     layers: [neo_ee_mk]
     value: 0.0
     params:
       step: 45
-  - id: sramcore_OFFGRID
-    check: offgrid
-    layers: [sramcore]
-    value: 0.005
   - id: sramcore_ACUTE
     check: no_angle
     layers: [sramcore]
     value: 0.0
     params:
       step: 45
-  - id: lvs_rf_OFFGRID
-    check: offgrid
-    layers: [lvs_rf]
-    value: 0.005
   - id: lvs_rf_ACUTE
     check: no_angle
     layers: [lvs_rf]
     value: 0.0
     params:
       step: 45
-  - id: lvs_drain_OFFGRID
-    check: offgrid
-    layers: [lvs_drain]
-    value: 0.005
   - id: lvs_drain_ACUTE
     check: no_angle
     layers: [lvs_drain]
     value: 0.0
     params:
       step: 45
-  - id: hvpolyrs_OFFGRID
-    check: offgrid
-    layers: [hvpolyrs]
-    value: 0.005
   - id: hvpolyrs_ACUTE
     check: no_angle
     layers: [hvpolyrs]
     value: 0.0
     params:
       step: 45
-  - id: lvs_io_OFFGRID
-    check: offgrid
-    layers: [lvs_io]
-    value: 0.005
   - id: lvs_io_ACUTE
     check: no_angle
     layers: [lvs_io]
     value: 0.0
     params:
       step: 45
-  - id: probe_mk_OFFGRID
-    check: offgrid
-    layers: [probe_mk]
-    value: 0.005
   - id: probe_mk_ACUTE
     check: no_angle
     layers: [probe_mk]
     value: 0.0
     params:
       step: 45
-  - id: esd_mk_OFFGRID
-    check: offgrid
-    layers: [esd_mk]
-    value: 0.005
   - id: esd_mk_ACUTE
     check: no_angle
     layers: [esd_mk]
     value: 0.0
     params:
       step: 45
-  - id: lvs_source_OFFGRID
-    check: offgrid
-    layers: [lvs_source]
-    value: 0.005
   - id: lvs_source_ACUTE
     check: no_angle
     layers: [lvs_source]
     value: 0.0
     params:
       step: 45
-  - id: well_diode_mk_OFFGRID
-    check: offgrid
-    layers: [well_diode_mk]
-    value: 0.005
   - id: well_diode_mk_ACUTE
     check: no_angle
     layers: [well_diode_mk]
     value: 0.0
     params:
       step: 45
-  - id: ldmos_xtor_OFFGRID
-    check: offgrid
-    layers: [ldmos_xtor]
-    value: 0.005
   - id: ldmos_xtor_ACUTE
     check: no_angle
     layers: [ldmos_xtor]
     value: 0.0
     params:
       step: 45
-  - id: plfuse_OFFGRID
-    check: offgrid
-    layers: [plfuse]
-    value: 0.005
   - id: plfuse_ACUTE
     check: no_angle
     layers: [plfuse]
     value: 0.0
     params:
       step: 45
-  - id: efuse_mk_OFFGRID
-    check: offgrid
-    layers: [efuse_mk]
-    value: 0.005
   - id: efuse_mk_ACUTE
     check: no_angle
     layers: [efuse_mk]
     value: 0.0
     params:
       step: 45
-  - id: mcell_feol_mk_OFFGRID
-    check: offgrid
-    layers: [mcell_feol_mk]
-    value: 0.005
   - id: mcell_feol_mk_ACUTE
     check: no_angle
     layers: [mcell_feol_mk]
     value: 0.0
     params:
       step: 45
-  - id: ymtp_mk_OFFGRID
-    check: offgrid
-    layers: [ymtp_mk]
-    value: 0.005
   - id: ymtp_mk_ACUTE
     check: no_angle
     layers: [ymtp_mk]
     value: 0.0
     params:
       step: 45
-  - id: dev_wf_mk_OFFGRID
-    check: offgrid
-    layers: [dev_wf_mk]
-    value: 0.005
   - id: dev_wf_mk_ACUTE
     check: no_angle
     layers: [dev_wf_mk]
     value: 0.0
     params:
       step: 45
-  - id: comp_label_OFFGRID
-    check: offgrid
-    layers: [comp_label]
-    value: 0.005
   - id: comp_label_ACUTE
     check: no_angle
     layers: [comp_label]
     value: 0.0
     params:
       step: 45
-  - id: poly2_label_OFFGRID
-    check: offgrid
-    layers: [poly2_label]
-    value: 0.005
   - id: poly2_label_ACUTE
     check: no_angle
     layers: [poly2_label]
     value: 0.0
     params:
       step: 45
-  - id: mdiode_OFFGRID
-    check: offgrid
-    layers: [mdiode]
-    value: 0.005
   - id: mdiode_ACUTE
     check: no_angle
     layers: [mdiode]
     value: 0.0
     params:
       step: 45
-  - id: contact_OFFGRID
-    check: offgrid
-    layers: [contact]
-    value: 0.005
   - id: contact_ACUTE
     check: no_angle
     layers: [contact]
     value: 0.0
     params:
       step: 45
-  - id: metal1_OFFGRID
-    check: offgrid
-    layers: [metal1_drawn]
-    value: 0.005
   - id: metal1_ACUTE
     check: no_angle
     layers: [metal1_drawn]
     value: 0.0
     params:
       step: 45
-  - id: metal1_slot_OFFGRID
-    check: offgrid
-    layers: [metal1_slot]
-    value: 0.005
   - id: metal1_slot_ACUTE
     check: no_angle
     layers: [metal1_slot]
     value: 0.0
     params:
       step: 45
-  - id: metal1_blk_OFFGRID
-    check: offgrid
-    layers: [metal1_blk]
-    value: 0.005
   - id: metal1_blk_ACUTE
     check: no_angle
     layers: [metal1_blk]
     value: 0.0
     params:
       step: 45
-  - id: metal1_label_OFFGRID
-    check: offgrid
-    layers: [metal1_label]
-    value: 0.005
   - id: metal1_label_ACUTE
     check: no_angle
     layers: [metal1_label]
     value: 0.0
     params:
       step: 45
-  - id: metal1_res_OFFGRID
-    check: offgrid
-    layers: [metal1_res]
-    value: 0.005
   - id: metal1_res_ACUTE
     check: no_angle
     layers: [metal1_res]
     value: 0.0
     params:
       step: 45
-  - id: via1_OFFGRID
-    check: offgrid
-    layers: [via1]
-    value: 0.005
   - id: via1_ACUTE
     check: no_angle
     layers: [via1]
     value: 0.0
     params:
       step: 45
-  - id: metal2_OFFGRID
-    check: offgrid
-    layers: [metal2_drawn]
-    value: 0.005
   - id: metal2_ACUTE
     check: no_angle
     layers: [metal2_drawn]
     value: 0.0
     params:
       step: 45
-  - id: metal2_label_OFFGRID
-    check: offgrid
-    layers: [metal2_label]
-    value: 0.005
   - id: metal2_label_ACUTE
     check: no_angle
     layers: [metal2_label]
     value: 0.0
     params:
       step: 45
-  - id: metal2_slot_OFFGRID
-    check: offgrid
-    layers: [metal2_slot]
-    value: 0.005
   - id: metal2_slot_ACUTE
     check: no_angle
     layers: [metal2_slot]
     value: 0.0
     params:
       step: 45
-  - id: metal2_blk_OFFGRID
-    check: offgrid
-    layers: [metal2_blk]
-    value: 0.005
   - id: metal2_blk_ACUTE
     check: no_angle
     layers: [metal2_blk]
     value: 0.0
     params:
       step: 45
-  - id: metal2_res_OFFGRID
-    check: offgrid
-    layers: [metal2_res]
-    value: 0.005
   - id: metal2_res_ACUTE
     check: no_angle
     layers: [metal2_res]
     value: 0.0
     params:
       step: 45
-  - id: via2_OFFGRID
-    check: offgrid
-    layers: [via2]
-    value: 0.005
   - id: via2_ACUTE
     check: no_angle
     layers: [via2]
     value: 0.0
     params:
       step: 45
-  - id: metal3_OFFGRID
-    check: offgrid
-    layers: [metal3_drawn]
-    value: 0.005
   - id: metal3_ACUTE
     check: no_angle
     layers: [metal3_drawn]
     value: 0.0
     params:
       step: 45
-  - id: metal3_dummy_OFFGRID
-    check: offgrid
-    layers: [metal3_dummy]
-    value: 0.005
   - id: metal3_dummy_ACUTE
     check: no_angle
     layers: [metal3_dummy]
     value: 0.0
     params:
       step: 45
-  - id: metal3_label_OFFGRID
-    check: offgrid
-    layers: [metal3_label]
-    value: 0.005
   - id: metal3_label_ACUTE
     check: no_angle
     layers: [metal3_label]
     value: 0.0
     params:
       step: 45
-  - id: metal3_blk_OFFGRID
-    check: offgrid
-    layers: [metal3_blk]
-    value: 0.005
   - id: metal3_blk_ACUTE
     check: no_angle
     layers: [metal3_blk]
     value: 0.0
     params:
       step: 45
-  - id: metal3_res_OFFGRID
-    check: offgrid
-    layers: [metal3_res]
-    value: 0.005
   - id: metal3_res_ACUTE
     check: no_angle
     layers: [metal3_res]
     value: 0.0
     params:
       step: 45
-  - id: via3_OFFGRID
-    check: offgrid
-    layers: [via3]
-    value: 0.005
   - id: via3_ACUTE
     check: no_angle
     layers: [via3]
     value: 0.0
     params:
       step: 45
-  - id: metal4_OFFGRID
-    check: offgrid
-    layers: [metal4_drawn]
-    value: 0.005
   - id: metal4_ACUTE
     check: no_angle
     layers: [metal4_drawn]
     value: 0.0
     params:
       step: 45
-  - id: metal4_dummy_OFFGRID
-    check: offgrid
-    layers: [metal4_dummy]
-    value: 0.005
   - id: metal4_dummy_ACUTE
     check: no_angle
     layers: [metal4_dummy]
     value: 0.0
     params:
       step: 45
-  - id: metal4_label_OFFGRID
-    check: offgrid
-    layers: [metal4_label]
-    value: 0.005
   - id: metal4_label_ACUTE
     check: no_angle
     layers: [metal4_label]
     value: 0.0
     params:
       step: 45
-  - id: metal4_blk_OFFGRID
-    check: offgrid
-    layers: [metal4_blk]
-    value: 0.005
   - id: metal4_blk_ACUTE
     check: no_angle
     layers: [metal4_blk]
     value: 0.0
     params:
       step: 45
-  - id: metal4_res_OFFGRID
-    check: offgrid
-    layers: [metal4_res]
-    value: 0.005
   - id: metal4_res_ACUTE
     check: no_angle
     layers: [metal4_res]
     value: 0.0
     params:
       step: 45
-  - id: via4_OFFGRID
-    check: offgrid
-    layers: [via4]
-    value: 0.005
   - id: via4_ACUTE
     check: no_angle
     layers: [via4]
     value: 0.0
     params:
       step: 45
-  - id: metal5_OFFGRID
-    check: offgrid
-    layers: [metal5_drawn]
-    value: 0.005
   - id: metal5_ACUTE
     check: no_angle
     layers: [metal5_drawn]
     value: 0.0
     params:
       step: 45
-  - id: metal5_dummy_OFFGRID
-    check: offgrid
-    layers: [metal5_dummy]
-    value: 0.005
   - id: metal5_dummy_ACUTE
     check: no_angle
     layers: [metal5_dummy]
     value: 0.0
     params:
       step: 45
-  - id: metal5_label_OFFGRID
-    check: offgrid
-    layers: [metal5_label]
-    value: 0.005
   - id: metal5_label_ACUTE
     check: no_angle
     layers: [metal5_label]
     value: 0.0
     params:
       step: 45
-  - id: metal5_blk_OFFGRID
-    check: offgrid
-    layers: [metal5_blk]
-    value: 0.005
   - id: metal5_blk_ACUTE
     check: no_angle
     layers: [metal5_blk]
     value: 0.0
     params:
       step: 45
-  - id: metal5_res_OFFGRID
-    check: offgrid
-    layers: [metal5_res]
-    value: 0.005
   - id: metal5_res_ACUTE
     check: no_angle
     layers: [metal5_res]
     value: 0.0
     params:
       step: 45
-  - id: pad_OFFGRID
-    check: offgrid
-    layers: [pad]
-    value: 0.005
   - id: pad_ACUTE
     check: no_angle
     layers: [pad]
     value: 0.0
     params:
       step: 45
-  - id: ubmpperi_OFFGRID
-    check: offgrid
-    layers: [ubmpperi]
-    value: 0.005
   - id: ubmpperi_ACUTE
     check: no_angle
     layers: [ubmpperi]
     value: 0.0
     params:
       step: 45
-  - id: ubmparray_OFFGRID
-    check: offgrid
-    layers: [ubmparray]
-    value: 0.005
   - id: ubmparray_ACUTE
     check: no_angle
     layers: [ubmparray]
     value: 0.0
     params:
       step: 45
-  - id: ubmeplate_OFFGRID
-    check: offgrid
-    layers: [ubmeplate]
-    value: 0.005
   - id: ubmeplate_ACUTE
     check: no_angle
     layers: [ubmeplate]
     value: 0.0
     params:
       step: 45
-  - id: pr_bndry_OFFGRID
-    check: offgrid
-    layers: [pr_bndry]
-    value: 0.005
   - id: pr_bndry_ACUTE
     check: no_angle
     layers: [pr_bndry]
     value: 0.0
     params:
       step: 45
-  - id: border_OFFGRID
-    check: offgrid
-    layers: [border]
-    value: 0.005
   - id: border_ACUTE
     check: no_angle
     layers: [border]

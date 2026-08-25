@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Gate poly.  Ported from rule_decks/poly2.rb - 18 of its 19 rules.
+# Gate poly.  18 of the 19 rules in this section.
 #
 # PL.6 is not ported: "90 degree bends on COMP are not allowed" is built from
 # `poly2.corners(90).sized(0.1)`, and there is no corner extractor here.

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# OTP marker.  Ported from rule_decks/otp_mk.rb - 12 of its 16 rules.
+# OTP marker.  12 of the 16 rules in this section.
 #
 # The OTP region carries its own, tighter rule set; every layer here is the ordinary
 # one intersected with the marker.
@@ -14,7 +14,8 @@
 # an edge layer, and O.PL.2 is a gate length measured the same way.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 68 of 128, 1 false positive.
+# logical violations: 73 of 128, and no false positives by either measure
+# (tools/unmatched-markers.py agrees).  O.SB.9 is exact.
 rules:
   - id: O.DF.3a
     check: min_space
@@ -68,10 +69,14 @@ rules:
   # inside the block - so the enclosed layer has to be that intersection, not the
   # whole OTP poly.  Written against poly_otp with interacting_only it fired on
   # nothing at all, which the every-rule-fires test caught.
+  # Same flush-edge case as SB.9 in the sab deck: where the SAB is drawn to the poly
+  # boundary there is no enclosure to measure, and upstream's `enclosed` reports nothing.
   - id: O.SB.9
     check: min_enclosure
     layers: [sab_otp, poly_unsalicided_otp]
     value: 0.1
+    params:
+      skip_coincident: 1
   - id: O.SB.13_LV
     check: min_area
     layers: [sab_otp_lv]

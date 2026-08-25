@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 5.0 V.  Ported from rule_decks/sram_5p0.rb - all 8 rules.
+# SRAM 5.0 V.  All 8 rules.
 #
 # Like sram_3p3, the SRAM core has tighter rules than the rest of the die; here the
 # core is the part of SRAMCORE that overlaps v5_xtor.

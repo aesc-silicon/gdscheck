@@ -18,6 +18,63 @@ use std::io::Read;
 
 pub use violation::Violation;
 
+/// GDSII record types whose payload gds21 decodes as a string.  Each is the high byte of
+/// the record header; the low byte is the data type, `0x06` for a string.
+const STRING_RECORD_TYPES: [u8; 10] = [
+    0x02, // LIBNAME
+    0x06, // STRNAME
+    0x12, // SNAME
+    0x19, // STRING
+    0x1f, // REFLIBS
+    0x20, // FONTS
+    0x23, // ATTRTABLE
+    0x2c, // PROPVALUE
+    0x37, // MASK
+    0x3a, // SRFNAME
+];
+
+/// Give every zero-length string record a one-character payload, and report how many.
+///
+/// gds21 3.0.0-pre.2 panics on an empty string: `read_str` strips an optional trailing
+/// NUL with `data[data.len() - 1]`, which underflows to `usize::MAX` when the payload is
+/// empty. An empty label is unusual but perfectly legal, and real designs contain them —
+/// so a whole DRC run dies on a text element that carries no DRC meaning at all.
+///
+/// The repair is the smallest one that survives that code path: a two-byte NUL payload,
+/// which gds21 reads back as a single NUL character. It cannot be read back as the empty
+/// string, because the only payload length that would produce one is the length that
+/// panics. Labels are matched against patterns, and no pattern matches a NUL, so this
+/// cannot turn a rule on or off — but it is a change to the input, so it is announced
+/// rather than done quietly.
+///
+/// Anything that does not parse as a clean record stream is passed through untouched, so
+/// a malformed file still gets gds21's own error rather than one from here.
+fn repair_empty_strings(bytes: Vec<u8>) -> (Vec<u8>, usize) {
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0usize;
+    let mut repaired = 0usize;
+    while i + 4 <= bytes.len() {
+        let len = u16::from_be_bytes([bytes[i], bytes[i + 1]]) as usize;
+        let (rtype, dtype) = (bytes[i + 2], bytes[i + 3]);
+        if len < 4 || i + len > bytes.len() {
+            // Not a record stream we understand: hand the original to gds21 unchanged.
+            return (bytes, 0);
+        }
+        if len == 4 && dtype == 0x06 && STRING_RECORD_TYPES.contains(&rtype) {
+            out.extend_from_slice(&6u16.to_be_bytes());
+            out.extend_from_slice(&[rtype, dtype, 0x00, 0x00]);
+            repaired += 1;
+        } else {
+            out.extend_from_slice(&bytes[i..i + len]);
+        }
+        i += len;
+    }
+    if i != bytes.len() {
+        return (bytes, 0); // trailing bytes that are not a record: leave it alone
+    }
+    (out, repaired)
+}
+
 pub fn load_gds(path: &str) -> Result<GdsLibrary, Box<dyn std::error::Error>> {
     let raw = std::fs::read(path)?;
 
@@ -30,6 +87,15 @@ pub fn load_gds(path: &str) -> Result<GdsLibrary, Box<dyn std::error::Error>> {
         raw
     };
 
+    let (bytes, repaired) = repair_empty_strings(bytes);
+    if repaired > 0 {
+        eprintln!(
+            "warning: {path}: {repaired} empty text label(s) rewritten to a single NUL \
+             character - gds21 cannot read a zero-length string and would panic. No \
+             geometry is affected."
+        );
+    }
+
     Ok(GdsLibrary::from_bytes(&bytes)?)
 }
 
@@ -40,6 +106,7 @@ pub const NET_AWARE_CHECKS: &[&str] = &[
     "antenna_ratio",
     "gate_connected_min_area",
     "min_space_different_net",
+    "min_space_same_net",
 ];
 
 /// Parse a lazy virtual layer's `op` string to a [`merge::VirtualOp`], converting its
@@ -522,6 +589,51 @@ pub fn run_drc(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A record whose length field is exactly 4 has an empty payload. gds21 panics on
+    /// that for any string record, so it is rewritten to a two-byte payload — real
+    /// designs do contain empty labels, and one of them should not take a DRC run down.
+    #[test]
+    fn empty_string_records_are_repaired() {
+        // STRNAME "TOP\0" (len 8), an empty STRING (len 4), then ENDEL (len 4).
+        let mut gds = vec![0x00, 0x08, 0x06, 0x06, b'T', b'O', b'P', 0x00];
+        gds.extend_from_slice(&[0x00, 0x04, 0x19, 0x06]);
+        gds.extend_from_slice(&[0x00, 0x04, 0x11, 0x00]);
+        let (out, repaired) = repair_empty_strings(gds);
+        assert_eq!(repaired, 1);
+        assert_eq!(
+            out,
+            vec![
+                0x00, 0x08, 0x06, 0x06, b'T', b'O', b'P', 0x00, // STRNAME, untouched
+                0x00, 0x06, 0x19, 0x06, 0x00, 0x00, // STRING, now two bytes long
+                0x00, 0x04, 0x11, 0x00, // ENDEL, untouched
+            ]
+        );
+    }
+
+    /// A non-empty string record, and a non-string record that happens to be 4 bytes
+    /// long, must both come through untouched — ENDEL and friends are always len 4.
+    #[test]
+    fn repair_leaves_everything_else_alone() {
+        let gds = vec![
+            0x00, 0x08, 0x06, 0x06, b'T', b'O', b'P', 0x00, // STRNAME "TOP"
+            0x00, 0x04, 0x11, 0x00, // ENDEL: len 4, but not a string record
+            0x00, 0x04, 0x07, 0x00, // ENDSTR
+        ];
+        let (out, repaired) = repair_empty_strings(gds.clone());
+        assert_eq!(repaired, 0);
+        assert_eq!(out, gds);
+    }
+
+    /// Anything that is not a clean record stream is handed to gds21 untouched, so a
+    /// malformed file still produces gds21's error rather than a mangled one from here.
+    #[test]
+    fn repair_passes_through_a_malformed_stream() {
+        let gds = vec![0x00, 0x02, 0x06, 0x06, 0xff]; // length 2 is impossible
+        let (out, repaired) = repair_empty_strings(gds.clone());
+        assert_eq!(repaired, 0);
+        assert_eq!(out, gds);
+    }
 
     /// A typo'd op or a missing parameter must be a hard error, not a silently empty
     /// layer (which would turn every rule referencing it into a false-clean).

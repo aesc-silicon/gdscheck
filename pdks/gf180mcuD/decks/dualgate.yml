@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Dual gate oxide (5/6 V devices).  Ported from rule_decks/dualgate.rb - all 8 rules.
+# Dual gate oxide (5/6 V devices).  All 8 rules.
 #
 # DV.1, DV.6 and DV.8 each pair an enclosure measurement with a second term for the
 # layer that overlaps dualgate but reaches outside it.  interacting_only is what keeps

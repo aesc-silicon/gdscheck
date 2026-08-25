@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# eFuse.  Ported from rule_decks/efuse.rb - 16 of its 27 rules.
+# eFuse.  16 of the 27 rules in this section.
 #
 # A poly fuse sits on field oxide between a cathode and an anode, all inside EFUSE_MK,
 # with LVS_Source picking out the anode end.

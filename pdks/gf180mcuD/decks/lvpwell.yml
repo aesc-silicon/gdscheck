@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Low-voltage P-well.  Ported from rule_decks/lvpwell.rb - all ten rules.
+# Low-voltage P-well.  All ten rules.
 #
 # LPW.2a is the different-potential minimum and LPW.2b the equi-potential one, the
 # same pairing as NW.2a/NW.2b: LPW.2b runs as a plain geometric space, so it also

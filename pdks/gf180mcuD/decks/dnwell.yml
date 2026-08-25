@@ -2,27 +2,38 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Deep N-well.  Ported from rule_decks/dnwell.rb.
+# Deep N-well.
 #
-# DN.3 is not ported: "each DNWELL shall be surrounded by a PCOMP guard ring" is built
-# from `holes`, `extents` and `interacting(other, 1..1)` - a selector counting how many
-# times a region meets another, which this engine does not have.
+# DN.3 - "each DNWELL shall be directly surrounded by a PCOMP guard ring" - is a
+# selection, not a measurement.  A ring shows up as a hole in the merged PCOMP layer, so
+# the area it encloses is that hole minus PCOMP itself, and a deep well is in breach if
+# it is not inside one of those, or if it is inside one that also encloses somebody
+# else's n-type geometry (then the ring is shared rather than this well's own).
 #
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 167 of 272 logical violations, 12 false positives.
-# 104 of the 105 misses are DN.3, which is not ported. Excluding it the deck
-# flags 167 of 168, with 12 false positives - the same same-net approximation NW.2a
-# carries: DN.2a runs as a plain geometric space, so it also fires on a different-net
-# pair below 2.5 um, which is a DN.2b violation anyway.
+# Two refinements of the reference are absent, both for want of an operator:
+#
+#   `.extents`                 the reference tests containment against the bounding box
+#                              of the ring's interior rather than its actual shape, which
+#                              is more forgiving for a non-convex ring.  Testing against
+#                              the shape is stricter, so this can only cost false
+#                              positives - and on the test case it costs none.
+#   `interacting(dnwell, 1..1)` the reference only accepts a ring interior holding
+#                              exactly *one* deep well, so a ring drawn around two flags
+#                              both.  Without a count-bounded interaction selector those
+#                              pass here, which is where most of the 20 misses are.
+#
+# Note the cost: `pcomp_holes` declares a 200 um ring extent, so this rule gives the deck
+# a 200 um halo on COMP and PCOMP.  That is affordable on a test case and is not on a
+# full chip - dnwell now joins ldnmos, ldpmos and mslot as a deck that wants the tiling
+# to scale with the halo before it can run at scale.
+#
 rules:
   - id: DN.1
     check: min_width
     layers: [dnwell]
     value: 1.7
-  # DN.2a is the equi-potential minimum, DN.2b the different-potential one; as in NW.2a
-  # the single-layer space rule needs a notch companion.
   - id: DN.2a
-    check: min_space
+    check: min_space_same_net
     layers: [dnwell]
     value: 2.5
   - id: DN.2a
@@ -33,3 +44,8 @@ rules:
     check: min_space_different_net
     layers: [dnwell]
     value: 5.42
+  - id: DN.3
+    check: nonempty
+    layers: [dn3_viol]
+    value: 0.0
+    description: "DN.3: each DNWELL must be directly surrounded by a PCOMP guard ring"

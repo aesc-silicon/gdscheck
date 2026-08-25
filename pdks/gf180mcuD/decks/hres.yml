@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# High-sheet poly resistor.  Ported from rule_decks/hres.rb - 8 of its 12 rules.
+# High-sheet poly resistor.  8 of the 12 rules in this section.
 #
 # HRES.10, HRES.12a and HRES.12b are absent: the first is a `.drc(width != ...)` over
 # an extended edge layer, the other two are the RES_MK marking checks, both edge work.
@@ -13,7 +13,8 @@
 # is what runs here; the other two terms are simply absent, not approximated.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 95 of 165, 3 false positives.
+# logical violations: 98 of 165, 3 by the clustered count and none by the
+# per-marker one (tools/unmatched-markers.py).
 rules:
   - id: HRES.1
     check: min_space

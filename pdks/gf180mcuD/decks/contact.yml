@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Contact.  Ported from rule_decks/contact.rb.
+# Contact.
 #
 # Five rules are not ported.  CO.2b selects a 4x4-or-larger contact array by counting
 # interactions and measuring with projection limits; CO.6a, CO.6b and CO.9 work on edge

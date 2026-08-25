@@ -32,6 +32,7 @@ pub mod min_space;
 pub mod min_space_bent;
 pub mod min_space_different_net;
 pub mod min_space_prl;
+pub mod min_space_same_net;
 pub mod min_width;
 pub mod must_interact;
 pub mod no_angle;
@@ -104,6 +105,7 @@ pub fn run_rule(
         "min_space_different_net" => {
             min_space_different_net::run(rule, layout, dbu_to_um, merged, conn)
         }
+        "min_space_same_net" => min_space_same_net::run(rule, layout, dbu_to_um, merged, conn),
         "max_space" => max_space::run(rule, layout, dbu_to_um, merged),
         "min_space_bent" => min_space_bent::run(rule, layout, dbu_to_um, merged),
         "min_array_space" => min_array_space::run(rule, layout, dbu_to_um, merged),

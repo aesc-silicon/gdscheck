@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Via 1-4.  Ported from rule_decks/via.rb, which runs one rule set per via below the
+# Via 1-4.  The design rules give one rule set per via below the
 # top metal; on this 5LM stack that is Via1 to Via4.
 #
 # Five of the nine rules per level are not ported.  V#.2b is the 4x4-array spacing,

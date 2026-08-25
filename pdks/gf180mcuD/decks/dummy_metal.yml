@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal dummy fill.  Ported from rule_decks/dummy_metal.rb, which applies the same rule
+# Metal dummy fill.  The design rules apply the same rule
 # set to every metal level present - Metal1 to Metal5 on this variant.
 #
 # DM#.4_DM#.6 and DM#.5_DM#.7 are not ported: both are density rules measured over a

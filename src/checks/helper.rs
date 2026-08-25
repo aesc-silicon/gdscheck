@@ -13,7 +13,10 @@
 //! Other common check utilities can move here as they're factored out.
 
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, MergedPoly, VirtualOp, compose_tile, merged_centroid_dbu};
+use crate::merge::{
+    Core, MergedCache, MergedPoly, VirtualOp, compose_tile, merged_centroid_dbu,
+    representative_point,
+};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use i_overlay::i_float::int::point::IntPoint;
@@ -934,7 +937,13 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     let half = dbu_to_um * 0.5;
     // Each polygon keeps its source region's DBU marker: `poly_from_merged` can drop a
     // polygon, so zipping here is what keeps `Poly` and `MergedPoly` aligned for the gate.
-    let conv = |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, merged_centroid_dbu(m)));
+    //
+    // The marker must be a point *on* the shape, not its centroid: a net-aware gate
+    // resolves the net by looking the marker up, and a ring's centroid sits in its hole -
+    // where, in GF180's DN.2b fixture, an unrelated island sits. Both sides then read as
+    // one net and the rule goes quiet on a real violation.
+    let conv =
+        |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, representative_point(m)));
     let pa: Vec<(Poly, Marker)> = a_polys.iter().filter_map(conv).collect();
     let pb: Vec<(Poly, Marker)> = if same_layer {
         Vec::new()
@@ -1625,14 +1634,55 @@ fn all_vertices_inside(inner: &Poly, outer: &Poly, tol: f64) -> bool {
 /// Whether two polygons overlap (one has a vertex inside the other).  A cheap bbox prefilter
 /// guards the point-in-polygon tests; for the via-over-device case it cannot miss (a via
 /// crossing the device edge has vertices inside it).
+/// Whether two segments meet — properly crossing, or touching at a point.
+fn segs_meet(p0: Marker, p1: Marker, q0: Marker, q1: Marker) -> bool {
+    let cross =
+        |o: Marker, a: Marker, b: Marker| (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0);
+    // Coordinates are µm on a nanometre grid, so a cross product this small is zero.
+    const EPS: f64 = 1e-9;
+    let (d1, d2) = (cross(q0, q1, p0), cross(q0, q1, p1));
+    let (d3, d4) = (cross(p0, p1, q0), cross(p0, p1, q1));
+    if ((d1 > EPS && d2 < -EPS) || (d1 < -EPS && d2 > EPS))
+        && ((d3 > EPS && d4 < -EPS) || (d3 < -EPS && d4 > EPS))
+    {
+        return true; // the segments properly cross
+    }
+    // Collinear or endpoint-touching: a zero cross product with the point in range.
+    let within = |a: Marker, b: Marker, p: Marker| {
+        p.0 >= a.0.min(b.0) - EPS
+            && p.0 <= a.0.max(b.0) + EPS
+            && p.1 >= a.1.min(b.1) - EPS
+            && p.1 <= a.1.max(b.1) + EPS
+    };
+    (d1.abs() <= EPS && within(q0, q1, p0))
+        || (d2.abs() <= EPS && within(q0, q1, p1))
+        || (d3.abs() <= EPS && within(p0, p1, q0))
+        || (d4.abs() <= EPS && within(p0, p1, q1))
+}
+
+/// Whether two polygons share any area or boundary.
+///
+/// A vertex test alone is not enough, and the case it misses is the ordinary one: two
+/// rectangles crossing in a plus shape have a large shared area and *no vertex of either
+/// inside the other*. That is what a transistor gate over its COMP looks like, so
+/// `interacting_only` enclosure rules — "COMP extend beyond gate", "poly end cap" —
+/// silently measured nothing at all on every real device. Edge crossings are tested too.
 fn polys_interact(a: &Poly, b: &Poly) -> bool {
     // Overlapping boxes have a clamped gap of exactly 0.0, so the threshold must be
     // positive — with 0.0 the prefilter rejects every pair (`gap < 0.0` never holds).
     if !a.bbox.possibly_within(&b.bbox, f64::MIN_POSITIVE) {
         return false;
     }
-    a.vertices().any(|&(x, y)| b.contains_point(x, y))
+    if a.vertices().any(|&(x, y)| b.contains_point(x, y))
         || b.vertices().any(|&(x, y)| a.contains_point(x, y))
+    {
+        return true;
+    }
+    a.edges.iter().any(|&(ax, ay, bx, by)| {
+        b.edges
+            .iter()
+            .any(|&(cx, cy, dx, dy)| segs_meet((ax, ay), (bx, by), (cx, cy), (dx, dy)))
+    })
 }
 
 // ===========================================================================

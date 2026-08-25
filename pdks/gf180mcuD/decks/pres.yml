@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# P+ poly resistor.  Ported from rule_decks/pres.rb - 7 of its 9 rules.
+# P+ poly resistor.  7 of the 9 rules in this section.
 #
 # The two absent rules are the RES_MK marking checks (PRES.9a and .9b): both
 # work on edge subsets - "the marking's length shall coincide with the resistor's" is
@@ -13,7 +13,7 @@
 # what min_space measures here; the notch companion covers the same-polygon case.
 #
 # Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 40 of 57, no false positives.
+# logical violations: 42 of 57, no false positives.
 rules:
   - id: PRES.1
     check: min_width

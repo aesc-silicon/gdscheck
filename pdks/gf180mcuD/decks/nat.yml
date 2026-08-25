@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Native-VT NMOS.  Ported from rule_decks/nat.rb.
+# Native-VT NMOS.
 #
 # NAT.6 and NAT.9 are not ported: both select by *how many times* a region meets
 # another - `covering(comp, 2)` and `interacting(ngate, 2)` - and this engine's

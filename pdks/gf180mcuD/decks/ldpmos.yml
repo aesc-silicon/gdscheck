@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS PFET.  Ported from rule_decks/ldpmos.rb - 24 of its 38 rules.
+# LDMOS PFET.  24 of the 38 rules in this section.
 #
 # Structurally the mirror of ldnmos with MVPSD marking the drain, but the rule ids and
 # much of the shape differ, so none of the derived layers are shared.
