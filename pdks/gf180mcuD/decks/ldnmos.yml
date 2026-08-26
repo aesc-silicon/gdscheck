@@ -27,7 +27,6 @@ rules:
     check: min_width
     layers: [mvsd]
     value: 1.0
-  # MDN.2a is the same-potential minimum, MDN.2b the different-potential one.
   - id: MDN.2a
     check: min_space
     layers: [mvsd]
@@ -46,8 +45,6 @@ rules:
     value: 0.6
     params:
       interacting_only: 1
-  # MDN.5a: the body tap must keep clear of the drain, and may not touch it at all.
-  # The limit is looser when tap and source are butted.
   - id: MDN.5ai
     check: min_space
     layers: [pcomp_mdn5ai, mvsd]
@@ -72,7 +69,6 @@ rules:
     check: nonempty
     layers: [mdn5b_touch]
     value: 0.0
-  # MDN.6 / MDN.7 / MDN.7a: the marker layers must cover the device and each other.
   - id: MDN.6
     check: nonempty
     layers: [mdn6_viol]
@@ -83,8 +79,6 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
-  # MDN.7a has two terms: dualgate reaching outside the marker, and dualgate over the
-  # drain outside it.
   - id: MDN.7a
     check: nonempty
     layers: [mdn7a_viol]
@@ -93,7 +87,6 @@ rules:
     check: nonempty
     layers: [mdn7a_viol_b]
     value: 0.0
-  # MDN.8: drain to N-well, split by potential; plus "may not overlap one at all".
   - id: MDN.8a
     check: min_space
     layers: [mvsd, nwell]
@@ -126,7 +119,6 @@ rules:
     check: min_space
     layers: [poly_mdn10, pcomp_at_ncomp]
     value: 0.32
-  # Max single finger width: upstream measures the poly run with `drc(length > 50)`.
   - id: MDN.13a
     check: max_length
     layers: [ldnmos_body]
@@ -147,8 +139,6 @@ rules:
     check: nonempty
     layers: [mdn15b_viol]
     value: 0.0
-  # MDN.17 is a recommendation, not a hard rule: the device should sit inside a
-  # non-broken P-substrate guard ring.
   - id: MDN.17
     check: nonempty
     layers: [mdn17_viol_a]

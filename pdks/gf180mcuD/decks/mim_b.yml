@@ -27,19 +27,12 @@ rules:
     check: min_space
     layers: [topmin1_metal, mimtm_virtual]
     value: 1.2
-  # Upstream's `enclosed`/`enclosing` only measure where the two layers actually meet;
-  # without `interacting_only` every routing via elsewhere on the die reads as a via the
-  # plate fails to enclose.
   - id: MIMTM.2
     check: min_enclosure
     layers: [topmin1_metal, mimtm_via]
     value: 0.4
     params:
       interacting_only: 1
-  # No `interacting_only` here, unlike MIMTM.2 and MIMTM.4: upstream joins the enclosure
-  # term with `fusetop.not_inside(mimtm_virtual)`, so a top plate sitting entirely off
-  # the reconstructed bottom plate is the violation, not a shape to skip.  Adding the
-  # filter drops 35 of the 40.
   - id: MIMTM.3
     check: min_enclosure
     layers: [mimtm_virtual, fusetop]
@@ -54,7 +47,6 @@ rules:
     check: min_space
     layers: [fusetop, top_via_on_topmin1_metal]
     value: 0.4
-  # `space` covers notches as well as the gap between shapes.
   - id: MIMTM.6
     check: min_space
     layers: [fusetop]
@@ -63,7 +55,6 @@ rules:
     check: min_notch
     layers: [fusetop]
     value: 0.6
-  # "Min FuseTop enclosure by CAP_MK is 0 um" - any top plate outside the marker.
   - id: MIMTM.7
     check: nonempty
     layers: [fusetop_outside_cap_mk]

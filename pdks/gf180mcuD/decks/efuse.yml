@@ -67,7 +67,6 @@ rules:
     check: min_notch
     layers: [anode]
     value: 0.26
-  # EF.12 / EF.13: contacts keep clear of the fuse, and none may touch it.
   - id: EF.12
     check: min_space
     layers: [plfuse_efuse, cont_cathode]

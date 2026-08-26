@@ -46,12 +46,6 @@ rules:
     check: min_width
     layers: [nw_res_mv]
     value: 2.0
-  # NW.2a is the equi-potential minimum and NW.2b the different-potential one.
-  # Upstream splits the pairs by net; this engine has no same-net-only spacing check,
-  # so NW.2a runs as a plain geometric space and also fires on a different-net pair
-  # below 0.6 um - which is a NW.2b violation as well, never a clean design.
-  # Region#space covers notches as well as inter-polygon gaps, so each single-layer
-  # space rule needs a notch companion; separation(other) does not and NW.3 has none.
   - id: NW.2a_LV
     check: min_space
     layers: [nw_lv_no_ymtp]
@@ -84,10 +78,6 @@ rules:
     check: nonempty
     layers: [nwell_on_lvpwell]
     value: 0.0
-  # Upstream measures the enclosure only where the well actually meets a deep well
-  # (`nw_lv.enclosed(dnwell, ...)`), then adds the wells that overlap the deep well
-  # but reach outside it. A well nowhere near a deep well is not a NW.5 candidate at
-  # all, which is what interacting_only says here.
   - id: NW.5_LV
     check: min_enclosure
     layers: [dnwell, nw_lv]

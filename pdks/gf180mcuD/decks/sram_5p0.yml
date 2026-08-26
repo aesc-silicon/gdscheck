@@ -2,28 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 5.0 V.  All 8 rules in this section.
-#
-# Like sram_3p3, the SRAM core has tighter rules than the rest of the die; here the
-# core is the part of SRAMCORE that overlaps v5_xtor.
-#
-# Every enclosure rule here carries `metric: euclidian`, which is what the reference asks
-# for.  That is not cosmetic on this case: it draws an N-well whose four orthogonal
-# margins are exactly 0.450 against a 0.45 um rule - clean by construction - then chamfers
-# one corner so the COMP's corner lands exactly on the diagonal, a zero margin no pair of
-# parallel edges can see.
-#
-# S.PL.5b_MV is "space from field Poly2 to related COMP": the poly gates this COMP, so the
-# pair overlaps by definition and its closest approach is zero.  `pairs: overlapping`
-# picks exactly those pairs and measures the narrowest empty gap between their facing
-# edges instead.  It is the only rule in the whole reference of that shape - Y.PL.5a and
-# Y.PL.5b, and poly2's PL.5a and PL.5b, read like the same pair but are identical
-# expressions upstream with no overlap condition, and sram_3p3 has no S.PL.5 at all.
-#
-# Two of the sites the reference flags there are exact point touches: a COMP corner
-# resting on the poly's boundary, and an arrow tip on its wall.  Those stay unreported,
-# because a boundary touch counts as no spacing throughout this engine rather than as a
-# zero gap.
+# SRAM 5.0 V.  All 8 rules in this section, on the part of SRAMCORE that overlaps
+# v5_xtor.
 rules:
   - id: S.DF.4c_MV
     check: min_enclosure

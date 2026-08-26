@@ -14,9 +14,6 @@ rules:
     check: min_width
     layers: [ndmy_or_pmndmy]
     value: 0.8
-  # Upstream builds DE.3 as "edges of NDMY over 15000 um2" joined with "those edges
-  # longer than 80 um".  The second set is a subset of the first, so the join is just
-  # the first: any NDMY above the area cap is the violation.
   - id: DE.3
     check: max_area
     layers: [ndmy]

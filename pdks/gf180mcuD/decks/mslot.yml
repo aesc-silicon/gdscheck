@@ -23,7 +23,6 @@
 # and Metal5 is the top of a 5LM stack, so there is no such via - upstream substitutes an
 # empty layer and the rule can never fire.
 rules:
-  # ---- Metal1 ----------------------------------------------------------
   - id: MSLOT1.0
     check: nonempty
     layers: [metal1_slot_not_rect]
@@ -34,12 +33,10 @@ rules:
     layers: [metal1_needs_slot]
     value: 0.0
     description: "MSLOT1.1: Maximum metal width without slotting: 30 um"
-  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
   - id: MSLOT1.2
     check: min_dim
     layers: [metal1_slot_rect]
     value: 2.0
-  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
   - id: MSLOT1.3
     check: min_length
     layers: [metal1_slot_rect]
@@ -68,7 +65,6 @@ rules:
     check: min_space
     layers: [metal1_slot_rect, dont_slot]
     value: 5.0
-  # ---- Metal2 ----------------------------------------------------------
   - id: MSLOT2.0
     check: nonempty
     layers: [metal2_slot_not_rect]
@@ -79,12 +75,10 @@ rules:
     layers: [metal2_needs_slot]
     value: 0.0
     description: "MSLOT2.1: Maximum metal width without slotting: 30 um"
-  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
   - id: MSLOT2.2
     check: min_dim
     layers: [metal2_slot_rect]
     value: 2.0
-  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
   - id: MSLOT2.3
     check: min_length
     layers: [metal2_slot_rect]
@@ -113,7 +107,6 @@ rules:
     check: min_space
     layers: [metal2_slot_rect, dont_slot]
     value: 5.0
-  # ---- Metal3 ----------------------------------------------------------
   - id: MSLOT3.0
     check: nonempty
     layers: [metal3_slot_not_rect]
@@ -124,12 +117,10 @@ rules:
     layers: [metal3_needs_slot]
     value: 0.0
     description: "MSLOT3.1: Maximum metal width without slotting: 30 um"
-  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
   - id: MSLOT3.2
     check: min_dim
     layers: [metal3_slot_rect]
     value: 2.0
-  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
   - id: MSLOT3.3
     check: min_length
     layers: [metal3_slot_rect]
@@ -158,7 +149,6 @@ rules:
     check: min_space
     layers: [metal3_slot_rect, dont_slot]
     value: 5.0
-  # ---- Metal4 ----------------------------------------------------------
   - id: MSLOT4.0
     check: nonempty
     layers: [metal4_slot_not_rect]
@@ -169,12 +159,10 @@ rules:
     layers: [metal4_needs_slot]
     value: 0.0
     description: "MSLOT4.1: Maximum metal width without slotting: 30 um"
-  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
   - id: MSLOT4.2
     check: min_dim
     layers: [metal4_slot_rect]
     value: 2.0
-  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
   - id: MSLOT4.3
     check: min_length
     layers: [metal4_slot_rect]
@@ -203,7 +191,6 @@ rules:
     check: min_space
     layers: [metal4_slot_rect, dont_slot]
     value: 5.0
-  # ---- Metal5 ----------------------------------------------------------
   - id: MSLOT5.0
     check: nonempty
     layers: [metal5_slot_not_rect]
@@ -214,12 +201,10 @@ rules:
     layers: [metal5_needs_slot]
     value: 0.0
     description: "MSLOT5.1: Maximum metal width without slotting: 30 um"
-  # bbox_min < 2: the slot's shorter side.  min_dim measures the same quantity directly.
   - id: MSLOT5.2
     check: min_dim
     layers: [metal5_slot_rect]
     value: 2.0
-  # bbox_max outside [10, 250]: the slot's longer side, bounded at both ends.
   - id: MSLOT5.3
     check: min_length
     layers: [metal5_slot_rect]

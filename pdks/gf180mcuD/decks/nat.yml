@@ -47,7 +47,6 @@ rules:
     check: min_notch
     layers: [nat]
     value: 0.74
-  # A NAT that meets a dualgate must be wholly inside it.
   - id: NAT.8
     check: nonempty
     layers: [nat8_viol]

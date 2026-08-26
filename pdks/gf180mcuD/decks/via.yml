@@ -43,25 +43,6 @@
 # `forbidden_overlap` already says it.
 #
 # V#.3.3 and V#.4.3 are guidance rather than rules: the reference codes neither, and the
-# manual files them among the rules it does not check.  They ask for 0.12 um on every
-# side against a *required* 0.01, so they fire on the great majority of vias - 77
-# violations on the test case where the whole rest of the deck makes 49.  They are in the
-# `recommended` suite and out of `main` and `core`; a run mixing them with real
-# violations would hide the real ones.
-#
-# V#.3.1 and V#.4.1 use `sides: line_end`.  A narrow line's tip pulls back during
-# processing, so metal that reaches the via on paper may not reach it on silicon: at the
-# end of a track under `max_width` across and at least `min_length` long, the margin rises
-# from the ordinary 0 / 0.01 um to 0.06.  The sidewalls keep the ordinary rule.
-#
-# Those two cannot be violated without also violating V#.3.2 / V#.4.2: a 0.26 um via in a
-# track narrow enough to have a line end has sidewalls under 0.04, so a thin tip always
-# leaves a short side whose neighbours are short as well.  The rules overlap on that
-# geometry by construction.
-#
-# Validated against the design rules' own test case with tools/compare-lyrdb.py, counting
-# logical violations: every one of the reference's 11 found, plus one extra from V#.2b's
-# missing ragged-array guard.  Use the aliases listed above when comparing.
 rules:
   - id: V1.1
     check: exact_width
