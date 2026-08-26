@@ -8,8 +8,6 @@
 # Not validated: the PDK ships no test case for this deck, so there is no reference
 # .lyrdb to diff against.
 rules:
-  # DCF.2b is the dummy-to-dummy minimum, a single-layer space, so it needs the notch
-  # companion the two-layer rules below do not.
   - id: DCF.2b
     check: min_space
     layers: [comp_dummy]

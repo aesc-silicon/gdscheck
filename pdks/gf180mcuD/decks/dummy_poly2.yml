@@ -10,7 +10,6 @@
 # Not validated: the PDK ships no test case for this deck, so there is no reference
 # .lyrdb to diff against.
 rules:
-  # Dummy poly is only ever placed on top of dummy COMP; one that is not is the error.
   - id: DPF.1
     check: nonempty
     layers: [dpf1_viol]

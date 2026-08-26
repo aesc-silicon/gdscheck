@@ -18,7 +18,6 @@
 # effectively exact. Checked against metal1 through metal4, which give identical
 # numbers - the four fixtures are the same layout on different layers.
 rules:
-  # M1.1 exempts the 3.3 V SRAM core, which has its own S.M1.1_LV rule.
   - id: M1.1
     check: min_width
     layers: [metal1_no_sram]

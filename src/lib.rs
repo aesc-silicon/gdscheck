@@ -161,6 +161,14 @@ pub fn parse_virtual_op(
         "holes" => Holes,
         "with_holes" => WithHoles,
         "with_text" => WithText,
+        "with_area" => {
+            if min.is_none() && max.is_none() {
+                return Err(format!("op '{op}' requires a `min` and/or `max` bound"));
+            }
+            // Bounds are um^2 in the deck and DBU^2 here, so the conversion squares.
+            let to_dbu2 = |v: Option<f64>| v.map(|x| (x / (dbu_to_um * dbu_to_um)).round() as i64);
+            WithArea(to_dbu2(min), to_dbu2(max))
+        }
         "with_bbox_min" => {
             let (lo, hi) = bounds()?;
             WithBBoxMin(lo, hi)
@@ -171,7 +179,12 @@ pub fn parse_virtual_op(
         }
         "close" => Close(radius_dbu()?),
         "open" => Open(radius_dbu()?),
-        "grow" => Grow(radius_dbu()?),
+        "grow" => Grow(
+            radius_dbu()?,
+            // `min` doubles as the slack here: a classifier band wants `min: 0`, so an
+            // edge drawn exactly at the boundary distance stays on the far side of it.
+            min.map_or(merge::GROW_MARGIN, |m| (m / dbu_to_um).round() as i32),
+        ),
         "shrink" => Shrink(radius_dbu()?),
         "grow_x" => GrowX(radius_dbu()?),
         "grow_y" => GrowY(radius_dbu()?),
@@ -211,6 +224,7 @@ pub fn parse_edge_op(
         "edges" => Edges,
         "and" => And,
         "not" => Not,
+        "or" | "join" => Or,
         "inside_part" => InsidePart,
         "outside_part" => OutsidePart,
         "with_length" => {
@@ -254,9 +268,9 @@ fn propagate_virtual_halos(
         }
         let extra = match op {
             merge::VirtualOp::Close(r) | merge::VirtualOp::Open(r) => 2 * r,
-            merge::VirtualOp::Grow(r) | merge::VirtualOp::GrowX(r) | merge::VirtualOp::GrowY(r) => {
-                *r
-            }
+            merge::VirtualOp::Grow(r, _)
+            | merge::VirtualOp::GrowX(r)
+            | merge::VirtualOp::GrowY(r) => *r,
             // A directional erode reads geometry up to `r` away along its axis (the
             // complement is dilated by that much), so the source needs the same reach.
             // An isotropic erode reads the same distance in every direction.

@@ -13,8 +13,6 @@
 # .lyrdb to diff against. The rules are a direct port of the upstream expressions and
 # nothing more - treat them as unverified until a fixture exists.
 rules:
-  # GR.2 keeps the guard-ring marker clear of everything on the prime die.  Upstream
-  # emits one rule per layer under a shared id; so does this.
   - id: GR.2
     check: min_space
     layers: [comp, guard_ring_mk]
@@ -71,7 +69,6 @@ rules:
     check: min_width
     layers: [comp_in_guard_ring]
     value: 16.0
-  # A guard ring must have a pad opening over it.
   - id: GR.11
     check: nonempty
     layers: [guard_ring_no_pad]

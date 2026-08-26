@@ -376,6 +376,25 @@ impl PdkConfig {
             raw.virtual_layers = virtuals;
         }
 
+        // A name may be declared once. A virtual layer's synthetic number comes from its
+        // position in the list, so a second declaration under the same name leaves the
+        // first one built but unreachable and every rule naming it silently measuring the
+        // other — which is exactly as quiet, and as wrong, as it sounds. (The `extends`
+        // merge above has already collapsed a child's deliberate override of a base
+        // entry, so anything left here is a collision within one file.)
+        let mut declared: HashSet<&str> = HashSet::new();
+        for name in raw
+            .layers
+            .iter()
+            .map(|l| l.name.as_str())
+            .chain(raw.virtual_layers.iter().map(|v| v.name.as_str()))
+            .chain(raw.edge_layers.iter().map(|e| e.name.as_str()))
+        {
+            if !declared.insert(name) {
+                return Err(format!("layer '{name}' is declared more than once").into());
+            }
+        }
+
         let mut layer_map: HashMap<String, Layer> = raw
             .layers
             .into_iter()

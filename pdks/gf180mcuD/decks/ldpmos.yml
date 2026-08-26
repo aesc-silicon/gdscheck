@@ -34,8 +34,6 @@ rules:
     value: 0.6
     params:
       interacting_only: 1
-  # MDP.3a: the N+ guard ring must keep clear of the drain and not touch it. The limit
-  # is looser when the tap is butted to the source.
   - id: MDP.3ai
     check: min_space
     layers: [ncomp_mdp3ai, mvpsd]
@@ -60,7 +58,6 @@ rules:
     check: min_space
     layers: [pcomp_ld_dg, dnwell_mdp]
     value: 2.5
-  # MDP.5 / MDP.6 / MDP.6a: the marker layers must cover the device and each other.
   - id: MDP.5
     check: nonempty
     layers: [mdp5_viol]
@@ -107,7 +104,6 @@ rules:
     check: nonempty
     layers: [mdp9eii_touch]
     value: 0.0
-  # MDP.10a is the different-potential minimum, MDP.10b the same-potential one.
   - id: MDP.10a
     check: min_space_different_net
     layers: [mvpsd]
@@ -142,7 +138,6 @@ rules:
     check: nonempty
     layers: [mdp16b_viol]
     value: 0.0
-  # The DNWELL guard ring needs an NCOMP tab to tie it to the highest potential.
   - id: MDP.17c
     check: nonempty
     layers: [mdp17c_viol]

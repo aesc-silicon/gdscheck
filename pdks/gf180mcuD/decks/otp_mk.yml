@@ -65,12 +65,6 @@ rules:
     check: min_space
     layers: [sab_otp_lv, tgate_out_sab]
     value: 0.1
-  # O.SB.9 measures the SAB's extension beyond the *unsalicided* poly - the poly
-  # inside the block - so the enclosed layer has to be that intersection, not the
-  # whole OTP poly.  Written against poly_otp with interacting_only it fired on
-  # nothing at all, which the every-rule-fires test caught.
-  # Same flush-edge case as SB.9 in the sab deck: where the SAB is drawn to the poly
-  # boundary there is no enclosure to measure, and upstream's `enclosed` reports nothing.
   - id: O.SB.9
     check: min_enclosure
     layers: [sab_otp, poly_unsalicided_otp]

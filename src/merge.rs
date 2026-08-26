@@ -236,10 +236,18 @@ pub fn closing(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
 /// inconsistently between the two facing edges — 5 nm reliably clears it on both, and is
 /// still far below any real DRC-scale feature size.
 pub fn grow(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    grow_by(polys, radius, GROW_MARGIN as f64)
+}
+
+/// The default slack, in DBU.  See [`grow`] for why it is 5 and not the usual half-DBU.
+pub const GROW_MARGIN: i32 = 5;
+
+/// [`grow`] with the slack chosen explicitly.
+pub fn grow_by(polys: &[MergedPoly], radius: f64, margin: f64) -> Vec<MergedPoly> {
     if polys.is_empty() {
         return Vec::new();
     }
-    shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(radius + 5.0)))
+    shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(radius + margin)))
 }
 
 /// Morphological erode (shrink) by `radius` DBU — the inverse of [`grow`], and KLayout's
@@ -572,7 +580,12 @@ pub enum VirtualOp {
     /// (e.g. pSD.e) via a subsequent `not_interacting` against the opened layer.
     Open(i32),
     /// Morphological grow (one-directional dilate) by `radius` DBU; single source.
-    Grow(i32),
+    /// Morphological grow by `radius` DBU, plus `margin` DBU of slack.  The slack
+    /// defaults to [`GROW_MARGIN`] and exists so a shape drawn at exactly the boundary
+    /// distance resolves as overlapping rather than merely touching; a band used to
+    /// *classify* an edge wants it at zero instead, or an edge drawn exactly on the
+    /// boundary is pulled to the wrong side of it.
+    Grow(i32, i32),
     /// Morphological erode by `radius` DBU; single source (KLayout `sized(-r)`).  No
     /// dilate back, unlike [`Open`] — a region narrower than `2 * radius` vanishes and
     /// the rest keep their eroded outline.
@@ -640,6 +653,10 @@ pub enum VirtualOp {
     /// Unary shape filter: keep regions that are not filled axis-aligned rectangles
     /// (KLayout `non_rectangles`, e.g. MSLOT`#`.0 "slot is not a rectangle").
     NotRectangle,
+    /// Unary region filter on total area, in DBU²: keep regions whose area is `>= min`
+    /// (if set) and `< max` (if set) — KLayout `with_area(a..b)`.  Measured on the
+    /// stitched region, so a shape spanning tiles is judged whole.
+    WithArea(Option<i64>, Option<i64>),
     /// Unary shape filter on the **shorter** bounding-box side, in DBU: keep regions whose
     /// short side is `>= min` (if set) and `< max` (if set) — KLayout `with_bbox_min(a..b)`.
     /// Both bounds open means "keep everything".
@@ -652,6 +669,20 @@ pub enum VirtualOp {
     /// `ext_interacting_with_text`).  Routed specially in `ensure` (needs the layout's
     /// texts, not polygon tiles).
     WithText,
+}
+
+/// A region-level unary filter: which measured quantity, and its half-open bounds.
+/// Unlike the shape predicates in [`compose_tile`], these are properties of a whole
+/// stitched region — a tile piece of a 15000 um² marker has neither its area nor its
+/// extent — so they are evaluated after stitching, like the selectors.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum RegionFilter {
+    /// Total area in DBU².
+    Area(Option<i64>, Option<i64>),
+    /// The shorter side of the region's bounding box, in DBU.
+    ShortSide(Option<i32>, Option<i32>),
+    /// The longer side of the region's bounding box, in DBU.
+    LongSide(Option<i32>, Option<i32>),
 }
 
 /// How a region-level selector decides whether to keep a candidate region.  Each maps
@@ -687,6 +718,16 @@ impl VirtualOp {
             _ => None,
         }
     }
+
+    /// The region-level unary filter this op is, if it is one.  See [`RegionFilter`].
+    fn region_filter(self) -> Option<RegionFilter> {
+        match self {
+            VirtualOp::WithArea(lo, hi) => Some(RegionFilter::Area(lo, hi)),
+            VirtualOp::WithBBoxMin(lo, hi) => Some(RegionFilter::ShortSide(lo, hi)),
+            VirtualOp::WithBBoxMax(lo, hi) => Some(RegionFilter::LongSide(lo, hi)),
+            _ => None,
+        }
+    }
 }
 
 /// True if a merged region is a filled axis-aligned rectangle: no holes, and its outline
@@ -702,13 +743,6 @@ fn is_rectangle(m: &MergedPoly) -> bool {
         return false;
     }
     (ring_area2(&m.outer) - 2.0 * (w * h) as f64).abs() < 0.5
-}
-
-/// The (shorter, longer) bounding-box side of a region, in DBU.
-fn bbox_sides(m: &MergedPoly) -> (i64, i64) {
-    let (x0, y0, x1, y1) = outer_bbox(&m.outer);
-    let (w, h) = (x1 - x0, y1 - y0);
-    (w.min(h), w.max(h))
 }
 
 /// Whether `side` falls in the half-open range `[min, max)`; an absent bound is open.
@@ -917,23 +951,19 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
             .filter(|m| !is_rectangle(m))
             .cloned()
             .collect(),
-        VirtualOp::WithBBoxMin(min, max) => sources[0]
-            .iter()
-            .filter(|m| side_in_range(bbox_sides(m).0, min, max))
-            .cloned()
-            .collect(),
-        VirtualOp::WithBBoxMax(min, max) => sources[0]
-            .iter()
-            .filter(|m| side_in_range(bbox_sides(m).1, min, max))
-            .cloned()
-            .collect(),
+        // Area and bounding-box filters are routed to `build_region_filter_tiles`: a
+        // region's area and extent are properties of the whole shape, and a tile piece
+        // of one has neither.
+        VirtualOp::WithArea(_, _) | VirtualOp::WithBBoxMin(_, _) | VirtualOp::WithBBoxMax(_, _) => {
+            Vec::new()
+        }
         // Text selection is routed to `build_text_selection_tiles` in `ensure`.
         VirtualOp::WithText => Vec::new(),
         // Morphological close of the single source by `r` DBU.  The source tile carries a
         // halo ≥ 2·r (set in run_drc) so dilate-then-erode is exact in the core.
         VirtualOp::Close(r) => closing(sources[0], r as f64),
         VirtualOp::Open(r) => opening(sources[0], r as f64),
-        VirtualOp::Grow(r) => grow(sources[0], r as f64),
+        VirtualOp::Grow(r, m) => grow_by(sources[0], r as f64, m as f64),
         VirtualOp::Shrink(r) => shrink(sources[0], r as f64),
         VirtualOp::GrowX(r) => grow_x(sources[0], r as f64),
         VirtualOp::GrowY(r) => grow_y(sources[0], r as f64),
@@ -976,11 +1006,12 @@ fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
         | VirtualOp::NotSquare
         | VirtualOp::Rectangle
         | VirtualOp::NotRectangle
+        | VirtualOp::WithArea(_, _)
         | VirtualOp::WithBBoxMin(_, _)
         | VirtualOp::WithBBoxMax(_, _)
         | VirtualOp::Close(_)
         | VirtualOp::Open(_)
-        | VirtualOp::Grow(_)
+        | VirtualOp::Grow(_, _)
         | VirtualOp::Shrink(_)
         | VirtualOp::GrowX(_)
         | VirtualOp::GrowY(_)
@@ -1262,6 +1293,10 @@ pub enum EdgeOp {
     /// The first edge layer with every stretch it shares with the second removed
     /// (KLayout edge `.not`).
     Not,
+    /// Every edge of every source layer, kept as they are (KLayout edge `.join`).  Not a
+    /// merge: two collinear edges stay two, because an edge layer is a bag of segments
+    /// and the checks that read one measure each segment on its own.
+    Or,
     /// The parts of the edge layer lying inside the *polygon* layer, cut at the
     /// boundary (KLayout `.inside_part`).
     InsidePart,
@@ -1303,6 +1338,7 @@ fn compose_edge_tile(op: EdgeOp, edge_srcs: &[&[Edge]], poly_srcs: &[&[MergedPol
                 .flat_map(|e| b.iter().filter_map(move |f| edge_overlap(e, f)))
                 .collect()
         }
+        EdgeOp::Or => edge_srcs.iter().flat_map(|s| s.iter().copied()).collect(),
         EdgeOp::Not => {
             let (Some(a), Some(b)) = (edge_srcs.first(), edge_srcs.get(1)) else {
                 return Vec::new();
@@ -2061,6 +2097,185 @@ fn poly_within(a: &MergedPoly, others: &[MergedPoly]) -> bool {
 /// share a tile) and for [`Covers`] as long as the filter region assembles within one
 /// tile bucket.  [`SelectionKind::Inside`] additionally needs the covering filter
 /// geometry present in each of the candidate's tiles, which the source halo provides.
+/// Put a region-filtered layer back on the tiling contract the drawn layers keep: every
+/// tile carries not only its own geometry but everything within `halo` of it, so a check
+/// that measures *between* shapes sees both sides of a tile boundary.
+///
+/// Stitching deliberately drops those copies — it hands back one piece per region per
+/// tile, owned by the tile its core falls in — so any layer built through it comes back
+/// halo-less. That is invisible until a spacing rule runs on one: GF180's PRES.9b puts
+/// two RES_MK markers 19.995 um apart across a full 20 um tile, and without this the two
+/// never appear in the same tile and the rule reads clean.
+///
+/// Applied to the region filters only, not to the selectors, though those lose the copies
+/// the same way. Restoring a selector's halo turned out to reach further than the halo
+/// its *sources* were tiled with, so a boolean built on it mixes two reaches and subtracts
+/// geometry that is only present on one side — measured as four extra DF.2a markers on
+/// comp, where a gate that tile-locally is not there stops being subtracted from its COMP.
+/// A region filter's output feeds a check directly, so it has no such downstream.
+fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
+    if halo_dbu <= 0 {
+        return core_owned;
+    }
+    let (tile, halo) = (tile_dbu.max(1) as i64, halo_dbu as i64);
+    let mut buckets: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
+    for polys in core_owned.into_values() {
+        for poly in polys {
+            let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
+            let tx0 = (x0 - halo).div_euclid(tile) as i32;
+            let tx1 = (x1 + halo).div_euclid(tile) as i32;
+            let ty0 = (y0 - halo).div_euclid(tile) as i32;
+            let ty1 = (y1 + halo).div_euclid(tile) as i32;
+            for tx in tx0..=tx1 {
+                for ty in ty0..=ty1 {
+                    buckets.entry((tx, ty)).or_default().push(poly.clone());
+                }
+            }
+        }
+    }
+    // Union per tile, not just collect: stitching hands back one piece per tile the
+    // region covers, and a tile that now sees several of them must see one shape, or a
+    // spacing scan pairs a region's own pieces against each other and counts a violation
+    // once per piece that reaches the tile.
+    buckets
+        .into_par_iter()
+        .map(|(key, polys)| {
+            let merged = compose_tile(VirtualOp::Union, &[&polys]);
+            (key, merged)
+        })
+        .collect()
+}
+
+/// Keep whole regions of `cand` whose measured quantity falls in the filter's range.
+fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> TileMap {
+    let labeled = stitch_labeled(cand, tile_dbu);
+    // A region's bounding box is the union of its pieces' — the pieces tile its core, so
+    // nothing of the region falls outside them.
+    let mut bb: Vec<Option<(i64, i64, i64, i64)>> = vec![None; labeled.regions.len()];
+    if !matches!(f, RegionFilter::Area(_, _)) {
+        for polys in labeled.by_tile.values() {
+            for (poly, rid) in polys {
+                let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
+                bb[*rid] = Some(match bb[*rid] {
+                    None => (x0, y0, x1, y1),
+                    Some(b) => (b.0.min(x0), b.1.min(y0), b.2.max(x1), b.3.max(y1)),
+                });
+            }
+        }
+    }
+    let keep: Vec<bool> = (0..labeled.regions.len())
+        .map(|rid| match f {
+            RegionFilter::Area(lo, hi) => {
+                let a = labeled.regions[rid].area_dbu;
+                lo.is_none_or(|v| a >= v as f64) && hi.is_none_or(|v| a < v as f64)
+            }
+            RegionFilter::ShortSide(lo, hi) | RegionFilter::LongSide(lo, hi) => {
+                let Some((x0, y0, x1, y1)) = bb[rid] else {
+                    return false;
+                };
+                let (w, h) = (x1 - x0, y1 - y0);
+                let side = match f {
+                    RegionFilter::LongSide(_, _) => w.max(h),
+                    _ => w.min(h),
+                };
+                side_in_range(side, lo, hi)
+            }
+        })
+        .collect();
+
+    let mut out: TileMap = HashMap::new();
+    for (tile, polys) in labeled.by_tile {
+        for (poly, rid) in polys {
+            if keep[rid] {
+                out.entry(tile).or_default().push(poly);
+            }
+        }
+    }
+    out
+}
+
+/// True if the segment `e` meets the region `poly` — either endpoint inside or on it, or
+/// the segment crossing its boundary.  A segment running clear past a region touches
+/// neither, which is what makes this a selection rather than a proximity test.
+fn poly_meets_edge(poly: &MergedPoly, e: &Edge) -> bool {
+    let (px, py) = (e.a.x as f64, e.a.y as f64);
+    let (qx, qy) = (e.b.x as f64, e.b.y as f64);
+    if point_in_merged(px, py, poly) || point_in_merged(qx, qy, poly) {
+        return true;
+    }
+    let cross = |ox: f64, oy: f64, ax: f64, ay: f64, bx: f64, by: f64| {
+        (ax - ox) * (by - oy) - (ay - oy) * (bx - ox)
+    };
+    // Coordinates are integer DBU, so a cross product this small is zero.
+    const EPS: f64 = 1e-9;
+    let within = |ax: f64, ay: f64, bx: f64, by: f64, x: f64, y: f64| {
+        x >= ax.min(bx) - EPS
+            && x <= ax.max(bx) + EPS
+            && y >= ay.min(by) - EPS
+            && y <= ay.max(by) + EPS
+    };
+    let ring = |pts: &[IntPoint]| {
+        for i in 0..pts.len() {
+            let (ax, ay) = (pts[i].x as f64, pts[i].y as f64);
+            let j = (i + 1) % pts.len();
+            let (bx, by) = (pts[j].x as f64, pts[j].y as f64);
+            let d1 = cross(ax, ay, bx, by, px, py);
+            let d2 = cross(ax, ay, bx, by, qx, qy);
+            let d3 = cross(px, py, qx, qy, ax, ay);
+            let d4 = cross(px, py, qx, qy, bx, by);
+            if ((d1 > 0.0) != (d2 > 0.0)) && ((d3 > 0.0) != (d4 > 0.0)) {
+                return true;
+            }
+            // Zero-area contact counts, which is what makes this `interacting` rather
+            // than `overlapping` — and it is the case that matters, because an edge
+            // derived *from* a region lies exactly on that region's own boundary.
+            if (d1.abs() <= EPS && within(ax, ay, bx, by, px, py))
+                || (d2.abs() <= EPS && within(ax, ay, bx, by, qx, qy))
+                || (d3.abs() <= EPS && within(px, py, qx, qy, ax, ay))
+                || (d4.abs() <= EPS && within(px, py, qx, qy, bx, by))
+            {
+                return true;
+            }
+        }
+        false
+    };
+    if ring(&poly.outer) {
+        return true;
+    }
+    poly.holes.iter().any(|h| ring(h))
+}
+
+/// Keep whole regions of `cand` that any segment of the edge layer `filt` meets.
+fn build_edge_selection_tiles(
+    cand: &TileMap,
+    filt: &EdgeTileMap,
+    keep: bool,
+    tile_dbu: i32,
+) -> TileMap {
+    if filt.values().all(|v| v.is_empty()) {
+        return if keep { TileMap::new() } else { cand.clone() };
+    }
+    let labeled = stitch_labeled(cand, tile_dbu);
+    let mut matches = vec![false; labeled.regions.len()];
+    for (tile, polys) in &labeled.by_tile {
+        let edges = filt.get(tile).map(Vec::as_slice).unwrap_or(&[]);
+        for (poly, rid) in polys {
+            if !matches[*rid] && edges.iter().any(|e| poly_meets_edge(poly, e)) {
+                matches[*rid] = true;
+            }
+        }
+    }
+    let mut out: TileMap = HashMap::new();
+    for (tile, polys) in labeled.by_tile {
+        for (poly, rid) in polys {
+            if matches[rid] == keep {
+                out.entry(tile).or_default().push(poly);
+            }
+        }
+    }
+    out
+}
+
 fn build_selection_tiles(
     cand: &TileMap,
     filt: &TileMap,
@@ -2477,6 +2692,16 @@ impl MergedCache {
     /// layers that need a larger one (e.g. a coarse layer with a big `max_width`).
     /// Keeping the halo per layer stops one large rule from inflating the merge of
     /// every other (fine) layer in the deck.
+    /// How wide a halo a *stitched* layer must be put back on, or 0 for none.
+    ///
+    /// Only a layer some distance check measures on needs one, and those are exactly the
+    /// layers a rule raised a halo for.  A layer that is only ever composed further or
+    /// extracted from - the sources of the channel-width edge layers, say - is read
+    /// tile-locally and gains nothing but duplicate work from the copies.
+    fn stitch_halo(&self, key: (i16, i16)) -> i32 {
+        self.halo_by_layer.get(&key).copied().unwrap_or(0)
+    }
+
     pub fn new(tile_dbu: i32, halo_dbu: i32, halo_by_layer: HashMap<(i16, i16), i32>) -> Self {
         Self {
             tile_dbu,
@@ -2677,10 +2902,40 @@ impl MergedCache {
                 self.layers.insert(key, tiles);
                 return;
             }
+            // A selector's filter may be an *edge* layer rather than a polygon one -
+            // GF180's PRES.9a keeps the RES_MK markings whose boundary does not follow
+            // the resistor's - so those sources are built as edges, not merged.
             for &(sg, sd) in &def.sources {
-                self.ensure(layout, sg, sd);
+                if self.is_edge_layer((sg, sd)) {
+                    self.ensure_edges(layout, (sg, sd));
+                } else {
+                    self.ensure(layout, sg, sd);
+                }
+            }
+            if let Some(f) = def.op.region_filter() {
+                let tiles =
+                    build_region_filter_tiles(&self.layers[&def.sources[0]], self.tile_dbu, f);
+                let tiles = rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key));
+                self.layers.insert(key, tiles);
+                return;
             }
             if let Some((kind, keep)) = def.op.selection() {
+                if let Some(&fkey) = def.sources.get(1).filter(|&&k| self.is_edge_layer(k)) {
+                    if kind != SelectionKind::Touches {
+                        eprintln!(
+                            "virtual layer: only `interacting` / `not_interacting` accept \
+                             an edge layer as their filter"
+                        );
+                    }
+                    let tiles = build_edge_selection_tiles(
+                        &self.layers[&def.sources[0]],
+                        self.edges(fkey),
+                        keep,
+                        self.tile_dbu,
+                    );
+                    self.layers.insert(key, tiles);
+                    return;
+                }
                 // candidate = source[0], filter = source[1] (empty if absent).
                 let empty = TileMap::new();
                 let cand = &self.layers[&def.sources[0]];

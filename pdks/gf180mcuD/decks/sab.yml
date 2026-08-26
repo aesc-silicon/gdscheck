@@ -4,19 +4,7 @@
 
 # Salicide block.  All 19 rules in this section.
 #
-# SB.11 and SB.12 are `min_overlap`, which is `min_space` measured the other way round:
-# the same facing edge pairs, but the rule is about the material of both between them
-# rather than the empty ground outside them.  SB.14a and SB.14b carry `metric: square`,
-# KLayout's L-infinity, which is what "must not fall within a 0.56 um square at the
-# corner" says.  SB.14a also drops pairs that abut at a butted N/P junction, and needs
-# nothing for it: a boundary touch is already not a spacing here.
-#
-# All three remaining false positives are SB.15b, and they are not the derivation: the
-# `sb15b_np`/`sb15b_poly` chain here is step for step what upstream builds.  Upstream
-# measures with `separation`, which scopes a pair differently from the closest-approach
-# `min_space` used here - the three sit at 0.171, 0.182 and 0.287 um on ordinary facing
-# edges that `separation` does not appear to pair, and the same rule misses two the
-# reference finds.  Wants a reduced case before anything is changed.
+# Known: SB.15b reports 3 false positives.  Needs a reduced case.
 rules:
   - id: SB.1
     check: min_width
@@ -34,7 +22,6 @@ rules:
     check: min_space
     layers: [sab_out_otp, comp_unrelated_sab]
     value: 0.22
-  # SB.4 is a spacing minimum plus "and it must not touch one at all".
   - id: SB.4
     check: min_space
     layers: [sab_out_otp, contact]
@@ -57,10 +44,6 @@ rules:
     value: 0.22
     params:
       interacting_only: 1
-  # A flush edge is not an extension violation.  Where SAB is drawn to the COMP boundary
-  # and overhangs it - same x range, taller - there is no enclosure to measure, and
-  # upstream's `enclosed` reports nothing.  Without `skip_coincident` the coincident side
-  # walls read as a zero margin: two false positives on SB.7 and two on SB.9.
   - id: SB.7
     check: min_enclosure
     layers: [comp_sab, sab]
@@ -117,7 +100,6 @@ rules:
     check: min_space
     layers: [sb15b_poly, sb15b_np]
     value: 0.32
-  # SAB may not sit on a core transistor; only on ones marked LVS_IO, OTP_MK or ESD_MK.
   - id: SB.16
     check: nonempty
     layers: [sb16_viol]

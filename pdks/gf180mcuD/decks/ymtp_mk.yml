@@ -42,8 +42,6 @@ rules:
     check: min_width
     layers: [poly_ymtp_lv_out_pf]
     value: 0.13
-  # Y.PL.1_MV has no limit at 5 V; upstream outputs the layer itself, so any poly there
-  # is the violation.
   - id: Y.PL.1_MV
     check: nonempty
     layers: [poly_ymtp_mv_out_pf]
@@ -62,7 +60,6 @@ rules:
     value: 0.16
     params:
       interacting_only: 1
-  # 5a is the unrelated case and 5b the related one; upstream measures both the same way.
   - id: Y.PL.5a_LV
     check: min_space
     layers: [poly_ymtp_lv, comp_ymtp_lv]

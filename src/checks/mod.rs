@@ -6,6 +6,7 @@ pub mod antenna_ratio;
 pub mod area;
 pub mod coverage;
 pub mod density;
+pub mod edge_distance;
 pub mod edge_length;
 pub mod exact_width;
 pub mod extent;

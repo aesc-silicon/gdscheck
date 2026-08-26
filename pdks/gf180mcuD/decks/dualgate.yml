@@ -40,7 +40,6 @@ rules:
     value: 0.24
     params:
       interacting_only: 1
-  # A COMP may be wholly inside a dualgate or wholly outside it, never straddling.
   - id: DV.7
     check: nonempty
     layers: [dv7_viol]

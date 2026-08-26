@@ -47,7 +47,6 @@ rules:
     value: 0.28
     params:
       interacting_only: 1
-  # A contact on the resistor must clear the salicide block, and not touch it at all.
   - id: LRES.7
     check: min_space
     layers: [cont_lres, sab]

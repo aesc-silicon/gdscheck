@@ -2,20 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Pplus implant.
-#
-# The rules left out are all edge work or a sizing this engine cannot express.  The
-# extension-beyond-COMP family (NP.4a/4b, NP.5b through NP.5dii and their PP twins)
-# measures from a subset of implant edges to a subset of COMP edges, selected by where
-# they sit; NP.11/PP.11 tests a butting edge the same way; NP.12/PP.12 needs KLayout's
-# `size_inside` with a step count.
-#
-# The 0.429 um sizings that split NP.3b/NP.3c into a near and a far case are `grow` and
-# the new `shrink`; a PCOMP within that distance of a well edge gets the looser limit.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 148 of 182 logical violations, 6 false positives.  PP.3a, PP.3ci,
-# PP.3cii, PP.3d, PP.3e, PP.6, PP.8a and PP.10 are exact.
+# Pplus implant.  All 25 rules in this section.
 rules:
   - id: PP.1
     check: min_width
@@ -94,3 +81,39 @@ rules:
     value: 0.18
     params:
       interacting_only: 1
+  - id: PP.4a
+    check: min_space
+    layers: [pplus_butted_edges, ngate.edges]
+    value: 0.32
+  - id: PP.5b
+    check: min_enclosure
+    layers: [pp5b_pplus, pcomp.edges]
+    value: 0.16
+  - id: PP.5ci
+    check: min_enclosure
+    layers: [pp5c_bg, pp5ci_fg]
+    value: 0.02
+  - id: PP.5cii
+    check: min_enclosure
+    layers: [pp5c_bg_all, pp5cii_fg]
+    value: 0.16
+  - id: PP.5di
+    check: min_enclosure
+    layers: [pp5d_bg, pp5di_fg]
+    value: 0.02
+  - id: PP.5dii
+    check: min_enclosure
+    layers: [pp5d_bg, pp5dii_fg]
+    value: 0.16
+  - id: PP.11
+    check: nonempty
+    layers: [pp11_viol]
+    value: 0.0
+  - id: PP.12
+    check: nonempty
+    layers: [pp12_viol]
+    value: 0.0
+  - id: PP.4b
+    check: min_space
+    layers: [pplus.edges, pp4b_poly]
+    value: 0.22

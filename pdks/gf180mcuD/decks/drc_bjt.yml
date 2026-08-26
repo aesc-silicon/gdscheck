@@ -5,10 +5,6 @@
 # BJT geometry.  All three rules.
 #
 # BJT.1 and BJT.2 are "must contain" rules: the marker has to cover what it marks, so
-# the violation is the marker that does not.  Both lean on the `covering` selector.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 6 of 7 logical violations, no false positives.
 rules:
   - id: BJT.1
     check: nonempty

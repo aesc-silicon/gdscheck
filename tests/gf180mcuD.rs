@@ -260,19 +260,21 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
     &[
-        ("NP.1", 392), ("NP.10", 3), ("NP.2", 83), ("NP.3a", 9), ("NP.3bi", 10),
-        ("NP.3bii", 4), ("NP.3ci", 17), ("NP.3cii", 2), ("NP.3d", 2), ("NP.3e", 2),
-        ("NP.5a", 6), ("NP.6", 72), ("NP.7", 4), ("NP.8a", 121), ("NP.8b", 2),
-        ("NP.9", 3),
+        ("NP.1", 392), ("NP.10", 3), ("NP.11", 26), ("NP.12", 1), ("NP.2", 83),
+        ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 17), ("NP.3cii", 2),
+        ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 6),
+        ("NP.5b", 113), ("NP.5ci", 7), ("NP.5cii", 3), ("NP.5di", 9), ("NP.5dii", 9),
+        ("NP.6", 72), ("NP.7", 4), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 3),
     ]
 )]
 #[case::pplus(
     "pplus", "pplus.gds.gz", "7_11_Pplus",
     &[
-        ("PP.1", 392), ("PP.10", 3), ("PP.2", 83), ("PP.3a", 21), ("PP.3bi", 2),
-        ("PP.3bii", 13), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2),
-        ("PP.5a", 6), ("PP.6", 72), ("PP.7", 4), ("PP.8a", 121), ("PP.8b", 2),
-        ("PP.9", 3),
+        ("PP.1", 392), ("PP.10", 3), ("PP.11", 8), ("PP.12", 1), ("PP.2", 83),
+        ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10),
+        ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 6),
+        ("PP.5b", 87), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33),
+        ("PP.6", 72), ("PP.7", 4), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 3),
     ]
 )]
 #[case::ldnmos(
@@ -306,7 +308,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "pres", "pres.gds.gz", "10_1_PRES",
     &[
         ("PRES.1", 26), ("PRES.2", 5), ("PRES.3", 8), ("PRES.4", 5), ("PRES.5", 7),
-        ("PRES.6", 39), ("PRES.7", 7),
+        ("PRES.6", 39), ("PRES.7", 7), ("PRES.9a", 5), ("PRES.9b", 1),
     ]
 )]
 #[case::hres(
@@ -603,6 +605,95 @@ fn pl6_corner_patterns() {
         vec![("PL.6".to_string(), 2)],
         "the L's two elbow corners are inside the COMP; its other four are not"
     );
+}
+
+// --- P+ poly resistor, generated ---
+//
+// The deck whose foundry case most needs a drawn counterpart: it reports far more markers
+// per violation than we do — 219 against 39 on PRES.6 alone — so a count that is merely
+// close reads as agreement and a real miss hides inside the difference. Here the clean
+// half is a hard zero and the bad half has a number we chose.
+
+/// How many markers each bad pattern is drawn to produce. One each, except where the
+/// check reports per wall or the perturbation necessarily moves two things:
+///
+/// * `PRES.1` reports a narrow body at both its walls.
+/// * `PRES.7` moves both contact heads, since the cell places them symmetrically.
+fn pres_bad_expect(id: &str) -> usize {
+    match id {
+        "PRES.1" | "PRES.7" => 2,
+        _ => 1,
+    }
+}
+
+#[test]
+fn pres_patterns_cover_every_rule() {
+    let mut ids: Vec<String> = rule_ids("pres");
+    ids.sort();
+    ids.dedup(); // PRES.3 and PRES.7 are each a spacing and a must-not-touch rule
+    assert_eq!(ids.len(), 9, "every rule in the section");
+
+    for id in ids {
+        let good = run_generated("pres", &id, "good");
+        assert!(
+            good.is_empty(),
+            "pres: {id} fired on its good pattern: {good:?}"
+        );
+        let bad = run_generated("pres", &id, "bad");
+        assert_eq!(
+            bad,
+            vec![(id.clone(), pres_bad_expect(&id))],
+            "pres: {id}'s bad pattern should trip {id} and nothing else"
+        );
+    }
+}
+
+// --- P+ implant, generated ---
+//
+// The deck that most needed drawn patterns. Its foundry case reports 222 PP.1 markers
+// where we report 392, so no count comparison on it means anything, and half the rules
+// come in near/far pairs split by a 0.429 um band around a well — a classifier that has
+// already caused two wrong measurements in this port. Each fixture sits deliberately on
+// one side of that band and its clean half is a hard zero.
+
+/// What each bad pattern is drawn to contain. One marker each, except:
+///
+/// * `PP.1` reports a narrow shape at both its walls.
+/// * `PP.5b` and the `PP.5c`/`PP.5d` pairs measure an extension that is short on every
+///   side of the COMP at once, so a square reports four — three for `PP.5dii`, whose
+///   fourth side faces the N-well that puts it in the near bucket.
+/// * `PP.3d` and `PP.3e` are the same set of geometry — COMP and Nplus and Pplus
+///   together — so neither can be drawn without the other.
+fn pplus_bad_expect(id: &str) -> Vec<(String, usize)> {
+    let one = |i: &str| (i.to_string(), 1);
+    match id {
+        "PP.1" => vec![("PP.1".to_string(), 2)],
+        "PP.3d" | "PP.3e" => vec![one("PP.3d"), one("PP.3e")],
+        "PP.5b" | "PP.5ci" | "PP.5cii" | "PP.5di" => vec![(id.to_string(), 4)],
+        "PP.5dii" => vec![("PP.5dii".to_string(), 3)],
+        _ => vec![one(id)],
+    }
+}
+
+#[test]
+fn pplus_patterns_cover_every_rule() {
+    let mut ids: Vec<String> = rule_ids("pplus");
+    ids.sort();
+    ids.dedup(); // PP.2 is a space and a notch rule under one id
+    assert_eq!(ids.len(), 25, "every rule in the section");
+
+    for id in ids {
+        let good = run_generated("pplus", &id, "good");
+        assert!(
+            good.is_empty(),
+            "pplus: {id} fired on its good pattern: {good:?}"
+        );
+        let mut bad = run_generated("pplus", &id, "bad");
+        bad.sort();
+        let mut want = pplus_bad_expect(&id);
+        want.sort();
+        assert_eq!(bad, want, "pplus: {id}'s bad pattern");
+    }
 }
 
 // --- Via, generated ---

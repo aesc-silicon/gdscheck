@@ -2,14 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 3.3 V - the SRAM core has tighter rules
-# than the rest of the die, so these run on the parts of each layer inside SRAMCORE.
-#
-# S.CO.6_ii_LV is the contact's version of the via deck's V#.3.2 - the same shape, with
-# tighter numbers: a contact side that Metal1 encloses by less than 0.02 um forces the
-# sides next to it to reach 0.04.  `sides: adjacent` says exactly that, so it needs no
-# edge layer despite the reference building it from one.  Note the reference's own
-# description has the two numbers the other way round; the code is what it runs.
+# SRAM 3.3 V.  All 6 rules in this section, on the parts of each layer inside
+# SRAMCORE.
 rules:
   - id: S.DF.4c_LV
     check: min_enclosure

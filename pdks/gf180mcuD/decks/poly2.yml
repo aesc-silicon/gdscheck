@@ -19,7 +19,6 @@
 # one (tools/unmatched-markers.py).  PL.6, PL.9, PL.11 and PL.12 are exact; gate_length
 # carries PL.2_MV to 35 of 38.
 rules:
-  # --- Interconnect width, outside and inside the poly fuse ---
   - id: PL.1_LV
     check: min_width
     layers: [poly2_lv_out_plfuse]
@@ -37,7 +36,6 @@ rules:
     layers: [poly2_mv_in_plfuse]
     value: 0.18
 
-  # --- Gate width (channel length) ---
   - id: PL.2_LV
     check: gate_length
     layers: [poly2_lv, tgate_pl2_lv]
@@ -59,7 +57,6 @@ rules:
     layers: [poly2_mv, pgate_6v]
     value: 0.55
 
-  # --- Space on COMP and field ---
   - id: PL.3a
     check: min_space
     layers: [pl3a_poly]
@@ -69,7 +66,6 @@ rules:
     layers: [pl3a_poly]
     value: 0.24
 
-  # --- Poly2 end cap over COMP ---
   - id: PL.4_LV
     check: min_enclosure
     layers: [poly_pl_lv, comp_pl]
@@ -83,9 +79,6 @@ rules:
     params:
       interacting_only: 1
 
-  # --- Field poly to COMP ---
-  # PL.5a and PL.5b are the unrelated and related cases; upstream measures both the
-  # same way and separates them only by intent, so both are the same rule here.
   - id: PL.5a_LV
     check: min_space
     layers: [poly_pl_lv, comp_pl]
@@ -103,7 +96,6 @@ rules:
     layers: [poly_pl_mv, comp_pl]
     value: 0.3
 
-  # --- 45-degree bent gate width ---
   - id: PL.7_LV
     check: min_45_width
     layers: [nom_gate]
@@ -113,7 +105,6 @@ rules:
     layers: [thick_gate]
     value: 0.7
 
-  # --- Marker enclosure ---
   - id: PL.9
     check: nonempty
     layers: [pl9_viol]
@@ -126,9 +117,6 @@ rules:
     check: nonempty
     layers: [pl12_viol]
     value: 0.0
-  # PL.6: poly may not turn a right angle while it is over active area.  `no_corner`
-  # matches on the absolute turn, so a convex and a concave bend both count - the
-  # reference unions `corners(90)` with `corners(-90)`.
   - id: PL.6
     check: no_corner
     layers: [poly2_drawn, comp_no_ymtp]

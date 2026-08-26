@@ -1590,6 +1590,179 @@ virtual_layers:
     mode: lazy
     radius: 0.429
     layers: [lvpwell_dn]
+  - name: nwell_dn_edge_band
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn, nwell_n_dn_sized_in]
+  # NP.11 excludes the band *outside* the N-well and *inside* the LVPWELL; PP.11 excludes
+  # the other two. The pair is not symmetric, and reusing one for the other is silent.
+  # The same 0.429 um reach as nwell_n_dn_sized_out with no slack, for deciding which of
+  # two limits an edge is judged by: the test case draws structures exactly on it, and
+  # 5 nm of slack puts a splinter of the wrong edge on the wrong side.
+  - name: nwell_n_dn_reach
+    op: grow
+    mode: lazy
+    radius: 0.429
+    min: 0.0
+    layers: [nwell_n_dn]
+  - name: nwell_dn_outer_band
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn_reach, nwell_n_dn]
+  - name: lvpwell_dn_outer_band
+    op: difference
+    mode: lazy
+    layers: [lvpwell_dn_reach, lvpwell_dn]
+  - name: pplus_in_lvpwell_dn_all
+    op: overlapping
+    mode: lazy
+    layers: [pplus, lvpwell]
+  - name: pplus_in_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [pplus_in_lvpwell_dn_all, dnwell]
+  - name: pcomp_in_lvpwell_dn_all
+    op: overlapping
+    mode: lazy
+    layers: [pcomp, lvpwell]
+  - name: pcomp_in_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [pcomp_in_lvpwell_dn_all, dnwell]
+  # PP.12 / NP.12: the gate's own extension along the Poly2 it sits on, within 0.32 um of
+  # the channel.  Upstream grows the gate with KLayout's `size_inside` in three steps,
+  # which clips each step to the Poly2 so the reach follows the conductor rather than
+  # crossing open ground to a neighbouring one.  Three grow-and-clip rounds are that,
+  # written out: a step that leaves the Poly2 is cut before the next one starts from it.
+  # Each round asks for no slack, or three rounds of it would add 15 nm to the reach.
+  - name: ngate_reach1
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    min: 0.0
+    layers: [ngate]
+  - name: ngate_step1
+    op: intersection
+    mode: lazy
+    layers: [ngate_reach1, poly2_drawn]
+  - name: ngate_reach2
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    min: 0.0
+    layers: [ngate_step1]
+  - name: ngate_step2
+    op: intersection
+    mode: lazy
+    layers: [ngate_reach2, poly2_drawn]
+  - name: ngate_reach3
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    min: 0.0
+    layers: [ngate_step2]
+  - name: ngate_step3
+    op: intersection
+    mode: lazy
+    layers: [ngate_reach3, poly2_drawn]
+  - name: pgate_reach1
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    min: 0.0
+    layers: [pgate]
+  - name: pgate_step1
+    op: intersection
+    mode: lazy
+    layers: [pgate_reach1, poly2_drawn]
+  - name: pgate_reach2
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    min: 0.0
+    layers: [pgate_step1]
+  - name: pgate_step2
+    op: intersection
+    mode: lazy
+    layers: [pgate_reach2, poly2_drawn]
+  - name: pgate_reach3
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    min: 0.0
+    layers: [pgate_step2]
+  - name: pgate_step3
+    op: intersection
+    mode: lazy
+    layers: [pgate_reach3, poly2_drawn]
+  # PP.4b / NP.4b: the Poly2 boundary within 0.32 um of the opposite-channel gate. The
+  # reach is a plain grow of the gate, not the confined one PP.12 uses, and it is drawn
+  # with no slack: the test case puts an implant island exactly 0.32 um above a channel,
+  # and 5 nm of reach past that is the difference between one violation and two.
+  - name: ngate_reach_flat
+    op: grow
+    mode: lazy
+    radius: 0.32
+    min: 0.0
+    layers: [ngate]
+  - name: pgate_reach_flat
+    op: grow
+    mode: lazy
+    radius: 0.32
+    min: 0.0
+    layers: [pgate]
+  - name: pp12_viol
+    op: interacting
+    mode: lazy
+    layers: [pplus, ngate_step3]
+  - name: np12_viol
+    op: interacting
+    mode: lazy
+    layers: [nplus, pgate_step3]
+  - name: nplus_n_dn
+    op: difference
+    mode: lazy
+    layers: [nplus, dnwell]
+  - name: nplus_out_lvpwell
+    op: not_inside
+    mode: lazy
+    layers: [nplus, lvpwell]
+  - name: nplus_out_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [nplus_out_lvpwell, dnwell]
+  - name: ncomp_out_lvpwell
+    op: not_inside
+    mode: lazy
+    layers: [ncomp, lvpwell]
+  - name: ncomp_out_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [ncomp_out_lvpwell, dnwell]
+  - name: nplus_at_nwell
+    op: overlapping
+    mode: lazy
+    layers: [nplus_n_dn, nwell]
+  - name: ncomp_at_nwell_all
+    op: overlapping
+    mode: lazy
+    layers: [ncomp, nwell]
+  - name: ncomp_at_nwell
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp_at_nwell_all, dnwell]
+  - name: pplus_no_guard_ring
+    op: not_interacting
+    mode: lazy
+    layers: [pplus, guard_ring_mk]
+  - name: pplus_outside_dn
+    op: not_overlapping
+    mode: lazy
+    layers: [pplus_no_guard_ring, dnwell]
+  - name: pcomp_outside_dn
+    op: not_overlapping
+    mode: lazy
+    layers: [pcomp, dnwell]
   - name: np3_nplus
     op: not_interacting
     mode: lazy
@@ -1697,6 +1870,12 @@ virtual_layers:
     mode: lazy
     radius: 0.429
     layers: [lvpwell_dn]
+  - name: lvpwell_dn_reach
+    op: grow
+    mode: lazy
+    radius: 0.429
+    min: 0.0
+    layers: [lvpwell_dn]
   - name: ncomp_in_lvpwell
     op: intersection
     mode: lazy
@@ -1712,11 +1891,11 @@ virtual_layers:
   - name: pp3bi_ncomp
     op: difference
     mode: lazy
-    layers: [ncomp, lvpwell_dn_sized_out]
+    layers: [ncomp, lvpwell_dn_reach]
   - name: pp3bii_ncomp
     op: intersection
     mode: lazy
-    layers: [ncomp, lvpwell_dn_sized_out]
+    layers: [ncomp, lvpwell_dn_reach]
   - name: pp3_pplus_in_dn
     op: intersection
     mode: lazy
@@ -2233,6 +2412,28 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [cont_pres, sab]
+  - name: pres_outline
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, pplus, sab]
+  - name: res_mk_on_pres
+    op: interacting
+    mode: lazy
+    layers: [res_mk, pres_poly]
+  - name: pres9a_viol
+    op: interacting
+    mode: lazy
+    layers: [res_mk_on_pres, res_mk_off_outline]
+  - name: res_mk_big_area
+    op: with_area
+    min: 15000.001
+    mode: lazy
+    layers: [res_mk]
+  - name: res_mk_big
+    op: with_bbox_min
+    min: 80.001
+    mode: lazy
+    layers: [res_mk_big_area]
   - name: hres_poly_pp
     op: interacting
     mode: lazy
@@ -3355,6 +3556,209 @@ edge_layers:
   # DF.2a, minimum channel width.  W is the length of the source/drain boundary that
   # runs under the gate - a property of that segment, not of any region, which is why
   # it needs an edge layer at all.
+  - name: res_mk.edges
+    op: edges
+    layers: [res_mk]
+  - name: pres_outline.edges
+    op: edges
+    layers: [pres_outline]
+  - name: res_mk_off_outline_all
+    op: not
+    layers: [res_mk.edges, pres_outline.edges]
+  - name: res_mk_off_outline
+    op: inside_part
+    layers: [res_mk_off_outline_all, poly2_drawn]
+  - name: pplus.edges
+    op: edges
+    layers: [pplus]
+  - name: nplus.edges
+    op: edges
+    layers: [nplus]
+  - name: ncomp.edges
+    op: edges
+    layers: [ncomp]
+  - name: pcomp.edges
+    op: edges
+    layers: [pcomp]
+  - name: ngate.edges
+    op: edges
+    layers: [ngate]
+  - name: pplus_butted_edges
+    op: and
+    layers: [pplus.edges, ncomp.edges]
+
+  # PP.11: a butting Pplus/NCOMP edge is forbidden in the band either side of a well edge.
+  - name: pp11_at_nwell
+    op: inside_part
+    layers: [pplus_butted_edges, nwell_dn_edge_band]
+  - name: pp11_at_lvpwell
+    op: inside_part
+    layers: [pplus_butted_edges, lvpwell_dn_outer_band]
+  - name: pp11_viol
+    op: or
+    layers: [pp11_at_nwell, pp11_at_lvpwell]
+
+  # PP.5b: the Pplus boundary that is not a butting edge, where it lies in an N-well or
+  # inside DNWELL but out of the LVPWELL, against the COMP boundary it must extend past.
+  - name: pp5b_pplus_all
+    op: not
+    layers: [pplus.edges, pplus_butted_edges]
+  - name: pp5b_in_nwell
+    op: inside_part
+    layers: [pp5b_pplus_all, nwell]
+  - name: pp5b_out_lvpwell
+    op: outside_part
+    layers: [pp5b_pplus_all, lvpwell]
+  - name: pp5b_in_dnwell
+    op: inside_part
+    layers: [pp5b_out_lvpwell, dnwell]
+  - name: pp5b_pplus
+    op: or
+    layers: [pp5b_in_nwell, pp5b_in_dnwell]
+
+  # PP.5ci / PP.5cii: inside DNWELL and inside LVPWELL, split by whether the COMP edge
+  # sits in the well's inner region or in the band along its edge.
+  - name: pp5c_bg_all
+    op: edges
+    layers: [pplus_in_lvpwell_dn]
+  - name: pp5c_bg
+    op: not
+    layers: [pp5c_bg_all, nplus.edges]
+  - name: pp5c_fg_all
+    op: edges
+    layers: [pcomp_in_lvpwell_dn]
+  - name: pp5c_fg_no_nplus
+    op: not
+    layers: [pp5c_fg_all, nplus.edges]
+  - name: pp5ci_fg
+    op: inside_part
+    layers: [pp5c_fg_no_nplus, lvpwell_dn_sized_in]
+  - name: pp5cii_fg
+    op: inside_part
+    layers: [pp5c_fg_no_nplus, lvpwell_dn_edge_band]
+
+  # PP.5di / PP.5dii: outside DNWELL, split by whether the COMP edge is within 0.429 um
+  # of an N-well.
+  - name: pp5d_bg
+    op: edges
+    layers: [pplus_outside_dn]
+  - name: pp5d_pcomp
+    op: edges
+    layers: [pcomp_outside_dn]
+  - name: pp5d_fg_all
+    op: not
+    layers: [pp5d_pcomp, nplus.edges]
+  - name: pp5di_fg_all
+    op: outside_part
+    layers: [pp5d_fg_all, nwell_n_dn_reach]
+  - name: pp5dii_fg_all
+    op: inside_part
+    layers: [pp5d_fg_all, nwell_n_dn_reach]
+  - name: pp5di_fg
+    op: or
+    layers: [pp5di_fg_all]
+  - name: pp5dii_fg
+    op: or
+    layers: [pp5dii_fg_all]
+
+  - name: pgate.edges
+    op: edges
+    layers: [pgate]
+  - name: poly2.edges
+    op: edges
+    layers: [poly2_drawn]
+  - name: pp4b_poly
+    op: inside_part
+    layers: [poly2.edges, ngate_reach_flat]
+  - name: np4b_poly
+    op: inside_part
+    layers: [poly2.edges, pgate_reach_flat]
+  - name: nplus_butted_edges
+    op: and
+    layers: [nplus.edges, pcomp.edges]
+
+  # NP.11: mirror of PP.11, on the other implant.
+  - name: np11_at_nwell
+    op: inside_part
+    layers: [nplus_butted_edges, nwell_dn_outer_band]
+  - name: np11_at_lvpwell
+    op: inside_part
+    layers: [nplus_butted_edges, lvpwell_dn_edge_band]
+  - name: np11_viol
+    op: or
+    layers: [np11_at_nwell, np11_at_lvpwell]
+
+  # NP.5b: the Nplus boundary that is not a butting edge, in an LVPWELL or clear of both
+  # NWELL and DNWELL, against the NCOMP boundary it must extend past.
+  - name: np5b_nplus_all
+    op: not
+    layers: [nplus.edges, nplus_butted_edges]
+  - name: np5b_in_lvpwell
+    op: inside_part
+    layers: [np5b_nplus_all, lvpwell]
+  - name: np5b_out_nwell
+    op: outside_part
+    layers: [np5b_nplus_all, nwell]
+  - name: np5b_out_both
+    op: outside_part
+    layers: [np5b_out_nwell, dnwell]
+  - name: np5b_nplus
+    op: or
+    layers: [np5b_in_lvpwell, np5b_out_both]
+
+  # NP.5ci / NP.5cii: inside DNWELL but out of the LVPWELL, split by whether the NCOMP
+  # edge falls within 0.429 um of the LVPWELL.
+  - name: np5c_bg
+    op: edges
+    layers: [nplus_out_lvpwell_dn]
+  - name: np5c_fg_all
+    op: edges
+    layers: [ncomp_out_lvpwell_dn]
+  - name: np5c_fg_no_pplus
+    op: not
+    layers: [np5c_fg_all, pplus.edges]
+  - name: np5ci_fg_all
+    op: inside_part
+    layers: [np5c_fg_no_pplus, lvpwell_dn_reach]
+  - name: np5cii_fg_all
+    op: outside_part
+    layers: [np5c_fg_no_pplus, lvpwell_dn_reach]
+  - name: np5ci_fg
+    op: or
+    layers: [np5ci_fg_all]
+  - name: np5cii_fg
+    op: or
+    layers: [np5cii_fg_all]
+
+  # NP.5di / NP.5dii: at an N-well and outside DNWELL, split by whether the NCOMP edge
+  # sits in the band along the well edge or in its inner region.
+  - name: np5d_bg_all
+    op: edges
+    layers: [nplus_at_nwell]
+  - name: np5dii_bg
+    op: not
+    layers: [np5d_bg_all, pplus.edges]
+  - name: np5d_fg_all
+    op: edges
+    layers: [ncomp_at_nwell]
+  - name: np5d_fg_no_pplus
+    op: not
+    layers: [np5d_fg_all, pplus.edges]
+  - name: np5di_fg_all
+    op: inside_part
+    layers: [np5d_fg_no_pplus, nwell_dn_edge_band]
+  - name: np5dii_fg_all
+    op: inside_part
+    layers: [np5d_fg_no_pplus, nwell_n_dn_sized_in]
+  - name: np5di_fg
+    op: with_length
+    min: 0.006
+    layers: [np5di_fg_all]
+  - name: np5dii_fg
+    op: with_length
+    min: 0.006
+    layers: [np5dii_fg_all]
+
   - name: comp_3p3v_no_poly.edges
     op: edges
     layers: [comp_3p3v_no_poly]
