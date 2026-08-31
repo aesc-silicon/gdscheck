@@ -3463,6 +3463,52 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [s_co_4_mv_crossing_all, comp_sram_mv]
+  # HRES.12a / LRES.9a: the RES_MK marking must follow its resistor's outline - the
+  # PRES.9a shape against the other two resistor types. HRES.12b / LRES.9b are PRES.9b:
+  # a marking over 15000 um2 with both sides over 80 um needs 20 um to the next.
+  - name: poly2_no_pplus
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, pplus]
+  - name: poly_nplus_lres
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, nplus]
+  - name: hres_outline
+    op: intersection
+    mode: lazy
+    layers: [poly2_no_pplus, sab]
+  - name: lres_outline
+    op: intersection
+    mode: lazy
+    layers: [poly_nplus_lres, sab]
+  - name: res_mk_on_hres
+    op: interacting
+    mode: lazy
+    layers: [res_mk, resistor]
+  - name: res_mk_on_lres
+    op: interacting
+    mode: lazy
+    layers: [res_mk, lres_poly]
+  - name: hres12a_viol
+    op: interacting
+    mode: lazy
+    layers: [res_mk_on_hres, res_mk_off_hres]
+  - name: lres9a_viol
+    op: interacting
+    mode: lazy
+    layers: [res_mk_on_lres, res_mk_off_lres]
+  # CO.9: a contact sitting on a butted N/P COMP boundary.
+  - name: co9_viol
+    op: interacting
+    mode: lazy
+    layers: [contact, ncomp_pcomp_butting_edges]
+  # DF.11: the COMP touching a butted NCOMP has its own width minimum.
+  - name: comp_at_ncomp_butted
+    op: interacting
+    mode: lazy
+    layers: [comp, ncomp_butted]
+
 layers:
   - name: comp
     gds_layer: 22
@@ -3769,6 +3815,27 @@ edge_layers:
   - name: res_mk.edges
     op: edges
     layers: [res_mk]
+  - name: hres_outline.edges
+    op: edges
+    layers: [hres_outline]
+  - name: res_mk_off_hres_all
+    op: not
+    layers: [res_mk.edges, hres_outline.edges]
+  - name: res_mk_off_hres
+    op: inside_part
+    layers: [res_mk_off_hres_all, poly2_drawn]
+  - name: lres_outline.edges
+    op: edges
+    layers: [lres_outline]
+  - name: res_mk_off_lres_all
+    op: not
+    layers: [res_mk.edges, lres_outline.edges]
+  - name: res_mk_off_lres
+    op: inside_part
+    layers: [res_mk_off_lres_all, poly2_drawn]
+  - name: ncomp_pcomp_butting_edges
+    op: and
+    layers: [ncomp.edges, pcomp.edges]
   - name: pres_outline.edges
     op: edges
     layers: [pres_outline]
@@ -3993,6 +4060,117 @@ edge_layers:
   - name: oplort_viol
     op: outside_part
     layers: [oplort_turned, v5_xtor]
+  # Channel length: the gate's own edges where they run inside the COMP, and the width
+  # between them. Upstream says every one of these as an edge measurement, so they are
+  # `min_width` on an edge layer rather than a region check with a mask.
+  - name: tgate_pl2_lv.edges
+    op: edges
+    layers: [tgate_pl2_lv]
+  - name: pl2_lv_channel
+    op: inside_part
+    layers: [tgate_pl2_lv.edges, comp]
+  - name: ngate_5v.edges
+    op: edges
+    layers: [ngate_5v]
+  - name: pl2_mv_n_channel
+    op: inside_part
+    layers: [ngate_5v.edges, comp]
+  - name: pgate_5v.edges
+    op: edges
+    layers: [pgate_5v]
+  - name: pl2_mv_p_channel
+    op: inside_part
+    layers: [pgate_5v.edges, comp]
+  - name: ngate_6v.edges
+    op: edges
+    layers: [ngate_6v]
+  - name: pl2_6v_n_channel
+    op: inside_part
+    layers: [ngate_6v.edges, comp]
+  - name: pgate_6v.edges
+    op: edges
+    layers: [pgate_6v]
+  - name: pl2_6v_p_channel
+    op: inside_part
+    layers: [pgate_6v.edges, comp]
+  - name: poly_nat_lv.edges
+    op: edges
+    layers: [poly_nat_lv]
+  - name: nat4_shared
+    op: and
+    layers: [poly_nat_lv.edges, ngate.edges]
+  - name: nat4_channel
+    op: outside_part
+    layers: [nat4_shared, nwell]
+  - name: poly_nat_mv.edges
+    op: edges
+    layers: [poly_nat_mv]
+  - name: nat5_shared
+    op: and
+    layers: [poly_nat_mv.edges, ngate.edges]
+  - name: nat5_channel
+    op: outside_part
+    layers: [nat5_shared, nwell]
+  - name: poly_ymtp_lv.edges
+    op: edges
+    layers: [poly_ymtp_lv]
+  - name: ypl2_lv_shared
+    op: and
+    layers: [poly_ymtp_lv.edges, tgate.edges]
+  - name: ypl2_lv_channel
+    op: outside_part
+    layers: [ypl2_lv_shared, otp_mk]
+  - name: poly_ymtp_mv.edges
+    op: edges
+    layers: [poly_ymtp_mv]
+  - name: ypl2_mv_shared
+    op: and
+    layers: [poly_ymtp_mv.edges, tgate.edges]
+  - name: ypl2_mv_channel
+    op: outside_part
+    layers: [ypl2_mv_shared, otp_mk]
+
+  # PL.7: the width across a gate that bends at 45 degrees, measured between the gate's
+  # own diagonal edges where they run inside the COMP. Angles normalise to [0, 180), so
+  # upstream's 25..65 and -65..-25 are 25..65 and 115..155 here.
+  - name: nom_gate.edges
+    op: edges
+    layers: [nom_gate]
+  - name: nom_gate_in_comp
+    op: inside_part
+    layers: [nom_gate.edges, comp]
+  - name: pl7_nom_rise
+    op: with_angle
+    min: 25
+    max: 65
+    layers: [nom_gate_in_comp]
+  - name: pl7_nom_fall
+    op: with_angle
+    min: 115
+    max: 155
+    layers: [nom_gate_in_comp]
+  - name: pl7_nom
+    op: or
+    layers: [pl7_nom_rise, pl7_nom_fall]
+  - name: thick_gate.edges
+    op: edges
+    layers: [thick_gate]
+  - name: thick_gate_in_comp
+    op: inside_part
+    layers: [thick_gate.edges, comp]
+  - name: pl7_thick_rise
+    op: with_angle
+    min: 25
+    max: 65
+    layers: [thick_gate_in_comp]
+  - name: pl7_thick_fall
+    op: with_angle
+    min: 115
+    max: 155
+    layers: [thick_gate_in_comp]
+  - name: pl7_thick
+    op: or
+    layers: [pl7_thick_rise, pl7_thick_fall]
   - name: comp_3p3v_no_poly.edges
     op: edges
     layers: [comp_3p3v_no_poly]

@@ -2,33 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# N-well.
-#
-# Every rule comes in an _LV and an _MV form: the low-voltage well is one that
-# touches neither v5_xtor nor dualgate anywhere, the medium-voltage well is one that
-# overlaps dualgate.  NW.6_MV and NW.7_* are not DRC checks upstream.
-#
-# Validated against the PDK's own drc/testing/unit/nwell.{gds,lyrdb} with
-# tools/compare-lyrdb.py, which counts *logical* violations - markers clustered by
-# proximity, since the two engines report at different granularity and matching
-# KLayout's marker count is not the goal.
-#
-# All 13 rules fire.  The reference finds 220 logical violations, we flag 152, and we
-# report nothing it does not - 68 false cleans, no false positives.  Where the gap sits:
-#
-#   NW.5     27 of the 68.  min_enclosure marks the deficient margin; upstream also
-#            emits the whole protruding area, and there are spots we miss entirely.
-#   NW.1a    12.  Chamfered wells, mostly closed already by the oblique/axis-aligned
-#            width pass; what is left is corner geometry.
-#   NW.2a/b  27.  Two wells meeting at a single shared vertex account for much of it:
-#            touching shapes dissolve into one merged region here, so the zero-width
-#            contact is inside a region rather than between two and there is no facing
-#            pair to measure.
-#
-# An earlier note here blamed the euclidian metric.  That was wrong - min_space already
-# measures euclidian, including point-to-45-degree-edge.  The real defect was min_width
-# not pairing an oblique edge with an axis-aligned one, since fixed.
-
+# N-well.  All 13 rules in this section.
 rules:
   - id: NW.1a_LV
     check: min_width

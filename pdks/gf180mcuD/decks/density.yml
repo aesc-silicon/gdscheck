@@ -2,24 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Global layer density.
+# Global layer density.  9 of the 10 rules in this section.
 #
-# Each rule is a coverage ratio over the die.  Upstream divides by `extent`, the whole
-# layout's bounding box.  This engine's fallback is the bounding box of the shapes it
-# flattened, and the flatten is scoped to the layers the deck names - so on a
-# density-only run that fallback collapses to the measured layer's own extent and every
-# ratio reads 100%.  Naming pr_bndry avoids it: a named boundary layer is pulled into
-# the flatten, and it is the right denominator anyway.
-#
-# The consequence is that these rules are NOT validated.  The cases the PDK ships draw
-# no pr_bndry - their die outline is an annotation shape on a layer no rule names - so
-# there is nothing to measure against.  What was checked is that the pass fixtures
-# produce exactly the reference's rule set; the fail fixtures cannot be, because the
-# denominator differs.
-#
-# MT30.7 is absent: it applies only to a 30K top metal, which this variant is not.
-# MT.3 measures the same layer as M5.4 on a 5LM stack - both are kept, as upstream has
-# them, because a 6LM variant would separate them.
+# Not ported: MT30.7.
 rules:
   - id: DCF.1b
     check: min_density

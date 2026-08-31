@@ -2,19 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Contact.
+# Contact.  12 of the 15 rules in this section.
 #
-# Five rules are not ported.  CO.2b selects a 4x4-or-larger contact array by counting
-# interactions and measuring with projection limits; CO.6a, CO.6b and CO.9 work on edge
-# layers (an end-of-line overlap, an adjacent-edge corner test, and a butting edge);
-# all need machinery this engine does not have.
-#
-# CO.1 is a min/max size: upstream rejects any contact edge that is not exactly 0.22 um,
-# which is what exact_width measures on a square contact.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 121 of 175 logical violations, 5 false positives. 53 of the 59
-# misses belong to the four rules above, so the ported rules miss 6.
+# Not ported: CO.2b, CO.6a, CO.6b.
 rules:
   - id: CO.1
     check: exact_width
@@ -79,4 +69,8 @@ rules:
   - id: CO.4
     check: nonempty
     layers: [co_4_crossing]
+    value: 0.0
+  - id: CO.9
+    check: nonempty
+    layers: [co9_viol]
     value: 0.0

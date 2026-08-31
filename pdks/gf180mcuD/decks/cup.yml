@@ -2,14 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Cu pillar.  The design rules apply the same two rules to every
-# metal level present - Metal1 to Metal5 on this variant.  Both are about the metal
-# carrying a bond pad, so the layer is filtered to metal that meets a pad and is not
-# part of a guard ring.
-#
-# Not validated: the PDK ships no test case for this deck, so there is no reference
-# .lyrdb to diff against. The rules are a direct port of the upstream expressions and
-# nothing more - treat them as unverified until a fixture exists.
+# Cu pillar.  All 2 rules in this section.
 rules:
   - id: CUP.2
     check: min_width

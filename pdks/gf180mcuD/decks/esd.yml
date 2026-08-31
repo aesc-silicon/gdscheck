@@ -2,22 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# ESD implant.
+# ESD implant.  11 of the 14 rules in this section.
 #
-# Three rules are not ported.  ESD.4a and ESD.6 measure an extension on an edge layer,
-# and ESD.4b uses KLayout's `overlap`, the width of the region two layers share, which
-# has no equivalent here.
-#
-# ESD.pl reads as an edge rule - `poly.edges.and(tgate_edges).width(0.8)` - but that is
-# the gate-length shape: the poly's own width, masked to where it forms a device gate.
-# gate_length measures exactly that.
-#
-# ESD.3b and ESD.7 are the same expression upstream - an ESD implant meeting a PCOMP -
-# reported under two ids, and are kept that way.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 23 of 26, no false positives; the three misses are ESD.4a, ESD.4b
-# and ESD.6, which are not ported.
+# Not ported: ESD.4a, ESD.4b, ESD.6.
 rules:
   - id: ESD.1
     check: min_width

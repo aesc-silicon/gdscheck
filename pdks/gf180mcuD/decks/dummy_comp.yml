@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# COMP dummy fill.  All ten rules, every one a
-# spacing minimum from the dummy active to something it must stay clear of.
-#
-# Not validated: the PDK ships no test case for this deck, so there is no reference
-# .lyrdb to diff against.
+# COMP dummy fill.  All 10 rules in this section.
 rules:
   - id: DCF.2b
     check: min_space

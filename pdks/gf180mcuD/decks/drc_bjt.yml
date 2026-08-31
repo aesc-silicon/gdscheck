@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# BJT geometry.  All three rules.
-#
-# BJT.1 and BJT.2 are "must contain" rules: the marker has to cover what it marks, so
+# BJT geometry.  All 3 rules in this section.
 rules:
   - id: BJT.1
     check: nonempty

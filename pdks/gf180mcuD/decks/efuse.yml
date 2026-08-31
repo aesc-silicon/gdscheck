@@ -2,30 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# eFuse.  16 of the 27 rules in this section.
+# eFuse.  15 of the 27 rules in this section.
 #
-# A poly fuse sits on field oxide between a cathode and an anode, all inside EFUSE_MK,
-# with LVS_Source picking out the anode end.
-#
-# Eleven rules are absent.  EF.03, EF.06 through EF.09, EF.21 and EF.22a/b all measure
-# a min/max dimension as an edge length (`edges.without_length(v)`), which needs the
-# edge layers plus an exact-length filter.  EF.04a, EF.16a and EF.16b select by
-# interaction count - "exactly four contacts at each end".
-#
-# EF.02 is a twelfth, dropped after measuring.  "Min/Max PLFUSE width: 0.18 um" is
-# `plfuse.drc(width != 0.18)`, and exact_width reports 229 violations against a
-# reference 129 - 100 false positives.  A fuse is a 0.18 x 1.26 um rectangle, and
-# exact_width tests every facing pair, so the long pair fails the width test as well as
-# the short one; upstream's `width` in a drc expression takes only the minimal span.
-# Left out rather than shipped wrong.
-#
-# The three "must be rectangular" rules are the first users of the `not_rectangle`
-# shape filter.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 322 of 832, 1 false positive.  EF.01, EF.04b/c/d, EF.05, EF.10,
-# EF.11, EF.14, EF.15 and EF.17 are exact; nearly all the misses are the eleven rules
-# above.
+# Not ported: EF.02, EF.03, EF.04a, EF.06, EF.07, EF.08, EF.09, EF.16a, EF.16b, EF.21,
+# EF.22a, EF.22b.
 rules:
   - id: EF.01
     check: nonempty

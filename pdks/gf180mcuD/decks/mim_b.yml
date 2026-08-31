@@ -2,26 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# MIM capacitor, option B - the variant this PDK build selects.  11 of the 12
-# rules in this section.
+# MIM capacitor, option B - the variant this PDK build selects.  11 of the 12 rules in this section.
 #
-# The capacitor's bottom plate has no layer of its own: it is whichever Metal4 shape
-# the FuseTop top plate sits on, and upstream reconstructs it as `mimtm_virtual` (see
-# pdk.yml).  Most of the deck is enclosure and spacing measured against that.
-#
-# MIMTM.11 is not ported.  It caps the *total* MIM area sharing one bottom plate, and
-# upstream implements it by walking each Metal4 polygon in Ruby and summing the FuseTop
-# area inside it - a per-polygon accumulation with no equivalent here.  MIMTM.8b already
-# bounds a single capacitor; this is the shared-plate sum on top of it.
-#
-# MIMTM.12 is not a DRC check upstream either - it points at the design manual.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 162 of 166, 3 false positives by the per-marker count.  MIMTM.7, MIMTM.8a, MIMTM.8b,
-# MIMTM.9 and MIMTM.10 are exact.  Of the 13 misses, 2 are MIMTM.11; two of MIMTM.1's
-# three are corner-to-corner pairs - facing edges that meet at a single x and are 0.74
-# and 1.03 um apart - which is the same class behind nwell's and lvpwell's residual, not
-# anything specific to this deck.
+# Not ported: MIMTM.11.
 rules:
   - id: MIMTM.1
     check: min_space
@@ -70,6 +53,10 @@ rules:
     value: 10000.0
   - id: MIMTM.9
     check: min_space
+    layers: [top_via_in_fusetop]
+    value: 0.5
+  - id: MIMTM.9
+    check: min_notch
     layers: [top_via_in_fusetop]
     value: 0.5
   - id: MIMTM.10

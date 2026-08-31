@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 5.0 V.  All 8 rules in this section, on the part of SRAMCORE that overlaps
-# v5_xtor.
+# SRAM 5.  All 8 rules in this section.
 rules:
   - id: S.DF.4c_MV
     check: min_enclosure

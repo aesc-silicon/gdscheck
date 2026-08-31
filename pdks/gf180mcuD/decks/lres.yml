@@ -2,18 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Low-sheet (N+) poly resistor.  7 of the 9 rules in this section.
-#
-# The two absent rules are the RES_MK marking checks (LRES.9a and .9b): both
-# work on edge subsets - "the marking's length shall coincide with the resistor's" is
-# an edge boolean against the poly-and-SAB outline, and the size rule filters marker
-# edges by length.
-#
-# `isolated` upstream is the space between separate regions of one layer, which is
-# what min_space measures here; the notch companion covers the same-polygon case.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 42 of 60, no false positives.
+# Low-sheet (N+) poly resistor.  All 9 rules in this section.
 rules:
   - id: LRES.1
     check: min_width
@@ -59,3 +48,11 @@ rules:
     check: nonempty
     layers: [lres_5_crossing]
     value: 0.0
+  - id: LRES.9a
+    check: nonempty
+    layers: [lres9a_viol]
+    value: 0.0
+  - id: LRES.9b
+    check: min_space
+    layers: [res_mk_big, res_mk]
+    value: 20.0

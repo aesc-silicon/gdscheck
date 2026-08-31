@@ -2,26 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal slotting.  Wide metal has to be perforated so
-# it does not lift during processing; these rules say which metal needs slots and what a
-# legal slot looks like.  One rule set per level, Metal1 to Metal5 on this 5LM variant.
-#
-# The PDK ships no test case for this deck, so unlike every other deck here the mapping
-# is not measured against a reference - it is read off mslot.rb directly and checked
-# against a pattern of our own, written by tools/gen-mslot-pattern.py: nine Metal1
-# plates, each drawn to trip exactly one MSLOT1 rule.  All nine fire once and nothing
-# else does.  That confirms every rule is reachable and lands on the geometry it is
-# about; it does not confirm agreement with the foundry's engine, which only a real test
-# case could.  Levels 2 to 5 are the same rules on the same derivations, so they are
-# covered by construction rather than by measurement.
-#
-# MSLOT#.0 and MSLOT#.1 are `nonempty` checks on a derived layer rather than measurements:
-# upstream outputs the derivation itself, so the geometry that reaches the layer *is* the
-# violation.
-#
-# MSLOT5.7 is absent.  It measures the space from the via *above* the metal to the slot,
-# and Metal5 is the top of a 5LM stack, so there is no such via - upstream substitutes an
-# empty layer and the rule can never fire.
+# Metal slotting.
 rules:
   - id: MSLOT1.0
     check: nonempty

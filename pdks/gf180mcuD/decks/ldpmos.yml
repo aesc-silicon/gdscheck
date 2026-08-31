@@ -2,31 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS PFET.  24 of the 38 rules in this section.
+# LDMOS PFET.  22 of the 38 rules in this section.
 #
-# Structurally the mirror of ldnmos with MVPSD marking the drain, but the rule ids and
-# much of the shape differ, so none of the derived layers are shared.
-#
-# Fourteen rules are not ported, in the same three kinds as ldnmos:
-#
-#   MDP.1a, MDP.2, MDP.3d, MDP.4, MDP.9b, MDP.9c, MDP.11
-#       Channel length and width, guard-ring metal continuity, and the poly extension
-#       beyond COMP - all measured on edge subsets.
-#   MDP.3, MDP.9f, MDP.13b, MDP.13c
-#       Selection by interaction count.
-#   MDP.3c, MDP.4b, MDP.10, MDP.17a
-#       `.drc(...)` expressions, `centers`, and `separation(..., transparent)`.
-#
-# MDP.9d is a fifteenth, dropped for a different reason: it was written and measured,
-# and both of its terms over-fire badly - 100 violations against a reference 15, 89 of
-# them false positives, with the first term alone accounting for all of it.  Whatever
-# `poly2 AND dualgate AND LDMOS_XTOR overlapping the grown drain` selects upstream, it
-# is not what the same expression selects here.  A rule wrong 85% of the time is worse
-# than an absent one, so it stays out until the discrepancy is understood.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 192 of 336, 2 false positives.  MDP.1, MDP.3ai, MDP.5, MDP.6,
-# MDP.7, MDP.8, MDP.12, MDP.15, MDP.16a, MDP.16b and MDP.17c are exact.
+# Not ported: MDP.10, MDP.11, MDP.13b, MDP.13c, MDP.17a, MDP.1a, MDP.2, MDP.3, MDP.3c,
+# MDP.3d, MDP.4, MDP.4b, MDP.9b, MDP.9c, MDP.9d, MDP.9f.
 rules:
   - id: MDP.1
     check: min_enclosure

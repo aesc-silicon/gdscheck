@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# BJT LVS marker.  The one rule in this section.
-#
-# The emitter COMP of an NPN (inside DNWELL) or a PNP (inside NWELL) must be fully
-# covered by LVS_BJT; whatever is left over after subtracting the marker is the error.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 2 of 2 logical violations, no false positives - exact.
+# BJT LVS marker.  All 1 rules in this section.
 rules:
   - id: LVS_BJT.1
     check: nonempty

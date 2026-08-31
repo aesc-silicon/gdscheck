@@ -2,26 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS NFET.  24 of the 35 rules in this section.
+# LDMOS NFET.  21 of the 35 rules in this section.
 #
-# The HV device is recognised by LDMOS_XTOR over Dualgate, with MVSD marking the drain.
-#
-# Eleven rules are not ported, and they cluster into three kinds:
-#
-#   MDN.3b, MDN.4a, MDN.4b, MDN.10b   Channel length and width, and the poly extension
-#                                     in the width direction, all measured between edge
-#                                     subsets picked with inside_part/outside_part.
-#   MDN.10f, MDN.13b, MDN.13c, MDN.13d
-#                                     Selection by interaction *count* -
-#                                     `interacting(other, 2, 2)` and friends - which
-#                                     this engine's boolean selectors cannot express.
-#   MDN.5c, MDN.10c, MDN.10d, MDN.11, MDN.12
-#                                     `.drc(...)` expressions over sized-and-extented
-#                                     regions, and `enclosed(..., transparent)`.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 494 of 837, 7 false positives (1 by tools/unmatched-markers.py).  MDN.3a, MDN.7a, MDN.13a and
-# MDN.15b are exact; MDN.17 is within one of the reference's 62.  Most of the 351 misses belong to the eleven rules above.
+# Not ported: MDN.10b, MDN.10c, MDN.10d, MDN.10f, MDN.11, MDN.12, MDN.13b, MDN.13c,
+# MDN.13d, MDN.3b, MDN.4a, MDN.4b, MDN.5c, MDN.7.
 rules:
   - id: MDN.1
     check: min_width
