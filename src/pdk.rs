@@ -108,6 +108,19 @@ pub struct VirtualLayerDef {
     /// absent means unbounded above.
     #[serde(default)]
     pub max: Option<f64>,
+    /// Extra reach (µm) for `grow`, beyond its radius.  Absent means none.
+    ///
+    /// Wanted only when the grown layer is a *selection radius* — "everything within X of
+    /// this" — because a shape at exactly X then merely touches the grown region, and a
+    /// whole-region test reads a zero-area touch as no overlap.  A hair of slack turns
+    /// that into a hairline overlap and the shape is selected.
+    ///
+    /// Wanted nowhere else, and it used to be the default: a band that decides which of
+    /// two limits applies, or a region a rule must not reach into, is judged wrong by any
+    /// slack at all.  That cost five rules across four decks before the default was
+    /// flipped, each one over-reporting plausibly rather than failing.
+    #[serde(default)]
+    pub slack: Option<f64>,
 }
 
 /// A derived *edge* layer: boundary segments rather than regions.  Declared in
@@ -153,6 +166,8 @@ pub struct TiledVirtualSpec {
     pub radius: Option<f64>,
     /// Text pattern for the `with_text` op.
     pub text: Option<String>,
+    /// Extra reach (µm) for `grow`; see [`VirtualLayerDef::slack`].
+    pub slack: Option<f64>,
     /// Bounding-box side bounds (µm) for the `with_bbox_min`/`with_bbox_max` filters.
     pub min: Option<f64>,
     pub max: Option<f64>,
@@ -803,6 +818,7 @@ impl PdkConfig {
                     op: vl.op.clone(),
                     sources,
                     radius: vl.radius,
+                    slack: vl.slack,
                     text: vl.text.clone(),
                     min: vl.min,
                     max: vl.max,

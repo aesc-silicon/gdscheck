@@ -212,6 +212,7 @@ virtual_layers:
     layers: [CuPillarPad]
   - name: CuPillarPadGrown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 29.995
     layers: [CuPillarPad]
@@ -502,6 +503,7 @@ virtual_layers:
     layers: [PsdActiv, NWellOrPWellBlk]
   - name: PsdActivX1Touch
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.0
     layers: [PsdActivX1]
@@ -511,6 +513,7 @@ virtual_layers:
     layers: [NActivX1, PsdActivX1Touch]
   - name: PsdActivX1Grown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.29
     layers: [PsdActivX1]
@@ -605,6 +608,7 @@ virtual_layers:
     layers: [Cont, GPRppdExtended]
   - name: SalBlockRppdGrown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.20
     layers: [SalBlockRppd]
@@ -622,6 +626,7 @@ virtual_layers:
     layers: [Cont, GPRhighExtended]
   - name: SalBlockRhighGrown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.20
     layers: [SalBlockRhigh]
@@ -643,6 +648,7 @@ virtual_layers:
     layers: [RhighRecogBase, GatPoly]
   - name: RhighRecogGrown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.0
     layers: [RhighRecog]
@@ -671,6 +677,7 @@ virtual_layers:
     layers: [TRANS, NpnTieHole]
   - name: NpnTieHoleGrown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.5
     layers: [NpnTieHole]
@@ -750,6 +757,7 @@ virtual_layers:
     layers: [SalBlock, IsoPWellAct]
   - name: NSDBlockIsoGrown
     op: grow
+    slack: 0.005
     mode: lazy
     radius: 0.145
     layers: [nSDBlockIso]

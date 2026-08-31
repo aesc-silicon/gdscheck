@@ -39,6 +39,14 @@ pub fn run(
         merged.ensure_edges(layout, key);
         let tile = merged.tile_dbu() as i64;
         let mut out = Vec::new();
+        // An edge layer is a bag of segments and the ops that build one may put the same
+        // segment in it more than once - a `join` of two selections that both reach it, a
+        // boolean whose sources overlap. The tile a segment is owned by dedups it across
+        // tiles; this dedups it within one. Reporting the same wall twice is not a second
+        // violation, and it is measurable: NP.11 emitted 26 markers for 10 segments and
+        // O.PL.ORT 725 for 367, in both cases exactly the reference's count once folded.
+        let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
+            std::collections::HashSet::new();
         for (&(tx, ty), edges) in merged.edges(key) {
             let core = crate::merge::Core {
                 x0: tx as i64 * tile,
@@ -50,6 +58,9 @@ pub fn run(
                 let (mx, my) = e.midpoint();
                 if !core.contains(mx, my) {
                     continue; // owned by the tile the segment's middle falls in
+                }
+                if !seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+                    continue; // the same segment, reached by more than one route
                 }
                 let (ax, ay) = (e.a.x as f64 * dbu_to_um, e.a.y as f64 * dbu_to_um);
                 let (bx, by) = (e.b.x as f64 * dbu_to_um, e.b.y as f64 * dbu_to_um);
