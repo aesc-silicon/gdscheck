@@ -55,3 +55,7 @@ rules:
     check: nonempty
     layers: [cont_lres_on_sab]
     value: 0.0
+  - id: LRES.5
+    check: nonempty
+    layers: [lres_5_crossing]
+    value: 0.0

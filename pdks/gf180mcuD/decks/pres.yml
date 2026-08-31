@@ -52,3 +52,7 @@ rules:
     check: min_space
     layers: [res_mk_big, res_mk]
     value: 20.0
+  - id: PRES.5
+    check: nonempty
+    layers: [pres_5_crossing]
+    value: 0.0

@@ -58,6 +58,18 @@ pub fn on_edge_layers(rule: &RuleDefinition, merged: &MergedCache, check: &str) 
     kinds.first().copied().unwrap_or(false)
 }
 
+/// Which way a pair of edges has to face, and which side the measured span is on.
+#[derive(Clone, Copy, PartialEq)]
+enum Rel {
+    /// Nested boundaries, normals the same way: how far the inner sits inside the outer.
+    Enclosure,
+    /// Facing boundaries, normals opposed, the span on the outside of both: empty ground.
+    Space,
+    /// Facing boundaries, normals opposed, the span on the *inside* of both: material.
+    /// One edge layer against itself — the two walls of a gate, and the width between.
+    Width,
+}
+
 /// The outer layer's boundary must sit at least `value` outside the inner layer's.
 pub fn run_enclosure(
     rule: &RuleDefinition,
@@ -65,7 +77,7 @@ pub fn run_enclosure(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, true)
+    run(rule, layout, dbu_to_um, merged, Rel::Enclosure)
 }
 
 /// The two layers' boundaries must stay at least `value` apart.
@@ -75,7 +87,19 @@ pub fn run_space(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, false)
+    run(rule, layout, dbu_to_um, merged, Rel::Space)
+}
+
+/// An edge layer's own facing pairs must span at least `value` of material — KLayout's
+/// `width` on an edge collection. GF180's `O.PL.2` is the OTP gate length: the two walls
+/// of the poly where it crosses the active, and no region carries that distance.
+pub fn run_width(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    run(rule, layout, dbu_to_um, merged, Rel::Width)
 }
 
 /// One offending pair: the margin measured, and the two points that measure it.
@@ -113,15 +137,23 @@ fn run(
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
-    nested: bool,
+    rel: Rel,
 ) -> Vec<Violation> {
-    let name = if nested {
-        "min_edge_enclosure"
-    } else {
-        "min_edge_space"
+    let name = match rel {
+        Rel::Enclosure => "min_enclosure",
+        Rel::Space => "min_space",
+        Rel::Width => "min_width",
     };
-    let (Some(la), Some(lb)) = (rule.layers.first(), rule.layers.get(1)) else {
-        eprintln!("[{}] {name} needs two layers", rule.id);
+    // A width is one layer against itself; the others take two.
+    let (Some(la), lb) = (
+        rule.layers.first(),
+        rule.layers.get(1).or(rule.layers.first()),
+    ) else {
+        eprintln!("[{}] {name} needs a layer", rule.id);
+        return vec![];
+    };
+    let Some(lb) = lb else {
+        eprintln!("[{}] {name} needs a layer", rule.id);
         return vec![];
     };
     let ka = (la.gds_layer as i16, la.gds_datatype as i16);
@@ -180,15 +212,15 @@ fn run(
                     continue; // not parallel: no projected run to measure
                 }
                 let dot = sa.n.0 * sb.n.0 + sa.n.1 * sb.n.1;
-                if nested != (dot > 0.0) {
-                    // Enclosure wants nested boundaries (normals the same way); spacing
-                    // wants facing ones (normals opposed).
+                if (rel == Rel::Enclosure) != (dot > 0.0) {
+                    // Enclosure wants nested boundaries (normals the same way); the other
+                    // two want facing ones (normals opposed).
                     continue;
                 }
-                // How far b sits on a's *inward* side (enclosure) or outward side
-                // (spacing).  One sign covers both.
+                // Which side of a the span lies on: outward for a spacing, inward for an
+                // enclosure or a width. One sign covers all three.
                 let along = (sb.o.0 - sa.o.0) * sa.n.0 + (sb.o.1 - sa.o.1) * sa.n.1;
-                let margin = if nested { -along } else { along };
+                let margin = if rel == Rel::Space { along } else { -along };
                 if margin < -tol || margin >= limit {
                     continue; // behind this edge, or already far enough
                 }
@@ -207,7 +239,7 @@ fn run(
                 }
                 let mid = (s0 + s1) * 0.5;
                 let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
-                let q = if nested {
+                let q = if rel != Rel::Space {
                     (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
                 } else {
                     (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
@@ -223,13 +255,17 @@ fn run(
             if !core.contains(mx, my) {
                 continue;
             }
-            let what = if nested { "enclosure" } else { "space" };
+            let what = match rel {
+                Rel::Enclosure => "enclosure",
+                Rel::Space => "space",
+                Rel::Width => "width",
+            };
             out.push(Violation::edge(
                 &rule.id,
-                if nested {
-                    "Minimum enclosure violation"
-                } else {
-                    "Minimum space violation"
+                match rel {
+                    Rel::Enclosure => "Minimum enclosure violation",
+                    Rel::Space => "Minimum space violation",
+                    Rel::Width => "Minimum width violation",
                 },
                 format!(
                     "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",

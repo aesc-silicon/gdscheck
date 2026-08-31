@@ -2,20 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# OTP marker.  12 of the 16 rules in this section.
-#
-# The OTP region carries its own, tighter rule set; every layer here is the ordinary
-# one intersected with the marker.
-#
-# Four are absent.  O.SB.11 uses KLayout's `overlap`, the width of a shared region.
-# O.SB.4 joins a spacing minimum with an intersection the same way SB.4 does, but its
-# second term is `sab_otp AND contact`, which duplicates O.CO.7's geometry - left out
-# rather than guessed at.  O.PL.ORT restricts gate orientation with `without_angle` on
-# an edge layer, and O.PL.2 is a gate length measured the same way.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 73 of 128, and no false positives by either measure
-# (tools/unmatched-markers.py agrees).  O.SB.9 is exact.
+# OTP marker.  All 16 rules in this section.
 rules:
   - id: O.DF.3a
     check: min_space
@@ -83,3 +70,23 @@ rules:
     check: min_space
     layers: [contact_in_comp_otp, tgate_otp]
     value: 0.13
+  - id: O.PL.2
+    check: min_width
+    layers: [opl2_channel]
+    value: 0.22
+  - id: O.PL.ORT
+    check: nonempty
+    layers: [oplort_viol]
+    value: 0.0
+  - id: O.SB.4
+    check: min_space
+    layers: [sab_otp, contact]
+    value: 0.03
+  - id: O.SB.4
+    check: nonempty
+    layers: [sab_otp_on_contact]
+    value: 0.0
+  - id: O.SB.11
+    check: min_overlap
+    layers: [sab_otp, comp]
+    value: 0.04

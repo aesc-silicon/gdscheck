@@ -55,3 +55,15 @@ rules:
       interacting_only: 1
     str_params:
       metric: euclidian
+  - id: S.DF.4c_MV
+    check: nonempty
+    layers: [s_df_4c_mv_crossing]
+    value: 0.0
+  - id: S.DF.8_MV
+    check: nonempty
+    layers: [s_df_8_mv_crossing]
+    value: 0.0
+  - id: S.CO.4_MV
+    check: nonempty
+    layers: [s_co_4_mv_crossing]
+    value: 0.0

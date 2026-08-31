@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Gate poly: patterns for `PL.6`, the `no_corner` rule.
+//! Gate poly: patterns for `PL.6`, the `no_corner` rule, and for the touching case that
+//! `PL.5a`/`PL.5b` turn on.
 //!
 //! "90 degree bends on the COMP are not allowed" is a rule about a *vertex*, not an edge,
 //! and its good pattern has to say so from several directions at once: a bend is fine off
@@ -33,12 +34,53 @@ fn ell(l: (i16, i16), x: f64, y: f64) -> gds21::GdsElement {
     )
 }
 
+/// The configuration `PL.5a`/`PL.5b` lose nine markers each to, reduced from the site at
+/// (-3830.478, 881.684) in the foundry case.
+///
+/// A COMP's corner sits *exactly* on the gate poly's boundary. The two walls are
+/// collinear and run away from that point in opposite directions, so they meet at one
+/// point and nowhere else. KLayout calls that a separation of zero and reports it; this
+/// engine calls a boundary touch no spacing at all and reports nothing, which is a
+/// deliberate convention (`check_tile`: "Touching: shapes share a boundary -> no
+/// spacing") and not specific to this rule or this deck.
+///
+/// Drawn so the two are otherwise clear of each other: every other part of the poly is
+/// more than the rule's limit from the COMP, so the point of contact is the only thing
+/// either engine could be reporting.
+fn kissing_corner(comp: (i16, i16), poly2: (i16, i16), x: f64, y: f64) -> Vec<gds21::GdsElement> {
+    vec![
+        // The COMP sits up and to the right of (x, y), with that corner on the wall.
+        rect(comp, x, y, x + 1.2, y + 1.2),
+        // The poly runs down and to the left, its right wall collinear with the COMP's
+        // left wall below the shared point.
+        rect(poly2, x - 1.2, y - 1.2, x, y),
+    ]
+}
+
+/// The same two shapes pulled a comfortable distance apart, which both engines call clean.
+fn split_corner(comp: (i16, i16), poly2: (i16, i16), x: f64, y: f64) -> Vec<gds21::GdsElement> {
+    vec![
+        rect(comp, x, y, x + 1.2, y + 1.2),
+        rect(poly2, x - 1.2 - 0.5, y - 1.2 - 0.5, x - 0.5, y - 0.5),
+    ]
+}
+
 pub fn generate(pdk: &PdkConfig) {
     std::fs::create_dir_all(DIR).expect("failed to create output directory");
     let comp = layer(pdk, "comp");
     let poly2 = layer(pdk, "poly2_drawn");
     let ymtp = layer(pdk, "ymtp_mk");
     let o = OFFSET;
+
+    // PL.5's touching case, as its own pair.
+    write_gz(
+        &format!("{DIR}/PL.5.good.gds.gz"),
+        library("TOP", split_corner(comp, poly2, o, o)),
+    );
+    write_gz(
+        &format!("{DIR}/PL.5.bad.gds.gz"),
+        library("TOP", kissing_corner(comp, poly2, o, o)),
+    );
 
     // Bad: an L whose elbow sits well inside a COMP island. Two of its six right angles
     // have their probe square inside the COMP - the outer corner of the elbow and the

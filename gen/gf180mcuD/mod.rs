@@ -13,6 +13,7 @@
 
 mod acute;
 mod offgrid;
+mod otp_mk;
 mod poly2;
 mod pplus;
 mod pres;
@@ -30,6 +31,7 @@ pub const GRID: f64 = 0.005;
 
 pub fn generate(pdk: &PdkConfig) {
     offgrid::generate(pdk);
+    otp_mk::generate(pdk);
     acute::generate(pdk);
     poly2::generate(pdk);
     pplus::generate(pdk);

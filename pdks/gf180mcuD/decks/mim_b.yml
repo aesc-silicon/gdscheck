@@ -77,3 +77,11 @@ rules:
     layers: [topmin1_via_on_mim_bottom]
     value: 0.0
     description: "MIMTM.10: no Via3 may touch the MIM bottom plate"
+  - id: MIMTM.2
+    check: nonempty
+    layers: [mimtm_2_crossing]
+    value: 0.0
+  - id: MIMTM.4
+    check: nonempty
+    layers: [mimtm_4_crossing]
+    value: 0.0

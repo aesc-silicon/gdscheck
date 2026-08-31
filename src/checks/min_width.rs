@@ -18,6 +18,9 @@ pub fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
+    if super::edge_distance::on_edge_layers(rule, merged, "min_width") {
+        return super::edge_distance::run_width(rule, layout, dbu_to_um, merged);
+    }
     let min_w_dbu = rule.value / dbu_to_um;
     run_width(
         rule,
