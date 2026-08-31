@@ -168,9 +168,9 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::esd(
     "esd", "esd.gds.gz", "7_11_ESD",
     &[
-        ("ESD.1", 2), ("ESD.10", 2), ("ESD.2", 2), ("ESD.3a", 1), ("ESD.3b", 7),
-        ("ESD.5a", 2), ("ESD.5b", 2), ("ESD.7", 7), ("ESD.8", 3), ("ESD.9", 1),
-        ("ESD.pl", 2),
+        ("ESD.1", 2), ("ESD.10", 2), ("ESD.2", 2), ("ESD.3a", 1), ("ESD.3b", 7), ("ESD.4a", 3),
+        ("ESD.4b", 2), ("ESD.5a", 2), ("ESD.5b", 2), ("ESD.6", 2), ("ESD.7", 7), ("ESD.8", 3),
+        ("ESD.9", 1), ("ESD.pl", 2),
     ]
 )]
 #[case::contact(
@@ -214,7 +214,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
     &[
-        ("NP.1", 392), ("NP.10", 3), ("NP.11", 26), ("NP.12", 1), ("NP.2", 83), ("NP.3a", 9),
+        ("NP.1", 392), ("NP.10", 3), ("NP.11", 10), ("NP.12", 1), ("NP.2", 83), ("NP.3a", 9),
         ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e",
         2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 6), ("NP.5b", 113), ("NP.5ci", 7), ("NP.5cii",
         3), ("NP.5di", 9), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 6), ("NP.8a", 121), ("NP.8b",
@@ -234,11 +234,11 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::ldnmos(
     "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
     &[
-        ("MDN.1", 40), ("MDN.10a", 64), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.13a", 8),
-        ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 15),
-        ("MDN.2b", 27), ("MDN.3a", 9), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8),
-        ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9",
-        6),
+        ("MDN.1", 40), ("MDN.10a", 64), ("MDN.10b", 8), ("MDN.10ei", 3), ("MDN.10eii", 2),
+        ("MDN.13a", 8), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74),
+        ("MDN.2a", 15), ("MDN.2b", 27), ("MDN.3a", 9), ("MDN.5ai", 31), ("MDN.5aii", 4),
+        ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a",
+        10), ("MDN.8b", 14), ("MDN.9", 6),
     ]
 )]
 #[case::ldpmos(
@@ -246,8 +246,9 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     &[
         ("MDP.1", 12), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.15",
         1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17c", 1), ("MDP.3ai", 91), ("MDP.3aii", 8),
-        ("MDP.3b", 4), ("MDP.4a", 8), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21),
-        ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9ei", 6), ("MDP.9eii", 4),
+        ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.5", 8), ("MDP.5a", 5),
+        ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9d",
+        15), ("MDP.9ei", 6), ("MDP.9eii", 4),
     ]
 )]
 #[case::lres(
@@ -276,7 +277,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
     &[
         ("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 82),
-        ("O.PL.3a", 10), ("O.PL.4", 9), ("O.PL.ORT", 725), ("O.SB.11", 1), ("O.SB.13_LV", 53),
+        ("O.PL.3a", 10), ("O.PL.4", 9), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53),
         ("O.SB.13_MV", 1), ("O.SB.2", 5), ("O.SB.3", 6), ("O.SB.4", 2), ("O.SB.5b_LV", 6),
         ("O.SB.9", 1),
     ]
@@ -300,9 +301,10 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::efuse(
     "efuse", "efuse.gds.gz", "10_11_EFUSE",
     &[
-        ("EF.01", 38), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.10",
-        38), ("EF.11", 5), ("EF.12", 21), ("EF.13", 5), ("EF.14", 6), ("EF.15", 12), ("EF.17",
-        6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 55),
+        ("EF.01", 38), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.06",
+        380), ("EF.07", 37), ("EF.08", 188), ("EF.09", 22), ("EF.10", 38), ("EF.11", 5),
+        ("EF.12", 21), ("EF.13", 5), ("EF.14", 6), ("EF.15", 12), ("EF.17", 6), ("EF.18", 46),
+        ("EF.19", 21), ("EF.20", 55), ("EF.22a", 65), ("EF.22b", 33),
     ]
 )]
 #[case::mim_b(

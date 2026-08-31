@@ -26,8 +26,15 @@ fn extract(process: &str, fixture: &str) -> (Connectivity, f64) {
     let halo_dbu = (merge::MIN_HALO_UM / dbu_to_um).ceil() as i32;
     let mut cache = merge::MergedCache::new(tile_dbu, halo_dbu, HashMap::new());
     for spec in pdk.tiled_virtual_layers() {
-        let op = parse_virtual_op(&spec.op, spec.radius, spec.min, spec.max, dbu_to_um)
-            .expect("virtual op");
+        let op = parse_virtual_op(
+            &spec.op,
+            spec.radius,
+            spec.min,
+            spec.max,
+            spec.slack,
+            dbu_to_um,
+        )
+        .expect("virtual op");
         cache.register_virtual(spec.key, op, spec.sources, spec.text);
     }
 

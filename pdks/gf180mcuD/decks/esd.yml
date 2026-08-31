@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# ESD implant.  11 of the 14 rules in this section.
-#
-# Not ported: ESD.4a, ESD.4b, ESD.6.
+# ESD implant.  All 14 rules in this section.
 rules:
   - id: ESD.1
     check: min_width
@@ -54,3 +52,15 @@ rules:
     check: nonempty
     layers: [esd10_viol]
     value: 0.0
+  - id: ESD.4a
+    check: min_enclosure
+    layers: [esd_edges_no_pcomp, ncomp.edges2]
+    value: 0.24
+  - id: ESD.4b
+    check: min_overlap
+    layers: [esd, comp]
+    value: 0.45
+  - id: ESD.6
+    check: min_enclosure
+    layers: [esd.edges, esd6_poly]
+    value: 0.45

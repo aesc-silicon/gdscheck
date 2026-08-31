@@ -68,7 +68,7 @@ fn every_virtual_layer_op_parses() {
             if vl.mode != VirtualMode::Lazy {
                 continue;
             }
-            parse_virtual_op(&vl.op, vl.radius, vl.min, vl.max, 0.001)
+            parse_virtual_op(&vl.op, vl.radius, vl.min, vl.max, vl.slack, 0.001)
                 .unwrap_or_else(|e| panic!("{process}: virtual layer '{}': {e}", vl.name));
         }
     }

@@ -123,6 +123,7 @@ pub fn parse_virtual_op(
     radius: Option<f64>,
     min: Option<f64>,
     max: Option<f64>,
+    slack: Option<f64>,
     dbu_to_um: f64,
 ) -> Result<merge::VirtualOp, String> {
     use merge::VirtualOp::*;
@@ -179,11 +180,10 @@ pub fn parse_virtual_op(
         }
         "close" => Close(radius_dbu()?),
         "open" => Open(radius_dbu()?),
+        // Slack is opt-in; see `VirtualLayerDef::slack` for the one case that wants it.
         "grow" => Grow(
             radius_dbu()?,
-            // `min` doubles as the slack here: a classifier band wants `min: 0`, so an
-            // edge drawn exactly at the boundary distance stays on the far side of it.
-            min.map_or(merge::GROW_MARGIN, |m| (m / dbu_to_um).round() as i32),
+            slack.map_or(0, |m| (m / dbu_to_um).round() as i32),
         ),
         "shrink" => Shrink(radius_dbu()?),
         "grow_x" => GrowX(radius_dbu()?),
@@ -227,6 +227,12 @@ pub fn parse_edge_op(
         "or" | "join" => Or,
         "inside_part" => InsidePart,
         "outside_part" => OutsidePart,
+        // Whole-edge selection: keeps or drops each segment entire, where the `_part`
+        // ops cut it at the boundary.
+        "interacting" => Interacting,
+        "not_interacting" => NotInteracting,
+        "interacting_edges" => InteractingEdges,
+        "not_interacting_edges" => NotInteractingEdges,
         "with_length" => {
             let (lo, hi) = bounds()?;
             WithLength(lo, hi)
@@ -354,8 +360,15 @@ pub fn run_drc(
     let tiled_virtuals: Vec<(pdk::TiledVirtualSpec, merge::VirtualOp)> = tiled_virtuals
         .into_iter()
         .map(|spec| {
-            let op = parse_virtual_op(&spec.op, spec.radius, spec.min, spec.max, dbu_to_um)
-                .map_err(|e| format!("Lazy virtual layer '{}': {e}", spec.name))?;
+            let op = parse_virtual_op(
+                &spec.op,
+                spec.radius,
+                spec.min,
+                spec.max,
+                spec.slack,
+                dbu_to_um,
+            )
+            .map_err(|e| format!("Lazy virtual layer '{}': {e}", spec.name))?;
             Ok((spec, op))
         })
         .collect::<Result<_, String>>()?;
@@ -653,17 +666,17 @@ mod tests {
     /// layer (which would turn every rule referencing it into a false-clean).
     #[test]
     fn parse_virtual_op_rejects_bad_config() {
-        assert!(parse_virtual_op("interacting", None, None, None, 0.001).is_ok());
-        assert!(parse_virtual_op("grow", Some(0.5), None, None, 0.001).is_ok());
-        let e = parse_virtual_op("interactign", None, None, None, 0.001).unwrap_err();
+        assert!(parse_virtual_op("interacting", None, None, None, None, 0.001).is_ok());
+        assert!(parse_virtual_op("grow", Some(0.5), None, None, None, 0.001).is_ok());
+        let e = parse_virtual_op("interactign", None, None, None, None, 0.001).unwrap_err();
         assert!(e.contains("unsupported op"), "{e}");
-        let e = parse_virtual_op("close", None, None, None, 0.001).unwrap_err();
+        let e = parse_virtual_op("close", None, None, None, None, 0.001).unwrap_err();
         assert!(e.contains("requires a radius"), "{e}");
-        let e = parse_virtual_op("shrink_x", None, None, None, 0.001).unwrap_err();
+        let e = parse_virtual_op("shrink_x", None, None, None, None, 0.001).unwrap_err();
         assert!(e.contains("requires a radius"), "{e}");
         // A bbox filter with neither bound would keep everything — almost certainly a
         // mistyped key rather than an intentional no-op filter.
-        let e = parse_virtual_op("with_bbox_min", None, None, None, 0.001).unwrap_err();
+        let e = parse_virtual_op("with_bbox_min", None, None, None, None, 0.001).unwrap_err();
         assert!(e.contains("`min` and/or `max`"), "{e}");
     }
 
@@ -671,26 +684,27 @@ mod tests {
     /// on zero-area contact, and silently aliasing them would be a correctness bug.
     #[test]
     fn parse_virtual_op_separates_overlapping_from_interacting() {
-        let over = parse_virtual_op("overlapping", None, None, None, 0.001).unwrap();
-        let inter = parse_virtual_op("interacting", None, None, None, 0.001).unwrap();
+        let over = parse_virtual_op("overlapping", None, None, None, None, 0.001).unwrap();
+        let inter = parse_virtual_op("interacting", None, None, None, None, 0.001).unwrap();
         assert_ne!(over, inter);
         // KLayout's `not_outside` / `outside` are the same relation under other names.
         assert_eq!(
             over,
-            parse_virtual_op("not_outside", None, None, None, 0.001).unwrap()
+            parse_virtual_op("not_outside", None, None, None, None, 0.001).unwrap()
         );
         assert_eq!(
-            parse_virtual_op("not_overlapping", None, None, None, 0.001).unwrap(),
-            parse_virtual_op("outside", None, None, None, 0.001).unwrap()
+            parse_virtual_op("not_overlapping", None, None, None, None, 0.001).unwrap(),
+            parse_virtual_op("outside", None, None, None, None, 0.001).unwrap()
         );
     }
 
     /// Bounds are converted from µm to DBU with the library's own scale.
     #[test]
     fn parse_virtual_op_converts_bbox_bounds_to_dbu() {
-        let op = parse_virtual_op("with_bbox_min", None, Some(2.0), Some(10.0), 0.001).unwrap();
+        let op =
+            parse_virtual_op("with_bbox_min", None, Some(2.0), Some(10.0), None, 0.001).unwrap();
         assert_eq!(op, merge::VirtualOp::WithBBoxMin(Some(2000), Some(10_000)));
-        let op = parse_virtual_op("with_bbox_max", None, None, Some(0.5), 0.001).unwrap();
+        let op = parse_virtual_op("with_bbox_max", None, None, Some(0.5), None, 0.001).unwrap();
         assert_eq!(op, merge::VirtualOp::WithBBoxMax(None, Some(500)));
     }
 }

@@ -1623,7 +1623,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.429
-    min: 0.0
     layers: [nwell_n_dn]
   - name: nwell_dn_outer_band
     op: difference
@@ -1659,7 +1658,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.10633
-    min: 0.0
     layers: [ngate]
   - name: ngate_step1
     op: intersection
@@ -1669,7 +1667,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.10633
-    min: 0.0
     layers: [ngate_step1]
   - name: ngate_step2
     op: intersection
@@ -1679,7 +1676,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.10633
-    min: 0.0
     layers: [ngate_step2]
   - name: ngate_step3
     op: intersection
@@ -1689,7 +1685,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.10633
-    min: 0.0
     layers: [pgate]
   - name: pgate_step1
     op: intersection
@@ -1699,7 +1694,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.10633
-    min: 0.0
     layers: [pgate_step1]
   - name: pgate_step2
     op: intersection
@@ -1709,7 +1703,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.10633
-    min: 0.0
     layers: [pgate_step2]
   - name: pgate_step3
     op: intersection
@@ -1723,13 +1716,11 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.32
-    min: 0.0
     layers: [ngate]
   - name: pgate_reach_flat
     op: grow
     mode: lazy
     radius: 0.32
-    min: 0.0
     layers: [pgate]
   - name: pp12_viol
     op: interacting
@@ -1894,7 +1885,6 @@ virtual_layers:
     op: grow
     mode: lazy
     radius: 0.429
-    min: 0.0
     layers: [lvpwell_dn]
   - name: ncomp_in_lvpwell
     op: intersection
@@ -2244,6 +2234,11 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [mvpsd_pcomp, poly2_drawn]
+  # No slack: `grow`'s default 5 nm exists to turn an exact touch into a hairline overlap
+  # so a whole-region test resolves it, and here that is precisely wrong. An LDMOS drain
+  # grown 0.16 um runs *alongside* its gate poly and should touch it; five more nanometres
+  # make it genuinely overlap, and `overlapping` then selects nearly every gate in the
+  # fixture instead of the ten upstream selects.
   - name: mdp9d_exclude
     op: grow
     mode: lazy
@@ -3196,9 +3191,13 @@ virtual_layers:
   # actually sits on.  Every enclosure rule in the deck is measured against that
   # reconstruction rather than against Metal4 itself, so a routing shape elsewhere on
   # the same net is not mistaken for the plate.
+  # A selection radius - "the plate reaches this far" - so it wants the slack: a via at
+  # exactly 1.06 um only touches the grown region, and a whole-region test reads a
+  # zero-area touch as no overlap. This is the one grow in either PDK that needs it.
   - name: fusetop_oversize
     op: grow
     radius: 1.06
+    slack: 0.005
     mode: lazy
     layers: [fusetop]
   - name: topmin1_metal_at_fusetop
@@ -3282,6 +3281,112 @@ virtual_layers:
 
 # The drawn layer table.  Variant D is a 5LM stack, so the
 # 6LM-only layers (via5 and the metaltop family) are absent.
+  # ---- LDMOS rules the engine can already say ------------------------------
+  # MDN.7: NCOMP or gate reaching an MVSD, or COMP inside one, outside the LDMOS marker.
+  - name: mdn7_ncomp_at_mvsd
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mvsd]
+  - name: mdn7_a1
+    op: difference
+    mode: lazy
+    layers: [mdn7_ncomp_at_mvsd, poly2_drawn]
+  - name: mdn7_a
+    op: difference
+    mode: lazy
+    layers: [mdn7_a1, mvsd]
+  - name: mdn7_ngate_at_mvsd
+    op: interacting
+    mode: lazy
+    layers: [ngate, mvsd]
+  - name: mdn7_b
+    op: difference
+    mode: lazy
+    layers: [mdn7_ngate_at_mvsd, mvsd]
+  - name: mdn7_c
+    op: intersection
+    mode: lazy
+    layers: [ncomp, mvsd]
+  - name: mdn7_all
+    op: union
+    mode: lazy
+    layers: [mdn7_a, mdn7_b, mdn7_c]
+  - name: mdn7_dg
+    op: intersection
+    mode: lazy
+    layers: [mdn7_all, dualgate]
+  - name: mdn7_viol
+    op: difference
+    mode: lazy
+    layers: [mdn7_dg, ldmos_xtor]
+
+  # MDP.9d: gate poly overlapping the sized source region, or not reaching it at all.
+  - name: mdp9d_poly_dg
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate]
+  - name: mdp9d_poly
+    op: intersection
+    mode: lazy
+    layers: [mdp9d_poly_dg, ldmos_xtor]
+  - name: mdp9d_l1
+    op: overlapping
+    mode: lazy
+    layers: [mdp9d_poly, mdp9d_exclude]
+  - name: ldmos_xtor_at_mvpsd
+    op: interacting
+    mode: lazy
+    layers: [ldmos_xtor, mvpsd]
+  - name: mdp9d_poly_mv
+    op: intersection
+    mode: lazy
+    layers: [mdp9d_poly_dg, ldmos_xtor_at_mvpsd]
+  - name: mdp9d_l2
+    op: not_interacting
+    mode: lazy
+    layers: [mdp9d_poly_mv, mdp9d_exclude]
+  - name: mdp9d_viol
+    op: union
+    mode: lazy
+    layers: [mdp9d_l1, mdp9d_l2]
+
+  # MDP.3d / MDP.4: COMP under an LDMOS marker but not under Metal1, whose uncovered
+  # boundary runs longer than 10 um.
+  - name: mdp3d_ncomp
+    op: interacting
+    mode: lazy
+    layers: [ncomp, ldmos_xtor_at_mvpsd]
+  - name: mdp3d_ncomp_dg
+    op: interacting
+    mode: lazy
+    layers: [mdp3d_ncomp, dualgate]
+  - name: mdp3d_bare
+    op: difference
+    mode: lazy
+    layers: [mdp3d_ncomp_dg, metal1]
+  - name: mdp4_pcomp_off
+    op: not_interacting
+    mode: lazy
+    layers: [pcomp, mvpsd]
+  - name: mdp4_pcomp_at
+    op: interacting
+    mode: lazy
+    layers: [mdp4_pcomp_off, ldmos_xtor_at_mvpsd]
+  - name: mdp4_pcomp_dg
+    op: interacting
+    mode: lazy
+    layers: [mdp4_pcomp_at, dualgate]
+  - name: mdp4_bare
+    op: difference
+    mode: lazy
+    layers: [mdp4_pcomp_dg, metal1]
+
+  # MDN.10b: the NCOMP boundary that reaches a gate, against the gate's own boundary.
+  - name: mdn10b_ncomp
+    op: interacting
+    mode: lazy
+    layers: [ncomp, poly_mdn10]
+
   # ---- "Crosses out" halves ------------------------------------------------
   # Every enclosure rule below is an OR upstream: the margin, and a shape that overlaps
   # what should contain it but runs outside. The second has no margin to measure - the
@@ -3836,6 +3941,129 @@ edge_layers:
   - name: ncomp_pcomp_butting_edges
     op: and
     layers: [ncomp.edges, pcomp.edges]
+  # ESD.4a: the ESD boundary away from any PCOMP, enclosing the NCOMP boundary.
+  - name: esd.edges
+    op: edges
+    layers: [esd]
+  - name: esd_edges_no_pcomp
+    op: not_interacting
+    layers: [esd.edges, pcomp]
+  - name: ncomp.edges2
+    op: edges
+    layers: [ncomp]
+  # ESD.6: the ESD boundary enclosing the poly edges that reach a gate.
+  - name: poly2.edges2
+    op: edges
+    layers: [poly2_drawn]
+  - name: esd6_poly
+    op: interacting_edges
+    layers: [poly2.edges2, tgate.edges]
+  # EF.06-09, EF.22a/b: the cathode and anode are rectangles whose width and length are
+  # both fixed. Upstream separates the two by which edges reach the fuse: those, plus the
+  # ones facing them, are the *width*; the remainder is the *length*. `without_length`
+  # then flags anything not exactly the value, hence the max of one DBU past it.
+  - name: cathode.edges
+    op: edges
+    layers: [cathode]
+  - name: anode.edges
+    op: edges
+    layers: [anode]
+  - name: plfuse.edges
+    op: edges
+    layers: [plfuse]
+  - name: cathode_at_fuse
+    op: interacting
+    layers: [cathode.edges, plfuse]
+  - name: cathode_facing
+    op: not_interacting_edges
+    layers: [cathode.edges, cathode_at_fuse]
+  - name: cathode_width
+    op: or
+    layers: [cathode_facing, cathode_at_fuse]
+  - name: cathode_length
+    op: not
+    layers: [cathode.edges, cathode_width]
+  - name: anode_at_fuse
+    op: interacting
+    layers: [anode.edges, plfuse]
+  - name: anode_facing
+    op: not_interacting_edges
+    layers: [anode.edges, anode_at_fuse]
+  - name: anode_width
+    op: or
+    layers: [anode_facing, anode_at_fuse]
+  - name: anode_length
+    op: not
+    layers: [anode.edges, anode_width]
+  - name: ef22a_edges
+    op: not
+    layers: [cathode_at_fuse, plfuse.edges]
+  - name: ef22b_edges
+    op: not
+    layers: [anode_at_fuse, plfuse.edges]
+  - name: ef_06_viol
+    op: without_length
+    min: 2.26
+    max: 2.261
+    layers: [cathode_width]
+  - name: ef_07_viol
+    op: without_length
+    min: 1.84
+    max: 1.841
+    layers: [cathode_length]
+  - name: ef_08_viol
+    op: without_length
+    min: 1.06
+    max: 1.061
+    layers: [anode_width]
+  - name: ef_09_viol
+    op: without_length
+    min: 2.43
+    max: 2.431
+    layers: [anode_length]
+  - name: ef_22a_viol
+    op: without_length
+    min: 1.04
+    max: 1.041
+    layers: [ef22a_edges]
+  - name: ef_22b_viol
+    op: without_length
+    min: 0.44
+    max: 0.441
+    layers: [ef22b_edges]
+  # MDP.3d / MDP.4 and MDN.10b, as edge layers.
+  - name: mdp3d_bare.edges
+    op: edges
+    layers: [mdp3d_bare]
+  - name: mdp3d_uncovered
+    op: outside_part
+    layers: [mdp3d_bare.edges, metal1]
+  - name: mdp3d_viol
+    op: with_length
+    min: 10.001
+    layers: [mdp3d_uncovered]
+  - name: mdp4_bare.edges
+    op: edges
+    layers: [mdp4_bare]
+  - name: mdp4_uncovered
+    op: outside_part
+    layers: [mdp4_bare.edges, metal1]
+  - name: mdp4_viol
+    op: with_length
+    min: 10.001
+    layers: [mdp4_uncovered]
+  - name: mdn10b_ncomp.edges
+    op: edges
+    layers: [mdn10b_ncomp]
+  - name: ncomp_off_poly
+    op: not_interacting
+    layers: [ncomp.edges, poly2_drawn]
+  - name: mdn10b_edges
+    op: interacting_edges
+    layers: [mdn10b_ncomp.edges, ncomp_off_poly]
+  - name: poly_mdn10.edges
+    op: edges
+    layers: [poly_mdn10]
   - name: pres_outline.edges
     op: edges
     layers: [pres_outline]

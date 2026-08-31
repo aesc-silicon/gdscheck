@@ -224,22 +224,26 @@ pub fn closing(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
 /// `not_interacting` selection (e.g. Rppd.c/Rhi.d's "Cont must be near SalBlock": grow
 /// SalBlock by the rule value, then flag Cont that still doesn't touch it).
 ///
-/// Adds a small (5 DBU = 5 nm) extra margin beyond `radius`.  Without it, a target polygon
-/// drawn *exactly* at the boundary distance would have its edge exactly coincide with the
-/// grown region's edge — a zero-area touch — and i_overlay's `Intersect` (which
-/// `polys_overlap`/`not_interacting` are built on) treats that as *no* overlap, so a
-/// legitimately-compliant polygon would misclassify as "too far".  The extra margin turns
-/// an exact touch into a hairline genuine overlap, which a whole-region boolean test
-/// (unlike an area-difference test) correctly resolves with an amount this small.  5 nm
-/// (not the usual 0.5 DBU tolerance used elsewhere) is deliberate: empirically, `outline`'s
-/// offset on a shape with 45°-chamfered corners applied a sub-nm-scale epsilon
-/// inconsistently between the two facing edges — 5 nm reliably clears it on both, and is
-/// still far below any real DRC-scale feature size.
+/// Grows by exactly `radius`.  A deck that wants slack beyond it asks with `slack:`, and
+/// only a *selection radius* should: a shape at exactly the boundary distance then merely
+/// touches the grown region, and i_overlay's `Intersect` — which `polys_overlap` and the
+/// whole-region selectors are built on — reads a zero-area touch as no overlap, so a
+/// compliant shape misclassifies as "too far".  A hair of slack turns the touch into a
+/// hairline overlap.
+///
+/// It used to be the default, and that was wrong five times over: a band deciding which of
+/// two limits applies, or a region a rule must not reach into, is judged wrong by any
+/// slack at all, and each such rule over-reported plausibly rather than failing.  Eight
+/// layers across both PDKs ask for it now, and the clearest is IHP's `PsdActivX1Touch` -
+/// a grow of radius *zero*, which exists for the slack alone.
 pub fn grow(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     grow_by(polys, radius, GROW_MARGIN as f64)
 }
 
-/// The default slack, in DBU.  See [`grow`] for why it is 5 and not the usual half-DBU.
+/// The slack a *selection radius* wants, in DBU.  Not a default any more - a deck asks
+/// for it with `slack:` - and 5 rather than the usual half-DBU because `outline`'s offset
+/// on a 45°-chamfered corner applied a sub-nanometre epsilon inconsistently between the
+/// two facing edges; 5 nm clears it on both and is still far below any real feature.
 pub const GROW_MARGIN: i32 = 5;
 
 /// [`grow`] with the slack chosen explicitly.
@@ -579,9 +583,9 @@ pub enum VirtualOp {
     /// has *no* position wider than that, which implements "min. X at one position" rules
     /// (e.g. pSD.e) via a subsequent `not_interacting` against the opened layer.
     Open(i32),
-    /// Morphological grow (one-directional dilate) by `radius` DBU; single source.
-    /// Morphological grow by `radius` DBU, plus `margin` DBU of slack.  The slack
-    /// defaults to [`GROW_MARGIN`] and exists so a shape drawn at exactly the boundary
+    /// Morphological grow (one-directional dilate) by `radius` DBU, plus `margin` DBU
+    /// of slack; single source.  The slack
+    /// is opt-in (a deck asks with `slack:`) and exists so a shape drawn at the boundary
     /// distance resolves as overlapping rather than merely touching; a band used to
     /// *classify* an edge wants it at zero instead, or an edge drawn exactly on the
     /// boundary is pulled to the wrong side of it.
@@ -1302,6 +1306,17 @@ pub enum EdgeOp {
     InsidePart,
     /// The parts lying outside it (KLayout `.outside_part`).
     OutsidePart,
+    /// Whole edges that touch the *polygon* layer, kept entire (KLayout edge
+    /// `.interacting`).  Unlike [`InsidePart`], which cuts an edge at the boundary, this
+    /// keeps or drops each segment whole — the difference between "the stretch of this
+    /// wall that lies in the marker" and "the walls that reach it at all".
+    /// `NotInteracting` keeps the complement.
+    Interacting,
+    NotInteracting,
+    /// The same against another *edge* layer: whole edges of the first that touch any
+    /// edge of the second.
+    InteractingEdges,
+    NotInteractingEdges,
     /// Keep edges whose length is in `[min, max)` DBU; an absent bound is open
     /// (KLayout `.with_length(a..b)`).  `WithoutLength` keeps the complement.
     WithLength(Option<i32>, Option<i32>),
@@ -1319,8 +1334,45 @@ impl EdgeOp {
     }
     /// True if source[1] is a polygon layer while source[0] is an edge layer.
     fn mixes(self) -> bool {
-        matches!(self, EdgeOp::InsidePart | EdgeOp::OutsidePart)
+        matches!(
+            self,
+            EdgeOp::InsidePart | EdgeOp::OutsidePart | EdgeOp::Interacting | EdgeOp::NotInteracting
+        )
     }
+}
+
+/// Whether a segment touches a region at all — a point of it inside, or a crossing of the
+/// boundary.  The test `Interacting` selects whole edges by.
+fn edge_meets_region(e: &Edge, m: &MergedPoly) -> bool {
+    poly_meets_edge(m, e)
+}
+
+/// Whether two segments touch: crossing, or meeting at a point, or overlapping
+/// collinearly.  Endpoint contact counts, which is what `interacting` means.
+fn edges_touch(a: &Edge, b: &Edge) -> bool {
+    let (p0, p1) = ((a.a.x as f64, a.a.y as f64), (a.b.x as f64, a.b.y as f64));
+    let (q0, q1) = ((b.a.x as f64, b.a.y as f64), (b.b.x as f64, b.b.y as f64));
+    let cross = |o: (f64, f64), u: (f64, f64), v: (f64, f64)| {
+        (u.0 - o.0) * (v.1 - o.1) - (u.1 - o.1) * (v.0 - o.0)
+    };
+    const EPS: f64 = 1e-9;
+    let (d1, d2) = (cross(q0, q1, p0), cross(q0, q1, p1));
+    let (d3, d4) = (cross(p0, p1, q0), cross(p0, p1, q1));
+    if ((d1 > EPS && d2 < -EPS) || (d1 < -EPS && d2 > EPS))
+        && ((d3 > EPS && d4 < -EPS) || (d3 < -EPS && d4 > EPS))
+    {
+        return true;
+    }
+    let within = |o: (f64, f64), u: (f64, f64), p: (f64, f64)| {
+        p.0 >= o.0.min(u.0) - EPS
+            && p.0 <= o.0.max(u.0) + EPS
+            && p.1 >= o.1.min(u.1) - EPS
+            && p.1 <= o.1.max(u.1) + EPS
+    };
+    (d1.abs() <= EPS && within(q0, q1, p0))
+        || (d2.abs() <= EPS && within(q0, q1, p1))
+        || (d3.abs() <= EPS && within(p0, p1, q0))
+        || (d4.abs() <= EPS && within(p0, p1, q1))
 }
 
 /// Apply an edge op to one tile's geometry.
@@ -1344,6 +1396,26 @@ fn compose_edge_tile(op: EdgeOp, edge_srcs: &[&[Edge]], poly_srcs: &[&[MergedPol
                 return Vec::new();
             };
             a.iter().flat_map(|e| subtract_edges(e, b)).collect()
+        }
+        EdgeOp::Interacting | EdgeOp::NotInteracting => {
+            let (Some(a), Some(p)) = (edge_srcs.first(), poly_srcs.first()) else {
+                return Vec::new();
+            };
+            let want = op == EdgeOp::Interacting;
+            a.iter()
+                .filter(|e| p.iter().any(|m| edge_meets_region(e, m)) == want)
+                .copied()
+                .collect()
+        }
+        EdgeOp::InteractingEdges | EdgeOp::NotInteractingEdges => {
+            let (Some(a), Some(b)) = (edge_srcs.first(), edge_srcs.get(1)) else {
+                return Vec::new();
+            };
+            let want = op == EdgeOp::InteractingEdges;
+            a.iter()
+                .filter(|e| b.iter().any(|f| edges_touch(e, f)) == want)
+                .copied()
+                .collect()
         }
         EdgeOp::InsidePart | EdgeOp::OutsidePart => {
             let (Some(a), Some(p)) = (edge_srcs.first(), poly_srcs.first()) else {
@@ -1392,6 +1464,22 @@ fn compose_edge_tile(op: EdgeOp, edge_srcs: &[&[Edge]], poly_srcs: &[&[MergedPol
 
 /// Bucket edges by the tile holding their midpoint, so an edge layer tiles the same way
 /// a polygon layer does and a check can read one tile at a time.
+/// Bucket edges by the tile their midpoint falls in.
+///
+/// This is a real limitation and it is worth stating, because it is invisible until a
+/// rule leans on it. An edge op only ever sees what shares a tile with it, so a shape's
+/// own boundary can be split: GF180's efuse has an anode whose right and bottom edges
+/// meet at a corner 0.07 um from a tile boundary, their midpoints land either side of it,
+/// and `not_interacting_edges` cannot see that they touch. The width/length partition
+/// comes apart there, which is most of what EF.06/EF.08 over-report and EF.09 misses.
+///
+/// Bucketing by every tile an edge *reaches* fixes that and costs more than it buys:
+/// measured, efuse finds 32 more logical violations and invents 66 more false positives,
+/// because the cutting ops (`not`, `and`) then run with different context in each tile
+/// and produce fragments that disagree - EF.22a and EF.22b go from near exact to
+/// over-reporting by half. The real fix is for edge ops to compose against consistent
+/// context rather than tile-local context, which is a larger piece of work than this
+/// function.
 fn bucket_edges(edges: Vec<Edge>, tile_dbu: i32) -> EdgeTileMap {
     let t = tile_dbu.max(1) as i64;
     let mut out: EdgeTileMap = HashMap::new();
