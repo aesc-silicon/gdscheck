@@ -657,8 +657,49 @@ pub(crate) fn point_in_polygon(px: f64, py: f64, pts: &[(f64, f64)]) -> bool {
 /// inside its NWell isolation ring) does not overlap it — its spacing to the hole
 /// boundary is a real, checkable gap (nmosi.c).
 fn overlapping(a: &Poly, b: &Poly) -> bool {
-    a.vertices().any(|&(x, y)| b.contains_point(x, y))
-        || b.vertices().any(|&(x, y)| a.contains_point(x, y))
+    // Strictly inside, not merely inside-or-on. A point on the boundary is shared
+    // *boundary*, not shared area, and counting it as area is what made two shapes
+    // meeting at one corner read as overlapping - so the pair never reached the spacing
+    // scan that is precisely about it.
+    if a.vertices().any(|&(x, y)| b.strictly_contains(x, y))
+        || b.vertices().any(|&(x, y)| a.strictly_contains(x, y))
+    {
+        return true;
+    }
+    // One wholly inside the other, with boundaries that may coincide: every vertex is
+    // inside or on, and none need be strictly inside - two identical regions being the
+    // limiting case.
+    if a.vertices().all(|&(x, y)| b.contains_point(x, y))
+        || b.vertices().all(|&(x, y)| a.contains_point(x, y))
+    {
+        return true;
+    }
+    // A vertex test alone misses the case a gate is: a poly stripe crossing a COMP shares
+    // a large area with it and has *no vertex of either inside the other*. Read as
+    // disjoint, such a pair is measured for spacing (finding zero, since the boundaries
+    // cross) or dropped from an `overlapping` rule that is precisely about it.
+    //
+    // Crossing must be *proper*: two shapes meeting at a boundary share no area, and that
+    // is what separates this from `polys_interact` next door.
+    a.edges.iter().any(|&(ax, ay, bx, by)| {
+        b.edges
+            .iter()
+            .any(|&(cx, cy, dx, dy)| segs_properly_cross((ax, ay), (bx, by), (cx, cy), (dx, dy)))
+    })
+}
+
+/// Whether two segments *properly* cross — each strictly straddles the other's line.
+/// Touching at an endpoint is not a crossing: the two meet without interpenetrating, and
+/// zero-area contact is `interacting`, not `overlapping`.
+fn segs_properly_cross(p0: Marker, p1: Marker, q0: Marker, q1: Marker) -> bool {
+    let cross =
+        |o: Marker, a: Marker, b: Marker| (a.0 - o.0) * (b.1 - o.1) - (a.1 - o.1) * (b.0 - o.0);
+    // Coordinates are µm on a nanometre grid, so a cross product this small is zero.
+    const EPS: f64 = 1e-9;
+    let (d1, d2) = (cross(q0, q1, p0), cross(q0, q1, p1));
+    let (d3, d4) = (cross(p0, p1, q0), cross(p0, p1, q1));
+    ((d1 > EPS && d2 < -EPS) || (d1 < -EPS && d2 > EPS))
+        && ((d3 > EPS && d4 < -EPS) || (d3 < -EPS && d4 > EPS))
 }
 
 #[derive(Clone, Copy)]
@@ -735,6 +776,18 @@ impl Poly {
     /// Point strictly inside the region: inside the outer ring and in no hole.
     fn contains_point(&self, x: f64, y: f64) -> bool {
         point_in_polygon(x, y, &self.pts) && !self.holes.iter().any(|h| point_in_polygon(x, y, h))
+    }
+
+    /// Inside the region and not on its boundary.  Coordinates are µm on a nanometre
+    /// grid, so a point meant to lie on an edge lies on it to well under this tolerance.
+    fn strictly_contains(&self, x: f64, y: f64) -> bool {
+        if !self.contains_point(x, y) {
+            return false;
+        }
+        !self
+            .edges
+            .iter()
+            .any(|&(ax, ay, bx, by)| point_to_segment_closest(x, y, ax, ay, bx, by).0 <= 1e-9)
     }
 
     /// True if any 45°/angled edge of this region lies within `max_gap` of `other`.
@@ -1087,17 +1140,24 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
                 }
             } else {
                 let m = closest(a, b, half, mode.square);
-                // Touching: shapes share a boundary -> no spacing.
+                // A contact between two layers is a separation of *zero*, and reported:
+                // two shapes meeting at a corner have a gap that happens to be nothing
+                // wide, which is the worst spacing there is. KLayout reads it that way and
+                // this engine used to drop it, silently, wherever it occurred.
                 //
-                // KLayout disagrees: it calls a contact a separation of zero and reports
-                // it. Measured across nineteen decks, adopting that finds 124 more logical
-                // violations and invents 68 false positives, and restricting it to point
-                // contacts - excluding shapes that abut along a run - barely moves either
-                // number. So it is not simply that this engine drops what KLayout keeps;
-                // KLayout keeps *some* zero-distance contacts and not others, and which is
-                // which is not yet known. See tests/data/gf180mcuD/generated/poly2/PL.5.*
-                // for the reduced case, and the `pl5_touching_corner_is_a_known_gap` test.
-                if m.0 < half {
+                // Within one layer it is not a gap at all. Two pieces of one layer meeting
+                // at a point are one shape pinched to nothing, which is a width or notch
+                // violation and belongs to those checks - reporting a spacing there was
+                // every false positive this reading produced.
+                //
+                // Measured over nineteen decks: 47 more logical violations and no new
+                // false positives at either count. See the reduced case in
+                // tests/data/gf180mcuD/generated/poly2/PL.5.*.
+                // And a contact along a *run* is not a gap either: two shapes drawn edge
+                // to edge abut, with no space between them anywhere. IHP's butted
+                // substrate ties are exactly that by construction. Only a contact at
+                // isolated points is a separation of zero.
+                if m.0 < half && (same_layer || shares_boundary_run(a, b, half)) {
                     continue;
                 }
                 m
@@ -1975,6 +2035,40 @@ fn segs_meet(p0: Marker, p1: Marker, q0: Marker, q1: Marker) -> bool {
         || (d2.abs() <= EPS && within(q0, q1, p1))
         || (d3.abs() <= EPS && within(p0, p1, q0))
         || (d4.abs() <= EPS && within(p0, p1, q1))
+}
+
+/// Whether two polygons share a *run* of boundary rather than meeting at isolated points.
+///
+/// Shapes drawn edge to edge abut: there is no space anywhere between them, and a
+/// separation of zero would be a fiction. Shapes meeting at one corner have a real gap
+/// that happens to be nothing wide. Both have a closest approach of zero, and only the
+/// second is a spacing violation.
+fn shares_boundary_run(a: &Poly, b: &Poly, tol: f64) -> bool {
+    for &(ax, ay, bx, by) in &a.edges {
+        let (ux, uy) = (bx - ax, by - ay);
+        let la = ux.hypot(uy);
+        if la <= 0.0 {
+            continue;
+        }
+        let (ux, uy) = (ux / la, uy / la);
+        for &(cx, cy, dx, dy) in &b.edges {
+            let (vx, vy) = (dx - cx, dy - cy);
+            let lb = vx.hypot(vy);
+            if lb <= 0.0 || (ux * vy - uy * vx).abs() > 1e-6 * lb {
+                continue; // not parallel
+            }
+            if ((cx - ax) * -uy + (cy - ay) * ux).abs() > tol {
+                continue; // parallel but not collinear
+            }
+            let t0 = (cx - ax) * ux + (cy - ay) * uy;
+            let t1 = (dx - ax) * ux + (dy - ay) * uy;
+            let (s0, s1) = (t0.min(t1).max(0.0), t0.max(t1).min(la));
+            if s1 - s0 > tol {
+                return true; // a shared stretch, not a shared point
+            }
+        }
+    }
+    false
 }
 
 /// Whether two polygons share any area or boundary.
