@@ -117,3 +117,11 @@ rules:
     check: min_space
     layers: [pplus.edges, pp4b_poly]
     value: 0.22
+  - id: PP.5a
+    check: nonempty
+    layers: [pp_5a_crossing]
+    value: 0.0
+  - id: PP.9
+    check: nonempty
+    layers: [pp_9_crossing]
+    value: 0.0

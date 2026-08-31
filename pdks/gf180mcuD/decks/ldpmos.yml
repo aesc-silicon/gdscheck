@@ -142,3 +142,7 @@ rules:
     check: nonempty
     layers: [mdp17c_viol]
     value: 0.0
+  - id: MDP.12
+    check: nonempty
+    layers: [mdp_12_crossing]
+    value: 0.0

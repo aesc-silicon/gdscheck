@@ -74,3 +74,11 @@ rules:
     value: 0.28
     params:
       interacting_only: 1
+  - id: HRES.4
+    check: nonempty
+    layers: [hres_4_crossing]
+    value: 0.0
+  - id: HRES.7
+    check: nonempty
+    layers: [hres_7_crossing]
+    value: 0.0

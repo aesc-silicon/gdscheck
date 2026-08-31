@@ -72,3 +72,11 @@ rules:
     check: nonempty
     layers: [co11_viol]
     value: 0.0
+  - id: CO.3
+    check: nonempty
+    layers: [co_3_crossing]
+    value: 0.0
+  - id: CO.4
+    check: nonempty
+    layers: [co_4_crossing]
+    value: 0.0

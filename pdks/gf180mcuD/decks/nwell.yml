@@ -94,3 +94,11 @@ rules:
     check: nonempty
     layers: [nwell_res_in_dnwell]
     value: 0.0
+  - id: NW.5_LV
+    check: nonempty
+    layers: [nw5_lv_crossing]
+    value: 0.0
+  - id: NW.5_MV
+    check: nonempty
+    layers: [nw5_mv_crossing]
+    value: 0.0

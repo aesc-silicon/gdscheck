@@ -1088,6 +1088,15 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
             } else {
                 let m = closest(a, b, half, mode.square);
                 // Touching: shapes share a boundary -> no spacing.
+                //
+                // KLayout disagrees: it calls a contact a separation of zero and reports
+                // it. Measured across nineteen decks, adopting that finds 124 more logical
+                // violations and invents 68 false positives, and restricting it to point
+                // contacts - excluding shapes that abut along a run - barely moves either
+                // number. So it is not simply that this engine drops what KLayout keeps;
+                // KLayout keeps *some* zero-distance contacts and not others, and which is
+                // which is not yet known. See tests/data/gf180mcuD/generated/poly2/PL.5.*
+                // for the reduced case, and the `pl5_touching_corner_is_a_known_gap` test.
                 if m.0 < half {
                     continue;
                 }

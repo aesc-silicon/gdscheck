@@ -39,3 +39,15 @@ rules:
     check: min_width
     layers: [metal1_sram]
     value: 0.22
+  - id: S.DF.4c_LV
+    check: nonempty
+    layers: [s_df_4c_lv_crossing]
+    value: 0.0
+  - id: S.CO.3_LV
+    check: nonempty
+    layers: [s_co_3_lv_crossing]
+    value: 0.0
+  - id: S.CO.4_LV
+    check: nonempty
+    layers: [s_co_4_lv_crossing]
+    value: 0.0

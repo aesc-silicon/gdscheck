@@ -460,6 +460,26 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [nwell, dnwell]
+  # NW.5's other half: an N-well that overlaps the DNWELL but runs outside it. There is no
+  # margin to measure there - the well crosses the boundary - so the enclosure check
+  # cannot see it, and upstream ORs this in as a second violation set. The MV variant
+  # takes plain `nwell` where the LV one takes `nw_lv`; that asymmetry is upstream's.
+  - name: nw5_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [nw_lv, dnwell]
+  - name: nw5_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [nw5_lv_crossing_all, dnwell]
+  - name: nw5_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [nwell, dnwell]
+  - name: nw5_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [nw5_mv_crossing_all, dnwell]
   - name: nwell_n_dn
     op: not_interacting
     mode: lazy
@@ -1806,11 +1826,11 @@ virtual_layers:
   - name: np3ci_pcomp
     op: intersection
     mode: lazy
-    layers: [pcomp_out_dn, nwell_n_dn_sized_out]
+    layers: [pcomp_out_dn, nwell_n_dn_reach]
   - name: np3cii_pcomp
     op: difference
     mode: lazy
-    layers: [pcomp_out_dn, nwell_n_dn_sized_out]
+    layers: [pcomp_out_dn, nwell_n_dn_reach]
   - name: np3_nplus_out_dn
     op: difference
     mode: lazy
@@ -2488,6 +2508,14 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [poly2_drawn, otp_mk]
+  - name: comp_otp_no_poly
+    op: difference
+    mode: lazy
+    layers: [comp_otp, poly_otp]
+  - name: sab_otp_on_contact
+    op: intersection
+    mode: lazy
+    layers: [sab_otp, contact]
   - name: sab_otp
     op: intersection
     mode: lazy
@@ -3254,6 +3282,187 @@ virtual_layers:
 
 # The drawn layer table.  Variant D is a 5LM stack, so the
 # 6LM-only layers (via5 and the metaltop family) are absent.
+  # ---- "Crosses out" halves ------------------------------------------------
+  # Every enclosure rule below is an OR upstream: the margin, and a shape that overlaps
+  # what should contain it but runs outside. The second has no margin to measure - the
+  # shape crosses the boundary - so the enclosure check is structurally blind to it, and
+  # each of these is that half, reported under the same rule id.
+  - name: co_3_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_no_sram, poly2_drawn]
+  - name: co_3_crossing
+    op: difference
+    mode: lazy
+    layers: [co_3_crossing_all, poly2_drawn]
+  - name: co_4_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_no_sram, comp]
+  - name: co_4_crossing
+    op: difference
+    mode: lazy
+    layers: [co_4_crossing_all, comp]
+  - name: dv_1_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [dnwell, dualgate]
+  - name: dv_1_crossing
+    op: difference
+    mode: lazy
+    layers: [dv_1_crossing_all, dualgate]
+  - name: dv_6_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [comp_dv, dualgate]
+  - name: dv_6_crossing
+    op: difference
+    mode: lazy
+    layers: [dv_6_crossing_all, dualgate]
+  - name: dv_8_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [poly2_drawn, dualgate]
+  - name: dv_8_crossing
+    op: difference
+    mode: lazy
+    layers: [dv_8_crossing_all, dualgate]
+  - name: hres_4_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [hres_poly, resistor]
+  - name: hres_4_crossing
+    op: difference
+    mode: lazy
+    layers: [hres_4_crossing_all, resistor]
+  - name: hres_7_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [hres_contact, pplus]
+  - name: hres_7_crossing
+    op: difference
+    mode: lazy
+    layers: [hres_7_crossing_all, pplus]
+  - name: mdp_12_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [ncomp_guard, dnwell_mdp]
+  - name: mdp_12_crossing
+    op: difference
+    mode: lazy
+    layers: [mdp_12_crossing_all, dnwell_mdp]
+  - name: lres_5_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [lres_poly, nplus]
+  - name: lres_5_crossing
+    op: difference
+    mode: lazy
+    layers: [lres_5_crossing_all, nplus]
+  - name: mimtm_2_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [mimtm_via, topmin1_metal]
+  - name: mimtm_2_crossing
+    op: difference
+    mode: lazy
+    layers: [mimtm_2_crossing_all, topmin1_metal]
+  - name: mimtm_4_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [top_via, fusetop]
+  - name: mimtm_4_crossing
+    op: difference
+    mode: lazy
+    layers: [mimtm_4_crossing_all, fusetop]
+  - name: np_5a_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [ngate, nplus]
+  - name: np_5a_crossing
+    op: difference
+    mode: lazy
+    layers: [np_5a_crossing_all, nplus]
+  - name: np_9_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [poly_sab_only, nplus]
+  - name: np_9_crossing
+    op: difference
+    mode: lazy
+    layers: [np_9_crossing_all, nplus]
+  - name: pp_5a_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pgate, pplus]
+  - name: pp_5a_crossing
+    op: difference
+    mode: lazy
+    layers: [pp_5a_crossing_all, pplus]
+  - name: pp_9_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [poly_sab_only, pplus]
+  - name: pp_9_crossing
+    op: difference
+    mode: lazy
+    layers: [pp_9_crossing_all, pplus]
+  - name: pres_5_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pres_poly, pplus]
+  - name: pres_5_crossing
+    op: difference
+    mode: lazy
+    layers: [pres_5_crossing_all, pplus]
+  - name: s_df_4c_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pcomp_out_dn_sram, nwell_n_dn_sram]
+  - name: s_df_4c_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_df_4c_lv_crossing_all, nwell_n_dn_sram]
+  - name: s_co_3_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_sram, poly_sram]
+  - name: s_co_3_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_co_3_lv_crossing_all, poly_sram]
+  - name: s_co_4_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_sram, comp_sram]
+  - name: s_co_4_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_co_4_lv_crossing_all, comp_sram]
+  - name: s_df_4c_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pcomp_out_dn_sram_mv, nw_n_dn_sram_mv]
+  - name: s_df_4c_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_df_4c_mv_crossing_all, nw_n_dn_sram_mv]
+  - name: s_df_8_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [ncomp_dn_sram, lvpwell_dn_sram_mv]
+  - name: s_df_8_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_df_8_mv_crossing_all, lvpwell_dn_sram_mv]
+  - name: s_co_4_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_sram_mv, comp_sram_mv]
+  - name: s_co_4_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_co_4_mv_crossing_all, comp_sram_mv]
 layers:
   - name: comp
     gds_layer: 22
@@ -3552,6 +3761,7 @@ layers:
 
 # Derived edge layers: boundary segments rather than regions.  A rule names one exactly
 # as it names any other layer; the checks that accept one say so.
+
 edge_layers:
   # DF.2a, minimum channel width.  W is the length of the source/drain boundary that
   # runs under the gate - a property of that segment, not of any region, which is why
@@ -3759,6 +3969,30 @@ edge_layers:
     min: 0.006
     layers: [np5dii_fg_all]
 
+  # O.PL.2: the OTP gate's own two walls, and the poly width between them.
+  - name: poly_otp.edges
+    op: edges
+    layers: [poly_otp]
+  - name: opl2_channel
+    op: and
+    layers: [poly_otp.edges, tgate.edges]
+
+  # O.PL.ORT: an orientation-restricted gate's width must run along x, so a channel edge
+  # that is not horizontal is the violation.
+  - name: comp_otp_no_poly.edges
+    op: edges
+    layers: [comp_otp_no_poly]
+  - name: oplort_channel
+    op: and
+    layers: [comp_otp_no_poly.edges, tgate.edges]
+  - name: oplort_turned
+    op: without_angle
+    min: 0
+    max: 0
+    layers: [oplort_channel]
+  - name: oplort_viol
+    op: outside_part
+    layers: [oplort_turned, v5_xtor]
   - name: comp_3p3v_no_poly.edges
     op: edges
     layers: [comp_3p3v_no_poly]

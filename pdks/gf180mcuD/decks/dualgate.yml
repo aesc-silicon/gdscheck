@@ -54,3 +54,15 @@ rules:
     check: nonempty
     layers: [dv9_viol]
     value: 0.0
+  - id: DV.1
+    check: nonempty
+    layers: [dv_1_crossing]
+    value: 0.0
+  - id: DV.6
+    check: nonempty
+    layers: [dv_6_crossing]
+    value: 0.0
+  - id: DV.8
+    check: nonempty
+    layers: [dv_8_crossing]
+    value: 0.0

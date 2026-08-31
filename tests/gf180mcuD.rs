@@ -95,19 +95,9 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "nwell.gds.gz",
     "7_4_NWELL",
     &[
-        ("NW.1a_LV", 79),
-        ("NW.1a_MV", 122),
-        ("NW.1b_LV", 2),
-        ("NW.1b_MV", 4),
-        ("NW.2a_LV", 4),
-        ("NW.2a_MV", 10),
-        ("NW.2b_LV", 13),
-        ("NW.2b_MV", 24),
-        ("NW.3", 13),
-        ("NW.4", 15),
-        ("NW.5_LV", 4),
-        ("NW.5_MV", 6),
-        ("NW.6", 13),
+        ("NW.1a_LV", 79), ("NW.1a_MV", 122), ("NW.1b_LV", 2), ("NW.1b_MV", 4),
+        ("NW.2a_LV", 4), ("NW.2a_MV", 10), ("NW.2b_LV", 13), ("NW.2b_MV", 24),
+        ("NW.3", 13), ("NW.4", 15), ("NW.5_LV", 11), ("NW.5_MV", 19), ("NW.6", 13),
     ]
 )]
 #[case::comp(
@@ -179,8 +169,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::dualgate(
     "dualgate", "dualgate.gds.gz", "7_6_Dualgate",
     &[
-        ("DV.1", 3), ("DV.2", 3), ("DV.3", 1), ("DV.5", 14),
-        ("DV.6", 3), ("DV.7", 1), ("DV.8", 3), ("DV.9", 1),
+        ("DV.1", 4), ("DV.2", 3), ("DV.3", 1), ("DV.5", 14), ("DV.6", 4), ("DV.7", 1), ("DV.8",
+        6), ("DV.9", 1),
     ]
 )]
 // The metal deck carries one rule set per level, and each fixture exercises one level,
@@ -221,15 +211,15 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::contact(
     "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
     &[
-        ("CO.1", 104), ("CO.10", 2), ("CO.11", 145), ("CO.2a", 8), ("CO.3", 7),
-        ("CO.4", 5), ("CO.5a", 2), ("CO.5b", 4), ("CO.6", 98), ("CO.7", 2), ("CO.8", 2),
+        ("CO.1", 104), ("CO.10", 2), ("CO.11", 145), ("CO.2a", 8), ("CO.3", 13), ("CO.4", 8),
+        ("CO.5a", 2), ("CO.5b", 4), ("CO.6", 98), ("CO.7", 2), ("CO.8", 2),
     ]
 )]
 #[case::sram_3p3(
     "sram_3p3", "sram_3p3.gds.gz", "sram_3p3",
     &[
-        ("S.CO.3_LV", 3), ("S.CO.4_LV", 3), ("S.CO.6_ii_LV", 8),
-        ("S.DF.16_LV", 4), ("S.DF.4c_LV", 3), ("S.M1.1_LV", 31),
+        ("S.CO.3_LV", 6), ("S.CO.4_LV", 6), ("S.CO.6_ii_LV", 8), ("S.DF.16_LV", 4),
+        ("S.DF.4c_LV", 6), ("S.M1.1_LV", 31),
     ]
 )]
 // Like metal, the via deck carries one rule set per level and each fixture exercises
@@ -260,21 +250,21 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
     &[
-        ("NP.1", 392), ("NP.10", 3), ("NP.11", 26), ("NP.12", 1), ("NP.2", 83),
-        ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 17), ("NP.3cii", 2),
-        ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 6),
-        ("NP.5b", 113), ("NP.5ci", 7), ("NP.5cii", 3), ("NP.5di", 9), ("NP.5dii", 9),
-        ("NP.6", 72), ("NP.7", 4), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 3),
+        ("NP.1", 392), ("NP.10", 3), ("NP.11", 26), ("NP.12", 1), ("NP.2", 83), ("NP.3a", 9),
+        ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e",
+        2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 6), ("NP.5b", 113), ("NP.5ci", 7), ("NP.5cii",
+        3), ("NP.5di", 9), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 4), ("NP.8a", 121), ("NP.8b",
+        2), ("NP.9", 4),
     ]
 )]
 #[case::pplus(
     "pplus", "pplus.gds.gz", "7_11_Pplus",
     &[
-        ("PP.1", 392), ("PP.10", 3), ("PP.11", 8), ("PP.12", 1), ("PP.2", 83),
-        ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10),
-        ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 6),
-        ("PP.5b", 87), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33),
-        ("PP.6", 72), ("PP.7", 4), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 3),
+        ("PP.1", 392), ("PP.10", 3), ("PP.11", 8), ("PP.12", 1), ("PP.2", 83), ("PP.3a", 21),
+        ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e",
+        2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 6), ("PP.5b", 87), ("PP.5ci", 6), ("PP.5cii",
+        9), ("PP.5di", 8), ("PP.5dii", 33), ("PP.6", 72), ("PP.7", 4), ("PP.8a", 121), ("PP.8b",
+        2), ("PP.9", 4),
     ]
 )]
 #[case::ldnmos(
@@ -290,11 +280,10 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::ldpmos(
     "ldpmos", "ldpmos.gds.gz", "10_12_2_MDP",
     &[
-        ("MDP.1", 12), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.12", 3), ("MDP.13a", 1),
-        ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17c", 1), ("MDP.3ai", 91),
-        ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.4a", 8), ("MDP.5", 8), ("MDP.5a", 5),
-        ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38),
-        ("MDP.9ei", 6), ("MDP.9eii", 4),
+        ("MDP.1", 12), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.15",
+        1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17c", 1), ("MDP.3ai", 91), ("MDP.3aii", 8),
+        ("MDP.3b", 4), ("MDP.4a", 8), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21),
+        ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9ei", 6), ("MDP.9eii", 4),
     ]
 )]
 #[case::lres(
@@ -314,16 +303,17 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::hres(
     "hres", "hres.gds.gz", "10_3_HRES",
     &[
-        ("HRES.1", 5), ("HRES.2", 59), ("HRES.3", 6), ("HRES.4", 23), ("HRES.5", 5),
-        ("HRES.6", 5), ("HRES.7", 22), ("HRES.8", 27), ("HRES.9", 5),
+        ("HRES.1", 5), ("HRES.2", 59), ("HRES.3", 6), ("HRES.4", 38), ("HRES.5", 5), ("HRES.6",
+        5), ("HRES.7", 23), ("HRES.8", 27), ("HRES.9", 5),
     ]
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
     &[
-        ("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.3a", 10),
-        ("O.PL.4", 9), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 5),
-        ("O.SB.3", 4), ("O.SB.5b_LV", 4), ("O.SB.9", 1),
+        ("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 82),
+        ("O.PL.3a", 10), ("O.PL.4", 9), ("O.PL.ORT", 725), ("O.SB.11", 1),
+        ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 5), ("O.SB.3", 4),
+        ("O.SB.4", 1), ("O.SB.5b_LV", 4), ("O.SB.9", 1),
     ]
 )]
 #[case::ymtp_mk(
@@ -338,8 +328,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::sram_5p0(
     "sram_5p0", "sram_5p0.gds.gz", "sram_5p0",
     &[
-        ("S.CO.4_MV", 5), ("S.DF.16_MV", 4), ("S.DF.4c_MV", 5), ("S.DF.6_MV", 15),
-        ("S.DF.7_MV", 4), ("S.DF.8_MV", 5), ("S.PL.5a_MV", 4), ("S.PL.5b_MV", 4),
+        ("S.CO.4_MV", 8), ("S.DF.16_MV", 4), ("S.DF.4c_MV", 8), ("S.DF.6_MV", 15), ("S.DF.7_MV",
+        4), ("S.DF.8_MV", 8), ("S.PL.5a_MV", 4), ("S.PL.5b_MV", 4),
     ]
 )]
 #[case::efuse(
@@ -353,9 +343,9 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::mim_b(
     "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
     &[
-        ("MIMTM.1", 4), ("MIMTM.10", 3), ("MIMTM.2", 7), ("MIMTM.3", 61),
-        ("MIMTM.4", 6), ("MIMTM.5", 6), ("MIMTM.6", 4), ("MIMTM.7", 2490),
-        ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 4),
+        ("MIMTM.1", 4), ("MIMTM.10", 3), ("MIMTM.2", 9), ("MIMTM.3", 61), ("MIMTM.4", 11),
+        ("MIMTM.5", 6), ("MIMTM.6", 4), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1),
+        ("MIMTM.9", 4),
     ]
 )]
 #[case::antenna(
@@ -693,6 +683,57 @@ fn pplus_patterns_cover_every_rule() {
         let mut want = pplus_bad_expect(&id);
         want.sort();
         assert_eq!(bad, want, "pplus: {id}'s bad pattern");
+    }
+}
+
+/// The touching case `PL.5a`/`PL.5b` lose nine markers each to, reduced from the site at
+/// (-3830.478, 881.684) in the foundry case: a COMP corner exactly on the gate poly's
+/// boundary, the two walls collinear and meeting at that one point.
+///
+/// KLayout reports two separations of zero there. This engine reports none, because a
+/// boundary touch is not a spacing anywhere in it. That is a deliberate convention and
+/// this test pins it rather than blessing it — adopting KLayout's reading across the
+/// nineteen decks with fixtures finds 124 more logical violations and invents 68 false
+/// positives, so what the right behaviour is remains open. If this test starts failing,
+/// that question was answered.
+#[test]
+fn pl5_touching_corner_is_a_known_gap() {
+    for polarity in ["good", "bad"] {
+        let got = counts_at(
+            "poly2",
+            &format!("{GENERATED}/poly2/PL.5.{polarity}.gds.gz"),
+            "TOP",
+        );
+        assert!(
+            got.is_empty(),
+            "PL.5 {polarity} pattern: expected silence, got {got:?}"
+        );
+    }
+}
+
+// --- OTP marker, generated ---
+//
+// Two rules, not the deck's sixteen. `otp_mk` has no false positives at either count and
+// its misses are all pinch- or 45°-shaped, which no axis-aligned fixture reaches — the
+// other fourteen would pin rules already exact against geometry that is not where the
+// risk is. These two carry engine surface with almost nothing else behind it: `O.PL.2` is
+// the only user anywhere of `min_width` on an edge layer, and `O.SB.11` one of two users
+// of `min_overlap`, which had no drawn pattern at all.
+
+#[test]
+fn otp_mk_patterns_cover_the_new_relations() {
+    for (id, bad_count) in [("O.PL.2", 2), ("O.SB.11", 1)] {
+        let good = run_generated("otp_mk", id, "good");
+        assert!(
+            good.is_empty(),
+            "otp_mk: {id} fired on its good pattern: {good:?}"
+        );
+        let bad = run_generated("otp_mk", id, "bad");
+        assert_eq!(
+            bad,
+            vec![(id.to_string(), bad_count)],
+            "otp_mk: {id}'s bad pattern should trip {id} and nothing else"
+        );
     }
 }
 
