@@ -2,19 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal dummy fill.  The design rules apply the same rule
-# set to every metal level present - Metal1 to Metal5 on this variant.
-#
-# DM#.4_DM#.6 and DM#.5_DM#.7 are not ported: both are density rules measured over a
-# sliding window against the circuit metal, which needs the windowed-density check
-# wired to a second layer.
-#
-# DM#.8 keeps dummy fill clear of everything fuse- or trim-related at once; upstream
-# sums six separate separations, which is one rule against their union here.
-#
-# Not validated: the PDK ships no test case for this deck, so there is no reference
-# .lyrdb to diff against. The rules are a direct port of the upstream expressions and
-# nothing more - treat them as unverified until a fixture exists.
+# Metal dummy fill.
 rules:
   - id: DM1.2b
     check: min_space

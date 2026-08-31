@@ -2,20 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Native-VT NMOS.
+# Native Vt device.  10 of the 12 rules in this section.
 #
-# NAT.6 and NAT.9 are not ported: both select by *how many times* a region meets
-# another - `covering(comp, 2)` and `interacting(ngate, 2)` - and this engine's
-# selectors are boolean.
-#
-# NAT.4 and NAT.5 look like edge rules - `poly.edges.and(ngate.edges).width(...)` - but
-# that is the gate-length shape: measure the poly's own width, masked to where it forms
-# the device gate.  gate_length does exactly that, and exists because the IHP port hit
-# the same shape in Gat.a1-a4.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 28 of 42, no false positives.  NAT.4 is exact (8 of 8) and NAT.5
-# gets 3 of 6; the remaining 14 misses are NAT.6 and NAT.9, which are not ported.
+# Not ported: NAT.6, NAT.9.
 rules:
   - id: NAT.1
     check: min_enclosure
@@ -32,12 +21,12 @@ rules:
     layers: [nat, nwell]
     value: 0.5
   - id: NAT.4
-    check: gate_length
-    layers: [poly_nat_lv, ngate_no_nwell]
+    check: min_width
+    layers: [nat4_channel]
     value: 1.8
   - id: NAT.5
-    check: gate_length
-    layers: [poly_nat_mv, ngate_no_nwell]
+    check: min_width
+    layers: [nat5_channel]
     value: 1.8
   - id: NAT.7
     check: min_space

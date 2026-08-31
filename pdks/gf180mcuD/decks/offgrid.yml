@@ -3,10 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Off-grid vertices: every drawn layer must sit on the 5 nm manufacturing grid.
-#
-# One rule per layer and nothing layer-specific about any of them, so the deck is a list
-# rather than a design.  93 layers; the 6LM-only ones (Via5 and the Metaltop family) are
-# absent here as they are from the layer table, this being a 5LM variant.
 rules:
   - id: comp_OFFGRID
     check: offgrid

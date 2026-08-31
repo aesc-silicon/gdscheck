@@ -2,11 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# YMTP marker.  All 14 rules.
-#
-# The marker carries a tighter rule set than the rest of the die, split by voltage the
-# usual way: LV touches neither v5_xtor nor dualgate, MV overlaps dualgate.
-#
+# YMTP marker.  All 14 rules in this section.
 rules:
   - id: Y.NW.2b_LV
     check: min_space
@@ -47,12 +43,12 @@ rules:
     layers: [poly_ymtp_mv_out_pf]
     value: 0.0
   - id: Y.PL.2_LV
-    check: gate_length
-    layers: [poly_ymtp_lv, tgate_no_otp_ymtp]
+    check: min_width
+    layers: [ypl2_lv_channel]
     value: 0.13
   - id: Y.PL.2_MV
-    check: gate_length
-    layers: [poly_ymtp_mv, tgate_no_otp_ymtp]
+    check: min_width
+    layers: [ypl2_mv_channel]
     value: 0.47
   - id: Y.PL.4_MV
     check: min_enclosure

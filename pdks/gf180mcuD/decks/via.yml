@@ -2,47 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Via 1-4.  The design rules give one rule set per via below the
-# top metal; on this 5LM stack that is Via1 to Via4.
-#
-# Rule ids follow the design manual, not the reference deck.  The manual has one
-# `V#.3` - "Metaln overlap of Vian" - with sub-rules written `V#.3 (i)`, `(ii)`, `(iii)`,
-# and the same shape again for `V#.4` against the metal above.  Those are numbered here
-# with a further dot:
-#
-#   V#.3     Metaln overlap of Vian            0 um over Metal1, 0.01 above
-#   V#.3.1   Metaln (< 0.34 um) end-of-line overlap                    0.06
-#   V#.3.2   adjacent-edge overlap where one side is under 0.04        0.06
-#   V#.3.3   overlap on all sides, for resistance variation            0.12
-#   V#.4     Metal[n+1] overlap of Vian                                0.01
-#   V#.4.1   Metal[n+1] (< 0.34 um) end-of-line overlap                0.06
-#   V#.4.2   adjacent-edge overlap where one side is under 0.04        0.06
-#   V#.4.3   overlap on all sides, for resistance variation            0.12
-#   V#.5     via stack over contact is permitted                              -
-#
-# The reference deck names these differently, and its names are worth knowing when
-# reading its output: it splits V#.3 into `3a` at Via1 and `3b` above - the letter there
-# encodes the *level*, which the `#` already does, and there is no `3b` rule in the
-# manual at all.  Its `3c`/`3d` are V#.3.1/V#.3.2 here, and `4a`/`4b`/`4c` are
-# V#.4/V#.4.1/V#.4.2.
-#
-# A diff against the reference keyed on rule id therefore needs those two told apart from
-# a real disagreement, which is what compare-lyrdb.py's `--alias` is for:
-#
-#   tools/compare-lyrdb.py via1.lyrdb ours.lyrdb --alias V1.3=V1.3a --alias V1.4=V1.4a
-#
-# Without it each reads as a phantom miss and a phantom extra at once - the same
-# violation under two names.  V#.1, V#.2a and V#.2b are unaffected, being the manual's
-# own ids.
-#
-# V#.5 - "Vian stack over contact is permitted" - is not implemented and cannot be.  It
-# is a permission, with no violation condition: it says no rule forbids stacking, and
-# nothing in the design rules does.  A check for it could only never fire, which reads as
-# coverage while proving nothing, or fire on geometry the manual allows.  Were some rule
-# to forbid stacking, the prohibition - not this - would be the thing to write, and
-# `forbidden_overlap` already says it.
-#
-# V#.3.3 and V#.4.3 are guidance rather than rules: the reference codes neither, and the
+# Via 1-4.
 rules:
   - id: V1.1
     check: exact_width

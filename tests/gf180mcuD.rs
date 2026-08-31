@@ -105,15 +105,15 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "comp.gds.gz",
     "7_5_DF",
     &[
-        ("DF.10", 2), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45), ("DF.14_LV", 43),
-        ("DF.14_MV", 44), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 6), ("DF.17_MV", 6),
-        ("DF.18", 6), ("DF.19_LV", 5), ("DF.19_MV", 5), ("DF.1a_LV", 97), ("DF.1a_MV", 167),
-        ("DF.1c", 9), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2), ("DF.3a_LV", 23),
-        ("DF.3a_MV", 23), ("DF.3b", 16), ("DF.3c_LV", 5), ("DF.4a_LV", 12), ("DF.4a_MV", 6),
-        ("DF.4b_LV", 6), ("DF.4b_MV", 6), ("DF.4c_LV", 8), ("DF.4c_MV", 6), ("DF.4d_LV", 6),
-        ("DF.4d_MV", 6), ("DF.4e_LV", 6), ("DF.4e_MV", 6), ("DF.5_LV", 6), ("DF.5_MV", 6),
-        ("DF.6_LV", 3), ("DF.6_MV", 3), ("DF.7_LV", 6), ("DF.7_MV", 6), ("DF.8_LV", 6),
-        ("DF.8_MV", 6), ("DF.9", 215),
+        ("DF.10", 2), ("DF.11", 72), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45),
+        ("DF.14_LV", 43), ("DF.14_MV", 44), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 6),
+        ("DF.17_MV", 6), ("DF.18", 6), ("DF.19_LV", 5), ("DF.19_MV", 5), ("DF.1a_LV", 97),
+        ("DF.1a_MV", 167), ("DF.1c", 9), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2),
+        ("DF.3a_LV", 23), ("DF.3a_MV", 23), ("DF.3b", 16), ("DF.3c_LV", 5), ("DF.4a_LV", 12),
+        ("DF.4a_MV", 6), ("DF.4b_LV", 6), ("DF.4b_MV", 6), ("DF.4c_LV", 8), ("DF.4c_MV", 6),
+        ("DF.4d_LV", 6), ("DF.4d_MV", 6), ("DF.4e_LV", 6), ("DF.4e_MV", 6), ("DF.5_LV", 6),
+        ("DF.5_MV", 6), ("DF.6_LV", 3), ("DF.6_MV", 3), ("DF.7_LV", 6), ("DF.7_MV", 6),
+        ("DF.8_LV", 6), ("DF.8_MV", 6), ("DF.9", 215),
     ]
 )]
 #[case::dnwell(
@@ -150,9 +150,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::nat(
     "nat", "nat.gds.gz", "10_5_NAT",
     &[
-        ("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2),
-        ("NAT.2", 4), ("NAT.3", 3), ("NAT.4", 36), ("NAT.5", 8),
-        ("NAT.7", 2), ("NAT.8", 5),
+        ("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2), ("NAT.2", 4), ("NAT.3", 3),
+        ("NAT.4", 36), ("NAT.5", 38), ("NAT.7", 2), ("NAT.8", 5),
     ]
 )]
 #[case::metaltop(
@@ -178,7 +177,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
     &[
         ("CO.1", 104), ("CO.10", 2), ("CO.11", 145), ("CO.2a", 8), ("CO.3", 13), ("CO.4", 8),
-        ("CO.5a", 2), ("CO.5b", 4), ("CO.6", 98), ("CO.7", 2), ("CO.8", 2),
+        ("CO.5a", 2), ("CO.5b", 4), ("CO.6", 98), ("CO.7", 2), ("CO.8", 2), ("CO.9", 6),
     ]
 )]
 #[case::sram_3p3(
@@ -198,9 +197,9 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "poly2", "poly2.gds.gz", "7_7_Poly2",
     &[
         ("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 21), ("PL.1_MV", 21), ("PL.1a_LV", 9),
-        ("PL.1a_MV", 9), ("PL.2_LV", 90), ("PL.2_MV", 382), ("PL.3a", 42), ("PL.4_LV", 4),
+        ("PL.1a_MV", 9), ("PL.2_LV", 98), ("PL.2_MV", 539), ("PL.3a", 42), ("PL.4_LV", 4),
         ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6),
-        ("PL.6", 720), ("PL.7_LV", 10), ("PL.7_MV", 10), ("PL.9", 11),
+        ("PL.6", 720), ("PL.7_LV", 40), ("PL.7_MV", 132), ("PL.9", 11),
     ]
 )]
 #[case::sab(
@@ -255,7 +254,7 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "lres", "lres.gds.gz", "10_2_LRES",
     &[
         ("LRES.1", 26), ("LRES.2", 6), ("LRES.3", 9), ("LRES.4", 6), ("LRES.5", 7), ("LRES.6",
-        39), ("LRES.7", 8),
+        39), ("LRES.7", 8), ("LRES.9a", 9), ("LRES.9b", 1),
     ]
 )]
 #[case::pres(
@@ -268,8 +267,9 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
 #[case::hres(
     "hres", "hres.gds.gz", "10_3_HRES",
     &[
-        ("HRES.1", 5), ("HRES.2", 59), ("HRES.3", 6), ("HRES.4", 38), ("HRES.5", 7), ("HRES.6",
-        7), ("HRES.7", 23), ("HRES.8", 27), ("HRES.9", 5),
+        ("HRES.1", 5), ("HRES.12a", 37), ("HRES.12b", 1), ("HRES.2", 59), ("HRES.3", 6),
+        ("HRES.4", 38), ("HRES.5", 7), ("HRES.6", 7), ("HRES.7", 23), ("HRES.8", 27), ("HRES.9",
+        5),
     ]
 )]
 #[case::otp_mk(
@@ -285,8 +285,8 @@ fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)
     "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
     &[
         ("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 14), ("Y.NW.2b_LV", 13),
-        ("Y.NW.2b_MV", 26), ("Y.PL.1_LV", 99), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68),
-        ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 6), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6),
+        ("Y.NW.2b_MV", 26), ("Y.PL.1_LV", 99), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 200),
+        ("Y.PL.2_MV", 425), ("Y.PL.4_MV", 6), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6),
         ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6),
     ]
 )]

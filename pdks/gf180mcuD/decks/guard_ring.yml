@@ -2,16 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Guard ring.
+# Guard ring.  4 of the 6 rules in this section.
 #
-# GR.1 and GR.3 are not ported.  Both use KLayout's `not_in`, which compares whole
-# polygons for set membership rather than measuring geometry - "this marker is not one
-# of those shapes".  There is no equivalent here, and approximating it with a boolean
-# would mean something different.
-#
-# Not validated: the PDK ships no test case for this deck, so there is no reference
-# .lyrdb to diff against. The rules are a direct port of the upstream expressions and
-# nothing more - treat them as unverified until a fixture exists.
+# Not ported: GR.1, GR.3.
 rules:
   - id: GR.2
     check: min_space

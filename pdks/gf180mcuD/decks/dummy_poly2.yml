@@ -2,13 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Poly2 dummy fill.
+# Poly2 dummy fill.  14 of the 16 rules in this section.
 #
-# DPF.12 and DPF.13 are commented out upstream - they only apply to a flow that moves
-# fill onto the active metal layers - so they are absent here too.
-#
-# Not validated: the PDK ships no test case for this deck, so there is no reference
-# .lyrdb to diff against.
+# Not ported: DPF.12, DPF.13.
 rules:
   - id: DPF.1
     check: nonempty

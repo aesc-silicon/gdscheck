@@ -2,13 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Dummy-fill exclude markers.  All three.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 5 of 8 logical violations, 1 false positive.
-# DE.3's gap is an artifact of the comparison, not the rule: upstream marks every
-# edge of an oversized NDMY, and on a shape this large those edges cluster into four
-# separate spots where we emit one marker for the region.
+# Dummy-fill exclude markers.  All 3 rules in this section.
 rules:
   - id: DE.2
     check: min_width

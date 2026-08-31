@@ -2,15 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Dual gate oxide (5/6 V devices).  All 8 rules.
-#
-# DV.1, DV.6 and DV.8 each pair an enclosure measurement with a second term for the
-# layer that overlaps dualgate but reaches outside it.  interacting_only is what keeps
-# the measurement to where the two actually meet - without it every DNWELL, COMP or
-# poly nowhere near a dualgate reads as a zero-margin violation.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 16 of 19 logical violations, 2 false positives.
+# Dual gate oxide (5/6 V devices).  All 8 rules in this section.
 rules:
   - id: DV.1
     check: min_enclosure

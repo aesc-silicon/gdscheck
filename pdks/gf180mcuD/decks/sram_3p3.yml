@@ -2,8 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# SRAM 3.3 V.  All 6 rules in this section, on the parts of each layer inside
-# SRAMCORE.
+# SRAM 3.  All 6 rules in this section.
 rules:
   - id: S.DF.4c_LV
     check: min_enclosure

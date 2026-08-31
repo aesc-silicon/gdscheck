@@ -2,21 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal 1-4.  The design rules give one rule set per level below
-# the top metal; on this 5LM variant that is Metal1 to Metal4, with Metal5 handled by
-# the metaltop deck.
-#
-# M#.2b is not ported.  "Space to wide metal" derives the wide metal by opening the
-# layer with a 5 um structuring element, then measures the gap from the layer back to
-# that subset with `without_touching_edges`.  The subset touches its parent everywhere
-# by construction, so without an equivalent of that flag the rule would fire on every
-# wide shape.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 64 of 75 logical violations per level, 2 false positives.
-# 11 of the 13 misses are M#.2b, which is not ported; excluding it the deck is
-# effectively exact. Checked against metal1 through metal4, which give identical
-# numbers - the four fixtures are the same layout on different layers.
+# Metal 1-4.
 rules:
   - id: M1.1
     check: min_width

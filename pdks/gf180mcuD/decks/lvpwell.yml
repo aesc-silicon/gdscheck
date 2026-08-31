@@ -2,16 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Low-voltage P-well.  All ten rules.
-#
-# LPW.2a is the different-potential minimum and LPW.2b the equi-potential one, the
-# same pairing as NW.2a/NW.2b: LPW.2b runs as a plain geometric space, so it also
-# fires on a different-net pair below 0.86 um, which is an LPW.2a violation anyway.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 128 of 206 logical violations, no false positives. LPW.2a needs
-# lvpwell_dn_lv/_mv in the connect graph - without them the net-aware check cannot
-# resolve a net, fails conservative and reported 24 pairs it should not have.
+# Low-voltage P-well.  All 10 rules in this section.
 rules:
   - id: LPW.1_LV
     check: min_width

@@ -2,31 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Deep N-well.
-#
-# DN.3 - "each DNWELL shall be directly surrounded by a PCOMP guard ring" - is a
-# selection, not a measurement.  A ring shows up as a hole in the merged PCOMP layer, so
-# the area it encloses is that hole minus PCOMP itself, and a deep well is in breach if
-# it is not inside one of those, or if it is inside one that also encloses somebody
-# else's n-type geometry (then the ring is shared rather than this well's own).
-#
-# Two refinements of the reference are absent, both for want of an operator:
-#
-#   `.extents`                 the reference tests containment against the bounding box
-#                              of the ring's interior rather than its actual shape, which
-#                              is more forgiving for a non-convex ring.  Testing against
-#                              the shape is stricter, so this can only cost false
-#                              positives - and on the test case it costs none.
-#   `interacting(dnwell, 1..1)` the reference only accepts a ring interior holding
-#                              exactly *one* deep well, so a ring drawn around two flags
-#                              both.  Without a count-bounded interaction selector those
-#                              pass here, which is where most of the 20 misses are.
-#
-# Note the cost: `pcomp_holes` declares a 200 um ring extent, so this rule gives the deck
-# a 200 um halo on COMP and PCOMP.  That is affordable on a test case and is not on a
-# full chip - dnwell now joins ldnmos, ldpmos and mslot as a deck that wants the tiling
-# to scale with the halo before it can run at scale.
-#
+# Deep N-well.  All 4 rules in this section.
 rules:
   - id: DN.1
     check: min_width

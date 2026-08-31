@@ -2,61 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Antenna ratios.  The only net-aware deck here: a
-# rule asks, for one net, how much conductor is attached to a gate relative to that
-# gate's own area, and flags the net when the ratio is too high.
+# Antenna ratios.  20 of the 26 rules in this section.
 #
-# What makes it different from every other deck is that each rule sees the stack *as it
-# exists partway through processing*.  Upstream clears the connect graph and rebuilds it
-# one level at a time, so the Metal1 rule sees a net that stops at Metal1 - Metal2 has
-# not been deposited yet and cannot drain the charge.  Here that is a `level`, the number
-# of steps of pdk.yml's ordered `connectivity:` list to apply.  The indices below are
-# from that list and are load-bearing; tests/pdk_integrity.rs pins the list so inserting
-# a step breaks loudly instead of silently shifting every rule.
-#
-# Two metrics.  A via or contact is measured by its plan area.  A metal wire is measured
-# by its *sidewall* area - perimeter times the metal's thickness - because that is the
-# surface that collects charge during etch.  Metal5 is the top metal on this 5LM variant
-# and is thicker (11K, 1.19 um) than the levels below it (0.54 um).
-#
-# The diode credit is a denominator term, not a relaxed limit: a protection diode on the
-# same net adds `diode_factor` times its area to the gate area it is protecting, and the
-# factor is 2 for a thin gate and 15 for a thick one.  The three diode layers are the n+
-# diffusion outside the well, the p+ diffusion inside it, and the well itself, each
-# resolved onto its net through its own base layer.
-#
-# Variant D is 5LM with MIM option B, so upstream's Via5 and Metaltop blocks do not run
-# (they need six metal levels) and the MIM-A rules do not either.  MIM option B ties the
-# cap plate in at the Via3 phase, which is why the MIM rules start there.
-#
-# ANT.1's antenna layer is `perimeter_only(poly2_drawn, 0.2.um)` upstream - a helper that
-# is called there and defined nowhere in the PDK.  Read here as what the other perimeter
-# rules do: poly perimeter times a 0.2 um thickness.  Flagged because it is a reading of
-# a broken call site rather than a port of working code.
-#
-# Validated against antenna-1, which is the PDK's variant *E* case - there is no variant
-# D antenna case in the PDK.  That still works, because a rule's net is a prefix of the
-# connect list and the prefixes at and below Metal5 are identical in D and E; E only adds
-# levels above.  Comparing the RATIO each engine records per net:
-#
-#   exact, same ratio      ANT.16_i_ANT.2, .3, .4, .5 (metal sidewall)
-#                          ANT.16_i_ANT.9, .10, .11, .12 (via area)
-#   exact, same structure  ANT.8; ANT.1 (which upstream marks on the antenna shape and
-#                          we mark on the gate, so the markers sit ~24 um apart)
-#   differs, as designed   ANT.16_i_ANT.6.  Metal5 is the top metal here and 1.19 um
-#                          thick; in the 6LM variant E it is an intermediate layer at
-# 0.54.  The reference's 401.0 becomes 883.6 - exactly the
-# 1.19/0.54 ratio - and two further nets cross 400 that did not.
-#   not applicable         ANT.16_i_ANT.13, ANT.16_i_ANT.7, ANT.16_iii_ANT.14_MT_MIMB
-#                          are Via5 and Metaltop, which a 5LM stack does not have.
-#
-# ANT.1's 200.9 against a limit of 200 is what says the 0.2 um reading of the missing
-# `perimeter_only` helper is the right one: any other thickness misses the rule entirely.
-#
-# The twelve thick-gate (ANT.16_ii_*) and MIM-B rules do not fire on this case - it has
-# no thick gates, and in variant E the MIM plate sits above Metal5.  They are the same
-# rules as their thin-gate and lower-level counterparts with a different gate layer and
-# multiplier, and those are exact, but they are unexercised and worth saying so.
+# Not ported: ANT.16_i_ANT.13, ANT.16_i_ANT.7, ANT.16_ii_ANT.13, ANT.16_ii_ANT.7,
+# ANT.16_iii_ANT.14_M3_MIMA, ANT.16_iii_ANT.15_V2_MIMA.
 rules:
   - id: ANT.1
     check: antenna_ratio

@@ -3,10 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Acute angles: every drawn layer may turn only by multiples of 45 degrees.
-#
-# `no_angle` with `step: 45` - 0, 45, 90 and -45 are legal and everything else is not.
-# The check's default step of 90 would flag every legitimate diagonal, so the parameter
-# is the whole rule.  One rule per layer, the same 93 as the off-grid deck.
 rules:
   - id: comp_ACUTE
     check: no_angle

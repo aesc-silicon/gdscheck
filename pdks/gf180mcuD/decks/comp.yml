@@ -2,62 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Active area (COMP).
+# Active area (COMP).  43 of the 44 rules in this section.
 #
-# As in the nwell deck, most rules come in an _LV and an _MV form, splitting on
-# whether the COMP touches v5_xtor/dualgate anywhere.  DF.1b_LV and DF.1b_MV are not
-# DRC checks upstream, and DF.15 does not exist.
-#
-# Four of the 44 rules are deliberately not ported; each needs something the engine
-# does not have yet, and a rule that silently matches nothing is worse than an absent
-# one:
-#
-#   DF.3c_MV             `drc_bjt.interacting(comp_56v, 2)` selects regions meeting
-#                        the other layer at least twice.  Our selectors are boolean;
-#                        there is no interaction count.
-#   DF.11                Min length of a butting COMP edge.  Upstream measures the
-#                        shared edge itself, not the region width; min_width on the
-#                        butted COMP is a different quantity, so it is left out
-#                        rather than approximated.
-#
-# Two more are ported but worth knowing about:
-#
-#   DF.2b   Upstream writes the 100 um width cap as sized(-50).sized(50), an opening
-#           with a round structuring element.  Our `open` is the same operation, so
-#           whatever survives the erode is the violation and the rule is `nonempty`.
-#   DF.10   Min field area, upstream `comp.holes.not(comp).with_area`.  Expressed as
-#           min_enclosed_area on COMP, which measures the same hole areas directly
-#           and avoids the `holes` op's tile-locality limit.
-#
-# Validated against drc/testing/unit/comp.{gds,lyrdb} with tools/compare-lyrdb.py,
-# which counts *logical* violations - markers clustered by proximity, since the two
-# engines report at different granularity and matching KLayout's marker count is not the
-# goal.  This engine's spacing check walks region pairs and emits one violation at their
-# closest approach; KLayout emits one edge-pair per facing side.  Two interlocking combs
-# out of this very fixture are five edge-pairs there and two here, both pointing at the
-# same structure.
-#
-# All 42 ported rules fire.  The reference finds 800 logical violations and we flag 687.
-# 138 are missed, 29 of them belonging to the four rules above that are deliberately
-# absent, so 109 come from ported rules.
-#
-# Of the 14 the clustered comparison calls false positives, only 7 markers actually land
-# where the reference has nothing, and all 7 are DF.13/DF.14 (tools/unmatched-markers.py).
-# The rest are a measurement artefact: on DF.4d_LV the reference emits 22 markers and we
-# emit 6, every one of ours on a wall the reference also flags, but the 22 cluster into 2
-# and the 6 into 3.  DF.1a, DF.4d_LV, DF.5_LV and DF.9 have no false positives at all.
-#
-# DF.9's four are gone.  They were the merge, not the rule: a chamfered COMP touching its
-# neighbour at a single corner was two regions here and one in KLayout, so a 0.38 um^2
-# shape read as 0.11 and 0.27 and both halves failed the 0.2025 um^2 area rule.  Region
-# stitching now joins pieces that touch at a point (src/merge.rs).
-#
-# The 109 have no confirmed cause.  Ruled out: the derived layers (raw COMP misses the
-# same spots), the LV/MV split (the misses are not picked up by the other variant), and
-# the checks themselves - min_space, min_notch and min_width all measure correctly on
-# reduced cases at this scale, including 45 degree edges, 55 nm gaps, an island inside a
-# ring's hole, and the interlocking comb pair above.
-
+# Not ported: DF.3c_MV.
 rules:
   - id: DF.1a_LV
     check: min_width
@@ -253,3 +200,7 @@ rules:
     check: min_space
     layers: [df16_ncomp_mv_all, dnwell]
     value: 3.28
+  - id: DF.11
+    check: min_width
+    layers: [comp_at_ncomp_butted]
+    value: 0.3

@@ -3,21 +3,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Gate poly.  All 19 rules in this section.
-#
-# Three rules read as edge work upstream and are not:
-#
-#   PL.2   Gate width (channel length) is `tgate.edges.inside_part(comp).width(v)` -
-#          the poly's own width measured only where it forms a gate, which is what
-#          gate_length does with a mask.  PL.2_MV splits into four device classes with
-#          their own values, all reported under the one id, as upstream has it.
-#   PL.7   The 45-degree bent gate width selects gate edges by angle and measures
-#          across them; min_45_width is that measurement, restricted to the oblique
-#          runs and skipping the axis-aligned ones PL.2 already covers.
-#
-# Validated against the PDK's own test case with tools/compare-lyrdb.py, counting
-# logical violations: 236 of 288, 11 by the clustered count and none by the per-marker
-# one (tools/unmatched-markers.py).  PL.6, PL.9, PL.11 and PL.12 are exact; gate_length
-# carries PL.2_MV to 35 of 38.
 rules:
   - id: PL.1_LV
     check: min_width
@@ -37,24 +22,24 @@ rules:
     value: 0.18
 
   - id: PL.2_LV
-    check: gate_length
-    layers: [poly2_lv, tgate_pl2_lv]
+    check: min_width
+    layers: [pl2_lv_channel]
     value: 0.28
   - id: PL.2_MV
-    check: gate_length
-    layers: [poly2_mv, ngate_5v]
+    check: min_width
+    layers: [pl2_mv_n_channel]
     value: 0.6
   - id: PL.2_MV
-    check: gate_length
-    layers: [poly2_mv, pgate_5v]
+    check: min_width
+    layers: [pl2_mv_p_channel]
     value: 0.5
   - id: PL.2_MV
-    check: gate_length
-    layers: [poly2_mv, ngate_6v]
+    check: min_width
+    layers: [pl2_6v_n_channel]
     value: 0.7
   - id: PL.2_MV
-    check: gate_length
-    layers: [poly2_mv, pgate_6v]
+    check: min_width
+    layers: [pl2_6v_p_channel]
     value: 0.55
 
   - id: PL.3a
@@ -97,12 +82,12 @@ rules:
     value: 0.3
 
   - id: PL.7_LV
-    check: min_45_width
-    layers: [nom_gate]
+    check: min_width
+    layers: [pl7_nom]
     value: 0.3
   - id: PL.7_MV
-    check: min_45_width
-    layers: [thick_gate]
+    check: min_width
+    layers: [pl7_thick]
     value: 0.7
 
   - id: PL.9
