@@ -7,6 +7,19 @@
 # Not ported: MDN.10c, MDN.10d, MDN.11, MDN.12, MDN.13b, MDN.13c, MDN.13d, MDN.3b,
 # MDN.4a, MDN.4b, MDN.5c.
 #
+# MDN.3b, MDN.4a, MDN.4b are min/max width across the gate's own edges - upstream's own
+# comment says the gate edges outside the COMP define the transistor's width and the ones
+# inside it define its length.  `max_width` reads them now and lands on the right walls:
+# MDN.3b finds four of the six, MDP.1a both of its two.  What is left over is the partner
+# set.  Upstream measures the width of the gate *region* and keeps the stretches of the
+# side edges it covers; pairing parallel edges reaches a different set, because the gate
+# ends run perpendicular to the sides and never pair with them - four extra on MDN.3b,
+# seven on MDP.1a.  Whatever closes that is what these three need.
+#
+# MDN.5c is `max_distance` and reads clean, but the reference measures the reach as a
+# facing separation, not as proximity: every tab edge has P+ within 15 um, and none of
+# them faces it across a gap that short.
+#
 # Known: MDN.10f reports one region the reference does not - a tiled difference leaves
 # residue outside the tile core and the selection reading it whole sees the residue.
 rules:

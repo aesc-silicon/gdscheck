@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # P+ poly resistor.  All 9 rules in this section.
+#
 rules:
   - id: PRES.1
     check: min_width

@@ -513,6 +513,7 @@ pub fn run_drc(
         "min_width",
         "max_width",
         "exact_width",
+        "max_distance",
         "min_space",
         "min_notch",
         "min_enclosure",

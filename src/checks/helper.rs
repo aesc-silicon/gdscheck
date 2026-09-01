@@ -444,6 +444,12 @@ fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     out
 }
 
+/// Below this, a merged piece is a shaving rather than material: the merge rounds a 45°
+/// corner drawn with a one-nanometre chamfer and leaves the chamfer behind as a triangle
+/// of half a square DBU.  A hundred square DBU is a ten-nanometre square, which is orders
+/// below anything a layout draws.
+const SHAVING_DBU2: f64 = 100.0;
+
 /// Drive a width check over the cached tiles: `viol(width_dbu)` decides a
 /// violation, `op`/`check_name`/`label` shape the log and the report.
 #[allow(clippy::too_many_arguments)]
@@ -1158,13 +1164,27 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     // one net and the rule goes quiet on a real violation.
     let conv =
         |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, representative_point(m)));
-    let pa: Vec<(Poly, Marker)> = a_polys.iter().filter_map(conv).collect();
-    let pb: Vec<(Poly, Marker)> = if same_layer {
-        Vec::new()
+    // Whether a merged piece is real material or a shaving the merge left behind.  A 45°
+    // wall is drawn with a one-nanometre chamfer at each corner, and rounding that corner
+    // detaches the chamfer as a triangle of half a square nanometre touching the body at
+    // a vertex.  The width checks want it - KLayout keeps the same feature and reports
+    // the notch - but a *gap* of nothing to a shaving is not a spacing violation, and
+    // reading it as one is five false positives each on LRES.2 and PRES.2.  Nothing drawn
+    // is this small: a hundred square DBU is a ten-nanometre square.
+    let material = |m: &MergedPoly| crate::merge::merged_area_dbu(m) >= SHAVING_DBU2;
+    let prep = |ms: &[MergedPoly]| -> (Vec<(Poly, Marker)>, Vec<bool>) {
+        ms.iter()
+            .filter_map(|m| conv(m).map(|p| (p, material(m))))
+            .unzip()
+    };
+    let (pa, mat_a) = prep(a_polys);
+    let (pb, mat_b) = if same_layer {
+        (Vec::new(), Vec::new())
     } else {
-        b_polys.iter().filter_map(conv).collect()
+        prep(b_polys)
     };
     let bs: &[(Poly, Marker)] = if same_layer { &pa } else { &pb };
+    let mat_bs: &[bool] = if same_layer { &mat_a } else { &mat_b };
 
     let mut out = Vec::new();
     for (i, (a, ma)) in pa.iter().enumerate() {
@@ -1214,19 +1234,21 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
                 // wide, which is the worst spacing there is. KLayout reads it that way and
                 // this engine used to drop it, silently, wherever it occurred.
                 //
-                // Within one layer it is not a gap at all. Two pieces of one layer meeting
-                // at a point are one shape pinched to nothing, which is a width or notch
-                // violation and belongs to those checks - reporting a spacing there was
-                // every false positive this reading produced.
+                // Within one layer it is a gap of zero too, and KLayout reports it: two
+                // wells meeting corner to corner merge into one self-touching shape, and
+                // `space` marks the touch point. This engine excluded the same-layer case
+                // for a while, on the grounds that such a contact is a pinch and belongs
+                // to the width checks; that reading cost 82 logical violations across
+                // eighteen gf180mcu decks - the whole of what `nwell` and `lvpwell` were
+                // missing on their well-spacing rules - and the pinch is reported anyway,
+                // by whichever width rule covers the layer.
                 //
-                // Measured over nineteen decks: 47 more logical violations and no new
-                // false positives at either count. See the reduced case in
-                // tests/data/gf180mcuD/generated/poly2/PL.5.*.
-                // And a contact along a *run* is not a gap either: two shapes drawn edge
-                // to edge abut, with no space between them anywhere. IHP's butted
-                // substrate ties are exactly that by construction. Only a contact at
-                // isolated points is a separation of zero.
-                if m.0 < half && (same_layer || shares_boundary_run(a, b, half)) {
+                // A contact along a *run* is not a gap: two shapes drawn edge to edge
+                // abut, with no space between them anywhere. IHP's butted substrate ties
+                // are exactly that by construction. Only a contact at isolated points is
+                // a separation of zero, whichever layers it is between.
+                let shaving = !mat_a[i] || !mat_bs[j];
+                if m.0 < half && (shaving || shares_boundary_run(a, b, half)) {
                     continue;
                 }
                 m
@@ -2495,13 +2517,19 @@ fn line_end_edges(
             || same((bx, by), (cx, cy))
             || same((bx, by), (dx, dy))
     };
+    // An edge that is itself a wall of some narrow pair is not a cap, even of a different
+    // pair.  A pad narrower than `max_width` in *both* directions has every side facing
+    // another, and taking one of them as the cap of the perpendicular pair would read a
+    // small square as a line end - which it is not, having no line.  KLayout says the same
+    // thing as `.not(first_edges).not(second_edges)`.
+    let is_wall: std::collections::HashSet<usize> =
+        walls.iter().flat_map(|&(i, j)| [i, j]).collect();
     (0..n)
         .filter(|&e| {
             let (ax, ay, bx, by) = a.edges[e];
             (bx - ax).hypot(by - ay) < max_width
-                && walls
-                    .iter()
-                    .any(|&(i, j)| e != i && e != j && touches(e, i) && touches(e, j))
+                && !is_wall.contains(&e)
+                && walls.iter().any(|&(i, j)| touches(e, i) && touches(e, j))
         })
         .map(|e| a.edges[e])
         .collect()

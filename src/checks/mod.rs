@@ -17,6 +17,7 @@ pub mod gate_connected_min_area;
 pub mod gate_length;
 pub mod helper;
 pub mod inside_boundary;
+pub mod max_distance;
 pub mod max_enclosure;
 pub mod max_space;
 pub mod max_total_area;
@@ -75,6 +76,7 @@ pub fn run_rule(
             forbidden_unless_labeled::run(rule, layout, dbu_to_um, merged)
         }
         "exact_width" => exact_width::run(rule, layout, dbu_to_um, merged),
+        "max_distance" => max_distance::run(rule, layout, dbu_to_um, merged),
         "forbidden" => forbidden::run(rule, layout, dbu_to_um),
         "forbidden_overlap" => forbidden_overlap::run(rule, layout, dbu_to_um, merged),
         "coverage" => coverage::run(rule, layout, dbu_to_um, merged),

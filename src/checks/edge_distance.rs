@@ -77,7 +77,7 @@ pub fn run_enclosure(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Enclosure)
+    run(rule, layout, dbu_to_um, merged, Rel::Enclosure, false)
 }
 
 /// The two layers' boundaries must stay at least `value` apart.
@@ -87,7 +87,7 @@ pub fn run_space(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Space)
+    run(rule, layout, dbu_to_um, merged, Rel::Space, false)
 }
 
 /// An edge layer's own facing pairs must span at least `value` of material — KLayout's
@@ -99,8 +99,34 @@ pub fn run_width(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Width)
+    run(rule, layout, dbu_to_um, merged, Rel::Width, false)
 }
+
+/// The same span, bounded from above: the material between two facing walls must not be
+/// *more* than `value` thick.  A transistor's channel length is the width between the
+/// gate's own sides and GF180 caps it - MDN.3b at 20 µm - which no region carries either.
+///
+/// The measurement is the same one and the comparison is the only difference, but the
+/// *search* is not.  A minimum only ever looks within its own limit, and the pairing
+/// takes advantage of that by pairing edges filed in one tile; a maximum is violated
+/// exactly by the pairs beyond the limit, which are the ones that reading never
+/// generates.  So this path gathers the partner from the tiles the edge can see out to
+/// [`MAX_REACH`] limits and reports the *nearest* partner it finds - the nearest is the
+/// one the width is measured to, a wall further off having material in between.
+pub fn run_max_width(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    run(rule, layout, dbu_to_um, merged, Rel::Width, true)
+}
+
+/// How far past its own limit a maximum looks for the facing wall, in multiples of the
+/// limit.  A width that exceeds the limit by more than this is not measured and so not
+/// reported: the check would rather miss one than invent a width to a wall that is not
+/// really opposite.
+const MAX_REACH: f64 = 4.0;
 
 /// One offending pair: the margin measured, and the two points that measure it.
 type Pair = (f64, (f64, f64), (f64, f64));
@@ -138,11 +164,13 @@ fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
     rel: Rel,
+    at_most: bool,
 ) -> Vec<Violation> {
-    let name = match rel {
-        Rel::Enclosure => "min_enclosure",
-        Rel::Space => "min_space",
-        Rel::Width => "min_width",
+    let name = match (rel, at_most) {
+        (Rel::Enclosure, _) => "min_enclosure",
+        (Rel::Space, _) => "min_space",
+        (Rel::Width, false) => "min_width",
+        (Rel::Width, true) => "max_width",
     };
     // A width is one layer against itself; the others take two.
     let (Some(la), lb) = (
@@ -174,8 +202,12 @@ fn run(
     merged.ensure_edges(layout, kb);
 
     println!(
-        "[{}] Checking {name} >= {:.2} µm between edge layers {} and {}",
-        rule.id, rule.value, la.name, lb.name
+        "[{}] Checking {name} {} {:.2} µm between edge layers {} and {}",
+        rule.id,
+        if at_most { "<=" } else { ">=" },
+        rule.value,
+        la.name,
+        lb.name
     );
 
     let limit = rule.value / dbu_to_um;
@@ -192,9 +224,29 @@ fn run(
     let tol = 0.5;
     let mut out = Vec::new();
 
+    // A minimum pairs within one tile: it only looks as far as its own limit, and an edge
+    // is filed under the tile its midpoint falls in.  A maximum has to reach further, so
+    // it collects the partner from the block of tiles its reach covers.
+    let reach = if at_most { limit * MAX_REACH } else { 0.0 };
+    let span = (reach / tile as f64).ceil() as i32 + 1;
     for (&(tx, ty), a_edges) in merged.edges(ka) {
-        let Some(b_edges) = merged.edges(kb).get(&(tx, ty)) else {
-            continue;
+        let gathered: Vec<Edge>;
+        let b_edges: &[Edge] = if at_most {
+            let mut v = Vec::new();
+            for dx in -span..=span {
+                for dy in -span..=span {
+                    if let Some(es) = merged.edges(kb).get(&(tx + dx, ty + dy)) {
+                        v.extend(es.iter().copied());
+                    }
+                }
+            }
+            gathered = v;
+            &gathered
+        } else {
+            match merged.edges(kb).get(&(tx, ty)) {
+                Some(v) => v.as_slice(),
+                None => continue,
+            }
         };
         let core = Core {
             x0: tx as i64 * tile,
@@ -221,8 +273,11 @@ fn run(
                 // enclosure or a width. One sign covers all three.
                 let along = (sb.o.0 - sa.o.0) * sa.n.0 + (sb.o.1 - sa.o.1) * sa.n.1;
                 let margin = if rel == Rel::Space { along } else { -along };
-                if margin < -tol || margin >= limit {
-                    continue; // behind this edge, or already far enough
+                // Behind this edge either way.  A minimum also drops everything already
+                // far enough; a maximum needs those, since the nearest partner is what it
+                // compares, and it caps the search at its reach instead.
+                if margin < -tol || (!at_most && margin >= limit) || margin > reach.max(limit) {
+                    continue;
                 }
                 if skip_coincident && margin <= tol {
                     continue; // flush, not short
@@ -237,18 +292,34 @@ fn run(
                 if worst.is_some_and(|(m, _, _)| m <= margin) {
                     continue;
                 }
-                let mid = (s0 + s1) * 0.5;
-                let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
-                let q = if rel != Rel::Space {
-                    (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
+                // A minimum marks the span it measured, which is short enough to stand
+                // for where the violation is.  A maximum's span is by definition longer
+                // than the rule allows, and its middle is nowhere near either wall - so
+                // that one marks the offending wall itself, the stretch of this edge that
+                // faces the far one, which is what the reference draws too.
+                let (p, q) = if at_most {
+                    (
+                        (sa.o.0 + s0 * sa.u.0, sa.o.1 + s0 * sa.u.1),
+                        (sa.o.0 + s1 * sa.u.0, sa.o.1 + s1 * sa.u.1),
+                    )
                 } else {
-                    (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
+                    let mid = (s0 + s1) * 0.5;
+                    let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
+                    let q = if rel != Rel::Space {
+                        (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
+                    } else {
+                        (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
+                    };
+                    (p, q)
                 };
                 worst = Some((margin, p, q));
             }
             let Some((margin, p, q)) = worst else {
                 continue;
             };
+            if at_most && margin <= limit + tol {
+                continue; // the nearest facing wall is close enough
+            }
             // The pair is owned by the tile holding the middle of what it measures, so an
             // edge seen from two tiles is reported once.
             let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
@@ -260,15 +331,23 @@ fn run(
                 Rel::Space => "space",
                 Rel::Width => "width",
             };
+            let (title, cmp) = if at_most {
+                ("Maximum width violation", ">")
+            } else {
+                (
+                    match rel {
+                        Rel::Enclosure => "Minimum enclosure violation",
+                        Rel::Space => "Minimum space violation",
+                        Rel::Width => "Minimum width violation",
+                    },
+                    "<",
+                )
+            };
             out.push(Violation::edge(
                 &rule.id,
-                match rel {
-                    Rel::Enclosure => "Minimum enclosure violation",
-                    Rel::Space => "Minimum space violation",
-                    Rel::Width => "Minimum width violation",
-                },
+                title,
                 format!(
-                    "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                    "{what} {:.4} µm {cmp} {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
                     margin * dbu_to_um,
                     rule.value,
                     la.name,

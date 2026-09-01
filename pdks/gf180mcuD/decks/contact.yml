@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Contact.  12 of the 15 rules in this section.
+# Contact.  14 of the 15 rules in this section.
 #
-# Not ported: CO.2b, CO.6a, CO.6b.
+# Not ported: CO.2b.
 rules:
   - id: CO.1
     check: exact_width
@@ -46,6 +46,23 @@ rules:
     check: min_enclosure
     layers: [metal1, contact]
     value: 0.005
+  - id: CO.6a
+    check: min_enclosure
+    layers: [metal1, contact]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.24
+    str_params:
+      sides: line_end
+  - id: CO.6b
+    check: min_enclosure
+    layers: [metal1, contact_no_sram]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
   - id: CO.7
     check: min_space
     layers: [contact_on_comp_no_otp, tgate_no_otp]

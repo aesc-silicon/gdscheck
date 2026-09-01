@@ -4,7 +4,9 @@
 
 # eFuse.  25 of the 27 rules in this section.
 #
-# Not ported: EF.02, EF.04a.
+# Not ported: EF.02, EF.04a.  EF.02 is `exact_width` on PLFUSE and reads correctly -
+# every width it flags is genuinely not 0.18 - but it over-reports the reference by a
+# hundred, the tail of them at the 45 degree spurs LRES.1 documents.
 #
 # Known: EF.06 and EF.08 over-report and EF.09 under-reports. The width/length
 # partition needs to see that a shape's own edges touch, and edge layers are
