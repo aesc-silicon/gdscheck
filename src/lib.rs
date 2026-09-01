@@ -668,6 +668,24 @@ pub fn run_drc(
         }
     }
 
+    // A run is over the same layout twice, so its report should be the same file twice.
+    // The checks emit while walking tile maps, whose iteration order is not stable, so
+    // the violations arrive shuffled; the *set* is deterministic and the order is not.
+    // Sorting here makes two reports of one layout diffable, which is what anyone
+    // comparing a fix against a baseline needs.
+    violations.sort_by(|a, b| {
+        let key = |v: &violation::Violation| {
+            let (x, y, x2, y2) = match v.geometry {
+                violation::ViolationGeometry::Point { x, y } => (x, y, x, y),
+                violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => (x1, y1, x2, y2),
+                violation::ViolationGeometry::None => (0.0, 0.0, 0.0, 0.0),
+            };
+            (v.rule_id.clone(), x, y, x2, y2, v.message.clone())
+        };
+        key(a)
+            .partial_cmp(&key(b))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     Ok(violations)
 }
 
