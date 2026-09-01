@@ -81,7 +81,7 @@ pub fn generate(pdk: &PdkConfig) {
 
     for l in &levels {
         let n = l.n;
-        // The lower-metal margin V#.3 asks for: nothing at Via1, 0.01 above it.
+        // The lower-metal margin V#.3a/V#.3b asks for: nothing at Via1, 0.01 above it.
         let lo_min = if n == 1 { 0.0 } else { 0.01 };
         let ok = [CLEAR; 4];
         let mut cases: Vec<(String, Vec<gds21::GdsElement>, Vec<gds21::GdsElement>)> = Vec::new();
@@ -115,14 +115,14 @@ pub fn generate(pdk: &PdkConfig) {
             array(l, OFFSET, OFFSET, 4, 4, VIA + 0.30),
         ));
 
-        // V#.3 - the metal below must cover the via, by 0.01 um above Via1.
+        // V#.3a / V#.3b - the metal below must cover the via, by 0.01 um above Via1.
         cases.push((
             format!("V{n}.3"),
             cell(l, OFFSET, OFFSET, [lo_min + 0.05; 4], [CLEAR; 4]),
             cell(l, OFFSET, OFFSET, [-0.05, CLEAR, CLEAR, CLEAR], [CLEAR; 4]),
         ));
 
-        // V#.3.2 - a lower side under 0.04 forces the sides bordering it to reach 0.06.
+        // V#.3d - a lower side under 0.04 forces the sides bordering it to reach 0.06.
         // Good twice over and for different reasons: nothing deficient, then a deficient
         // side whose neighbours are generous.
         let mut good_32 = cell(l, OFFSET, OFFSET, [0.1; 4], [CLEAR; 4]);
@@ -139,7 +139,7 @@ pub fn generate(pdk: &PdkConfig) {
             cell(l, OFFSET, OFFSET, [0.02, 0.2, 0.05, 0.2], [CLEAR; 4]),
         ));
 
-        // V#.3.1 - at the end of a narrow track (under 0.34 um wide, 0.28 um long) the
+        // V#.3c - at the end of a narrow track (under 0.34 um wide, 0.28 um long) the
         // metal below must reach 0.06 past the via, six times the ordinary margin,
         // because a narrow line's tip pulls back during processing. The good pattern
         // makes the track *wide* at the same 0.02 um margin: no narrow line, no line end,
@@ -168,16 +168,16 @@ pub fn generate(pdk: &PdkConfig) {
         };
         cases.push((format!("V{n}.3.1"), track(0.5, 0.02), track(0.3, 0.02)));
 
-        // V#.4 - and the metal above must cover it by 0.01 um.
+        // V#.4a - and the metal above must cover it by 0.01 um.
         cases.push((
             format!("V{n}.4"),
             cell(l, OFFSET, OFFSET, ok, [0.06; 4]),
-            // Deficient on one side only, so V#.4.2 - whose neighbours stay generous -
-            // has nothing to say and this fixture is about V#.4 alone.
+            // Deficient on one side only, so V#.4c - whose neighbours stay generous -
+            // has nothing to say and this fixture is about V#.4a alone.
             cell(l, OFFSET, OFFSET, ok, [-0.05, CLEAR, CLEAR, CLEAR]),
         ));
 
-        // V#.4.1 - the same end-of-line rule against the metal above.
+        // V#.4b - the same end-of-line rule against the metal above.
         let track_up = |w: f64, tip: f64| {
             let (x, y) = (OFFSET, OFFSET);
             vec![
@@ -204,7 +204,7 @@ pub fn generate(pdk: &PdkConfig) {
             track_up(0.3, 0.02),
         ));
 
-        // V#.4.2 - the same adjacent-side rule against the metal above.
+        // V#.4c - the same adjacent-side rule against the metal above.
         let mut good_42 = cell(l, OFFSET, OFFSET, ok, [0.1; 4]);
         good_42.extend(cell(l, OFFSET + 5.0, OFFSET, ok, [0.02, 0.2, 0.2, 0.2]));
         let mut bad_42 = cell(l, OFFSET, OFFSET, ok, [CLEAR; 4]);
@@ -219,7 +219,7 @@ pub fn generate(pdk: &PdkConfig) {
 
         // V#.3.3 / V#.4.3 - guidance: 0.12 um on every side, for resistance matching.
         // The bad half is short on one side only, and at 0.10 um it is comfortably above
-        // everything else that watches these margins (V#.3 wants 0.01, V#.3.2 triggers
+        // everything else that watches these margins (V#.3b wants 0.01, V#.3d triggers
         // under 0.04), so the fixture isolates the guidance rule.
         cases.push((
             format!("V{n}.3.3"),

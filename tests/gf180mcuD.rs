@@ -76,238 +76,19 @@ fn counts_at(deck: &str, path: &str, topcell: &str) -> Vec<(String, usize)> {
     by_rule.into_iter().collect()
 }
 
-fn assert_counts(deck: &str, gds: &str, topcell: &str, expected: &[(&str, usize)]) {
-    let want: Vec<(String, usize)> = expected
-        .iter()
-        .map(|(r, n)| ((*r).to_string(), *n))
-        .collect();
-    assert_eq!(counts(deck, gds, topcell), want);
-}
-
 // --- N-well ---
 //
 // Every rule in the deck fires on this case, which is the first thing worth knowing: a
 // rule that silently matches nothing is the failure mode a skeleton invites.
 
-#[rstest]
-#[case::nwell(
-    "nwell",
-    "nwell.gds.gz",
-    "7_4_NWELL",
-    &[
-        ("NW.1a_LV", 82), ("NW.1a_MV", 128), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 8), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 24), ("NW.3", 14), ("NW.4", 15), ("NW.5_LV", 11), ("NW.5_MV", 19), ("NW.6", 13),
-    ]
-)]
-#[case::comp(
-    "comp",
-    "comp.gds.gz",
-    "7_5_DF",
-    &[
-        ("DF.10", 2), ("DF.11", 72), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45), ("DF.14_LV", 43), ("DF.14_MV", 44), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 6), ("DF.17_MV", 6), ("DF.18", 6), ("DF.19_LV", 5), ("DF.19_MV", 5), ("DF.1a_LV", 101), ("DF.1a_MV", 170), ("DF.1c", 10), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2), ("DF.3a_LV", 29), ("DF.3a_MV", 28), ("DF.3b", 16), ("DF.3c_LV", 7), ("DF.3c_MV", 11), ("DF.4a_LV", 12), ("DF.4a_MV", 6), ("DF.4b_LV", 6), ("DF.4b_MV", 6), ("DF.4c_LV", 8), ("DF.4c_MV", 6), ("DF.4d_LV", 6), ("DF.4d_MV", 6), ("DF.4e_LV", 6), ("DF.4e_MV", 6), ("DF.5_LV", 6), ("DF.5_MV", 6), ("DF.6_LV", 3), ("DF.6_MV", 3), ("DF.7_LV", 6), ("DF.7_MV", 6), ("DF.8_LV", 6), ("DF.8_MV", 6), ("DF.9", 215),
-    ]
-)]
-#[case::dnwell(
-    "dnwell", "dnwell.gds.gz", "7_2_DNWELL",
-    &[
-        ("DN.1", 465), ("DN.2a", 13), ("DN.2b", 33), ("DN.3", 118),
-    ]
-)]
-#[case::mcell(
-    "mcell", "mcell.gds.gz", "7_17_Mcell",
-    &[
-        ("MC.1", 37), ("MC.2", 24), ("MC.3", 13), ("MC.4", 6),
-    ]
-)]
-#[case::drc_bjt(
-    "drc_bjt", "drc_bjt.gds.gz", "DRC_BJT",
-    &[
-        ("BJT.1", 1), ("BJT.2", 2), ("BJT.3", 3),
-    ]
-)]
-#[case::lvs_bjt("lvs_bjt", "lvs_bjt.gds.gz", "LVS_BJT", &[
-        ("LVS_BJT.1", 2),
-    ])]
-#[case::dummy_exclude(
-    "dummy_exclude", "dummy_exclude.gds.gz", "10_8_DE",
-    &[
-        ("DE.2", 3), ("DE.3", 1), ("DE.4", 2),
-    ]
-)]
-#[case::dualgate(
-    "dualgate", "dualgate.gds.gz", "7_6_Dualgate",
-    &[
-        ("DV.1", 4), ("DV.2", 3), ("DV.3", 2), ("DV.5", 14), ("DV.6", 4), ("DV.7", 1), ("DV.8", 6), ("DV.9", 1),
-    ]
-)]
-// The metal deck carries one rule set per level, and each fixture exercises one level,
-// so only the M1.* rules fire here. That is why metal is absent from
-// `every_rule_in_the_deck_fires` below - the other levels are silent by design.
-#[case::metal1(
-    "metal", "metal1.gds.gz", "metal1",
-    &[
-        ("M1.1", 337), ("M1.2a", 16), ("M1.2b", 11), ("M1.3", 85),
-    ]
-)]
-#[case::metal2(
-    "metal", "metal2.gds.gz", "metal2",
-    &[
-        ("M2.1", 341), ("M2.2a", 16), ("M2.2b", 11), ("M2.3", 85),
-    ]
-)]
-#[case::metal3(
-    "metal", "metal3.gds.gz", "metal3",
-    &[
-        ("M3.1", 341), ("M3.2a", 16), ("M3.2b", 11), ("M3.3", 85),
-    ]
-)]
-#[case::metal4(
-    "metal", "metal4.gds.gz", "metal4",
-    &[
-        ("M4.1", 341), ("M4.2a", 16), ("M4.2b", 11), ("M4.3", 85),
-    ]
-)]
-#[case::nat(
-    "nat", "nat.gds.gz", "10_5_NAT",
-    &[
-        ("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2), ("NAT.2", 4), ("NAT.3", 3), ("NAT.4", 24), ("NAT.5", 10), ("NAT.7", 2), ("NAT.8", 5),
-    ]
-)]
-#[case::metaltop(
-    "metaltop", "metaltop.gds.gz", "metaltop",
-    &[
-        ("MT.1", 389), ("MT.2a", 16), ("MT.2b", 11), ("MT.4", 85),
-    ]
-)]
-#[case::lvpwell(
-    "lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL",
-    &[
-        ("LPW.11", 14), ("LPW.12", 8), ("LPW.1_LV", 18), ("LPW.1_MV", 24), ("LPW.2a_LV", 10), ("LPW.2a_MV", 20), ("LPW.2b_LV", 9), ("LPW.2b_MV", 18), ("LPW.3", 49), ("LPW.5", 4),
-    ]
-)]
-#[case::esd(
-    "esd", "esd.gds.gz", "7_11_ESD",
-    &[
-        ("ESD.1", 2), ("ESD.10", 2), ("ESD.2", 2), ("ESD.3a", 1), ("ESD.3b", 7), ("ESD.4a", 2), ("ESD.4b", 2), ("ESD.5a", 2), ("ESD.5b", 2), ("ESD.6", 2), ("ESD.7", 7), ("ESD.8", 3), ("ESD.9", 1), ("ESD.pl", 2),
-    ]
-)]
-#[case::contact(
-    "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
-    &[
-        ("CO.1", 104), ("CO.10", 2), ("CO.11", 145), ("CO.2a", 8), ("CO.3", 13), ("CO.4", 8), ("CO.5a", 2), ("CO.5b", 4), ("CO.6", 98), ("CO.6a", 27), ("CO.6b", 30), ("CO.7", 2), ("CO.8", 2), ("CO.9", 6),
-    ]
-)]
-#[case::sram_3p3(
-    "sram_3p3", "sram_3p3.gds.gz", "sram_3p3",
-    &[
-        ("S.CO.3_LV", 6), ("S.CO.4_LV", 6), ("S.CO.6_ii_LV", 8), ("S.DF.16_LV", 6), ("S.DF.4c_LV", 6), ("S.M1.1_LV", 32),
-    ]
-)]
-// Like metal, the via deck carries one rule set per level and each fixture exercises
-// one, so only the V1.* rules fire here.
-#[case::via1(
-    "via", "via1.gds.gz", "7_14_VIA",
-    &[
-        ("V1.1", 5), ("V1.2a", 3), ("V1.2b", 7), ("V1.3", 3), ("V1.3.1", 2), ("V1.3.2", 13), ("V1.3.3", 38), ("V1.4", 6), ("V1.4.1", 2), ("V1.4.2", 13), ("V1.4.3", 39),
-    ]
-)]
-#[case::poly2(
-    "poly2", "poly2.gds.gz", "7_7_Poly2",
-    &[
-        ("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 24), ("PL.1_MV", 23), ("PL.1a_LV", 10), ("PL.1a_MV", 10), ("PL.2_LV", 98), ("PL.2_MV", 306), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6), ("PL.6", 720), ("PL.7_LV", 40), ("PL.7_MV", 84), ("PL.9", 11),
-    ]
-)]
-#[case::sab(
-    "sab", "sab.gds.gz", "7_10_SB",
-    &[
-        ("SB.1", 18), ("SB.10", 47), ("SB.11", 1), ("SB.12", 1), ("SB.13", 132), ("SB.14a", 6), ("SB.14b", 6), ("SB.15a", 13), ("SB.15b", 5), ("SB.16", 6), ("SB.2", 9), ("SB.3", 9), ("SB.4", 6), ("SB.5a", 9), ("SB.5b", 7), ("SB.6", 14), ("SB.7", 16), ("SB.8", 3), ("SB.9", 28),
-    ]
-)]
-#[case::nplus(
-    "nplus", "nplus.gds.gz", "7_10_Nplus",
-    &[
-        ("NP.1", 394), ("NP.10", 3), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 6), ("NP.5b", 82), ("NP.5ci", 7), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 6), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 4),
-    ]
-)]
-#[case::pplus(
-    "pplus", "pplus.gds.gz", "7_11_Pplus",
-    &[
-        ("PP.1", 394), ("PP.10", 3), ("PP.11", 8), ("PP.12", 1), ("PP.2", 86), ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 6), ("PP.5b", 87), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33), ("PP.6", 72), ("PP.7", 6), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 4),
-    ]
-)]
-#[case::ldnmos(
-    "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
-    &[
-        ("MDN.1", 47), ("MDN.10a", 65), ("MDN.10b", 4), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 7), ("MDN.13a", 8), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 9), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 6),
-    ]
-)]
-#[case::ldpmos(
-    "ldpmos", "ldpmos.gds.gz", "10_12_2_MDP",
-    &[
-        ("MDP.1", 12), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17c", 1), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1),
-    ]
-)]
-#[case::lres(
-    "lres", "lres.gds.gz", "10_2_LRES",
-    &[
-        ("LRES.1", 46), ("LRES.2", 6), ("LRES.3", 9), ("LRES.4", 6), ("LRES.5", 7), ("LRES.6", 39), ("LRES.7", 8), ("LRES.9a", 9), ("LRES.9b", 1),
-    ]
-)]
-#[case::pres(
-    "pres", "pres.gds.gz", "10_1_PRES",
-    &[
-        ("PRES.1", 47), ("PRES.2", 5), ("PRES.3", 9), ("PRES.4", 5), ("PRES.5", 7), ("PRES.6", 39), ("PRES.7", 8), ("PRES.9a", 5), ("PRES.9b", 1),
-    ]
-)]
-#[case::hres(
-    "hres", "hres.gds.gz", "10_3_HRES",
-    &[
-        ("HRES.1", 7), ("HRES.12a", 37), ("HRES.12b", 1), ("HRES.2", 60), ("HRES.3", 8), ("HRES.4", 38), ("HRES.5", 7), ("HRES.6", 7), ("HRES.7", 23), ("HRES.8", 27), ("HRES.9", 5),
-    ]
-)]
-#[case::otp_mk(
-    "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
-    &[
-        ("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 70), ("O.PL.3a", 14), ("O.PL.4", 9), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 6), ("O.SB.4", 2), ("O.SB.5b_LV", 6), ("O.SB.9", 1),
-    ]
-)]
-#[case::ymtp_mk(
-    "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
-    &[
-        ("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 14), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 100), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 6), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6),
-    ]
-)]
-#[case::sram_5p0(
-    "sram_5p0", "sram_5p0.gds.gz", "sram_5p0",
-    &[
-        ("S.CO.4_MV", 8), ("S.DF.16_MV", 6), ("S.DF.4c_MV", 8), ("S.DF.6_MV", 15), ("S.DF.7_MV", 6), ("S.DF.8_MV", 8), ("S.PL.5a_MV", 6), ("S.PL.5b_MV", 4),
-    ]
-)]
-#[case::efuse(
-    "efuse", "efuse.gds.gz", "10_11_EFUSE",
-    &[
-        ("EF.01", 38), ("EF.03", 155), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.06", 381), ("EF.07", 35), ("EF.08", 188), ("EF.09", 22), ("EF.10", 38), ("EF.11", 5), ("EF.12", 21), ("EF.13", 5), ("EF.14", 6), ("EF.15", 12), ("EF.16a", 74), ("EF.16b", 52), ("EF.17", 6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 55), ("EF.21", 122), ("EF.22a", 62), ("EF.22b", 33),
-    ]
-)]
-#[case::mim_b(
-    "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
-    &[
-        ("MIMTM.1", 4), ("MIMTM.10", 3), ("MIMTM.2", 9), ("MIMTM.3", 61), ("MIMTM.4", 11), ("MIMTM.5", 8), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6),
-    ]
-)]
-#[case::antenna(
-    "antenna", "antenna-1.gds.gz", "8_0_ANT",
-    &[
-        ("ANT.1", 1), ("ANT.16_i_ANT.10", 1), ("ANT.16_i_ANT.11", 1), ("ANT.16_i_ANT.12", 1), ("ANT.16_i_ANT.2", 1), ("ANT.16_i_ANT.3", 1), ("ANT.16_i_ANT.4", 1), ("ANT.16_i_ANT.5", 1), ("ANT.16_i_ANT.6", 4), ("ANT.16_i_ANT.9", 1), ("ANT.8", 1),
-    ]
-)]
-fn static_fixture(
-    #[case] deck: &str,
-    #[case] gds: &str,
-    #[case] topcell: &str,
-    #[case] expected: &[(&str, usize)],
-) {
-    assert_counts(deck, gds, topcell, expected);
-}
+// The per-rule marker counts that used to live here are gone.  What they pinned was this
+// engine's own output, false positives and all, so every improvement moved a couple of
+// dozen numbers and a diff of them could not say whether the port had got better or
+// worse.  Two tests replace them, each answering one of the questions those numbers
+// conflated: `tests/reference_score.rs` scores each deck against the report the foundry
+// ships beside its own case, as a floor on violations found and a ceiling on violations
+// invented, so an improvement passes and only a regression fails; and the generated
+// good/bad patterns below say whether a rule is *right*, on geometry drawn here for it.
 
 /// Every rule the deck declares must appear in the run above. A rule that resolves to an
 /// empty derived layer produces no violations and no error, so without this a typo in a
@@ -709,7 +490,7 @@ fn is_guidance(suffix: &str) -> bool {
 /// drawing:
 ///
 /// * `V#.1` reports per wall pair, so an oversized via is four.
-/// * `V#.3.1`/`V#.4.1` cannot avoid also tripping `V#.3.2`/`V#.4.2`. A 0.26 µm via in a
+/// * `V#.3c`/`V#.4b` cannot avoid also tripping `V#.3d`/`V#.4c`. A 0.26 µm via in a
 ///   track narrow enough to have a line end — under 0.34 µm — has sidewalls under 0.04,
 ///   so a thin tip always leaves a short side whose neighbours are short too. The two
 ///   rules genuinely overlap on that geometry; there is no way to draw one without the
@@ -718,8 +499,8 @@ fn via_bad_expect(level: usize, suffix: &str) -> Vec<(String, usize)> {
     let id = |sfx: &str| (format!("V{level}.{sfx}"), 1);
     match suffix {
         "1" => vec![(format!("V{level}.1"), 4)],
-        "3.1" => vec![id("3.1"), id("3.2")],
-        "4.1" => vec![id("4.1"), id("4.2")],
+        "3c" => vec![id("3c"), id("3d")],
+        "4b" => vec![id("4b"), id("4c")],
         _ => vec![id(suffix)],
     }
 }

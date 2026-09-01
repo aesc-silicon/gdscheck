@@ -1988,7 +1988,16 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
     // Every piece's source polygon, for the within-tile touch test below.
     let mut piece_poly: Vec<&MergedPoly> = Vec::new();
 
-    for (&(tx, ty), polys) in tiles {
+    // In tile order, not hash order.  Everything downstream inherits the order pieces are
+    // built in - which piece a region takes its marker from when two are the same size,
+    // which piece each region is numbered after, and so the order violations come out -
+    // and a `HashMap`'s iteration order is not the same twice.  That was visible: MDN.17
+    // reported its marker at one end of a region on one run and the other end on the next,
+    // twelve micrometres away, which is enough to read as a different violation.
+    let mut keys: Vec<(i32, i32)> = tiles.keys().copied().collect();
+    keys.sort_unstable();
+    for (tx, ty) in keys {
+        let polys = &tiles[&(tx, ty)];
         let cx0 = (tx as i64 * t) as f64;
         let cy0 = (ty as i64 * t) as f64;
         let cx1 = ((tx as i64 + 1) * t) as f64;
@@ -2030,6 +2039,8 @@ fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledReg
         });
         regions[region].area_dbu += p.area;
         regions[region].perimeter_dbu += p.perimeter;
+        // Strictly greater, so the first piece of a tie keeps it - and the pieces now
+        // arrive in a fixed order, so "first" means something.
         if p.area > largest[region] {
             largest[region] = p.area;
             regions[region].marker = p.marker;

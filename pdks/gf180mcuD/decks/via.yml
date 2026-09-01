@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Via 1-4.
+#
+# V#.3.3 and V#.4.3 are the only ids here that are not the foundry's: they are the
+# recommended 0.12 um enclosures, which the DRM documents and the KLayout deck does not
+# check, and they are in the `recommended` suite rather than `main`.
 rules:
   - id: V1.1
     check: exact_width
@@ -26,11 +30,11 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
-  - id: V1.3
+  - id: V1.3a
     check: min_enclosure
     layers: [metal1, via1]
     value: 0.0
-  - id: V1.3.1
+  - id: V1.3c
     check: min_enclosure
     layers: [metal1, via1]
     value: 0.06
@@ -39,7 +43,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V1.3.2
+  - id: V1.3d
     check: min_enclosure
     layers: [metal1, via1]
     value: 0.06
@@ -51,11 +55,11 @@ rules:
     check: min_enclosure
     layers: [metal1, via1]
     value: 0.12
-  - id: V1.4
+  - id: V1.4a
     check: min_enclosure
     layers: [metal2, via1]
     value: 0.01
-  - id: V1.4.1
+  - id: V1.4b
     check: min_enclosure
     layers: [metal2, via1]
     value: 0.06
@@ -64,7 +68,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V1.4.2
+  - id: V1.4c
     check: min_enclosure
     layers: [metal2, via1]
     value: 0.06
@@ -98,11 +102,11 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
-  - id: V2.3
+  - id: V2.3b
     check: min_enclosure
     layers: [metal2, via2]
     value: 0.01
-  - id: V2.3.1
+  - id: V2.3c
     check: min_enclosure
     layers: [metal2, via2]
     value: 0.06
@@ -111,7 +115,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V2.3.2
+  - id: V2.3d
     check: min_enclosure
     layers: [metal2, via2]
     value: 0.06
@@ -123,11 +127,11 @@ rules:
     check: min_enclosure
     layers: [metal2, via2]
     value: 0.12
-  - id: V2.4
+  - id: V2.4a
     check: min_enclosure
     layers: [metal3, via2]
     value: 0.01
-  - id: V2.4.1
+  - id: V2.4b
     check: min_enclosure
     layers: [metal3, via2]
     value: 0.06
@@ -136,7 +140,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V2.4.2
+  - id: V2.4c
     check: min_enclosure
     layers: [metal3, via2]
     value: 0.06
@@ -170,11 +174,11 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
-  - id: V3.3
+  - id: V3.3b
     check: min_enclosure
     layers: [metal3, via3]
     value: 0.01
-  - id: V3.3.1
+  - id: V3.3c
     check: min_enclosure
     layers: [metal3, via3]
     value: 0.06
@@ -183,7 +187,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V3.3.2
+  - id: V3.3d
     check: min_enclosure
     layers: [metal3, via3]
     value: 0.06
@@ -195,11 +199,11 @@ rules:
     check: min_enclosure
     layers: [metal3, via3]
     value: 0.12
-  - id: V3.4
+  - id: V3.4a
     check: min_enclosure
     layers: [metal4, via3]
     value: 0.01
-  - id: V3.4.1
+  - id: V3.4b
     check: min_enclosure
     layers: [metal4, via3]
     value: 0.06
@@ -208,7 +212,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V3.4.2
+  - id: V3.4c
     check: min_enclosure
     layers: [metal4, via3]
     value: 0.06
@@ -242,11 +246,11 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
-  - id: V4.3
+  - id: V4.3b
     check: min_enclosure
     layers: [metal4, via4]
     value: 0.01
-  - id: V4.3.1
+  - id: V4.3c
     check: min_enclosure
     layers: [metal4, via4]
     value: 0.06
@@ -255,7 +259,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V4.3.2
+  - id: V4.3d
     check: min_enclosure
     layers: [metal4, via4]
     value: 0.06
@@ -267,11 +271,11 @@ rules:
     check: min_enclosure
     layers: [metal4, via4]
     value: 0.12
-  - id: V4.4
+  - id: V4.4a
     check: min_enclosure
     layers: [metal5, via4]
     value: 0.01
-  - id: V4.4.1
+  - id: V4.4b
     check: min_enclosure
     layers: [metal5, via4]
     value: 0.06
@@ -280,7 +284,7 @@ rules:
       min_length: 0.28
     str_params:
       sides: line_end
-  - id: V4.4.2
+  - id: V4.4c
     check: min_enclosure
     layers: [metal5, via4]
     value: 0.06
