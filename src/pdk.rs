@@ -137,6 +137,9 @@ pub struct EdgeLayerDef {
     pub min: Option<f64>,
     #[serde(default)]
     pub max: Option<f64>,
+    /// `centers` only: the middle part to keep, as a fraction of each edge's length.
+    #[serde(default)]
+    pub fraction: Option<f64>,
 }
 
 /// An edge layer resolved to GDS numbers, ready for the merge cache.
@@ -148,6 +151,7 @@ pub struct TiledEdgeSpec {
     pub sources: Vec<(i16, i16)>,
     pub min: Option<f64>,
     pub max: Option<f64>,
+    pub fraction: Option<f64>,
 }
 
 /// A lazy virtual layer resolved to GDS numbers, ready for the merge cache.
@@ -775,6 +779,7 @@ impl PdkConfig {
                     sources,
                     min: el.min,
                     max: el.max,
+                    fraction: el.fraction,
                 });
             }
         }

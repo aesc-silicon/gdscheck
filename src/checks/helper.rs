@@ -394,6 +394,56 @@ fn oblique_widths(
     }
 }
 
+/// Points where a layer's own material narrows to nothing: two pieces of it meeting at
+/// an isolated vertex.
+///
+/// Both are one shape pinched to a point — two squares corner to corner are drawn as a
+/// bow-tie and merge into two polygons that touch, so the width there is zero and no pair
+/// of facing edges exists to measure it between. The spacing checks deliberately send
+/// this case here rather than calling it a gap of zero, so this is where it has to be
+/// caught.
+///
+/// A shared *run* of boundary is not a pinch: two pieces drawn edge to edge are one wide
+/// shape, and the width across it is whatever the scan measures.
+fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
+    let mut out = Vec::new();
+    // A vertex repeated *within* one ring is not the test, though it looks like it should
+    // be: i_overlay never emits a self-touching contour. A bow-tie comes back as two
+    // polygons that touch, and so does the degenerate spur a 45° wall leaves on the
+    // nanometre grid - which is why the test below has to be between pieces.
+    //
+    // The test: a vertex two pieces share, where they do not also share a wall.
+    let verts: Vec<std::collections::HashSet<(i32, i32)>> = polys
+        .iter()
+        .map(|p| {
+            std::iter::once(&p.outer)
+                .chain(p.holes.iter())
+                .flatten()
+                .map(|q| (q.x, q.y))
+                .collect()
+        })
+        .collect();
+    for i in 0..polys.len() {
+        for j in i + 1..polys.len() {
+            let shared: Vec<(i32, i32)> = verts[i].intersection(&verts[j]).copied().collect();
+            if shared.is_empty() {
+                continue;
+            }
+            let (a, b) = (
+                poly_from_merged(&polys[i], 1.0),
+                poly_from_merged(&polys[j], 1.0),
+            );
+            if let (Some(a), Some(b)) = (a, b)
+                && shares_boundary_run(&a, &b, 0.5)
+            {
+                continue; // abutting, not pinched
+            }
+            out.extend(shared.into_iter().map(|(x, y)| (x as f64, y as f64)));
+        }
+    }
+    out
+}
+
 /// Drive a width check over the cached tiles: `viol(width_dbu)` decides a
 /// violation, `op`/`check_name`/`label` shape the log and the report.
 #[allow(clippy::too_many_arguments)]
@@ -441,9 +491,28 @@ pub fn run_width(
                     x1: (tx as i64 + 1) * tile,
                     y1: (ty as i64 + 1) * tile,
                 };
-                polys
+                let mut pinches: Vec<Violation> = Vec::new();
+                if !oblique_only && viol(0.0) {
+                    for (px, py) in pinch_points(polys) {
+                        if !core.contains(px, py) {
+                            continue; // owned by the tile the point falls in
+                        }
+                        let (x, y) = (px * dbu_to_um, py * dbu_to_um);
+                        pinches.push(Violation::point(
+                            rid,
+                            label,
+                            format!(
+                                "{lname}: width 0.0000 µm {cmp} {limit:.2} µm at \
+                                 ({x:.4}, {y:.4}) µm — the layer pinches to a point"
+                            ),
+                            x,
+                            y,
+                        ));
+                    }
+                }
+                let scanned: Vec<Violation> = polys
                     .iter()
-                    .flat_map(move |poly| {
+                    .flat_map(|poly| {
                         scan_widths(
                             poly,
                             core,
@@ -460,8 +529,8 @@ pub fn run_width(
                             None,
                         )
                     })
-                    .collect::<Vec<_>>()
-                    .into_iter()
+                    .collect();
+                pinches.into_iter().chain(scanned)
             })
             .collect();
 

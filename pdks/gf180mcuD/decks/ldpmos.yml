@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS PFET.  25 of the 38 rules in this section.
+# LDMOS PFET.  26 of the 38 rules in this section.
 #
 # Not ported: MDP.10, MDP.11, MDP.13b, MDP.13c, MDP.17a, MDP.1a, MDP.2, MDP.3, MDP.3c,
-# MDP.4b, MDP.9b, MDP.9c, MDP.9f.
+# MDP.4b, MDP.9b, MDP.9c.
 rules:
   - id: MDP.1
     check: min_enclosure
@@ -82,6 +82,10 @@ rules:
   - id: MDP.9eii
     check: nonempty
     layers: [mdp9eii_touch]
+    value: 0.0
+  - id: MDP.9f
+    check: nonempty
+    layers: [mdp9f_interconnect]
     value: 0.0
   - id: MDP.10a
     check: min_space_different_net

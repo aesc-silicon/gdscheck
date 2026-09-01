@@ -322,3 +322,114 @@ fn channel_width_is_the_active_boundary_under_the_gate() {
         assert_eq!(len, 50, "channel width should be 50: {e:?}");
     }
 }
+
+// ---------------------------------------------------------------------------
+// centers
+// ---------------------------------------------------------------------------
+
+/// `centers` keeps the middle of each edge, trimming half the remainder from each end.
+/// A 100-long edge at 0.9 keeps 90, centred: 5 off each end.
+#[test]
+fn centers_trims_both_ends_symmetrically() {
+    let got = run(
+        &[rect(A, 0, 0, 100, 100)],
+        &[],
+        &[
+            ((900, 0), EdgeOp::Edges, vec![A]),
+            ((901, 0), EdgeOp::Centers(0, 900), vec![(900, 0)]),
+        ],
+    );
+    assert_eq!(
+        got,
+        vec![
+            (0, 5, 0, 95),
+            (5, 0, 95, 0),
+            (5, 100, 95, 100),
+            (100, 5, 100, 95),
+        ]
+    );
+}
+
+/// The absolute length and the fraction are alternatives and the *longer* wins, so a
+/// generous absolute bound overrides a mean fraction — and neither may exceed the edge.
+#[test]
+fn centers_takes_the_longer_of_length_and_fraction() {
+    let edges = |op: EdgeOp| -> Vec<(i32, i32, i32, i32)> {
+        run(
+            &[rect(A, 0, 0, 100, 100)],
+            &[],
+            &[
+                ((900, 0), EdgeOp::Edges, vec![A]),
+                ((901, 0), op, vec![(900, 0)]),
+            ],
+        )
+    };
+    // 80 absolute beats 50%, so 80 is kept, not 50.
+    assert!(edges(EdgeOp::Centers(80, 500)).contains(&(10, 0, 90, 0)));
+    // A length longer than the edge cannot grow it.
+    assert!(edges(EdgeOp::Centers(500, 0)).contains(&(0, 0, 100, 0)));
+}
+
+/// Why the op exists: two edges meeting at a corner touch at that vertex, so an
+/// `interacting` between them says yes for a reason the rule does not mean.  Trimming the
+/// ends makes contact mean overlap.
+#[test]
+fn centers_breaks_contact_at_a_shared_corner() {
+    let a = vec![rect(A, 0, 0, 100, 100)];
+    let b = vec![rect(B, 100, 100, 200, 200)]; // shares only the corner (100, 100)
+    let defs = |trim: bool| -> Vec<EdgeDef> {
+        let mut d = vec![
+            ((900, 0), EdgeOp::Edges, vec![A]),
+            ((901, 0), EdgeOp::Edges, vec![B]),
+        ];
+        if trim {
+            d.push(((902, 0), EdgeOp::Centers(0, 990), vec![(901, 0)]));
+            d.push(((903, 0), EdgeOp::InteractingEdges, vec![(900, 0), (902, 0)]));
+        } else {
+            d.push(((903, 0), EdgeOp::InteractingEdges, vec![(900, 0), (901, 0)]));
+        }
+        d
+    };
+    assert!(
+        !run(&a, &b, &defs(false)).is_empty(),
+        "untrimmed, the shared corner counts as contact"
+    );
+    assert!(
+        run(&a, &b, &defs(true)).is_empty(),
+        "trimmed, it should not"
+    );
+}
+
+/// Two rectangles drawn edge to edge are one shape, so the wall they share is interior
+/// and not boundary.  An `.edges` layer that keeps it reports a wall where the material
+/// is continuous, and every edge boolean downstream inherits the mistake.
+#[test]
+fn edges_drops_the_wall_between_abutting_shapes() {
+    let got = run(
+        &[rect(A, 0, 0, 100, 100), rect(A, 100, 0, 200, 100)],
+        &[],
+        &[((900, 0), EdgeOp::Edges, vec![A])],
+    );
+    assert!(
+        !got.contains(&(100, 0, 100, 100)),
+        "the shared wall is interior: {got:?}"
+    );
+    assert_eq!(got.len(), 4, "one rectangle's worth of boundary: {got:?}");
+}
+
+/// The same where the abutment is partial — the fixture shape that found this: a wide pad
+/// with a narrow link off one side.  The pad's wall survives only where the link is not.
+#[test]
+fn a_partial_abutment_splits_the_shared_wall() {
+    let got = run(
+        &[rect(A, 0, 0, 100, 100), rect(A, 100, 40, 200, 60)],
+        &[],
+        &[((900, 0), EdgeOp::Edges, vec![A])],
+    );
+    assert!(
+        !got.contains(&(100, 0, 100, 100)),
+        "the pad's wall must not span the link: {got:?}"
+    );
+    assert!(got.contains(&(100, 0, 100, 40)), "lower remnant: {got:?}");
+    assert!(got.contains(&(100, 60, 100, 100)), "upper remnant: {got:?}");
+}

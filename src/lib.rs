@@ -133,6 +133,20 @@ pub fn parse_virtual_op(
             .ok_or_else(|| format!("op '{op}' requires a radius"))
     };
     let to_dbu = |v: Option<f64>| v.map(|x| (x / dbu_to_um).round() as i32);
+    // Neighbour counts for the region selectors: whole numbers, and a minimum below one is
+    // a selector that keeps everything, which is a deck bug rather than a rule.
+    let counts = || -> Result<(Option<u32>, Option<u32>), String> {
+        for (v, which) in [(min, "min"), (max, "max")] {
+            if let Some(v) = v
+                && (v < 1.0 || v.fract() != 0.0)
+            {
+                return Err(format!(
+                    "op '{op}' takes a whole `{which}` count of 1 or more"
+                ));
+            }
+        }
+        Ok((min.map(|v| v as u32), max.map(|v| v as u32)))
+    };
     let bounds = || -> Result<(Option<i32>, Option<i32>), String> {
         if min.is_none() && max.is_none() {
             return Err(format!("op '{op}' requires a `min` and/or `max` bound"));
@@ -148,20 +162,43 @@ pub fn parse_virtual_op(
         "rectangle" => Rectangle,
         "not_rectangle" => NotRectangle,
         // KLayout `overlapping` / `not_outside` — positive shared area only.
-        "overlapping" | "not_outside" => Overlapping,
-        "not_overlapping" | "outside" => NotOverlapping,
+        //
+        // The selectors take `min`/`max` as KLayout's inclusive neighbour *counts*, not as
+        // a measurement: `interacting` with `min: 2, max: 2` is `interacting(other, 2, 2)`.
+        // Absent bounds are the uncounted form, "at least one".
+        "overlapping" | "not_outside" => {
+            let (a, b) = counts()?;
+            Overlapping(a, b)
+        }
+        "not_overlapping" | "outside" => {
+            let (a, b) = counts()?;
+            NotOverlapping(a, b)
+        }
         // KLayout `interacting` — shared area *or* zero-area contact.
-        "interacting" => Interacting,
-        "not_interacting" => NotInteracting,
+        "interacting" => {
+            let (a, b) = counts()?;
+            Interacting(a, b)
+        }
+        "not_interacting" => {
+            let (a, b) = counts()?;
+            NotInteracting(a, b)
+        }
         "inside" => Inside,
         "not_inside" => NotInside,
-        "covering" => Covering,
-        "not_covering" => NotCovering,
+        "covering" => {
+            let (a, b) = counts()?;
+            Covering(a, b)
+        }
+        "not_covering" => {
+            let (a, b) = counts()?;
+            NotCovering(a, b)
+        }
         "not_circle_or_octagon" => NotCircleOrOctagon,
         "not_circle" => NotCircle,
         "holes" => Holes,
         "with_holes" => WithHoles,
         "with_text" => WithText,
+        "extents" => Extents,
         "with_area" => {
             if min.is_none() && max.is_none() {
                 return Err(format!("op '{op}' requires a `min` and/or `max` bound"));
@@ -200,6 +237,7 @@ pub fn parse_edge_op(
     op: &str,
     min: Option<f64>,
     max: Option<f64>,
+    fraction: Option<f64>,
     dbu_to_um: f64,
 ) -> Result<merge::EdgeOp, String> {
     use merge::EdgeOp::*;
@@ -233,6 +271,25 @@ pub fn parse_edge_op(
         "not_interacting" => NotInteracting,
         "interacting_edges" => InteractingEdges,
         "not_interacting_edges" => NotInteractingEdges,
+        // `centers(length, fraction)`: `min` is the absolute length in µm, `fraction` the
+        // relative one, and KLayout keeps whichever is longer.  Neither given would keep
+        // the edge entire, which is not what any deck means by asking for its centre.
+        "centers" => {
+            if min.is_none() && fraction.is_none() {
+                return Err(format!("edge op '{op}' requires a `min` and/or `fraction`"));
+            }
+            if let Some(f) = fraction
+                && !(0.0..=1.0).contains(&f)
+            {
+                return Err(format!(
+                    "edge op '{op}' takes a `fraction` in 0..1, got {f}"
+                ));
+            }
+            Centers(
+                to_dbu(min).unwrap_or(0),
+                fraction.map_or(0, |f| (f * 1000.0).round() as i32),
+            )
+        }
         "with_length" => {
             let (lo, hi) = bounds()?;
             WithLength(lo, hi)
@@ -548,7 +605,7 @@ pub fn run_drc(
         merged.register_virtual(spec.key, op, spec.sources, spec.text);
     }
     for spec in pdk.tiled_edge_layers() {
-        let op = parse_edge_op(&spec.op, spec.min, spec.max, dbu_to_um)
+        let op = parse_edge_op(&spec.op, spec.min, spec.max, spec.fraction, dbu_to_um)
             .map_err(|e| format!("Edge layer '{}': {e}", spec.name))?;
         merged.register_edge(spec.key, op, spec.sources);
     }
@@ -678,6 +735,13 @@ mod tests {
         // mistyped key rather than an intentional no-op filter.
         let e = parse_virtual_op("with_bbox_min", None, None, None, None, 0.001).unwrap_err();
         assert!(e.contains("`min` and/or `max`"), "{e}");
+        // A selector's bounds are neighbour counts, so a fraction is a deck that meant a
+        // measurement, and a zero minimum is a selector that keeps everything.
+        let e = parse_virtual_op("interacting", None, Some(1.5), None, None, 0.001).unwrap_err();
+        assert!(e.contains("whole `min` count"), "{e}");
+        let e = parse_virtual_op("covering", None, Some(0.0), None, None, 0.001).unwrap_err();
+        assert!(e.contains("whole `min` count"), "{e}");
+        assert!(parse_virtual_op("interacting", None, Some(2.0), Some(2.0), None, 0.001).is_ok());
     }
 
     /// `overlapping` and `interacting` must resolve to *different* ops: they differ only
