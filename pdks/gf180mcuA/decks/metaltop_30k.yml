@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Top metal at 30 kA, which replaces the metaltop deck rather than adding to it.
+# 7 of the 8 rules in this section.
+#
+# Not ported: MT30.8.
+rules:
+  - id: MT30.1a
+    check: min_width
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.1b
+    check: min_width
+    layers: [top_metal_long_line]
+    value: 2.2
+  - id: MT30.2
+    check: min_space
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.2
+    check: min_notch
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.3
+    check: min_space
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.3
+    check: min_notch
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.4
+    check: min_space
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.4
+    check: min_notch
+    layers: [top_metal]
+    value: 1.8
+  - id: MT30.5
+    check: min_enclosure
+    layers: [top_metal, top_via]
+    value: 0.12
+    params:
+      interacting_only: 1
+  - id: MT30.5
+    check: nonempty
+    layers: [top_via_not_in_top_metal]
+    value: 0.0
+  - id: MT30.6
+    check: min_enclosure
+    layers: [top_metal, top_via]
+    value: 0.25
+    params:
+      max_width: 2.5
+    str_params:
+      sides: line_end

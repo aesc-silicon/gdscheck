@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Global layer density.  All 8 rules in this section.
+rules:
+  - id: DCF.1b
+    check: min_density
+    layers: [comp, comp_dummy]
+    value: 25.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: DCF.1d
+    check: max_density
+    layers: [comp, comp_dummy]
+    value: 70.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: PL.8
+    check: min_density
+    layers: [poly2_drawn, poly2_dummy]
+    value: 14.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M1.4
+    check: min_density
+    layers: [metal1_drawn, metal1_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M2.4
+    check: min_density
+    layers: [metal2_drawn, metal2_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: M3.4
+    check: min_density
+    layers: [metal3_drawn, metal3_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: MT30.7
+    check: min_density
+    layers: [metal3_drawn, metal3_dummy]
+    value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0

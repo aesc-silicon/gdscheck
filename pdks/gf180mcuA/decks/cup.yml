@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Cu pillar.  All 2 rules in this section.
+rules:
+  - id: CUP.2
+    check: min_width
+    layers: [metal1_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal1_pad_nogr]
+    value: 1.0
+  - id: CUP.2
+    check: min_width
+    layers: [metal2_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal2_pad_nogr]
+    value: 1.0
+  - id: CUP.2
+    check: min_width
+    layers: [metal3_pad_nogr]
+    value: 1.0
+  - id: CUP.3
+    check: min_notch
+    layers: [metal3_pad_nogr]
+    value: 1.0

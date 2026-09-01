@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The global coverage rules only (DCF.1b/1d, PL.8, M#.4, MT30.7).
+include:
+  - deck: density
