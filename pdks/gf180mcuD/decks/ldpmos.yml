@@ -2,10 +2,15 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS PFET.  26 of the 38 rules in this section.
+# LDMOS PFET.  27 of the 38 rules in this section.
 #
 # Not ported: MDP.10, MDP.11, MDP.13b, MDP.13c, MDP.17a, MDP.1a, MDP.2, MDP.3, MDP.3c,
-# MDP.4b, MDP.9b, MDP.9c.
+# MDP.9b, MDP.9c.
+#
+# MDP.1a and MDP.2 are the LDNMOS channel rules at this polarity; see the ldnmos deck.
+#
+# MDP.3c is `max_distance` over a count: the reference asks for four sides of the tab
+# within 15 um, not every edge of it, so a tab with more than four reads as a violation.
 rules:
   - id: MDP.1
     check: min_enclosure
@@ -37,6 +42,10 @@ rules:
     check: min_space
     layers: [pcomp_ld_dg, dnwell_mdp]
     value: 2.5
+  - id: MDP.4b
+    check: max_distance
+    layers: [mdp4b_edges, mdp4b_pcomp]
+    value: 15.0
   - id: MDP.5
     check: nonempty
     layers: [mdp5_viol]

@@ -1168,6 +1168,30 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [metal4_wide10_d, metal4_drawn]
+  - name: top_metal_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal]
+  - name: top_metal_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_wide10_a]
+  - name: top_metal_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_wide10_b]
+  - name: top_metal_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_wide10_c]
+  - name: top_metal_wide10
+    op: intersection
+    mode: lazy
+    layers: [top_metal_wide10_d, top_metal]
   - name: dm8_sensitive
     op: union
     mode: lazy
@@ -2192,6 +2216,50 @@ virtual_layers:
     min: 2
     mode: lazy
     layers: [poly_ld_link, poly_ld_gated]
+  # MDP.3c: every side of an N+ tab in the deep well must reach the P+ within 15 um.
+  - name: mdp3c_ncomp_x
+    op: inside
+    mode: lazy
+    layers: [ncomp_in_dnwell, ldmos_xtor]
+  - name: mdp3c_ncomp
+    op: inside
+    mode: lazy
+    layers: [mdp3c_ncomp_x, dualgate]
+  # MDN.5c: the substrate tab, taken as the bounding box of the closed drain N+.
+  - name: mdn5c_tab_a
+    op: interacting
+    mode: lazy
+    layers: [ncomp_mdn, mvsd]
+  - name: mdn5c_tab_b
+    op: close
+    radius: 0.36
+    mode: lazy
+    layers: [mdn5c_tab_a]
+  - name: mdn5c_tab
+    op: extents
+    mode: lazy
+    layers: [mdn5c_tab_b]
+  # MDP.4b: every DNWELL edge inside the guard ring must have the ring within 15 um.
+  - name: mdp4b_dnwell_x
+    op: inside
+    mode: lazy
+    layers: [dnwell, ldmos_xtor]
+  - name: mdp4b_dnwell
+    op: inside
+    mode: lazy
+    layers: [mdp4b_dnwell_x, dualgate]
+  - name: mdp4b_pcomp_x
+    op: inside
+    mode: lazy
+    layers: [pcomp, ldmos_xtor_at_mvpsd]
+  - name: mdp4b_pcomp_y
+    op: inside
+    mode: lazy
+    layers: [mdp4b_pcomp_x, dualgate]
+  - name: mdp4b_pcomp
+    op: not_interacting
+    mode: lazy
+    layers: [mdp4b_pcomp_y, mvpsd]
   - name: pcomp_not_ncomp
     op: not_interacting
     mode: lazy
@@ -4138,6 +4206,39 @@ edge_layers:
   - name: plfuse.edges
     op: edges
     layers: [plfuse]
+  - name: ldpmos_gate_sides
+    op: inside_part
+    layers: [ldpmos_gate.edges, pcomp]
+  - name: mdp3c_ncomp.edges
+    op: edges
+    layers: [mdp3c_ncomp]
+  - name: mdp3c_edges
+    op: centers
+    fraction: 0.99
+    layers: [mdp3c_ncomp.edges]
+  - name: mdn5c_tab.edges
+    op: edges
+    layers: [mdn5c_tab]
+  - name: mdn5c_centers
+    op: centers
+    fraction: 0.99
+    layers: [mdn5c_tab.edges]
+  - name: mdn5c_on_ncomp
+    op: inside_part
+    layers: [mdn5c_centers, ncomp]
+  - name: mdn5c_edges
+    op: inside_part
+    layers: [mdn5c_on_ncomp, pcomp_holes]
+  - name: mdp4b_dnwell.edges
+    op: edges
+    layers: [mdp4b_dnwell]
+  - name: mdp4b_dnwell_centers
+    op: centers
+    fraction: 0.99
+    layers: [mdp4b_dnwell.edges]
+  - name: mdp4b_edges
+    op: inside_part
+    layers: [mdp4b_dnwell_centers, pcomp_holes]
   - name: ef03_shared
     op: and
     layers: [poly2.edges, plfuse.edges]

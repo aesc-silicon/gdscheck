@@ -21,7 +21,9 @@ use i_overlay::core::fill_rule::FillRule;
 use i_overlay::core::overlay_rule::OverlayRule;
 use i_overlay::float::simplify::SimplifyShape;
 use i_overlay::float::single::SingleFloatOverlay;
-use i_overlay::i_float::int::point::IntPoint;
+// Re-exported: `MergedPoly`'s contours are made of these, so the type is already part of
+// this module's surface - only its name was missing.
+pub use i_overlay::i_float::int::point::IntPoint;
 use i_overlay::mesh::outline::offset::OutlineOffset;
 use i_overlay::mesh::style::OutlineStyle;
 use rayon::prelude::*;
