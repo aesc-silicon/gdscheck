@@ -4206,9 +4206,26 @@ edge_layers:
   - name: plfuse.edges
     op: edges
     layers: [plfuse]
+  # The LDMOS body is the gate poly over the active with the drift marker taken out, so
+  # wherever the active cut it its boundary *is* the active's.  That is the split the
+  # channel rules need: the walls the gate brought with it stand across the channel and
+  # the distance between them is its length, while the ones the active cut stand at the
+  # ends and the distance between them is the transistor's width.
+  - name: ldnmos_body.edges
+    op: edges
+    layers: [ldnmos_body]
+  - name: ldnmos_gate_sides
+    op: not
+    layers: [ldnmos_body.edges, ncomp.edges]
+  - name: ldnmos_gate_ends
+    op: and
+    layers: [ldnmos_body.edges, ncomp.edges]
+  - name: ldpmos_body.edges
+    op: edges
+    layers: [ldpmos_body]
   - name: ldpmos_gate_sides
-    op: inside_part
-    layers: [ldpmos_gate.edges, pcomp]
+    op: not
+    layers: [ldpmos_body.edges, pcomp.edges]
   - name: mdp3c_ncomp.edges
     op: edges
     layers: [mdp3c_ncomp]

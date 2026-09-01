@@ -1559,6 +1559,83 @@ fn compose_edge_tile(
 /// over-reporting by half. The real fix is for edge ops to compose against consistent
 /// context rather than tile-local context, which is a larger piece of work than this
 /// function.
+/// Every tile the segment passes through, not only the one holding its midpoint.
+///
+/// A segment is *owned* by one tile so that an op reads it once and emits it once.  As
+/// somebody else's filter it has to be visible wherever it reaches instead: a boundary
+/// run long enough to cross a tile line is otherwise simply absent from the tiles it
+/// crosses, and an `and` against it there quietly finds nothing to keep.
+fn edge_tiles(e: &Edge, t: i64) -> Vec<(i32, i32)> {
+    let tf = t as f64;
+    let (x0, y0) = (e.a.x as f64, e.a.y as f64);
+    let (x1, y1) = (e.b.x as f64, e.b.y as f64);
+    let (mut cx, mut cy) = ((x0 / tf).floor() as i64, (y0 / tf).floor() as i64);
+    let (ex, ey) = ((x1 / tf).floor() as i64, (y1 / tf).floor() as i64);
+    let mut out = vec![(cx as i32, cy as i32)];
+    let (dx, dy) = (x1 - x0, y1 - y0);
+    let (sx, sy) = (
+        if dx < 0.0 { -1i64 } else { 1 },
+        if dy < 0.0 { -1i64 } else { 1 },
+    );
+    // How far along the segment the next tile line in each axis is, and how far apart
+    // successive lines are - the usual grid walk, one axis stepped at a time.
+    let line = |c: i64, s: i64| {
+        if s > 0 {
+            (c + 1) as f64 * tf
+        } else {
+            c as f64 * tf
+        }
+    };
+    let mut mx = if dx != 0.0 {
+        (line(cx, sx) - x0) / dx
+    } else {
+        f64::INFINITY
+    };
+    let mut my = if dy != 0.0 {
+        (line(cy, sy) - y0) / dy
+    } else {
+        f64::INFINITY
+    };
+    let (px, py) = (
+        if dx != 0.0 {
+            tf / dx.abs()
+        } else {
+            f64::INFINITY
+        },
+        if dy != 0.0 {
+            tf / dy.abs()
+        } else {
+            f64::INFINITY
+        },
+    );
+    // Exactly one step per tile line crossed, so the walk cannot run away.
+    for _ in 0..((ex - cx).abs() + (ey - cy).abs()) {
+        if mx < my {
+            cx += sx;
+            mx += px;
+        } else {
+            cy += sy;
+            my += py;
+        }
+        out.push((cx as i32, cy as i32));
+    }
+    out
+}
+
+/// The same edges filed under every tile they cross, for use as a filter.
+fn spanning_index(owned: &EdgeTileMap, tile_dbu: i32) -> EdgeTileMap {
+    let t = tile_dbu.max(1) as i64;
+    let mut out: EdgeTileMap = HashMap::new();
+    for v in owned.values() {
+        for e in v {
+            for k in edge_tiles(e, t) {
+                out.entry(k).or_default().push(*e);
+            }
+        }
+    }
+    out
+}
+
 fn bucket_edges(edges: Vec<Edge>, tile_dbu: i32) -> EdgeTileMap {
     let t = tile_dbu.max(1) as i64;
     let mut out: EdgeTileMap = HashMap::new();
@@ -2942,6 +3019,8 @@ pub struct MergedCache {
     /// differs — a check asks for one or the other, never both under one key.
     edge_layers: HashMap<(i16, i16), EdgeTileMap>,
     edge_defs: HashMap<(i16, i16), TiledEdge>,
+    /// Every edge layer filed under every tile it crosses, for reading as a filter.
+    edge_spans: HashMap<(i16, i16), EdgeTileMap>,
 }
 
 /// A registered edge layer: its op and the source keys it is built from.
@@ -2976,6 +3055,7 @@ impl MergedCache {
             virtual_defs: HashMap::new(),
             edge_layers: HashMap::new(),
             edge_defs: HashMap::new(),
+            edge_spans: HashMap::new(),
         }
     }
 
@@ -3002,6 +3082,31 @@ impl MergedCache {
         self.edge_defs.contains_key(&key)
     }
 
+    /// The polygon layer an edge layer was ultimately cut from, if it is only one.
+    ///
+    /// Every edge op but one either drops segments or splits them, and never invents one:
+    /// whatever survives still lies on the boundary the first source was cut from, so the
+    /// walk follows that source back to its `edges` node and reports the region there.
+    /// `or` is the exception - it is the one op that puts two boundaries in a single
+    /// layer - so it agrees with itself or admits it has no single region.
+    pub fn edge_base_region(&self, key: (i16, i16)) -> Option<(i16, i16)> {
+        let def = self.edge_defs.get(&key)?;
+        if def.op == EdgeOp::Edges {
+            return def.sources.first().copied();
+        }
+        if def.op == EdgeOp::Or {
+            let mut found = None;
+            for &s in &def.sources {
+                let base = self.edge_base_region(s)?;
+                if *found.get_or_insert(base) != base {
+                    return None; // two boundaries: no one material to measure through
+                }
+            }
+            return found;
+        }
+        self.edge_base_region(*def.sources.first()?)
+    }
+
     /// Build `key`'s edge tiles if not already done, resolving its sources first —
     /// polygon sources through `ensure`, edge sources recursively through here.
     pub fn ensure_edges(&mut self, layout: &FlatLayout, key: (i16, i16)) {
@@ -3010,6 +3115,7 @@ impl MergedCache {
         }
         let Some(def) = self.edge_defs.get(&key).cloned() else {
             self.edge_layers.insert(key, EdgeTileMap::new());
+            self.edge_spans.insert(key, EdgeTileMap::new());
             return;
         };
         // An op's sources are polygons, edges, or one of each; resolve accordingly.
@@ -3022,41 +3128,75 @@ impl MergedCache {
             }
         }
 
-        let empty_e: Vec<Edge> = Vec::new();
         let empty_p: Vec<MergedPoly> = Vec::new();
-        // Compose per tile, over every tile any source touches.
+        let t = self.tile_dbu as i64;
+        // `or` puts every source in the output, so all of them are subjects; every other
+        // op reads the first and measures it against the rest.
+        let subjects = if def.op == EdgeOp::Or {
+            def.sources.len()
+        } else {
+            1
+        };
+        let is_poly = |i: usize| def.op.takes_polygons() || (def.op.mixes() && i == 1);
+        // Compose per tile, over the tiles a *subject* touches.  A filter alone produces
+        // nothing, and the tiles it has to be read in are the subject's, not its own.
         let mut keys: HashSet<(i32, i32)> = HashSet::new();
         for (i, &src) in def.sources.iter().enumerate() {
-            let is_poly = def.op.takes_polygons() || (def.op.mixes() && i == 1);
-            if is_poly {
-                keys.extend(self.layers[&src].keys().copied());
-            } else {
+            if is_poly(i) {
+                if def.op.takes_polygons() {
+                    keys.extend(self.layers[&src].keys().copied());
+                }
+            } else if i < subjects {
                 keys.extend(self.edge_layers[&src].keys().copied());
             }
         }
         let mut out: EdgeTileMap = HashMap::new();
         for tile in keys {
-            let mut es: Vec<&[Edge]> = Vec::new();
+            // Every tile this tile's subjects reach.  A filter that overlaps one of them
+            // shares points with it, so it crosses those tiles too and the spanning index
+            // has it filed there - which is what makes a long filter visible to a subject
+            // it meets three tiles away from where its own midpoint fell.
+            let mut reach: HashSet<(i32, i32)> = HashSet::from([tile]);
+            for (i, &src) in def.sources.iter().enumerate() {
+                if is_poly(i) || i >= subjects {
+                    continue;
+                }
+                for e in self.edge_layers[&src].get(&tile).into_iter().flatten() {
+                    reach.extend(edge_tiles(e, t));
+                }
+            }
+            let mut gathered: Vec<Vec<Edge>> = Vec::new();
             let mut ps: Vec<&[MergedPoly]> = Vec::new();
             for (i, &src) in def.sources.iter().enumerate() {
-                let is_poly = def.op.takes_polygons() || (def.op.mixes() && i == 1);
-                if is_poly {
+                if is_poly(i) {
                     ps.push(
                         self.layers[&src]
                             .get(&tile)
                             .map(Vec::as_slice)
                             .unwrap_or(&empty_p),
                     );
-                } else {
-                    es.push(
+                } else if i < subjects {
+                    gathered.push(
                         self.edge_layers[&src]
                             .get(&tile)
-                            .map(Vec::as_slice)
-                            .unwrap_or(&empty_e),
+                            .cloned()
+                            .unwrap_or_default(),
                     );
+                } else {
+                    let spans = &self.edge_spans[&src];
+                    let mut seen: HashSet<(i32, i32, i32, i32)> = HashSet::new();
+                    let mut v = Vec::new();
+                    for tt in &reach {
+                        for e in spans.get(tt).into_iter().flatten() {
+                            if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+                                v.push(*e);
+                            }
+                        }
+                    }
+                    gathered.push(v);
                 }
             }
-            let t = self.tile_dbu as i64;
+            let es: Vec<&[Edge]> = gathered.iter().map(Vec::as_slice).collect();
             let core = (
                 tile.0 as i64 * t,
                 tile.1 as i64 * t,
@@ -3072,6 +3212,8 @@ impl MergedCache {
                 }
             }
         }
+        self.edge_spans
+            .insert(key, spanning_index(&out, self.tile_dbu));
         self.edge_layers.insert(key, out);
     }
 
@@ -3205,7 +3347,7 @@ impl MergedCache {
                     }
                     let tiles = build_edge_selection_tiles(
                         &self.layers[&def.sources[0]],
-                        self.edges(fkey),
+                        &self.edge_spans[&fkey],
                         keep,
                         self.tile_dbu,
                     );
@@ -3259,6 +3401,41 @@ impl MergedCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn edge(ax: i32, ay: i32, bx: i32, by: i32) -> Edge {
+        Edge {
+            a: IntPoint { x: ax, y: ay },
+            b: IntPoint { x: bx, y: by },
+        }
+    }
+
+    /// A run long enough to cross tile lines belongs to every tile it passes through, or
+    /// it is invisible to the ops in all but one of them.
+    #[test]
+    fn a_long_edge_is_filed_in_every_tile_it_crosses() {
+        // Five tiles across, midpoint in the middle one.
+        let e = edge(50, 50, 450, 50);
+        let mut t = edge_tiles(&e, 100);
+        t.sort();
+        assert_eq!(t, vec![(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]);
+        // Short enough to stay home.
+        assert_eq!(edge_tiles(&edge(10, 10, 90, 10), 100), vec![(0, 0)]);
+        // Backwards is the same set.
+        let mut back = edge_tiles(&edge(450, 50, 50, 50), 100);
+        back.sort();
+        assert_eq!(back, t);
+    }
+
+    /// A diagonal steps one tile at a time and never lists the whole bounding box.
+    #[test]
+    fn a_diagonal_walks_the_grid_rather_than_its_bbox() {
+        let t = edge_tiles(&edge(50, 50, 350, 350), 100);
+        assert!(t.len() <= 7, "walked {} tiles, not a 4x4 box", t.len());
+        for c in [(0, 0), (3, 3)] {
+            assert!(t.contains(&c), "missing {c:?}");
+        }
+        assert!(!t.contains(&(3, 0)), "the far corner is not on the line");
+    }
 
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
