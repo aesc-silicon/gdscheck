@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The full run: import every deck with no rule restriction.
+include:
+  - deck: offgrid
+  - deck: acute
+  - deck: density
+  - deck: dnwell
+  - deck: nwell
+  - deck: lvpwell
+  - deck: comp
+  - deck: dualgate
+  - deck: poly2
+  - deck: nplus
+  - deck: pplus
+  - deck: contact
+  - deck: metal
+  - deck: via
+    # Guidance, not rules; see the `recommended` suite.
+    exclude: [V1.3.3, V1.4.3, V2.3.3, V2.4.3]
+  - deck: metaltop_30k
+  - deck: mim_a
+  - deck: mslot
+  - deck: dummy_comp
+  - deck: dummy_poly2
+  - deck: dummy_metal
+  - deck: dummy_exclude
+  - deck: guard_ring
+  - deck: esd
+  - deck: sab
+  - deck: nat
+  - deck: hres
+  - deck: lres
+  - deck: pres
+  - deck: ldnmos
+  - deck: ldpmos
+  - deck: efuse
+  - deck: otp_mk
+  - deck: ymtp_mk
+  - deck: mcell
+  - deck: sram_3p3
+  - deck: sram_5p0
+  - deck: drc_bjt
+  - deck: lvs_bjt
+  - deck: cup

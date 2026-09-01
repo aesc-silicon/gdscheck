@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Guidance the foundry documents but does not check: rules that improve a parameter
+# rather than protect yield, and which a design can breach everywhere and still be
+# manufacturable.  Kept out of `main` and `core` because they fire on most of the
+# geometry they cover, and a run mixing them with real violations hides the real ones.
+include:
+  - deck: via
+    rules: [V1.3.3, V1.4.3, V2.3.3, V2.4.3]

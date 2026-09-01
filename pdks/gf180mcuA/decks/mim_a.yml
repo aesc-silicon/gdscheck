@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# MIM capacitor, option A.  11 of the 12 rules in this section.
+#
+# Not ported: MIM.11.
+rules:
+  - id: MIM.1
+    check: min_space
+    layers: [topmin1_metal, mimtm_virtual]
+    value: 1.2
+  - id: MIM.2
+    check: min_enclosure
+    layers: [topmin1_metal, mimtm_via]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: MIM.3
+    check: min_enclosure
+    layers: [mimtm_virtual, fusetop]
+    value: 0.6
+  - id: MIM.4
+    check: min_enclosure
+    layers: [fusetop, top_via]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: MIM.5
+    check: min_space
+    layers: [fusetop, top_via_on_topmin1_metal]
+    value: 0.4
+  - id: MIM.6
+    check: min_space
+    layers: [fusetop]
+    value: 0.6
+  - id: MIM.6
+    check: min_notch
+    layers: [fusetop]
+    value: 0.6
+  - id: MIM.7
+    check: nonempty
+    layers: [fusetop_outside_cap_mk]
+    value: 0.0
+    description: "MIM.7: Min FuseTop enclosure by CAP_MK: 0 um"
+  - id: MIM.8a
+    check: min_area
+    layers: [fusetop]
+    value: 25.0
+  - id: MIM.8b
+    check: max_area
+    layers: [fusetop]
+    value: 10000.0
+  - id: MIM.9
+    check: min_space
+    layers: [top_via_and_fusetop]
+    value: 0.5
+  - id: MIM.9
+    check: min_notch
+    layers: [top_via_and_fusetop]
+    value: 0.5
+  - id: MIM.10
+    check: nonempty
+    layers: [topmin1_via_on_mim_bottom]
+    value: 0.0
+    description: "MIM.10: no Via3 may touch the MIM bottom plate"
+  - id: MIM.2
+    check: nonempty
+    layers: [mimtm_2_crossing]
+    value: 0.0
+  - id: MIM.4
+    check: nonempty
+    layers: [mimtm_4_crossing]
+    value: 0.0

@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Guard ring.  4 of the 6 rules in this section.
+#
+# Not ported: GR.1, GR.3.
+rules:
+  - id: GR.2
+    check: min_space
+    layers: [comp, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [nwell, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [poly2, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal1, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal2, guard_ring_mk]
+    value: 10.0
+  - id: GR.2
+    check: min_space
+    layers: [metal3, guard_ring_mk]
+    value: 10.0
+  - id: GR.4
+    check: min_width
+    layers: [metal1_in_guard_ring]
+    value: 12.0
+  - id: GR.4
+    check: min_width
+    layers: [metal2_in_guard_ring]
+    value: 12.0
+  - id: GR.4
+    check: min_width
+    layers: [metal3_in_guard_ring]
+    value: 12.0
+  - id: GR.6
+    check: min_width
+    layers: [comp_in_guard_ring]
+    value: 16.0
+  - id: GR.11
+    check: nonempty
+    layers: [guard_ring_no_pad]
+    value: 0.0
