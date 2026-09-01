@@ -12,11 +12,37 @@
 //! ourselves has no such ambiguity: the good half is a hard zero.
 
 mod acute;
+mod antenna;
+mod bjt;
+mod comp;
+mod contact;
+mod cup;
+mod density;
+mod dnwell;
+mod dualgate;
+mod dummy_exclude;
+mod dummy_fill;
+mod efuse;
+mod esd;
+mod guard_ring;
+mod hres;
+mod lres;
+mod lvpwell;
+mod mcell;
+mod metal;
+mod metaltop;
+mod mim_b;
+mod nat;
+mod nplus;
+mod nwell;
 mod offgrid;
 mod otp_mk;
 mod poly2;
 mod pplus;
 mod pres;
+mod sab;
+mod sram_3p3;
+mod sram_5p0;
 mod via;
 mod ymtp_mk;
 
@@ -30,12 +56,38 @@ pub const OFFSET: f64 = 10.0;
 pub const GRID: f64 = 0.005;
 
 pub fn generate(pdk: &PdkConfig) {
+    mim_b::generate(pdk);
+    nat::generate(pdk);
     offgrid::generate(pdk);
+    nplus::generate(pdk);
+    nwell::generate(pdk);
+    sab::generate(pdk);
     otp_mk::generate(pdk);
     acute::generate(pdk);
+    antenna::generate(pdk);
+    bjt::generate(pdk);
+    comp::generate(pdk);
+    contact::generate(pdk);
+    cup::generate(pdk);
+    density::generate(pdk);
+    dnwell::generate(pdk);
+    dualgate::generate(pdk);
+    efuse::generate(pdk);
+    esd::generate(pdk);
+    guard_ring::generate(pdk);
+    hres::generate(pdk);
+    lres::generate(pdk);
+    dummy_fill::generate(pdk);
+    dummy_exclude::generate(pdk);
+    metal::generate(pdk);
+    lvpwell::generate(pdk);
+    mcell::generate(pdk);
+    metaltop::generate(pdk);
     poly2::generate(pdk);
     pplus::generate(pdk);
     pres::generate(pdk);
+    sram_3p3::generate(pdk);
+    sram_5p0::generate(pdk);
     via::generate(pdk);
     ymtp_mk::generate(pdk);
 }

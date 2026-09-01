@@ -175,6 +175,158 @@ fn run_generated(deck: &str, id: &str, polarity: &str) -> Vec<(String, usize)> {
     )
 }
 
+/// Decks where every rule has a drawn good/bad pair, and the pair means the same thing
+/// for all of them: the good half is silent, and the bad half fires that rule and only
+/// that rule.
+///
+/// This is the contract to write new patterns against.  The older decks above predate it
+/// and pin exact counts through tests of their own, which says more but has to be written
+/// per deck; this one costs a generator and a line here.
+const PATTERN_DECKS: &[&str] = &[
+    "comp",
+    "contact",
+    "drc_bjt",
+    "cup",
+    "density",
+    "dnwell",
+    "dualgate",
+    "dummy_comp",
+    "dummy_exclude",
+    "dummy_metal",
+    "dummy_poly2",
+    "efuse",
+    "esd",
+    "guard_ring",
+    "hres",
+    "lres",
+    "lvs_bjt",
+    "lvpwell",
+    "mcell",
+    "nat",
+    "nplus",
+    "nwell",
+    "sab",
+    "sram_3p3",
+    "sram_5p0",
+    "metal",
+    "metaltop",
+    "mim_b",
+];
+
+#[test]
+fn pattern_good_halves_are_silent() {
+    for deck in PATTERN_DECKS {
+        for id in dedup(rule_ids(deck)) {
+            let got = run_generated(deck, &id, "good");
+            assert!(
+                got.is_empty(),
+                "{deck}: {id} good pattern is not clean: {got:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn pattern_bad_halves_fire_their_own_rule() {
+    for deck in PATTERN_DECKS {
+        for id in dedup(rule_ids(deck)) {
+            let got = run_generated(deck, &id, "bad");
+            let fired: Vec<&String> = got.iter().map(|(r, _)| r).collect();
+            assert!(
+                fired.contains(&&id),
+                "{deck}: {id} bad pattern did not fire it: {got:?}"
+            );
+            // Two deck entries with the same check on the same layers at the same value
+            // are one measurement under two names - GF180 floors the top metal's density
+            // as both M5.4 and MT.3 - and no pattern can separate them.  Read from the
+            // deck rather than listed here, so the allowance cannot outlive its reason.
+            let twins = same_measurement(deck, &id);
+            let others: Vec<&&String> = fired
+                .iter()
+                .filter(|r| **r != &id && !twins.contains(**r))
+                .filter(|r| {
+                    !COINCIDENT
+                        .iter()
+                        .any(|&(d, of, also)| d == *deck && of == id && also == r.as_str())
+                })
+                .collect();
+            assert!(
+                others.is_empty(),
+                "{deck}: {id} bad pattern also fired {others:?} - a pattern should isolate \
+                 its own rule"
+            );
+        }
+    }
+}
+
+/// Rule ids in `deck` that measure exactly what `id` measures - same check, same layers,
+/// same value - and so must fire wherever it does.
+/// Rules a fixture may fire besides its own, because the deck makes the two coincide and
+/// no geometry can tell them apart.  Twins that are literally the same check on the same
+/// layers are found from the deck by [`same_measurement`]; these are the ones only the
+/// rule text explains, so each carries its reason.
+const COINCIDENT: &[(&str, &str, &str)] = &[
+    // Upstream writes SB.4 as `separation(contact, 0.15).or(sab.and(contact))` and SB.8
+    // as `contact.and(sab)`.  A contact *on* the block is the second half of one and the
+    // whole of the other, so it breaks both by construction.
+    ("sab", "SB.8", "SB.4"),
+    // NP.3d forbids an N+ active over a P+ active and NP.3e an N+ marker over a P+
+    // active.  An N+ active *is* comp under the marker, so both expand to the same
+    // intersection of comp, nplus and pplus and no drawing separates them.
+    ("nplus", "NP.3d", "NP.3e"),
+    ("nplus", "NP.3e", "NP.3d"),
+    // The eFuse deck does not bound its device's dimensions, it fixes them, and the
+    // numbers are not independent: 1.84 + 1.26 + 2.43 is the 5.53 µm EF.21 asks of the
+    // poly end to end, and the shoulders EF.22a and EF.22b pin are what is left when the
+    // link's width is taken from each pad's.  So no drawing changes one of them alone.
+    ("efuse", "EF.03", "EF.21"),
+    ("efuse", "EF.07", "EF.21"),
+    ("efuse", "EF.09", "EF.21"),
+    ("efuse", "EF.21", "EF.03"),
+    ("efuse", "EF.06", "EF.22a"),
+    ("efuse", "EF.08", "EF.22b"),
+    ("efuse", "EF.22a", "EF.22b"),
+    ("efuse", "EF.22b", "EF.22a"),
+    // A shape that is no longer a rectangle has an edge that is no longer its old length,
+    // and every edge of this device is pinned by something.
+    ("efuse", "EF.04b", "EF.03"),
+    ("efuse", "EF.04c", "EF.06"),
+    ("efuse", "EF.04c", "EF.07"),
+    ("efuse", "EF.04d", "EF.08"),
+    ("efuse", "EF.04d", "EF.09"),
+    // A contact *on* the link is also nearer to it than the 0.155 µm EF.12 allows.
+    ("efuse", "EF.15", "EF.12"),
+    // Metal is in the list of things EF.18 keeps off the link as well as EF.19's.
+    ("efuse", "EF.19", "EF.18"),
+    // A marker that overlaps an active without covering it has, by saying so, failed to
+    // enclose it by the 0.24 µm DV.6 asks.
+    ("dualgate", "DV.7", "DV.6"),
+];
+
+fn same_measurement(deck: &str, id: &str) -> Vec<String> {
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).expect("PDK loads");
+    let rules = pdk.load_deck(deck).expect("deck loads");
+    let key = |r: &gdscheck::pdk::RuleDefinition| {
+        (
+            r.check.clone(),
+            r.layers.iter().map(|l| l.name.clone()).collect::<Vec<_>>(),
+            r.value.to_bits(),
+        )
+    };
+    let want: Vec<_> = rules.iter().filter(|r| r.id == id).map(key).collect();
+    rules
+        .iter()
+        .filter(|r| r.id != id && want.contains(&key(r)))
+        .map(|r| r.id.clone())
+        .collect()
+}
+
+fn dedup(mut ids: Vec<String>) -> Vec<String> {
+    ids.sort();
+    ids.dedup(); // a rule split over a space and a notch entry shares one id
+    ids
+}
+
 /// The half that matters most: legal geometry, including a 45° chamfer, produces nothing.
 #[test]
 fn generated_good_patterns_are_clean() {
