@@ -119,7 +119,7 @@ fn contact_case() -> (Vec<GdsBoundary>, Vec<GdsBoundary>) {
 fn overlapping_needs_area_and_drops_a_touching_region() {
     let (a, b) = contact_case();
     assert_eq!(
-        run(VirtualOp::Overlapping, &a, &b),
+        run(VirtualOp::Overlapping(None, None), &a, &b),
         vec![(50, 0, 150, 100)],
         "only the region sharing positive area with the filter should survive"
     );
@@ -129,7 +129,7 @@ fn overlapping_needs_area_and_drops_a_touching_region() {
 fn not_overlapping_keeps_the_touching_region() {
     let (a, b) = contact_case();
     assert_eq!(
-        run(VirtualOp::NotOverlapping, &a, &b),
+        run(VirtualOp::NotOverlapping(None, None), &a, &b),
         vec![(200, 0, 300, 100), (400, 0, 500, 100)],
         "edge contact is not overlap, so the touching region is kept"
     );
@@ -139,7 +139,7 @@ fn not_overlapping_keeps_the_touching_region() {
 fn interacting_counts_edge_contact() {
     let (a, b) = contact_case();
     assert_eq!(
-        run(VirtualOp::Interacting, &a, &b),
+        run(VirtualOp::Interacting(None, None), &a, &b),
         vec![(50, 0, 150, 100), (200, 0, 300, 100)],
         "interacting keeps both the overlapping and the merely touching region"
     );
@@ -149,7 +149,7 @@ fn interacting_counts_edge_contact() {
 fn not_interacting_keeps_only_the_clear_region() {
     let (a, b) = contact_case();
     assert_eq!(
-        run(VirtualOp::NotInteracting, &a, &b),
+        run(VirtualOp::NotInteracting(None, None), &a, &b),
         vec![(400, 0, 500, 100)]
     );
 }
@@ -161,10 +161,10 @@ fn interacting_counts_a_shared_corner() {
     let a = vec![rect(A, 100, 100, 200, 200)];
     let b = vec![rect(B, 0, 0, 100, 100)];
     assert_eq!(
-        run(VirtualOp::Interacting, &a, &b),
+        run(VirtualOp::Interacting(None, None), &a, &b),
         vec![(100, 100, 200, 200)]
     );
-    assert!(run(VirtualOp::Overlapping, &a, &b).is_empty());
+    assert!(run(VirtualOp::Overlapping(None, None), &a, &b).is_empty());
 }
 
 /// An empty filter matches nothing, so the positive selectors keep nothing and the
@@ -174,18 +174,18 @@ fn interacting_counts_a_shared_corner() {
 fn empty_filter_matches_nothing() {
     let a = vec![rect(A, 0, 0, 100, 100)];
     for op in [
-        VirtualOp::Overlapping,
-        VirtualOp::Interacting,
+        VirtualOp::Overlapping(None, None),
+        VirtualOp::Interacting(None, None),
         VirtualOp::Inside,
-        VirtualOp::Covering,
+        VirtualOp::Covering(None, None),
     ] {
         assert!(run(op, &a, &[]).is_empty(), "{op:?} should match nothing");
     }
     for op in [
-        VirtualOp::NotOverlapping,
-        VirtualOp::NotInteracting,
+        VirtualOp::NotOverlapping(None, None),
+        VirtualOp::NotInteracting(None, None),
         VirtualOp::NotInside,
-        VirtualOp::NotCovering,
+        VirtualOp::NotCovering(None, None),
     ] {
         assert_eq!(run(op, &a, &[]), vec![(0, 0, 100, 100)], "{op:?}");
     }
@@ -213,7 +213,7 @@ fn inside_requires_full_containment() {
     // The straddling region *does* overlap, so `overlapping` keeps it — the distinction
     // `inside` exists to make.
     assert_eq!(
-        run(VirtualOp::Overlapping, &a, &b),
+        run(VirtualOp::Overlapping(None, None), &a, &b),
         vec![(10, 10, 90, 90), (150, 10, 250, 90)]
     );
 }
@@ -262,14 +262,17 @@ fn covering_requires_containing_a_whole_filter_region() {
         rect(B, 20, 20, 80, 80),   // wholly inside the first candidate
         rect(B, 250, 20, 350, 80), // half in, half out of the second
     ];
-    assert_eq!(run(VirtualOp::Covering, &a, &b), vec![(0, 0, 100, 100)]);
     assert_eq!(
-        run(VirtualOp::NotCovering, &a, &b),
+        run(VirtualOp::Covering(None, None), &a, &b),
+        vec![(0, 0, 100, 100)]
+    );
+    assert_eq!(
+        run(VirtualOp::NotCovering(None, None), &a, &b),
         vec![(200, 0, 300, 100), (400, 0, 500, 100)]
     );
     // `overlapping` keeps the straddled candidate too — the distinction `covering` makes.
     assert_eq!(
-        run(VirtualOp::Overlapping, &a, &b),
+        run(VirtualOp::Overlapping(None, None), &a, &b),
         vec![(0, 0, 100, 100), (200, 0, 300, 100)]
     );
 }
@@ -450,5 +453,132 @@ fn directional_open_chain_keeps_only_wide_regions() {
         out,
         vec![(0, 0, 400, 400)],
         "the 400x400 plate is restored; the 400x60 wire is erased"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Counted selection
+// ---------------------------------------------------------------------------
+
+/// Three candidates over one filter row: the left one meets two filter shapes, the middle
+/// one, the right none.  Enough to separate every count bound from every other.
+fn counted_case() -> (Vec<GdsBoundary>, Vec<GdsBoundary>) {
+    let a = vec![
+        rect(A, 0, 0, 300, 100),   // spans both filter shapes
+        rect(A, 400, 0, 500, 100), // spans the third only
+        rect(A, 800, 0, 900, 100), // spans none
+    ];
+    let b = vec![
+        rect(B, 50, 0, 100, 100),
+        rect(B, 200, 0, 250, 100),
+        rect(B, 420, 0, 470, 100),
+    ];
+    (a, b)
+}
+
+/// `interacting(other, 2, 2)` is "exactly two", not "at least two": the candidate meeting
+/// one is dropped as surely as the candidate meeting none.
+#[test]
+fn interacting_bounds_are_an_inclusive_count() {
+    let (a, b) = counted_case();
+    assert_eq!(
+        run(VirtualOp::Interacting(Some(2), Some(2)), &a, &b),
+        vec![(0, 0, 300, 100)]
+    );
+    assert_eq!(
+        run(VirtualOp::Interacting(Some(1), Some(1)), &a, &b),
+        vec![(400, 0, 500, 100)]
+    );
+    // An open maximum is "at least", so both meeting candidates survive.
+    assert_eq!(
+        run(VirtualOp::Interacting(Some(1), None), &a, &b),
+        vec![(0, 0, 300, 100), (400, 0, 500, 100)]
+    );
+}
+
+/// The uncounted form must stay exactly "at least one" — the counted path is an addition,
+/// not a change of default.
+#[test]
+fn an_absent_count_is_at_least_one() {
+    let (a, b) = counted_case();
+    assert_eq!(
+        run(VirtualOp::Interacting(None, None), &a, &b),
+        run(VirtualOp::Interacting(Some(1), None), &a, &b)
+    );
+}
+
+/// `not_interacting` with a count is the complement of the counted predicate, not of the
+/// uncounted one: it keeps everything that does *not* meet exactly two, which includes the
+/// candidate meeting one.
+#[test]
+fn not_interacting_complements_the_count() {
+    let (a, b) = counted_case();
+    assert_eq!(
+        run(VirtualOp::NotInteracting(Some(2), Some(2)), &a, &b),
+        vec![(400, 0, 500, 100), (800, 0, 900, 100)]
+    );
+}
+
+/// The reason the filter is stitched as well.  One filter shape crossing a tile edge is
+/// one neighbour; counting per tile piece would see two and let a `(2, 2)` selector keep a
+/// candidate that touches a single shape.
+#[test]
+fn a_filter_region_spanning_tiles_counts_once() {
+    let a = vec![rect(A, 0, 0, 300, 100)];
+    let b = vec![rect(B, 50, 0, 250, 100)]; // straddles the tile edge at x = 200
+    assert!(
+        run_tiled(VirtualOp::Interacting(Some(2), Some(2)), &a, &b, 200).is_empty(),
+        "one filter shape must not count as two"
+    );
+    assert_eq!(
+        run_tiled(VirtualOp::Interacting(Some(1), Some(1)), &a, &b, 200),
+        vec![(0, 0, 300, 100)]
+    );
+}
+
+/// `covering` counts whole filter regions the candidate contains, so the same bounds
+/// apply to it — and a filter shape running past the candidate's edge still counts for
+/// nothing, exactly as in the uncounted form.
+#[test]
+fn covering_counts_only_wholly_contained_regions() {
+    let a = vec![rect(A, 0, 0, 300, 300)];
+    let b = vec![
+        rect(B, 50, 50, 100, 100),
+        rect(B, 150, 150, 200, 200),
+        rect(B, 250, 250, 400, 350), // runs outside
+    ];
+    assert_eq!(
+        run(VirtualOp::Covering(Some(2), Some(2)), &a, &b),
+        vec![(0, 0, 300, 300)]
+    );
+    assert!(run(VirtualOp::Covering(Some(3), None), &a, &b).is_empty());
+}
+
+// ---------------------------------------------------------------------------
+// extents
+// ---------------------------------------------------------------------------
+
+/// `extents` replaces each region with its bounding box, so an L becomes the rectangle it
+/// occupies — and two separate shapes stay two boxes, not one around both.
+#[test]
+fn extents_boxes_each_region_separately() {
+    let l = vec![rect(A, 0, 0, 100, 20), rect(A, 0, 0, 20, 100)];
+    let far = vec![rect(A, 300, 300, 340, 320)];
+    let mut a = l.clone();
+    a.extend(far);
+    assert_eq!(
+        run(VirtualOp::Extents, &a, &[]),
+        vec![(0, 0, 100, 100), (300, 300, 340, 320)]
+    );
+}
+
+/// The box is the *stitched* region's, not a tile piece's: a shape wider than a tile has
+/// one bounding box, and taking it per piece would return several smaller ones.
+#[test]
+fn extents_measures_the_whole_region_across_tiles() {
+    let a = vec![rect(A, 0, 0, 500, 40)];
+    assert_eq!(
+        run_tiled(VirtualOp::Extents, &a, &[], 100),
+        vec![(0, 0, 500, 40)]
     );
 }

@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS NFET.  23 of the 35 rules in this section.
+# LDMOS NFET.  24 of the 35 rules in this section.
 #
-# Not ported: MDN.10c, MDN.10d, MDN.10f, MDN.11, MDN.12, MDN.13b, MDN.13c, MDN.13d,
-# MDN.3b, MDN.4a, MDN.4b, MDN.5c.
+# Not ported: MDN.10c, MDN.10d, MDN.11, MDN.12, MDN.13b, MDN.13c, MDN.13d, MDN.3b,
+# MDN.4a, MDN.4b, MDN.5c.
+#
+# Known: MDN.10f reports one region the reference does not - a tiled difference leaves
+# residue outside the tile core and the selection reading it whole sees the residue.
 rules:
   - id: MDN.1
     check: min_width
@@ -103,6 +106,14 @@ rules:
     check: min_space
     layers: [poly_mdn10, pcomp_at_ncomp]
     value: 0.32
+  - id: MDN.10f
+    check: nonempty
+    layers: [mdn10f_interconnect]
+    value: 0.0
+  - id: MDN.10f
+    check: nonempty
+    layers: [mdn10f_reaching_out]
+    value: 0.0
   - id: MDN.13a
     check: max_length
     layers: [ldnmos_body]

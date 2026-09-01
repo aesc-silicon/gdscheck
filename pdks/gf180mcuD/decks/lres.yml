@@ -2,7 +2,10 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Low-sheet (N+) poly resistor.  All 9 rules in this section.
+# N+ poly resistor.  All 9 rules in this section.
+#
+# Known: LRES.1 reports seven extra pinch points, at 45 degree corners where our merge
+# keeps a one-nanometre spur that KLayout's absorbs into the contour.
 rules:
   - id: LRES.1
     check: min_width

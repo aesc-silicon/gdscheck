@@ -620,6 +620,15 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [comp, dualgate]
+  - name: drc_bjt_two_comp
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [drc_bjt, comp_56v]
+  - name: df3c_viol
+    op: intersection
+    mode: lazy
+    layers: [comp_56v, drc_bjt_two_comp]
   - name: mvsd_or_mvpsd
     op: union
     mode: lazy
@@ -1063,6 +1072,102 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [metal1_drawn, sram_lv]
+  - name: metal1_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_drawn]
+  - name: metal1_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_wide10_a]
+  - name: metal1_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_wide10_b]
+  - name: metal1_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_wide10_c]
+  - name: metal1_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal1_wide10_d, metal1_drawn]
+  - name: metal2_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_drawn]
+  - name: metal2_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_wide10_a]
+  - name: metal2_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_wide10_b]
+  - name: metal2_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_wide10_c]
+  - name: metal2_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal2_wide10_d, metal2_drawn]
+  - name: metal3_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_drawn]
+  - name: metal3_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_wide10_a]
+  - name: metal3_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_wide10_b]
+  - name: metal3_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_wide10_c]
+  - name: metal3_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal3_wide10_d, metal3_drawn]
+  - name: metal4_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_drawn]
+  - name: metal4_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_wide10_a]
+  - name: metal4_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_wide10_b]
+  - name: metal4_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_wide10_c]
+  - name: metal4_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal4_wide10_d, metal4_drawn]
   - name: dm8_sensitive
     op: union
     mode: lazy
@@ -2049,6 +2154,44 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [poly2_drawn, dualgate, ldmos_xtor_at_mvsd]
+  - name: poly_mdn10_gated
+    op: intersection
+    mode: lazy
+    layers: [poly_mdn10, nplus]
+  - name: poly_mdn10_link
+    op: difference
+    mode: lazy
+    layers: [poly_mdn10, nplus]
+  - name: mdn10f_interconnect
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [poly_mdn10_link, poly_mdn10_gated]
+  - name: poly_ld_outside
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, ldmos_xtor]
+  - name: poly_xtor
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, ldmos_xtor]
+  - name: mdn10f_reaching_out
+    op: interacting
+    mode: lazy
+    layers: [poly_xtor, poly_ld_outside]
+  - name: poly_ld_gated
+    op: intersection
+    mode: lazy
+    layers: [poly_ld, pplus]
+  - name: poly_ld_link
+    op: difference
+    mode: lazy
+    layers: [poly_ld, pplus]
+  - name: mdp9f_interconnect
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [poly_ld_link, poly_ld_gated]
   - name: pcomp_not_ncomp
     op: not_interacting
     mode: lazy
@@ -2704,6 +2847,18 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [efuse_mk, pplus]
+  - name: poly2_at_plfuse
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, plfuse]
+  - name: ef21_fuse
+    op: inside
+    mode: lazy
+    layers: [poly2_at_plfuse, efuse_mk_pplus]
+  - name: ef21_fuse_box
+    op: extents
+    mode: lazy
+    layers: [ef21_fuse]
   - name: plfuse_efuse
     op: intersection
     mode: lazy
@@ -2720,6 +2875,18 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [poly_efuse, lvs_source_or_plfuse]
+  - name: ef16a_viol
+    op: not_covering
+    min: 4
+    max: 4
+    mode: lazy
+    layers: [cathode, contact]
+  - name: ef16b_viol
+    op: not_covering
+    min: 4
+    max: 4
+    mode: lazy
+    layers: [anode, contact]
   - name: anode
     op: intersection
     mode: lazy
@@ -3971,6 +4138,21 @@ edge_layers:
   - name: plfuse.edges
     op: edges
     layers: [plfuse]
+  - name: ef03_shared
+    op: and
+    layers: [poly2.edges, plfuse.edges]
+  - name: ef03_shared_centers
+    op: centers
+    fraction: 0.95
+    layers: [ef03_shared]
+  - name: ef03_fuse_length
+    op: interacting_edges
+    layers: [plfuse.edges, ef03_shared_centers]
+  - name: ef03_viol
+    op: without_length
+    min: 1.26
+    max: 1.261
+    layers: [ef03_fuse_length]
   - name: cathode_at_fuse
     op: interacting
     layers: [cathode.edges, plfuse]
@@ -3995,6 +4177,24 @@ edge_layers:
   - name: anode_length
     op: not
     layers: [anode.edges, anode_width]
+  - name: ef21_fuse_box.edges
+    op: edges
+    layers: [ef21_fuse_box]
+  - name: ef21_far
+    op: or
+    layers: [anode_facing, cathode_facing]
+  - name: ef21_far_centers
+    op: centers
+    fraction: 0.95
+    layers: [ef21_far]
+  - name: ef21_clear
+    op: not_interacting_edges
+    layers: [ef21_fuse_box.edges, ef21_far_centers]
+  - name: ef21_viol
+    op: without_length
+    min: 5.53
+    max: 5.531
+    layers: [ef21_clear]
   - name: ef22a_edges
     op: not
     layers: [cathode_at_fuse, plfuse.edges]

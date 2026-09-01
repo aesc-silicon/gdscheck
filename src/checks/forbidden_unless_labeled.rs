@@ -132,14 +132,34 @@ pub fn run(
         vec![nbulay, recog_diode, nwell, nsd_block],
         None,
     );
-    merged.register_virtual(x1, VirtualOp::Interacting, vec![nbulay, recog_diode], None);
-    merged.register_virtual(a1, VirtualOp::Interacting, vec![x1, nact_nwell], None);
-    merged.register_virtual(x2, VirtualOp::Interacting, vec![recog_diode, nbulay], None);
-    merged.register_virtual(b1, VirtualOp::Interacting, vec![x2, nact_nwell], None);
+    merged.register_virtual(
+        x1,
+        VirtualOp::Interacting(None, None),
+        vec![nbulay, recog_diode],
+        None,
+    );
+    merged.register_virtual(
+        a1,
+        VirtualOp::Interacting(None, None),
+        vec![x1, nact_nwell],
+        None,
+    );
+    merged.register_virtual(
+        x2,
+        VirtualOp::Interacting(None, None),
+        vec![recog_diode, nbulay],
+        None,
+    );
+    merged.register_virtual(
+        b1,
+        VirtualOp::Interacting(None, None),
+        vec![x2, nact_nwell],
+        None,
+    );
     merged.register_virtual(isolbox_1, VirtualOp::Union, vec![a1, b1], None);
     merged.register_virtual(
         isolbox_2,
-        VirtualOp::NotInteracting,
+        VirtualOp::NotInteracting(None, None),
         vec![isolbox_1, schottky],
         None,
     );
@@ -149,7 +169,12 @@ pub fn run(
         vec![isolbox_2, text],
         Some(pattern.to_string()),
     );
-    merged.register_virtual(kept, VirtualOp::NotInteracting, vec![cand, isolbox], None);
+    merged.register_virtual(
+        kept,
+        VirtualOp::NotInteracting(None, None),
+        vec![cand, isolbox],
+        None,
+    );
     merged.register_virtual(err, VirtualOp::Intersection, vec![kept, nwell], None);
 
     // One violation per whole connected region (stitched across tile borders), matching

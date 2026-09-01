@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Active area (COMP).  43 of the 44 rules in this section.
-#
-# Not ported: DF.3c_MV.
+# Active area (COMP).  All 44 rules in this section.
 rules:
   - id: DF.1a_LV
     check: min_width
@@ -31,6 +29,10 @@ rules:
     layers: [comp_over_100um]
     value: 0.0
 
+  - id: DF.3c_MV
+    check: nonempty
+    layers: [df3c_viol]
+    value: 0.0
   - id: DF.3a_LV
     check: min_space
     layers: [comp_3p3v_no_otp]

@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# eFuse.  21 of the 27 rules in this section.
+# eFuse.  25 of the 27 rules in this section.
 #
-# Not ported: EF.02, EF.03, EF.04a, EF.16a, EF.16b, EF.21.
+# Not ported: EF.02, EF.04a.
 #
 # Known: EF.06 and EF.08 over-report and EF.09 under-reports. The width/length
 # partition needs to see that a shape's own edges touch, and edge layers are
@@ -14,6 +14,10 @@ rules:
   - id: EF.01
     check: nonempty
     layers: [ef01_viol]
+    value: 0.0
+  - id: EF.03
+    check: nonempty
+    layers: [ef03_viol]
     value: 0.0
   - id: EF.04b
     check: nonempty
@@ -71,6 +75,14 @@ rules:
     check: nonempty
     layers: [plfuse_at_contact]
     value: 0.0
+  - id: EF.16a
+    check: nonempty
+    layers: [ef16a_viol]
+    value: 0.0
+  - id: EF.16b
+    check: nonempty
+    layers: [ef16b_viol]
+    value: 0.0
   - id: EF.17
     check: min_space
     layers: [efuse_mk]
@@ -106,6 +118,10 @@ rules:
   - id: EF.09
     check: nonempty
     layers: [ef_09_viol]
+    value: 0.0
+  - id: EF.21
+    check: nonempty
+    layers: [ef21_viol]
     value: 0.0
   - id: EF.22a
     check: nonempty
