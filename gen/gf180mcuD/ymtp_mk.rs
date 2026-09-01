@@ -223,16 +223,32 @@ pub fn generate(pdk: &PdkConfig) {
             shield_pl1: true,
         },
         // 5a (unrelated COMP) and 5b (related COMP) are the same measurement upstream, so
-        // one pattern exercises both and the test expects both to fire.
+        // one drawing exercises both.  It is written under each id rather than under a
+        // shared name, so that every rule in the deck has a pattern the harness can find
+        // by its own id.
         Case {
-            name: "Y.PL.5_LV",
+            name: "Y.PL.5a_LV",
             class: Class::Lv,
             good: poly_near_comp(0.1),
             bad: poly_near_comp(0.02),
             shield_pl1: false,
         },
         Case {
-            name: "Y.PL.5_MV",
+            name: "Y.PL.5b_LV",
+            class: Class::Lv,
+            good: poly_near_comp(0.1),
+            bad: poly_near_comp(0.02),
+            shield_pl1: false,
+        },
+        Case {
+            name: "Y.PL.5a_MV",
+            class: Class::Mv,
+            good: poly_near_comp(0.4),
+            bad: poly_near_comp(0.1),
+            shield_pl1: true,
+        },
+        Case {
+            name: "Y.PL.5b_MV",
             class: Class::Mv,
             good: poly_near_comp(0.4),
             bad: poly_near_comp(0.1),
