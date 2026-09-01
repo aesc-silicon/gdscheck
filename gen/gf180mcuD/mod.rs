@@ -26,12 +26,15 @@ mod efuse;
 mod esd;
 mod guard_ring;
 mod hres;
+mod ldnmos;
+mod ldpmos;
 mod lres;
 mod lvpwell;
 mod mcell;
 mod metal;
 mod metaltop;
 mod mim_b;
+mod mslot;
 mod nat;
 mod nplus;
 mod nwell;
@@ -57,6 +60,7 @@ pub const GRID: f64 = 0.005;
 
 pub fn generate(pdk: &PdkConfig) {
     mim_b::generate(pdk);
+    mslot::generate(pdk);
     nat::generate(pdk);
     offgrid::generate(pdk);
     nplus::generate(pdk);
@@ -76,6 +80,8 @@ pub fn generate(pdk: &PdkConfig) {
     esd::generate(pdk);
     guard_ring::generate(pdk);
     hres::generate(pdk);
+    ldnmos::generate(pdk);
+    ldpmos::generate(pdk);
     lres::generate(pdk);
     dummy_fill::generate(pdk);
     dummy_exclude::generate(pdk);
