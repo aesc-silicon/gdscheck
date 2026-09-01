@@ -1085,6 +1085,26 @@ impl Core {
     pub fn contains(&self, x: f64, y: f64) -> bool {
         x >= self.x0 as f64 && x < self.x1 as f64 && y >= self.y0 as f64 && y < self.y1 as f64
     }
+
+    /// Whether this tile owns a violation reported at `(x, y)`, in DBU.
+    ///
+    /// Ownership is what stops a pair two tiles can both see from being reported twice,
+    /// and a half-open core settles that for any point strictly inside one.  A point
+    /// landing *on* a shared line is the exception, and the half-open rule gets it wrong:
+    /// it hands the point to the tile above, which is the one whose geometry need not
+    /// reach back down to it - a shape whose edge stops on the line has no area past it
+    /// and so is not filed beyond it at all, and the violation is then claimed by a tile
+    /// that cannot see either shape and dropped by the tile that can.
+    ///
+    /// Handing it to the tile below instead only mirrors the problem, since a shape can
+    /// stop on the line from either side.  Neither tile is reliably the right owner, so a
+    /// point on a line is claimed by *both*: the core closes on its upper edges, every
+    /// tile that can see the pair reports it, and the duplicate that creates is dropped
+    /// afterwards by [`run_drc`], which already sorts the violations and so has identical
+    /// ones adjacent.  Only points exactly on a tile line are ever claimed twice.
+    pub fn owns(&self, x: f64, y: f64) -> bool {
+        x >= self.x0 as f64 && x <= self.x1 as f64 && y >= self.y0 as f64 && y <= self.y1 as f64
+    }
 }
 
 /// Merged geometry of one layer, indexed by global tile `(tx, ty)`.
@@ -3401,6 +3421,34 @@ impl MergedCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A violation on a tile line has to be claimed, and by a tile that can see it.
+    #[test]
+    fn a_point_on_a_tile_line_is_claimed_by_both_its_tiles() {
+        let lower = Core {
+            x0: 0,
+            y0: 0,
+            x1: 100,
+            y1: 100,
+        };
+        let upper = Core {
+            x0: 0,
+            y0: 100,
+            x1: 100,
+            y1: 200,
+        };
+        // On the line they share: both claim it, and `run_drc` drops the copy.
+        assert!(lower.owns(50.0, 100.0));
+        assert!(upper.owns(50.0, 100.0));
+        // Anywhere else, exactly one does.
+        assert!(lower.owns(50.0, 99.5));
+        assert!(!upper.owns(50.0, 99.5));
+        assert!(!lower.owns(50.0, 100.5));
+        assert!(upper.owns(50.0, 100.5));
+        // And a tile still claims nothing outside itself.
+        assert!(!lower.owns(50.0, 200.5));
+        assert!(!lower.owns(-0.5, 50.0));
+    }
 
     fn edge(ax: i32, ay: i32, bx: i32, by: i32) -> Edge {
         Edge {

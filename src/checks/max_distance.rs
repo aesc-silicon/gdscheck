@@ -135,7 +135,7 @@ pub fn run(
         };
         for e in es {
             let (mx, my) = e.midpoint();
-            if core.contains(mx, my) && seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+            if core.owns(mx, my) && seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
                 edges.push(*e);
             }
         }

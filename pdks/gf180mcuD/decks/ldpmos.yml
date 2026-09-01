@@ -9,10 +9,6 @@
 #
 # MDP.2 is MDN.4a at this polarity and is out for the same reason; see the ldnmos deck.
 #
-# Known: MDP.7 and MDP.8 measure something outside the LDMOS marker against it, and a
-# neighbour that reaches in from the next tile is missed - it is filed where it was cut,
-# and the spacing engine walks the first layer's tiles only.
-#
 # MDP.3c is `max_distance` over a count: the reference asks for four sides of the tab
 # within 15 um, not every edge of it, so a tab with more than four reads as a violation.
 rules:

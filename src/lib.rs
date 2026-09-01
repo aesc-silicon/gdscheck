@@ -686,6 +686,12 @@ pub fn run_drc(
             .partial_cmp(&key(b))
             .unwrap_or(std::cmp::Ordering::Equal)
     });
+    // A violation sitting exactly on a tile line is claimed by both tiles that share it -
+    // see `Core::owns`, which would rather report one twice than let the tile that cannot
+    // see it silence the tile that can.  Sorted, those two are adjacent and identical.
+    violations.dedup_by(|a, b| {
+        a.rule_id == b.rule_id && a.message == b.message && a.geometry == b.geometry
+    });
     Ok(violations)
 }
 
