@@ -1079,10 +1079,15 @@ const DECK_SEALRING: &str = "sealring";
 // Seal.n (ring-covering) is incidental to the synthetic ring and ignored here.
 #[case::seal_ef("sealring/Seal.ef.gds.gz", "TOP", { let mut v = vec!["Seal.e"; 8]; v.push("Seal.f"); v }, vec!["Seal.n"])]
 #[case::seal_b("sealring/Seal.b.gds.gz", "TOP", vec!["Seal.b"; 2], vec!["Seal.l"])]
-// Two seal frames: Cont ring at 0.80 from the frame edge (< 1.30, fires ×4 — one per ring
-// side, exact match with KLayout's 4 markers) and at 1.50 (clean).  Seal.l is synthetic
-// two-frame collateral.
-#[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 4], vec!["Seal.l"])]
+// Two seal frames: Cont ring at 0.80 from the frame edge (< 1.30) and at 1.50 (clean).
+// Seal.l is synthetic two-frame collateral.
+//
+// Three markers, all on the frame's right side: the side entire, and a sliver at each of
+// its corners. This case used to read four and be described as one marker per side, an
+// exact match with KLayout's count — but the fourth was a byte-identical copy of the
+// second, and the match was arithmetic rather than agreement. The other three sides are
+// genuinely missed.
+#[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 3], vec!["Seal.l"])]
 fn test_sealring(
     #[case] gds: &str,
     #[case] topcell: &str,

@@ -16,6 +16,7 @@
 //! * metric words are lowercase (width, space, enclosure, density, …); layer
 //!   names keep their PDK spelling.
 
+#[derive(PartialEq)]
 pub enum ViolationGeometry {
     /// A single point, coordinates in µm
     Point { x: f64, y: f64 },

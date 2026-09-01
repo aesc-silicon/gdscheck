@@ -182,7 +182,7 @@ fn scan_widths(
                     if width > 0 && viol(width as f64) {
                         let cx = (l.x as f64 + r.x as f64) * 0.5;
                         let cy = (yb as f64 + yb1 as f64) * 0.5;
-                        if core.contains(cx, cy) && in_mask(cx, cy) {
+                        if core.owns(cx, cy) && in_mask(cx, cy) {
                             push_edge(l.x as f64, yb as f64, l.x as f64, yb1 as f64, width as f64);
                             push_edge(r.x as f64, yb as f64, r.x as f64, yb1 as f64, width as f64);
                         }
@@ -210,7 +210,7 @@ fn scan_widths(
                     if height > 0 && viol(height as f64) {
                         let cx = (xb as f64 + xb1 as f64) * 0.5;
                         let cy = (b.y as f64 + t.y as f64) * 0.5;
-                        if core.contains(cx, cy) && in_mask(cx, cy) {
+                        if core.owns(cx, cy) && in_mask(cx, cy) {
                             push_edge(xb as f64, b.y as f64, xb1 as f64, b.y as f64, height as f64);
                             push_edge(xb as f64, t.y as f64, xb1 as f64, t.y as f64, height as f64);
                         }
@@ -324,7 +324,7 @@ fn mixed_widths(
                 continue;
             }
             let (mx, my) = ((po.0 + pa.0) * 0.5, (po.1 + pa.1) * 0.5);
-            if !core.contains(mx, my) {
+            if !core.owns(mx, my) {
                 continue;
             }
             push_edge(po.0, po.1, pa.0, pa.1, dist);
@@ -371,7 +371,7 @@ fn oblique_widths(
             let mid = (lo + hi) * 0.5;
             let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
             let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
-            if !core.contains(mx, my) {
+            if !core.owns(mx, my) {
                 continue;
             }
             push_edge(
@@ -500,7 +500,7 @@ pub fn run_width(
                 let mut pinches: Vec<Violation> = Vec::new();
                 if !oblique_only && viol(0.0) {
                     for (px, py) in pinch_points(polys) {
-                        if !core.contains(px, py) {
+                        if !core.owns(px, py) {
                             continue; // owned by the tile the point falls in
                         }
                         let (x, y) = (px * dbu_to_um, py * dbu_to_um);
@@ -1260,7 +1260,7 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
                 // Own the violation by the gap midpoint; mark the gap itself.
                 let mx = (ax + bx) * 0.5;
                 let my = (ay + by) * 0.5;
-                if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
+                if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                     continue;
                 }
                 let (title, what) = if mode.inward {
@@ -1609,7 +1609,7 @@ pub fn run_boolean_residual(
                 .into_iter()
                 .filter_map(move |m| {
                     let (cx, cy) = merged_centroid_dbu(&m);
-                    if !core.contains(cx, cy) {
+                    if !core.owns(cx, cy) {
                         return None;
                     }
                     let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -1726,7 +1726,7 @@ pub fn run_extension(
                     // Build a violation edge along the under-extended span of this edge.
                     let make = |sx: f64, sy: f64, ex: f64, ey: f64, worst: f64| {
                         let (mx, my) = ((sx + ex) / 2.0, (sy + ey) / 2.0);
-                        if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
+                        if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                             return None;
                         }
                         // Expand a single-sample span into a short edge along the boundary.
@@ -1852,7 +1852,7 @@ pub fn run_enclosed_area(
                     for hole in &m.holes {
                         let (area_dbu, cx, cy) = ring_area_centroid(hole);
                         let area = area_dbu * d2;
-                        if area >= value || !core.contains(cx, cy) {
+                        if area >= value || !core.owns(cx, cy) {
                             continue;
                         }
                         let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -1949,7 +1949,7 @@ pub fn run_no_angle(
                         continue;
                     }
                     let (mx, my) = ((ax + bx) / 2.0, (ay + by) / 2.0);
-                    if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
+                    if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                         continue;
                     }
                     out.push(Violation::edge(
@@ -2043,7 +2043,7 @@ pub fn run_extent(
                         return None;
                     }
                     let (cx, cy) = merged_centroid_dbu(m);
-                    if !core.contains(cx, cy) {
+                    if !core.owns(cx, cy) {
                         return None;
                     }
                     let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -2655,7 +2655,7 @@ pub fn run_enclosure(
             let mut out = Vec::new();
             for bm in b_polys {
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.contains(cxd, cyd) {
+                if !core.owns(cxd, cyd) {
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else { continue };
@@ -2935,7 +2935,7 @@ pub fn run_max_enclosure(
             let mut out = Vec::new();
             for bm in b_polys {
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.contains(cxd, cyd) {
+                if !core.owns(cxd, cyd) {
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else {

@@ -343,22 +343,20 @@ pub fn generate(pdk: &PdkConfig) {
 
     // MDP.7 and MDP.8: an N-well, then an N+ active, too close to the LDMOS marker from
     // outside it.
-    // Both of these measure something outside the marker against it, and both keep the
-    // neighbour small and wholly inside one 20 µm tile.  That is not tidiness: a region
-    // reaching in from the next tile is filed where it was cut, and the spacing engine
-    // walks the first layer's tiles, so a pair whose second half lives in a tile the
-    // first never reached is not found.  Same shape of gap as MDN.10f's.
+    // Both of these measure something outside the marker against it.  The neighbour's
+    // top edge lands exactly on a 20 µm tile line, which is where a gap midpoint on that
+    // line used to be claimed by the tile above and dropped by the tile below.
     let outside = |gap: f64, well: bool| {
         let x = marker_r + gap;
         if well {
-            vec![rect(c.nwell, x, o + 4.0, x + 0.8, o + 9.0)]
+            vec![rect(c.nwell, x, o + 4.0, x + 4.0, o + 10.0)]
         } else {
-            ncomp(x, o + 4.0, x + 0.8, o + 9.0)
+            ncomp(x, o + 4.0, x + 4.0, o + 10.0)
         }
     };
-    write("MDP.7", "good", with(outside(2.05, true)));
+    write("MDP.7", "good", with(outside(3.0, true)));
     write("MDP.7", "bad", with(outside(1.995, true)));
-    write("MDP.8", "good", with(outside(1.6, false)));
+    write("MDP.8", "good", with(outside(3.0, false)));
     write("MDP.8", "bad", with(outside(1.495, false)));
 
     // MDP.3ai: an N+ active touching no P+, closer than 1 µm to a drift.

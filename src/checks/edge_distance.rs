@@ -339,8 +339,21 @@ fn run(
             let mut worst: Option<Pair> = None;
             for eb in b_edges {
                 let Some(sb) = Seg::of(eb) else { continue };
-                if (sa.u.0 * sb.u.1 - sa.u.1 * sb.u.0).abs() > 1e-6 {
-                    continue; // not parallel: no projected run to measure
+                // Parallel enough to measure a width between, which is not the same as
+                // parallel.  Coordinates are integers, so a wall that a boolean cut at
+                // an angle keeps its direction only to the nearest DBU: the two sides of
+                // one 45° bar can come out as (1160, 1160) and (1160, 1161), which is
+                // 0.05° apart and was rejected outright by a test that wanted agreement
+                // to six decimal places.  What matters is whether the gap between them
+                // stays put along the run they share - the cross product of the unit
+                // directions is the sine of the angle, so times the shorter run it is how
+                // far the far end drifts, and a drift under one DBU is a straight gap as
+                // far as the grid can say.
+                // A wall one DBU out of true drifts by almost exactly one DBU over its
+                // own length, whatever that length is, so the bound sits just above one.
+                let drift = (sa.u.0 * sb.u.1 - sa.u.1 * sb.u.0).abs() * sa.len.min(sb.len);
+                if drift > 1.5 {
+                    continue; // not parallel: no steady gap to measure
                 }
                 let dot = sa.n.0 * sb.n.0 + sa.n.1 * sb.n.1;
                 if (rel == Rel::Enclosure) != (dot > 0.0) {
@@ -412,7 +425,7 @@ fn run(
             // The pair is owned by the tile holding the middle of what it measures, so an
             // edge seen from two tiles is reported once.
             let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
-            if !core.contains(mx, my) {
+            if !core.owns(mx, my) {
                 continue;
             }
             let what = match rel {
@@ -459,6 +472,48 @@ fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn seg(ax: i32, ay: i32, bx: i32, by: i32) -> Seg {
+        Seg::of(&Edge {
+            a: IntPoint { x: ax, y: ay },
+            b: IntPoint { x: bx, y: by },
+        })
+        .expect("non-degenerate")
+    }
+
+    fn drift(a: &Seg, b: &Seg) -> f64 {
+        (a.u.0 * b.u.1 - a.u.1 * b.u.0).abs() * a.len.min(b.len)
+    }
+
+    /// The two walls of one 45° bar come off a boolean a nanometre apart in direction.
+    /// The gap between them is still straight as far as the grid can say, so it still
+    /// bounds a width - these are the exact coordinates a 0.24 µm diagonal gate produced,
+    /// where a test for exact parallelism found nothing to measure.
+    #[test]
+    fn a_wall_a_nanometre_off_parallel_still_bounds_a_width() {
+        let exact = seg(13000, 11500, 11500, 10000);
+        let snapped = seg(11840, 10000, 13000, 11161);
+        assert!(
+            drift(&exact, &snapped) <= 1.0,
+            "drift {} should be within a DBU",
+            drift(&exact, &snapped)
+        );
+        // A wall genuinely at another angle drifts far past it.
+        let turned = seg(11840, 10000, 13000, 12000);
+        assert!(
+            drift(&exact, &turned) > 1.0,
+            "drift {} should exceed a DBU",
+            drift(&exact, &turned)
+        );
+        // One DBU out of true drifts by about one whatever the run, so a snapped wall is
+        // measured against a long partner as readily as a short one...
+        let flat = seg(0, 0, 100_000, 0);
+        assert!(drift(&flat, &seg(0, 500, 100_000, 501)) <= 1.5);
+        assert!(drift(&flat, &seg(0, 500, 1_000, 501)) <= 1.5);
+        // ...while a wall at a real angle drifts far past it on any run worth measuring.
+        assert!(drift(&flat, &seg(0, 500, 100_000, 600)) > 1.5);
+        assert!(drift(&flat, &seg(0, 500, 1_000, 600)) > 1.5);
+    }
 
     fn poly(pts: &[(i32, i32)]) -> crate::merge::MergedPoly {
         crate::merge::MergedPoly {

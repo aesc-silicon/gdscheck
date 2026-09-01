@@ -199,14 +199,7 @@ pub fn generate(pdk: &PdkConfig) {
     }
 
     // PL.7: the same channel measured only where the gate runs at 45°.
-    //
-    // The widths are picked from a sweep rather than set to the limit minus 5 nm like
-    // everything else here.  A diagonal gate is not measured at every width: between
-    // roughly 0.20 and 0.26 µm this engine finds no channel at all, and PL.2 - which
-    // reads the same edges without an angle filter - goes quiet over the same band, so
-    // whatever is lost goes before the filter rather than in it.  Above and below that
-    // band both rules read the gate correctly.
-    for (id, w, thick) in [("PL.7_LV", 0.29, false), ("PL.7_MV", 0.695, true)] {
+    for (id, w, thick) in [("PL.7_LV", 0.295, false), ("PL.7_MV", 0.695, true)] {
         for (polarity, w) in [("good", 1.2), ("bad", w)] {
             let mut v = vec![rect(comp, o, o, o + 3.0, o + 3.0)];
             v.push(diagonal(poly2, o + 0.5, o - 1.0, w, 6.0));
