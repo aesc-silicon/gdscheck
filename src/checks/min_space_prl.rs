@@ -13,7 +13,8 @@
 //! Params: `wide_width` (µm) and `parallel_run` (µm), both required.  Width and run
 //! are measured from the regions' bounding boxes (exact for axis-aligned metal).
 
-use super::helper::{Poly, run_gated};
+use super::helper::run_gated;
+use crate::geom::Poly;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;

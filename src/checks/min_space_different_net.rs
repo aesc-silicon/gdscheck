@@ -21,8 +21,8 @@
 //! exactly as the plain geometric rule would.  A wrong net can therefore only ever cost a
 //! false positive, never a false clean.
 
-use crate::checks::helper::Marker;
 use crate::connectivity::{Connectivity, LayerKey};
+use crate::geom::Marker;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;

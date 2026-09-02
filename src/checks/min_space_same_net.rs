@@ -21,8 +21,8 @@
 //! it. That reasoning depends on the pair being written as a pair, which is how these
 //! rules come; a same-net rule standing alone would need the opposite default.
 
-use crate::checks::helper::Marker;
 use crate::connectivity::{Connectivity, LayerKey};
+use crate::geom::Marker;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;

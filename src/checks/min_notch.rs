@@ -10,7 +10,8 @@
 //! pass as width, but the pairing is inverted (an empty gap between facing walls
 //! instead of metal), and each notch is reported once.
 
-use super::helper::{HEdge, OEdge, VEdge, collect_edges, segment_closest_points, sorted_unique};
+use crate::geom::segment_closest_points;
+use crate::geom::{HEdge, OEdge, VEdge, collect_edges, sorted_unique};
 use crate::layout::FlatLayout;
 use crate::merge::{Core, MergedCache, MergedPoly};
 use crate::pdk::RuleDefinition;

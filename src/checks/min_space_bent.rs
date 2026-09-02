@@ -12,7 +12,8 @@
 //! long net may run at 45° in one place and Manhattan elsewhere, and only the angled
 //! stretch should attract the wider spacing.
 
-use super::helper::{Poly, run_gated};
+use super::helper::run_gated;
+use crate::geom::Poly;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;

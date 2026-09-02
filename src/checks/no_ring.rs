@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use super::boundaries_on;
-use super::helper::point_in_polygon;
+use crate::geom::point_in_polygon;
 use crate::layout::FlatLayout;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
