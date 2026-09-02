@@ -948,11 +948,11 @@ fn test_nmosi(
 const DECK_NPN: &str = "npn";
 
 #[rstest]
-// npnG2.c fires twice on one ring: the check reports the worst pair per enclosed
-// polygon per owning tile bucket, and the tie ring straddles a tile boundary
-// (KLayout reports the same violation as 8 edge pairs — same device, same rule).
+// The tie ring is under-enclosed by 0.05 the whole way round; npnG2.c reports the
+// worst wall once (KLayout reports the same violation as 8 edge pairs — same device,
+// same rule).
 #[case::npn_g2("npn/npnG2.gds.gz", "TOP",
-    vec!["npnG2.b", "npnG2.c", "npnG2.c", "npnG2.d", "npnG2.e"], vec![])]
+    vec!["npnG2.b", "npnG2.c", "npnG2.d", "npnG2.e"], vec![])]
 // One marker per emitter case: min/max for G2 (=0.90), L (1.00..2.50), V (1.00..5.00).
 // KLayout's shipped emitter rules are dead code (µm/dbu bug in ext_with_length's
 // ">" branch) — limits here follow the PDF; see the deck comment.

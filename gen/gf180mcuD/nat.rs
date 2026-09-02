@@ -131,10 +131,21 @@ pub fn generate(pdk: &PdkConfig) {
     };
 
     for id in [
-        "NAT.1", "NAT.2", "NAT.3", "NAT.4", "NAT.7", "NAT.8", "NAT.10", "NAT.11", "NAT.12",
+        "NAT.1", "NAT.2", "NAT.3", "NAT.4", "NAT.7", "NAT.8", "NAT.9", "NAT.10", "NAT.11", "NAT.12",
     ] {
         write(id, "good", clean());
     }
+    // NAT.9: poly that belongs to no gate of the marker, closer than 0.3 µm to it.  The
+    // rule's other half is a poly interconnect *under* the marker, which needs two gates
+    // to run between and so cannot be drawn on a one-gate device.
+    let stray_poly = |gap: f64| {
+        let mut v = Cell::at(o, o).draw(&c);
+        let x = o + COMP_L + NAT_M + gap;
+        v.push(rect(c.poly, x, o, x + 1.0, o + COMP_W));
+        v
+    };
+    write("NAT.9", "bad", stray_poly(0.295));
+
     // NAT.5 is the 6 V rule, so both its halves carry Dualgate.
     write("NAT.5", "good", mv_clean());
 

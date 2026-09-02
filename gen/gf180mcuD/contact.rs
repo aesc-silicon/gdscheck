@@ -167,6 +167,28 @@ pub fn generate(pdk: &PdkConfig) {
         v
     });
 
+    // CO.2b: inside a 4x4 array the spacing rises from CO.2a's 0.25 to 0.28, so a 0.26 µm
+    // gap is legal for a lone pair and not for an array.  The clean half is the same gap
+    // in a 3x3, which is too small to be an array at all.
+    let array = |n: usize, gap: f64| {
+        let pitch = CO + gap;
+        let side = (n - 1) as f64 * pitch + CO;
+        let mut v = vec![
+            rect(c.comp, o - 0.2, o - 0.2, o + side + 0.2, o + side + 0.2),
+            rect(c.nplus, o - 0.4, o - 0.4, o + side + 0.4, o + side + 0.4),
+            rect(c.metal1, o - M1, o - M1, o + side + M1, o + side + M1),
+        ];
+        for i in 0..n {
+            for j in 0..n {
+                let (x, y) = (o + i as f64 * pitch, o + j as f64 * pitch);
+                v.push(rect(c.contact, x, y, x + CO, y + CO));
+            }
+        }
+        v
+    };
+    write("CO.2b", "good", array(3, 0.26));
+    write("CO.2b", "bad", array(4, 0.26));
+
     // CO.3 / CO.4: the poly, and the active, running only 0.07 µm past the contact.
     write("CO.3", "bad", {
         let mut cell = on_poly(o, o);

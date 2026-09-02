@@ -43,6 +43,16 @@ fn rect(l: (i16, i16), x0: i32, y0: i32, x1: i32, y1: i32) -> GdsBoundary {
 /// Build a cache over layers A and B, register the edge layers `defs` names, and return
 /// the resulting segments of the last one, as sorted `(x0,y0,x1,y1)` endpoints.
 fn run(a: &[GdsBoundary], b: &[GdsBoundary], defs: &[EdgeDef]) -> Vec<(i32, i32, i32, i32)> {
+    run_tiled(a, b, defs, 10_000_000)
+}
+
+/// [`run`] with the tile pitch spelled out, for the cases that are about tiling.
+fn run_tiled(
+    a: &[GdsBoundary],
+    b: &[GdsBoundary],
+    defs: &[EdgeDef],
+    tile: i32,
+) -> Vec<(i32, i32, i32, i32)> {
     let mut layout = FlatLayout::new();
     for s in a {
         layout.insert(A.0, A.1, s.clone());
@@ -50,7 +60,7 @@ fn run(a: &[GdsBoundary], b: &[GdsBoundary], defs: &[EdgeDef]) -> Vec<(i32, i32,
     for s in b {
         layout.insert(B.0, B.1, s.clone());
     }
-    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let mut cache = MergedCache::new(tile, 0, HashMap::new());
     for (key, op, sources) in defs {
         cache.register_edge(*key, *op, sources.clone());
     }
@@ -432,4 +442,32 @@ fn a_partial_abutment_splits_the_shared_wall() {
     );
     assert!(got.contains(&(100, 0, 100, 40)), "lower remnant: {got:?}");
     assert!(got.contains(&(100, 60, 100, 100)), "upper remnant: {got:?}");
+}
+
+/// Two abutting rectangles bound the same region as the single rectangle they make, so
+/// `edges` should report the same four segments for both.  It does not, once the pair
+/// spans more than one tile: each tile merges only what its own bucket holds, so the seam
+/// is gone in the tiles that see both rectangles and present in the tiles that see one,
+/// and the midpoint-ownership filter then hands each edge to a single tile without
+/// checking that that tile drew the same boundary.  The bottom edge comes back three
+/// times - whole, and as each half - and the right-hand edge does not come back at all,
+/// because it lies on the far boundary of the last tile with core area and so is charged
+/// to a tile that holds no copy of the polygon.
+///
+/// Found through GF180 GR.1 on a real seal ring, whose active is drawn as four corners
+/// and four bars: the rule read four false violations off the corner pieces.  GR.1 is a
+/// region boolean now and no longer depends on this, but every other `edges` layer still
+/// does.
+#[test]
+#[ignore = "known defect: `edges` of a multi-piece region depends on the tiling"]
+fn edges_of_abutting_rectangles_match_the_single_rectangle() {
+    let defs: &[EdgeDef] = &[((90, 0), EdgeOp::Edges, vec![A])];
+    let split = run_tiled(
+        &[rect(A, 0, 0, 30, 30), rect(A, 30, 0, 60, 30)],
+        &[],
+        defs,
+        20,
+    );
+    let whole = run_tiled(&[rect(A, 0, 0, 60, 30)], &[], defs, 20);
+    assert_eq!(split, whole);
 }

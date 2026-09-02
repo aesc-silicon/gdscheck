@@ -201,12 +201,36 @@ pub fn generate(pdk: &PdkConfig) {
     let clean = || base.draw(&c);
 
     for id in [
-        "EF.01", "EF.03", "EF.04b", "EF.04c", "EF.04d", "EF.05", "EF.06", "EF.07", "EF.08",
-        "EF.09", "EF.10", "EF.11", "EF.12", "EF.13", "EF.14", "EF.15", "EF.16a", "EF.16b", "EF.17",
-        "EF.18", "EF.19", "EF.20", "EF.21", "EF.22a", "EF.22b",
+        "EF.02", "EF.01", "EF.03", "EF.04a", "EF.04b", "EF.04c", "EF.04d", "EF.05", "EF.06",
+        "EF.07", "EF.08", "EF.09", "EF.10", "EF.11", "EF.12", "EF.13", "EF.14", "EF.15", "EF.16a",
+        "EF.16b", "EF.17", "EF.18", "EF.19", "EF.20", "EF.21", "EF.22a", "EF.22b",
     ] {
         write(id, "good", clean());
     }
+
+    // EF.02 fixes the fuse layer's own width wherever it is drawn, not just on a device,
+    // so its fixture is a bare bar off to one side rather than a bent fuse: bending the
+    // fuse's link moves the shoulders EF.22a and EF.22b pin and answers for them too.
+    let bar = |w: f64| {
+        let mut v = base.draw(&c);
+        v.push(rect(c.plfuse, o + 20.0, o, o + 22.0, o + w));
+        v
+    };
+    write("EF.02", "good", bar(0.18));
+    write("EF.02", "bad", bar(0.175));
+
+    // EF.04a: a fuse with no poly under it and no anode at either end, in a marker of its
+    // own off to one side.  Widening the device's own fuse would say the same thing, but
+    // its width is what EF.02 fixes and its shoulders are what EF.22a and EF.22b pin.
+    write("EF.04a", "bad", {
+        let mut v = base.draw(&c);
+        let (x, y) = (o + 20.0, o);
+        v.push(rect(c.plfuse, x, y, x + 1.26, y + 0.18));
+        v.push(rect(c.efuse_mk, x - 0.7, y - 0.7, x + 1.96, y + 0.88));
+        // EF.01 wants the implant over anything the marker covers.
+        v.push(rect(c.pplus, x - 0.9, y - 0.9, x + 2.16, y + 1.08));
+        v
+    });
 
     // The dimensions the deck fixes: each bad half is the fuse with one of them a
     // half-grid out, which is what the exact-length rules are there to catch.

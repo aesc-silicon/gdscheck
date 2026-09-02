@@ -2,34 +2,46 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Guard ring.  4 of the 6 rules in this section.
+# Guard ring.  8 of the 11 rules in this section.
 #
-# Not ported: GR.1, GR.3.
+# Not ported: GR.5, GR.9, GR.10.
 rules:
+  - id: GR.1
+    check: nonempty
+    layers: [gr1_mk_viol]
+    value: 0.0
+  - id: GR.1
+    check: nonempty
+    layers: [gr1_comp_viol]
+    value: 0.0
   - id: GR.2
     check: min_space
-    layers: [comp, guard_ring_mk]
+    layers: [comp_prime, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [nwell, guard_ring_mk]
+    layers: [nwell_prime, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [poly2, guard_ring_mk]
+    layers: [poly2_prime, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal1, guard_ring_mk]
+    layers: [metal1_prime, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal2, guard_ring_mk]
+    layers: [metal2_prime, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal3, guard_ring_mk]
+    layers: [metal3_prime, guard_ring_mk]
     value: 10.0
+  - id: GR.3
+    check: nonempty
+    layers: [gr3_viol]
+    value: 0.0
   - id: GR.4
     check: min_width
     layers: [metal1_in_guard_ring]
@@ -44,8 +56,20 @@ rules:
     value: 12.0
   - id: GR.6
     check: min_width
-    layers: [comp_in_guard_ring]
+    layers: [pcomp_in_guard_ring]
     value: 16.0
+  - id: GR.7
+    check: min_space
+    layers: [contact_in_guard_ring]
+    value: 0.7
+  - id: GR.8
+    check: min_space
+    layers: [via1_in_guard_ring]
+    value: 0.7
+  - id: GR.8
+    check: min_space
+    layers: [via2_in_guard_ring]
+    value: 0.7
   - id: GR.11
     check: nonempty
     layers: [guard_ring_no_pad]

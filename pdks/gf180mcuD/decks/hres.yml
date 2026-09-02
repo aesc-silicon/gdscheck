@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# High-sheet poly resistor.  11 of the 12 rules in this section.
-#
-# Not ported: HRES.10.
+# High-sheet poly resistor.  All 12 rules in this section.
 rules:
   - id: HRES.1
     check: min_space
@@ -80,3 +78,11 @@ rules:
     check: min_space
     layers: [res_mk_big, res_mk]
     value: 20.0
+  - id: HRES.10
+    check: min_width
+    layers: [hres10_overlap]
+    value: 0.1
+  - id: HRES.10
+    check: max_enclosure
+    layers: [pplus, hres9_sab]
+    value: 0.1

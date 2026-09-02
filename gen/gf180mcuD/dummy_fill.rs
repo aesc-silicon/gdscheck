@@ -57,6 +57,10 @@ const PAIR: &[(&str, &str, &str, &str, f64)] = &[
     ("dummy_poly2", "DPF.8", "poly2_dummy", "res_mk", 19.7),
     ("dummy_poly2", "DPF.9", "poly2_dummy", "pad", 6.7),
     ("dummy_poly2", "DPF.11", "poly2_dummy", "ndmy", 29.7),
+    // DPF.12 and DPF.13 are the space to *active circuit* metal, so the neighbour is the
+    // drawn layer: the rule does not apply to dummy metal fill.
+    ("dummy_poly2", "DPF.12", "poly2_dummy", "metal1_drawn", 2.0),
+    ("dummy_poly2", "DPF.13", "poly2_dummy", "metal2_drawn", 2.0),
     ("dummy_poly2", "DPF.14", "poly2_dummy", "ind_mk", 3.0),
     ("dummy_poly2", "DPF.16", "poly2_dummy", "mtpmark", 3.0),
     ("dummy_poly2", "DPF.19", "poly2_dummy", "pmndmy", 8.0),

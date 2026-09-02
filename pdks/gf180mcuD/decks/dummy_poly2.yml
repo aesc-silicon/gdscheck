@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Poly2 dummy fill.  14 of the 16 rules in this section.
-#
-# Not ported: DPF.12, DPF.13.
+# Poly2 dummy fill.  All 16 rules in this section.
 rules:
   - id: DPF.1
     check: nonempty
@@ -66,3 +64,11 @@ rules:
     check: min_space
     layers: [poly2_dummy, pmndmy]
     value: 8.0
+  - id: DPF.12
+    check: min_space
+    layers: [poly2_dummy, metal1_drawn]
+    value: 2.0
+  - id: DPF.13
+    check: min_space
+    layers: [poly2_dummy, metal2_drawn]
+    value: 2.0

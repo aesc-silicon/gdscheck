@@ -2,16 +2,20 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# eFuse.  25 of the 27 rules in this section.
-#
-# Not ported: EF.02, EF.04a.  EF.02 is `exact_width` on PLFUSE and reads correctly -
-# every width it flags is genuinely not 0.18 - but it over-reports the reference by a
-# hundred, the tail of them at the 45 degree spurs LRES.1 documents.
+# eFuse.  All 27 rules in this section.
 rules:
   - id: EF.01
     check: nonempty
     layers: [ef01_viol]
     value: 0.0
+  - id: EF.02
+    check: min_width
+    layers: [plfuse]
+    value: 0.18
+  - id: EF.02
+    check: max_dim
+    layers: [plfuse]
+    value: 0.18
   - id: EF.03
     check: nonempty
     layers: [ef03_viol]
@@ -127,4 +131,12 @@ rules:
   - id: EF.22b
     check: nonempty
     layers: [ef_22b_viol]
+    value: 0.0
+  - id: EF.04a
+    check: nonempty
+    layers: [ef04a_viol]
+    value: 0.0
+  - id: EF.04a
+    check: nonempty
+    layers: [ef04a_long_off]
     value: 0.0
