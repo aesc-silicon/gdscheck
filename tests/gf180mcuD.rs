@@ -292,6 +292,14 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     // as `contact.and(sab)`.  A contact *on* the block is the second half of one and the
     // whole of the other, so it breaks both by construction.
     ("sab", "SB.8", "SB.4"),
+    // The LDNMOS gate's width is the channel plus the drift it overlaps, and MDN.11 fixes
+    // that overlap at 0.4.  So a channel under MDN.3a's 0.6 leaves a gate under MDN.10a's
+    // 1.2 by arithmetic, and no geometry breaks the one without the other.
+    ("ldnmos", "MDN.3a", "MDN.10a"),
+    // A source shared between two fingers is what MDN.13c reports, and it is also the
+    // butted-tap arrangement MDN.13d joins into its own output, so the one geometry is
+    // both by construction.
+    ("ldnmos", "MDN.13c", "MDN.13d"),
     // GR.3 wants the implant over the ring's active and GR.6 wants that active 16 µm
     // wide.  Uncovering any of it is what GR.3 forbids and what narrows what GR.6
     // measures, so no geometry breaks one alone.

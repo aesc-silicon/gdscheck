@@ -76,7 +76,7 @@ struct Dev {
 impl Default for Dev {
     fn default() -> Self {
         Dev {
-            over_drift: 1.0,
+            over_drift: 0.4,
             endcap: 0.5,
             drain_h: 4.0,
             drain_contact: true,
@@ -90,9 +90,13 @@ impl Default for Dev {
     }
 }
 
-/// Where the ring's hole sits, so the fixtures can park a second shape in it.  The device
-/// occupies the lower left of it; everything from `SPARE` up is free.
-const SPARE: f64 = 13.0;
+/// Where a fixture parks the extra shapes its own rule needs.  It is *outside* the
+/// device's LDMOS_XTOR and Dualgate marker, which reaches `o + 27`: MDN.11 forbids a drift
+/// with no channel under it and MDN.13d forbids two drains in one ring, and both read only
+/// what the marker covers, so a bare bar of MVSD parked inside it would answer for them
+/// rather than for the rule it was drawn for.  The rules those bars are drawn for -
+/// MDN.1, MDN.2a/b, MDN.8a/b, MDN.14 - all measure the drawn MVSD and do not need it.
+const SPARE: f64 = 30.0;
 const HOLE_TOP: f64 = 22.0;
 const HOLE_RIGHT: f64 = 22.0;
 
@@ -239,6 +243,13 @@ pub fn generate(pdk: &PdkConfig) {
             },
         ),
         (
+            "MDN.11",
+            Dev {
+                over_drift: 0.405,
+                ..good
+            },
+        ),
+        (
             "MDN.3b",
             Dev {
                 channel: 20.005,
@@ -285,6 +296,44 @@ pub fn generate(pdk: &PdkConfig) {
     // A drift bar in the spare room, which several rules measure something against.
     let bar = |x: f64, y: f64, w: f64, h: f64| rect(c.mvsd, x, y, x + w, y + h);
 
+    // A drift that is a device, for the fixtures that need one where a bare bar of MVSD
+    // would answer for MDN.11 instead: a gate crossing the near edge by exactly the 0.4
+    // MDN.11 fixes, reaching 0.4 past the active for MDN.10b, the source it sits on, and a
+    // bare drain island in the drift.  `right` puts the source on the far side, for a
+    // fixture with something to its left; `plain` adds a third active so the drift meets
+    // three and is not the two-active drain MDN.13d counts.
+    let device_bar = |x: f64, y: f64, w: f64, h: f64, right: bool, plain: bool| {
+        // The gate crosses one edge of the drift, reaching 0.4 in - which is the overlap
+        // MDN.11 fixes - and 1.4 out; the source it sits on reaches 2.6 out.
+        let (gx0, gx1, nx0, nx1) = if right {
+            (x + w - 0.4, x + w + 1.4, x + w - 0.4, x + w + 2.6)
+        } else {
+            (x - 1.4, x + 0.4, x - 2.6, x + 0.4)
+        };
+        let mut v = vec![
+            rect(c.mvsd, x, y, x + w, y + h),
+            rect(c.poly2, gx0, y - 0.1, gx1, y + h + 0.1),
+        ];
+        v.extend(ncomp(nx0, y + 0.3, nx1, y + h - 0.3));
+        v.extend(ncomp(
+            x + w * 0.5,
+            y + h * 0.35,
+            x + w * 0.5 + 0.3,
+            y + h * 0.65,
+        ));
+        if plain {
+            // A third active on the drift, so it meets three and is not the two-active
+            // drain MDN.13d counts.
+            v.extend(ncomp(
+                x + w * 0.3,
+                y + h - 0.4,
+                x + w * 0.3 + 0.3,
+                y + h + 0.9,
+            ));
+        }
+        v
+    };
+
     // MDN.1: a drift narrower than 1 µm.
     write(
         "MDN.1",
@@ -296,6 +345,61 @@ pub fn generate(pdk: &PdkConfig) {
         "bad",
         with(vec![bar(o + 4.0, o + SPARE, 4.0, 0.995)]),
     );
+
+    // MDN.13c: a finger with source on both sides.  It brings its own ring rather than
+    // sharing the device's, because the drain beside a shared source is a drain like any
+    // other and a ring holding two of those is what MDN.13d forbids.  The right-hand drift
+    // meets a third active so it is not one of those, leaving the left as the only one.
+    let two_finger = |shared: bool| {
+        let (dy0, dy1) = (o + 7.0, o + 14.0);
+        let (gy0, gy1) = (o + 7.6, o + 13.4);
+        let (ny0, ny1) = (o + 8.0, o + 13.0);
+        let src_x1 = if shared { o + 13.4 } else { o + 9.0 };
+        let mut v = vec![
+            rect(c.mvsd, o + 2.0, dy0, o + 6.0, dy1),
+            rect(c.poly2, o + 5.6, gy0, o + 7.4, gy1),
+        ];
+        v.extend(ncomp(o + 5.6, ny0, src_x1, ny1));
+        v.extend(ncomp(o + 3.0, o + 10.0, o + 3.3, o + 11.0));
+        if shared {
+            v.push(rect(c.mvsd, o + 13.0, dy0, o + 18.0, dy1));
+            v.push(rect(c.poly2, o + 11.6, gy0, o + 13.4, gy1));
+            v.extend(ncomp(o + 15.0, o + 10.0, o + 15.3, o + 11.0));
+            // Two more actives, so the right-hand drift meets four and is neither the two
+            // that make a drain nor the three that make a multi-finger one.
+            v.extend(ncomp(o + 16.0, o + 13.5, o + 17.0, o + 14.5));
+            v.extend(ncomp(o + 14.0, o + 6.0, o + 15.0, o + 7.5));
+        }
+        let (ix0, iy0, ix1, iy1) = (o + 1.0, o + 1.0, o + 22.0, o + 22.0);
+        let w = 2.0;
+        for l in [c.comp, c.pplus] {
+            v.push(rect(l, ix0 - w, iy0 - w, ix1 + w, iy0));
+            v.push(rect(l, ix0 - w, iy1, ix1 + w, iy1 + w));
+            v.push(rect(l, ix0 - w, iy0, ix0, iy1));
+            v.push(rect(l, ix1, iy0, ix1 + w, iy1));
+        }
+        for l in [c.ldmos, c.dualgate] {
+            v.push(rect(
+                l,
+                ix0 - w - 3.0,
+                iy0 - w - 3.0,
+                ix1 + w + 3.0,
+                iy1 + w + 3.0,
+            ));
+        }
+        v
+    };
+    write("MDN.13c", "good", two_finger(false));
+    write("MDN.13c", "bad", two_finger(true));
+
+    // MDN.13d: a second drift-and-drain inside the device's own guard ring, so the ring
+    // holds two where it may hold one.
+    let second_drain = || {
+        let y = o + 14.0;
+        device_bar(o + 6.0, y, 5.0, 5.0, false, false)
+    };
+    write("MDN.13d", "good", with(vec![]));
+    write("MDN.13d", "bad", with(second_drain()));
 
     // MDN.2a: two drifts closer than 1 µm at the same potential.  An active over both
     // shorts them, which is what keeps MDN.2b - the different-potential rule - quiet.
@@ -395,19 +499,9 @@ pub fn generate(pdk: &PdkConfig) {
     // MDN.5aii: a P+ active that *does* touch an N+, closer than 0.92 µm to a drift.  The
     // N+ it touches runs onto the drift, or MDN.9 measures that instead.
     let pbutt = |gap: f64| {
-        let mut v = vec![bar(o + 4.0, o + SPARE, 5.0, 2.0)];
-        v.extend(ncomp(
-            o + 7.0,
-            o + SPARE + 0.5,
-            o + 9.0 + gap,
-            o + SPARE + 1.5,
-        ));
-        v.extend(pcomp(
-            o + 9.0 + gap,
-            o + SPARE + 0.5,
-            o + 11.0 + gap,
-            o + SPARE + 1.5,
-        ));
+        let mut v = device_bar(o + 6.0, o + 13.0, 5.0, 2.0, false, true);
+        v.extend(ncomp(o + 9.0, o + 13.5, o + 11.0 + gap, o + 14.5));
+        v.extend(pcomp(o + 11.0 + gap, o + 13.5, o + 13.0 + gap, o + 14.5));
         v
     };
     write("MDN.5aii", "good", with(pbutt(2.0)));
@@ -533,14 +627,21 @@ pub fn generate(pdk: &PdkConfig) {
 
     // MDN.17: device material outside the guard ring's hole, in the band the marker
     // covers beyond the ring.
-    write(
-        "MDN.17",
-        "good",
-        with(vec![bar(o + 4.0, o + SPARE, 4.0, 2.0)]),
-    );
+    // MDN.17 wants device material outside the ring but still under the marker, so its
+    // device carries a wider one than the rest.
+    let wide_marker = Dev {
+        margin: 12.0,
+        ..good
+    };
+    let outside_ring = |extra: Vec<GdsElement>| {
+        let mut v = device(&c, wide_marker);
+        v.extend(extra);
+        v
+    };
+    write("MDN.17", "good", outside_ring(vec![]));
     write(
         "MDN.17",
         "bad",
-        with(vec![bar(o + 25.0, o + 6.0, 2.0, 4.0)]),
+        outside_ring(device_bar(o + 28.0, o + 6.0, 2.0, 4.0, true, false)),
     );
 }

@@ -3621,6 +3621,192 @@ virtual_layers:
 
 # The drawn layer table.  Variant D is a 5LM stack, so the
 # 6LM-only layers (via5 and the metaltop family) are absent.
+  # ---- MDN.11 -------------------------------------------------------------
+  # The channel the drift overlaps: the rule fixes its width at 0.4 in both directions,
+  # and separately forbids a drift with no channel under it and no drain in it.
+  - name: mdn11_overlap
+    op: intersection
+    mode: lazy
+    layers: [ldmos_xtor, mvsd, comp, poly2_drawn, nplus]
+  # The parts wider than 0.4.  An opening by half of it survives only where the region is
+  # thicker than that, which is what upstream's "region minus its narrow parts" means; a
+  # max_width scan would call the overlap's own length a width.
+  - name: mdn11_wide
+    op: open
+    mode: lazy
+    radius: 0.2
+    layers: [mdn11_overlap]
+  - name: mdn11_uniform
+    op: not_interacting
+    mode: lazy
+    layers: [mdn11_overlap, mdn11_wide]
+  # The selections run on the drawn drift and the device markers are intersected after -
+  # clipping first changes which shapes a whole-polygon selection sees.
+  - name: mdn11_over_ncomp
+    op: covering
+    mode: lazy
+    layers: [mvsd, ncomp]
+  - name: mdn11_no_gate_sel
+    op: not_overlapping
+    mode: lazy
+    layers: [mdn11_over_ncomp, tgate]
+  - name: mdn11_no_gate
+    op: intersection
+    mode: lazy
+    layers: [mdn11_no_gate_sel, dualgate, ldmos_xtor]
+  - name: mdn11_bare_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: mdn11_no_drain_sel
+    op: not_covering
+    mode: lazy
+    layers: [mvsd, mdn11_bare_ncomp]
+  - name: mdn11_no_drain
+    op: intersection
+    mode: lazy
+    layers: [mdn11_no_drain_sel, dualgate, ldmos_xtor]
+  - name: mdn11_no_channel
+    op: union
+    mode: lazy
+    layers: [mdn11_no_gate, mdn11_no_drain]
+  # ---- MDN.13c ------------------------------------------------------------
+  # A finger with source on both sides: the source is the active meeting a gate that is
+  # inside a drift, minus the gate; a source meeting two gates is one shared between
+  # fingers, and the drain that sits by such a finger is what the rule reports.
+  - name: mdn13c_gate_in_mvsd
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_xtor, mvsd]
+  - name: mdn13c_source_touch
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdn13c_gate_in_mvsd]
+  - name: mdn13c_source
+    op: difference
+    mode: lazy
+    layers: [mdn13c_source_touch, poly2_drawn]
+  - name: mdn13c_finger
+    op: difference
+    mode: lazy
+    layers: [poly_mdn, mvsd]
+  - name: mdn13c_shared
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13c_source, mdn13c_finger]
+  - name: mdn13c_tap
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [pcomp, mdn13c_source]
+  - name: mdn13c_via_tap
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_source, mdn13c_tap]
+  - name: mdn13c_shared_any
+    op: union
+    mode: lazy
+    layers: [mdn13c_shared, mdn13c_via_tap]
+  - name: mdn13c_source_side
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_finger, mdn13c_shared_any]
+  - name: mdn13c_bare_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: mdn13c_drain
+    op: covering
+    mode: lazy
+    layers: [mvsd, mdn13c_bare_ncomp]
+  - name: mdn13c_two_ncomp
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13c_drain, ncomp]
+  - name: mdn13c_viol
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_two_ncomp, mdn13c_source_side]
+  # ---- MDN.13d ---------------------------------------------------
+  # A finger's source: NCOMP touching a gate that is inside the marker, minus the gate.
+  - name: mdn_gate_in_mvsd
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_xtor, mvsd]
+  - name: mdn_source_touch
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdn_gate_in_mvsd]
+  - name: mdn_source
+    op: difference
+    mode: lazy
+    layers: [mdn_source_touch, poly2_drawn]
+  - name: mdn_ldnmos
+    op: difference
+    mode: lazy
+    layers: [poly_mdn, mvsd]
+  - name: mdn_ncomp_no_poly
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  # MDN.13d: the P-sub ring around every two fingers, and the butted-tap case it excludes.
+  - name: mdn13d_drain
+    op: covering
+    mode: lazy
+    layers: [mvsd_mdn, mdn_ncomp_no_poly]
+  - name: mdn13d_single
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13d_drain, ncomp]
+  - name: mdn13d_multi
+    op: interacting
+    mode: lazy
+    min: 3
+    max: 3
+    layers: [mdn13d_drain, ncomp]
+  - name: mdn13d_source_closed
+    op: close
+    mode: lazy
+    radius: 1.0
+    layers: [mdn_source]
+  - name: mdn13d_source_ext
+    op: extents
+    mode: lazy
+    layers: [mdn13d_source_closed]
+  - name: mdn13d_no_tap
+    op: difference
+    mode: lazy
+    layers: [mdn13d_source_ext, pcomp]
+  - name: mdn13d_butted_well
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13d_no_tap, mdn_ldnmos]
+  - name: mdn13d_l1
+    op: covering
+    mode: lazy
+    min: 2
+    layers: [pcomp_holes, mdn13d_single]
+  - name: mdn13d_l2a
+    op: covering
+    mode: lazy
+    layers: [pcomp_holes, mdn13d_single]
+  - name: mdn13d_l2
+    op: covering
+    mode: lazy
+    layers: [mdn13d_l2a, mdn13d_multi]
+  - name: mdn13d_viol
+    op: union
+    mode: lazy
+    layers: [mdn13d_l1, mdn13d_l2, mdn13d_butted_well]
   # ---- LDMOS rules the engine can already say ------------------------------
   # MDN.7: NCOMP or gate reaching an MVSD, or COMP inside one, outside the LDMOS marker.
   - name: mdn7_ncomp_at_mvsd
