@@ -15,6 +15,10 @@
 //! below 2^53, so this is exact for the manufacturing grid and the result is
 //! rounded back to integer DBU.
 
+use crate::geom::{
+    ENCLOSURE_MAX_REACH, EnclosurePair, FacingRun, closest, enclosure_pairs, facing_runs,
+    poly_from_merged, width_pairs,
+};
 use crate::layout::FlatLayout;
 use gds21::GdsBoundary;
 use i_overlay::core::fill_rule::FillRule;
@@ -580,6 +584,25 @@ pub enum VirtualOp {
     NotSquare,
     /// Morphological close by `radius` DBU (size-merge); single source.
     Close(i32),
+    /// Where the second layer is enclosed by the first by less than `radius` DBU, as the
+    /// quadrangles spanning the short margin (KLayout `inner.enclosed(outer, v).polygons`).
+    /// Sources are `[outer, inner]`, the order `min_enclosure` names them in.
+    EnclosureBelow(i32),
+    /// The other side of [`EnclosureBelow`]: where the margin *exceeds* `radius` DBU.  A
+    /// maximum has to know the real margin before it can call it too large, so each inner
+    /// wall is measured to its nearest outer one and only then compared - the same reading
+    /// `max_enclosure` takes, and the reason this cannot be the complement of the minimum.
+    ///
+    /// The search stops at [`ENCLOSURE_MAX_REACH`] times the bound: a wall that far off is
+    /// not really the one opposite, and a margin swept to it would be a quadrangle long
+    /// enough to cross whatever the rule uses to confine itself.
+    EnclosureAbove(i32),
+    /// The gaps between two layers narrower than `radius` DBU, as the quadrangles that
+    /// span them (KLayout `a.drc(separation(b) < v).polygons`).  A measurement kept as
+    /// geometry: a spacing *rule* asks whether two shapes are too close, this answers
+    /// where they are close at all, which is what a maximum-distance rule needs - it
+    /// reports the walls this leaves untouched.
+    SeparationBelow(i32),
     /// Morphological open by `radius` DBU (erode-then-dilate); single source.  Removes
     /// every part of a region narrower than `2·radius` — a region that vanishes entirely
     /// has *no* position wider than that, which implements "min. X at one position" rules
@@ -985,6 +1008,119 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
         VirtualOp::WithText | VirtualOp::Extents => Vec::new(),
         // Morphological close of the single source by `r` DBU.  The source tile carries a
         // halo ≥ 2·r (set in run_drc) so dilate-then-erode is exact in the core.
+        VirtualOp::EnclosureAbove(r) => {
+            let (Some(outer), Some(inner)) = (sources.first(), sources.get(1)) else {
+                return Vec::new();
+            };
+            let mut out = Vec::new();
+            for pi in inner.iter().filter_map(|m| poly_from_merged(m, 1.0)) {
+                for po in outer.iter().filter_map(|m| poly_from_merged(m, 1.0)) {
+                    // The nearest outer wall per inner wall is that wall's real margin.
+                    let mut best: HashMap<(i64, i64, i64, i64), EnclosurePair> = HashMap::new();
+                    let reach = r as f64 * ENCLOSURE_MAX_REACH;
+                    for p in enclosure_pairs(&pi, &po, reach, false, false, 0.0).0 {
+                        let k = (
+                            p.edge.0.round() as i64,
+                            p.edge.1.round() as i64,
+                            p.edge.2.round() as i64,
+                            p.edge.3.round() as i64,
+                        );
+                        if best.get(&k).is_none_or(|q| p.dist < q.dist) {
+                            best.insert(k, p);
+                        }
+                    }
+                    out.extend(
+                        best.into_values()
+                            .filter(|p| p.dist > r as f64)
+                            .filter_map(|p| enclosure_quad(&p)),
+                    );
+                }
+            }
+            out
+        }
+        VirtualOp::EnclosureBelow(r) => {
+            let (Some(outer), Some(inner)) = (sources.first(), sources.get(1)) else {
+                return Vec::new();
+            };
+            let mut out = Vec::new();
+            for pi in inner.iter().filter_map(|m| poly_from_merged(m, 1.0)) {
+                for po in outer.iter().filter_map(|m| poly_from_merged(m, 1.0)) {
+                    let (pairs, _) = enclosure_pairs(&pi, &po, r as f64, false, false, 0.0);
+                    for p in pairs {
+                        let (x1, y1, x2, y2) = p.edge;
+                        let (mx, my) = ((x1 + x2) * 0.5, (y1 + y2) * 0.5);
+                        // The probe sits just past the outer wall this margin was measured
+                        // to, so it points the way the margin runs.
+                        let (vx, vy) = (p.probe.0 - mx, p.probe.1 - my);
+                        let l = vx.hypot(vy);
+                        if l <= 0.0 {
+                            continue;
+                        }
+                        let (ox, oy) = (vx / l * p.dist, vy / l * p.dist);
+                        let outer_ring: Vec<IntPoint> =
+                            [(x1, y1), (x2, y2), (x2 + ox, y2 + oy), (x1 + ox, y1 + oy)]
+                                .iter()
+                                .map(|&(x, y)| IntPoint::new(x.round() as i32, y.round() as i32))
+                                .collect();
+                        if ring_area2(&outer_ring).abs() > 0.0 {
+                            out.push(MergedPoly {
+                                outer: outer_ring,
+                                holes: Vec::new(),
+                            });
+                        }
+                    }
+                }
+            }
+            out
+        }
+        VirtualOp::SeparationBelow(r) => {
+            let (Some(a), Some(b)) = (sources.first(), sources.get(1)) else {
+                return Vec::new();
+            };
+            let mut out = Vec::new();
+            for pa in a.iter().filter_map(|m| poly_from_merged(m, 1.0)) {
+                for pb in b.iter().filter_map(|m| poly_from_merged(m, 1.0)) {
+                    // Euclidian, as the rule asks: the facing runs, plus the closest
+                    // approach of the two outlines, which is what carries a corner that
+                    // nears another corner without any wall facing it.
+                    let mut runs = facing_runs(&pa, &pb, r as f64, 0.0, false);
+                    let (d, ca, cb) = closest(&pa, &pb, 0.0, false);
+                    // Only where no wall faces another: two corners that near each other
+                    // are within the euclidian distance the rule asks for, and no facing
+                    // run describes them.
+                    if runs.is_empty() && d < r as f64 {
+                        let (vx, vy) = (cb.0 - ca.0, cb.1 - ca.1);
+                        let l = vx.hypot(vy).max(1.0);
+                        let (px, py) = (-vy / l, vx / l);
+                        runs.push(FacingRun {
+                            gap: d,
+                            a: (ca.0 - px, ca.1 - py, ca.0 + px, ca.1 + py),
+                            b: (cb.0 - px, cb.1 - py, cb.0 + px, cb.1 + py),
+                            closest: (ca, cb),
+                        });
+                    }
+                    for run in runs {
+                        let quad = [
+                            (run.a.0, run.a.1),
+                            (run.a.2, run.a.3),
+                            (run.b.2, run.b.3),
+                            (run.b.0, run.b.1),
+                        ];
+                        let outer: Vec<IntPoint> = quad
+                            .iter()
+                            .map(|&(x, y)| IntPoint::new(x.round() as i32, y.round() as i32))
+                            .collect();
+                        if ring_area2(&outer).abs() > 0.0 {
+                            out.push(MergedPoly {
+                                outer,
+                                holes: Vec::new(),
+                            });
+                        }
+                    }
+                }
+            }
+            out
+        }
         VirtualOp::Close(r) => closing(sources[0], r as f64),
         VirtualOp::Open(r) => opening(sources[0], r as f64),
         VirtualOp::Grow(r, m) => grow_by(sources[0], r as f64, m as f64),
@@ -1006,6 +1142,28 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
     }
 }
 
+/// The margin a pair measures, as the quadrangle spanning it: the inner wall, swept to the
+/// outer wall it was measured to.  The probe sits just past that wall, which is what says
+/// which way the sweep runs.
+fn enclosure_quad(p: &EnclosurePair) -> Option<MergedPoly> {
+    let (x1, y1, x2, y2) = p.edge;
+    let (mx, my) = ((x1 + x2) * 0.5, (y1 + y2) * 0.5);
+    let (vx, vy) = (p.probe.0 - mx, p.probe.1 - my);
+    let l = vx.hypot(vy);
+    if l <= 0.0 {
+        return None;
+    }
+    let (ox, oy) = (vx / l * p.dist, vy / l * p.dist);
+    let outer: Vec<IntPoint> = [(x1, y1), (x2, y2), (x2 + ox, y2 + oy), (x1 + ox, y1 + oy)]
+        .iter()
+        .map(|&(x, y)| IntPoint::new(x.round() as i32, y.round() as i32))
+        .collect();
+    (ring_area2(&outer).abs() > 0.0).then_some(MergedPoly {
+        outer,
+        holes: Vec::new(),
+    })
+}
+
 /// Build a lazy virtual layer's tiles from its (already tiled) source layers — one
 /// boolean op per tile, run across tiles in parallel.
 fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
@@ -1016,7 +1174,11 @@ fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
     // bounded by the base and Intersection by the keys common to every source.
     let keys: HashSet<(i32, i32)> = match op {
         VirtualOp::Difference => first.keys().copied().collect(),
-        VirtualOp::Intersection => {
+        // A gap only materialises in a tile that holds both sides of it.
+        VirtualOp::SeparationBelow(_)
+        | VirtualOp::EnclosureBelow(_)
+        | VirtualOp::EnclosureAbove(_)
+        | VirtualOp::Intersection => {
             let mut acc: HashSet<(i32, i32)> = first.keys().copied().collect();
             for m in rest {
                 acc.retain(|k| m.contains_key(k));
@@ -1332,6 +1494,11 @@ fn seg_cross_param(e: &Edge, f: &Edge) -> Option<f64> {
 pub enum EdgeOp {
     /// Every contour segment of the source *polygon* layer (KLayout `.edges`).
     Edges,
+    /// The walls of the source *polygon* layer that face another wall closer than the
+    /// value, both walls of each pair (KLayout `layer.width(v).edges`).  A measurement
+    /// kept as geometry rather than reported: the width rules answer "is this too
+    /// narrow", this answers "which walls are", so a rule can then ask where they lie.
+    WidthBelow(i32),
     /// The stretches two edge layers have in common (KLayout edge `.and`).  Collinear
     /// overlap, not shared area.
     And,
@@ -1380,7 +1547,7 @@ pub enum EdgeOp {
 impl EdgeOp {
     /// True if the op's sources are polygon layers rather than edge layers.
     fn takes_polygons(self) -> bool {
-        matches!(self, EdgeOp::Edges)
+        matches!(self, EdgeOp::Edges | EdgeOp::WidthBelow(_))
     }
     /// True if source[1] is a polygon layer while source[0] is an edge layer.
     fn mixes(self) -> bool {
@@ -1441,6 +1608,34 @@ fn compose_edge_tile(
     core: (i64, i64, i64, i64),
 ) -> Vec<Edge> {
     match op {
+        EdgeOp::WidthBelow(v) => poly_srcs
+            .first()
+            .map(|ps| {
+                let limit = v as f64;
+                ps.iter()
+                    .flat_map(|p| {
+                        width_pairs(
+                            p,
+                            Core {
+                                x0: core.0,
+                                y0: core.1,
+                                x1: core.2,
+                                y1: core.3,
+                            },
+                            |w| w < limit,
+                            |_, _| true,
+                            false,
+                            true,
+                            0.0,
+                        )
+                    })
+                    .map(|(x1, y1, x2, y2, _)| Edge {
+                        a: IntPoint::new(x1.round() as i32, y1.round() as i32),
+                        b: IntPoint::new(x2.round() as i32, y2.round() as i32),
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
         EdgeOp::Edges => poly_srcs
             .first()
             .map(|ps| {
@@ -3124,7 +3319,7 @@ impl MergedCache {
     /// layer - so it agrees with itself or admits it has no single region.
     pub fn edge_base_region(&self, key: (i16, i16)) -> Option<(i16, i16)> {
         let def = self.edge_defs.get(&key)?;
-        if def.op == EdgeOp::Edges {
+        if def.op == EdgeOp::Edges || matches!(def.op, EdgeOp::WidthBelow(_)) {
             return def.sources.first().copied();
         }
         if def.op == EdgeOp::Or {

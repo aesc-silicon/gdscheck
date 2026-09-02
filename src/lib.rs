@@ -6,6 +6,7 @@ pub mod cache;
 pub mod checks;
 pub mod connectivity;
 pub mod flatten;
+pub mod geom;
 pub mod layout;
 pub mod merge;
 pub mod pdk;
@@ -215,6 +216,18 @@ pub fn parse_virtual_op(
             let (lo, hi) = bounds()?;
             WithBBoxMax(lo, hi)
         }
+        "enclosure_above" => {
+            let v = min.ok_or_else(|| format!("virtual op '{op}' requires a `min`"))?;
+            EnclosureAbove((v / dbu_to_um).round() as i32)
+        }
+        "enclosure_below" => {
+            let v = max.ok_or_else(|| format!("virtual op '{op}' requires a `max`"))?;
+            EnclosureBelow((v / dbu_to_um).round() as i32)
+        }
+        "separation_below" => {
+            let v = max.ok_or_else(|| format!("virtual op '{op}' requires a `max`"))?;
+            SeparationBelow((v / dbu_to_um).round() as i32)
+        }
         "close" => Close(radius_dbu()?),
         "open" => Open(radius_dbu()?),
         // Slack is opt-in; see `VirtualLayerDef::slack` for the one case that wants it.
@@ -274,6 +287,10 @@ pub fn parse_edge_op(
         // `centers(length, fraction)`: `min` is the absolute length in µm, `fraction` the
         // relative one, and KLayout keeps whichever is longer.  Neither given would keep
         // the edge entire, which is not what any deck means by asking for its centre.
+        "width_below" => {
+            let v = max.ok_or_else(|| format!("edge op '{op}' requires a `max`"))?;
+            merge::EdgeOp::WidthBelow((v / dbu_to_um).round() as i32)
+        }
         "centers" => {
             if min.is_none() && fraction.is_none() {
                 return Err(format!("edge op '{op}' requires a `min` and/or `fraction`"));
@@ -331,6 +348,10 @@ fn propagate_virtual_halos(
         }
         let extra = match op {
             merge::VirtualOp::Close(r) | merge::VirtualOp::Open(r) => 2 * r,
+            // Reads to the far side of the gap it measures.
+            merge::VirtualOp::SeparationBelow(r)
+            | merge::VirtualOp::EnclosureBelow(r)
+            | merge::VirtualOp::EnclosureAbove(r) => *r,
             merge::VirtualOp::Grow(r, _)
             | merge::VirtualOp::GrowX(r)
             | merge::VirtualOp::GrowY(r) => *r,
@@ -582,6 +603,22 @@ pub fn run_drc(
         );
         if halo_by_layer == before {
             break;
+        }
+    }
+
+    // An edge layer built from a measurement reads as far as the measurement does, so its
+    // source has to be tiled with at least that much halo - the same claim `close` and
+    // `grow` make, and the reason a measurement can be a layer at all.
+    for spec in pdk.tiled_edge_layers() {
+        if spec.op != "width_below" {
+            continue;
+        }
+        if let Some(v) = spec.max {
+            let need = (v / dbu_to_um).ceil() as i32;
+            for src in &spec.sources {
+                let e = halo_by_layer.entry(*src).or_insert(0);
+                *e = (*e).max(need);
+            }
         }
     }
 

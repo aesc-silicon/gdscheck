@@ -78,7 +78,7 @@ const D: &str = "tests/data/gf180mcuD";
 #[case("dummy_exclude", "dummy_exclude.gds.gz", "10_8_DE", 4, 1)]
 #[case("ldpmos", "ldpmos.gds.gz", "10_12_2_MDP", 212, 2)]
 #[case("nat", "nat.gds.gz", "10_5_NAT", 31, 2)]
-#[case("ldnmos", "ldnmos.gds.gz", "10_12_1_MDN", 674, 13)]
+#[case("ldnmos", "ldnmos.gds.gz", "10_12_1_MDN", 709, 13)]
 #[case("lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL", 165, 0)]
 #[case("efuse", "efuse.gds.gz", "10_11_EFUSE", 809, 1)]
 #[case("hres", "hres.gds.gz", "10_3_HRES", 149, 2)]

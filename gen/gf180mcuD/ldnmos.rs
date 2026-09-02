@@ -243,6 +243,23 @@ pub fn generate(pdk: &PdkConfig) {
             },
         ),
         (
+            "MDN.12",
+            Dev {
+                drain_h: 6.01,
+                ..good
+            },
+        ),
+        (
+            "MDN.4a",
+            Dev {
+                width: 3.995,
+                // The drain has to shrink with the device or it comes within MDN.12's
+                // half micron of the drift's own edge.
+                drain_h: 3.0,
+                ..good
+            },
+        ),
+        (
             "MDN.11",
             Dev {
                 over_drift: 0.405,
@@ -297,7 +314,8 @@ pub fn generate(pdk: &PdkConfig) {
     let bar = |x: f64, y: f64, w: f64, h: f64| rect(c.mvsd, x, y, x + w, y + h);
 
     // A drift that is a device, for the fixtures that need one where a bare bar of MVSD
-    // would answer for MDN.11 instead: a gate crossing the near edge by exactly the 0.4
+    // would answer for MDN.11 instead.  `h` is the transistor's width, so it has to clear
+    // MDN.4a's 4 µm with the 0.3 the active is inset by at each end: a gate crossing the near edge by exactly the 0.4
     // MDN.11 fixes, reaching 0.4 past the active for MDN.10b, the source it sits on, and a
     // bare drain island in the drift.  `right` puts the source on the far side, for a
     // fixture with something to its left; `plain` adds a third active so the drift meets
@@ -499,7 +517,7 @@ pub fn generate(pdk: &PdkConfig) {
     // MDN.5aii: a P+ active that *does* touch an N+, closer than 0.92 µm to a drift.  The
     // N+ it touches runs onto the drift, or MDN.9 measures that instead.
     let pbutt = |gap: f64| {
-        let mut v = device_bar(o + 6.0, o + 13.0, 5.0, 2.0, false, true);
+        let mut v = device_bar(o + 6.0, o + 13.0, 5.0, 5.0, false, true);
         v.extend(ncomp(o + 9.0, o + 13.5, o + 11.0 + gap, o + 14.5));
         v.extend(pcomp(o + 11.0 + gap, o + 13.5, o + 13.0 + gap, o + 14.5));
         v
@@ -642,6 +660,6 @@ pub fn generate(pdk: &PdkConfig) {
     write(
         "MDN.17",
         "bad",
-        outside_ring(device_bar(o + 28.0, o + 6.0, 2.0, 4.0, true, false)),
+        outside_ring(device_bar(o + 28.0, o + 6.0, 2.0, 5.0, true, false)),
     );
 }

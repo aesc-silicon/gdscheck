@@ -27,6 +27,7 @@
 //! direction of the contour they were extracted from, so an edge still knows which side
 //! its material is on however many booleans later it is read.
 
+use crate::geom::MAX_REACH;
 use crate::layout::FlatLayout;
 use crate::merge::{Core, Edge, IntPoint, MergedCache};
 use crate::pdk::RuleDefinition;
@@ -121,12 +122,6 @@ pub fn run_max_width(
 ) -> Vec<Violation> {
     run(rule, layout, dbu_to_um, merged, Rel::Width, true)
 }
-
-/// How far past its own limit a maximum looks for the facing wall, in multiples of the
-/// limit.  A width that exceeds the limit by more than this is not measured and so not
-/// reported: the check would rather miss one than invent a width to a wall that is not
-/// really opposite.
-const MAX_REACH: f64 = 4.0;
 
 /// One offending pair: the margin measured, and the two points that measure it.
 type Pair = (f64, (f64, f64), (f64, f64));

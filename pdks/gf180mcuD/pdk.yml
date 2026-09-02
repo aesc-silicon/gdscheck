@@ -3670,6 +3670,39 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [mdn11_no_gate, mdn11_no_drain]
+  # ---- MDN.12 -------------------------------------------------------------
+  # The drain's active must sit 0.5 inside the drift, and a drift with no drain in it at
+  # all is the other half of the rule.  The two halves read different actives: the
+  # enclosure is measured on the marked device's, the missing drain on any.
+  - name: mdn12_bare_ncomp_mdn
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp_mdn, poly2_drawn]
+  - name: mdn12_bare_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: mdn12_drift
+    op: covering
+    mode: lazy
+    layers: [mvsd_mdn, mdn12_bare_ncomp_mdn]
+  - name: mdn12_short
+    op: enclosure_below
+    max: 0.5
+    mode: lazy
+    layers: [mdn12_drift, ncomp_mdn]
+  - name: mdn12_short_off_poly
+    op: not_overlapping
+    mode: lazy
+    layers: [mdn12_short, poly2_drawn]
+  - name: mdn12_no_drain
+    op: not_covering
+    mode: lazy
+    layers: [mvsd_mdn, mdn12_bare_ncomp]
+  - name: mdn12_viol
+    op: union
+    mode: lazy
+    layers: [mdn12_short_off_poly, mdn12_no_drain]
   # ---- MDN.13c ------------------------------------------------------------
   # A finger with source on both sides: the source is the active meeting a gate that is
   # inside a drift, minus the gate; a source meeting two gates is one shared between
@@ -4511,6 +4544,13 @@ edge_layers:
   - name: ldnmos_gate_ends
     op: and
     layers: [ldnmos_body.edges, ncomp.edges]
+  - name: mdn4a_narrow
+    op: width_below
+    max: 4.0
+    layers: [ldnmos_body]
+  - name: mdn4a_viol
+    op: and
+    layers: [ldnmos_gate_ends, mdn4a_narrow]
   - name: ldpmos_body.edges
     op: edges
     layers: [ldpmos_body]

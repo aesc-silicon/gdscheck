@@ -582,3 +582,79 @@ fn extents_measures_the_whole_region_across_tiles() {
         vec![(0, 0, 500, 40)]
     );
 }
+
+/// `separation_below` keeps the gap itself, not the shapes either side of it: two walls
+/// 30 DBU apart with the limit at 50 give one region spanning exactly that gap, over the
+/// stretch the two walls face each other along.  Past the limit there is nothing to keep.
+///
+/// This is a measurement used as geometry — the thing a maximum-distance rule needs, which
+/// reports the walls such a region leaves untouched rather than the region itself.
+#[test]
+fn separation_below_spans_the_gap_between_facing_walls() {
+    let a = [rect(A, 0, 0, 100, 100)];
+    let b = [rect(B, 130, 20, 200, 80)];
+
+    let got = run(VirtualOp::SeparationBelow(50), &a, &b);
+    assert_eq!(got, vec![(100, 20, 130, 80)]);
+
+    // The same pair with the limit under the gap: nothing faces closely enough.
+    assert!(run(VirtualOp::SeparationBelow(20), &a, &b).is_empty());
+}
+
+/// It needs both sides: a gap has two walls, so a tile holding only one of them has none.
+#[test]
+fn separation_below_needs_both_sides() {
+    let a = [rect(A, 0, 0, 100, 100)];
+    assert!(run(VirtualOp::SeparationBelow(50), &a, &[]).is_empty());
+}
+
+/// `enclosure_below` keeps the short margin itself: an inner square sitting 10 DBU inside
+/// an outer one, with the limit at 30, gives the four bands of margin that fall short.
+/// Raise the enclosure past the limit and there is nothing short to keep.
+#[test]
+fn enclosure_below_spans_the_short_margin() {
+    let outer = [rect(A, 0, 0, 200, 200)];
+    let inner = [rect(B, 10, 10, 190, 190)];
+
+    let got = run(VirtualOp::EnclosureBelow(30), &outer, &inner);
+    assert_eq!(
+        got,
+        vec![
+            (0, 10, 10, 190),
+            (10, 0, 190, 10),
+            (10, 190, 190, 200),
+            (190, 10, 200, 190),
+        ]
+    );
+
+    // The same pair measured against a limit the margin already clears.
+    assert!(run(VirtualOp::EnclosureBelow(5), &outer, &inner).is_empty());
+}
+
+/// `enclosure_above` is the other side of the same measurement: with the inner square 10
+/// DBU inside the outer one and the bound at 8, every margin exceeds it and all four bands
+/// come back.  Raise the bound past the margin and none does.
+///
+/// The bound also sets how far the search looks — `ENCLOSURE_MAX_REACH` times it — so a
+/// margin further off than that is deliberately not measured: the wall that far away is
+/// the far side of the enclosing shape, not the one this margin runs to.  Here 8 reaches
+/// 16, comfortably past the margin of 10; at a bound of 5 it would reach only 10 and the
+/// margin would sit on the edge of being seen at all.
+#[test]
+fn enclosure_above_spans_the_margin_that_exceeds_the_bound() {
+    let outer = [rect(A, 0, 0, 200, 200)];
+    let inner = [rect(B, 10, 10, 190, 190)];
+
+    let got = run(VirtualOp::EnclosureAbove(8), &outer, &inner);
+    assert_eq!(
+        got,
+        vec![
+            (0, 10, 10, 190),
+            (10, 0, 190, 10),
+            (10, 190, 190, 200),
+            (190, 10, 200, 190),
+        ]
+    );
+
+    assert!(run(VirtualOp::EnclosureAbove(30), &outer, &inner).is_empty());
+}
