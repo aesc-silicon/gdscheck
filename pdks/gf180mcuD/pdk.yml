@@ -513,7 +513,9 @@ virtual_layers:
     layers: [metal5_drawn, metal5_dummy]
 
   # ---- Top-of-stack aliases ----------------------------------------------
-  # On a 5LM stack the top metal is Metal5, so the metaltop deck runs against it.
+  # Metal5 and Via4.  Upstream's METAL_STACK_MAP gives 5LM `top_metal: metal5` and
+  # `top_via: via4`, and registers no MetalTop or Via5 at all for this variant.
+  #
   # A single-source union is the alias: it renames without copying a rule set.
   - name: top_metal_drawn
     op: union
@@ -1200,6 +1202,76 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [comp, guard_ring_mk]
+  # The guard ring's own shapes sit on the marker; GR.2 measures the prime die's, which
+  # do not.
+  - name: comp_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [comp, guard_ring_mk]
+  - name: nwell_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [nwell, guard_ring_mk]
+  - name: poly2_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [poly2, guard_ring_mk]
+  - name: metal1_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [metal1, guard_ring_mk]
+  - name: metal2_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [metal2, guard_ring_mk]
+  - name: metal3_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [metal3, guard_ring_mk]
+  - name: metal4_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [metal4, guard_ring_mk]
+  - name: metal5_prime
+    op: not_overlapping
+    mode: lazy
+    layers: [metal5, guard_ring_mk]
+  - name: contact_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [contact, guard_ring_mk]
+  - name: via1_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via1, guard_ring_mk]
+  - name: via2_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via2, guard_ring_mk]
+  - name: via3_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via3, guard_ring_mk]
+  - name: via4_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via4, guard_ring_mk]
+  - name: pcomp_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [pcomp, guard_ring_mk]
+  - name: gr1_mk_viol
+    op: difference
+    mode: lazy
+    layers: [guard_ring_mk, comp_in_guard_ring]
+  - name: gr1_comp_viol
+    op: difference
+    mode: lazy
+    layers: [comp_in_guard_ring, guard_ring_mk]
+  - name: gr3_viol
+    op: difference
+    mode: lazy
+    layers: [comp_in_guard_ring, pplus]
   - name: guard_ring_no_pad
     op: not_interacting
     mode: lazy
@@ -1332,6 +1404,21 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [poly_nat, res_mk]
+  # NAT.9: poly under the marker that runs from one of its gates to another is an
+  # interconnect, and poly that belongs to no gate of it has to keep its distance.
+  - name: nat9_gate
+    op: intersection
+    mode: lazy
+    layers: [ngate, nat]
+  - name: nat9_interconnect
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [poly_nat, nat9_gate]
+  - name: poly_off_nat
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, nat]
   - name: nat12_viol
     op: union
     mode: lazy
@@ -2668,6 +2755,12 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [hres_poly_pp, sab]
+  # HRES.10: where the P+ implant and the block overlap on the resistor, the overlap has
+  # one width and the rule fixes it.
+  - name: hres10_overlap
+    op: intersection
+    mode: lazy
+    layers: [pplus, hres9_sab]
   - name: hres1_poly
     op: interacting
     mode: lazy
@@ -2980,6 +3073,18 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [poly_or_plfuse, efuse_mk]
+  - name: ef04a_no_source
+    op: not_interacting
+    mode: lazy
+    layers: [plfuse_efuse, lvs_source]
+  - name: ef04a_no_poly
+    op: not_interacting
+    mode: lazy
+    layers: [plfuse_efuse, poly2_drawn]
+  - name: ef04a_viol
+    op: union
+    mode: lazy
+    layers: [ef04a_no_source, ef04a_no_poly]
   - name: ef01_viol
     op: not_inside
     mode: lazy
@@ -4490,6 +4595,18 @@ edge_layers:
   - name: poly2.edges
     op: edges
     layers: [poly2_drawn]
+  - name: guard_ring_mk.edges
+    op: edges
+    layers: [guard_ring_mk]
+  - name: plfuse_efuse.edges
+    op: edges
+    layers: [plfuse_efuse]
+  - name: ef04a_off_poly
+    op: not
+    layers: [plfuse_efuse.edges, poly2.edges]
+  - name: ef04a_long_off
+    op: outside_part
+    layers: [ef04a_off_poly, poly2_drawn]
   - name: pp4b_poly
     op: inside_part
     layers: [poly2.edges, ngate_reach_flat]

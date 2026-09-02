@@ -47,6 +47,9 @@ struct Ctx {
 
 /// One resistor, every margin overridable so a rule's bad half moves exactly one of them.
 struct Cell {
+    /// How far the implant reaches past the body.  A fixture that pulls the block in
+    /// moves this with it, so the 0.1 µm overlap HRES.10 fixes is left where it was.
+    pp: f64,
     x: f64,
     y: f64,
     width: f64,
@@ -61,6 +64,7 @@ struct Cell {
 impl Cell {
     fn at(x: f64, y: f64) -> Self {
         Cell {
+            pp: PP,
             x,
             y,
             width: WIDTH,
@@ -83,11 +87,17 @@ impl Cell {
         let (x, y, w) = (self.x, self.y, self.width);
         let pp_x0 = match self.pp_left {
             Some(margin) => self.contacts()[0] - margin,
-            None => x - PP,
+            None => x - self.pp,
         };
         let mut v = vec![
             rect(c.poly, x, y, x + LEN, y + w),
-            rect(c.pplus, pp_x0, y - PP, x + LEN + PP, y + w + PP),
+            rect(
+                c.pplus,
+                pp_x0,
+                y - self.pp,
+                x + LEN + self.pp,
+                y + w + self.pp,
+            ),
             rect(
                 c.sab,
                 x + SAB_IN,
@@ -149,9 +159,20 @@ pub fn generate(pdk: &PdkConfig) {
     };
     let clean = || Cell::at(o, o).draw(&c);
 
+    // HRES.10 fixes how far the implant reaches past the block at 0.1 µm, and the clean
+    // cell already sits there - the implant runs 0.5 µm past the poly and the block 0.4.
+    // Pulling the block in widens the overlap without moving the implant.
+    let overlap = |sab_w: f64| {
+        let mut cell = Cell::at(o, o);
+        cell.sab_w = sab_w;
+        cell.draw(&c)
+    };
+
+    write("HRES.10", "bad", overlap(0.395));
+
     for id in [
         "HRES.1", "HRES.2", "HRES.3", "HRES.4", "HRES.5", "HRES.6", "HRES.7", "HRES.8", "HRES.9",
-        "HRES.12a",
+        "HRES.10", "HRES.12a",
     ] {
         write(id, "good", clean());
     }
@@ -219,10 +240,13 @@ pub fn generate(pdk: &PdkConfig) {
         cell.draw(&c)
     });
 
-    // HRES.9: the SAB overhanging the body by only 0.275 µm in the width direction.
+    // HRES.9: the SAB overhanging the body by only 0.275 µm in the width direction.  The
+    // implant comes in with it: leaving the implant where it was would widen its reach
+    // past the block, which is HRES.10's business and not this rule's.
     write("HRES.9", "bad", {
         let mut cell = Cell::at(o, o);
         cell.sab_w = 0.275;
+        cell.pp = 0.375;
         cell.draw(&c)
     });
 

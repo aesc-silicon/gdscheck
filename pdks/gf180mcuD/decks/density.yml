@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Global layer density.  9 of the 10 rules in this section.
-#
-# Not ported: MT30.7.
+# Global layer density.  All 9 rules in this section.
 rules:
   - id: DCF.1b
     check: min_density

@@ -2,9 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Contact.  14 of the 15 rules in this section.
-#
-# Not ported: CO.2b.
+# Contact.  All 15 rules in this section.
 rules:
   - id: CO.1
     check: exact_width
@@ -91,3 +89,13 @@ rules:
     check: nonempty
     layers: [co9_viol]
     value: 0.0
+  - id: CO.2b
+    check: min_array_space
+    layers: [contact]
+    value: 0.28
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.32
+      count: 16

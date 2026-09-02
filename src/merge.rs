@@ -3065,6 +3065,19 @@ impl MergedCache {
         self.halo_by_layer.get(&key).copied().unwrap_or(0)
     }
 
+    /// Whether any other virtual or edge layer is built from `key`.  A layer that feeds
+    /// one is on its sources' tiling reach and has to stay there; a layer that feeds only
+    /// rules can be put back on the drawn layers' halo contract.
+    fn feeds_another_layer(&self, key: (i16, i16)) -> bool {
+        self.virtual_defs
+            .iter()
+            .any(|(k, d)| *k != key && d.sources.contains(&key))
+            || self
+                .edge_defs
+                .iter()
+                .any(|(k, d)| *k != key && d.sources.contains(&key))
+    }
+
     pub fn new(tile_dbu: i32, halo_dbu: i32, halo_by_layer: HashMap<(i16, i16), i32>) -> Self {
         Self {
             tile_dbu,
@@ -3383,6 +3396,18 @@ impl MergedCache {
                     .map(|s| &self.layers[s])
                     .unwrap_or(&empty);
                 let tiles = build_selection_tiles(cand, filt, kind, keep, count, self.tile_dbu);
+                // Same story as the region filters above, with the same limit: a selector
+                // that something else is built from must keep the reach its sources were
+                // tiled with, but one that nothing reads but a rule has no such downstream,
+                // and a spacing rule on it has to see across a tile edge.  GF180's GR.2
+                // measures `metal1_prime` (metal not overlapping the seal-ring marker)
+                // against the marker, and without this five of its walls fall in a
+                // neighbouring tile's core and go unreported.
+                let tiles = if self.feeds_another_layer(key) {
+                    tiles
+                } else {
+                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key))
+                };
                 self.layers.insert(key, tiles);
                 return;
             }

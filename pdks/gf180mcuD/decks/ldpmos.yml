@@ -6,11 +6,6 @@
 #
 # Not ported: MDP.10, MDP.11, MDP.13b, MDP.13c, MDP.17a, MDP.2, MDP.3, MDP.3c, MDP.9b,
 # MDP.9c.
-#
-# MDP.2 is MDN.4a at this polarity and is out for the same reason; see the ldnmos deck.
-#
-# MDP.3c is `max_distance` over a count: the reference asks for four sides of the tab
-# within 15 um, not every edge of it, so a tab with more than four reads as a violation.
 rules:
   - id: MDP.1
     check: min_enclosure

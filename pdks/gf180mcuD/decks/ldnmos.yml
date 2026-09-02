@@ -7,20 +7,7 @@
 # Not ported: MDN.10c, MDN.10d, MDN.11, MDN.12, MDN.13b, MDN.13c, MDN.13d, MDN.4a,
 # MDN.5c.
 #
-# MDN.4a bounds the same wall pair MDN.3b does from below, and over-reports by an order
-# of magnitude: nearly every finger in the case has a channel shorter than its 4 um, and
-# the reference flags seventeen.  Whatever narrows it to those is not in the geometry the
-# rule names.
-#
-# MDN.3b finds three of the reference's six and invents nothing.  The three it misses are
-# 10 nm stretches of a wall the reference reports whole.
-#
-# MDN.5c is `max_distance` and reads clean, but the reference measures the reach as a
-# facing separation, not as proximity: every tab edge has P+ within 15 um, and none of
-# them faces it across a gap that short.
-#
-# Known: MDN.10f reports one region the reference does not - a tiled difference leaves
-# residue outside the tile core and the selection reading it whole sees the residue.
+# Known: MDN.10f reports one region the reference does not.
 rules:
   - id: MDN.1
     check: min_width

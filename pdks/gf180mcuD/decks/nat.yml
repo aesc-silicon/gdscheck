@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Native Vt device.  10 of the 12 rules in this section.
+# Native Vt device.  11 of the 12 rules in this section.
 #
-# Not ported: NAT.6, NAT.9.
+# Not ported: NAT.6.
 rules:
   - id: NAT.1
     check: min_enclosure
@@ -52,3 +52,11 @@ rules:
     check: nonempty
     layers: [nat12_viol]
     value: 0.0
+  - id: NAT.9
+    check: nonempty
+    layers: [nat9_interconnect]
+    value: 0.0
+  - id: NAT.9
+    check: min_space
+    layers: [nat, poly_off_nat]
+    value: 0.3

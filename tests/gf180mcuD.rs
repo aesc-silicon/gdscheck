@@ -83,6 +83,30 @@ fn counts_at(deck: &str, path: &str, topcell: &str) -> Vec<(String, usize)> {
 // invented, so an improvement passes and only a regression fails; and the generated
 // good/bad patterns below say whether a rule is *right*, on geometry drawn here for it.
 
+/// A real seal ring, and the shape the generated patterns are modelled on: a band 16 µm
+/// wide with a 45° chamfer across each corner, its active drawn as four corner pieces and
+/// four bars, the marker one annulus over the same outline, and contacts and vias 0.7 µm
+/// apart filling it.  Upstream implements no GR rule at all - `guard_ring_mk` appears in
+/// KLayout's deck only as an exclusion for other sections - so there is no reference to
+/// score this against and the count below is a golden, not a verdict on the design.
+///
+/// GR.2 is the one that fires: the prime die's metal stands 8.8 µm off the marker on every
+/// level, where the table asks for ten.  Everything else the ring satisfies, two of them
+/// exactly - its active is 16 µm against GR.6's minimum of 16, and its contacts and vias
+/// sit at 0.7000 µm against GR.7 and GR.8's 0.7.
+///
+/// It is also the case that found the halo the region selectors were missing: GR.2 reads
+/// `metal1_prime` and its siblings, which are selections, and a selection comes back with
+/// one piece per region per tile and no halo copies; five of these walls fell in a
+/// neighbouring tile's core and went unreported until the count below was 130.
+#[test]
+fn guard_ring_on_a_real_seal_ring() {
+    assert_eq!(
+        counts("guard_ring", "guardring.gds.gz", "TOP"),
+        vec![("GR.2".to_string(), 145)]
+    );
+}
+
 /// Every rule the deck declares must appear in the run above. A rule that resolves to an
 /// empty derived layer produces no violations and no error, so without this a typo in a
 /// layer name looks exactly like a clean design.
@@ -268,6 +292,10 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     // as `contact.and(sab)`.  A contact *on* the block is the second half of one and the
     // whole of the other, so it breaks both by construction.
     ("sab", "SB.8", "SB.4"),
+    // GR.3 wants the implant over the ring's active and GR.6 wants that active 16 µm
+    // wide.  Uncovering any of it is what GR.3 forbids and what narrows what GR.6
+    // measures, so no geometry breaks one alone.
+    ("guard_ring", "GR.3", "GR.6"),
     // MDN.4b caps the transistor's width and MDN.13a the length of the body that carries
     // it, and on this device they are the same measurement seen from two sides: the
     // foundry's own report draws MDN.13a on a body's long walls and MDN.4b on the two
@@ -296,9 +324,16 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     ("efuse", "EF.08", "EF.22b"),
     ("efuse", "EF.22a", "EF.22b"),
     ("efuse", "EF.22b", "EF.22a"),
+    // The shoulders are the only pair a drawing can reach through the link's own width,
+    // and EF.02 fixes that width, so narrowing a shoulder is widening the link past it.
+    ("efuse", "EF.22a", "EF.02"),
+    ("efuse", "EF.22b", "EF.02"),
     // A shape that is no longer a rectangle has an edge that is no longer its old length,
     // and every edge of this device is pinned by something.
     ("efuse", "EF.04b", "EF.03"),
+    // And a shape that is no longer a rectangle has no one width, so EF.02 - which fixes
+    // the link's - reads it as the wrong one wherever the bend put it.
+    ("efuse", "EF.04b", "EF.02"),
     ("efuse", "EF.04c", "EF.06"),
     ("efuse", "EF.04c", "EF.07"),
     ("efuse", "EF.04d", "EF.08"),

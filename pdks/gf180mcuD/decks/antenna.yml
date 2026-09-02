@@ -2,10 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Antenna ratios.  20 of the 26 rules in this section.
-#
-# Not ported: ANT.16_i_ANT.13, ANT.16_i_ANT.7, ANT.16_ii_ANT.13, ANT.16_ii_ANT.7,
-# ANT.16_iii_ANT.14_M3_MIMA, ANT.16_iii_ANT.15_V2_MIMA.
+# Antenna ratios.  All 24 rules of the five-metal, MIM-B variant.
 rules:
   - id: ANT.1
     check: antenna_ratio

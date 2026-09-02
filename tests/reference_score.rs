@@ -77,15 +77,15 @@ const D: &str = "tests/data/gf180mcuD";
 #[case("antenna", "antenna-1.gds.gz", "8_0_ANT", 10, 4)]
 #[case("dummy_exclude", "dummy_exclude.gds.gz", "10_8_DE", 4, 1)]
 #[case("ldpmos", "ldpmos.gds.gz", "10_12_2_MDP", 212, 2)]
-#[case("nat", "nat.gds.gz", "10_5_NAT", 28, 2)]
-#[case("ldnmos", "ldnmos.gds.gz", "10_12_1_MDN", 577, 13)]
-#[case("lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL", 156, 0)]
-#[case("efuse", "efuse.gds.gz", "10_11_EFUSE", 657, 1)]
-#[case("hres", "hres.gds.gz", "10_3_HRES", 133, 2)]
+#[case("nat", "nat.gds.gz", "10_5_NAT", 31, 2)]
+#[case("ldnmos", "ldnmos.gds.gz", "10_12_1_MDN", 578, 13)]
+#[case("lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL", 165, 0)]
+#[case("efuse", "efuse.gds.gz", "10_11_EFUSE", 809, 1)]
+#[case("hres", "hres.gds.gz", "10_3_HRES", 149, 2)]
 #[case("dualgate", "dualgate.gds.gz", "7_6_Dualgate", 16, 2)]
 #[case("sram_3p3", "sram_3p3.gds.gz", "sram_3p3", 27, 6)]
 #[case("drc_bjt", "drc_bjt.gds.gz", "DRC_BJT", 6, 0)]
-#[case("nwell", "nwell.gds.gz", "7_4_NWELL", 194, 0)]
+#[case("nwell", "nwell.gds.gz", "7_4_NWELL", 195, 0)]
 #[case("poly2", "poly2.gds.gz", "7_7_Poly2", 260, 11)]
 #[case("dnwell", "dnwell.gds.gz", "7_2_DNWELL", 246, 0)]
 #[case("pres", "pres.gds.gz", "10_1_PRES", 52, 1)]
@@ -96,7 +96,7 @@ const D: &str = "tests/data/gf180mcuD";
     "contact",
     "contact.gds.gz",
     "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
-    163,
+    166,
     8
 )]
 #[case("sram_5p0", "sram_5p0.gds.gz", "sram_5p0", 41, 0)]
