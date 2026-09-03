@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# MIM capacitor, option B - the variant this PDK build selects.  11 of the 12 rules in this section.
+# MIM capacitor, option B - the variant this PDK build selects.  All 12 rules in this section.
 #
-# Not ported: MIMTM.11.
 rules:
   - id: MIMTM.1
     check: min_space
@@ -72,3 +71,7 @@ rules:
     check: nonempty
     layers: [mimtm_4_crossing]
     value: 0.0
+  - id: MIMTM.11
+    check: max_contained_area
+    layers: [mimtm11_plate, fusetop]
+    value: 10000.0

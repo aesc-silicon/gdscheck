@@ -107,6 +107,26 @@ pub fn generate(pdk: &PdkConfig) {
         write(id, "good", clean());
     }
 
+    // MIMTM.11: two caps whose bottom metal is one plate.  Each is well inside MIMTM.8b's
+    // cap on a single MIM; what this rule adds is that they add up against it, so the pair
+    // is drawn either side of that sum.
+    let shared = |side: f64| {
+        let a = Cell {
+            plate: side,
+            ..Cell::at(o, o)
+        };
+        let b = Cell {
+            x: o + side + 2.0 * BOT,
+            plate: side,
+            ..Cell::at(o, o)
+        };
+        let mut v = a.draw(&c);
+        v.extend(b.draw(&c));
+        v
+    };
+    write("MIMTM.11", "good", shared(70.0));
+    write("MIMTM.11", "bad", shared(72.0));
+
     // MIMTM.1: other metal below, 1.2 µm from the virtual plate - which here is the cell's
     // own metal, so the gap is measured from that edge.
     write("MIMTM.1", "bad", {

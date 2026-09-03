@@ -17,8 +17,10 @@ pub mod gate_connected_min_area;
 pub mod gate_length;
 pub mod helper;
 pub mod inside_boundary;
+pub mod max_contained_area;
 pub mod max_distance;
 pub mod max_enclosure;
+pub mod max_nets_under;
 pub mod max_space;
 pub mod max_total_area;
 pub mod max_width;
@@ -36,6 +38,7 @@ pub mod min_space_bent;
 pub mod min_space_different_net;
 pub mod min_space_prl;
 pub mod min_space_same_net;
+pub mod min_via_array;
 pub mod min_width;
 pub mod must_interact;
 pub mod no_angle;
@@ -95,6 +98,8 @@ pub fn run_rule(
         "nonempty" => nonempty::run(rule, layout, dbu_to_um, merged),
         "min_enclosed_area" => min_enclosed_area::run(rule, layout, dbu_to_um, merged),
         "max_area" => area::run_max(rule, layout, dbu_to_um, merged),
+        "max_contained_area" => max_contained_area::run(rule, layout, dbu_to_um, merged),
+        "max_nets_under" => max_nets_under::run(rule, layout, dbu_to_um, merged, conn),
         "max_total_area" => max_total_area::run(rule, layout, dbu_to_um, merged),
         "no_angle" => no_angle::run(rule, layout, dbu_to_um, merged),
         "no_corner" => no_corner::run(rule, layout, dbu_to_um, merged),
@@ -114,6 +119,7 @@ pub fn run_rule(
         }
         "min_space_same_net" => min_space_same_net::run(rule, layout, dbu_to_um, merged, conn),
         "max_space" => max_space::run(rule, layout, dbu_to_um, merged),
+        "min_via_array" => min_via_array::run(rule, layout, dbu_to_um, merged),
         "min_space_bent" => min_space_bent::run(rule, layout, dbu_to_um, merged),
         "min_array_space" => min_array_space::run(rule, layout, dbu_to_um, merged),
         "min_space_prl" => min_space_prl::run(rule, layout, dbu_to_um, merged),

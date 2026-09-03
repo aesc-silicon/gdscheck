@@ -106,6 +106,7 @@ pub fn load_gds(path: &str) -> Result<GdsLibrary, Box<dyn std::error::Error>> {
 pub const NET_AWARE_CHECKS: &[&str] = &[
     "antenna_ratio",
     "gate_connected_min_area",
+    "max_nets_under",
     "min_space_different_net",
     "min_space_same_net",
 ];

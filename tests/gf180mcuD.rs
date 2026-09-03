@@ -292,6 +292,10 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     // as `contact.and(sab)`.  A contact *on* the block is the second half of one and the
     // whole of the other, so it breaks both by construction.
     ("sab", "SB.8", "SB.4"),
+    // MIMTM.8b caps one MIM's area and MIMTM.11 the total sharing a bottom plate.  A
+    // single MIM over the cap is over it both ways, since it is its own plate's whole
+    // total - the rule only adds anything where several share one.
+    ("mim_b", "MIMTM.8b", "MIMTM.11"),
     // The LDNMOS gate's width is the channel plus the drift it overlaps, and MDN.11 fixes
     // that overlap at 0.4.  So a channel under MDN.3a's 0.6 leaves a gate under MDN.10a's
     // 1.2 by arithmetic, and no geometry breaks the one without the other.

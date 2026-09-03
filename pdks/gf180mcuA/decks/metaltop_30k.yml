@@ -3,9 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Top metal at 30 kA, which replaces the metaltop deck rather than adding to it.
-# 7 of the 8 rules in this section.
-#
-# Not ported: MT30.8.
+# All 8 rules in this section.
 rules:
   - id: MT30.1a
     check: min_width
@@ -57,3 +55,11 @@ rules:
       max_width: 2.5
     str_params:
       sides: line_end
+  - id: MT30.8
+    check: nonempty
+    layers: [mt308_few]
+    value: 0.0
+  - id: MT30.8
+    check: min_via_array
+    layers: [mt308_x, mt308_via]
+    value: 2.0

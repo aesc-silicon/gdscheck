@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# MIM capacitor, option A.  11 of the 12 rules in this section.
+# MIM capacitor, option A.  All 12 rules in this section.
 #
-# Not ported: MIM.11.
 rules:
   - id: MIM.1
     check: min_space
@@ -72,3 +71,7 @@ rules:
     check: nonempty
     layers: [mimtm_4_crossing]
     value: 0.0
+  - id: MIM.11
+    check: max_contained_area
+    layers: [mim11_plate, fusetop]
+    value: 10000.0
