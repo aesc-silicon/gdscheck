@@ -43,6 +43,12 @@ struct Dev {
     channel: f64,
     /// How far the gate reaches over the drift.
     over_drift: f64,
+    /// How much active there is to the left of the gate - the source.  MDP.13b wants each
+    /// finger to meet exactly one, so a device drawn without any breaks it.
+    source_len: f64,
+    /// Whether to leave the N+ guard ring open on one side.  MDP.3 wants it unbroken, and
+    /// a ring with a gap in it has no hole for the device to sit in.
+    ring_break: bool,
     /// The device's width, which MDP.13a caps at 50 µm.
     width: f64,
     /// The drain's height; MDP.16a asks 0.22 µm.
@@ -69,6 +75,8 @@ impl Default for Dev {
         Dev {
             channel: 7.0,
             over_drift: 1.0,
+            source_len: 1.0,
+            ring_break: false,
             width: 6.0,
             drain_h: 4.0,
             drain_contact: true,
@@ -91,7 +99,7 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
     let o = OFFSET;
     let (x0, y0) = (o + 4.0, o + 4.0);
     let y1 = y0 + d.width;
-    let gate_x = x0 + 1.0;
+    let gate_x = x0 + d.source_len;
     let drift_x = gate_x + d.channel;
     let comp_x1 = drift_x + 1.0;
     let (py0, py1) = (y0 - 0.5, y1 + 0.5);
@@ -145,7 +153,9 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
         v.push(rect(l, ox0, oy0, ox1, iy0));
         v.push(rect(l, ox0, iy1, ox1, oy1));
         v.push(rect(l, ox0, iy0, ix0, iy1));
-        v.push(rect(l, ix1, iy0, ox1, iy1));
+        if !d.ring_break {
+            v.push(rect(l, ix1, iy0, ox1, iy1));
+        }
     }
     // Metal1 straps the ring, the way a real cell does.  It follows the ring rather than
     // covering the field inside it: MDP.3d and MDP.4 fire on bare active edge, and a
@@ -254,6 +264,23 @@ pub fn generate(pdk: &PdkConfig) {
             "MDP.1a",
             Dev {
                 channel: 20.005,
+                ..good
+            },
+            good,
+        ),
+        (
+            "MDP.2",
+            Dev {
+                width: 3.995,
+                drain_h: 3.0,
+                ..good
+            },
+            good,
+        ),
+        (
+            "MDP.13b",
+            Dev {
+                source_len: 0.0,
                 ..good
             },
             good,
@@ -609,6 +636,89 @@ pub fn generate(pdk: &PdkConfig) {
         ));
         v
     };
+    // MDP.13c: a finger with source on both sides.  It brings its own ring rather than
+    // sharing the device's, for the reason its N-side twin does - the drain beside a shared
+    // source is a drain like any other, and a ring holding two of those answers to a
+    // different rule.  The right-hand drift meets four actives so it is not one of them.
+    let two_finger = |shared: bool| {
+        let (dy0, dy1) = (o + 7.0, o + 14.0);
+        let (gy0, gy1) = (o + 7.6, o + 13.4);
+        let (ny0, ny1) = (o + 8.0, o + 13.0);
+        let src_x1 = if shared { o + 13.4 } else { o + 9.0 };
+        let mut v = vec![
+            rect(c.mvpsd, o + 2.0, dy0, o + 6.0, dy1),
+            rect(c.poly2, o + 5.6, gy0, o + 7.4, gy1),
+        ];
+        v.extend(pcomp(o + 5.6, ny0, src_x1, ny1));
+        // MDP.9d puts the drain 0.16 past the gate, inside the drift.
+        v.extend(pcomp(o + 5.14, o + 10.0, o + 5.44, o + 11.0));
+        if shared {
+            v.push(rect(c.mvpsd, o + 13.0, dy0, o + 18.0, dy1));
+            v.push(rect(c.poly2, o + 11.6, gy0, o + 13.4, gy1));
+            v.extend(pcomp(o + 13.56, o + 10.0, o + 13.86, o + 11.0));
+            v.extend(pcomp(o + 16.0, o + 13.5, o + 17.0, o + 14.5));
+            v.extend(pcomp(o + 14.0, o + 6.0, o + 15.0, o + 7.5));
+        }
+        // The N+ ring the P device sits in, and the deep well that holds it.
+        let (ix0, iy0, ix1, iy1) = (o + 1.0, o + 1.0, o + 22.0, o + 22.0);
+        let w = 2.0;
+        for l in [c.comp, c.nplus] {
+            v.push(rect(l, ix0 - w, iy0 - w, ix1 + w, iy0));
+            v.push(rect(l, ix0 - w, iy1, ix1 + w, iy1 + w));
+            v.push(rect(l, ix0 - w, iy0, ix0, iy1));
+            v.push(rect(l, ix1, iy0, ix1 + w, iy1));
+        }
+        // Metal1 straps the ring, as the device's own does: MDP.3d and MDP.4 read bare
+        // active edge, and a ring left unstrapped is all of it.
+        for (a, b, e, f) in [
+            (ix0 - w, iy0 - w, ix1 + w, iy0),
+            (ix0 - w, iy1, ix1 + w, iy1 + w),
+            (ix0 - w, iy0, ix0, iy1),
+            (ix1, iy0, ix1 + w, iy1),
+        ] {
+            v.push(rect(c.metal1, a - 0.2, b - 0.2, e + 0.2, f + 0.2));
+        }
+        v.push(rect(
+            c.dnwell,
+            ix0 - w - 1.0,
+            iy0 - w - 1.0,
+            ix1 + w + 1.0,
+            iy1 + w + 1.0,
+        ));
+        for l in [c.dualgate, c.ldmos] {
+            v.push(rect(
+                l,
+                ix0 - w - 3.0,
+                iy0 - w - 3.0,
+                ix1 + w + 3.0,
+                iy1 + w + 3.0,
+            ));
+        }
+        v
+    };
+    write("MDP.13c", "good", two_finger(false));
+    write("MDP.13c", "bad", two_finger(true));
+
+    // MDP.17a: N+ active outside both wells, within 40 µm of the marked drift and with no
+    // deep-well ring between them.  The device's own ring holes shield anything near it,
+    // so the active sits out past the well where none of them reaches.
+    // The rule is about the ring, not the distance: with the active this close, an
+    // unbroken deep-well ring is what stands between them, and a ring with a gap in it has
+    // no hole to stand anywhere.
+    let near_active = |broken: bool| {
+        let mut v = device(
+            &c,
+            Dev {
+                ring_break: broken,
+                ..good
+            },
+        );
+        v.extend(ncomp(o + 30.0, o + 6.0, o + 34.0, o + 12.0));
+        v
+    };
+    write("MDP.17a", "good", near_active(false));
+    write("MDP.17a", "bad", near_active(true));
+
     write("MDP.4b", "good", reach(8.0));
     write("MDP.4b", "bad", reach(40.0));
 }

@@ -3670,6 +3670,45 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [mdn11_no_gate, mdn11_no_drain]
+  # ---- MDN.10c ------------------------------------------------------------
+  # The field poly must overhang the active by exactly 0.2 towards the drain, so both
+  # directions are violations - and only where the drain's own box, the drift and the poly
+  # all coincide.
+  - name: mdn10c_ncomp
+    op: interacting
+    mode: lazy
+    layers: [ncomp, poly_mdn10]
+  - name: mdn10c_short
+    op: enclosure_below
+    max: 0.2
+    mode: lazy
+    layers: [poly_mdn10, mdn10c_ncomp]
+  - name: mdn10c_long
+    op: enclosure_above
+    min: 0.2
+    mode: lazy
+    layers: [poly_mdn10, mdn10c_ncomp]
+  - name: mdn10c_off
+    op: union
+    mode: lazy
+    layers: [mdn10c_short, mdn10c_long]
+  - name: mdn10c_box_a
+    op: close
+    radius: 0.36
+    mode: lazy
+    layers: [ncomp_mdn]
+  - name: mdn10c_box
+    op: extents
+    mode: lazy
+    layers: [mdn10c_box_a]
+  - name: mdn10c_region
+    op: intersection
+    mode: lazy
+    layers: [mdn10c_box, mvsd, poly2_drawn]
+  - name: mdn10c_viol
+    op: intersection
+    mode: lazy
+    layers: [mdn10c_off, mdn10c_region]
   # ---- MDN.12 -------------------------------------------------------------
   # The drain's active must sit 0.5 inside the drift, and a drift with no drain in it at
   # all is the other half of the rule.  The two halves read different actives: the
@@ -3703,6 +3742,161 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [mdn12_short_off_poly, mdn12_no_drain]
+  # ---- LDPMOS: the source and the gate ends, mirroring the N-side ----------
+  - name: mdp_gate_in_mvpsd
+    op: intersection
+    mode: lazy
+    layers: [poly_mdp, mvpsd]
+  - name: mdp_source_touch
+    op: interacting
+    mode: lazy
+    layers: [pcomp, mdp_gate_in_mvpsd]
+  - name: mdp_source
+    op: difference
+    mode: lazy
+    layers: [mdp_source_touch, poly2_drawn]
+  # MDP.13b: fingers alternate source and drain.
+  - name: mdp13b_l1
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [ldpmos_body, mdp_source]
+  - name: mdp13b_l2
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [ldpmos_body, mvpsd]
+  - name: mdp13b_l3
+    op: interacting
+    mode: lazy
+    layers: [mdp_source, mvpsd]
+  - name: mdp13b_viol
+    op: union
+    mode: lazy
+    layers: [mdp13b_l1, mdp13b_l2, mdp13b_l3]
+  # MDP.13c: a finger with source on both sides, directly or through a shared tap.
+  - name: mdp13c_shared
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdp_source, ldpmos_body]
+  - name: mdp13c_tap
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [ncomp, mdp_source]
+  - name: mdp13c_via_tap
+    op: interacting
+    mode: lazy
+    layers: [mdp_source, mdp13c_tap]
+  - name: mdp13c_shared_any
+    op: union
+    mode: lazy
+    layers: [mdp13c_shared, mdp13c_via_tap]
+  - name: mdp13c_source_side
+    op: interacting
+    mode: lazy
+    layers: [ldpmos_body, mdp13c_shared_any]
+  - name: mdp13c_bare_pcomp
+    op: not_interacting
+    mode: lazy
+    layers: [pcomp, poly2_drawn]
+  - name: mdp13c_drain
+    op: covering
+    mode: lazy
+    layers: [mvpsd, mdp13c_bare_pcomp]
+  - name: mdp13c_two_pcomp
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdp13c_drain, pcomp]
+  - name: mdp13c_viol
+    op: interacting
+    mode: lazy
+    layers: [mdp13c_two_pcomp, mdp13c_source_side]
+  # MDP.3: an unbroken N+ guard ring inside DNWELL around each device - device material
+  # that no ring hole contains, and a ring hole that holds no tapped source or more than
+  # one drift.
+  - name: nplus_holes
+    op: holes
+    mode: lazy
+    radius: 200.0
+    layers: [nplus]
+  - name: mdp3_device_a
+    op: union
+    mode: lazy
+    layers: [ldpmos_body, mvpsd, mdp_source]
+  - name: mdp3_device
+    op: intersection
+    mode: lazy
+    layers: [mdp3_device_a, dualgate, ldmos_xtor]
+  - name: mdp3_a
+    op: not_interacting
+    mode: lazy
+    layers: [mdp3_device, nplus_holes]
+  - name: mdp3_ring
+    op: intersection
+    mode: lazy
+    layers: [nplus_holes, dualgate, ldmos_xtor]
+  - name: mdp3_tap
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdp_source]
+  - name: mdp3_b1
+    op: not_interacting
+    mode: lazy
+    layers: [mdp3_ring, mdp3_tap]
+  - name: mdp3_b
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [mdp3_b1, mvpsd]
+  - name: mdp3_viol
+    op: union
+    mode: lazy
+    layers: [mdp3_a, mdp3_b]
+  # MDP.17a: a DNWELL guard ring is wanted between a marked drift and any N+ active
+  # outside the wells, whenever they come within 40 um of each other.
+  - name: mdp17_drift_a
+    op: inside
+    mode: lazy
+    layers: [mvpsd, dnwell]
+  - name: mdp17_drift
+    op: inside
+    mode: lazy
+    layers: [mdp17_drift_a, ldmos_xtor]
+  - name: mdp17_ncomp_a
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp, dnwell]
+  - name: mdp17_ncomp
+    op: not_overlapping
+    mode: lazy
+    layers: [mdp17_ncomp_a, nwell]
+  - name: mdp17_near
+    op: separation_below
+    max: 40.0
+    mode: lazy
+    layers: [mdp17_drift, mdp17_ncomp]
+  - name: mdp17_ring_a
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell]
+  - name: mdp17_ring
+    op: holes
+    mode: lazy
+    radius: 200.0
+    layers: [mdp17_ring_a]
+  - name: mdp17a_viol
+    op: not_interacting
+    mode: lazy
+    layers: [mdp17_near, mdp17_ring]
   # ---- MDN.13c ------------------------------------------------------------
   # A finger with source on both sides: the source is the active meeting a gate that is
   # inside a drift, minus the gate; a source meeting two gates is one shared between
@@ -3765,6 +3959,29 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [mdn13c_two_ncomp, mdn13c_source_side]
+  # MDN.13b: fingers alternate source and drain, so a finger meets exactly one source and
+  # exactly one drift, and no source reaches a drift.  It reads the same source and finger
+  # MDN.13c does.
+  - name: mdn13b_l1
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [mdn13c_finger, mdn13c_source]
+  - name: mdn13b_l2
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [mdn13c_finger, mvsd]
+  - name: mdn13b_l3
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_source, mvsd]
+  - name: mdn13b_viol
+    op: union
+    mode: lazy
+    layers: [mdn13b_l1, mdn13b_l2, mdn13b_l3]
   # ---- MDN.13d ---------------------------------------------------
   # A finger's source: NCOMP touching a gate that is inside the marker, minus the gate.
   - name: mdn_gate_in_mvsd
@@ -4554,6 +4771,16 @@ edge_layers:
   - name: ldpmos_body.edges
     op: edges
     layers: [ldpmos_body]
+  - name: ldpmos_gate_ends
+    op: and
+    layers: [ldpmos_body.edges, pcomp.edges]
+  - name: mdp2_narrow
+    op: width_below
+    max: 4.0
+    layers: [ldpmos_body]
+  - name: mdp2_viol
+    op: and
+    layers: [ldpmos_gate_ends, mdp2_narrow]
   - name: ldpmos_gate_sides
     op: not
     layers: [ldpmos_body.edges, pcomp.edges]

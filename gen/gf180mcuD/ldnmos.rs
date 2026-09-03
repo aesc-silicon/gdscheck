@@ -47,8 +47,17 @@ struct Ctx {
 /// The device, with one knob per rule that bends it.  The defaults draw a legal one.
 #[derive(Clone, Copy)]
 struct Dev {
-    /// How far the gate reaches over the drift, past where the channel ends.
-    over_drift: f64,
+    /// How much active there is to the left of the gate - the source.  MDN.13b wants each
+    /// finger to meet exactly one, so a device drawn without any breaks it.
+    source_len: f64,
+    /// How far the *active* reaches into the drift.  That overlap is the channel the
+    /// drift covers, which MDN.11 fixes at 0.4 in both directions.
+    comp_into_drift: f64,
+    /// How far the gate reaches past the active, on into the drift.  MDN.10c fixes this
+    /// at 0.2 in both directions - it is the poly's extension beyond COMP on the field,
+    /// towards the drain.  The gate ends at `comp_into_drift + poly_past_comp` into the
+    /// drift, so bending either rule leaves the other's measurement alone.
+    poly_past_comp: f64,
     /// How far the gate reaches past the active - MDN.10b asks 0.4 µm.
     endcap: f64,
     /// The drain's height; MDN.15a asks 0.22 µm.
@@ -62,6 +71,11 @@ struct Dev {
     /// drift's near edge amounts to - the drift's other edges run past the gate top and
     /// bottom and out to the drain, and a wall the gate does not hold is not measured.
     channel: f64,
+    /// How long the drift is.  MDN.10c only reads where the poly's overhang falls inside
+    /// the drain's own bounding box, and that box is the *closed* N+ - so the drain island
+    /// has to sit near enough the active for the two to close into one box, which a short
+    /// drift is what arranges.
+    drift_len: f64,
     /// The device's width, which MDN.4b and MDN.13a cap at 50 µm.
     width: f64,
     /// A narrow tab off the gate, for the one rule that bounds the poly's own width.
@@ -76,12 +90,15 @@ struct Dev {
 impl Default for Dev {
     fn default() -> Self {
         Dev {
-            over_drift: 0.4,
+            source_len: 1.0,
+            comp_into_drift: 0.4,
+            poly_past_comp: 0.2,
             endcap: 0.5,
             drain_h: 4.0,
             drain_contact: true,
             margin: 3.0,
             channel: 7.0,
+            drift_len: 7.0,
             width: 6.0,
             poly_tab: None,
             ring_wall: 2.0,
@@ -104,10 +121,10 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
     let o = OFFSET;
     let (x0, y0) = (o + 4.0, o + 4.0);
     let y1 = y0 + d.width;
-    let gate_x = x0 + 1.0;
+    let gate_x = x0 + d.source_len;
     let drift_x = gate_x + d.channel;
-    let comp_x1 = drift_x + 1.0;
-    let drift_x1 = drift_x + 7.0;
+    let comp_x1 = drift_x + d.comp_into_drift;
+    let drift_x1 = drift_x + d.drift_len;
     let (py0, py1) = (y0 - d.endcap, y1 + d.endcap);
     let (dy0, dy1) = (y0 - 0.5, y1 + 0.5);
     let (drain_x, drain_x1) = (drift_x1 - 3.0, drift_x1 - 1.0);
@@ -120,7 +137,7 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
         // The drain, an active island inside the drift.
         rect(c.comp, drain_x, ky0, drain_x1, ky1),
         rect(c.nplus, x0 - 0.3, y0 - 0.3, drain_x1 + 0.3, y1 + 0.3),
-        rect(c.poly2, gate_x, py0, drift_x + d.over_drift, py1),
+        rect(c.poly2, gate_x, py0, comp_x1 + d.poly_past_comp, py1),
         rect(c.mvsd, drift_x, dy0, drift_x1, dy1),
     ];
     if d.drain_contact {
@@ -262,7 +279,22 @@ pub fn generate(pdk: &PdkConfig) {
         (
             "MDN.11",
             Dev {
-                over_drift: 0.405,
+                comp_into_drift: 0.405,
+                ..good
+            },
+        ),
+        (
+            "MDN.13b",
+            Dev {
+                source_len: 0.0,
+                ..good
+            },
+        ),
+        (
+            "MDN.10c",
+            Dev {
+                poly_past_comp: 0.205,
+                drift_len: 4.0,
                 ..good
             },
         ),
@@ -302,6 +334,12 @@ pub fn generate(pdk: &PdkConfig) {
             },
             "MDN.10a" => Dev {
                 poly_tab: Some(2.0),
+                ..good
+            },
+            // Its good half needs the same short drift as its bad one, or the rule has
+            // nothing to read on either and passes for the wrong reason.
+            "MDN.10c" => Dev {
+                drift_len: 4.0,
                 ..good
             },
             _ => good,
@@ -657,9 +695,12 @@ pub fn generate(pdk: &PdkConfig) {
         v
     };
     write("MDN.17", "good", outside_ring(vec![]));
+    // Active is device material too, and unlike a drift it answers to none of the rules
+    // that ask a transistor to be whole - which is what this fixture wants outside the
+    // ring, rather than a stand-in device that is not one.
     write(
         "MDN.17",
         "bad",
-        outside_ring(device_bar(o + 28.0, o + 6.0, 2.0, 5.0, true, false)),
+        outside_ring(ncomp(o + 28.0, o + 6.0, o + 32.0, o + 11.0)),
     );
 }
