@@ -300,6 +300,10 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     // that overlap at 0.4.  So a channel under MDN.3a's 0.6 leaves a gate under MDN.10a's
     // 1.2 by arithmetic, and no geometry breaks the one without the other.
     ("ldnmos", "MDN.3a", "MDN.10a"),
+    // The P side of MDN.3a and MDN.10a, for the same arithmetic: MDP.10 fixes the drift's
+    // overlap onto the channel at 0.4, so a channel under MDP.1's 0.6 leaves a gate under
+    // MDP.9a's 1.2.
+    ("ldpmos", "MDP.1", "MDP.9a"),
     // A source shared between two fingers is what MDN.13c reports, and it is also the
     // butted-tap arrangement MDN.13d joins into its own output, so the one geometry is
     // both by construction.

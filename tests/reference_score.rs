@@ -76,7 +76,7 @@ const D: &str = "tests/data/gf180mcuD";
 #[rstest]
 #[case("antenna", "antenna-1.gds.gz", "8_0_ANT", 10, 4)]
 #[case("dummy_exclude", "dummy_exclude.gds.gz", "10_8_DE", 4, 1)]
-#[case("ldpmos", "ldpmos.gds.gz", "10_12_2_MDP", 246, 2)]
+#[case("ldpmos", "ldpmos.gds.gz", "10_12_2_MDP", 283, 2)]
 #[case("nat", "nat.gds.gz", "10_5_NAT", 36, 5)]
 #[case("ldnmos", "ldnmos.gds.gz", "10_12_1_MDN", 735, 13)]
 #[case("lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL", 165, 0)]
