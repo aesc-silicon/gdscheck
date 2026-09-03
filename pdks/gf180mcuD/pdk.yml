@@ -3632,6 +3632,25 @@ virtual_layers:
     min: 1
     max: 3
     layers: [mt308_x, mt308_via]
+  # ---- MDP.10, the P-side twin of MDN.11 ----------------------------------
+  - name: mvpsd_mdp
+    op: intersection
+    mode: lazy
+    layers: [mvpsd, dualgate, ldmos_xtor]
+  # MDP.10: the channel the drift overlaps, fixed at 0.4 in both directions.
+  - name: mdp10_overlap
+    op: intersection
+    mode: lazy
+    layers: [ldmos_xtor, mvpsd, comp, poly2_drawn, pplus]
+  - name: mdp10_wide
+    op: open
+    radius: 0.2
+    mode: lazy
+    layers: [mdp10_overlap]
+  - name: mdp10_no_channel
+    op: not_interacting
+    mode: lazy
+    layers: [mvpsd_mdp, mdp10_overlap]
   # ---- MDN.11 -------------------------------------------------------------
   # The channel the drift overlaps: the rule fixes its width at 0.4 in both directions,
   # and separately forbids a drift with no channel under it and no drain in it.
@@ -4951,6 +4970,35 @@ edge_layers:
   - name: poly_mdn10.edges
     op: edges
     layers: [poly_mdn10]
+  # MDP.9b: the gate's own edge where it leaves the drift - the width direction - which
+  # is what has to clear the active by 0.4.
+  - name: poly_in_dnwell_mdp.edges
+    op: edges
+    layers: [poly_in_dnwell_mdp]
+  - name: mdp9b_at_drift
+    op: interacting
+    layers: [poly_in_dnwell_mdp.edges, mvpsd]
+  - name: mdp9b_edges
+    op: outside_part
+    layers: [mdp9b_at_drift, mvpsd]
+  - name: mdp9b_touch
+    op: interacting
+    layers: [mdp9b_edges, pcomp]
+  - name: comp.edges
+    op: edges
+    layers: [comp]
+  # MDP.11: the drift's own edge where no active runs along it, which is the edge that
+  # has to hold the drain active by 0.8; where one does run along it the enclosure is
+  # nothing at all, and that shared edge is the other half of the rule.
+  - name: mvpsd.edges
+    op: edges
+    layers: [mvpsd]
+  - name: mdp11_edges
+    op: not_interacting_edges
+    layers: [mvpsd.edges, pcomp.edges]
+  - name: mdp11_flush
+    op: and
+    layers: [mvpsd.edges, pcomp.edges]
   - name: pres_outline.edges
     op: edges
     layers: [pres_outline]

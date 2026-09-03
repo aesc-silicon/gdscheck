@@ -41,8 +41,17 @@ struct Ctx {
 struct Dev {
     /// The channel's length: MDP.1 asks 0.6 µm of it and MDP.1a caps it at 20.
     channel: f64,
-    /// How far the gate reaches over the drift.
-    over_drift: f64,
+    /// How far the *active* reaches into the drift.  That overlap is the channel the drift
+    /// covers, which MDP.10 fixes at 0.4 in both directions.
+    comp_into_drift: f64,
+    /// How far the gate reaches past the active, on into the drift - MDP.9c's extension
+    /// beyond COMP towards the drain, 0.2 both ways.  The gate ends at the sum of the two,
+    /// so bending either rule leaves the other's measurement alone, and the drain sits off
+    /// the gate's end where MDP.9d puts it rather than inside the source.
+    poly_past_comp: f64,
+    /// How far the gate reaches past the active in the width direction, which MDP.9b
+    /// asks 0.4 of.
+    poly_past_width: f64,
     /// How much active there is to the left of the gate - the source.  MDP.13b wants each
     /// finger to meet exactly one, so a device drawn without any breaks it.
     source_len: f64,
@@ -53,6 +62,11 @@ struct Dev {
     width: f64,
     /// The drain's height; MDP.16a asks 0.22 µm.
     drain_h: f64,
+    /// How far the drift reaches past the drain it holds, which MDP.11 asks 0.8 of.
+    drain_hold: f64,
+    /// And how far it reaches past the active in the width direction, which is the other
+    /// direction of the same rule.
+    drift_past_width: f64,
     /// Whether the drain is contacted, which only MDP.16b needs.
     drain_contact: bool,
     /// How far the deep well holds the guard ring - MDP.12 asks 0.66 µm.
@@ -74,11 +88,15 @@ impl Default for Dev {
     fn default() -> Self {
         Dev {
             channel: 7.0,
-            over_drift: 1.0,
+            comp_into_drift: 0.4,
+            poly_past_comp: 0.2,
+            poly_past_width: 0.5,
             source_len: 1.0,
             ring_break: false,
             width: 6.0,
             drain_h: 4.0,
+            drain_hold: 1.0,
+            drift_past_width: 1.0,
             drain_contact: true,
             well_hold: 1.5,
             ring_wall: 2.0,
@@ -101,14 +119,14 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
     let y1 = y0 + d.width;
     let gate_x = x0 + d.source_len;
     let drift_x = gate_x + d.channel;
-    let comp_x1 = drift_x + 1.0;
-    let (py0, py1) = (y0 - 0.5, y1 + 0.5);
+    let comp_x1 = drift_x + d.comp_into_drift;
+    let (py0, py1) = (y0 - d.poly_past_width, y1 + d.poly_past_width);
     // MDP.9d reads the drain's own 0.16 µm surround: poly that overlaps it breaks the
     // rule and poly that never reaches it breaks the rule, so the gate stops exactly
     // there and the drain is placed off the gate rather than off the drift's far end.
-    let poly_x1 = drift_x + d.over_drift;
+    let poly_x1 = comp_x1 + d.poly_past_comp;
     let (drain_x, drain_x1) = (poly_x1 + 0.16, poly_x1 + 2.16);
-    let drift_x1 = drain_x1 + 1.0;
+    let drift_x1 = drain_x1 + d.drain_hold;
     let mid = (y0 + y1) * 0.5;
     let (ky0, ky1) = (mid - d.drain_h * 0.5, mid + d.drain_h * 0.5);
 
@@ -117,7 +135,13 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
         rect(c.comp, drain_x, ky0, drain_x1, ky1),
         rect(c.pplus, x0 - 0.3, y0 - 0.3, drain_x1 + 0.3, y1 + 0.3),
         rect(c.poly2, gate_x, py0, poly_x1, py1),
-        rect(c.mvpsd, drift_x, py0, drift_x1, py1),
+        rect(
+            c.mvpsd,
+            drift_x,
+            y0 - d.drift_past_width,
+            drift_x1,
+            y1 + d.drift_past_width,
+        ),
     ];
     if d.drain_contact {
         v.push(rect(
@@ -244,7 +268,32 @@ pub fn generate(pdk: &PdkConfig) {
             rect(r, xm, y0 - 0.1, x1 + 0.1, y1 + 0.1),
         ]
     };
-    let bar = |x: f64, y: f64, w: f64, h: f64| rect(c.mvpsd, x, y, x + w, y + h);
+    // A drift with the channel every drift is expected to have: the active reaches
+    // 0.4 µm into it, which is what MDP.10 measures, the gate runs 0.2 µm past the active
+    // and 2 µm further to pick up a source, which MDP.13b asks each finger for, and the
+    // drain sits 0.16 µm off the gate, the surround MDP.9d reads.  `flip` puts the gate on
+    // the right instead, so a mirrored pair can share one drain and so one potential.  The
+    // height is the channel's width, which MDP.2 floors at 4 µm.
+    let drift = |x: f64, y: f64, w: f64, h: f64, flip: bool| {
+        let (cy0, cy1) = (y + 1.0, y + h - 1.0);
+        let s = if flip { -1.0 } else { 1.0 };
+        let e = if flip { x + w } else { x };
+        let at = |a: f64, b: f64| {
+            let (p, q) = (e + s * a, e + s * b);
+            (p.min(q), p.max(q))
+        };
+        let (gx0, gx1) = at(-1.0, 0.6);
+        let (sx0, sx1) = at(-2.0, 0.4);
+        let (dx0, dx1) = at(0.76, 2.0);
+        let (px0, px1) = at(-2.1, 2.1);
+        vec![
+            rect(c.mvpsd, x, y, x + w, y + h),
+            rect(c.comp, sx0, cy0, sx1, cy1),
+            rect(c.poly2, gx0, cy0 - 0.4, gx1, cy1 + 0.4),
+            rect(c.comp, dx0, cy0, dx1, cy1),
+            rect(c.pplus, px0, cy0 - 0.1, px1, cy1 + 0.1),
+        ]
+    };
     // Where the default device's marker and its deep well end, so the fixtures that
     // measure something against either from outside can be placed off them.
     let marker_r = o + 27.0;
@@ -322,6 +371,30 @@ pub fn generate(pdk: &PdkConfig) {
             good,
         ),
         (
+            "MDP.11",
+            Dev {
+                drain_hold: 0.795,
+                ..good
+            },
+            good,
+        ),
+        (
+            "MDP.9b",
+            Dev {
+                poly_past_width: 0.395,
+                ..good
+            },
+            good,
+        ),
+        (
+            "MDP.10",
+            Dev {
+                comp_into_drift: 0.405,
+                ..good
+            },
+            good,
+        ),
+        (
             "MDP.9a",
             Dev {
                 poly_tab: Some(1.195),
@@ -340,25 +413,25 @@ pub fn generate(pdk: &PdkConfig) {
     // MDP.10b: two drifts closer than 1 µm at the same potential, and MDP.10a the
     // different-potential rule at 2 µm.
     let pair_same = |gap: f64| {
-        let mut v = vec![
-            bar(o + 4.0, o + SPARE, 4.0, 2.0),
-            bar(o + 8.0 + gap, o + SPARE, 4.0, 2.0),
-        ];
+        let mut v = drift(o + 4.0, o + SPARE, 4.0, 6.5, false);
+        v.extend(drift(o + 8.0 + gap, o + SPARE, 4.0, 6.5, true));
+        // The pair is at one potential because one active is the drain of both.
         v.extend(pcomp(
             o + 6.0,
-            o + SPARE + 0.5,
+            o + SPARE + 1.0,
             o + 10.0 + gap,
-            o + SPARE + 1.5,
+            o + SPARE + 5.5,
         ));
         v
     };
     write("MDP.10b", "good", with(pair_same(1.5)));
     write("MDP.10b", "bad", with(pair_same(0.995)));
     let pair_diff = |gap: f64| {
-        vec![
-            bar(o + 4.0, o + SPARE, 4.0, 2.0),
-            bar(o + 8.0 + gap, o + SPARE, 4.0, 2.0),
-        ]
+        // Mirrored, so that neither drift's source active reaches over the other at the
+        // sub-2 µm gaps the rule is about, and the two stay at potentials of their own.
+        let mut v = drift(o + 4.0, o + SPARE, 4.0, 6.5, false);
+        v.extend(drift(o + 8.0 + gap, o + SPARE, 4.0, 6.5, true));
+        v
     };
     write("MDP.10a", "good", with(pair_diff(2.5)));
     write("MDP.10a", "bad", with(pair_diff(1.995)));
@@ -393,13 +466,13 @@ pub fn generate(pdk: &PdkConfig) {
 
     // MDP.3aii: an N+ active that does touch a P+, closer than 0.92 µm to a drift.
     let nbutt = |gap: f64| {
-        let mut v = vec![bar(o + 4.0, o + SPARE, 5.0, 2.0)];
+        let mut v = drift(o + 4.0, o + SPARE, 5.0, 6.5, false);
         v.extend(butted(
             o + 7.0,
-            o + SPARE + 0.5,
+            o + SPARE + 1.0,
             o + 9.0 + gap,
             o + 11.0 + gap,
-            o + SPARE + 1.5,
+            o + SPARE + 3.0,
             false,
         ));
         v
@@ -484,18 +557,18 @@ pub fn generate(pdk: &PdkConfig) {
     write(
         "MDP.6",
         "good",
-        with(vec![bar(o + 4.0, o + SPARE, 4.0, 2.0)]),
+        with(drift(o + 4.0, o + SPARE, 4.0, 6.5, false)),
     );
-    write("MDP.6", "bad", with(vec![bar(o + 32.0, o + 4.0, 4.0, 2.0)]));
+    write("MDP.6", "bad", with(drift(o + 32.0, o + 4.0, 4.0, 6.5, false)));
 
     // MDP.16b: a contact on the drain that reaches off the drain's own active.
     let drain_contact = |dx: f64| {
         let mut v = device(&c, good);
         v.push(rect(
             c.contact,
-            o + 14.94 + dx,
+            o + 14.54 + dx,
             o + 6.9,
-            o + 15.16 + dx,
+            o + 14.76 + dx,
             o + 7.12,
         ));
         v
@@ -627,13 +700,10 @@ pub fn generate(pdk: &PdkConfig) {
             x + 5.5 + hole,
             y + 5.5 + hole,
         ));
-        v.push(rect(
-            c.mvpsd,
-            mid - 0.5,
-            y + 2.0 + hole * 0.5 - 0.5,
-            mid + 0.5,
-            y + 2.0 + hole * 0.5 + 0.5,
-        ));
+        // The marker only counts as an LDPMOS one because a drift sits in it, and a
+        // drift needs its channel, so it is parked in the ring's hole clear of the deep
+        // well rather than on top of it - MDP.4a keeps P+ active 2.5 µm off the well.
+        v.extend(drift(x + 5.0, y + 2.0 + hole * 0.5 - 3.25, 3.0, 6.5, false));
         v
     };
     // MDP.13c: a finger with source on both sides.  It brings its own ring rather than
@@ -719,6 +789,6 @@ pub fn generate(pdk: &PdkConfig) {
     write("MDP.17a", "good", near_active(false));
     write("MDP.17a", "bad", near_active(true));
 
-    write("MDP.4b", "good", reach(8.0));
+    write("MDP.4b", "good", reach(20.0));
     write("MDP.4b", "bad", reach(40.0));
 }
