@@ -300,6 +300,12 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     // butted-tap arrangement MDN.13d joins into its own output, so the one geometry is
     // both by construction.
     ("ldnmos", "MDN.13c", "MDN.13d"),
+    // MDN.13b wants the fingers to alternate source and drain.  A finger with source on
+    // both sides of it, which is what MDN.13c reports, is the arrangement that is not
+    // alternating - so the one geometry answers to both.
+    ("ldnmos", "MDN.13c", "MDN.13b"),
+    // The P side, for the same reason.
+    ("ldpmos", "MDP.13c", "MDP.13b"),
     // GR.3 wants the implant over the ring's active and GR.6 wants that active 16 µm
     // wide.  Uncovering any of it is what GR.3 forbids and what narrows what GR.6
     // measures, so no geometry breaks one alone.

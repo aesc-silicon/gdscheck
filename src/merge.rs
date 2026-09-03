@@ -1142,6 +1142,24 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
     }
 }
 
+/// Whether an op *measures* between shapes rather than composing them.
+///
+/// It decides whether a selection feeding this op keeps its halo copies.  A boolean built
+/// on a selector has to stay on its sources' reach, which is why a selector is otherwise
+/// left halo-less; a measurement is the opposite case - it reads across a tile edge by
+/// definition, and two shapes forty microns apart never share a tile without the copies.
+fn measures(op: VirtualOp) -> bool {
+    matches!(
+        op,
+        VirtualOp::SeparationBelow(_) | VirtualOp::EnclosureBelow(_) | VirtualOp::EnclosureAbove(_)
+    )
+}
+
+/// The same for the edge ops.
+fn edge_measures(op: EdgeOp) -> bool {
+    matches!(op, EdgeOp::WidthBelow(_))
+}
+
 /// The margin a pair measures, as the quadrangle spanning it: the inner wall, swept to the
 /// outer wall it was measured to.  The probe sits just past that wall, which is what says
 /// which way the sweep runs.
@@ -3266,11 +3284,11 @@ impl MergedCache {
     fn feeds_another_layer(&self, key: (i16, i16)) -> bool {
         self.virtual_defs
             .iter()
-            .any(|(k, d)| *k != key && d.sources.contains(&key))
+            .any(|(k, d)| *k != key && !measures(d.op) && d.sources.contains(&key))
             || self
                 .edge_defs
                 .iter()
-                .any(|(k, d)| *k != key && d.sources.contains(&key))
+                .any(|(k, d)| *k != key && !edge_measures(d.op) && d.sources.contains(&key))
     }
 
     pub fn new(tile_dbu: i32, halo_dbu: i32, halo_by_layer: HashMap<(i16, i16), i32>) -> Self {

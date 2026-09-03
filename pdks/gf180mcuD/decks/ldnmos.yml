@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# LDMOS NFET.  31 of the 35 rules in this section.
+# LDMOS NFET.  33 of the 35 rules in this section.
 #
-# Not ported: MDN.10c, MDN.10d, MDN.13b, MDN.5c.
+# Not ported: MDN.10d, MDN.5c.
 #
 # Known: MDN.10f reports one region the reference does not.
 rules:
@@ -183,4 +183,12 @@ rules:
   - id: MDN.12
     check: nonempty
     layers: [mdn12_viol]
+    value: 0.0
+  - id: MDN.10c
+    check: nonempty
+    layers: [mdn10c_viol]
+    value: 0.0
+  - id: MDN.13b
+    check: nonempty
+    layers: [mdn13b_viol]
     value: 0.0
