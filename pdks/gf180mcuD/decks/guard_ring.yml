@@ -16,35 +16,35 @@ rules:
     value: 0.0
   - id: GR.2
     check: min_space
-    layers: [comp_prime, guard_ring_mk]
+    layers: [comp, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [nwell_prime, guard_ring_mk]
+    layers: [nwell, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [poly2_prime, guard_ring_mk]
+    layers: [poly2, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal1_prime, guard_ring_mk]
+    layers: [metal1, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal2_prime, guard_ring_mk]
+    layers: [metal2, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal3_prime, guard_ring_mk]
+    layers: [metal3, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal4_prime, guard_ring_mk]
+    layers: [metal4, guard_ring_mk]
     value: 10.0
   - id: GR.2
     check: min_space
-    layers: [metal5_prime, guard_ring_mk]
+    layers: [metal5, guard_ring_mk]
     value: 10.0
   - id: GR.3
     check: nonempty

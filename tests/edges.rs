@@ -455,11 +455,10 @@ fn a_partial_abutment_splits_the_shared_wall() {
 /// to a tile that holds no copy of the polygon.
 ///
 /// Found through GF180 GR.1 on a real seal ring, whose active is drawn as four corners
-/// and four bars: the rule read four false violations off the corner pieces.  GR.1 is a
-/// region boolean now and no longer depends on this, but every other `edges` layer still
-/// does.
+/// and four bars: the rule read four false violations off the corner pieces.  Each tile
+/// now reports only the stretch of boundary its own core covers, and the pieces are
+/// rejoined once the layer is composed.
 #[test]
-#[ignore = "known defect: `edges` of a multi-piece region depends on the tiling"]
 fn edges_of_abutting_rectangles_match_the_single_rectangle() {
     let defs: &[EdgeDef] = &[((90, 0), EdgeOp::Edges, vec![A])];
     let split = run_tiled(

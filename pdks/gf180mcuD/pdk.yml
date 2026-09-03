@@ -1202,40 +1202,6 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [comp, guard_ring_mk]
-  # The guard ring's own shapes sit on the marker; GR.2 measures the prime die's, which
-  # do not.
-  - name: comp_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [comp, guard_ring_mk]
-  - name: nwell_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [nwell, guard_ring_mk]
-  - name: poly2_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [poly2, guard_ring_mk]
-  - name: metal1_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [metal1, guard_ring_mk]
-  - name: metal2_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [metal2, guard_ring_mk]
-  - name: metal3_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [metal3, guard_ring_mk]
-  - name: metal4_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [metal4, guard_ring_mk]
-  - name: metal5_prime
-    op: not_overlapping
-    mode: lazy
-    layers: [metal5, guard_ring_mk]
   - name: contact_in_guard_ring
     op: overlapping
     mode: lazy

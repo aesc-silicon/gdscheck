@@ -1142,6 +1142,104 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
     }
 }
 
+/// Clip an edge to a closed rectangle, or `None` where nothing of it lies inside.
+///
+/// Closed on every side on purpose: an edge lying exactly along a tile's boundary belongs
+/// to that tile as much as to its neighbour, and dropping it on both sides is how an edge
+/// goes missing altogether.  The duplicate that costs is rejoined afterwards.
+fn clip_edge(e: Edge, core: (i64, i64, i64, i64)) -> Option<Edge> {
+    let (px, py) = (e.a.x as f64, e.a.y as f64);
+    let (dx, dy) = ((e.b.x - e.a.x) as f64, (e.b.y - e.a.y) as f64);
+    let (mut t0, mut t1) = (0.0_f64, 1.0_f64);
+    for (p, q) in [
+        (-dx, px - core.0 as f64),
+        (dx, core.2 as f64 - px),
+        (-dy, py - core.1 as f64),
+        (dy, core.3 as f64 - py),
+    ] {
+        if p == 0.0 {
+            if q < 0.0 {
+                return None; // parallel to this side and outside it
+            }
+            continue;
+        }
+        let r = q / p;
+        if p < 0.0 {
+            if r > t1 {
+                return None;
+            }
+            t0 = t0.max(r);
+        } else {
+            if r < t0 {
+                return None;
+            }
+            t1 = t1.min(r);
+        }
+    }
+    if t1 <= t0 {
+        return None;
+    }
+    let pt = |t: f64| IntPoint::new((px + t * dx).round() as i32, (py + t * dy).round() as i32);
+    let (a, b) = (pt(t0), pt(t1));
+    (a != b).then_some(Edge { a, b })
+}
+
+/// A supporting line: a direction reduced to its smallest integer step, and how far the
+/// line sits from the origin perpendicular to it.
+type Line = (i64, i64, i64);
+
+/// One piece on such a line: where it starts and ends along the direction, and the two
+/// points it was cut between.
+type LinePiece = (i64, i64, IntPoint, IntPoint);
+
+/// Put an edge back together from the pieces the tiles cut it into.
+///
+/// Every piece of one edge shares its supporting line *and its direction* - the direction
+/// carries which side the material is on, so pieces running the other way are a different
+/// wall and are left alone.  Within a line the pieces are intervals: sort them and merge
+/// the ones that touch or overlap.
+fn rejoin_collinear(edges: Vec<Edge>) -> Vec<Edge> {
+    fn gcd(a: i64, b: i64) -> i64 {
+        if b == 0 {
+            a.abs().max(1)
+        } else {
+            gcd(b, a % b)
+        }
+    }
+    let mut by_line: HashMap<Line, Vec<LinePiece>> = HashMap::new();
+    for e in edges {
+        let (dx, dy) = ((e.b.x - e.a.x) as i64, (e.b.y - e.a.y) as i64);
+        let g = gcd(dx, dy);
+        let (ux, uy) = (dx / g, dy / g);
+        // The line: its direction, and where it sits perpendicular to that direction.
+        let off = e.a.x as i64 * uy - e.a.y as i64 * ux;
+        let t = |p: IntPoint| p.x as i64 * ux + p.y as i64 * uy;
+        by_line
+            .entry((ux, uy, off))
+            .or_default()
+            .push((t(e.a), t(e.b), e.a, e.b));
+    }
+    let mut out = Vec::new();
+    for (_, mut v) in by_line {
+        v.sort_unstable_by_key(|&(t0, _, _, _)| t0);
+        let (mut lo, mut hi, mut a, mut b) = v[0];
+        for &(t0, t1, pa, pb) in &v[1..] {
+            if t0 <= hi {
+                if t1 > hi {
+                    hi = t1;
+                    b = pb;
+                }
+            } else {
+                out.push(Edge { a, b });
+                (lo, hi, a, b) = (t0, t1, pa, pb);
+            }
+        }
+        let _ = lo;
+        out.push(Edge { a, b });
+    }
+    out
+}
+
 /// Whether an op *measures* between shapes rather than composing them.
 ///
 /// It decides whether a selection feeding this op keeps its halo copies.  A boolean built
@@ -1654,18 +1752,18 @@ fn compose_edge_tile(
                     .collect()
             })
             .unwrap_or_default(),
+        // Each tile contributes the stretch of boundary its own core covers, and no more.
+        // Charging a whole edge to the tile its midpoint falls in reads that tile's merge
+        // for a boundary another tile drew: the tiles disagree about where a region ends
+        // when it is drawn as several abutting pieces, and the edge either comes back
+        // twice at two granularities or not at all.  Clipping asks each tile only about
+        // the part it is sure of, and `rejoin_collinear` puts the edge back together.
         EdgeOp::Edges => poly_srcs
             .first()
             .map(|ps| {
                 ps.iter()
                     .flat_map(region_edges)
-                    .filter(|e| {
-                        let (mx, my) = e.midpoint();
-                        mx >= core.0 as f64
-                            && mx < core.2 as f64
-                            && my >= core.1 as f64
-                            && my < core.3 as f64
-                    })
+                    .filter_map(|e| clip_edge(e, core))
                     .collect()
             })
             .unwrap_or_default(),
@@ -3457,6 +3555,10 @@ impl MergedCache {
                     out.entry(k).or_default().extend(v);
                 }
             }
+        }
+        if def.op == EdgeOp::Edges {
+            let all: Vec<Edge> = out.into_values().flatten().collect();
+            out = bucket_edges(rejoin_collinear(all), self.tile_dbu);
         }
         self.edge_spans
             .insert(key, spanning_index(&out, self.tile_dbu));
