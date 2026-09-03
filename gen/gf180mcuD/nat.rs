@@ -135,6 +135,29 @@ pub fn generate(pdk: &PdkConfig) {
     ] {
         write(id, "good", clean());
     }
+    // NAT.6: a second active under the same marker with nothing tying it to the first, so
+    // the marker covers two potentials.  It sits in the margin the marker already keeps
+    // past the active, which is where a second one would be.
+    // Its marker is drawn wide enough to hold both actives with NAT.1's two microns to
+    // spare, which the default one has no room for.
+    let two_actives = |second: bool| {
+        let mut cell = Cell::at(o, o);
+        cell.nat_m = 7.0;
+        let mut v = cell.draw(&c);
+        if second {
+            // A second device, not merely a second active: NAT.11 asks that every active
+            // under the marker have a gate on it.
+            let (x0, y0, x1, y1) = (o + 1.0, o + COMP_W + 2.4, o + 7.0, o + COMP_W + 3.6);
+            v.push(rect(c.comp, x0, y0, x1, y1));
+            v.push(rect(c.nplus, x0 - NP, y0 - NP, x1 + NP, y1 + NP));
+            let gx = x0 + (x1 - x0 - GATE) * 0.5;
+            v.push(rect(c.poly, gx, y0 - GATE_EXT, gx + GATE, y1 + GATE_EXT));
+        }
+        v
+    };
+    write("NAT.6", "good", two_actives(false));
+    write("NAT.6", "bad", two_actives(true));
+
     // NAT.9: poly that belongs to no gate of the marker, closer than 0.3 µm to it.  The
     // rule's other half is a poly interconnect *under* the marker, which needs two gates
     // to run between and so cannot be drawn on a one-gate device.

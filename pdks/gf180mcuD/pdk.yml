@@ -3587,6 +3587,51 @@ virtual_layers:
 
 # The drawn layer table.  Variant D is a 5LM stack, so the
 # 6LM-only layers (via5 and the metaltop family) are absent.
+  # MIMTM.11: the bottom plate several MIM caps may share.  Their areas add up against
+  # the same cap MIMTM.8b puts on one of them.
+  - name: mimtm11_plate
+    op: interacting
+    mode: lazy
+    layers: [topmin1_metal, fusetop]
+  # MIM.11 is the same rule on option A, where the plate is Metal2.
+  - name: mim11_plate
+    op: interacting
+    mode: lazy
+    layers: [metal2, fusetop]
+  # NAT.6: the active under a NAT marker.  Two of them at different potential are not
+  # allowed under one marker.
+  - name: nat6_comp
+    op: intersection
+    mode: lazy
+    layers: [comp, nat]
+  # ---- MT30.8 -------------------------------------------------------------
+  # The DRM splits this in two: a single top via at one location (MT30.8a) and the 2x2
+  # array a location needs (MT30.8b).  Upstream emits one id for both.  Neither applies in
+  # the seal ring, which the guard ring marker identifies.
+  - name: mt308_via
+    op: difference
+    mode: lazy
+    layers: [top_via, guard_ring_mk]
+  - name: mt308_x_a
+    op: intersection
+    mode: lazy
+    layers: [top_metal, topmin1_metal]
+  - name: mt308_x_b
+    op: difference
+    mode: lazy
+    layers: [mt308_x_a, guard_ring_mk]
+  - name: mt308_x
+    op: interacting
+    mode: lazy
+    layers: [mt308_x_b, mt308_via]
+  # Fewer than four vias at one location cannot be a 2x2 array, and one of them is
+  # MT30.8a's single via outright.
+  - name: mt308_few
+    op: interacting
+    mode: lazy
+    min: 1
+    max: 3
+    layers: [mt308_x, mt308_via]
   # ---- MDN.11 -------------------------------------------------------------
   # The channel the drift overlaps: the rule fixes its width at 0.4 in both directions,
   # and separately forbids a drift with no channel under it and no drain in it.

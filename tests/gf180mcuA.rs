@@ -34,7 +34,7 @@ fn counts(deck: &str, gds: &str, topcell: &str) -> Vec<(String, usize)> {
 #[case::mim_a(
     "mim_a", "mim_a.gds.gz", "10_4_1_MIM_OptionA",
     &[
-        ("MIM.1", 4), ("MIM.10", 4), ("MIM.2", 9), ("MIM.3", 59), ("MIM.4", 11), ("MIM.5", 8),
+        ("MIM.1", 4), ("MIM.10", 4), ("MIM.11", 2), ("MIM.2", 9), ("MIM.3", 59), ("MIM.4", 11), ("MIM.5", 8),
         ("MIM.6", 6), ("MIM.7", 2488), ("MIM.8a", 55), ("MIM.8b", 1), ("MIM.9", 832),
     ]
 )]
@@ -42,7 +42,7 @@ fn counts(deck: &str, gds: &str, topcell: &str) -> Vec<(String, usize)> {
     "metaltop_30k", "metaltop_30k.gds.gz", "7_16_METAL_30KA_6LM",
     &[
         ("MT30.1a", 161), ("MT30.1b", 2), ("MT30.2", 9), ("MT30.3", 9), ("MT30.4", 9),
-        ("MT30.5", 6), ("MT30.6", 4),
+        ("MT30.5", 6), ("MT30.6", 4), ("MT30.8", 7),
     ]
 )]
 fn static_fixture(
