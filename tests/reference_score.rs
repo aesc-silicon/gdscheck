@@ -85,7 +85,7 @@ const D: &str = "tests/data/gf180mcuD";
 #[case("dualgate", "dualgate.gds.gz", "7_6_Dualgate", 16, 2)]
 #[case("sram_3p3", "sram_3p3.gds.gz", "sram_3p3", 27, 6)]
 #[case("drc_bjt", "drc_bjt.gds.gz", "DRC_BJT", 6, 0)]
-#[case("nwell", "nwell.gds.gz", "7_4_NWELL", 195, 0)]
+#[case("nwell", "nwell.gds.gz", "7_4_NWELL", 202, 2)]
 #[case("poly2", "poly2.gds.gz", "7_7_Poly2", 260, 11)]
 #[case("dnwell", "dnwell.gds.gz", "7_2_DNWELL", 246, 0)]
 #[case("pres", "pres.gds.gz", "10_1_PRES", 52, 1)]

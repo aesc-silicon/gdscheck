@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Check-level test PDK.  Where tests/data/synthetic exercises deck and suite
+# *resolution*, this one exercises the checks themselves: two anonymous layers and
+# one rule per thing being measured, so a pattern's expected answer follows from the
+# geometry alone and not from any foundry's reading of it.
+name: Engine
+version: "1.0"
+
+decks:
+  - name: min_enclosure
+    path: decks/min_enclosure.yml
+
+layers:
+  - name: Outer
+    gds_layer: 1
+    gds_datatype: 0
+  - name: Inner
+    gds_layer: 2
+    gds_datatype: 0
