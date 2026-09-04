@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The same 0.5 µm enclosure under both metrics, so a pattern says which of them a
+# given geometry reaches.  They agree on orthogonal walls and part company at any
+# corner that is not square, which is the whole reason this deck exists.
+rules:
+  - id: ENC.proj
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    str_params:
+      metric: projection
+  - id: ENC.eucl
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    str_params:
+      metric: euclidian
+  # KLayout drops a pair measuring exactly zero - a corner resting on the enclosing
+  # wall - before it reports.  `skip_coincident` is meant to mirror that, and the
+  # `touch` patterns say whether it drops only those.
+  - id: ENC.eucl_skip
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      skip_coincident: 1
+    str_params:
+      metric: euclidian

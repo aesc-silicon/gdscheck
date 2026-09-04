@@ -58,12 +58,16 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
+    str_params:
+      metric: euclidian
   - id: NW.5_MV
     check: min_enclosure
     layers: [dnwell, nw_mv]
     value: 0.5
     params:
       interacting_only: 1
+    str_params:
+      metric: euclidian
   - id: NW.6
     check: nonempty
     layers: [nwell_res_in_dnwell]
