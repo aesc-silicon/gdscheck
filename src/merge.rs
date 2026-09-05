@@ -203,7 +203,9 @@ pub fn opening(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     if polys.is_empty() || radius <= 0.0 {
         return polys.to_vec();
     }
-    let eroded = tile_shapes(polys).outline(&OutlineStyle::new(-radius));
+    // Unioned first, for the same reason as `shrink`.
+    let whole = tile_shapes(polys).simplify_shape(FillRule::NonZero);
+    let eroded = whole.outline(&OutlineStyle::new(-radius));
     if eroded.is_empty() {
         return Vec::new();
     }
@@ -268,7 +270,11 @@ pub fn shrink(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     if polys.is_empty() || radius <= 0.0 {
         return polys.to_vec();
     }
-    shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(-radius)))
+    // Unioned first: the outline erodes each input shape on its own, and two pieces of
+    // one region that abut along a cut would each lose a strip along it.  Merged tile
+    // geometry never abuts, but a layer delivered as core-clipped pieces does.
+    let whole = tile_shapes(polys).simplify_shape(FillRule::NonZero);
+    shapes_to_merged(whole.outline(&OutlineStyle::new(-radius)))
 }
 
 /// Directional dilate: the Minkowski sum of `polys` with the segment from `-d` to `+d`,
@@ -1238,24 +1244,6 @@ fn rejoin_collinear(edges: Vec<Edge>) -> Vec<Edge> {
         out.push(Edge { a, b });
     }
     out
-}
-
-/// Whether an op *measures* between shapes rather than composing them.
-///
-/// It decides whether a selection feeding this op keeps its halo copies.  A boolean built
-/// on a selector has to stay on its sources' reach, which is why a selector is otherwise
-/// left halo-less; a measurement is the opposite case - it reads across a tile edge by
-/// definition, and two shapes forty microns apart never share a tile without the copies.
-fn measures(op: VirtualOp) -> bool {
-    matches!(
-        op,
-        VirtualOp::SeparationBelow(_) | VirtualOp::EnclosureBelow(_) | VirtualOp::EnclosureAbove(_)
-    )
-}
-
-/// The same for the edge ops.
-fn edge_measures(op: EdgeOp) -> bool {
-    matches!(op, EdgeOp::WidthBelow(_))
 }
 
 /// The margin a pair measures, as the quadrangle spanning it: the inner wall, swept to the
@@ -2264,6 +2252,12 @@ impl UnionFind {
             parent: (0..n).collect(),
         }
     }
+    /// Extend to `n` elements, each new one its own set.
+    pub(crate) fn grow_to(&mut self, n: usize) {
+        let from = self.parent.len();
+        self.parent.extend(from..n);
+    }
+
     pub(crate) fn find(&mut self, x: usize) -> usize {
         let mut r = x;
         while self.parent[r] != r {
@@ -2311,6 +2305,12 @@ struct Piece {
     area: f64,
     perimeter: f64,
     marker: (f64, f64),
+    /// Sum and count of the outer-ring vertices this core owns, towards the region's
+    /// vertex-average centroid.  Within its core a copy's outline is the region's, so the
+    /// sum over a region's pieces is the average over the whole region's outer ring -
+    /// what `representative_point` returns for a copy that holds the whole region, and
+    /// which a copy holds only when the halo happens to reach that far.
+    vsum: (f64, f64, usize),
     sides: Sides,
 }
 
@@ -2319,11 +2319,29 @@ impl Piece {
     /// region only reaches this tile's halo, not its core.
     fn of(poly: &MergedPoly, cx0: f64, cy0: f64, cx1: f64, cy1: f64) -> Option<Piece> {
         let area = clipped_area_dbu(poly, cx0, cy0, cx1, cy1);
-        (area > 0.0).then(|| Piece {
-            area,
-            perimeter: poly_perimeter_in_core(poly, cx0, cy0, cx1, cy1),
-            marker: representative_point(poly),
-            sides: Sides::of(poly, cx0, cy0, cx1, cy1),
+        (area > 0.0).then(|| {
+            // Strictly inside: a vertex on a tile line is as likely a cut as a corner -
+            // a layer delivered as pieces has one at every crossing - and a cut is not
+            // part of the region's outline.  A real corner on the line is lost with it,
+            // which moves the average by less than the cuts would.  Hole vertices count
+            // too: a hole a tile line runs through is a notch in the outer ring of
+            // both pieces, so only the sum over every vertex is the same however the
+            // region was cut - and a marker polygon written with cut lines, which is
+            // what the references hold, averages its hole corners as well.
+            let mut vsum = (0.0, 0.0, 0usize);
+            for p in poly.outer.iter().chain(poly.holes.iter().flatten()) {
+                let (x, y) = (p.x as f64, p.y as f64);
+                if x > cx0 && x < cx1 && y > cy0 && y < cy1 {
+                    vsum = (vsum.0 + x, vsum.1 + y, vsum.2 + 1);
+                }
+            }
+            Piece {
+                area,
+                perimeter: poly_perimeter_in_core(poly, cx0, cy0, cx1, cy1),
+                marker: representative_point(poly),
+                vsum,
+                sides: Sides::of(poly, cx0, cy0, cx1, cy1),
+            }
         })
     }
 }
@@ -2335,24 +2353,60 @@ fn link_adjacent_pieces(
     uf: &mut UnionFind,
     tile_pieces: &HashMap<(i32, i32), Vec<usize>>,
     sides: &[&Sides],
+    only: Option<&[(i32, i32)]>,
 ) {
-    for (&(tx, ty), ids) in tile_pieces {
-        if let Some(neigh) = tile_pieces.get(&(tx + 1, ty)) {
-            for &a in ids {
-                for &b in neigh {
-                    if intervals_overlap(&sides[a].right, &sides[b].left) {
-                        uf.union(a, b);
-                    }
+    // With `only`, just the borders those tiles have - in both directions, since the
+    // neighbour may have been filed in an earlier wave.  A pair linked twice is no harm.
+    let mut across = |tile: (i32, i32), dx: i32, dy: i32| {
+        let (Some(ids), Some(neigh)) = (
+            tile_pieces.get(&tile),
+            tile_pieces.get(&(tile.0 + dx, tile.1 + dy)),
+        ) else {
+            return;
+        };
+        // Only a piece that reaches the border can continue past it.  Nearly none do on
+        // a via layer, and trying every pair of a tile and its neighbour regardless was
+        // ten seconds of interval tests over 7.5 million vias that touch nothing.
+        type Side = fn(&Sides) -> &[(f64, f64)];
+        let (mine, theirs): (Side, Side) = match (dx, dy) {
+            (1, 0) => (|s| &s.right, |s| &s.left),
+            (-1, 0) => (|s| &s.left, |s| &s.right),
+            (0, 1) => (|s| &s.top, |s| &s.bottom),
+            _ => (|s| &s.bottom, |s| &s.top),
+        };
+        let at_border: Vec<usize> = ids
+            .iter()
+            .copied()
+            .filter(|&a| !mine(sides[a]).is_empty())
+            .collect();
+        if at_border.is_empty() {
+            return;
+        }
+        let facing: Vec<usize> = neigh
+            .iter()
+            .copied()
+            .filter(|&b| !theirs(sides[b]).is_empty())
+            .collect();
+        for &a in &at_border {
+            for &b in &facing {
+                if intervals_overlap(mine(sides[a]), theirs(sides[b])) {
+                    uf.union(a, b);
                 }
             }
         }
-        if let Some(neigh) = tile_pieces.get(&(tx, ty + 1)) {
-            for &a in ids {
-                for &b in neigh {
-                    if intervals_overlap(&sides[a].top, &sides[b].bottom) {
-                        uf.union(a, b);
-                    }
+    };
+    match only {
+        Some(tiles) => {
+            for &tile in tiles {
+                for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    across(tile, dx, dy);
                 }
+            }
+        }
+        None => {
+            for &tile in tile_pieces.keys() {
+                across(tile, 1, 0);
+                across(tile, 0, 1);
             }
         }
     }
@@ -2389,79 +2443,223 @@ pub fn stitch_labeled(tiles: &TileMap, tile_dbu: i32) -> LabeledRegions {
 /// selects whether each core piece's polygon is cloned into `by_tile` (the point-lookup
 /// index) — skipped for plain region stitching so dense layers aren't copied.
 fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledRegions {
+    stitch_from(tiles, tile_dbu, record_polys, None).0
+}
+
+/// The stitcher proper: regions grown outward from `seeds`, or the whole layer.
+///
+/// With `seeds`, only the regions that have a piece in one of those tiles are built.
+/// The seed tiles' pieces come first; a piece whose metal reaches a tile border pulls
+/// the tile beyond it into the next wave, and the waves stop when nothing crosses.  A
+/// region is either taken whole or not at all, since every border it crosses is
+/// followed, so what comes back is exactly the full stitch restricted to the regions
+/// that touch a seed.  The tiles visited come back with it, so a caller can tell which
+/// of the layer's other tiles it never looked at.
+///
+/// That is what a selection needs.  `overlapping [via4, mim_marker]` stitched all nine
+/// million via4 copies to decide which regions touch a marker filed in 53 tiles, one
+/// thread, fifty seconds a rule; it needs the regions in those 53 tiles and whatever
+/// they connect to.
+///
+/// Each wave's pieces are built across tiles in parallel and then filed in tile order,
+/// so the order pieces are numbered in - which piece a region takes its marker from
+/// when two are the same size, and so the order violations come out - is fixed by the
+/// seeds and the geometry, never by a `HashMap`'s iteration order.  Without seeds the
+/// first wave is every tile, sorted, which is the order the full stitch always used.
+/// One tile's pieces: the tile, and each piece with the index of the polygon it was cut
+/// from in the tile's list.
+type TilePieces = ((i32, i32), Vec<(usize, Piece)>);
+
+fn stitch_from(
+    tiles: &TileMap,
+    tile_dbu: i32,
+    record_polys: bool,
+    seeds: Option<&[(i32, i32)]>,
+) -> (LabeledRegions, HashSet<(i32, i32)>) {
     let t = tile_dbu as i64;
     let mut pieces: Vec<Piece> = Vec::new();
     let mut piece_loc: Vec<((i32, i32), MergedPoly)> = Vec::new();
     let mut tile_pieces: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
     // Every piece's source polygon, for the within-tile touch test below.
     let mut piece_poly: Vec<&MergedPoly> = Vec::new();
+    let mut uf = UnionFind::new(0);
+    let mut visited: HashSet<(i32, i32)> = HashSet::new();
 
-    // In tile order, not hash order.  Everything downstream inherits the order pieces are
-    // built in - which piece a region takes its marker from when two are the same size,
-    // which piece each region is numbered after, and so the order violations come out -
-    // and a `HashMap`'s iteration order is not the same twice.  That was visible: MDN.17
-    // reported its marker at one end of a region on one run and the other end on the next,
-    // twelve micrometres away, which is enough to read as a different violation.
-    let mut keys: Vec<(i32, i32)> = tiles.keys().copied().collect();
-    keys.sort_unstable();
-    for (tx, ty) in keys {
-        let polys = &tiles[&(tx, ty)];
-        let cx0 = (tx as i64 * t) as f64;
-        let cy0 = (ty as i64 * t) as f64;
-        let cx1 = ((tx as i64 + 1) * t) as f64;
-        let cy1 = ((ty as i64 + 1) * t) as f64;
-        for poly in polys {
-            let Some(piece) = Piece::of(poly, cx0, cy0, cx1, cy1) else {
-                continue;
-            };
-            let id = pieces.len();
-            pieces.push(piece);
-            piece_poly.push(poly);
-            if record_polys {
-                piece_loc.push(((tx, ty), poly.clone()));
+    let mut wave: Vec<(i32, i32)> = match seeds {
+        Some(s) => s
+            .iter()
+            .copied()
+            .filter(|k| tiles.contains_key(k))
+            .collect(),
+        None => tiles.keys().copied().collect(),
+    };
+    wave.sort_unstable();
+    wave.dedup();
+    let trace = std::env::var("GDSCHECK_STITCH_TRACE").is_ok();
+    let t_all = std::time::Instant::now();
+    let (mut t_build, mut t_file, mut t_adj, mut t_touch) = (0.0, 0.0, 0.0, 0.0);
+    while !wave.is_empty() {
+        let t0 = std::time::Instant::now();
+        // Build this wave's pieces in parallel, then file them in tile order.
+        let built: Vec<TilePieces> = wave
+            .par_iter()
+            .map(|&(tx, ty)| {
+                let polys = &tiles[&(tx, ty)];
+                let cx0 = (tx as i64 * t) as f64;
+                let cy0 = (ty as i64 * t) as f64;
+                let cx1 = ((tx as i64 + 1) * t) as f64;
+                let cy1 = ((ty as i64 + 1) * t) as f64;
+                let ps = polys
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, poly)| Piece::of(poly, cx0, cy0, cx1, cy1).map(|p| (i, p)))
+                    .collect();
+                ((tx, ty), ps)
+            })
+            .collect();
+        t_build += t0.elapsed().as_secs_f64();
+        let t0 = std::time::Instant::now();
+        let mut next: Vec<(i32, i32)> = Vec::new();
+        let mut new_tiles: Vec<(i32, i32)> = Vec::new();
+        for (tile, ps) in built {
+            visited.insert(tile);
+            let polys = &tiles[&tile];
+            let ids = tile_pieces.entry(tile).or_default();
+            for (i, piece) in ps {
+                let id = pieces.len();
+                if seeds.is_some() {
+                    let (tx, ty) = tile;
+                    let s = &piece.sides;
+                    if !s.right.is_empty() {
+                        next.push((tx + 1, ty));
+                    }
+                    if !s.left.is_empty() {
+                        next.push((tx - 1, ty));
+                    }
+                    if !s.top.is_empty() {
+                        next.push((tx, ty + 1));
+                    }
+                    if !s.bottom.is_empty() {
+                        next.push((tx, ty - 1));
+                    }
+                }
+                pieces.push(piece);
+                piece_poly.push(&polys[i]);
+                if record_polys {
+                    piece_loc.push((tile, polys[i].clone()));
+                }
+                ids.push(id);
             }
-            tile_pieces.entry((tx, ty)).or_default().push(id);
+            new_tiles.push(tile);
         }
+        uf.grow_to(pieces.len());
+        t_file += t0.elapsed().as_secs_f64();
+        let t0 = std::time::Instant::now();
+        let sides: Vec<&Sides> = pieces.iter().map(|p| &p.sides).collect();
+        let only = seeds.map(|_| new_tiles.as_slice());
+        link_adjacent_pieces(&mut uf, &tile_pieces, &sides, only);
+        t_adj += t0.elapsed().as_secs_f64();
+        let t0 = std::time::Instant::now();
+        link_touching_pieces(&mut uf, &tile_pieces, &piece_poly, only);
+        t_touch += t0.elapsed().as_secs_f64();
+        next.sort_unstable();
+        next.dedup();
+        wave = next
+            .into_iter()
+            .filter(|k| !visited.contains(k) && tiles.contains_key(k))
+            .collect();
     }
-
-    let mut uf = UnionFind::new(pieces.len());
-    let sides: Vec<&Sides> = pieces.iter().map(|p| &p.sides).collect();
-    link_adjacent_pieces(&mut uf, &tile_pieces, &sides);
-    link_touching_pieces(&mut uf, &tile_pieces, &piece_poly);
 
     // Compact each union-find root to a dense region id and aggregate area/marker
     // (marker from the largest piece).
-    let mut root_to_region: HashMap<usize, usize> = HashMap::new();
+    // Roots are piece ids, so a vector indexed by root does what a map would, for
+    // millions of single-via regions without the hashing.
+    let mut root_to_region: Vec<usize> = vec![usize::MAX; pieces.len()];
+    let mut piece_region: Vec<usize> = vec![0; pieces.len()];
     let mut regions: Vec<Region> = Vec::new();
-    let mut largest: Vec<f64> = Vec::new();
+    let mut largest: Vec<(f64, usize)> = Vec::new();
+    let mut vsum: Vec<(f64, f64, usize)> = Vec::new();
     for (id, p) in pieces.iter().enumerate() {
         let root = uf.find(id);
-        let region = *root_to_region.entry(root).or_insert_with(|| {
+        if root_to_region[root] == usize::MAX {
+            root_to_region[root] = regions.len();
             regions.push(Region {
                 area_dbu: 0.0,
                 perimeter_dbu: 0.0,
                 marker: p.marker,
             });
-            largest.push(0.0);
-            regions.len() - 1
-        });
+            largest.push((0.0, id));
+            vsum.push((0.0, 0.0, 0));
+        }
+        let region = root_to_region[root];
+        piece_region[id] = region;
         regions[region].area_dbu += p.area;
         regions[region].perimeter_dbu += p.perimeter;
+        let v = &mut vsum[region];
+        *v = (v.0 + p.vsum.0, v.1 + p.vsum.1, v.2 + p.vsum.2);
         // Strictly greater, so the first piece of a tie keeps it - and the pieces now
         // arrive in a fixed order, so "first" means something.
-        if p.area > largest[region] {
-            largest[region] = p.area;
+        if p.area > largest[region].0 {
+            largest[region] = (p.area, id);
             regions[region].marker = p.marker;
         }
     }
-
-    let mut by_tile: HashMap<(i32, i32), Vec<(MergedPoly, usize)>> = HashMap::new();
-    for (id, (tile, poly)) in piece_loc.into_iter().enumerate() {
-        let region = root_to_region[&uf.find(id)];
-        by_tile.entry(tile).or_default().push((poly, region));
+    // A region's marker is the vertex average of its whole outer ring where that lies
+    // inside it, which is what a copy holding the whole region reports and does not
+    // depend on how far any tile's copy reaches.  A ring's average sits in its hole, and
+    // a region whose pieces do not agree on what is outer keeps the largest piece's
+    // point, which is always inside.  The largest piece is asked first, which settles
+    // every one-piece region at once; only a point outside it costs a scan of the
+    // tile it fell in.
+    for (region, v) in vsum.iter().enumerate() {
+        if v.2 == 0 {
+            continue;
+        }
+        let c = (v.0 / v.2 as f64, v.1 / v.2 as f64);
+        let inside = point_in_merged(c.0, c.1, piece_poly[largest[region].1]) || {
+            let tile = (
+                (c.0 / t as f64).floor() as i32,
+                (c.1 / t as f64).floor() as i32,
+            );
+            tile_pieces.get(&tile).is_some_and(|ids| {
+                ids.iter().any(|&id| {
+                    piece_region[id] == region && point_in_merged(c.0, c.1, piece_poly[id])
+                })
+            })
+        };
+        if inside {
+            regions[region].marker = c;
+        }
     }
 
-    LabeledRegions { regions, by_tile }
+    // Pieces were filed tile by tile, so each tile's run is contiguous.
+    let mut by_tile: HashMap<(i32, i32), Vec<(MergedPoly, usize)>> = HashMap::new();
+    let mut current: Option<(i32, i32)> = None;
+    let mut bucket: Vec<(MergedPoly, usize)> = Vec::new();
+    for (id, (tile, poly)) in piece_loc.into_iter().enumerate() {
+        if current != Some(tile) {
+            if let Some(prev) = current {
+                by_tile.entry(prev).or_default().append(&mut bucket);
+            }
+            current = Some(tile);
+        }
+        bucket.push((poly, piece_region[id]));
+    }
+    if let Some(prev) = current {
+        by_tile.entry(prev).or_default().append(&mut bucket);
+    }
+
+    if trace && pieces.len() > 100_000 {
+        eprintln!(
+            "stitch pieces={} regions={} tiles={} build={t_build:.1}s file={t_file:.1}s \
+             adjacent={t_adj:.1}s touching={t_touch:.1}s total={:.1}s",
+            pieces.len(),
+            regions.len(),
+            visited.len(),
+            t_all.elapsed().as_secs_f64()
+        );
+    }
+    (LabeledRegions { regions, by_tile }, visited)
 }
 
 /// Per connected region of a base layer: true filled area (DBU²), the enclosed `feature`
@@ -2561,28 +2759,39 @@ fn link_touching_pieces(
     uf: &mut UnionFind,
     tile_pieces: &HashMap<(i32, i32), Vec<usize>>,
     piece_poly: &[&MergedPoly],
+    only: Option<&[(i32, i32)]>,
 ) {
-    for ids in tile_pieces.values() {
-        if ids.len() < 2 {
-            continue;
-        }
-        let boxes: Vec<(i32, i32, i32, i32)> =
-            ids.iter().map(|&i| poly_bbox(piece_poly[i])).collect();
-        for a in 0..ids.len() {
-            for b in (a + 1)..ids.len() {
-                let (ax0, ay0, ax1, ay1) = boxes[a];
-                let (bx0, by0, bx1, by1) = boxes[b];
-                if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
-                    continue;
-                }
-                if uf.find(ids[a]) == uf.find(ids[b]) {
-                    continue;
-                }
-                if polys_interact(piece_poly[ids[a]], piece_poly[ids[b]]) {
-                    uf.union(ids[a], ids[b]);
+    // The geometry is the work, and it is per tile, so the pairs are found across tiles
+    // in parallel and the unions replayed after.
+    let groups: Vec<&Vec<usize>> = match only {
+        Some(tiles) => tiles.iter().filter_map(|k| tile_pieces.get(k)).collect(),
+        None => tile_pieces.values().collect(),
+    };
+    let pairs: Vec<(usize, usize)> = groups
+        .par_iter()
+        .flat_map_iter(|ids| {
+            let mut local = Vec::new();
+            if ids.len() >= 2 {
+                let boxes: Vec<(i32, i32, i32, i32)> =
+                    ids.iter().map(|&i| poly_bbox(piece_poly[i])).collect();
+                for a in 0..ids.len() {
+                    for b in (a + 1)..ids.len() {
+                        let (ax0, ay0, ax1, ay1) = boxes[a];
+                        let (bx0, by0, bx1, by1) = boxes[b];
+                        if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
+                            continue;
+                        }
+                        if polys_interact(piece_poly[ids[a]], piece_poly[ids[b]]) {
+                            local.push((ids[a], ids[b]));
+                        }
+                    }
                 }
             }
-        }
+            local.into_iter()
+        })
+        .collect();
+    for (a, b) in pairs {
+        uf.union(a, b);
     }
 }
 
@@ -2699,13 +2908,100 @@ fn poly_within(a: &MergedPoly, others: &[MergedPoly]) -> bool {
 /// geometry that is only present on one side — measured as four extra DF.2a markers on
 /// comp, where a gate that tile-locally is not there stops being subtracted from its COMP.
 /// A region filter's output feeds a check directly, so it has no such downstream.
-fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
+/// Cut every tile's polygons to the tile's core: what is inside stays as it is, what is
+/// outside goes, and what straddles the border is clipped.  The result owns nothing
+/// twice across tiles, which is what [`rebroadcast_halo`] takes.
+fn clip_to_cores(tiles: TileMap, tile_dbu: i32) -> TileMap {
+    let t = tile_dbu as i64;
+    tiles
+        .into_par_iter()
+        .filter_map(|((tx, ty), polys)| {
+            let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+            let (x1, y1) = ((tx as i64 + 1) * t, (ty as i64 + 1) * t);
+            let inside = clip_to_box(polys, x0, y0, x1, y1);
+            (!inside.is_empty()).then_some(((tx, ty), inside))
+        })
+        .collect()
+}
+
+/// The part of `polys` inside the box: what lies within stays as it is, what lies
+/// outside goes, and what straddles the border is cut.  Holes survive the cut.
+fn clip_to_box(polys: Vec<MergedPoly>, x0: i64, y0: i64, x1: i64, y1: i64) -> Vec<MergedPoly> {
+    let (mut inside, mut straddle): (Vec<MergedPoly>, Vec<MergedPoly>) = (Vec::new(), Vec::new());
+    for p in polys {
+        let (bx0, by0, bx1, by1) = poly_bbox(&p);
+        let (bx0, by0, bx1, by1) = (bx0 as i64, by0 as i64, bx1 as i64, by1 as i64);
+        if bx1 <= x0 || bx0 >= x1 || by1 <= y0 || by0 >= y1 {
+            continue;
+        }
+        if bx0 >= x0 && bx1 <= x1 && by0 >= y0 && by1 <= y1 {
+            inside.push(p);
+        } else {
+            straddle.push(p);
+        }
+    }
+    if !straddle.is_empty() {
+        let rect = vec![vec![vec![
+            [x0 as f64, y0 as f64],
+            [x1 as f64, y0 as f64],
+            [x1 as f64, y1 as f64],
+            [x0 as f64, y1 as f64],
+        ]]];
+        let cut = tile_shapes(&straddle)
+            .simplify_shape(FillRule::NonZero)
+            .overlay(&rect, OverlayRule::Intersect, FillRule::NonZero);
+        inside.extend(shapes_to_merged(cut));
+    }
+    inside
+}
+
+/// The polygons of each tile that own area in the tile's core - what a stitch files
+/// for the tile, without the stitch.
+fn core_owned(tiles: &TileMap, tile_dbu: i32) -> TileMap {
+    let t = tile_dbu as i64;
+    tiles
+        .par_iter()
+        .filter_map(|(&(tx, ty), polys)| {
+            let cx0 = (tx as i64 * t) as f64;
+            let cy0 = (ty as i64 * t) as f64;
+            let cx1 = ((tx as i64 + 1) * t) as f64;
+            let cy1 = ((ty as i64 + 1) * t) as f64;
+            let own: Vec<MergedPoly> = polys
+                .iter()
+                .filter(|p| clipped_area_dbu(p, cx0, cy0, cx1, cy1) > 0.0)
+                .cloned()
+                .collect();
+            (!own.is_empty()).then_some(((tx, ty), own))
+        })
+        .collect()
+}
+
+fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32, clip: bool) -> TileMap {
     if halo_dbu <= 0 {
         return core_owned;
     }
     let (tile, halo) = (tile_dbu.max(1) as i64, halo_dbu as i64);
+    // A tile's copy of a polygon is exact within the tile's core plus the halo the layer
+    // was built at, which is at least this one, and past that it is whatever the tile
+    // happened to compute - a subtrahend that stopped short leaves material that does
+    // not exist.  Copying a polygon whole carried that out to tiles that read it as
+    // their own: DF.14 flagged a 1.5 µm scrap of `nactive` inside an n-well, made in a
+    // tile twenty microns away where the well's copy had run out.  Each owner's copy
+    // is cut to the owner's exact zone first; every point another tile is owed lies in
+    // the core of the tile that owns it, so nothing that matters is lost.
+    let owned: Vec<Vec<MergedPoly>> = core_owned
+        .into_par_iter()
+        .map(|((tx, ty), polys)| {
+            if !clip {
+                return polys;
+            }
+            let (x0, y0) = (tx as i64 * tile - halo, ty as i64 * tile - halo);
+            let (x1, y1) = ((tx as i64 + 1) * tile + halo, (ty as i64 + 1) * tile + halo);
+            clip_to_box(polys, x0, y0, x1, y1)
+        })
+        .collect();
     let mut buckets: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
-    for polys in core_owned.into_values() {
+    for polys in owned {
         for poly in polys {
             let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
             let tx0 = (x0 - halo).div_euclid(tile) as i32;
@@ -2981,24 +3277,73 @@ fn build_selection_tiles(
         return build_counted_selection_tiles(cand, filt, kind, keep, count, tile_dbu);
     }
 
-    let labeled = stitch_labeled(cand, tile_dbu);
+    // Only a region with a piece in a tile the filter is filed in can meet it, so only
+    // those regions are stitched, outward from the filter's tiles.  What is left in the
+    // tiles never visited is regions that meet nothing: dropped by `keep`, and passed
+    // through as their core-owned polygons otherwise, which is what the stitch would have
+    // filed for them.
+    let mut seeds: Vec<(i32, i32)> = filt
+        .iter()
+        .filter(|(_, v)| !v.is_empty())
+        .map(|(k, _)| *k)
+        .collect();
+    seeds.sort_unstable();
+    let (labeled, visited) = stitch_from(cand, tile_dbu, true, Some(&seeds));
     // `Inside` reduces with AND over a region's pieces, so it starts true and is cleared
     // by the first uncovered piece; the others start false and are set by the first match.
     let and_reduce = kind == SelectionKind::Inside;
-    let mut matches = vec![and_reduce; labeled.regions.len()];
-
-    for (tile, polys) in &labeled.by_tile {
-        let fpolys = filt.get(tile).map(Vec::as_slice).unwrap_or(&[]);
+    // Decided across tiles in parallel; a flag only ever moves one way, so the order the
+    // tiles land in does not matter.
+    let flags: Vec<std::sync::atomic::AtomicBool> = (0..labeled.regions.len())
+        .map(|_| std::sync::atomic::AtomicBool::new(and_reduce))
+        .collect();
+    let empty_f: Vec<MergedPoly> = Vec::new();
+    let t = tile_dbu as i64;
+    labeled.by_tile.par_iter().for_each(|(tile, polys)| {
+        use std::sync::atomic::Ordering::Relaxed;
+        let fpolys = filt.get(tile).unwrap_or(&empty_f);
+        let fboxes: Vec<(i32, i32, i32, i32)> = fpolys.iter().map(poly_bbox).collect();
+        let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
+        let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
         for (poly, rid) in polys {
-            if kind == SelectionKind::Inside {
-                if matches[*rid] && !poly_within(poly, fpolys) {
-                    matches[*rid] = false;
+            // Only the part of the candidate this tile owns is tested here.  A copy is
+            // exact within its tile's reach and no further, and the filter is only owed
+            // to be exact there too; every point of the region is owned by some tile,
+            // which tests it against a filter that is exact around it.  `inside` reduces
+            // with AND over the pieces, so this asks each piece exactly what it can
+            // answer; the others need one piece to meet the filter, and the piece that
+            // does is the one owning the meeting point.
+            //
+            // `covering` is the exception: it asks whether a filter polygon fits inside
+            // one candidate polygon, and a filter spanning two pieces fits in neither.
+            // It keeps the whole copy, and a layer it reads is never clipped.
+            let pieces = if kind == SelectionKind::Covers {
+                vec![poly.clone()]
+            } else {
+                clip_to_box(vec![poly.clone()], cx0, cy0, cx1, cy1)
+            };
+            for piece in &pieces {
+                if kind == SelectionKind::Inside {
+                    if flags[*rid].load(Relaxed) && !poly_within(piece, fpolys) {
+                        flags[*rid].store(false, Relaxed);
+                    }
+                } else if !flags[*rid].load(Relaxed) {
+                    let (x0, y0, x1, y1) = poly_bbox(piece);
+                    let hit = fpolys
+                        .iter()
+                        .zip(&fboxes)
+                        .any(|(fp, &(fx0, fy0, fx1, fy1))| {
+                            !(x1 < fx0 || fx1 < x0 || y1 < fy0 || fy1 < y0)
+                                && piece_meets(kind, piece, fp)
+                        });
+                    if hit {
+                        flags[*rid].store(true, Relaxed);
+                    }
                 }
-            } else if !matches[*rid] && fpolys.iter().any(|fp| piece_meets(kind, poly, fp)) {
-                matches[*rid] = true;
             }
         }
-    }
+    });
+    let matches: Vec<bool> = flags.into_iter().map(|f| f.into_inner()).collect();
 
     let mut out: TileMap = HashMap::new();
     for (tile, polys) in labeled.by_tile {
@@ -3006,6 +3351,16 @@ fn build_selection_tiles(
             if matches[rid] == keep {
                 out.entry(tile).or_default().push(poly);
             }
+        }
+    }
+    if !keep {
+        let rest: TileMap = cand
+            .iter()
+            .filter(|(k, _)| !visited.contains(k))
+            .map(|(k, v)| (*k, v.clone()))
+            .collect();
+        for (tile, polys) in core_owned(&rest, tile_dbu) {
+            out.entry(tile).or_default().extend(polys);
         }
     }
     out
@@ -3225,7 +3580,7 @@ pub fn analyze_regions(
     }
     let mut uf = UnionFind::new(pieces.len());
     let sides: Vec<&Sides> = pieces.iter().map(|p| &p.sides).collect();
-    link_adjacent_pieces(&mut uf, &tile_pieces, &sides);
+    link_adjacent_pieces(&mut uf, &tile_pieces, &sides, None);
     drop(sides);
 
     // Stage 3: aggregate per region.
@@ -3336,11 +3691,25 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
 /// region on every layer — which lets inter-layer checks (e.g. spacing between a
 /// layer and its filler) line up tile-for-tile.  The first check that needs a
 /// layer pays for its merge; the rest reuse it.
+/// What one rule needs of the layers it reaches: the halo per layer the rule raised,
+/// and the closure of layers it reaches at all.  See `MergedCache::rule_halos`.
+pub type RuleHalos = (HashMap<(i16, i16), i32>, HashSet<(i16, i16)>);
+
 pub struct MergedCache {
     tile_dbu: i32,
     halo_dbu: i32,
     halo_by_layer: HashMap<(i16, i16), i32>,
     layers: HashMap<(i16, i16), TileMap>,
+    /// The halo each cached layer was actually built at.  A layer can be cached at less
+    /// than its configured halo when only rules that measure nothing have read it so far;
+    /// a later consumer that needs more rebuilds it.  See [`MergedCache::ensure_at`].
+    layer_halo: HashMap<(i16, i16), i32>,
+    /// The halo each layer needs for the rule currently being run - its own reach on the
+    /// layers it names, and what its derivations need of their sources - and the closure
+    /// of layers the rule reaches.  A layer in the closure that the table does not raise
+    /// takes the minimum; a layer outside it - a violation boundary, a layer named in
+    /// `params` - takes its configured halo.  `None` outside a rule.
+    rule_halos: Option<RuleHalos>,
     regions: HashMap<(i16, i16), Vec<Region>>,
     /// Lazy virtual layers, keyed by their synthetic (layer, datatype); built on
     /// first `ensure` from their source layers' tiles instead of the layout.
@@ -3352,6 +3721,20 @@ pub struct MergedCache {
     edge_defs: HashMap<(i16, i16), TiledEdge>,
     /// Every edge layer filed under every tile it crosses, for reading as a filter.
     edge_spans: HashMap<(i16, i16), EdgeTileMap>,
+    /// The halo each cached edge layer was built for; see `layer_halo`.
+    edge_halo: HashMap<(i16, i16), i32>,
+    /// Derived layers delivered as core-clipped pieces copied out to their consumers'
+    /// reach, rather than as whole tile copies.  Decided by `clippable_layers`.
+    clippable: HashSet<(i16, i16)>,
+    /// Layer names, for the traces and `GDSCHECK_DUMP_LAYER`.
+    names: HashMap<(i16, i16), String>,
+    /// Polygon copies per cached layer, kept at insert so the trace's resident count
+    /// is a sum over layers and not a walk over fifty million tiles per rule.
+    layer_polys: HashMap<(i16, i16), usize>,
+    /// Derived layers read, somewhere downstream, by the enclosure engine or by
+    /// `covering`, which take one tile's copy for the whole region.  Built and copied
+    /// the old way; see `clippable_layers`.
+    whole_chain: HashSet<(i16, i16)>,
 }
 
 /// A registered edge layer: its op and the source keys it is built from.
@@ -3372,21 +3755,22 @@ impl MergedCache {
     /// layers a rule raised a halo for.  A layer that is only ever composed further or
     /// extracted from - the sources of the channel-width edge layers, say - is read
     /// tile-locally and gains nothing but duplicate work from the copies.
-    fn stitch_halo(&self, key: (i16, i16)) -> i32 {
-        self.halo_by_layer.get(&key).copied().unwrap_or(0)
+    /// The halo this layer's tiles are built with, for diagnostics.
+    pub fn halo_dbu(&self, l: i16, d: i16) -> i32 {
+        self.halo_for((l, d)).unwrap_or(self.halo_dbu)
     }
 
-    /// Whether any other virtual or edge layer is built from `key`.  A layer that feeds
-    /// one is on its sources' tiling reach and has to stay there; a layer that feeds only
-    /// rules can be put back on the drawn layers' halo contract.
-    fn feeds_another_layer(&self, key: (i16, i16)) -> bool {
-        self.virtual_defs
-            .iter()
-            .any(|(k, d)| *k != key && !measures(d.op) && d.sources.contains(&key))
-            || self
-                .edge_defs
-                .iter()
-                .any(|(k, d)| *k != key && !edge_measures(d.op) && d.sources.contains(&key))
+    fn stitch_halo(&self, key: (i16, i16)) -> i32 {
+        self.halo_for(key).unwrap_or(0)
+    }
+
+    /// What the running rule needs of `key`, else what the layer is configured with.
+    /// `None` is a layer nothing raised, which the callers read as their own floor.
+    fn halo_for(&self, key: (i16, i16)) -> Option<i32> {
+        match &self.rule_halos {
+            Some((table, closure)) if closure.contains(&key) => table.get(&key).copied(),
+            _ => self.halo_by_layer.get(&key).copied(),
+        }
     }
 
     pub fn new(tile_dbu: i32, halo_dbu: i32, halo_by_layer: HashMap<(i16, i16), i32>) -> Self {
@@ -3395,11 +3779,18 @@ impl MergedCache {
             halo_dbu,
             halo_by_layer,
             layers: HashMap::new(),
+            layer_halo: HashMap::new(),
+            rule_halos: None,
             regions: HashMap::new(),
             virtual_defs: HashMap::new(),
             edge_layers: HashMap::new(),
             edge_defs: HashMap::new(),
             edge_spans: HashMap::new(),
+            edge_halo: HashMap::new(),
+            clippable: HashSet::new(),
+            names: HashMap::new(),
+            layer_polys: HashMap::new(),
+            whole_chain: HashSet::new(),
         }
     }
 
@@ -3454,9 +3845,30 @@ impl MergedCache {
     /// Build `key`'s edge tiles if not already done, resolving its sources first —
     /// polygon sources through `ensure`, edge sources recursively through here.
     pub fn ensure_edges(&mut self, layout: &FlatLayout, key: (i16, i16)) {
+        let want = self.halo_dbu(key.0, key.1);
         if self.edge_layers.contains_key(&key) {
-            return;
+            if self.edge_halo.get(&key).copied().unwrap_or(i32::MAX) >= want {
+                return;
+            }
+            self.edge_layers.remove(&key);
+            self.edge_spans.remove(&key);
         }
+        let t0 = std::time::Instant::now();
+        self.ensure_edges_inner(layout, key);
+        self.edge_halo.insert(key, want);
+        self.dump_edges_if_asked(key);
+        if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+            let n: usize = self.edge_layers[&key].values().map(|v| v.len()).sum();
+            eprintln!(
+                "edges {} op={:?} halo={want} edges={n} {:.1}s",
+                self.name_of(key),
+                self.edge_defs.get(&key).map(|d| d.op),
+                t0.elapsed().as_secs_f64()
+            );
+        }
+    }
+
+    fn ensure_edges_inner(&mut self, layout: &FlatLayout, key: (i16, i16)) {
         let Some(def) = self.edge_defs.get(&key).cloned() else {
             self.edge_layers.insert(key, EdgeTileMap::new());
             self.edge_spans.insert(key, EdgeTileMap::new());
@@ -3510,15 +3922,36 @@ impl MergedCache {
                 }
             }
             let mut gathered: Vec<Vec<Edge>> = Vec::new();
-            let mut ps: Vec<&[MergedPoly]> = Vec::new();
+            let mut ps: Vec<std::borrow::Cow<[MergedPoly]>> = Vec::new();
             for (i, &src) in def.sources.iter().enumerate() {
-                if is_poly(i) {
-                    ps.push(
+                if is_poly(i) && def.op.mixes() {
+                    // A polygon filter is read wherever the subject edges go, like an
+                    // edge filter above: an edge is filed by its midpoint and can run
+                    // three tiles past it, and the polygon it meets there is in this
+                    // tile only if the polygon's halo happens to reach.  It used to,
+                    // by luck - a 40 µm rule elsewhere on the same layer - until halos
+                    // were built per rule and MDP.9b lost its drift edge to a 1 µm one.
+                    // Copies of one polygon filed in several tiles are dropped; two
+                    // tiles' differing merges of one region are both kept, and read as
+                    // a union by every op that takes a filter.
+                    let mut seen: HashSet<(usize, i32, i32, i32, i32)> = HashSet::new();
+                    let mut v: Vec<MergedPoly> = Vec::new();
+                    for tt in &reach {
+                        for m in self.layers[&src].get(tt).into_iter().flatten() {
+                            let (a, b) = (m.outer[0], m.outer[m.outer.len() / 2]);
+                            if seen.insert((m.outer.len(), a.x, a.y, b.x, b.y)) {
+                                v.push(m.clone());
+                            }
+                        }
+                    }
+                    ps.push(std::borrow::Cow::Owned(v));
+                } else if is_poly(i) {
+                    ps.push(std::borrow::Cow::Borrowed(
                         self.layers[&src]
                             .get(&tile)
                             .map(Vec::as_slice)
                             .unwrap_or(&empty_p),
-                    );
+                    ));
                 } else if i < subjects {
                     gathered.push(
                         self.edge_layers[&src]
@@ -3541,6 +3974,7 @@ impl MergedCache {
                 }
             }
             let es: Vec<&[Edge]> = gathered.iter().map(Vec::as_slice).collect();
+            let ps: Vec<&[MergedPoly]> = ps.iter().map(|c| c.as_ref()).collect();
             let core = (
                 tile.0 as i64 * t,
                 tile.1 as i64 * t,
@@ -3578,6 +4012,17 @@ impl MergedCache {
         self.ensure(layout, layer, datatype);
         if !self.regions.contains_key(&(layer, datatype)) {
             let r = stitch_regions(&self.layers[&(layer, datatype)], self.tile_dbu);
+            if self.dump_wanted((layer, datatype)) {
+                for (i, reg) in r.iter().enumerate() {
+                    eprintln!(
+                        "dump {} region {i} area={:.0} marker=({:.1},{:.1})",
+                        self.name_of((layer, datatype)),
+                        reg.area_dbu,
+                        reg.marker.0,
+                        reg.marker.1
+                    );
+                }
+            }
             self.regions.insert((layer, datatype), r);
         }
         &self.regions[&(layer, datatype)]
@@ -3635,10 +4080,171 @@ impl MergedCache {
     /// Merge `(layer, datatype)` and cache it if not already done.  A registered
     /// lazy virtual layer is composed per tile from its (recursively ensured)
     /// sources; any other layer is tiled directly from the layout.
-    pub fn ensure(&mut self, layout: &FlatLayout, layer: i16, datatype: i16) {
-        let key = (layer, datatype);
-        if self.layers.contains_key(&key) {
+    /// Whether `key` is a drawn layer - one with no virtual or edge derivation behind it.
+    pub fn is_drawn(&self, key: (i16, i16)) -> bool {
+        !self.virtual_defs.contains_key(&key) && !self.edge_defs.contains_key(&key)
+    }
+
+    /// The reach of the rule about to run and the layers it names, or `None` to fall back
+    /// to each layer's configured halo.  Set by the deck runner around every rule.
+    pub fn set_whole_chain(&mut self, keys: HashSet<(i16, i16)>) {
+        self.whole_chain = keys;
+    }
+
+    /// Whether any other virtual or edge layer is built from `key`.
+    fn feeds_another_layer(&self, key: (i16, i16)) -> bool {
+        self.virtual_defs
+            .iter()
+            .any(|(k, d)| *k != key && d.sources.contains(&key))
+            || self
+                .edge_defs
+                .iter()
+                .any(|(k, d)| *k != key && d.sources.contains(&key))
+    }
+
+    pub fn set_names(&mut self, names: HashMap<(i16, i16), String>) {
+        self.names = names;
+    }
+
+    /// A layer's name if known, else its numbers.
+    fn name_of(&self, key: (i16, i16)) -> String {
+        self.names
+            .get(&key)
+            .cloned()
+            .unwrap_or_else(|| format!("{}/{}", key.0, key.1))
+    }
+
+    /// `GDSCHECK_NO_CLIP=1` builds every layer whole, for telling a clipping problem
+    /// from any other.
+    pub fn set_clippable(&mut self, keys: HashSet<(i16, i16)>) {
+        self.clippable = if std::env::var("GDSCHECK_NO_CLIP").is_ok() {
+            HashSet::new()
+        } else {
+            keys
+        };
+    }
+
+    /// `GDSCHECK_DUMP_LAYER=<layer>/<datatype>[,...]`: print a layer's tiles as they are
+    /// cached, polygons as bounding boxes and edges as segments.
+    fn dump_wanted(&self, key: (i16, i16)) -> bool {
+        std::env::var("GDSCHECK_DUMP_LAYER").is_ok_and(|w| {
+            w.split(',')
+                .any(|k| k == format!("{}/{}", key.0, key.1) || k == self.name_of(key))
+        })
+    }
+
+    fn dump_edges_if_asked(&self, key: (i16, i16)) {
+        if !self.dump_wanted(key) {
             return;
+        }
+        let mut keys: Vec<_> = self.edge_layers[&key].keys().copied().collect();
+        keys.sort_unstable();
+        for k in keys {
+            for e in &self.edge_layers[&key][&k] {
+                eprintln!(
+                    "dump {} tile=({},{}) edge=({},{})-({},{})",
+                    self.name_of(key),
+                    k.0,
+                    k.1,
+                    e.a.x,
+                    e.a.y,
+                    e.b.x,
+                    e.b.y
+                );
+            }
+        }
+    }
+
+    fn dump_if_asked(&self, key: (i16, i16), tiles: &TileMap) {
+        if !self.dump_wanted(key) {
+            return;
+        }
+        let mut keys: Vec<_> = tiles.keys().copied().collect();
+        keys.sort_unstable();
+        for k in keys {
+            for p in &tiles[&k] {
+                let (x0, y0, x1, y1) = poly_bbox(p);
+                let verts = if std::env::var("GDSCHECK_DUMP_VERTS").is_ok() {
+                    p.outer
+                        .iter()
+                        .map(|v| format!("({},{})", v.x, v.y))
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                } else {
+                    String::new()
+                };
+                eprintln!(
+                    "dump {} tile=({},{}) bbox=({x0},{y0})-({x1},{y1}) n={} holes={} {verts}",
+                    self.name_of(key),
+                    k.0,
+                    k.1,
+                    p.outer.len(),
+                    p.holes.len()
+                );
+            }
+        }
+    }
+
+    /// Set (or clear) the per-layer halos of the rule about to run.  See `rule_halos`.
+    pub fn set_rule_halos(&mut self, halos: Option<RuleHalos>) {
+        self.rule_halos = halos;
+    }
+
+    /// Merge `layer`/`datatype` with the halo the running rule needs of it, or the
+    /// layer's configured halo outside a rule.
+    pub fn ensure(&mut self, layout: &FlatLayout, layer: i16, datatype: i16) {
+        let want = self.halo_dbu(layer, datatype);
+        self.ensure_at(layout, layer, datatype, want);
+    }
+
+    /// Merge a **drawn** layer with at least `want` of halo, reusing a cached merge that
+    /// already has that much and rebuilding one that has less.
+    ///
+    /// A layer's configured halo is the maximum over everything that reads it, so one
+    /// long-reach consumer makes every other pay its reach - and against a 20 µm tile a
+    /// halo multiplies a layer's geometry by about `((tile + 2·halo)/tile)²`.  On a real
+    /// design GF180's slotting chain put 120 µm on the drawn metals and a guard-ring
+    /// chain 200 µm on the actives, so a `no_angle` check - which reads each polygon's
+    /// own edges and needs no halo whatsoever - was merging Contact into 175 million
+    /// polygon copies from 3.6 million drawn shapes.  A caller that knows it needs less
+    /// asks for less.
+    ///
+    /// Derived layers ignore `want`: what a virtual or edge layer's sources need is set
+    /// by the derivation, not by whoever reads the result.  A derived layer records the
+    /// halo it was built for all the same, because its sources were built for that and
+    /// a rule that needs more of it has them rebuilt - and then needs it rebuilt on top.
+    pub fn ensure_at(&mut self, layout: &FlatLayout, layer: i16, datatype: i16, want: i32) {
+        let key = (layer, datatype);
+        let want = if self.is_drawn(key) {
+            want
+        } else if self.clippable.contains(&key) {
+            // Delivered as pieces copied out to exactly this reach - none when nothing
+            // asked - so that, not the floor a whole copy gets, is what it was built for.
+            self.stitch_halo(key)
+        } else {
+            self.halo_dbu(layer, datatype)
+        };
+        if self.layers.contains_key(&key) {
+            let have = self.layer_halo.get(&key).copied().unwrap_or(i32::MAX);
+            // A copy built far past this consumer's reach is reused only while it is
+            // cheap to keep reading: a drawn layer at a 200 µm guard-ring halo is 250
+            // copies of every shape, and a 0.3 µm spacing rule reading it walks all of
+            // them - NAT.2 spent 27 s on comp that way, against a 1.6 s merge to build
+            // it thin (and 1.6 s again for the guard-ring rule that needs it fat later).
+            // The threshold is a ratio of reaches; the copy count grows with its square.
+            let far_too_fat = self.is_drawn(key)
+                && have != i32::MAX
+                && want < have / 4
+                && self.layer_polys.get(&key).copied().unwrap_or(0) > 1_000_000;
+            if have >= want && !far_too_fat {
+                return;
+            }
+            // Cached too thin for this consumer, or too fat to read.  Drop it and
+            // everything derived from it by stitching, which inherits the tiles' reach.
+            self.layers.remove(&key);
+            self.layer_polys.remove(&key);
+            self.regions.remove(&key);
+            self.layer_halo.remove(&key);
         }
         if let Some(def) = self.virtual_defs.get(&key).cloned() {
             if matches!(def.op, VirtualOp::WithText) {
@@ -3660,7 +4266,10 @@ impl MergedCache {
                     .unwrap_or_default();
                 let cand = &self.layers[&def.sources[0]];
                 let tiles = build_text_selection_tiles(cand, &pts, self.tile_dbu);
+                self.layer_polys
+                    .insert(key, tiles.values().map(|v| v.len()).sum());
                 self.layers.insert(key, tiles);
+                self.layer_halo.insert(key, want);
                 return;
             }
             // A selector's filter may be an *edge* layer rather than a polygon one -
@@ -3673,16 +4282,28 @@ impl MergedCache {
                     self.ensure(layout, sg, sd);
                 }
             }
+            let t0 = std::time::Instant::now();
+            let src_copies: usize = def
+                .sources
+                .iter()
+                .filter_map(|s| self.layers.get(s))
+                .map(|m| m.values().map(|v| v.len()).sum::<usize>())
+                .sum();
             if def.op == VirtualOp::Extents {
                 let tiles = build_extents_tiles(&self.layers[&def.sources[0]], self.tile_dbu);
-                self.layers.insert(key, tiles);
+                self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
             }
             if let Some(f) = def.op.region_filter() {
                 let tiles =
                     build_region_filter_tiles(&self.layers[&def.sources[0]], self.tile_dbu, f);
-                let tiles = rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key));
-                self.layers.insert(key, tiles);
+                let tiles = if self.clippable.contains(&key) {
+                    tiles
+                } else {
+                    let whole = self.whole_chain.contains(&key);
+                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), !whole)
+                };
+                self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
             }
             if let Some((kind, keep, count)) = def.op.selection() {
@@ -3699,7 +4320,7 @@ impl MergedCache {
                         keep,
                         self.tile_dbu,
                     );
-                    self.layers.insert(key, tiles);
+                    self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                     return;
                 }
                 // candidate = source[0], filter = source[1] (empty if absent).
@@ -3711,42 +4332,128 @@ impl MergedCache {
                     .map(|s| &self.layers[s])
                     .unwrap_or(&empty);
                 let tiles = build_selection_tiles(cand, filt, kind, keep, count, self.tile_dbu);
-                // Same story as the region filters above, with the same limit: a selector
-                // that something else is built from must keep the reach its sources were
-                // tiled with, but one that nothing reads but a rule has no such downstream,
-                // and a spacing rule on it has to see across a tile edge.  GF180's GR.2
-                // measures `metal1_prime` (metal not overlapping the seal-ring marker)
-                // against the marker, and without this five of its walls fall in a
-                // neighbouring tile's core and go unreported.
-                let tiles = if self.feeds_another_layer(key) {
+                // Stitching hands back one whole copy per region per tile that owns a
+                // piece of it, and nothing in the tiles around - so a consumer that reads
+                // across a tile edge, a rule or a boolean alike, is owed the copies back
+                // out to its reach.  A selection that fed another layer used to be left
+                // without them, because a whole copy carries whatever its tile computed
+                // past its exact zone and a boolean on that subtracted geometry present
+                // on one side only; `rebroadcast_halo` now cuts each copy to the zone it
+                // is exact in, so the copies can go wherever they are needed.  A layer
+                // delivered as pieces is cut and copied by `insert_virtual` instead.
+                let tiles = if self.clippable.contains(&key) {
                     tiles
+                } else if self.whole_chain.contains(&key) {
+                    if self.feeds_another_layer(key) {
+                        tiles
+                    } else {
+                        rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), false)
+                    }
                 } else {
-                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key))
+                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), true)
                 };
-                self.layers.insert(key, tiles);
+                self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
             }
             let src_maps: Vec<&TileMap> = def.sources.iter().map(|s| &self.layers[s]).collect();
             let tiles = build_virtual_tiles(def.op, &src_maps);
-            self.layers.insert(key, tiles);
+            self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
             return;
         }
         let tile = self.tile_dbu;
-        let halo = self
-            .halo_by_layer
-            .get(&key)
-            .copied()
-            .unwrap_or(self.halo_dbu);
-        let tiles = build_tiled_merge(layout.get(layer, datatype), tile, halo);
+        let halo = want;
+        let raw = layout.get(layer, datatype);
+        let t0 = std::time::Instant::now();
+        let tiles = build_tiled_merge(raw, tile, halo);
+        if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+            let copies: usize = tiles.values().map(|v| v.len()).sum();
+            eprintln!(
+                "merge {layer}/{datatype} raw={} halo={}dbu tile={}dbu tiles={} copies={} \
+                 blowup={:.0}x {:.1}s",
+                raw.len(),
+                halo,
+                tile,
+                tiles.len(),
+                copies,
+                copies as f64 / (raw.len().max(1)) as f64,
+                t0.elapsed().as_secs_f64()
+            );
+        }
+        self.dump_if_asked(key, &tiles);
+        self.layer_polys
+            .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, tiles);
+        self.layer_halo.insert(key, halo);
+    }
+
+    /// Store a built derived layer, and under `GDSCHECK_MERGE_TRACE` say what it cost:
+    /// the copies it read, the copies it holds, and the time - a selection stitches its
+    /// whole candidate layer, so on a heavily haloed source this is where a run goes.
+    fn insert_virtual(
+        &mut self,
+        key: (i16, i16),
+        op: VirtualOp,
+        src_copies: usize,
+        tiles: TileMap,
+        t0: std::time::Instant,
+        want: i32,
+    ) {
+        let clipped = self.clippable.contains(&key);
+        let tiles = if clipped {
+            let pieces = clip_to_cores(tiles, self.tile_dbu);
+            rebroadcast_halo(pieces, self.tile_dbu, self.stitch_halo(key), true)
+        } else {
+            tiles
+        };
+        if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+            let copies: usize = tiles.values().map(|v| v.len()).sum();
+            eprintln!(
+                "virtual {} op={:?} src_copies={} tiles={} copies={}{} {:.1}s resident={}",
+                self.name_of(key),
+                op,
+                src_copies,
+                tiles.len(),
+                copies,
+                if clipped { " clipped" } else { "" },
+                t0.elapsed().as_secs_f64(),
+                self.resident_summary()
+            );
+        }
+        self.dump_if_asked(key, &tiles);
+        self.layer_polys
+            .insert(key, tiles.values().map(|v| v.len()).sum());
+        self.layers.insert(key, tiles);
+        self.layer_halo.insert(key, want);
+    }
+
+    /// What the cache holds right now, for the traces: layers, polygon copies, and how
+    /// many of those layers no rule names (derived intermediates, which nothing evicts).
+    pub fn resident_summary(&self) -> String {
+        let polys: usize = self.layer_polys.values().sum();
+        let derived = self.layers.keys().filter(|k| !self.is_drawn(**k)).count();
+        format!("{}L/{}derived/{}polys", self.layers.len(), derived, polys)
+    }
+
+    /// The halo a cached layer was built for, or `None` if it is not cached.
+    pub fn cached_halo(&self, key: (i16, i16)) -> Option<i32> {
+        self.layer_halo
+            .get(&key)
+            .or_else(|| self.edge_halo.get(&key))
+            .copied()
     }
 
     /// Drop a layer's cached tiles and stitched regions.  Used by the deck
     /// runner to free a layer's merged geometry once no remaining rule needs it,
     /// bounding peak memory when a deck touches many layers.
     pub fn evict(&mut self, layer: i16, datatype: i16) {
-        self.layers.remove(&(layer, datatype));
-        self.regions.remove(&(layer, datatype));
+        let key = (layer, datatype);
+        self.layers.remove(&key);
+        self.layer_polys.remove(&key);
+        self.layer_halo.remove(&key);
+        self.regions.remove(&key);
+        self.edge_layers.remove(&key);
+        self.edge_spans.remove(&key);
+        self.edge_halo.remove(&key);
     }
 
     /// Per-tile merged geometry of a layer.  Must be `ensure`d first; a layer
@@ -3912,5 +4619,46 @@ mod tests {
         let bars = compose_tile(VirtualOp::NotSquare, &[&src]);
         assert_eq!(squares.len(), 1, "one square contact");
         assert_eq!(bars.len(), 2, "the rectangle and the L-shape are bars");
+    }
+}
+
+#[cfg(test)]
+mod pieces_are_a_region {
+    use super::*;
+    fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
+        MergedPoly {
+            outer: vec![
+                IntPoint::new(x0, y0),
+                IntPoint::new(x1, y0),
+                IntPoint::new(x1, y1),
+                IntPoint::new(x0, y1),
+            ],
+            holes: Vec::new(),
+        }
+    }
+    fn area(v: &[MergedPoly]) -> f64 {
+        v.iter().map(merged_area_dbu).sum()
+    }
+
+    /// A layer delivered as core-clipped pieces abuts along tile lines, and every size
+    /// operator must read the pieces as the one region they are - an erode that treated
+    /// a cut as a wall would eat a strip along it.
+    #[test]
+    fn every_size_operator_unions_abutting_pieces_first() {
+        let whole = vec![rect(0, 0, 2000, 1000)];
+        let halves = vec![rect(0, 0, 1000, 1000), rect(1000, 0, 2000, 1000)];
+        let ops: [(&str, fn(&[MergedPoly]) -> Vec<MergedPoly>); 7] = [
+            ("shrink", |p| shrink(p, 100.0)),
+            ("shrink_x", |p| shrink_x(p, 100.0)),
+            ("shrink_y", |p| shrink_y(p, 100.0)),
+            ("open", |p| opening(p, 100.0)),
+            ("close", |p| closing(p, 100.0)),
+            ("grow", |p| grow_by(p, 100.0, 0.0)),
+            ("grow_x", |p| grow_x(p, 100.0)),
+        ];
+        for (name, f) in ops {
+            let (a, b) = (area(&f(&whole)), area(&f(&halves)));
+            assert!((a - b).abs() < 1.0, "{name}: whole {a} vs pieces {b}");
+        }
     }
 }

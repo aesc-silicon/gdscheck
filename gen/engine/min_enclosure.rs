@@ -93,10 +93,7 @@ pub fn generate(pdk: &PdkConfig) {
     ];
     write(
         "touch".into(),
-        vec![
-            poly(outer, &two_chamfers),
-            rect(inner, 1.0, 5.5, 8.5, 8.5),
-        ],
+        vec![poly(outer, &two_chamfers), rect(inner, 1.0, 5.5, 8.5, 8.5)],
     );
     write(
         "touch_and_diag".into(),

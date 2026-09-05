@@ -559,7 +559,11 @@ pub fn generate(pdk: &PdkConfig) {
         "good",
         with(drift(o + 4.0, o + SPARE, 4.0, 6.5, false)),
     );
-    write("MDP.6", "bad", with(drift(o + 32.0, o + 4.0, 4.0, 6.5, false)));
+    write(
+        "MDP.6",
+        "bad",
+        with(drift(o + 32.0, o + 4.0, 4.0, 6.5, false)),
+    );
 
     // MDP.16b: a contact on the drain that reaches off the drain's own active.
     let drain_contact = |dx: f64| {

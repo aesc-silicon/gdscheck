@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use clap::{ArgGroup, Parser, Subcommand};
-use gdscheck::{load_gds, pdk::PdkConfig, report, run_drc};
+use gdscheck::{load_gds, pdk::PdkConfig, report, run_drc_with};
 use rayon::ThreadPoolBuilder;
 
 /// gdscheck — Open Source DRC engine
@@ -228,6 +228,8 @@ fn run(args: RunArgs) {
         println!("Deck: {}", args.deck.join(","));
     }
 
+    let t_load = std::time::Instant::now();
+    let c_load = gdscheck::cpu_seconds();
     let lib = match load_gds(&args.input) {
         Ok(l) => l,
         Err(e) => {
@@ -237,11 +239,21 @@ fn run(args: RunArgs) {
     };
 
     println!("Library: {}", lib.name);
+    if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+        let (w, c) = (
+            t_load.elapsed().as_secs_f64(),
+            gdscheck::cpu_seconds() - c_load,
+        );
+        eprintln!(
+            "phase load wall={w:.1}s cpu={c:.1}s cores={:.1}",
+            c / w.max(1e-9)
+        );
+    }
 
     let decks: Vec<&str> = args.deck.iter().map(String::as_str).collect();
     let start = std::time::Instant::now();
-    let violations = match run_drc(
-        &args.input,
+    let violations = match run_drc_with(
+        &lib,
         &args.process,
         &decks,
         args.suite.as_deref(),
@@ -278,9 +290,20 @@ fn run(args: RunArgs) {
     }
 
     if let Some(report) = &args.report {
+        let (t_rep, c_rep) = (std::time::Instant::now(), gdscheck::cpu_seconds());
         match report::write_lyrdb(report, &args.topcell, &violations) {
             Ok(()) => println!("Report written to: {report}"),
             Err(e) => eprintln!("Error writing report: {e}"),
+        }
+        if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            let (w, c) = (
+                t_rep.elapsed().as_secs_f64(),
+                gdscheck::cpu_seconds() - c_rep,
+            );
+            eprintln!(
+                "phase report wall={w:.1}s cpu={c:.1}s cores={:.1}",
+                c / w.max(1e-9)
+            );
         }
     }
 }

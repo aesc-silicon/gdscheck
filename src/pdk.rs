@@ -155,7 +155,7 @@ pub struct TiledEdgeSpec {
 }
 
 /// A lazy virtual layer resolved to GDS numbers, ready for the merge cache.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TiledVirtualSpec {
     /// The virtual layer's name (for diagnostics).
     pub name: String,
