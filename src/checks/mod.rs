@@ -128,7 +128,7 @@ pub fn run_rule(
         "max_width" => max_width::run(rule, layout, dbu_to_um, merged),
         "min_windowed_density" => windowed_density::run_min(rule, layout, dbu_to_um, merged),
         "max_windowed_density" => windowed_density::run_max(rule, layout, dbu_to_um, merged),
-        "offgrid" => offgrid::run(rule, layout, dbu_to_um),
+        "offgrid" => offgrid::run(rule, layout, dbu_to_um, merged),
         other => {
             eprintln!("[{}] Unknown check function: '{}'", rule.id, other);
             vec![]
