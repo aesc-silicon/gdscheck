@@ -1250,18 +1250,44 @@ fn side_margins(inner: &Poly, outers: &[&Poly], tol: f64) -> Vec<f64> {
                 for &(cx, cy, dx, dy) in &o.edges {
                     let (dox, doy) = (dx - cx, dy - cy);
                     let lo = dox.hypot(doy);
-                    if lo <= 0.0 || (dix * doy - diy * dox).abs() > 1e-6 * li * lo {
-                        continue; // not parallel
+                    if lo <= 0.0 {
+                        continue;
                     }
+                    // The outer edge over the part of it that projects onto this side:
+                    // where along the side each end lands, and how far out it is there.
+                    // The margin is the projection metric's, the shortest normal distance
+                    // over the overlap, which for an edge at any angle is at one end of
+                    // it.  Only parallel edges were measured before, and a side whose
+                    // facing wall is a 45° chamfer - every via on a power ring corner -
+                    // came back as an enclosure of nothing at all, a quarter of a million
+                    // times on one design.
                     let t0 = (cx - ax) * ux + (cy - ay) * uy;
                     let t1 = (dx - ax) * ux + (dy - ay) * uy;
-                    if t0.max(t1).min(li) - t0.min(t1).max(0.0) <= tol {
+                    let n0 = (cx - ax) * nx + (cy - ay) * ny;
+                    let n1 = (dx - ax) * nx + (dy - ay) * ny;
+                    let (lo_t, hi_t) = (t0.min(t1).max(0.0), t0.max(t1).min(li));
+                    if hi_t - lo_t <= tol {
                         continue; // no projected overlap
                     }
-                    let d0 = (cx - ax) * nx + (cy - ay) * ny;
-                    if d0 >= -tol {
-                        best = best.min(d0.max(0.0));
+                    // Normal distance at the two ends of the overlap, by interpolation.
+                    let at = |t: f64| {
+                        if (t1 - t0).abs() < 1e-12 {
+                            n0.min(n1)
+                        } else {
+                            n0 + (n1 - n0) * (t - t0) / (t1 - t0)
+                        }
+                    };
+                    let (m0, m1) = (at(lo_t), at(hi_t));
+                    if m0.max(m1) < -tol {
+                        continue; // wholly behind the side: the far wall, not this one
                     }
+                    // An edge that crosses the side's line within the overlap touches it.
+                    let m = if m0.min(m1) < -tol {
+                        0.0
+                    } else {
+                        m0.min(m1).max(0.0)
+                    };
+                    best = best.min(m);
                 }
             }
             if best.is_finite() { best } else { 0.0 }

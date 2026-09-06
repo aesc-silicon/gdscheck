@@ -70,7 +70,7 @@ pub fn run_rule(
     merged: &mut MergedCache,
     conn: Option<&crate::connectivity::Connectivity>,
 ) -> Vec<Violation> {
-    match rule.check.as_str() {
+    let mut out = match rule.check.as_str() {
         "antenna_ratio" => antenna_ratio::run(rule, layout, dbu_to_um, merged, conn),
         "gate_connected_min_area" => {
             gate_connected_min_area::run(rule, layout, dbu_to_um, merged, conn)
@@ -133,5 +133,45 @@ pub fn run_rule(
             eprintln!("[{}] Unknown check function: '{}'", rule.id, other);
             vec![]
         }
+    };
+    // `layer_params: {interacting: X}` keeps only the violations that touch X - KLayout's
+    // trailing `.interacting(layer)` on a check's result.  GF180's CUP.2 measures the
+    // width of the metal connected to a bond pad, but only where the measurement meets
+    // the pad: a millimetre of 0.3 µm line that happens to be on the pad's net is the
+    // line's own business.
+    if let (Some(&l), Some(&d)) = (
+        rule.params.get("interacting"),
+        rule.params.get("interacting_dt"),
+    ) {
+        let key = (l as i16, d as i16);
+        merged.ensure(layout, key.0, key.1);
+        let tiles = merged.tiles(key.0, key.1);
+        let t = merged.tile_dbu() as f64 * dbu_to_um;
+        let touches = |x: f64, y: f64| {
+            let tile = ((x / t).floor() as i32, (y / t).floor() as i32);
+            let (xd, yd) = (x / dbu_to_um, y / dbu_to_um);
+            tiles
+                .get(&tile)
+                .is_some_and(|ps| ps.iter().any(|p| crate::merge::point_in_merged(xd, yd, p)))
+        };
+        let trace = std::env::var("GDSCHECK_RULE_TRACE").is_ok();
+        out.retain(|v| {
+            let keep = match v.geometry {
+                crate::violation::ViolationGeometry::Point { x, y } => touches(x, y),
+                crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => (0..=4).any(|i| {
+                    let f = i as f64 / 4.0;
+                    touches(x1 + (x2 - x1) * f, y1 + (y2 - y1) * f)
+                }),
+                crate::violation::ViolationGeometry::None => true,
+            };
+            if !keep && trace {
+                eprintln!(
+                    "dropped (not interacting {}/{}): {}",
+                    key.0, key.1, v.message
+                );
+            }
+            keep
+        });
     }
+    out
 }

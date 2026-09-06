@@ -71,7 +71,7 @@ rules:
     value: 0.35
   - id: PP.9
     check: min_enclosure
-    layers: [pplus, poly_sab_only]
+    layers: [pplus, poly_sab_no_res]
     value: 0.18
     params:
       interacting_only: 1

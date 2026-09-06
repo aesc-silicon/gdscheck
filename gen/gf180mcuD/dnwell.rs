@@ -66,7 +66,22 @@ fn well(c: &Ctx, x: f64, y: f64, w: f64) -> (Vec<GdsElement>, (f64, f64)) {
 
 /// A P+ guard ring whose hole holds everything between `x0,y0` and `x1,y1`.
 fn ring(c: &Ctx, x0: f64, y0: f64, x1: f64, y1: f64) -> Vec<GdsElement> {
-    let (a, b) = (RING_GAP, RING_GAP + RING);
+    ring_sized(c, x0, y0, x1, y1, RING_GAP, RING)
+}
+
+/// A ring `gap` out from the box and `width` wide.  The pair fixtures put two wells 2.5 um
+/// apart, and DN.3 wants each in a ring of its own - a ring's interior that touches two
+/// wells surrounds neither - so theirs are narrow and close.
+fn ring_sized(
+    c: &Ctx,
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    gap: f64,
+    width: f64,
+) -> Vec<GdsElement> {
+    let (a, b) = (gap, gap + width);
     let (ox0, oy0, ox1, oy1) = (x0 - b, y0 - b, x1 + b, y1 + b);
     let (ix0, iy0, ix1, iy1) = (x0 - a, y0 - a, x1 + a, y1 + a);
     let mut v = Vec::new();
@@ -118,13 +133,14 @@ pub fn generate(pdk: &PdkConfig) {
         v.push(strap(&c, &[p]));
         v
     };
-    // Two wells `gap` apart in one ring, on one net or on two.
+    // Two wells `gap` apart, each in its own ring, on one net or on two.
     let pair = |gap: f64, same_net: bool| {
         let (mut v, p1) = well(&c, o, o, WELL);
         let x2 = o + WELL + gap;
         let (w2, p2) = well(&c, x2, o, WELL);
         v.extend(w2);
-        v.extend(ring(&c, o, o, x2 + WELL, o + WELL));
+        v.extend(ring_sized(&c, o, o, o + WELL, o + WELL, 0.5, 0.5));
+        v.extend(ring_sized(&c, x2, o, x2 + WELL, o + WELL, 0.5, 0.5));
         if same_net {
             v.push(strap(&c, &[p1, p2]));
         } else {
