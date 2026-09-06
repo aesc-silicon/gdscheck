@@ -205,8 +205,18 @@ fn add_path(path: &GdsPath, transform: &Transform, out: &mut FlatLayout) {
         return;
     }
     let hw = width.unsigned_abs() as f64 / 2.0;
-    let pts: Vec<(f64, f64)> = path.xy.iter().map(|p| (p.x as f64, p.y as f64)).collect();
+    // Consecutive duplicate points carry no direction and would divide by zero below.
+    let mut pts: Vec<(f64, f64)> = Vec::with_capacity(path.xy.len());
+    for p in &path.xy {
+        let q = (p.x as f64, p.y as f64);
+        if pts.last() != Some(&q) {
+            pts.push(q);
+        }
+    }
     let n = pts.len();
+    if n < 2 {
+        return;
+    }
     let ptype = path.path_type.unwrap_or(0);
     let cap = |is_begin: bool| -> f64 {
         match ptype {
@@ -223,50 +233,84 @@ fn add_path(path: &GdsPath, transform: &Transform, out: &mut FlatLayout) {
         }
     };
 
-    for i in 0..n - 1 {
-        let (ax, ay) = pts[i];
-        let (bx, by) = pts[i + 1];
-        let (dx, dy) = (bx - ax, by - ay);
-        let len = dx.hypot(dy);
-        if len == 0.0 {
-            continue;
+    // One polygon for the whole path, its sides the offset polylines joined at each
+    // bend where the two offset lines meet - the outline KLayout draws for it.  A
+    // rectangle per segment, extended by the half width at each joint, is the same
+    // shape only for right-angle bends; at a 45° bend the extension sticks out past
+    // the true outline by a fifth of a micron, and its corner is a vertex the layout
+    // never drew - which an off-grid check then reported, at a 1 nm database unit, on
+    // the diagonal corners of every power ring.
+    let dirs: Vec<(f64, f64)> = pts
+        .windows(2)
+        .map(|w| {
+            let (dx, dy) = (w[1].0 - w[0].0, w[1].1 - w[0].1);
+            let len = dx.hypot(dy);
+            (dx / len, dy / len)
+        })
+        .collect();
+    let side = |sign: f64| -> Vec<(f64, f64)> {
+        let mut v = Vec::with_capacity(n + 2);
+        let off = |i: usize, (x, y): (f64, f64)| {
+            let (ux, uy) = dirs[i];
+            (x - uy * hw * sign, y + ux * hw * sign)
+        };
+        let (u0x, u0y) = dirs[0];
+        let ea = cap(true);
+        v.push(off(0, (pts[0].0 - u0x * ea, pts[0].1 - u0y * ea)));
+        for j in 1..n - 1 {
+            let (ax, ay) = off(j - 1, pts[j]);
+            let (bx, by) = off(j, pts[j]);
+            let (ux, uy) = dirs[j - 1];
+            let (vx, vy) = dirs[j];
+            let cross = ux * vy - uy * vx;
+            if cross.abs() < 1e-9 {
+                // Straight on, or doubling back: no single meeting point.
+                v.push((ax, ay));
+                if ux * vx + uy * vy < 0.0 {
+                    v.push((bx, by));
+                }
+                continue;
+            }
+            // Where the two offset lines meet: a + u*t with (a + u*t - b) x v = 0.
+            let t = ((bx - ax) * vy - (by - ay) * vx) / cross;
+            let (mx, my) = (ax + ux * t, ay + uy * t);
+            // A very sharp bend would run the meeting point far out; bevel it instead.
+            if (mx - pts[j].0).hypot(my - pts[j].1) > 4.0 * hw {
+                v.push((ax, ay));
+                v.push((bx, by));
+            } else {
+                v.push((mx, my));
+            }
         }
-        let (ux, uy) = (dx / len, dy / len); // along the segment
-        let (nx, ny) = (-uy, ux); // perpendicular (left)
-        let ext_a = if i == 0 { cap(true) } else { hw };
-        let ext_b = if i + 1 == n - 1 { cap(false) } else { hw };
-        let (sax, say) = (ax - ux * ext_a, ay - uy * ext_a);
-        let (sbx, sby) = (bx + ux * ext_b, by + uy * ext_b);
-        let corners = [
-            (sax + nx * hw, say + ny * hw),
-            (sbx + nx * hw, sby + ny * hw),
-            (sbx - nx * hw, sby - ny * hw),
-            (sax - nx * hw, say - ny * hw),
-        ];
-        // Repeat the first corner so the ring is closed, matching the GDS
-        // boundary convention the merge expects (it drops the final vertex).
-        let xy: Vec<GdsPoint> = corners
-            .iter()
-            .chain(std::iter::once(&corners[0]))
-            .map(|&(x, y)| transform.apply(x.round() as i32, y.round() as i32))
-            .collect();
-        out.insert(
-            path.layer,
-            path.datatype,
-            GdsBoundary {
-                layer: path.layer,
-                datatype: path.datatype,
-                xy,
-                ..Default::default()
-            },
-        );
-    }
+        let (u1x, u1y) = dirs[n - 2];
+        let eb = cap(false);
+        v.push(off(
+            n - 2,
+            (pts[n - 1].0 + u1x * eb, pts[n - 1].1 + u1y * eb),
+        ));
+        v
+    };
+    let left = side(1.0);
+    let mut right = side(-1.0);
+    right.reverse();
+    let xy: Vec<GdsPoint> = left
+        .iter()
+        .chain(right.iter())
+        .chain(std::iter::once(&left[0]))
+        .map(|&(x, y)| transform.apply(x.round() as i32, y.round() as i32))
+        .collect();
+    out.insert(
+        path.layer,
+        path.datatype,
+        GdsBoundary {
+            layer: path.layer,
+            datatype: path.datatype,
+            xy,
+            ..Default::default()
+        },
+    );
 }
 
-/// Flatten the named top cell from `lib` into a `FlatLayout` of `GdsBoundary`
-/// variants in top-cell coordinates.  `needed` restricts which `(layer,
-/// datatype)` pairs are kept (`None` keeps all) — scoping a flatten to the layers
-/// a deck actually uses keeps a large hierarchy from blowing up memory.
 pub fn flatten_to_elems(topcell: &str, lib: &GdsLibrary, needed: Needed) -> FlatLayout {
     let cell_map: HashMap<&str, &GdsStruct> =
         lib.structs.iter().map(|s| (s.name.as_str(), s)).collect();
