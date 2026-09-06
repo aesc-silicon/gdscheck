@@ -297,12 +297,14 @@ pub fn generate(pdk: &PdkConfig) {
     write("NP.4a", "good", np4a(0.5));
     write("NP.4a", "bad", np4a(0.315));
 
-    // NP.4b: a marker edge beside a poly edge that runs within 0.32 µm of a P-channel
-    // gate - here the gate poly's end cap, which stops 0.3 µm past the active.
+    // NP.4b: a marker edge beside the side of the gate extension - the 0.3 µm of poly
+    // past the active - and only there, so that NP.4a, which asks the same of a butted
+    // edge beside the gate itself, has nothing to say.  The rule reads the extension's
+    // sides, not its end cap: an edge facing the cap is out of its reach.
     let np4b = |gap: f64| {
         let mut v = pmos(&c);
-        let y = o + 2.8 + gap;
-        v.push(rect(c.nplus, o + 2.2, y, o + 3.2, y + 0.5));
+        let xb = o + 2.5 - gap;
+        v.push(rect(c.nplus, o + 0.7, o + 2.5, xb, o + 3.2));
         v
     };
     write("NP.4b", "good", np4b(0.4));

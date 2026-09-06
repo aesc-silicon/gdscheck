@@ -50,7 +50,9 @@ pub fn generate(pdk: &PdkConfig) {
                     elems.push(rect(m, O, y, O + 2.0, y + 4.0 + v));
                     elems.push(rect(m, O + 2.0, y, O + 6.0, y + 2.0));
                     elems.push(rect(m, O + 2.0, y + 2.0 + v, O + 6.0, y + 4.0 + v));
-                    elems.push(rect(pad, O + 0.5, y + 0.5, O + 1.5, y + 1.5));
+                    // The pad sits on the notch: the rule keeps only the measurements
+                    // that meet the pad, so a notch the pad does not reach is nobody's.
+                    elems.push(rect(pad, O + 1.5, y + 1.5, O + 6.5, y + 2.5 + v));
                 }
             }
             write(&format!("{id}.{name}"), elems);

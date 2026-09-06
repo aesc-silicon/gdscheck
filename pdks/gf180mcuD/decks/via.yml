@@ -30,6 +30,8 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
+      min_extent: 1.86
+      projection: 0.26
   - id: V1.3a
     check: min_enclosure
     layers: [metal1, via1]
@@ -102,6 +104,8 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
+      min_extent: 1.86
+      projection: 0.26
   - id: V2.3b
     check: min_enclosure
     layers: [metal2, via2]
@@ -174,6 +178,8 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
+      min_extent: 1.86
+      projection: 0.26
   - id: V3.3b
     check: min_enclosure
     layers: [metal3, via3]
@@ -246,6 +252,8 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
+      min_extent: 1.86
+      projection: 0.26
   - id: V4.3b
     check: min_enclosure
     layers: [metal4, via4]

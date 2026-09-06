@@ -2020,6 +2020,17 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [poly2_drawn, sab]
+  # PP.9 leaves marked resistors alone: a high-resistance poly resistor has its heads
+  # implanted and its body under the salicide block bare, and its implant edges are
+  # the device's, not the rule's.
+  - name: poly_no_res
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, resistor]
+  - name: poly_sab_no_res
+    op: intersection
+    mode: lazy
+    layers: [poly_no_res, sab]
   - name: comp_sab_only
     op: intersection
     mode: lazy
@@ -3549,10 +3560,24 @@ virtual_layers:
     mode: lazy
     layers: [pcomp_holes, pcomp]
   # A deep well with no ring around it at all.
+  # The ring's interior as a box: a DNWELL has PCOMP devices of its own inside the ring,
+  # and subtracting every PCOMP from the hole punched them out of the interior, so the
+  # well was "not inside" the ring that surrounds it.  Upstream takes the extents of
+  # the interior that touches exactly one DNWELL, and so does this.
+  - name: pcomp_ring_one
+    op: interacting
+    min: 1
+    max: 1
+    mode: lazy
+    layers: [pcomp_ring_interior, dnwell]
+  - name: pcomp_ring_box
+    op: extents
+    mode: lazy
+    layers: [pcomp_ring_one]
   - name: dnwell_outside_ring
     op: not_inside
     mode: lazy
-    layers: [dnwell, pcomp_ring_interior]
+    layers: [dnwell, pcomp_ring_box]
   # "Directly surrounded" also fails when the ring encloses somebody else's n-type
   # geometry as well - the ring is then shared rather than this well's own.
   - name: n_type_all
@@ -4313,7 +4338,7 @@ virtual_layers:
   - name: pp_9_crossing_all
     op: overlapping
     mode: lazy
-    layers: [poly_sab_only, pplus]
+    layers: [poly_sab_no_res, pplus]
   - name: pp_9_crossing
     op: difference
     mode: lazy
@@ -5119,12 +5144,37 @@ edge_layers:
   - name: ef04a_long_off
     op: outside_part
     layers: [ef04a_off_poly, poly2_drawn]
+  # NP.4b / PP.4b: the gate extension's sides, not the whole poly outline near the gate.
+  # The gate's edges that are not active edges are its sides, along the poly; the poly
+  # edges that carry them are the sides of the extension too, trimmed by a percent so a
+  # corner touch does not pull in the end cap, and cut to 0.32 um of the channel.  An
+  # implant edge butting the extension's end cap is the cap's business, not this rule's.
+  - name: ngate_sides
+    op: not
+    layers: [ngate.edges, ncomp.edges]
+  - name: ngate_side_poly
+    op: interacting_edges
+    layers: [poly2.edges, ngate_sides]
+  - name: ngate_side_poly_c
+    op: centers
+    fraction: 0.99
+    layers: [ngate_side_poly]
   - name: pp4b_poly
     op: inside_part
-    layers: [poly2.edges, ngate_reach_flat]
+    layers: [ngate_side_poly_c, ngate_reach_flat]
+  - name: pgate_sides
+    op: not
+    layers: [pgate.edges, pcomp.edges]
+  - name: pgate_side_poly
+    op: interacting_edges
+    layers: [poly2.edges, pgate_sides]
+  - name: pgate_side_poly_c
+    op: centers
+    fraction: 0.99
+    layers: [pgate_side_poly]
   - name: np4b_poly
     op: inside_part
-    layers: [poly2.edges, pgate_reach_flat]
+    layers: [pgate_side_poly_c, pgate_reach_flat]
   - name: nplus_butted_edges
     op: and
     layers: [nplus.edges, pcomp.edges]

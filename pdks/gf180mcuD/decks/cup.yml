@@ -8,39 +8,59 @@ rules:
     check: min_width
     layers: [metal1_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.3
     check: min_notch
     layers: [metal1_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.2
     check: min_width
     layers: [metal2_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.3
     check: min_notch
     layers: [metal2_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.2
     check: min_width
     layers: [metal3_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.3
     check: min_notch
     layers: [metal3_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.2
     check: min_width
     layers: [metal4_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.3
     check: min_notch
     layers: [metal4_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.2
     check: min_width
     layers: [metal5_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
   - id: CUP.3
     check: min_notch
     layers: [metal5_pad_nogr]
     value: 1.0
+    layer_params:
+      interacting: pad
