@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Metal enclosure of via on all sides, recommended.  The mandatory rules (V#.3d, V#.4c)
+# ask the margin on adjacent sides only.
+rules:
+  - id: V1.3.3
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.12
+  - id: V1.4.3
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.12
+  - id: V2.3.3
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.12
+  - id: V2.4.3
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.12
+  - id: V3.3.3
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.12
+  - id: V3.4.3
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.12
+  - id: V4.3.3
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.12
+  - id: V4.4.3
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.12

@@ -12,6 +12,8 @@ version: "1.0"
 decks:
   - name: min_enclosure
     path: decks/min_enclosure.yml
+  - name: min_array_space
+    path: decks/min_array_space.yml
 
 layers:
   - name: Outer
@@ -19,4 +21,7 @@ layers:
     gds_datatype: 0
   - name: Inner
     gds_layer: 2
+    gds_datatype: 0
+  - name: Via
+    gds_layer: 3
     gds_datatype: 0

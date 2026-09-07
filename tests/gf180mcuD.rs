@@ -703,7 +703,13 @@ fn via_bad_expect(level: usize, suffix: &str) -> Vec<(String, usize)> {
 
 #[test]
 fn via_patterns_cover_every_rule() {
+    // The guidance rules live in a deck of their own, and each fixture runs against the
+    // deck its rule is in.  V#.3.3 and V#.4.3 ask for 0.12 µm where the rules require
+    // 0.01, so they fire on any via not drawn generously - including the *legal* half of
+    // patterns whose point is a small margin - which is the same property that keeps
+    // them out of `main`, and the reason they are not in the `via` deck at all.
     let mut ids: Vec<String> = rule_ids("via");
+    ids.extend(rule_ids("via_recommended"));
     ids.sort();
     ids.dedup(); // V#.2a is a space and a notch rule under one id
     assert_eq!(ids.len(), 44, "eleven rules at each of four levels");
@@ -711,27 +717,16 @@ fn via_patterns_cover_every_rule() {
     for id in ids {
         let (level, suffix) = id.split_once('.').expect("V<n>.<rule>");
         let level: usize = level[1..].parse().expect("V<n>");
-
-        // V#.3.3 and V#.4.3 ask for 0.12 µm where the rules require 0.01, so they fire on
-        // any via not drawn generously — including the *legal* half of patterns whose
-        // point is a small margin. `V#.3.1`'s good pattern is exactly that: it keeps the
-        // same 0.02 µm margin as its bad half and only widens the track, which is what
-        // says the rule is about the line end rather than the number. So the guidance
-        // rules are asserted by their own two fixtures and filtered out of every other,
-        // where they say nothing about the rule at hand. That they cannot be avoided here
-        // is the same property that keeps them out of `main`.
-        let drop_guidance = |c: &mut Vec<(String, usize)>| {
-            if !is_guidance(suffix) {
-                c.retain(|(r, _)| !is_guidance(r.split_once('.').expect("V<n>.<rule>").1));
-            }
+        let deck = if is_guidance(suffix) {
+            "via_recommended"
+        } else {
+            "via"
         };
 
-        let mut good = counts_at("via", &format!("{GENERATED}/via/{id}.good.gds.gz"), "TOP");
-        drop_guidance(&mut good);
+        let good = counts_at(deck, &format!("{GENERATED}/via/{id}.good.gds.gz"), "TOP");
         assert!(good.is_empty(), "{id} fired on its good pattern: {good:?}");
 
-        let mut bad = counts_at("via", &format!("{GENERATED}/via/{id}.bad.gds.gz"), "TOP");
-        drop_guidance(&mut bad);
+        let bad = counts_at(deck, &format!("{GENERATED}/via/{id}.bad.gds.gz"), "TOP");
         let mut want = via_bad_expect(level, suffix);
         want.sort();
         assert_eq!(bad, want, "{id} bad pattern");

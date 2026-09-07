@@ -74,6 +74,9 @@ decks:
   - name: via
     path: decks/via.yml
     description: Via 1-4
+  - name: via_recommended
+    path: decks/via_recommended.yml
+    description: Via enclosure guidance
   - name: metaltop
     path: decks/metaltop.yml
     description: Top metal (Metal5 on 5LM)

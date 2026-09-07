@@ -15,10 +15,12 @@
 //! drawing, never from a run: a pattern whose answer came out of the engine would pass by
 //! construction and guard nothing.
 
+mod min_array_space;
 mod min_enclosure;
 
 use gdscheck::pdk::PdkConfig;
 
 pub fn generate(pdk: &PdkConfig) {
+    min_array_space::generate(pdk);
     min_enclosure::generate(pdk);
 }

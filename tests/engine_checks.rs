@@ -101,3 +101,47 @@ fn skip_coincident_drops_the_zero_and_nothing_else(
         "{pattern}: euclidian with skip_coincident"
     );
 }
+
+/// Via spacing inside a 4x4-or-larger array at 0.36 µm, on the shapes an array comes in.
+///
+/// Which vias are the array is answered geometrically, as the foundry's own deck answers
+/// it: an attached row or column a hundredth too close forms, with the block's nearest
+/// rows, a 4x4 of its own and violates.  An L and a U are all block.  Counts are per
+/// array: one marker for a block with a tight pair, however many pairs it has.
+///
+/// `both` is GF180's reading, any tight pair in the block violates; `one` is IHP's, one
+/// axis at the larger space is enough, so only a block tight both ways violates.
+///
+/// `tail` is where we part from the foundry deck on purpose: it exempts a whole blob of
+/// vias whenever any part of it is thinner than four vias, so a tail of vias on a block
+/// hides a tight pair in the block's middle.  The pair is the block's own, and it counts.
+#[rstest]
+#[case("block_0360", 0, 0)]
+#[case("block_0350", 1, 1)]
+#[case("block_x_0350", 1, 0)]
+#[case("row_0360", 0, 0)]
+#[case("row_0350", 1, 0)]
+#[case("row_inside_0350", 1, 0)]
+#[case("column_0360", 0, 0)]
+#[case("column_0350", 1, 0)]
+#[case("tail_0350", 1, 0)]
+#[case("l_0360", 0, 0)]
+#[case("l_0350", 1, 0)]
+#[case("u_0360", 0, 0)]
+#[case("u_0350", 1, 0)]
+fn min_array_space_knows_what_is_inside_the_array(
+    #[case] pattern: &str,
+    #[case] both: usize,
+    #[case] one: usize,
+) {
+    assert_eq!(
+        count("min_array_space", pattern, "ARR.both"),
+        both,
+        "{pattern}: space in both axes"
+    );
+    assert_eq!(
+        count("min_array_space", pattern, "ARR.one"),
+        one,
+        "{pattern}: space in one axis"
+    );
+}
