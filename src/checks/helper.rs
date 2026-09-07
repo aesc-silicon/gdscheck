@@ -21,7 +21,7 @@ use crate::merge::{
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// The width scan as a rule reports it: [`width_pairs`] measured, then each wall written
 /// out as one violation.
@@ -88,40 +88,43 @@ fn scan_widths(
 /// A shared *run* of boundary is not a pinch: two pieces drawn edge to edge are one wide
 /// shape, and the width across it is whatever the scan measures.
 fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
-    let mut out = Vec::new();
-    // A vertex repeated *within* one ring is not the test, though it looks like it should
-    // be: i_overlay never emits a self-touching contour. A bow-tie comes back as two
-    // polygons that touch, and so does the degenerate spur a 45° wall leaves on the
-    // nanometre grid - which is why the test below has to be between pieces.
-    //
-    // The test: a vertex two pieces share, where they do not also share a wall.
-    let verts: Vec<std::collections::HashSet<(i32, i32)>> = polys
-        .iter()
-        .map(|p| {
-            std::iter::once(&p.outer)
-                .chain(p.holes.iter())
-                .flatten()
-                .map(|q| (q.x, q.y))
-                .collect()
-        })
-        .collect();
-    for i in 0..polys.len() {
-        for j in i + 1..polys.len() {
-            let shared: Vec<(i32, i32)> = verts[i].intersection(&verts[j]).copied().collect();
-            if shared.is_empty() {
-                continue;
+    // Every vertex filed once under its coordinates; a pinch is a vertex two polygons
+    // share.  Trying every pair of polygons through a set intersection was quadratic in
+    // the tile, and a tile of five hundred vias - none of which touch anything - paid
+    // a hundred thousand intersections to learn that, on every width rule of the deck.
+    let mut at: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+    for (i, p) in polys.iter().enumerate() {
+        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+            let owners = at.entry((q.x, q.y)).or_default();
+            if owners.last() != Some(&i) {
+                owners.push(i);
             }
-            let (a, b) = (
-                poly_from_merged(&polys[i], 1.0),
-                poly_from_merged(&polys[j], 1.0),
-            );
-            if let (Some(a), Some(b)) = (a, b)
-                && shares_boundary_run(&a, &b, 0.5)
-            {
-                continue; // abutting, not pinched
-            }
-            out.extend(shared.into_iter().map(|(x, y)| (x as f64, y as f64)));
         }
+    }
+    // The shared vertices of each pair, so a pair is judged once however many it shares.
+    let mut shared_by: HashMap<(usize, usize), Vec<(i32, i32)>> = HashMap::new();
+    for (&v, owners) in &at {
+        for a in 0..owners.len() {
+            for b in a + 1..owners.len() {
+                shared_by.entry((owners[a], owners[b])).or_default().push(v);
+            }
+        }
+    }
+    let mut out = Vec::new();
+    let mut pairs: Vec<_> = shared_by.into_iter().collect();
+    pairs.sort_unstable();
+    for ((i, j), mut shared) in pairs {
+        let (a, b) = (
+            poly_from_merged(&polys[i], 1.0),
+            poly_from_merged(&polys[j], 1.0),
+        );
+        if let (Some(a), Some(b)) = (a, b)
+            && shares_boundary_run(&a, &b, 0.5)
+        {
+            continue; // abutting, not pinched
+        }
+        shared.sort_unstable();
+        out.extend(shared.into_iter().map(|(x, y)| (x as f64, y as f64)));
     }
     out
 }
