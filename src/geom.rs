@@ -108,6 +108,23 @@ pub fn collect_edges(
     }
 }
 
+/// The box of `poly` if it is one: four corners, no holes, every edge on an axis.
+pub fn axis_rect(poly: &MergedPoly) -> Option<(i32, i32, i32, i32)> {
+    let o = &poly.outer;
+    if o.len() != 4 || !poly.holes.is_empty() {
+        return None;
+    }
+    for i in 0..4 {
+        let (a, b) = (o[i], o[(i + 1) % 4]);
+        if a.x != b.x && a.y != b.y {
+            return None;
+        }
+    }
+    let (x0, x1) = (o.iter().map(|p| p.x).min()?, o.iter().map(|p| p.x).max()?);
+    let (y0, y1) = (o.iter().map(|p| p.y).min()?, o.iter().map(|p| p.y).max()?);
+    Some((x0, y0, x1, y1))
+}
+
 pub fn sorted_unique(mut v: Vec<i32>) -> Vec<i32> {
     v.sort_unstable();
     v.dedup();
@@ -133,12 +150,33 @@ pub fn width_pairs(
     mixed: bool,
     min_run: f64,
 ) -> Vec<(f64, f64, f64, f64, f64)> {
+    let mut out = Vec::new();
+    // An axis-aligned rectangle - every via, most contacts - has one width and one
+    // height, and the sweep below would find exactly the two pairs the box gives
+    // directly.  Same pairs, same order, same ownership test, without the sweep.
+    if let Some((x0, y0, x1, y1)) = axis_rect(poly) {
+        if oblique_only {
+            return out;
+        }
+        let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
+        if core.owns(cx, cy) && in_mask(cx, cy) {
+            let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
+            if w > 0.0 && viol(w) {
+                out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w));
+                out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w));
+            }
+            if h > 0.0 && viol(h) {
+                out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h));
+                out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h));
+            }
+        }
+        return out;
+    }
     let mut vedges = Vec::new();
     let mut hedges = Vec::new();
     let mut oedges = Vec::new();
     collect_edges(poly, &mut vedges, &mut hedges, &mut oedges);
 
-    let mut out = Vec::new();
     let mut push_edge = |x1: f64, y1: f64, x2: f64, y2: f64, w_dbu: f64| {
         out.push((x1, y1, x2, y2, w_dbu));
     };

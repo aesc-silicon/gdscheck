@@ -3288,7 +3288,11 @@ fn build_selection_tiles(
         .map(|(k, _)| *k)
         .collect();
     seeds.sort_unstable();
+    let trace = std::env::var("GDSCHECK_STITCH_TRACE").is_ok();
+    let t0 = std::time::Instant::now();
     let (labeled, visited) = stitch_from(cand, tile_dbu, true, Some(&seeds));
+    let t_stitch = t0.elapsed().as_secs_f64();
+    let t0 = std::time::Instant::now();
     // `Inside` reduces with AND over a region's pieces, so it starts true and is cleared
     // by the first uncovered piece; the others start false and are set by the first match.
     let and_reduce = kind == SelectionKind::Inside;
@@ -3344,6 +3348,8 @@ fn build_selection_tiles(
         }
     });
     let matches: Vec<bool> = flags.into_iter().map(|f| f.into_inner()).collect();
+    let t_match = t0.elapsed().as_secs_f64();
+    let t0 = std::time::Instant::now();
 
     let mut out: TileMap = HashMap::new();
     for (tile, polys) in labeled.by_tile {
@@ -3362,6 +3368,16 @@ fn build_selection_tiles(
         for (tile, polys) in core_owned(&rest, tile_dbu) {
             out.entry(tile).or_default().extend(polys);
         }
+    }
+    if trace {
+        eprintln!(
+            "selection {kind:?} keep={keep} seeds={} visited={} regions={} stitch={t_stitch:.1}s \
+             match={t_match:.1}s output={:.1}s",
+            seeds.len(),
+            visited.len(),
+            labeled.regions.len(),
+            t0.elapsed().as_secs_f64()
+        );
     }
     out
 }
@@ -3731,6 +3747,12 @@ pub struct MergedCache {
     /// Polygon copies per cached layer, kept at insert so the trace's resident count
     /// is a sum over layers and not a walk over fifty million tiles per rule.
     layer_polys: HashMap<(i16, i16), usize>,
+    /// A fat copy set aside when a rule wanted the layer much thinner: the halo it
+    /// was built for, its tiles, and its copies.  Handed back to the next rule that
+    /// wants that reach, so comp at the guard ring's 200 um is merged once and not
+    /// again for every deck that has a guard-ring rule between its own.  Dropped like
+    /// the live copy when no later rule needs its reach.
+    shelf: HashMap<(i16, i16), (i32, TileMap, usize)>,
     /// Derived layers read, somewhere downstream, by the enclosure engine or by
     /// `covering`, which take one tile's copy for the whole region.  Built and copied
     /// the old way; see `clippable_layers`.
@@ -3790,6 +3812,7 @@ impl MergedCache {
             clippable: HashSet::new(),
             names: HashMap::new(),
             layer_polys: HashMap::new(),
+            shelf: HashMap::new(),
             whole_chain: HashSet::new(),
         }
     }
@@ -4232,19 +4255,46 @@ impl MergedCache {
             // them - NAT.2 spent 27 s on comp that way, against a 1.6 s merge to build
             // it thin (and 1.6 s again for the guard-ring rule that needs it fat later).
             // The threshold is a ratio of reaches; the copy count grows with its square.
-            let far_too_fat = self.is_drawn(key)
-                && have != i32::MAX
-                && want < have / 4
-                && self.layer_polys.get(&key).copied().unwrap_or(0) > 1_000_000;
+            // A derived layer rides the same way: a selection over the implant union
+            // cached at 200 um read 732k copies where 55k would do, ten times slower.
+            // Its rebuild is its own build, cheap at a thin reach, so the bar is lower.
+            let copies = self.layer_polys.get(&key).copied().unwrap_or(0);
+            let far_too_fat = have != i32::MAX && want < have / 4 && copies > 200_000;
             if have >= want && !far_too_fat {
                 return;
             }
             // Cached too thin for this consumer, or too fat to read.  Drop it and
             // everything derived from it by stitching, which inherits the tiles' reach.
-            self.layers.remove(&key);
-            self.layer_polys.remove(&key);
+            let tiles = self.layers.remove(&key).expect("checked above");
+            let polys = self.layer_polys.remove(&key).unwrap_or(0);
             self.regions.remove(&key);
             self.layer_halo.remove(&key);
+            if far_too_fat
+                && self.is_drawn(key)
+                && self.shelf.get(&key).is_none_or(|(h, _, _)| *h < have)
+            {
+                // Too fat to read now, and expensive to make again: set it aside.  The
+                // shelf keeps the fattest, since a thinner one is cheap to make again.
+                self.shelf.insert(key, (have, tiles, polys));
+            }
+        }
+        if let Some((have, _, _)) = self.shelf.get(&key)
+            && *have >= want
+            && want > *have / 4
+        {
+            {
+                let (have, tiles, polys) = self.shelf.remove(&key).expect("just seen");
+                self.layers.insert(key, tiles);
+                self.layer_polys.insert(key, polys);
+                self.layer_halo.insert(key, have);
+                if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+                    eprintln!(
+                        "unshelve {} halo={have}dbu copies={polys}",
+                        self.name_of(key)
+                    );
+                }
+                return;
+            }
         }
         if let Some(def) = self.virtual_defs.get(&key).cloned() {
             if matches!(def.op, VirtualOp::WithText) {
@@ -4440,6 +4490,7 @@ impl MergedCache {
             .get(&key)
             .or_else(|| self.edge_halo.get(&key))
             .copied()
+            .max(self.shelf.get(&key).map(|(h, _, _)| *h))
     }
 
     /// Drop a layer's cached tiles and stitched regions.  Used by the deck
@@ -4450,6 +4501,7 @@ impl MergedCache {
         self.layers.remove(&key);
         self.layer_polys.remove(&key);
         self.layer_halo.remove(&key);
+        self.shelf.remove(&key);
         self.regions.remove(&key);
         self.edge_layers.remove(&key);
         self.edge_spans.remove(&key);

@@ -1227,7 +1227,18 @@ fn run_drc_impl(
     for (i, rule) in rules.iter().enumerate() {
         // What this rule needs of every layer in its closure, so a layer is merged at
         // that rather than at the maximum some other rule on it set.
-        merged.set_rule_halos(Some(rule_halos[i].clone()));
+        // Build a little ahead: a layer this rule wants at h that a later rule wants
+        // at up to 1.5h is built for the later rule now, since the smaller copy could
+        // not serve it and would be merged again.  comp at 200 um followed by a rule at
+        // 215 um was two 1.6 s merges of 9 million copies for a 14% difference.
+        let (mut table, closure) = rule_halos[i].clone();
+        for (key, want) in table.iter_mut() {
+            let fut = future_need[key][i];
+            if fut > *want && fut <= *want + *want / 2 {
+                *want = fut;
+            }
+        }
+        merged.set_rule_halos(Some((table, closure)));
         if NET_AWARE_CHECKS.contains(&rule.check.as_str()) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
@@ -1263,8 +1274,12 @@ fn run_drc_impl(
 
         for key in &rule_halos[i].1 {
             let future = future_need[key][i];
+            // Dropped when nothing later needs it, or when it is far fatter than
+            // anything later needs - the same ratio the rebuild uses, so a copy a
+            // little fatter than the next rule's reach serves it rather than being
+            // merged again at 14% fewer copies.
             let cached = merged.cached_halo(*key);
-            if future < 0 || cached.is_some_and(|h| h > future) {
+            if future < 0 || cached.is_some_and(|h| h > future * 4) {
                 if cached.is_some() && std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
                         "evict {}/{} cached={:?} future={future}",
