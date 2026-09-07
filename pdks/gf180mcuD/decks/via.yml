@@ -53,10 +53,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V1.3.3
-    check: min_enclosure
-    layers: [metal1, via1]
-    value: 0.12
   - id: V1.4a
     check: min_enclosure
     layers: [metal2, via1]
@@ -78,10 +74,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V1.4.3
-    check: min_enclosure
-    layers: [metal2, via1]
-    value: 0.12
   - id: V2.1
     check: exact_width
     layers: [via2]
@@ -127,10 +119,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V2.3.3
-    check: min_enclosure
-    layers: [metal2, via2]
-    value: 0.12
   - id: V2.4a
     check: min_enclosure
     layers: [metal3, via2]
@@ -152,10 +140,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V2.4.3
-    check: min_enclosure
-    layers: [metal3, via2]
-    value: 0.12
   - id: V3.1
     check: exact_width
     layers: [via3]
@@ -201,10 +185,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V3.3.3
-    check: min_enclosure
-    layers: [metal3, via3]
-    value: 0.12
   - id: V3.4a
     check: min_enclosure
     layers: [metal4, via3]
@@ -226,10 +206,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V3.4.3
-    check: min_enclosure
-    layers: [metal4, via3]
-    value: 0.12
   - id: V4.1
     check: exact_width
     layers: [via4]
@@ -275,10 +251,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V4.3.3
-    check: min_enclosure
-    layers: [metal4, via4]
-    value: 0.12
   - id: V4.4a
     check: min_enclosure
     layers: [metal5, via4]
@@ -300,7 +272,3 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V4.4.3
-    check: min_enclosure
-    layers: [metal5, via4]
-    value: 0.12

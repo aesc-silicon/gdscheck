@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Via spacing inside a 4x4 or larger array, at 0.36 µm against a 0.26 µm via, under the
+# two readings foundries write it in: GF180's, where the space must hold in both axes so
+# any tight pair in the array violates, and IHP's, where one axis at the larger space
+# is enough and only an array tight both ways violates.
+rules:
+  - id: ARR.both
+    check: min_array_space
+    layers: [Via]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+      projection: 0.26
+      min_extent: 1.86
+  - id: ARR.one
+    check: min_array_space
+    layers: [Via]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 1

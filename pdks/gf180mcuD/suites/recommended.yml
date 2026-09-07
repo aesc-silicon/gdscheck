@@ -7,5 +7,4 @@
 # manufacturable.  Kept out of `main` and `core` because they fire on most of the
 # geometry they cover, and a run mixing them with real violations hides the real ones.
 include:
-  - deck: via
-    rules: [V1.3.3, V1.4.3, V2.3.3, V2.4.3, V3.3.3, V3.4.3, V4.3.3, V4.4.3]
+  - deck: via_recommended

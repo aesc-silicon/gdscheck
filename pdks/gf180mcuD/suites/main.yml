@@ -18,8 +18,6 @@ include:
   - deck: contact
   - deck: metal
   - deck: via
-    # Guidance, not rules; see the `recommended` suite.
-    exclude: [V1.3.3, V1.4.3, V2.3.3, V2.4.3, V3.3.3, V3.4.3, V4.3.3, V4.4.3]
   - deck: metaltop
   - deck: mslot
   - deck: dummy_comp
