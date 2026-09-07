@@ -30,6 +30,10 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
+  - id: V1.3.3
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.12
   - id: V1.3a
     check: min_enclosure
     layers: [metal1, via1]
@@ -51,9 +55,9 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V1.3.3
+  - id: V1.4.3
     check: min_enclosure
-    layers: [metal1, via1]
+    layers: [metal2, via1]
     value: 0.12
   - id: V1.4a
     check: min_enclosure
@@ -76,10 +80,6 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V1.4.3
-    check: min_enclosure
-    layers: [metal2, via1]
-    value: 0.12
   - id: V2.1
     check: exact_width
     layers: [via2]
@@ -102,6 +102,10 @@ rules:
       axes: 2
       pitch: 0.4
       count: 16
+  - id: V2.3.3
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.12
   - id: V2.3b
     check: min_enclosure
     layers: [metal2, via2]
@@ -123,9 +127,9 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V2.3.3
+  - id: V2.4.3
     check: min_enclosure
-    layers: [metal2, via2]
+    layers: [metal3, via2]
     value: 0.12
   - id: V2.4a
     check: min_enclosure
@@ -148,7 +152,3 @@ rules:
       trigger: 0.04
     str_params:
       sides: adjacent
-  - id: V2.4.3
-    check: min_enclosure
-    layers: [metal3, via2]
-    value: 0.12

@@ -12,6 +12,14 @@ rules:
     value: 0.6
     params:
       interacting_only: 1
+  - id: MDP.1a
+    check: max_width
+    layers: [ldpmos_gate_sides]
+    value: 20.0
+  - id: MDP.2
+    check: nonempty
+    layers: [mdp2_viol]
+    value: 0.0
   - id: MDP.3ai
     check: min_space
     layers: [ncomp_mdp3ai, mvpsd]
@@ -32,9 +40,17 @@ rules:
     check: min_space
     layers: [ncomp_mdp3b, pcomp_mdp3b]
     value: 0.4
+  - id: MDP.3d
+    check: nonempty
+    layers: [mdp3d_viol]
+    value: 0.0
+  - id: MDP.4
+    check: nonempty
+    layers: [mdp4_viol]
+    value: 0.0
   - id: MDP.4a
     check: min_space
-    layers: [pcomp_ld_dg, dnwell_mdp]
+    layers: [pcomp_mdn, dnwell_mdp]
     value: 2.5
   - id: MDP.4b
     check: max_distance
@@ -70,6 +86,18 @@ rules:
     check: min_width
     layers: [poly_in_dnwell_mdp]
     value: 1.2
+  - id: MDP.9b
+    check: min_enclosure
+    layers: [mdp9b_edges, comp.edges]
+    value: 0.4
+  - id: MDP.9b
+    check: nonempty
+    layers: [mdp9b_touch]
+    value: 0.0
+  - id: MDP.9d
+    check: nonempty
+    layers: [mdp9d_viol]
+    value: 0.0
   - id: MDP.9ei
     check: min_space
     layers: [ldpmos_gate_mdp, ncomp_not_butted]
@@ -80,7 +108,7 @@ rules:
     value: 0.0
   - id: MDP.9eii
     check: min_space
-    layers: [ldpmos_gate_mdp, ncomp_at_pcomp]
+    layers: [ldpmos_gate_mdp, ncomp_butted]
     value: 0.32
   - id: MDP.9eii
     check: nonempty
@@ -89,6 +117,14 @@ rules:
   - id: MDP.9f
     check: nonempty
     layers: [mdp9f_interconnect]
+    value: 0.0
+  - id: MDP.10
+    check: nonempty
+    layers: [mdp10_wide]
+    value: 0.0
+  - id: MDP.10
+    check: nonempty
+    layers: [mdp10_no_channel]
     value: 0.0
   - id: MDP.10a
     check: min_space_different_net
@@ -102,16 +138,36 @@ rules:
     check: min_notch
     layers: [mvpsd]
     value: 1.0
+  - id: MDP.11
+    check: min_enclosure
+    layers: [mdp11_edges, pcomp.edges]
+    value: 0.8
+  - id: MDP.11
+    check: nonempty
+    layers: [mdp11_flush]
+    value: 0.0
   - id: MDP.12
     check: min_enclosure
     layers: [dnwell_mdp, ncomp_guard]
     value: 0.66
     params:
       interacting_only: 1
+  - id: MDP.12
+    check: nonempty
+    layers: [mdp_12_crossing]
+    value: 0.0
   - id: MDP.13a
     check: max_length
     layers: [ldpmos_body]
     value: 50.0
+  - id: MDP.13b
+    check: nonempty
+    layers: [mdp13b_viol]
+    value: 0.0
+  - id: MDP.13c
+    check: nonempty
+    layers: [mdp13c_viol]
+    value: 0.0
   - id: MDP.15
     check: min_space
     layers: [dnwell, dnwell_mvpsd_mdp]
@@ -124,67 +180,11 @@ rules:
     check: nonempty
     layers: [mdp16b_viol]
     value: 0.0
-  - id: MDP.17c
-    check: nonempty
-    layers: [mdp17c_viol]
-    value: 0.0
-  - id: MDP.12
-    check: nonempty
-    layers: [mdp_12_crossing]
-    value: 0.0
-  - id: MDP.3d
-    check: nonempty
-    layers: [mdp3d_viol]
-    value: 0.0
-  - id: MDP.4
-    check: nonempty
-    layers: [mdp4_viol]
-    value: 0.0
-  - id: MDP.9d
-    check: nonempty
-    layers: [mdp9d_viol]
-    value: 0.0
-  - id: MDP.1a
-    check: max_width
-    layers: [ldpmos_gate_sides]
-    value: 20.0
-  - id: MDP.2
-    check: nonempty
-    layers: [mdp2_viol]
-    value: 0.0
-  - id: MDP.13b
-    check: nonempty
-    layers: [mdp13b_viol]
-    value: 0.0
   - id: MDP.17a
     check: nonempty
     layers: [mdp17a_viol]
     value: 0.0
-  - id: MDP.13c
+  - id: MDP.17c
     check: nonempty
-    layers: [mdp13c_viol]
-    value: 0.0
-  - id: MDP.10
-    check: nonempty
-    layers: [mdp10_wide]
-    value: 0.0
-  - id: MDP.10
-    check: nonempty
-    layers: [mdp10_no_channel]
-    value: 0.0
-  - id: MDP.9b
-    check: min_enclosure
-    layers: [mdp9b_edges, comp.edges]
-    value: 0.4
-  - id: MDP.9b
-    check: nonempty
-    layers: [mdp9b_touch]
-    value: 0.0
-  - id: MDP.11
-    check: min_enclosure
-    layers: [mdp11_edges, pcomp.edges]
-    value: 0.8
-  - id: MDP.11
-    check: nonempty
-    layers: [mdp11_flush]
+    layers: [mdp17c_viol]
     value: 0.0

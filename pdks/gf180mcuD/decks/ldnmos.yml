@@ -30,6 +30,18 @@ rules:
     value: 0.6
     params:
       interacting_only: 1
+  - id: MDN.3b
+    check: max_width
+    layers: [ldnmos_gate_sides]
+    value: 20.0
+  - id: MDN.4a
+    check: nonempty
+    layers: [mdn4a_viol]
+    value: 0.0
+  - id: MDN.4b
+    check: max_width
+    layers: [ldnmos_gate_ends]
+    value: 50.0
   - id: MDN.5ai
     check: min_space
     layers: [pcomp_mdn5ai, mvsd]
@@ -64,6 +76,10 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
+  - id: MDN.7
+    check: nonempty
+    layers: [mdn7_viol]
+    value: 0.0
   - id: MDN.7a
     check: nonempty
     layers: [mdn7a_viol]
@@ -92,6 +108,14 @@ rules:
     check: min_width
     layers: [poly_mdn10]
     value: 1.2
+  - id: MDN.10b
+    check: min_enclosure
+    layers: [poly_mdn10.edges, mdn10b_edges]
+    value: 0.4
+  - id: MDN.10c
+    check: nonempty
+    layers: [mdn10c_viol]
+    value: 0.0
   - id: MDN.10ei
     check: min_space
     layers: [poly_mdn10, pcomp_not_ncomp]
@@ -112,10 +136,38 @@ rules:
     check: nonempty
     layers: [mdn10f_reaching_out]
     value: 0.0
+  - id: MDN.11
+    check: min_width
+    layers: [mdn11_uniform]
+    value: 0.4
+  - id: MDN.11
+    check: nonempty
+    layers: [mdn11_wide]
+    value: 0.0
+  - id: MDN.11
+    check: nonempty
+    layers: [mdn11_no_channel]
+    value: 0.0
+  - id: MDN.12
+    check: nonempty
+    layers: [mdn12_viol]
+    value: 0.0
   - id: MDN.13a
     check: max_length
     layers: [ldnmos_body]
     value: 50.0
+  - id: MDN.13b
+    check: nonempty
+    layers: [mdn13b_viol]
+    value: 0.0
+  - id: MDN.13c
+    check: nonempty
+    layers: [mdn13c_viol]
+    value: 0.0
+  - id: MDN.13d
+    check: nonempty
+    layers: [mdn13d_viol]
+    value: 0.0
   - id: MDN.14
     check: min_space
     layers: [mvsd, dnwell]
@@ -139,56 +191,4 @@ rules:
   - id: MDN.17
     check: nonempty
     layers: [mdn17_viol_b]
-    value: 0.0
-  - id: MDN.7
-    check: nonempty
-    layers: [mdn7_viol]
-    value: 0.0
-  - id: MDN.10b
-    check: min_enclosure
-    layers: [poly_mdn10.edges, mdn10b_edges]
-    value: 0.4
-  - id: MDN.3b
-    check: max_width
-    layers: [ldnmos_gate_sides]
-    value: 20.0
-  - id: MDN.4b
-    check: max_width
-    layers: [ldnmos_gate_ends]
-    value: 50.0
-  - id: MDN.13d
-    check: nonempty
-    layers: [mdn13d_viol]
-    value: 0.0
-  - id: MDN.11
-    check: min_width
-    layers: [mdn11_uniform]
-    value: 0.4
-  - id: MDN.11
-    check: nonempty
-    layers: [mdn11_wide]
-    value: 0.0
-  - id: MDN.11
-    check: nonempty
-    layers: [mdn11_no_channel]
-    value: 0.0
-  - id: MDN.13c
-    check: nonempty
-    layers: [mdn13c_viol]
-    value: 0.0
-  - id: MDN.4a
-    check: nonempty
-    layers: [mdn4a_viol]
-    value: 0.0
-  - id: MDN.12
-    check: nonempty
-    layers: [mdn12_viol]
-    value: 0.0
-  - id: MDN.10c
-    check: nonempty
-    layers: [mdn10c_viol]
-    value: 0.0
-  - id: MDN.13b
-    check: nonempty
-    layers: [mdn13b_viol]
     value: 0.0

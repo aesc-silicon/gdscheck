@@ -15,6 +15,10 @@ rules:
     value: 0.4
     params:
       interacting_only: 1
+  - id: MIMTM.2
+    check: nonempty
+    layers: [mimtm_2_crossing]
+    value: 0.0
   - id: MIMTM.3
     check: min_enclosure
     layers: [mimtm_virtual, fusetop]
@@ -25,6 +29,10 @@ rules:
     value: 0.4
     params:
       interacting_only: 1
+  - id: MIMTM.4
+    check: nonempty
+    layers: [mimtm_4_crossing]
+    value: 0.0
   - id: MIMTM.5
     check: min_space
     layers: [fusetop, top_via_on_topmin1_metal]
@@ -63,14 +71,6 @@ rules:
     layers: [topmin1_via_on_mim_bottom]
     value: 0.0
     description: "MIMTM.10: no Via3 may touch the MIM bottom plate"
-  - id: MIMTM.2
-    check: nonempty
-    layers: [mimtm_2_crossing]
-    value: 0.0
-  - id: MIMTM.4
-    check: nonempty
-    layers: [mimtm_4_crossing]
-    value: 0.0
   - id: MIMTM.11
     check: max_contained_area
     layers: [mimtm11_plate, fusetop]

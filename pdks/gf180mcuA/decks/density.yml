@@ -18,13 +18,6 @@ rules:
     params:
       boundary_layer: 0
       boundary_datatype: 0
-  - id: PL.8
-    check: min_density
-    layers: [poly2_drawn, poly2_dummy]
-    value: 14.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
   - id: M1.4
     check: min_density
     layers: [metal1_drawn, metal1_dummy]
@@ -50,6 +43,13 @@ rules:
     check: min_density
     layers: [metal3_drawn, metal3_dummy]
     value: 30.0
+    params:
+      boundary_layer: 0
+      boundary_datatype: 0
+  - id: PL.8
+    check: min_density
+    layers: [poly2_drawn, poly2_dummy]
+    value: 14.0
     params:
       boundary_layer: 0
       boundary_datatype: 0

@@ -16,18 +16,36 @@ rules:
     check: min_notch
     layers: [contact]
     value: 0.25
+  - id: CO.2b
+    check: min_array_space
+    layers: [contact]
+    value: 0.28
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.32
+      count: 16
   - id: CO.3
     check: min_enclosure
     layers: [poly2_drawn, contact_no_sram]
     value: 0.07
     params:
       interacting_only: 1
+  - id: CO.3
+    check: nonempty
+    layers: [co_3_crossing]
+    value: 0.0
   - id: CO.4
     check: min_enclosure
     layers: [comp, contact_no_sram]
     value: 0.07
     params:
       interacting_only: 1
+  - id: CO.4
+    check: nonempty
+    layers: [co_4_crossing]
+    value: 0.0
   - id: CO.5a
     check: min_enclosure
     layers: [ncomp_butted_only, contact_on_ncomp_butted]
@@ -69,6 +87,10 @@ rules:
     check: min_space
     layers: [contact_on_poly, comp]
     value: 0.17
+  - id: CO.9
+    check: nonempty
+    layers: [co9_viol]
+    value: 0.0
   - id: CO.10
     check: nonempty
     layers: [co10_viol]
@@ -77,25 +99,3 @@ rules:
     check: nonempty
     layers: [co11_viol]
     value: 0.0
-  - id: CO.3
-    check: nonempty
-    layers: [co_3_crossing]
-    value: 0.0
-  - id: CO.4
-    check: nonempty
-    layers: [co_4_crossing]
-    value: 0.0
-  - id: CO.9
-    check: nonempty
-    layers: [co9_viol]
-    value: 0.0
-  - id: CO.2b
-    check: min_array_space
-    layers: [contact]
-    value: 0.28
-    params:
-      rows: 3
-      cols: 3
-      axes: 2
-      pitch: 0.32
-      count: 16

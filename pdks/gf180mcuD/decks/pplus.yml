@@ -44,12 +44,44 @@ rules:
     check: nonempty
     layers: [pp3e_viol]
     value: 0.0
+  - id: PP.4a
+    check: min_space
+    layers: [pplus_butted_edges, ngate.edges]
+    value: 0.32
+  - id: PP.4b
+    check: min_space
+    layers: [pplus.edges, pp4b_poly]
+    value: 0.22
   - id: PP.5a
     check: min_enclosure
     layers: [pplus, pgate]
     value: 0.23
     params:
       interacting_only: 1
+  - id: PP.5a
+    check: nonempty
+    layers: [pp_5a_crossing]
+    value: 0.0
+  - id: PP.5b
+    check: min_enclosure
+    layers: [pp5b_pplus, pcomp.edges]
+    value: 0.16
+  - id: PP.5ci
+    check: min_enclosure
+    layers: [pp5c_bg, pp5ci_fg]
+    value: 0.02
+  - id: PP.5cii
+    check: min_enclosure
+    layers: [pp5c_bg_all, pp5cii_fg]
+    value: 0.16
+  - id: PP.5di
+    check: min_enclosure
+    layers: [pp5d_bg, pp5di_fg]
+    value: 0.02
+  - id: PP.5dii
+    check: min_enclosure
+    layers: [pp5d_bg, pp5dii_fg]
+    value: 0.16
   - id: PP.6
     check: min_enclosure
     layers: [comp_at_pplus, ncomp_at_pplus]
@@ -75,36 +107,16 @@ rules:
     value: 0.18
     params:
       interacting_only: 1
+  - id: PP.9
+    check: nonempty
+    layers: [pp_9_crossing]
+    value: 0.0
   - id: PP.10
     check: min_enclosure
     layers: [pplus, comp_sab_only]
     value: 0.18
     params:
       interacting_only: 1
-  - id: PP.4a
-    check: min_space
-    layers: [pplus_butted_edges, ngate.edges]
-    value: 0.32
-  - id: PP.5b
-    check: min_enclosure
-    layers: [pp5b_pplus, pcomp.edges]
-    value: 0.16
-  - id: PP.5ci
-    check: min_enclosure
-    layers: [pp5c_bg, pp5ci_fg]
-    value: 0.02
-  - id: PP.5cii
-    check: min_enclosure
-    layers: [pp5c_bg_all, pp5cii_fg]
-    value: 0.16
-  - id: PP.5di
-    check: min_enclosure
-    layers: [pp5d_bg, pp5di_fg]
-    value: 0.02
-  - id: PP.5dii
-    check: min_enclosure
-    layers: [pp5d_bg, pp5dii_fg]
-    value: 0.16
   - id: PP.11
     check: nonempty
     layers: [pp11_viol]
@@ -112,16 +124,4 @@ rules:
   - id: PP.12
     check: nonempty
     layers: [pp12_viol]
-    value: 0.0
-  - id: PP.4b
-    check: min_space
-    layers: [pplus.edges, pp4b_poly]
-    value: 0.22
-  - id: PP.5a
-    check: nonempty
-    layers: [pp_5a_crossing]
-    value: 0.0
-  - id: PP.9
-    check: nonempty
-    layers: [pp_9_crossing]
     value: 0.0

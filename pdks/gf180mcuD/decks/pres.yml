@@ -31,6 +31,10 @@ rules:
     value: 0.3
     params:
       interacting_only: 1
+  - id: PRES.5
+    check: nonempty
+    layers: [pres_5_crossing]
+    value: 0.0
   - id: PRES.6
     check: min_enclosure
     layers: [sab, pres_poly]
@@ -53,7 +57,3 @@ rules:
     check: min_space
     layers: [res_mk_big, res_mk]
     value: 20.0
-  - id: PRES.5
-    check: nonempty
-    layers: [pres_5_crossing]
-    value: 0.0

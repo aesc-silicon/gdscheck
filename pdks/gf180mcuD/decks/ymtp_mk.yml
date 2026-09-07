@@ -4,22 +4,6 @@
 
 # YMTP marker.  All 14 rules in this section.
 rules:
-  - id: Y.NW.2b_LV
-    check: min_space
-    layers: [nwell_ymtp_lv]
-    value: 1.0
-  - id: Y.NW.2b_LV
-    check: min_notch
-    layers: [nwell_ymtp_lv]
-    value: 1.0
-  - id: Y.NW.2b_MV
-    check: min_space
-    layers: [nwell_ymtp_mv]
-    value: 1.0
-  - id: Y.NW.2b_MV
-    check: min_notch
-    layers: [nwell_ymtp_mv]
-    value: 1.0
   - id: Y.DF.6_MV
     check: min_enclosure
     layers: [comp_no_otp_ymtp_mv, poly_ymtp_mv]
@@ -34,6 +18,22 @@ rules:
     check: min_space
     layers: [ncomp_ymtp_mv_out, nwell_n_dn]
     value: 0.23
+  - id: Y.NW.2b_LV
+    check: min_space
+    layers: [nwell_ymtp_lv]
+    value: 1.0
+  - id: Y.NW.2b_LV
+    check: min_notch
+    layers: [nwell_ymtp_lv]
+    value: 1.0
+  - id: Y.NW.2b_MV
+    check: min_space
+    layers: [nwell_ymtp_mv]
+    value: 1.0
+  - id: Y.NW.2b_MV
+    check: min_notch
+    layers: [nwell_ymtp_mv]
+    value: 1.0
   - id: Y.PL.1_LV
     check: min_width
     layers: [poly_ymtp_lv_out_pf]
