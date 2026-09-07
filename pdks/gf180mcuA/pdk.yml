@@ -34,123 +34,123 @@ suites:
     description: Guidance the foundry documents but does not check
 
 decks:
-  - name: offgrid
-    path: ../gf180mcuD/decks/offgrid.yml
-    description: Off-grid vertices
   - name: acute
     path: ../gf180mcuD/decks/acute.yml
     description: Angles that are not a multiple of 45 degrees
+  - name: comp
+    path: ../gf180mcuD/decks/comp.yml
+    description: Active area (COMP)
+  - name: contact
+    path: ../gf180mcuD/decks/contact.yml
+    description: Contact
+  - name: cup
+    path: decks/cup.yml
+    description: Cu pillar
   - name: density
     path: decks/density.yml
     description: Global layer density (COMP, Poly2, Metal)
   - name: dnwell
     path: ../gf180mcuD/decks/dnwell.yml
     description: Deep N-well
-  - name: nwell
-    path: ../gf180mcuD/decks/nwell.yml
-    description: N-well
-  - name: lvpwell
-    path: ../gf180mcuD/decks/lvpwell.yml
-    description: Low-voltage P-well
-  - name: comp
-    path: ../gf180mcuD/decks/comp.yml
-    description: Active area (COMP)
+  - name: drc_bjt
+    path: ../gf180mcuD/decks/drc_bjt.yml
+    description: BJT geometry
   - name: dualgate
     path: ../gf180mcuD/decks/dualgate.yml
     description: Dual gate oxide (5/6 V devices)
-  - name: poly2
-    path: ../gf180mcuD/decks/poly2.yml
-    description: Gate poly
-  - name: nplus
-    path: ../gf180mcuD/decks/nplus.yml
-    description: N+ implant
-  - name: pplus
-    path: ../gf180mcuD/decks/pplus.yml
-    description: P+ implant
-  - name: contact
-    path: ../gf180mcuD/decks/contact.yml
-    description: Contact
-  - name: metal
-    path: decks/metal.yml
-    description: Metal 1-2
-  - name: via
-    path: decks/via.yml
-    description: Via 1-2
-  - name: metaltop_30k
-    path: decks/metaltop_30k.yml
-    description: Top metal (Metal3 on 3LM), 30 kA thick
-  - name: mslot
-    path: decks/mslot.yml
-    description: Metal slots
   - name: dummy_comp
     path: ../gf180mcuD/decks/dummy_comp.yml
     description: COMP dummy fill
-  - name: dummy_poly2
-    path: ../gf180mcuD/decks/dummy_poly2.yml
-    description: Poly2 dummy fill
-  - name: dummy_metal
-    path: decks/dummy_metal.yml
-    description: Metal dummy fill
   - name: dummy_exclude
     path: ../gf180mcuD/decks/dummy_exclude.yml
     description: Dummy-fill exclude marker
-  - name: guard_ring
-    path: decks/guard_ring.yml
-    description: Guard ring
+  - name: dummy_metal
+    path: decks/dummy_metal.yml
+    description: Metal dummy fill
+  - name: dummy_poly2
+    path: ../gf180mcuD/decks/dummy_poly2.yml
+    description: Poly2 dummy fill
+  - name: efuse
+    path: ../gf180mcuD/decks/efuse.yml
+    description: eFuse
   - name: esd
     path: ../gf180mcuD/decks/esd.yml
     description: ESD implant
-  - name: sab
-    path: ../gf180mcuD/decks/sab.yml
-    description: Salicide block
-  - name: nat
-    path: ../gf180mcuD/decks/nat.yml
-    description: Native-VT device
-  - name: mim_a
-    path: decks/mim_a.yml
-    description: MIM capacitor (option A)
+  - name: guard_ring
+    path: decks/guard_ring.yml
+    description: Guard ring
   - name: hres
     path: ../gf180mcuD/decks/hres.yml
     description: High-sheet poly resistor
-  - name: lres
-    path: ../gf180mcuD/decks/lres.yml
-    description: Low-sheet poly resistor
-  - name: pres
-    path: ../gf180mcuD/decks/pres.yml
-    description: P+ poly resistor
   - name: ldnmos
     path: ../gf180mcuD/decks/ldnmos.yml
     description: LDMOS NFET
   - name: ldpmos
     path: ../gf180mcuD/decks/ldpmos.yml
     description: LDMOS PFET
-  - name: efuse
-    path: ../gf180mcuD/decks/efuse.yml
-    description: eFuse
-  - name: otp_mk
-    path: ../gf180mcuD/decks/otp_mk.yml
-    description: OTP marker
-  - name: ymtp_mk
-    path: ../gf180mcuD/decks/ymtp_mk.yml
-    description: YMTP marker
+  - name: lres
+    path: ../gf180mcuD/decks/lres.yml
+    description: Low-sheet poly resistor
+  - name: lvpwell
+    path: ../gf180mcuD/decks/lvpwell.yml
+    description: Low-voltage P-well
+  - name: lvs_bjt
+    path: ../gf180mcuD/decks/lvs_bjt.yml
+    description: BJT LVS marker
   - name: mcell
     path: ../gf180mcuD/decks/mcell.yml
     description: Memory cell
+  - name: metal
+    path: decks/metal.yml
+    description: Metal 1-2
+  - name: metaltop_30k
+    path: decks/metaltop_30k.yml
+    description: Top metal (Metal3 on 3LM), 30 kA thick
+  - name: mim_a
+    path: decks/mim_a.yml
+    description: MIM capacitor (option A)
+  - name: mslot
+    path: decks/mslot.yml
+    description: Metal slots
+  - name: nat
+    path: ../gf180mcuD/decks/nat.yml
+    description: Native-VT device
+  - name: nplus
+    path: ../gf180mcuD/decks/nplus.yml
+    description: N+ implant
+  - name: nwell
+    path: ../gf180mcuD/decks/nwell.yml
+    description: N-well
+  - name: offgrid
+    path: ../gf180mcuD/decks/offgrid.yml
+    description: Off-grid vertices
+  - name: otp_mk
+    path: ../gf180mcuD/decks/otp_mk.yml
+    description: OTP marker
+  - name: poly2
+    path: ../gf180mcuD/decks/poly2.yml
+    description: Gate poly
+  - name: pplus
+    path: ../gf180mcuD/decks/pplus.yml
+    description: P+ implant
+  - name: pres
+    path: ../gf180mcuD/decks/pres.yml
+    description: P+ poly resistor
+  - name: sab
+    path: ../gf180mcuD/decks/sab.yml
+    description: Salicide block
   - name: sram_3p3
     path: ../gf180mcuD/decks/sram_3p3.yml
     description: SRAM 3.3 V
   - name: sram_5p0
     path: ../gf180mcuD/decks/sram_5p0.yml
     description: SRAM 5.0 V
-  - name: drc_bjt
-    path: ../gf180mcuD/decks/drc_bjt.yml
-    description: BJT geometry
-  - name: lvs_bjt
-    path: ../gf180mcuD/decks/lvs_bjt.yml
-    description: BJT LVS marker
-  - name: cup
-    path: decks/cup.yml
-    description: Cu pillar
+  - name: via
+    path: decks/via.yml
+    description: Via 1-2
+  - name: ymtp_mk
+    path: ../gf180mcuD/decks/ymtp_mk.yml
+    description: YMTP marker
 
 connectivity:
   # ORDERED, and shorter than the base PDK's: the antenna deck reads a net by *prefix*

@@ -30,6 +30,10 @@ rules:
     value: 0.4
     params:
       interacting_only: 1
+  - id: HRES.4
+    check: nonempty
+    layers: [hres_4_crossing]
+    value: 0.0
   - id: HRES.5
     check: min_space
     layers: [hres_resistor, poly2_unrelated]
@@ -48,6 +52,10 @@ rules:
     value: 0.2
     params:
       interacting_only: 1
+  - id: HRES.7
+    check: nonempty
+    layers: [hres_7_crossing]
+    value: 0.0
   - id: HRES.8
     check: min_space
     layers: [hres_contact, sab]
@@ -62,22 +70,6 @@ rules:
     value: 0.28
     params:
       interacting_only: 1
-  - id: HRES.4
-    check: nonempty
-    layers: [hres_4_crossing]
-    value: 0.0
-  - id: HRES.7
-    check: nonempty
-    layers: [hres_7_crossing]
-    value: 0.0
-  - id: HRES.12a
-    check: nonempty
-    layers: [hres12a_viol]
-    value: 0.0
-  - id: HRES.12b
-    check: min_space
-    layers: [res_mk_big, res_mk]
-    value: 20.0
   - id: HRES.10
     check: min_width
     layers: [hres10_overlap]
@@ -86,3 +78,11 @@ rules:
     check: max_enclosure
     layers: [pplus, hres9_sab]
     value: 0.1
+  - id: HRES.12a
+    check: nonempty
+    layers: [hres12a_viol]
+    value: 0.0
+  - id: HRES.12b
+    check: min_space
+    layers: [res_mk_big, res_mk]
+    value: 20.0

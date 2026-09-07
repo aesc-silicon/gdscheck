@@ -20,6 +20,14 @@ rules:
     check: nonempty
     layers: [ef03_viol]
     value: 0.0
+  - id: EF.04a
+    check: nonempty
+    layers: [ef04a_viol]
+    value: 0.0
+  - id: EF.04a
+    check: nonempty
+    layers: [ef04a_long_off]
+    value: 0.0
   - id: EF.04b
     check: nonempty
     layers: [plfuse_not_rect]
@@ -39,6 +47,22 @@ rules:
   - id: EF.05
     check: nonempty
     layers: [ef05_viol_b]
+    value: 0.0
+  - id: EF.06
+    check: nonempty
+    layers: [ef_06_viol]
+    value: 0.0
+  - id: EF.07
+    check: nonempty
+    layers: [ef_07_viol]
+    value: 0.0
+  - id: EF.08
+    check: nonempty
+    layers: [ef_08_viol]
+    value: 0.0
+  - id: EF.09
+    check: nonempty
+    layers: [ef_09_viol]
     value: 0.0
   - id: EF.10
     check: min_space
@@ -104,22 +128,6 @@ rules:
     check: min_space
     layers: [plfuse, ef20_neighbours]
     value: 2.73
-  - id: EF.06
-    check: nonempty
-    layers: [ef_06_viol]
-    value: 0.0
-  - id: EF.07
-    check: nonempty
-    layers: [ef_07_viol]
-    value: 0.0
-  - id: EF.08
-    check: nonempty
-    layers: [ef_08_viol]
-    value: 0.0
-  - id: EF.09
-    check: nonempty
-    layers: [ef_09_viol]
-    value: 0.0
   - id: EF.21
     check: nonempty
     layers: [ef21_viol]
@@ -131,12 +139,4 @@ rules:
   - id: EF.22b
     check: nonempty
     layers: [ef_22b_viol]
-    value: 0.0
-  - id: EF.04a
-    check: nonempty
-    layers: [ef04a_viol]
-    value: 0.0
-  - id: EF.04a
-    check: nonempty
-    layers: [ef04a_long_off]
     value: 0.0

@@ -81,6 +81,13 @@ rules:
     layers: [poly_pl_mv, comp_pl]
     value: 0.3
 
+  - id: PL.6
+    check: no_corner
+    layers: [poly2_drawn, comp_no_ymtp]
+    value: 90.0
+    layer_params:
+      outside_layer: ymtp_mk
+
   - id: PL.7_LV
     check: min_width
     layers: [pl7_nom]
@@ -94,17 +101,13 @@ rules:
     check: nonempty
     layers: [pl9_viol]
     value: 0.0
+
   - id: PL.11
     check: nonempty
     layers: [pl11_viol]
     value: 0.0
+
   - id: PL.12
     check: nonempty
     layers: [pl12_viol]
     value: 0.0
-  - id: PL.6
-    check: no_corner
-    layers: [poly2_drawn, comp_no_ymtp]
-    value: 90.0
-    layer_params:
-      outside_layer: ymtp_mk

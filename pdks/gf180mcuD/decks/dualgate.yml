@@ -10,6 +10,10 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
+  - id: DV.1
+    check: nonempty
+    layers: [dv_1_crossing]
+    value: 0.0
   - id: DV.2
     check: min_space
     layers: [dualgate]
@@ -32,6 +36,10 @@ rules:
     value: 0.24
     params:
       interacting_only: 1
+  - id: DV.6
+    check: nonempty
+    layers: [dv_6_crossing]
+    value: 0.0
   - id: DV.7
     check: nonempty
     layers: [dv7_viol]
@@ -42,19 +50,11 @@ rules:
     value: 0.4
     params:
       interacting_only: 1
-  - id: DV.9
-    check: nonempty
-    layers: [dv9_viol]
-    value: 0.0
-  - id: DV.1
-    check: nonempty
-    layers: [dv_1_crossing]
-    value: 0.0
-  - id: DV.6
-    check: nonempty
-    layers: [dv_6_crossing]
-    value: 0.0
   - id: DV.8
     check: nonempty
     layers: [dv_8_crossing]
+    value: 0.0
+  - id: DV.9
+    check: nonempty
+    layers: [dv9_viol]
     value: 0.0

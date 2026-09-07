@@ -16,6 +16,7 @@ rules:
     check: min_width
     layers: [comp_moscap]
     value: 1.0
+
   - id: DF.2a_LV
     check: min_edge_length
     layers: [channel_edges_3p3v]
@@ -29,10 +30,6 @@ rules:
     layers: [comp_over_100um]
     value: 0.0
 
-  - id: DF.3c_MV
-    check: nonempty
-    layers: [df3c_viol]
-    value: 0.0
   - id: DF.3a_LV
     check: min_space
     layers: [comp_3p3v_no_otp]
@@ -61,6 +58,10 @@ rules:
     check: min_notch
     layers: [comp_3p3v_bjt]
     value: 0.32
+  - id: DF.3c_MV
+    check: nonempty
+    layers: [df3c_viol]
+    value: 0.0
 
   - id: DF.4a_LV
     check: min_space
@@ -78,7 +79,6 @@ rules:
     check: min_enclosure
     layers: [dnwell_56v, ntap_dn56v]
     value: 0.66
-
   - id: DF.4c_LV
     check: min_enclosure
     layers: [nw_ndn_sram_3p3v, df4c_pcomp3p3v]
@@ -95,7 +95,6 @@ rules:
     check: min_enclosure
     layers: [df4d_nwell, df4d_ncomp56v]
     value: 0.16
-
   - id: DF.4e_LV
     check: min_enclosure
     layers: [dnwell_3p3v, pcomp_dn3p3v]
@@ -104,6 +103,7 @@ rules:
     check: min_enclosure
     layers: [dnwell_56v, pcomp_dn56v]
     value: 1.1
+
   - id: DF.5_LV
     check: min_enclosure
     layers: [lvpwell_dn3p3v, ptap_lvpwell_dn3p3v]
@@ -134,6 +134,7 @@ rules:
     check: min_space
     layers: [pcomp_dn56v_no_sram, lvpwell_dn56v]
     value: 0.6
+
   - id: DF.8_LV
     check: min_enclosure
     layers: [lvpwell_dn3p3v, df8_ncomp3p3v]
@@ -147,10 +148,16 @@ rules:
     check: min_area
     layers: [comp_no_otp]
     value: 0.2025
+
   - id: DF.10
     check: min_enclosed_area
     layers: [comp]
     value: 0.26
+
+  - id: DF.11
+    check: min_width
+    layers: [comp_at_ncomp_butted]
+    value: 0.3
 
   - id: DF.12
     check: nonempty
@@ -165,6 +172,7 @@ rules:
     check: max_space
     layers: [pactive_56v, ntap]
     value: 15.0
+
   - id: DF.14_LV
     check: max_space
     layers: [nactive_3p3v, ptap]
@@ -182,6 +190,7 @@ rules:
     check: min_space
     layers: [df16_ncomp_mv, nwell_n_dn56v_no_ymtp]
     value: 0.6
+
   - id: DF.17_LV
     check: min_space
     layers: [df17_pcomp_lv, nwell_n_dn3p3v]
@@ -190,10 +199,12 @@ rules:
     check: min_space
     layers: [df17_pcomp_mv, nwell_n_dn56v]
     value: 0.16
+
   - id: DF.18
     check: min_space
     layers: [pcomp_out_nw_dn, dnwell]
     value: 2.5
+
   - id: DF.19_LV
     check: min_space
     layers: [df16_ncomp_lv_all, dnwell]
@@ -202,7 +213,3 @@ rules:
     check: min_space
     layers: [df16_ncomp_mv_all, dnwell]
     value: 3.28
-  - id: DF.11
-    check: min_width
-    layers: [comp_at_ncomp_butted]
-    value: 0.3

@@ -4,6 +4,18 @@
 
 # SRAM 5.  All 8 rules in this section.
 rules:
+  - id: S.CO.4_MV
+    check: min_enclosure
+    layers: [comp_sram_mv, contact_sram_mv]
+    value: 0.04
+    params:
+      interacting_only: 1
+    str_params:
+      metric: euclidian
+  - id: S.CO.4_MV
+    check: nonempty
+    layers: [s_co_4_mv_crossing]
+    value: 0.0
   - id: S.DF.4c_MV
     check: min_enclosure
     layers: [nw_n_dn_sram_mv, pcomp_out_dn_sram_mv]
@@ -12,6 +24,10 @@ rules:
       interacting_only: 1
     str_params:
       metric: euclidian
+  - id: S.DF.4c_MV
+    check: nonempty
+    layers: [s_df_4c_mv_crossing]
+    value: 0.0
   - id: S.DF.6_MV
     check: min_enclosure
     layers: [comp_sram_mv, poly_sram_mv]
@@ -32,6 +48,10 @@ rules:
       interacting_only: 1
     str_params:
       metric: euclidian
+  - id: S.DF.8_MV
+    check: nonempty
+    layers: [s_df_8_mv_crossing]
+    value: 0.0
   - id: S.DF.16_MV
     check: min_space
     layers: [ncomp_out_nw_dn_sram_mv, nw_n_dn_sram_mv]
@@ -46,23 +66,3 @@ rules:
     value: 0.12
     str_params:
       pairs: overlapping
-  - id: S.CO.4_MV
-    check: min_enclosure
-    layers: [comp_sram_mv, contact_sram_mv]
-    value: 0.04
-    params:
-      interacting_only: 1
-    str_params:
-      metric: euclidian
-  - id: S.DF.4c_MV
-    check: nonempty
-    layers: [s_df_4c_mv_crossing]
-    value: 0.0
-  - id: S.DF.8_MV
-    check: nonempty
-    layers: [s_df_8_mv_crossing]
-    value: 0.0
-  - id: S.CO.4_MV
-    check: nonempty
-    layers: [s_co_4_mv_crossing]
-    value: 0.0

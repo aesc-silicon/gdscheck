@@ -33,6 +33,10 @@ rules:
     value: 0.3
     params:
       interacting_only: 1
+  - id: LRES.5
+    check: nonempty
+    layers: [lres_5_crossing]
+    value: 0.0
   - id: LRES.6
     check: min_enclosure
     layers: [sab, lres_poly]
@@ -46,10 +50,6 @@ rules:
   - id: LRES.7
     check: nonempty
     layers: [cont_lres_on_sab]
-    value: 0.0
-  - id: LRES.5
-    check: nonempty
-    layers: [lres_5_crossing]
     value: 0.0
   - id: LRES.9a
     check: nonempty
