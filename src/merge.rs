@@ -2257,6 +2257,11 @@ pub struct Region {
     /// introduces along tile lines are never included and no edge is counted twice.
     pub perimeter_dbu: f64,
     pub marker: (f64, f64),
+    /// A point certainly inside the region (its largest piece), where `marker` is
+    /// where a report points and may sit in a U's opening.  Net extraction looks a
+    /// connector's conductors up here: a U-shaped well tap looked up at its marker
+    /// found the well and not the tap, and NW.2b reported one net as two.
+    pub anchor: (f64, f64),
 }
 
 /// Length of the part of segment `a`-`b` lying inside the rectangle, by Liang-Barsky.
@@ -2453,6 +2458,8 @@ struct Piece {
     area: f64,
     perimeter: f64,
     marker: (f64, f64),
+    /// A point certainly on the piece, for a lookup that must hit the region.
+    anchor: (f64, f64),
     /// Sum and count of the outer-ring vertices this core owns, towards the region's
     /// vertex-average centroid.  Within its core a copy's outline is the region's, so the
     /// sum over a region's pieces is the average over the whole region's outer ring -
@@ -2487,6 +2494,7 @@ impl Piece {
                 area,
                 perimeter: poly_perimeter_in_core(poly, cx0, cy0, cx1, cy1),
                 marker: representative_point(poly),
+                anchor: inside_point(poly),
                 vsum,
                 sides: Sides::of(poly, cx0, cy0, cx1, cy1),
             }
@@ -2735,6 +2743,7 @@ fn stitch_from(
                 area_dbu: 0.0,
                 perimeter_dbu: 0.0,
                 marker: p.marker,
+                anchor: p.anchor,
             });
             largest.push((0.0, id));
             vsum.push((0.0, 0.0, 0));
@@ -2750,6 +2759,7 @@ fn stitch_from(
         if p.area > largest[region].0 {
             largest[region] = (p.area, id);
             regions[region].marker = p.marker;
+            regions[region].anchor = p.anchor;
         }
     }
     // A region's marker is the vertex average of its whole outer ring where that lies
@@ -2846,6 +2856,33 @@ pub fn representative_point(m: &MergedPoly) -> (f64, f64) {
     let (x0, y0, x1, y1) = (x0 as f64, y0 as f64, x1 as f64, y1 as f64);
     let mut best: Option<(f64, f64, f64)> = None; // (span, x, y)
     // Sample off the DBU grid so a scanline never runs along a vertical edge.
+    const SAMPLES: usize = 17;
+    for i in 1..SAMPLES {
+        let xs = x0 + (x1 - x0) * i as f64 / SAMPLES as f64 + 0.5;
+        for (a, b) in coverage_y(m, xs, y0, y1) {
+            let span = b - a;
+            if span > best.map_or(0.0, |(s, _, _)| s) {
+                best = Some((span, xs, (a + b) * 0.5));
+            }
+        }
+    }
+    best.map(|(_, x, y)| (x, y)).unwrap_or(c)
+}
+
+/// A point certainly inside `m`: the vertex average when that is inside, else the
+/// midpoint of the widest scanline span.  [`representative_point`] is the marker a
+/// report shows and keeps the vertex average of a hole-free shape even when that lies
+/// off it - a U-shaped well tap's average sits in its opening - because the foundry
+/// scoreboards cluster markers by proximity and every move re-chains them.  A lookup
+/// that has to land *on* the region - a connector bridging its conductors - takes this.
+pub fn inside_point(m: &MergedPoly) -> (f64, f64) {
+    let c = merged_centroid_dbu(m);
+    if point_in_merged(c.0, c.1, m) {
+        return c;
+    }
+    let (x0, y0, x1, y1) = poly_bbox(m);
+    let (x0, y0, x1, y1) = (x0 as f64, y0 as f64, x1 as f64, y1 as f64);
+    let mut best: Option<(f64, f64, f64)> = None;
     const SAMPLES: usize = 17;
     for i in 1..SAMPLES {
         let xs = x0 + (x1 - x0) * i as f64 / SAMPLES as f64 + 0.5;

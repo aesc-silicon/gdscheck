@@ -1278,6 +1278,51 @@ fn run_drc_impl(
     } else {
         None
     };
+    // `GDSCHECK_NET_AT="layer:x,y;layer:x,y"` (µm) prints the net each point resolves
+    // to, for finding where a chain the design connects comes apart in the graph.
+    if let (Some(c), Ok(spec)) = (net.as_ref(), std::env::var("GDSCHECK_NET_AT")) {
+        for probe in spec.split(';').filter(|s| !s.trim().is_empty()) {
+            let Some((name, xy)) = probe.split_once(':') else {
+                continue;
+            };
+            let Some((x, y)) = xy.split_once(',') else {
+                continue;
+            };
+            let (Ok(x), Ok(y)) = (x.trim().parse::<f64>(), y.trim().parse::<f64>()) else {
+                continue;
+            };
+            let Some(l) = pdk.layer(name.trim()) else {
+                eprintln!("net probe: no layer '{name}'");
+                continue;
+            };
+            let key = (l.gds_layer as i16, l.gds_datatype as i16);
+            eprintln!(
+                "net probe {name} ({x},{y}) node={:?} net={:?}",
+                c.node_at(key, x / dbu_to_um, y / dbu_to_um),
+                c.net_at(key, x / dbu_to_um, y / dbu_to_um)
+            );
+            // A connector has no index of its own; list its regions whose marker lies
+            // within 5 µm of the point, and what each bridged layer resolves to there.
+            for spec in pdk.connectivity.iter().filter(|s| s.connector == key) {
+                for r in c.regions_of(key) {
+                    let (mx, my) = (r.marker.0 * dbu_to_um, r.marker.1 * dbu_to_um);
+                    if (mx - x).abs() > 5.0 || (my - y).abs() > 5.0 {
+                        continue;
+                    }
+                    let bridged: Vec<String> = spec
+                        .layers
+                        .iter()
+                        .map(|&lk| format!("{:?}:{:?}", lk, c.node_at(lk, r.marker.0, r.marker.1)))
+                        .collect();
+                    eprintln!(
+                        "  connector region marker=({mx:.3},{my:.3}) area={:.3} um2 bridges {}",
+                        r.area_dbu * dbu_to_um * dbu_to_um,
+                        bridged.join(" ")
+                    );
+                }
+            }
+        }
+    }
     phase.end("net extraction");
 
     for (i, rule) in rules.iter().enumerate() {
