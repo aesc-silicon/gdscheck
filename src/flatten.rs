@@ -100,6 +100,133 @@ impl Transform {
     }
 }
 
+/// The bounding box of a cell's own geometry and of everything it instantiates, in
+/// the cell's coordinates, over every layer.  Memoised per cell.
+fn cell_bbox(
+    cell_name: &str,
+    cell_map: &HashMap<&str, &GdsStruct>,
+    memo: &mut HashMap<String, Option<(i64, i64, i64, i64)>>,
+    depth: u32,
+) -> Option<(i64, i64, i64, i64)> {
+    if let Some(b) = memo.get(cell_name) {
+        return *b;
+    }
+    let mut bb: Option<(i64, i64, i64, i64)> = None;
+    let mut grow = |x0: i64, y0: i64, x1: i64, y1: i64| {
+        bb = Some(match bb {
+            None => (x0, y0, x1, y1),
+            Some(b) => (b.0.min(x0), b.1.min(y0), b.2.max(x1), b.3.max(y1)),
+        });
+    };
+    if depth <= 64
+        && let Some(cell) = cell_map.get(cell_name)
+    {
+        for elem in &cell.elems {
+            match elem {
+                GdsElement::GdsBoundary(b) => {
+                    for p in &b.xy {
+                        grow(p.x as i64, p.y as i64, p.x as i64, p.y as i64);
+                    }
+                }
+                GdsElement::GdsPath(p) => {
+                    let w = (p.width.unwrap_or(0) as i64 + 1) / 2;
+                    for q in &p.xy {
+                        grow(
+                            q.x as i64 - w,
+                            q.y as i64 - w,
+                            q.x as i64 + w,
+                            q.y as i64 + w,
+                        );
+                    }
+                }
+                GdsElement::GdsBox(b) => {
+                    for p in &b.xy {
+                        grow(p.x as i64, p.y as i64, p.x as i64, p.y as i64);
+                    }
+                }
+                GdsElement::GdsStructRef(sr) => {
+                    if let Some(cb) = cell_bbox(&sr.name, cell_map, memo, depth + 1) {
+                        let tr = Transform::from_strans(sr.strans.as_ref(), sr.xy.x, sr.xy.y);
+                        let (x0, y0, x1, y1) = placed_bbox(&tr, cb);
+                        grow(x0, y0, x1, y1);
+                    }
+                }
+                GdsElement::GdsArrayRef(ar) => {
+                    if let Some(cb) = cell_bbox(&ar.name, cell_map, memo, depth + 1) {
+                        let (cols, rows) = (ar.cols as i32, ar.rows as i32);
+                        let col_dx = (ar.xy[1].x - ar.xy[0].x) / cols;
+                        let col_dy = (ar.xy[1].y - ar.xy[0].y) / cols;
+                        let row_dx = (ar.xy[2].x - ar.xy[0].x) / rows;
+                        let row_dy = (ar.xy[2].y - ar.xy[0].y) / rows;
+                        for c in [0, cols - 1] {
+                            for r in [0, rows - 1] {
+                                let ix = ar.xy[0].x + c * col_dx + r * row_dx;
+                                let iy = ar.xy[0].y + c * col_dy + r * row_dy;
+                                let tr = Transform::from_strans(ar.strans.as_ref(), ix, iy);
+                                let (x0, y0, x1, y1) = placed_bbox(&tr, cb);
+                                grow(x0, y0, x1, y1);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    memo.insert(cell_name.to_string(), bb);
+    bb
+}
+
+/// A box's corners through a transform, and the box round them.
+fn placed_bbox(tr: &Transform, (x0, y0, x1, y1): (i64, i64, i64, i64)) -> (i64, i64, i64, i64) {
+    let mut out: Option<(i64, i64, i64, i64)> = None;
+    for (x, y) in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)] {
+        let p = tr.apply(x as i32, y as i32);
+        let (px, py) = (p.x as i64, p.y as i64);
+        out = Some(match out {
+            None => (px, py, px, py),
+            Some(b) => (b.0.min(px), b.1.min(py), b.2.max(px), b.3.max(py)),
+        });
+    }
+    out.expect("four corners")
+}
+
+/// What the flattener records besides geometry: the waivers to match instances
+/// against, and the memo of cell boxes for the instances that match.
+struct Waiving<'a> {
+    waivers: &'a [crate::pdk::Waiver],
+    boxes: HashMap<String, Option<(i64, i64, i64, i64)>>,
+}
+
+impl Waiving<'_> {
+    /// Record a placed instance of `cell` if a waiver names it.
+    fn note(
+        &mut self,
+        cell: &str,
+        cell_map: &HashMap<&str, &GdsStruct>,
+        transform: &Transform,
+        out: &mut FlatLayout,
+    ) {
+        for (i, w) in self.waivers.iter().enumerate() {
+            if !w.matches_cell(cell) {
+                continue;
+            }
+            if let Some(cb) = cell_bbox(cell, cell_map, &mut self.boxes, 0) {
+                let (x0, y0, x1, y1) = placed_bbox(transform, cb);
+                out.push_waived_instance(crate::layout::WaivedInstance {
+                    cell: cell.to_string(),
+                    waiver: i,
+                    x0: x0 as i32,
+                    y0: y0 as i32,
+                    x1: x1 as i32,
+                    y1: y1 as i32,
+                });
+            }
+            break;
+        }
+    }
+}
+
 fn flatten_cell(
     cell_name: &str,
     cell_map: &HashMap<&str, &GdsStruct>,
@@ -107,6 +234,7 @@ fn flatten_cell(
     depth: u32,
     needed: Needed,
     out: &mut FlatLayout,
+    waiving: &mut Waiving,
 ) {
     if depth > 64 {
         eprintln!("flatten: depth limit reached inside cell '{}'", cell_name);
@@ -153,7 +281,16 @@ fn flatten_cell(
             GdsElement::GdsStructRef(sr) => {
                 let child_tr = Transform::from_strans(sr.strans.as_ref(), sr.xy.x, sr.xy.y);
                 let composed = transform.compose(&child_tr);
-                flatten_cell(&sr.name, cell_map, &composed, depth + 1, needed, out);
+                waiving.note(&sr.name, cell_map, &composed, out);
+                flatten_cell(
+                    &sr.name,
+                    cell_map,
+                    &composed,
+                    depth + 1,
+                    needed,
+                    out,
+                    waiving,
+                );
             }
             GdsElement::GdsArrayRef(ar) => {
                 let cols = ar.cols as i32;
@@ -171,7 +308,16 @@ fn flatten_cell(
                         let iy = ar.xy[0].y + c * col_dy + r * row_dy;
                         let child_tr = Transform::from_strans(ar.strans.as_ref(), ix, iy);
                         let composed = transform.compose(&child_tr);
-                        flatten_cell(&ar.name, cell_map, &composed, depth + 1, needed, out);
+                        waiving.note(&ar.name, cell_map, &composed, out);
+                        flatten_cell(
+                            &ar.name,
+                            cell_map,
+                            &composed,
+                            depth + 1,
+                            needed,
+                            out,
+                            waiving,
+                        );
                     }
                 }
             }
@@ -311,11 +457,20 @@ fn add_path(path: &GdsPath, transform: &Transform, out: &mut FlatLayout) {
     );
 }
 
-pub fn flatten_to_elems(topcell: &str, lib: &GdsLibrary, needed: Needed) -> FlatLayout {
+pub fn flatten_to_elems(
+    topcell: &str,
+    lib: &GdsLibrary,
+    needed: Needed,
+    waivers: &[crate::pdk::Waiver],
+) -> FlatLayout {
     let cell_map: HashMap<&str, &GdsStruct> =
         lib.structs.iter().map(|s| (s.name.as_str(), s)).collect();
 
     let mut out = FlatLayout::new();
+    let mut waiving = Waiving {
+        waivers,
+        boxes: HashMap::new(),
+    };
     flatten_cell(
         topcell,
         &cell_map,
@@ -323,6 +478,7 @@ pub fn flatten_to_elems(topcell: &str, lib: &GdsLibrary, needed: Needed) -> Flat
         0,
         needed,
         &mut out,
+        &mut waiving,
     );
     out
 }

@@ -281,6 +281,64 @@ struct PdkRaw {
     /// Electrical connect graph for net extraction (used by net-aware checks).
     #[serde(default)]
     pub connectivity: Vec<ConnectivityRaw>,
+    /// Cells checked as delivered; a base PDK's waivers are inherited.
+    #[serde(default)]
+    pub waivers: Vec<Waiver>,
+}
+
+/// A waiver: violations of the named rules whose marker lies inside a placed instance
+/// of a matching cell are reported, but as waived.  A PDK states these for the cells
+/// it ships checked as delivered - a foundry's pad and IO library - and nothing else
+/// does: a waiver is a statement about geometry, not a run option, so it is not on
+/// the command line where it would be reached for instead of a fix.
+#[derive(Debug, Deserialize, Clone)]
+pub struct Waiver {
+    /// Cell name patterns; `*` matches any run of characters.
+    pub cells: Vec<String>,
+    /// Rule ids the waiver covers; absent means every rule.
+    #[serde(default)]
+    pub rules: Option<Vec<String>>,
+    #[serde(default)]
+    pub reason: String,
+}
+
+impl Waiver {
+    pub fn matches_cell(&self, cell: &str) -> bool {
+        self.cells.iter().any(|p| glob_matches(p, cell))
+    }
+
+    pub fn covers_rule(&self, rule_id: &str) -> bool {
+        self.rules
+            .as_ref()
+            .is_none_or(|ids| ids.iter().any(|id| id == rule_id))
+    }
+}
+
+/// `pattern` against `s`, where `*` stands for any run of characters, including none.
+pub fn glob_matches(pattern: &str, s: &str) -> bool {
+    let parts: Vec<&str> = pattern.split('*').collect();
+    if parts.len() == 1 {
+        return pattern == s;
+    }
+    let mut rest = s;
+    for (i, part) in parts.iter().enumerate() {
+        if i == 0 {
+            let Some(r) = rest.strip_prefix(part) else {
+                return false;
+            };
+            rest = r;
+        } else if i == parts.len() - 1 {
+            return rest.ends_with(part);
+        } else if part.is_empty() {
+            continue;
+        } else {
+            let Some(at) = rest.find(part) else {
+                return false;
+            };
+            rest = &rest[at + part.len()..];
+        }
+    }
+    true
 }
 
 #[derive(Debug, Deserialize)]
@@ -322,6 +380,8 @@ pub struct PdkConfig {
     pub edge_layers: Vec<EdgeLayerDef>,
     /// Resolved connect graph for net extraction; empty if the PDK declares none.
     pub connectivity: Vec<crate::connectivity::ConnectSpec>,
+    /// Cells whose violations are reported waived (see [`Waiver`]).
+    pub waivers: Vec<Waiver>,
     layer_map: HashMap<String, Layer>,
     source: PdkSource,
 }
@@ -380,6 +440,9 @@ impl PdkConfig {
             let mut layers = base.layers;
             layers.extend(raw.layers);
             raw.layers = layers;
+            let mut waivers = base.waivers;
+            waivers.extend(raw.waivers);
+            raw.waivers = waivers;
             // Base virtuals first, the child's appended; a child entry with the same
             // name *replaces* the base one (keep the last of each name).
             let mut edges = base.edge_layers;
@@ -494,6 +557,7 @@ impl PdkConfig {
             virtual_layers: raw.virtual_layers,
             edge_layers: raw.edge_layers,
             connectivity,
+            waivers: raw.waivers,
             layer_map,
             source,
         })
@@ -972,5 +1036,21 @@ impl PdkConfig {
             .collect::<Result<Vec<_>, String>>()?;
 
         Ok(rules)
+    }
+}
+
+#[cfg(test)]
+mod waiver_tests {
+    use super::glob_matches;
+
+    #[test]
+    fn glob_star_matches_any_run() {
+        assert!(glob_matches("gf180mcu_fd_io__*", "gf180mcu_fd_io__in_c"));
+        assert!(glob_matches("Bondpad_*", "Bondpad_5LM"));
+        assert!(glob_matches("*_fill_*", "COMP_fill_cell"));
+        assert!(glob_matches("exact", "exact"));
+        assert!(!glob_matches("exact", "exactly"));
+        assert!(!glob_matches("Bondpad_*", "xBondpad_5LM"));
+        assert!(glob_matches("*", ""));
     }
 }

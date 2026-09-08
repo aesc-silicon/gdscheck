@@ -15,6 +15,13 @@ decks:
   - name: min_array_space
     path: decks/min_array_space.yml
 
+# Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
+# reported waived for ENC.proj, and for nothing else.
+waivers:
+  - cells: ["PADLIB_*"]
+    rules: [ENC.proj]
+    reason: library cell
+
 layers:
   - name: Outer
     gds_layer: 1

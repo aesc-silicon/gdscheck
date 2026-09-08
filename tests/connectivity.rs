@@ -19,7 +19,7 @@ fn extract(process: &str, fixture: &str) -> (Connectivity, f64) {
     let lib = load_gds(fixture).expect("load fixture");
     let dbu_to_um = lib.units.1 * 1e6;
 
-    let mut layout = flatten::flatten_to_elems("TOP", &lib, None);
+    let mut layout = flatten::flatten_to_elems("TOP", &lib, None, &[]);
     pdk.compute_virtual_layers(&mut layout, dbu_to_um);
 
     let tile_dbu = (merge::TILE_UM / dbu_to_um).round() as i32;

@@ -156,6 +156,15 @@ decks:
     path: decks/ymtp_mk.yml
     description: YMTP marker
 
+# Cells checked as delivered.  A violation of the listed rules whose marker lies inside
+# a placed instance of one is reported, but as waived.  The foundry's bond pads and IO
+# cells draw their pad metal with 0.3 um slots against the 1 um CUP.3 asks of a
+# wire-bonded pad, and the reference deck reports those as well.
+waivers:
+  - cells: ["Bondpad_*", "gf180mcu_fd_io__*"]
+    rules: [CUP.3]
+    reason: foundry pad and IO library, qualified as delivered
+
 # Drawn layers: the GDS layer/datatype pairs the derived layers below are built from.
 layers:
   - name: comp

@@ -16,7 +16,7 @@
 //! * metric words are lowercase (width, space, enclosure, density, …); layer
 //!   names keep their PDK spelling.
 
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ViolationGeometry {
     /// A single point, coordinates in µm
     Point { x: f64, y: f64 },
@@ -26,11 +26,15 @@ pub enum ViolationGeometry {
     None,
 }
 
+#[derive(Debug, Clone)]
 pub struct Violation {
     pub rule_id: String,
     pub description: String,
     pub message: String,
     pub geometry: ViolationGeometry,
+    /// Set when the marker lies inside a cell the PDK waives for this rule: the cell
+    /// and the waiver's reason.  The violation is still reported, marked as waived.
+    pub waived: Option<String>,
 }
 
 impl Violation {
@@ -48,6 +52,7 @@ impl Violation {
             description: description.to_string(),
             message,
             geometry: ViolationGeometry::Edge { x1, y1, x2, y2 },
+            waived: None,
         }
     }
 
@@ -57,6 +62,7 @@ impl Violation {
             description: description.to_string(),
             message,
             geometry: ViolationGeometry::Point { x, y },
+            waived: None,
         }
     }
 
@@ -66,6 +72,7 @@ impl Violation {
             description: description.to_string(),
             message,
             geometry: ViolationGeometry::None,
+            waived: None,
         }
     }
 }
