@@ -399,7 +399,7 @@ fn propagate_virtual_halos(
     clippable: &std::collections::HashSet<(i16, i16)>,
     halo_by_layer: &mut std::collections::HashMap<(i16, i16), Reach>,
     why: &mut std::collections::HashMap<(i16, i16), String>,
-    dbu_to_um: f64,
+    tile_dbu: i32,
 ) {
     for (spec, op) in tiled_virtuals {
         // A virtual the deck never reads costs nothing to build, but its halo would
@@ -411,6 +411,16 @@ fn propagate_virtual_halos(
             continue;
         }
         let extra: Reach = match op {
+            // An erosion large against the tile is read on stitched regions and asks
+            // its source for nothing (see `merge::erosion_on_regions`).
+            merge::VirtualOp::Open(r)
+            | merge::VirtualOp::Shrink(r)
+            | merge::VirtualOp::ShrinkX(r)
+            | merge::VirtualOp::ShrinkY(r)
+                if merge::erosion_on_regions(*r, tile_dbu) =>
+            {
+                (0, 0)
+            }
             merge::VirtualOp::Close(r) | merge::VirtualOp::Open(r) => (2 * r, 2 * r),
             // Reads to the far side of the gap it measures.
             merge::VirtualOp::SeparationBelow(r)
@@ -594,7 +604,7 @@ fn halo_table(
             clippable,
             &mut halo,
             &mut why,
-            dbu_to_um,
+            (merge::TILE_UM / dbu_to_um).round() as i32,
         );
         for spec in edge_specs {
             if in_scope.is_some_and(|n| !n.contains(&spec.key)) {
