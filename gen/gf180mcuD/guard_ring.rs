@@ -4,8 +4,8 @@
 
 //! Guard ring: a good and a bad pattern for every rule in the `guard_ring` deck.
 //!
-//! The ring is drawn the way the real one in `static/guardring.gds.gz` is, scaled down:
-//! a band `B` wide with a 45° chamfer `C` across each corner, its active laid out as four
+//! The ring is drawn the way a real seal ring is, scaled down: a band `B` wide with a
+//! 45° chamfer `C` across each corner, its active laid out as four
 //! corner pieces and four bars between them, the marker one annulus over the same
 //! outline, and P+ over the active.  Three rules are statements about that shape rather
 //! than about a distance and so fire on every other fixture until it is right - GR.1 wants
@@ -15,6 +15,12 @@
 //!
 //! The real ring's own numbers are the good halves here: its active band is 16 µm, which
 //! is exactly GR.6's minimum, and its metal 15 µm against GR.4's 12.
+//!
+//! `seal` is that ring at something nearer chip scale, with the die it guards: metal on
+//! every level standing 8.8 µm off the marker where GR.2 asks ten, the way the ring this
+//! was modelled on stood, and its contacts and vias filling a stretch of the band at
+//! exactly the 0.7 µm GR.7 and GR.8 allow.  It spans twenty tiles each way, so a wall
+//! that a tile reads from its neighbour's copy has to be reported by someone.
 
 use crate::helpers::{layer, library, poly, rect, write_gz};
 use gds21::GdsElement;
@@ -28,6 +34,15 @@ const H: f64 = 120.0;
 /// The band, and the chamfer across each corner - both the real ring's.
 const B: f64 = 16.0;
 const C: f64 = 9.0;
+/// The `seal` ring's outline, and how far its die's metal stands off the marker.
+const SEAL_W: f64 = 400.0;
+const SEAL_H: f64 = 300.0;
+const DIE_GAP: f64 = 8.8;
+/// The die's metal blocks: `BLOCK` long along the wall, `BLOCK_DEPTH` into the die, at
+/// `BLOCK_PITCH`.
+const BLOCK: f64 = 10.0;
+const BLOCK_DEPTH: f64 = 6.0;
+const BLOCK_PITCH: f64 = 15.0;
 const D: f64 = 0.005;
 
 /// The eight layers GR.2 keeps clear of the marker.
@@ -53,26 +68,31 @@ const METALS: &[&str] = &[
 /// A ring band `b` wide on layer `l`, as the eight pieces the real ring is drawn as:
 /// four corners carrying the 45° chamfer, four bars between them.
 fn band(l: (i16, i16), b: f64) -> Vec<GdsElement> {
-    let (x1, y1) = (O + W, O + H);
+    band_at(l, b, (O, W, H))
+}
+
+/// [`band`] round an outline with lower left `o`, `w` wide and `h` high.
+fn band_at(l: (i16, i16), b: f64, (o, w, h): (f64, f64, f64)) -> Vec<GdsElement> {
+    let (x1, y1) = (o + w, o + h);
     vec![
         poly(
             l,
             &[
-                (O + C, O),
-                (O, O + C),
-                (O, O + b),
-                (O + b, O + b),
-                (O + b, O),
+                (o + C, o),
+                (o, o + C),
+                (o, o + b),
+                (o + b, o + b),
+                (o + b, o),
             ],
         ),
         poly(
             l,
             &[
-                (x1 - C, O),
-                (x1 - b, O),
-                (x1 - b, O + b),
-                (x1, O + b),
-                (x1, O + C),
+                (x1 - C, o),
+                (x1 - b, o),
+                (x1 - b, o + b),
+                (x1, o + b),
+                (x1, o + C),
             ],
         ),
         poly(
@@ -88,41 +108,46 @@ fn band(l: (i16, i16), b: f64) -> Vec<GdsElement> {
         poly(
             l,
             &[
-                (O + C, y1),
-                (O + b, y1),
-                (O + b, y1 - b),
-                (O, y1 - b),
-                (O, y1 - C),
+                (o + C, y1),
+                (o + b, y1),
+                (o + b, y1 - b),
+                (o, y1 - b),
+                (o, y1 - C),
             ],
         ),
-        rect(l, O + b, O, x1 - b, O + b),
-        rect(l, O + b, y1 - b, x1 - b, y1),
-        rect(l, O, O + b, O + b, y1 - b),
-        rect(l, x1 - b, O + b, x1, y1 - b),
+        rect(l, o + b, o, x1 - b, o + b),
+        rect(l, o + b, y1 - b, x1 - b, y1),
+        rect(l, o, o + b, o + b, y1 - b),
+        rect(l, x1 - b, o + b, x1, y1 - b),
     ]
 }
 
 /// The marker: one annulus over a band `b` wide, written as the keyhole polygon the real
 /// ring uses - the outer boundary with its chamfers, then the inner rectangle.
 fn marker(l: (i16, i16), b: f64) -> GdsElement {
-    let (x1, y1) = (O + W, O + H);
+    marker_at(l, b, (O, W, H))
+}
+
+/// [`marker`] round an outline with lower left `o`, `w` wide and `h` high.
+fn marker_at(l: (i16, i16), b: f64, (o, w, h): (f64, f64, f64)) -> GdsElement {
+    let (x1, y1) = (o + w, o + h);
     poly(
         l,
         &[
-            (O + C, O),
-            (O, O + C),
-            (O, y1 - b),
-            (O + b, y1 - b),
-            (O + b, O + b),
-            (x1 - b, O + b),
+            (o + C, o),
+            (o, o + C),
+            (o, y1 - b),
+            (o + b, y1 - b),
+            (o + b, o + b),
+            (x1 - b, o + b),
             (x1 - b, y1 - b),
-            (O, y1 - b),
-            (O, y1 - C),
-            (O + C, y1),
+            (o, y1 - b),
+            (o, y1 - C),
+            (o + C, y1),
             (x1 - C, y1),
             (x1, y1 - C),
-            (x1, O + C),
-            (x1 - C, O),
+            (x1, o + C),
+            (x1 - C, o),
         ],
     )
 }
@@ -267,6 +292,57 @@ pub fn generate(pdk: &PdkConfig) {
         bad.extend(band(layer(pdk, m), B - 1.0));
     }
     write("GR.11.bad", bad);
+
+    seal(pdk);
+}
+
+/// The seal ring with its die: 400 x 300 µm, the die's metal a row of blocks along each
+/// wall 8.8 µm off the marker on every level, a stretch of the band across two tile
+/// lines filled with contacts and vias at 0.7 µm.
+fn seal(pdk: &PdkConfig) {
+    let ring = (O, SEAL_W, SEAL_H);
+    let (x1, y1) = (O + SEAL_W, O + SEAL_H);
+    let mut elems = vec![marker_at(layer(pdk, "guard_ring_mk"), B, ring)];
+    elems.extend(band_at(layer(pdk, "comp"), B, ring));
+    elems.extend(band_at(layer(pdk, "pplus"), B, ring));
+    for m in METALS {
+        elems.extend(band_at(layer(pdk, m), B - 1.0, ring));
+    }
+    elems.push(rect(layer(pdk, "pad"), x1 - 12.0, y1 - 12.0, x1 - 2.0, y1 - 2.0));
+    // The die's metal along each wall as a row of blocks, each its own region and so its
+    // own GR.2 marker: a spacing rule reports one pair once, and a die drawn as one plate
+    // would be one marker per level however many tiles its walls cross.
+    let (dx0, dy0, dx1, dy1) = (
+        O + B + DIE_GAP,
+        O + B + DIE_GAP,
+        x1 - B - DIE_GAP,
+        y1 - B - DIE_GAP,
+    );
+    for m in METALS {
+        let l = layer(pdk, m);
+        let mut x = dx0;
+        while x + BLOCK <= dx1 {
+            elems.push(rect(l, x, dy0, x + BLOCK, dy0 + BLOCK_DEPTH));
+            elems.push(rect(l, x, dy1 - BLOCK_DEPTH, x + BLOCK, dy1));
+            x += BLOCK_PITCH;
+        }
+        let mut y = dy0 + BLOCK_DEPTH + 2.0;
+        while y + BLOCK <= dy1 - BLOCK_DEPTH - 2.0 {
+            elems.push(rect(l, dx0, y, dx0 + BLOCK_DEPTH, y + BLOCK));
+            elems.push(rect(l, dx1 - BLOCK_DEPTH, y, dx1, y + BLOCK));
+            y += BLOCK_PITCH;
+        }
+    }
+    for (i, lname) in ["contact", "via1", "via2", "via3", "via4"].iter().enumerate() {
+        let l = layer(pdk, lname);
+        let y = O + 2.0 + i as f64 * 2.0;
+        let mut x = O + 30.0;
+        while x < O + 70.0 {
+            elems.push(rect(l, x, y, x + 0.22, y + 0.22));
+            x += 0.22 + 0.7;
+        }
+    }
+    write("seal", elems);
 }
 
 fn write(name: &str, elems: Vec<GdsElement>) {
