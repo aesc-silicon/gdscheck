@@ -44,7 +44,14 @@ fn count(deck: &str, pattern: &str, rule: &str) -> usize {
 /// - `notch` dips the enclosing wall towards the enclosed shape in a 45° V.  The wall it
 ///   faces is still 1.7 µm away, so again only the euclidian metric reaches the apex; the
 ///   difference from `diag` is that the violation is mid-wall rather than at a corner.
+/// - `bar` is a 40 µm bar across three tiles, enclosed by a row of 2.5 µm pieces the
+///   way abutting cells enclose a merged row of their Activ.  The tile owning the bar
+///   holds the enclosing layer exact only 1 µm past its core; the far end's margin has
+///   to be read from the tiles that own it, and was once reported as no enclosure at
+///   all whatever the margin.
 #[rstest]
+#[case("bar_0400", 1, 1)]
+#[case("bar_0600", 0, 0)]
 #[case("ortho_0400", 1, 1)]
 #[case("ortho_0499", 1, 1)]
 #[case("ortho_0500", 0, 0)]
