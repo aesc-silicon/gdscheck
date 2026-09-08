@@ -1023,8 +1023,12 @@ pub fn run_no_angle(
 // this never confuses a bar's length for its width.
 // ===========================================================================
 
-/// Drive a bounding-box extent check over the cached tiles.  One point violation per
-/// offending region (owned by the tile whose core holds its centroid).
+/// Drive a bounding-box extent check over the layer's stitched regions: one point
+/// violation per offending region, at the region's marker.  The extent is the union of
+/// the region's pieces' bounding boxes, each piece cut to its tile core, so a region of
+/// any size is measured whole without any tile holding a whole copy of it - which is
+/// what the check used to need, a halo the size of its value on the drawn layers under
+/// the region: MDP.13a's 50 µm on a dense COMP was 21 copies of every shape.
 #[allow(clippy::too_many_arguments)]
 pub fn run_extent(
     rule: &RuleDefinition,
@@ -1057,56 +1061,59 @@ pub fn run_extent(
         _ => "≠",
     };
 
-    merged
-        .tiles(gl, gd)
+    let labeled = crate::merge::stitch_labeled(merged.tiles(gl, gd), merged.tile_dbu());
+    let per_tile: Vec<Vec<(usize, (i32, i32, i32, i32))>> = labeled
+        .by_tile
         .par_iter()
-        .flat_map_iter(move |(&(tx, ty), polys)| {
-            let core = Core {
-                x0: tx as i64 * tile,
-                y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile,
-                y1: (ty as i64 + 1) * tile,
-            };
+        .map(|(&(tx, ty), polys)| {
+            let core = (
+                tx as i64 * tile,
+                ty as i64 * tile,
+                (tx as i64 + 1) * tile,
+                (ty as i64 + 1) * tile,
+            );
             polys
                 .iter()
-                .filter_map(move |m| {
-                    let (mut x0, mut y0) = (i32::MAX, i32::MAX);
-                    let (mut x1, mut y1) = (i32::MIN, i32::MIN);
-                    for p in &m.outer {
-                        x0 = x0.min(p.x);
-                        y0 = y0.min(p.y);
-                        x1 = x1.max(p.x);
-                        y1 = y1.max(p.y);
-                    }
-                    let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
-                    let extent = if long { w.max(h) } else { w.min(h) };
-                    if !viol(extent) {
-                        return None;
-                    }
-                    let (cx, cy) = merged_centroid_dbu(m);
-                    if !core.owns(cx, cy) {
-                        return None;
-                    }
-                    let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
-                    Some(Violation::point(
-                        rid,
-                        label,
-                        format!(
-                            "{}: {} {:.4} µm {} {:.4} µm at ({:.4}, {:.4}) µm",
-                            lname,
-                            word,
-                            extent * dbu_to_um,
-                            cmp,
-                            limit,
-                            ux,
-                            uy
-                        ),
-                        ux,
-                        uy,
-                    ))
-                })
-                .collect::<Vec<_>>()
-                .into_iter()
+                .filter_map(|(m, r)| crate::merge::core_clipped_bbox(m, core).map(|b| (*r, b)))
+                .collect()
+        })
+        .collect();
+    let mut bbox: Vec<Option<(i32, i32, i32, i32)>> = vec![None; labeled.regions.len()];
+    for v in per_tile {
+        for (r, b) in v {
+            bbox[r] = Some(match bbox[r] {
+                None => b,
+                Some(a) => (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3)),
+            });
+        }
+    }
+    bbox.iter()
+        .enumerate()
+        .filter_map(|(r, b)| {
+            let (x0, y0, x1, y1) = (*b)?;
+            let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
+            let extent = if long { w.max(h) } else { w.min(h) };
+            if !viol(extent) {
+                return None;
+            }
+            let (cx, cy) = labeled.regions[r].marker;
+            let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
+            Some(Violation::point(
+                rid,
+                label,
+                format!(
+                    "{}: {} {:.4} µm {} {:.4} µm at ({:.4}, {:.4}) µm",
+                    lname,
+                    word,
+                    extent * dbu_to_um,
+                    cmp,
+                    limit,
+                    ux,
+                    uy
+                ),
+                ux,
+                uy,
+            ))
         })
         .collect()
 }

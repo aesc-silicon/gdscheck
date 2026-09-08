@@ -728,6 +728,13 @@ pub enum RegionFilter {
     ShortSide(Option<i32>, Option<i32>),
     /// The longer side of the region's bounding box, in DBU.
     LongSide(Option<i32>, Option<i32>),
+    /// A filled axis-aligned rectangle (`true`) or anything else (`false`): the region's
+    /// area is its bounding box's.  Decided on the stitched region, because a copy of
+    /// an L drawn as two bars holds only the bar that reaches its tile, and that bar is
+    /// a rectangle - MSLOT1.0's bad pattern read as a legal slot two tiles over.
+    Rectangle(bool),
+    /// A filled square (`true`) or anything else (`false`), likewise.
+    Square(bool),
 }
 
 /// A selector's count bounds: how many *distinct* filter regions a candidate must meet,
@@ -776,6 +783,10 @@ impl VirtualOp {
             VirtualOp::WithArea(lo, hi) => Some(RegionFilter::Area(lo, hi)),
             VirtualOp::WithBBoxMin(lo, hi) => Some(RegionFilter::ShortSide(lo, hi)),
             VirtualOp::WithBBoxMax(lo, hi) => Some(RegionFilter::LongSide(lo, hi)),
+            VirtualOp::Rectangle => Some(RegionFilter::Rectangle(true)),
+            VirtualOp::NotRectangle => Some(RegionFilter::Rectangle(false)),
+            VirtualOp::Square => Some(RegionFilter::Square(true)),
+            VirtualOp::NotSquare => Some(RegionFilter::Square(false)),
             _ => None,
         }
     }
@@ -3061,6 +3072,27 @@ fn clip_to_cores(tiles: TileMap, tile_dbu: i32) -> TileMap {
         .collect()
 }
 
+/// The bounding box of the part of `m` inside the core, or `None` if none of it is.
+/// A polygon wholly inside is its own box; one straddling the core is cut first,
+/// because the box of a cut L is not the cut of the L's box.
+pub fn core_clipped_bbox(
+    m: &MergedPoly,
+    core: (i64, i64, i64, i64),
+) -> Option<(i32, i32, i32, i32)> {
+    let (bx0, by0, bx1, by1) = poly_bbox(m);
+    let (x0, y0, x1, y1) = core;
+    if (bx1 as i64) <= x0 || (bx0 as i64) >= x1 || (by1 as i64) <= y0 || (by0 as i64) >= y1 {
+        return None;
+    }
+    if bx0 as i64 >= x0 && bx1 as i64 <= x1 && by0 as i64 >= y0 && by1 as i64 <= y1 {
+        return Some((bx0, by0, bx1, by1));
+    }
+    clip_to_box(vec![m.clone()], x0, y0, x1, y1)
+        .iter()
+        .map(poly_bbox)
+        .reduce(|a, b| (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3)))
+}
+
 /// The part of `polys` inside the box: what lies within stays as it is, what lies
 /// outside goes, and what straddles the border is cut.  Holes survive the cut.
 fn clip_to_box(polys: Vec<MergedPoly>, x0: i64, y0: i64, x1: i64, y1: i64) -> Vec<MergedPoly> {
@@ -3577,14 +3609,32 @@ fn empty_when_source_empty(op: VirtualOp, i: usize) -> bool {
 
 fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> TileMap {
     let labeled = stitch_labeled(cand, tile_dbu);
-    // A region's bounding box is the union of its pieces' — the pieces tile its core, so
-    // nothing of the region falls outside them.
+    // A region's bounding box is the union of its pieces', each cut to its core: within
+    // the core a copy is the region, and past it a whole copy holds whatever its tile
+    // computed.
+    let t = tile_dbu as i64;
     let mut bb: Vec<Option<(i64, i64, i64, i64)>> = vec![None; labeled.regions.len()];
     if !matches!(f, RegionFilter::Area(_, _)) {
-        for polys in labeled.by_tile.values() {
-            for (poly, rid) in polys {
-                let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
-                bb[*rid] = Some(match bb[*rid] {
+        let per_tile: Vec<Vec<(usize, (i32, i32, i32, i32))>> = labeled
+            .by_tile
+            .par_iter()
+            .map(|(&(tx, ty), polys)| {
+                let core = (
+                    tx as i64 * t,
+                    ty as i64 * t,
+                    (tx as i64 + 1) * t,
+                    (ty as i64 + 1) * t,
+                );
+                polys
+                    .iter()
+                    .filter_map(|(poly, rid)| core_clipped_bbox(poly, core).map(|b| (*rid, b)))
+                    .collect()
+            })
+            .collect();
+        for v in per_tile {
+            for (rid, (x0, y0, x1, y1)) in v {
+                let (x0, y0, x1, y1) = (x0 as i64, y0 as i64, x1 as i64, y1 as i64);
+                bb[rid] = Some(match bb[rid] {
                     None => (x0, y0, x1, y1),
                     Some(b) => (b.0.min(x0), b.1.min(y0), b.2.max(x1), b.3.max(y1)),
                 });
@@ -3596,6 +3646,17 @@ fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> 
             RegionFilter::Area(lo, hi) => {
                 let a = labeled.regions[rid].area_dbu;
                 lo.is_none_or(|v| a >= v as f64) && hi.is_none_or(|v| a < v as f64)
+            }
+            RegionFilter::Rectangle(want) | RegionFilter::Square(want) => {
+                let Some((x0, y0, x1, y1)) = bb[rid] else {
+                    return false;
+                };
+                let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
+                // Filled to its box exactly: the pieces' areas are integer sums, and a
+                // notch one DBU deep is what the reference calls not a rectangle.
+                let filled = labeled.regions[rid].area_dbu >= w * h - 0.5;
+                let is = filled && (matches!(f, RegionFilter::Rectangle(_)) || (w - h).abs() < 0.5);
+                is == want
             }
             RegionFilter::ShortSide(lo, hi) | RegionFilter::LongSide(lo, hi) => {
                 let Some((x0, y0, x1, y1)) = bb[rid] else {
