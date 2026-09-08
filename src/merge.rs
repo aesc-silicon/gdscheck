@@ -3145,6 +3145,34 @@ fn core_owned(tiles: &TileMap, tile_dbu: i32) -> TileMap {
         .collect()
 }
 
+/// Drop every polygon of each tile that has no area within the tile's zone of
+/// `halo_dbu` around its core.  Whole polygons touching the zone stay whole.
+fn trim_beyond_zone(tiles: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
+    let (t, h) = (tile_dbu as i64, halo_dbu.max(0) as i64);
+    tiles
+        .into_par_iter()
+        .filter_map(|((tx, ty), polys)| {
+            let (x0, y0) = ((tx as i64 * t - h) as f64, (ty as i64 * t - h) as f64);
+            let (x1, y1) = (
+                ((tx as i64 + 1) * t + h) as f64,
+                ((ty as i64 + 1) * t + h) as f64,
+            );
+            let kept: Vec<MergedPoly> = polys
+                .into_iter()
+                .filter(|p| {
+                    let (bx0, by0, bx1, by1) = poly_bbox(p);
+                    let touches = (bx1 as f64) > x0
+                        && (bx0 as f64) < x1
+                        && (by1 as f64) > y0
+                        && (by0 as f64) < y1;
+                    touches && clipped_area_dbu(p, x0, y0, x1, y1) > 0.0
+                })
+                .collect();
+            (!kept.is_empty()).then_some(((tx, ty), kept))
+        })
+        .collect()
+}
+
 fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32, clip: bool) -> TileMap {
     if halo_dbu <= 0 {
         return core_owned;
@@ -5257,6 +5285,25 @@ impl MergedCache {
             }
             let src_maps: Vec<&TileMap> = def.sources.iter().map(|s| &self.layers[s]).collect();
             let tiles = build_virtual_tiles(def.op, &src_maps);
+            // A boolean of sources cached at different halos - one reused from a
+            // fatter merge an earlier rule made - is exact only out to the thinner
+            // one's reach, and past it the fat source meets a truncated union: Activ
+            // at 7.5 µm against NWell at 1.1 µm left a 40 nm sliver of "tap" seven
+            // microns out, which a selection then copied into the tile that owns that
+            // ground, where min_area read it as a region (pSD.g on ihp-sg13cmos5l,
+            // 1395 times).  Nothing reads a copy past the zone its sources cover, so
+            // what lies wholly beyond it goes.
+            let halos: Vec<i32> = def
+                .sources
+                .iter()
+                .filter_map(|s| self.layer_halo.get(s).copied())
+                .collect();
+            let tiles = match (halos.iter().min(), halos.iter().max()) {
+                (Some(&lo), Some(&hi)) if lo != hi && halos.len() == def.sources.len() => {
+                    trim_beyond_zone(tiles, self.tile_dbu, lo)
+                }
+                _ => tiles,
+            };
             self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
             return;
         }
