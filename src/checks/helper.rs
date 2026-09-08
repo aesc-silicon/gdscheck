@@ -1341,8 +1341,12 @@ fn line_end_edges(
             }
             // Facing across the *inside* of the shape: the other wall lies on the
             // inward side, which for a CCW contour is the negative normal.
+            // Strictly narrower than `max_width`, at grid resolution: upstream keeps a
+            // cap only while its length is under the width bound, so a track exactly
+            // 0.34 µm wide is not a narrow line, and a float length a hair under 0.34
+            // must not make it one (13,675 CO.6a markers on 0.340 µm stubs).
             let sep = -((cx - ax) * nx + (cy - ay) * ny);
-            if sep <= tol || sep >= max_width {
+            if sep <= tol || sep >= max_width - tol {
                 continue;
             }
             let t0 = (cx - ax) * ux + (cy - ay) * uy;
@@ -1377,7 +1381,7 @@ fn line_end_edges(
     (0..n)
         .filter(|&e| {
             let (ax, ay, bx, by) = a.edges[e];
-            (bx - ax).hypot(by - ay) < max_width
+            (bx - ax).hypot(by - ay) < max_width - tol
                 && !is_wall.contains(&e)
                 && walls.iter().any(|&(i, j)| touches(e, i) && touches(e, j))
         })
