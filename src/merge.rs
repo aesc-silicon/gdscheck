@@ -4783,7 +4783,7 @@ impl MergedCache {
     }
 
     /// A layer's name if known, else its numbers.
-    fn name_of(&self, key: (i16, i16)) -> String {
+    pub fn name_of(&self, key: (i16, i16)) -> String {
         self.names
             .get(&key)
             .cloned()
@@ -5213,6 +5213,22 @@ impl MergedCache {
         let polys: usize = self.layer_polys.values().sum();
         let derived = self.layers.keys().filter(|k| !self.is_drawn(**k)).count();
         format!("{}L/{}derived/{}polys", self.layers.len(), derived, polys)
+    }
+
+    /// Polygon copies resident across every cached layer and the shelf.
+    pub fn resident_polys(&self) -> usize {
+        self.layer_polys.values().sum::<usize>()
+            + self.shelf.values().map(|(_, _, n)| n).sum::<usize>()
+    }
+
+    /// Every cached layer with its polygon copies, shelf included.
+    pub fn resident_layers(&self) -> Vec<((i16, i16), usize)> {
+        let mut v: Vec<((i16, i16), usize)> =
+            self.layer_polys.iter().map(|(k, n)| (*k, *n)).collect();
+        for (k, (_, _, n)) in &self.shelf {
+            v.push((*k, *n));
+        }
+        v
     }
 
     /// The halo a cached layer was built for, or `None` if it is not cached.
