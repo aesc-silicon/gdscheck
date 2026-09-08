@@ -494,13 +494,17 @@ fn propagate_virtual_halos(
 /// different-net spacing rode on LPW.3's 2.5 µm.  A halo built per rule has no such
 /// luck to ride on, which is how the omission showed: three foundry violations at
 /// 1.395 µm gone, under a 1 µm halo.
+///
+/// `max_space` is not here: it reads both layers as core pieces and finds the
+/// reference within its value of a core in the neighbouring tiles itself (see
+/// `merge::max_space_gaps`).  Listed, its 20 µm was the halo of Activ on an ORFS
+/// layout, and the merge died in it.
 const DIST_CHECKS: &[&str] = &[
     "min_width",
     "max_width",
     "exact_width",
     "min_45_width",
     "max_distance",
-    "max_space",
     "min_space",
     "min_space_different_net",
     "min_space_same_net",

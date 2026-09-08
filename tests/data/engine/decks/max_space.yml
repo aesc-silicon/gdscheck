@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Every part of Outer within 20 µm of Inner, the shape of a latch-up rule and a value
+# the size of a tile.
+rules:
+  - id: SPC.max
+    check: max_space
+    layers: [Outer, Inner]
+    value: 20.0

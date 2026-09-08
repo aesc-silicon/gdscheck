@@ -150,3 +150,27 @@ fn min_array_space_knows_what_is_inside_the_array(
         "{pattern}: space in one axis"
     );
 }
+
+/// Every part of Outer within 20 µm of Inner, the reference grown as KLayout's `sized`
+/// grows rectilinear geometry: a square structuring element, so `corner_near` at 18 µm
+/// in each axis - 25 µm as the crow flies - is covered.  `ring` is a tie ring 100 µm
+/// across with a target in its middle: the ring's bounding box grown by 20 µm would
+/// cover the whole interior, the ring grown does not, and that device is what the
+/// latch-up rule exists for.  `straddle` puts the target across a tile line, and asks
+/// for one gap; `reach` puts the reference across one, and asks that it cover the full
+/// 20 µm into the next tile but one.
+#[rstest]
+#[case("ring_far", 1)]
+#[case("ring_near", 0)]
+#[case("straddle_far", 1)]
+#[case("straddle_near", 0)]
+#[case("reach_far", 1)]
+#[case("reach_near", 0)]
+#[case("corner_far", 1)]
+#[case("corner_near", 0)]
+fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
+    #[case] pattern: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("max_space", pattern, "SPC.max"), expected, "{pattern}");
+}
