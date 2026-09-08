@@ -423,16 +423,8 @@ fn propagate_virtual_halos(
             merge::VirtualOp::GrowX(r) | merge::VirtualOp::ShrinkX(r) => (*r, 0),
             merge::VirtualOp::GrowY(r) | merge::VirtualOp::ShrinkY(r) => (0, *r),
             merge::VirtualOp::Shrink(r) => (*r, *r),
-            // For `holes`/`with_holes`, radius declares the maximum expected ring
-            // extent: a hole only materialises in a tile whose bucket assembles the
-            // WHOLE ring, so the source needs the full ring within reach.
-            merge::VirtualOp::Holes | merge::VirtualOp::WithHoles => {
-                let r = spec
-                    .radius
-                    .map(|r| (r / dbu_to_um).ceil() as i32)
-                    .unwrap_or(0);
-                (r, r)
-            }
+            // `holes`/`with_holes` read the stitched region, so a ring of any size has
+            // its hole without the source holding the whole ring in one tile.
             _ => (0, 0),
         };
         // A layer delivered as core-clipped pieces (see `clippable_layers`) only has to
@@ -688,6 +680,9 @@ fn clippable_layers(
                 | O::WithArea(_, _)
                 | O::WithBBoxMin(_, _)
                 | O::WithBBoxMax(_, _)
+                | O::Holes
+                | O::WithHoles
+                | O::Extents
         )
     };
     let passes_through = |op: O| {

@@ -165,8 +165,7 @@ pub struct TiledVirtualSpec {
     pub op: String,
     /// Resolved source layer keys.
     pub sources: Vec<(i16, i16)>,
-    /// Radius (µm) for the parameterised ops (`close`/`open`/`grow`; for
-    /// `holes`/`with_holes` it declares the max expected ring extent for halos).
+    /// Radius (µm) for the parameterised ops (`close`/`open`/`grow`).
     pub radius: Option<f64>,
     /// Text pattern for the `with_text` op.
     pub text: Option<String>,
