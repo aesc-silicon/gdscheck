@@ -4,6 +4,7 @@
 
 [package]
 name = "gdscheck"
+# When bumping: also update the tag in README.md's image URL
 version = "0.1.2"
 edition = "2024"
 authors = ["Daniel Schultz <dnltz@aesc-silicon.de>"]
