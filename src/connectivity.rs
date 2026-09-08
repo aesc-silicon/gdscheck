@@ -211,7 +211,7 @@ impl Connectivity {
                     .enumerate()
                     .flat_map_iter(|(r, region)| {
                         let conn_node = conn.base + r;
-                        let (mx, my) = region.marker;
+                        let (mx, my) = region.anchor;
                         s.layers
                             .iter()
                             .filter_map(move |&lk| {
