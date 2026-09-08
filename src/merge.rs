@@ -4095,6 +4095,17 @@ struct PlatePiece {
     sides: Sides,
 }
 
+/// Connected regions of `metal` with their enclosed `feature` area and a wide-spot flag,
+/// for `wide_uncovered`.  Pieces are cut per tile core and linked across tile lines, so
+/// nothing is unioned globally.  The wide test - a spot `erode_radius` from every wall -
+/// is asked only of regions whose extent allows one: a region narrower than twice the
+/// radius in either direction has no such spot, and that is every fill square and every
+/// wire on a metal layer.  It used to erode the neighbourhood of every tile at least
+/// half covered in metal, which on a filled chip is every tile, each a union of
+/// thousands of fill squares: the i2c-gpio-expander's Slt.c went to 40 GB that way.
+/// The tiles a wide-enough region has pieces in erode the union of that region's
+/// pieces in the surrounding ring of tiles, each cut to its own core, and read the
+/// metal from the neighbouring tiles rather than from any halo.
 pub fn analyze_regions(
     metal: &TileMap,
     feature: &TileMap,
@@ -4103,14 +4114,11 @@ pub fn analyze_regions(
 ) -> Vec<PlateInfo> {
     let t = tile_dbu as i64;
     let empty: Vec<MergedPoly> = Vec::new();
-    // The erosion reach is supplied by reading neighbouring tiles (no wide halo needed):
-    // `ring` tiles in every direction cover the core ± `erode_radius`.
     let ring = (erode_radius / tile_dbu as f64).ceil().max(1.0) as i32;
 
     // Stage 1 (parallel): one piece per metal poly with core area, carrying the enclosed
-    // feature area and a wide flag.  The wide flag erodes the union of the tile's `ring`
-    // neighbourhood (a few hundred polys) — bounded and never a global union.
-    let mut pieces: Vec<PlatePiece> = metal
+    // feature area and the index of its polygon in the tile.
+    let mut pieces: Vec<(PlatePiece, usize)> = metal
         .par_iter()
         .flat_map_iter(|(&(tx, ty), polys)| {
             let cx0 = (tx as i64 * t) as f64;
@@ -4118,9 +4126,8 @@ pub fn analyze_regions(
             let cx1 = ((tx as i64 + 1) * t) as f64;
             let cy1 = ((ty as i64 + 1) * t) as f64;
             let feats = feature.get(&(tx, ty)).unwrap_or(&empty);
-            let mut local: Vec<PlatePiece> = Vec::new();
-            let mut local_polys: Vec<&MergedPoly> = Vec::new();
-            for poly in polys {
+            let mut local: Vec<(PlatePiece, usize)> = Vec::new();
+            for (i, poly) in polys.iter().enumerate() {
                 let area = clipped_area_dbu(poly, cx0, cy0, cx1, cy1);
                 if area <= 0.0 {
                     continue; // only reaches this tile's halo, not its core
@@ -4141,38 +4148,79 @@ pub fn analyze_regions(
                         feature += clipped_area_dbu(f, cx0, cy0, cx1, cy1);
                     }
                 }
-                local.push(PlatePiece {
-                    area,
-                    feature,
-                    wide: false,
-                    wide_at: (0.0, 0.0),
-                    marker: merged_centroid_dbu(poly),
-                    bbox: (bx0, by0, bx1, by1),
-                    tile: (tx, ty),
-                    sides: Sides::of(poly, cx0, cy0, cx1, cy1),
-                });
-                local_polys.push(poly);
+                local.push((
+                    PlatePiece {
+                        area,
+                        feature,
+                        wide: false,
+                        wide_at: (0.0, 0.0),
+                        marker: merged_centroid_dbu(poly),
+                        bbox: (bx0, by0, bx1, by1),
+                        tile: (tx, ty),
+                        sides: Sides::of(poly, cx0, cy0, cx1, cy1),
+                    },
+                    i,
+                ));
             }
-            if local.is_empty() {
-                return local.into_iter();
-            }
-            // A ≥ 2*radius-wide plate fully covers a tile core, so a sparsely-filled tile
-            // (thin routing) can't host a wide spot — skip its erosion.  This keeps the
-            // neighbourhood union to the few plate-dense tiles, not every routing tile.
-            let core_area = (t * t) as f64;
-            let core_metal: f64 = local.iter().map(|p| p.area).sum();
-            if core_metal < 0.5 * core_area {
-                return local.into_iter();
-            }
-            // Erode the neighbourhood; any eroded metal left in this core marks the local
-            // piece that contains it as wide (it sits in a ≥ 2*radius-wide plate).  Each
-            // neighbour fragment is clipped to its own tile core first, so the per-tile
-            // halo overlaps don't seam into erosion slivers.
+            local.into_iter()
+        })
+        .collect();
+
+    // Stage 2: union pieces that are continuous across shared tile-core edges.
+    let mut tile_pieces: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+    for (id, (p, _)) in pieces.iter().enumerate() {
+        tile_pieces.entry(p.tile).or_default().push(id);
+    }
+    let mut uf = UnionFind::new(pieces.len());
+    let sides: Vec<&Sides> = pieces.iter().map(|(p, _)| &p.sides).collect();
+    link_adjacent_pieces(&mut uf, &tile_pieces, &sides, None);
+    drop(sides);
+    let roots: Vec<usize> = (0..pieces.len()).map(|id| uf.find(id)).collect();
+
+    // Stage 3: which regions are wide enough to hold a wide spot at all.
+    let mut region_bbox: HashMap<usize, (i32, i32, i32, i32)> = HashMap::new();
+    for (id, (p, _)) in pieces.iter().enumerate() {
+        let e = region_bbox.entry(roots[id]).or_insert(p.bbox);
+        e.0 = e.0.min(p.bbox.0);
+        e.1 = e.1.min(p.bbox.1);
+        e.2 = e.2.max(p.bbox.2);
+        e.3 = e.3.max(p.bbox.3);
+    }
+    let span = (2.0 * erode_radius) as i64;
+    let candidate: HashSet<usize> = region_bbox
+        .iter()
+        .filter(|(_, b)| (b.2 - b.0) as i64 >= span && (b.3 - b.1) as i64 >= span)
+        .map(|(root, _)| *root)
+        .collect();
+    let wide_tiles: Vec<(i32, i32)> = {
+        let mut v: Vec<(i32, i32)> = pieces
+            .iter()
+            .enumerate()
+            .filter(|(id, _)| candidate.contains(&roots[*id]))
+            .map(|(_, (p, _))| p.tile)
+            .collect();
+        v.sort_unstable();
+        v.dedup();
+        v
+    };
+
+    // Stage 4 (parallel): erode the candidate regions' metal around each such tile.
+    // Each neighbour polygon is cut to its own tile core first, so the per-tile halo
+    // overlaps do not seam into erosion slivers; any eroded metal left in this core
+    // marks the local piece that contains it as wide.
+    let found: Vec<(usize, (f64, f64))> = wide_tiles
+        .par_iter()
+        .flat_map_iter(|&(tx, ty)| {
+            let cx0 = (tx as i64 * t) as f64;
+            let cy0 = (ty as i64 * t) as f64;
+            let cx1 = ((tx as i64 + 1) * t) as f64;
+            let cy1 = ((ty as i64 + 1) * t) as f64;
             let mut neigh: Vec<Vec<Vec<[f64; 2]>>> = Vec::new();
             for dx in -ring..=ring {
                 for dy in -ring..=ring {
                     let (nx, ny) = (tx + dx, ty + dy);
-                    let Some(ps) = metal.get(&(nx, ny)) else {
+                    let (Some(ids), Some(ps)) = (tile_pieces.get(&(nx, ny)), metal.get(&(nx, ny)))
+                    else {
                         continue;
                     };
                     let bx0 = (nx as i64 * t) as f64;
@@ -4180,8 +4228,11 @@ pub fn analyze_regions(
                     let bx1 = ((nx as i64 + 1) * t) as f64;
                     let by1 = ((ny as i64 + 1) * t) as f64;
                     let core_box = vec![vec![[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]]];
-                    for p in ps {
-                        neigh.extend(merged_to_shape(p).overlay(
+                    for &id in ids {
+                        if !candidate.contains(&roots[id]) {
+                            continue;
+                        }
+                        neigh.extend(merged_to_shape(&ps[pieces[id].1]).overlay(
                             &core_box,
                             OverlayRule::Intersect,
                             FillRule::NonZero,
@@ -4189,8 +4240,22 @@ pub fn analyze_regions(
                     }
                 }
             }
+            let mut hits: Vec<(usize, (f64, f64))> = Vec::new();
+            if neigh.is_empty() {
+                return hits.into_iter();
+            }
             let metal_shapes = neigh.simplify_shape(FillRule::NonZero);
             let eroded = metal_shapes.outline(&OutlineStyle::new(-erode_radius));
+            let local: Vec<usize> = tile_pieces
+                .get(&(tx, ty))
+                .map(|ids| {
+                    ids.iter()
+                        .copied()
+                        .filter(|id| candidate.contains(&roots[*id]))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let polys = &metal[&(tx, ty)];
             for e in shapes_to_merged(eroded) {
                 if clipped_area_dbu(&e, cx0, cy0, cx1, cy1) <= 0.5 {
                     continue;
@@ -4207,29 +4272,22 @@ pub fn analyze_regions(
                 if !leftover.is_empty() {
                     continue;
                 }
-                if let Some(i) = local_polys
+                if let Some(&id) = local
                     .iter()
-                    .position(|p| point_in_merged(ecx, ecy, p))
+                    .find(|&&id| point_in_merged(ecx, ecy, &polys[pieces[id].1]))
                 {
-                    local[i].wide = true;
-                    local[i].wide_at = (ecx, ecy);
+                    hits.push((id, (ecx, ecy)));
                 }
             }
-            local.into_iter()
+            hits.into_iter()
         })
         .collect();
-
-    // Stage 2: union pieces that are continuous across shared tile-core edges.
-    let mut tile_pieces: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
-    for (id, p) in pieces.iter().enumerate() {
-        tile_pieces.entry(p.tile).or_default().push(id);
+    for (id, at) in found {
+        pieces[id].0.wide = true;
+        pieces[id].0.wide_at = at;
     }
-    let mut uf = UnionFind::new(pieces.len());
-    let sides: Vec<&Sides> = pieces.iter().map(|p| &p.sides).collect();
-    link_adjacent_pieces(&mut uf, &tile_pieces, &sides, None);
-    drop(sides);
 
-    // Stage 3: aggregate per region.
+    // Stage 5: aggregate per region.
     struct Acc {
         area: f64,
         feature: f64,
@@ -4240,8 +4298,8 @@ pub fn analyze_regions(
         wide_at: (f64, f64),
     }
     let mut acc: HashMap<usize, Acc> = HashMap::new();
-    for (id, p) in pieces.drain(..).enumerate() {
-        let root = uf.find(id);
+    for (id, (p, _)) in pieces.drain(..).enumerate() {
+        let root = roots[id];
         let e = acc.entry(root).or_insert(Acc {
             area: 0.0,
             feature: 0.0,
