@@ -393,6 +393,27 @@ type Reach = (i32, i32);
 /// core; a `grow` only dilates, so 1·r.  The radius part is charged even when no distance
 /// rule reads the virtual - a grow feeding a `nonempty` chain still needs its source
 /// within reach to be right per tile.
+/// How many polygon copies the merge cache may hold between rules: `GDSCHECK_CACHE_POLYS`,
+/// or a quarter of physical memory at the half kilobyte a copy costs on average.
+fn cache_budget_polys() -> usize {
+    if let Some(v) = std::env::var("GDSCHECK_CACHE_POLYS")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+    {
+        return v;
+    }
+    let total_kb = std::fs::read_to_string("/proc/meminfo")
+        .ok()
+        .and_then(|s| {
+            s.lines()
+                .find(|l| l.starts_with("MemTotal:"))
+                .and_then(|l| l.split_whitespace().nth(1))
+                .and_then(|v| v.parse::<u64>().ok())
+        })
+        .unwrap_or(32 * 1024 * 1024);
+    (total_kb * 1024 / 4 / 500) as usize
+}
+
 fn propagate_virtual_halos(
     tiled_virtuals: &[(pdk::TiledVirtualSpec, merge::VirtualOp)],
     in_scope: Option<&std::collections::HashSet<(i16, i16)>>,
@@ -1178,17 +1199,29 @@ fn run_drc_impl(
     let mut future_need: std::collections::HashMap<(i16, i16), Vec<i32>> =
         last_use.keys().map(|k| (*k, vec![-1; n_rules])).collect();
     let mut running: std::collections::HashMap<(i16, i16), i32> = std::collections::HashMap::new();
+    // And the next rule that reads each layer after rule `i`, for the cache budget
+    // below: what is evicted first is what is needed last.
+    let mut next_use: std::collections::HashMap<(i16, i16), Vec<usize>> = last_use
+        .keys()
+        .map(|k| (*k, vec![usize::MAX; n_rules]))
+        .collect();
+    let mut coming: std::collections::HashMap<(i16, i16), usize> = std::collections::HashMap::new();
     for i in (0..n_rules).rev() {
         for (key, need) in &running {
             future_need.get_mut(key).expect("key from a closure")[i] = *need;
+        }
+        for (key, at) in &coming {
+            next_use.get_mut(key).expect("key from a closure")[i] = *at;
         }
         let (table, closure) = &rule_halos[i];
         for key in closure {
             let need = table.get(key).copied().unwrap_or(halo_dbu);
             let e = running.entry(*key).or_insert(need);
             *e = (*e).max(need);
+            coming.insert(*key, i);
         }
     }
+    let budget = cache_budget_polys();
 
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
@@ -1290,6 +1323,30 @@ fn run_drc_impl(
                     eprintln!(
                         "evict {}/{} cached={:?} future={future}",
                         key.0, key.1, cached
+                    );
+                }
+                merged.evict(key.0, key.1);
+            }
+        }
+        // A budget on what stays resident.  Eviction by need alone keeps every layer
+        // some later rule reads, and on a design whose drawn metals and vias are ten
+        // million shapes each that is a hundred million copies, fifty gigabytes, for
+        // a rule reading one of them.  Over budget, the layers read again latest go
+        // first, and come back for the cost of one merge when their rule arrives.
+        if merged.resident_polys() > budget {
+            let mut resident = merged.resident_layers();
+            resident.sort_by_key(|(key, _)| {
+                std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
+            });
+            for (key, polys) in resident {
+                if merged.resident_polys() <= budget {
+                    break;
+                }
+                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                    eprintln!(
+                        "evict {} over budget: {polys} copies, next use at rule {:?}",
+                        merged.name_of(key),
+                        next_use.get(&key).map(|v| v[i])
                     );
                 }
                 merged.evict(key.0, key.1);
