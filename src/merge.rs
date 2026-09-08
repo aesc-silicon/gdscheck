@@ -390,189 +390,131 @@ pub fn shrink_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     erode_directional(polys, radius, false)
 }
 
-/// Maximum-space / proximity-coverage gaps (latch-up LU.a–d): every part of `a` must lie
-/// within `value` (DBU) of `b`.  Returns a point inside each part of `a` that is *not* —
-/// i.e. the residue of `a − dilate(b, value)`.  Tiled: `b` is read and dilated only within
-/// each tile's `value`-neighbourhood, so a dense layer (e.g. Cont) is never globally
-/// unioned (which OOMs).
+/// Where `a` lies more than `value` DBU from `b`: the centroid of every such gap.
+///
+/// Both layers are read as core pieces.  A copy is exact within its core and no
+/// further, and the pieces of every core together are the layer, so neither layer asks
+/// a halo of the merge: `a` is only ever tested within a tile's own core, and the
+/// reference within `value` of that core is read from the neighbouring tiles.  The
+/// rule's value used to be the halo of both layers down to the drawn ones - LU.a's
+/// 20 µm on Activ, pSD and NWell, nine copies of every shape - and on a 121 MB ORFS
+/// layout a bucket of 17,000 abutting Activ shapes sent the union's sweep quadratic:
+/// the run died at 60 GB before the first layer was merged.
+///
+/// Coverage is `b` grown by `value` with a square structuring element, which is what
+/// KLayout's `sized` gives rectilinear geometry.  Each piece is cut into the rectangles
+/// between its vertices' y-coordinates and each rectangle grown: a Minkowski sum
+/// distributes over union, so the grown rectangles together are the grown piece, and
+/// the grown pieces together the grown layer.  A grown bounding box, which this used
+/// to take per polygon, over-covered every concave shape - a tie ring's box grown by
+/// 20 µm covered the ring's whole interior.  A piece with a 45° edge is still taken by
+/// its box in that slab.
+///
+/// The coverage is subtracted from each piece of `a` in small batches with an early
+/// exit: a dense reference - the contacts on ties, thousands per tile - covers a piece
+/// after a handful of batches, and unioning every grown rectangle in reach at once is
+/// what made i_overlay's `simplify` blow up.  What is left is stitched across the tile
+/// lines and reported once per gap.
 pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
     let t = tile_dbu as i64;
-    let b_count: usize = b.values().map(|ps| ps.len()).sum();
-
-    // Dense reference (e.g. the contacts on ties, thousands of them): a single global dilate
-    // would hit i_overlay's super-linear `simplify`, so query `b` local to each `a` polygon
-    // and subtract the coverage in small early-exiting batches.  Each `a` is clipped to the
-    // tile core first, so even a large tie's query stays tile-sized.
-    if b_count > 4000 {
-        return a
-            .par_iter()
-            .flat_map_iter(move |(&(tx, ty), a_polys)| {
-                let cx0 = (tx as i64 * t) as f64;
-                let cy0 = (ty as i64 * t) as f64;
-                let cx1 = ((tx as i64 + 1) * t) as f64;
-                let cy1 = ((ty as i64 + 1) * t) as f64;
-                let core_box = vec![vec![[cx0, cy0], [cx1, cy0], [cx1, cy1], [cx0, cy1]]];
-                let mut out = Vec::new();
-                for p in a_polys {
-                    if clipped_area_dbu(p, cx0, cy0, cx1, cy1) <= 0.5 {
-                        continue;
-                    }
-                    let a_core = merged_to_shape(p).overlay(
-                        &core_box,
-                        OverlayRule::Intersect,
-                        FillRule::NonZero,
-                    );
-                    if a_core.is_empty() {
-                        continue;
-                    }
-                    let (mut qx0, mut qy0, mut qx1, mut qy1) =
-                        (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
-                    for s in &a_core {
-                        for c in s {
-                            for pt in c {
-                                qx0 = qx0.min(pt[0]);
-                                qy0 = qy0.min(pt[1]);
-                                qx1 = qx1.max(pt[0]);
-                                qy1 = qy1.max(pt[1]);
-                            }
-                        }
-                    }
-                    let (qx0, qy0, qx1, qy1) = (qx0 - value, qy0 - value, qx1 + value, qy1 + value);
-                    // Coverage = each reference shape dilated by `value` with a *square*
-                    // structuring element (its bbox grown by `value`), matching KLayout's
-                    // `sized`.  We deliberately do NOT use i_overlay's `outline` offset here:
-                    // it is unreliable when the offset (e.g. 6 µm) dwarfs the feature size
-                    // (0.16 µm contacts), under-covering and producing false gaps.
-                    let grown: Vec<Vec<Vec<[f64; 2]>>> = (((qy0 / t as f64).floor() as i32)
-                        ..=((qy1 / t as f64).floor() as i32))
-                        .flat_map(|qy| {
-                            (((qx0 / t as f64).floor() as i32)..=((qx1 / t as f64).floor() as i32))
-                                .map(move |qx| (qx, qy))
-                        })
-                        .filter_map(|(qx, qy)| b.get(&(qx, qy)))
-                        .flat_map(|ps| ps.iter())
-                        .filter_map(|bp| {
-                            let (bx0, by0, bx1, by1) = bp.outer.iter().fold(
-                                (f64::MAX, f64::MAX, f64::MIN, f64::MIN),
-                                |(x0, y0, x1, y1), p| {
-                                    (
-                                        x0.min(p.x as f64),
-                                        y0.min(p.y as f64),
-                                        x1.max(p.x as f64),
-                                        y1.max(p.y as f64),
-                                    )
-                                },
-                            );
-                            if bx1 >= qx0 && bx0 <= qx1 && by1 >= qy0 && by0 <= qy1 {
-                                let (gx0, gy0, gx1, gy1) =
-                                    (bx0 - value, by0 - value, bx1 + value, by1 + value);
-                                Some(vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]])
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    // Subtract the coverage from `a_core` in small batches, stopping as soon
-                    // as nothing is left.  Unioning thousands of heavily-overlapping grown
-                    // rectangles at once makes `simplify` blow up (super-linear, OOM); a
-                    // dense contact field instead covers `a_core` after a handful of batches,
-                    // so we keep each `simplify` tiny and bail early.
-                    let mut remaining = a_core;
-                    for batch in grown.chunks(256) {
-                        if remaining.is_empty() {
-                            break;
-                        }
-                        let cov = batch.to_vec().simplify_shape(FillRule::NonZero);
-                        remaining =
-                            remaining.overlay(&cov, OverlayRule::Difference, FillRule::NonZero);
-                    }
-                    let gaps = remaining;
-                    for g in shapes_to_merged(gaps) {
-                        if clipped_area_dbu(&g, cx0, cy0, cx1, cy1) > 0.5 {
-                            out.push(merged_centroid_dbu(&g));
-                        }
-                    }
-                }
-                out.into_iter()
-            })
-            .collect();
-    }
-
-    // Sparse reference (ties — a few hundred polygons even if large): dilate it ONCE globally
-    // (cheap for i_overlay), bucket the result, and difference `a` against it per tile.
-    let all_b: Vec<Vec<Vec<[f64; 2]>>> = b
-        .values()
-        .flat_map(|ps| ps.iter().map(merged_to_shape))
-        .collect();
-    let covered_polys: Vec<MergedPoly> = if all_b.is_empty() {
-        Vec::new()
-    } else {
-        shapes_to_merged(
-            all_b
-                .simplify_shape(FillRule::NonZero)
-                .outline(&OutlineStyle::new(value)),
-        )
+    let core_of = |tx: i32, ty: i32| {
+        (tx as i64 * t, ty as i64 * t, (tx as i64 + 1) * t, (ty as i64 + 1) * t)
     };
-    // Bucket each dilated-`b` polygon into the tiles its bbox covers.
-    let mut covered_tiles: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
-    for (i, cp) in covered_polys.iter().enumerate() {
-        let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
-        for p in &cp.outer {
-            x0 = x0.min(p.x as i64);
-            y0 = y0.min(p.y as i64);
-            x1 = x1.max(p.x as i64);
-            y1 = y1.max(p.y as i64);
-        }
-        for ty in y0.div_euclid(t)..=y1.div_euclid(t) {
-            for tx in x0.div_euclid(t)..=x1.div_euclid(t) {
-                covered_tiles
-                    .entry((tx as i32, ty as i32))
-                    .or_default()
-                    .push(i);
-            }
-        }
-    }
-
-    a.par_iter()
-        .flat_map_iter(move |(&(tx, ty), a_polys)| {
-            let cx0 = (tx as i64 * t) as f64;
-            let cy0 = (ty as i64 * t) as f64;
-            let cx1 = ((tx as i64 + 1) * t) as f64;
-            let cy1 = ((ty as i64 + 1) * t) as f64;
-            let mut out = Vec::new();
-            // The `a` tiles are already merged, so take them as-is (no per-poly clip — that
-            // boolean op per polygon is what was slow on dense device layers).  Gaps are
-            // de-duplicated by reporting only those whose centroid lies in this tile's core.
-            let a_shapes: Vec<Vec<Vec<[f64; 2]>>> = a_polys
+    // The reference as grown rectangles, filed under the tile whose core the piece
+    // lies in; every rectangle lies within `value` of that core.
+    let grown: HashMap<(i32, i32), Vec<(f64, f64, f64, f64)>> = b
+        .par_iter()
+        .filter_map(|(&(tx, ty), polys)| {
+            let (x0, y0, x1, y1) = core_of(tx, ty);
+            let rects: Vec<(f64, f64, f64, f64)> = clip_to_box(polys.clone(), x0, y0, x1, y1)
                 .iter()
-                .filter(|p| clipped_area_dbu(p, cx0, cy0, cx1, cy1) > 0.5)
-                .map(merged_to_shape)
+                .flat_map(rectangles_of)
+                .map(|(rx0, ry0, rx1, ry1)| {
+                    (
+                        rx0 as f64 - value,
+                        ry0 as f64 - value,
+                        rx1 as f64 + value,
+                        ry1 as f64 + value,
+                    )
+                })
                 .collect();
-            if a_shapes.is_empty() {
-                return out.into_iter();
-            }
-            let gaps = match covered_tiles.get(&(tx, ty)) {
-                Some(idxs) => {
-                    let cov: Vec<Vec<Vec<[f64; 2]>>> = idxs
-                        .iter()
-                        .map(|&i| merged_to_shape(&covered_polys[i]))
-                        .collect();
-                    a_shapes.overlay(&cov, OverlayRule::Difference, FillRule::NonZero)
+            (!rects.is_empty()).then_some(((tx, ty), rects))
+        })
+        .collect();
+
+    // The gaps as core pieces, then stitched: a gap across a tile line is one gap and
+    // one marker, not one per tile it has a piece in.
+    let gaps: TileMap = a
+        .par_iter()
+        .filter_map(|(&(tx, ty), polys)| {
+            let (x0, y0, x1, y1) = core_of(tx, ty);
+            let mut out = Vec::new();
+            for p in clip_to_box(polys.clone(), x0, y0, x1, y1) {
+                let (bx0, by0, bx1, by1) = poly_bbox(&p);
+                let (bx0, by0, bx1, by1) = (bx0 as f64, by0 as f64, bx1 as f64, by1 as f64);
+                // A grown rectangle meets the piece only if it meets the piece's box, and
+                // it lies within `value` of its own tile's core, so only the tiles the
+                // box grown by `value` touches can hold one.
+                let (qx0, qy0, qx1, qy1) = (bx0 - value, by0 - value, bx1 + value, by1 + value);
+                let tiles_x = (qx0 / t as f64).floor() as i32..=(qx1 / t as f64).floor() as i32;
+                let tiles_y = (qy0 / t as f64).floor() as i32..=(qy1 / t as f64).floor() as i32;
+                let cover: Vec<Vec<Vec<[f64; 2]>>> = tiles_y
+                    .flat_map(|qy| tiles_x.clone().map(move |qx| (qx, qy)))
+                    .filter_map(|k| grown.get(&k))
+                    .flatten()
+                    .filter(|&&(gx0, gy0, gx1, gy1)| {
+                        gx1 > bx0 && gx0 < bx1 && gy1 > by0 && gy0 < by1
+                    })
+                    .map(|&(gx0, gy0, gx1, gy1)| {
+                        vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]]
+                    })
+                    .collect();
+                let mut remaining = merged_to_shape(&p).simplify_shape(FillRule::NonZero);
+                for batch in cover.chunks(256) {
+                    if remaining.is_empty() {
+                        break;
+                    }
+                    let cov = batch.to_vec().simplify_shape(FillRule::NonZero);
+                    remaining = remaining.overlay(&cov, OverlayRule::Difference, FillRule::NonZero);
                 }
-                None => a_shapes.simplify_shape(FillRule::NonZero),
-            };
-            for g in shapes_to_merged(gaps) {
-                let (mx, my) = merged_centroid_dbu(&g);
-                if mx >= cx0
-                    && mx < cx1
-                    && my >= cy0
-                    && my < cy1
-                    && clipped_area_dbu(&g, cx0, cy0, cx1, cy1) > 0.5
-                {
-                    out.push((mx, my));
-                }
+                out.extend(
+                    shapes_to_merged(remaining)
+                        .into_iter()
+                        .filter(|g| merged_area_dbu(g) > 0.5),
+                );
             }
-            out.into_iter()
+            (!out.is_empty()).then_some(((tx, ty), out))
+        })
+        .collect();
+    stitch_regions(&gaps, tile_dbu)
+        .into_iter()
+        .map(|r| r.marker)
+        .collect()
+}
+
+/// A polygon as rectangles: itself when it fills its box, else what each slab between
+/// two consecutive vertex y-coordinates cuts from it, taken by its box.  Exact for
+/// rectilinear geometry, where every such cut is a rectangle.
+fn rectangles_of(m: &MergedPoly) -> Vec<(i32, i32, i32, i32)> {
+    let (bx0, by0, bx1, by1) = poly_bbox(m);
+    let box_area = (bx1 - bx0) as f64 * (by1 - by0) as f64;
+    if m.holes.is_empty() && merged_area_dbu(m) >= box_area - 0.5 {
+        return vec![(bx0, by0, bx1, by1)];
+    }
+    let mut ys: Vec<i32> = m
+        .outer
+        .iter()
+        .chain(m.holes.iter().flatten())
+        .map(|p| p.y)
+        .collect();
+    ys.sort_unstable();
+    ys.dedup();
+    ys.windows(2)
+        .flat_map(|w| {
+            clip_to_box(vec![m.clone()], bx0 as i64, w[0] as i64, bx1 as i64, w[1] as i64)
+                .iter()
+                .map(poly_bbox)
+                .collect::<Vec<_>>()
         })
         .collect()
 }
