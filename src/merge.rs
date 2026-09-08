@@ -1446,6 +1446,39 @@ pub fn region_edges(m: &MergedPoly) -> Vec<Edge> {
 /// The portion of `e` that lies on `f`, if the two are collinear and overlap in more
 /// than a point.  This is what an edge-layer `and` means: not the area two layers share,
 /// but the stretch of boundary they have in common.
+/// The line an edge lies on: its direction reduced to lowest terms with a fixed sign,
+/// and the line's offset from the origin.  Two edges are collinear exactly when their
+/// keys agree, which is what lets an edge boolean look its partners up instead of
+/// testing every pair.
+fn line_key(e: &Edge) -> (i64, i64, i64) {
+    let (mut dx, mut dy) = (e.b.x as i64 - e.a.x as i64, e.b.y as i64 - e.a.y as i64);
+    let g = gcd(dx.abs(), dy.abs());
+    if g > 1 {
+        dx /= g;
+        dy /= g;
+    }
+    if dx < 0 || (dx == 0 && dy < 0) {
+        dx = -dx;
+        dy = -dy;
+    }
+    (dx, dy, dx * e.a.y as i64 - dy * e.a.x as i64)
+}
+
+fn gcd(mut a: i64, mut b: i64) -> i64 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    a
+}
+
+fn line_index(edges: &[Edge]) -> HashMap<(i64, i64, i64), Vec<Edge>> {
+    let mut index: HashMap<(i64, i64, i64), Vec<Edge>> = HashMap::new();
+    for e in edges {
+        index.entry(line_key(e)).or_default().push(*e);
+    }
+    index
+}
+
 fn edge_overlap(e: &Edge, f: &Edge) -> Option<Edge> {
     let (ex, ey) = (e.b.x as i64 - e.a.x as i64, e.b.y as i64 - e.a.y as i64);
     let (fx, fy) = (f.b.x as i64 - f.a.x as i64, f.b.y as i64 - f.a.y as i64);
@@ -1533,7 +1566,62 @@ fn subtract_edges(a: &Edge, b: &[Edge]) -> Vec<Edge> {
 /// Split `e` where it crosses the boundary of `polys`, keeping the parts whose midpoint
 /// is inside (`keep_inside`) or outside it.  This is KLayout's `inside_part` /
 /// `outside_part`: an edge is not kept or dropped whole, it is cut.
-fn edge_vs_polygons(e: &Edge, polys: &[MergedPoly], keep_inside: bool) -> Vec<Edge> {
+/// A uniform grid over bounding boxes, so an edge asks only the polygons or edges it
+/// could meet at all rather than every one gathered for the tile.  The edge cuts and
+/// selections were trying each edge against everything in reach: `inside_part` on
+/// 16 million gate edges against the COMP in nine tiles was 90 seconds of contour
+/// crossings that could not happen.
+struct BoxGrid {
+    cell: i64,
+    cells: HashMap<(i64, i64), Vec<u32>>,
+}
+
+impl BoxGrid {
+    fn new(boxes: &[(i32, i32, i32, i32)], cell: i64) -> Self {
+        let cell = cell.max(1);
+        let mut cells: HashMap<(i64, i64), Vec<u32>> = HashMap::new();
+        for (i, &(x0, y0, x1, y1)) in boxes.iter().enumerate() {
+            for cx in (x0 as i64).div_euclid(cell)..=(x1 as i64).div_euclid(cell) {
+                for cy in (y0 as i64).div_euclid(cell)..=(y1 as i64).div_euclid(cell) {
+                    cells.entry((cx, cy)).or_default().push(i as u32);
+                }
+            }
+        }
+        BoxGrid { cell, cells }
+    }
+
+    /// The indices filed in any cell the box touches, each once.
+    fn hits(&self, (x0, y0, x1, y1): (i32, i32, i32, i32), out: &mut Vec<u32>) {
+        out.clear();
+        for cx in (x0 as i64).div_euclid(self.cell)..=(x1 as i64).div_euclid(self.cell) {
+            for cy in (y0 as i64).div_euclid(self.cell)..=(y1 as i64).div_euclid(self.cell) {
+                if let Some(v) = self.cells.get(&(cx, cy)) {
+                    out.extend_from_slice(v);
+                }
+            }
+        }
+        out.sort_unstable();
+        out.dedup();
+    }
+}
+
+fn edge_bbox(e: &Edge) -> (i32, i32, i32, i32) {
+    (
+        e.a.x.min(e.b.x),
+        e.a.y.min(e.b.y),
+        e.a.x.max(e.b.x),
+        e.a.y.max(e.b.y),
+    )
+}
+
+fn boxes_meet(a: (i32, i32, i32, i32), b: (i32, i32, i32, i32)) -> bool {
+    !(a.2 < b.0 || b.2 < a.0 || a.3 < b.1 || b.3 < a.1)
+}
+
+/// `polys` come with their contour edges, computed once per tile rather than once per
+/// subject edge: a tile of COMP against sixteen million gate edges rebuilt every
+/// contour for every one of them.
+fn edge_vs_polygons(e: &Edge, polys: &[(&MergedPoly, &[Edge])], keep_inside: bool) -> Vec<Edge> {
     let (dx, dy) = (e.b.x as i64 - e.a.x as i64, e.b.y as i64 - e.a.y as i64);
     let len2 = dx * dx + dy * dy;
     if len2 == 0 {
@@ -1541,9 +1629,12 @@ fn edge_vs_polygons(e: &Edge, polys: &[MergedPoly], keep_inside: bool) -> Vec<Ed
     }
     // Cut parameters: the ends, plus every crossing of a polygon contour.
     let mut ts: Vec<f64> = vec![0.0, 1.0];
-    for m in polys {
-        for f in region_edges(m) {
-            if let Some(t) = seg_cross_param(e, &f) {
+    let eb = edge_bbox(e);
+    for (_, edges) in polys {
+        for f in *edges {
+            if boxes_meet(eb, edge_bbox(f))
+                && let Some(t) = seg_cross_param(e, f)
+            {
                 ts.push(t);
             }
         }
@@ -1562,7 +1653,7 @@ fn edge_vs_polygons(e: &Edge, polys: &[MergedPoly], keep_inside: bool) -> Vec<Ed
             e.a.x as f64 + dx as f64 * mid,
             e.a.y as f64 + dy as f64 * mid,
         );
-        let inside = polys.iter().any(|m| point_in_merged(mx, my, m));
+        let inside = polys.iter().any(|(m, _)| point_in_merged(mx, my, m));
         if inside == keep_inside {
             let (p, q) = (at(w[0]), at(w[1]));
             if p != q {
@@ -1751,12 +1842,23 @@ fn compose_edge_tile(
                     .collect()
             })
             .unwrap_or_default(),
+        // Only collinear edges share a stretch, so the filter is filed by its supporting
+        // line and each subject edge looks up its own line rather than trying every
+        // pair: DF.2a's channel edges were 24 million COMP boundary edges against 16
+        // million gate ones, 46 seconds of pairs that could not possibly overlap.
         EdgeOp::And => {
             let (Some(a), Some(b)) = (edge_srcs.first(), edge_srcs.get(1)) else {
                 return Vec::new();
             };
+            let index = line_index(b);
             a.iter()
-                .flat_map(|e| b.iter().filter_map(move |f| edge_overlap(e, f)))
+                .flat_map(|e| {
+                    index
+                        .get(&line_key(e))
+                        .into_iter()
+                        .flatten()
+                        .filter_map(move |f| edge_overlap(e, f))
+                })
                 .collect()
         }
         EdgeOp::Or => edge_srcs.iter().flat_map(|s| s.iter().copied()).collect(),
@@ -1764,15 +1866,30 @@ fn compose_edge_tile(
             let (Some(a), Some(b)) = (edge_srcs.first(), edge_srcs.get(1)) else {
                 return Vec::new();
             };
-            a.iter().flat_map(|e| subtract_edges(e, b)).collect()
+            let index = line_index(b);
+            a.iter()
+                .flat_map(|e| {
+                    let on_line = index.get(&line_key(e)).map(Vec::as_slice).unwrap_or(&[]);
+                    subtract_edges(e, on_line)
+                })
+                .collect()
         }
         EdgeOp::Interacting | EdgeOp::NotInteracting => {
             let (Some(a), Some(p)) = (edge_srcs.first(), poly_srcs.first()) else {
                 return Vec::new();
             };
             let want = op == EdgeOp::Interacting;
+            let boxes: Vec<_> = p.iter().map(poly_bbox).collect();
+            let grid = BoxGrid::new(&boxes, (core.2 - core.0) / 20);
+            let mut hits: Vec<u32> = Vec::new();
             a.iter()
-                .filter(|e| p.iter().any(|m| edge_meets_region(e, m)) == want)
+                .filter(|e| {
+                    let eb = edge_bbox(e);
+                    grid.hits(eb, &mut hits);
+                    hits.iter().any(|&i| {
+                        boxes_meet(eb, boxes[i as usize]) && edge_meets_region(e, &p[i as usize])
+                    }) == want
+                })
                 .copied()
                 .collect()
         }
@@ -1781,8 +1898,17 @@ fn compose_edge_tile(
                 return Vec::new();
             };
             let want = op == EdgeOp::InteractingEdges;
+            let boxes: Vec<_> = b.iter().map(edge_bbox).collect();
+            let grid = BoxGrid::new(&boxes, (core.2 - core.0) / 20);
+            let mut hits: Vec<u32> = Vec::new();
             a.iter()
-                .filter(|e| b.iter().any(|f| edges_touch(e, f)) == want)
+                .filter(|e| {
+                    let eb = edge_bbox(e);
+                    grid.hits(eb, &mut hits);
+                    hits.iter().any(|&i| {
+                        boxes_meet(eb, boxes[i as usize]) && edges_touch(e, &b[i as usize])
+                    }) == want
+                })
                 .copied()
                 .collect()
         }
@@ -1791,8 +1917,23 @@ fn compose_edge_tile(
                 return Vec::new();
             };
             let keep_inside = op == EdgeOp::InsidePart;
+            let boxes: Vec<_> = p.iter().map(poly_bbox).collect();
+            let contours: Vec<Vec<Edge>> = p.iter().map(region_edges).collect();
+            let grid = BoxGrid::new(&boxes, (core.2 - core.0) / 20);
+            let mut hits: Vec<u32> = Vec::new();
+            let mut near: Vec<(&MergedPoly, &[Edge])> = Vec::new();
             a.iter()
-                .flat_map(|e| edge_vs_polygons(e, p, keep_inside))
+                .flat_map(|e| {
+                    let eb = edge_bbox(e);
+                    grid.hits(eb, &mut hits);
+                    near.clear();
+                    near.extend(
+                        hits.iter()
+                            .filter(|&&i| boxes_meet(eb, boxes[i as usize]))
+                            .map(|&i| (&p[i as usize], contours[i as usize].as_slice())),
+                    );
+                    edge_vs_polygons(e, &near, keep_inside)
+                })
                 .collect()
         }
         EdgeOp::Centers(abs, per_mille) => edge_srcs
