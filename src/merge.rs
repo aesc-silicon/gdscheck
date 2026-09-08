@@ -4951,17 +4951,6 @@ impl MergedCache {
         self.whole_chain = keys;
     }
 
-    /// Whether any other virtual or edge layer is built from `key`.
-    fn feeds_another_layer(&self, key: (i16, i16)) -> bool {
-        self.virtual_defs
-            .iter()
-            .any(|(k, d)| *k != key && d.sources.contains(&key))
-            || self
-                .edge_defs
-                .iter()
-                .any(|(k, d)| *k != key && d.sources.contains(&key))
-    }
-
     pub fn set_names(&mut self, names: HashMap<(i16, i16), String>) {
         self.names = names;
     }
@@ -5309,11 +5298,16 @@ impl MergedCache {
                 let tiles = if self.clippable.contains(&key) {
                     tiles
                 } else if self.whole_chain.contains(&key) {
-                    if self.feeds_another_layer(key) {
-                        tiles
-                    } else {
-                        rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), false)
-                    }
+                    // Whole copies out to the consumers' reach, whether a rule or another
+                    // layer reads them.  A selection feeding a boolean used to be left
+                    // without copies, so a tile owning none of a region subtracted
+                    // nothing from its halo copy of the drawn layer: a substrate tap
+                    // survived in `comp_dv` two tiles from where it lay and DV.6 measured
+                    // it (gf180mcuD IO cell).  Copies cut to the owner's zone would do
+                    // for the boolean, but not for the enclosure engine downstream of
+                    // it, which wants a MIM plate whole over a sixty-micron window
+                    // (MIMTM.3 on the MIMTM.11 pattern).
+                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), false)
                 } else {
                     rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), true)
                 };
