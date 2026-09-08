@@ -1168,6 +1168,35 @@ fn enclosure_is_euclidian(rule: &RuleDefinition) -> bool {
     }
 }
 
+/// The enclosing layer over an enclosed shape that reaches past the zone this tile's
+/// copy is exact in, assembled from the cores the shape's box grown by the value
+/// touches; `None` when the tile's own copy covers it.  A copy is exact out to its halo
+/// and no further, and an enclosed shape can be longer than that - a row of abutting
+/// cells' Activ merges into one bar - so the tile's copy of the enclosing layer ended
+/// short of the bar's far end, and NW.c reported the bar not enclosed at all.
+fn outer_over(
+    map_a: &crate::merge::TileMap,
+    tile: i64,
+    halo: i64,
+    core: &Core,
+    bm: &MergedPoly,
+    value_dbu: f64,
+) -> Option<Vec<MergedPoly>> {
+    let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+    for p in &bm.outer {
+        x0 = x0.min(p.x as i64);
+        y0 = y0.min(p.y as i64);
+        x1 = x1.max(p.x as i64);
+        y1 = y1.max(p.y as i64);
+    }
+    let g = value_dbu.ceil() as i64 + 1;
+    let (x0, y0, x1, y1) = (x0 - g, y0 - g, x1 + g, y1 + g);
+    if x0 >= core.x0 - halo && y0 >= core.y0 - halo && x1 <= core.x1 + halo && y1 <= core.y1 + halo {
+        return None;
+    }
+    Some(crate::merge::assemble_over(map_a, tile as i32, (x0, y0, x1, y1)))
+}
+
 /// Whether a point (µm) lies inside the layer's merged geometry, tested against the
 /// bucket of the tile that *contains the point* — where that bucket's union is complete
 /// by construction (every polygon covering a point inside `tile + halo` has a bounding
@@ -1439,6 +1468,7 @@ pub fn run_enclosure(
 
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
+    let a_halo = merged.halo_of(al, ad) as i64;
 
     println!(
         "[{}] Checking {} >= {:.2} µm of {} within {}",
@@ -1513,13 +1543,26 @@ pub fn run_enclosure(
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else { continue };
+                let assembled: Vec<Poly>;
+                let a_here: &Vec<Poly> =
+                    match outer_over(map_a, tile, a_halo, &core, bm, value / dbu_to_um) {
+                        Some(polys) => {
+                            assembled = polys
+                                .iter()
+                                .filter_map(|m| poly_from_merged(m, dbu_to_um))
+                                .collect();
+                            &assembled
+                        }
+                        None => &a_conv,
+                    };
+
 
                 // Best-case enclosing shape (greatest margin) among those containing B.
                 let mut best_dist = f64::NEG_INFINITY;
                 let mut best_edge = None;
                 let mut any_contained = false;
                 let mut clipped = false;
-                for a in &a_conv {
+                for a in a_here {
                     if !all_vertices_inside(&bp, a, tol) {
                         continue;
                     }
@@ -1558,7 +1601,7 @@ pub fn run_enclosure(
                 // `line_end` measures only where the enclosing shape's track ends: find
                 // the caps, then the via side facing one.
                 if sides == Sides::LineEnd {
-                    let caps: Vec<(f64, f64, f64, f64)> = a_conv
+                    let caps: Vec<(f64, f64, f64, f64)> = a_here
                         .iter()
                         .filter(|a| all_vertices_inside(&bp, a, tol) || polys_interact(&bp, a))
                         .flat_map(|a| line_end_edges(a, max_width, min_length, tol))
@@ -1607,7 +1650,7 @@ pub fn run_enclosure(
                 // `adjacent` is decided per side rather than by a reduction: a side under
                 // `trigger` is allowed to be short only if the sides bordering it are not.
                 if sides == Sides::Adjacent {
-                    let containing: Vec<&Poly> = a_conv
+                    let containing: Vec<&Poly> = a_here
                         .iter()
                         .filter(|a| all_vertices_inside(&bp, a, tol) || polys_interact(&bp, a))
                         .collect();
@@ -1651,7 +1694,7 @@ pub fn run_enclosure(
                         // Skip shapes that overlap no enclosing region at all — they
                         // are not subject to this enclosure rule.
                         let touching: Vec<&Poly> =
-                            a_conv.iter().filter(|a| polys_interact(&bp, a)).collect();
+                            a_here.iter().filter(|a| polys_interact(&bp, a)).collect();
                         if touching.is_empty() {
                             continue;
                         }
@@ -1751,6 +1794,7 @@ pub fn run_max_enclosure(
 
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
+    let a_halo = merged.halo_of(al, ad) as i64;
 
     println!(
         "[{}] Checking {} <= {:.2} µm of {} within {}",
@@ -1795,10 +1839,22 @@ pub fn run_max_enclosure(
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else {
                     continue;
                 };
+                let assembled: Vec<Poly>;
+                let a_here: &Vec<Poly> =
+                    match outer_over(map_a, tile, a_halo, &core, bm, value / dbu_to_um) {
+                        Some(polys) => {
+                            assembled = polys
+                                .iter()
+                                .filter_map(|m| poly_from_merged(m, dbu_to_um))
+                                .collect();
+                            &assembled
+                        }
+                        None => &a_conv,
+                    };
 
                 let mut best_dist = f64::NEG_INFINITY;
                 let mut best_edge = None;
-                for a in &a_conv {
+                for a in a_here {
                     if !all_vertices_inside(&bp, a, tol) {
                         continue;
                     }

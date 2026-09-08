@@ -44,6 +44,20 @@ pub fn generate(pdk: &PdkConfig) {
         write_gz(&format!("{DIR}/{file}.gds.gz"), library("TOP", elems));
     };
 
+    // A bar 40 µm long across three tiles, enclosed by a row of 2.5 µm pieces the way
+    // abutting cells enclose a merged row of their Activ, its far end margin under test.
+    // The tile owning the bar's centroid holds a copy of the enclosing layer exact
+    // only 1 µm past its core, so the far end lies beyond what that copy shows.
+    for m in [0.4, 0.6] {
+        let mut v = vec![rect(inner, 5.0, 10.0, 45.0, 11.0)];
+        let mut x = 0.0;
+        while x < 45.0 + m {
+            v.push(rect(outer, x, 9.0, (x + 2.5).min(45.0 + m), 12.0));
+            x += 2.5;
+        }
+        write(format!("bar_{}", name(m)), v);
+    }
+
     // Orthogonal: a square hole in a square, one wall brought in to the margin under
     // test.  Both metrics measure this one, and must agree on it.
     for m in ORTHO_MARGINS {

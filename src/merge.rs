@@ -3587,6 +3587,33 @@ fn assemble_zone_copies(pieces: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMa
         .collect()
 }
 
+/// The layer over a box, whole: the core pieces of every tile the box touches, unioned.
+/// A tile's copy is exact within its core, so the cores' pieces together are the layer
+/// wherever the box reaches, the seams vanishing in the union.  For a reader that needs
+/// a layer past the zone one tile's copy is exact in - an enclosing layer round a shape
+/// longer than the tile's halo.
+pub fn assemble_over(
+    tiles: &TileMap,
+    tile_dbu: i32,
+    (x0, y0, x1, y1): (i64, i64, i64, i64),
+) -> Vec<MergedPoly> {
+    let t = tile_dbu as i64;
+    let mut block: Vec<MergedPoly> = Vec::new();
+    for ty in y0.div_euclid(t)..=(y1.max(y0 + 1) - 1).div_euclid(t) {
+        for tx in x0.div_euclid(t)..=(x1.max(x0 + 1) - 1).div_euclid(t) {
+            if let Some(ps) = tiles.get(&(tx as i32, ty as i32)) {
+                let (cx0, cy0) = (tx * t, ty * t);
+                block.extend(clip_to_box(ps.clone(), cx0, cy0, cx0 + t, cy0 + t));
+            }
+        }
+    }
+    if block.len() <= 1 {
+        block
+    } else {
+        shapes_to_merged(tile_shapes(&block).simplify_shape(FillRule::NonZero))
+    }
+}
+
 /// A region's holes as filled polygons.  Hole contours are stored clockwise (see
 /// [`MergedPoly`]); reversed to CCW so downstream ops see solid regions.
 fn holes_of(m: &MergedPoly) -> Vec<MergedPoly> {
@@ -5411,6 +5438,11 @@ impl MergedCache {
 
     /// Per-tile merged geometry of a layer.  Must be `ensure`d first; a layer
     /// with no shapes yields an empty map.
+    /// The halo (DBU) a cached layer's copies are exact out to, past their core.
+    pub fn halo_of(&self, layer: i16, datatype: i16) -> i32 {
+        self.layer_halo.get(&(layer, datatype)).copied().unwrap_or(0)
+    }
+
     pub fn tiles(&self, layer: i16, datatype: i16) -> &TileMap {
         self.layers
             .get(&(layer, datatype))
