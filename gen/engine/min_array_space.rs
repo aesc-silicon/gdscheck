@@ -143,6 +143,16 @@ pub fn generate(pdk: &PdkConfig) {
         write("tail_0350".into(), v);
     }
 
+    // A finger: a legal 6x6 block with a 12-wide finger of vias at the tight space in
+    // both directions leading away from its right side, in line with its bottom rows.
+    // Three rows deep the finger is no part of any 4x4, and the blob the pitch groups
+    // is not the array; four rows deep it is a 4x4 of its own, and violates.
+    for rows in [3usize, 4] {
+        let mut v = block(via, O, O, 6, 6, SPACE, SPACE);
+        v.extend(block(via, O + 6.0 * pitch, O, 12, rows, TIGHT, TIGHT));
+        write(format!("finger_{rows}_0350"), v);
+    }
+
     // An L: an 8x4 block, and a 4x4 block standing on its left end.  Every via is in
     // some 4x4 of the whole, so the arm is block too; the tight pair is in the arm.
     for s in [SPACE, TIGHT] {

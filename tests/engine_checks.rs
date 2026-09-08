@@ -115,6 +115,9 @@ fn skip_coincident_drops_the_zero_and_nothing_else(
 /// `tail` is where we part from the foundry deck on purpose: it exempts a whole blob of
 /// vias whenever any part of it is thinner than four vias, so a tail of vias on a block
 /// hides a tight pair in the block's middle.  The pair is the block's own, and it counts.
+/// `finger` is the other side of that: a 12x3 finger at the tight space hanging off a
+/// legal block is in the blob and no part of any 4x4, so its pairs do not count - which
+/// the foundry deck also gets right, by dropping the blob.  Four rows deep it is a 4x4.
 #[rstest]
 #[case("block_0360", 0, 0)]
 #[case("block_0350", 1, 1)]
@@ -125,6 +128,8 @@ fn skip_coincident_drops_the_zero_and_nothing_else(
 #[case("column_0360", 0, 0)]
 #[case("column_0350", 1, 0)]
 #[case("tail_0350", 1, 0)]
+#[case("finger_3_0350", 0, 0)]
+#[case("finger_4_0350", 1, 1)]
 #[case("l_0360", 0, 0)]
 #[case("l_0350", 1, 0)]
 #[case("u_0360", 0, 0)]
