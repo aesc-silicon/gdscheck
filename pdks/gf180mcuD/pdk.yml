@@ -166,6 +166,8 @@ waivers:
     reason: foundry pad and IO library, qualified as delivered
 
 # Drawn layers: the GDS layer/datatype pairs the derived layers below are built from.
+# Variant D is a 5LM stack, so the 6LM-only layers (via5 and the metaltop family) are
+# absent.
 layers:
   - name: comp
     gds_layer: 22
@@ -3854,8 +3856,6 @@ virtual_layers:
     mode: lazy
     layers: [comp, ymtp_mk]
 
-# The drawn layer table.  Variant D is a 5LM stack, so the
-# 6LM-only layers (via5 and the metaltop family) are absent.
   # MIMTM.11: the bottom plate several MIM caps may share.  Their areas add up against
   # the same cap MIMTM.8b puts on one of them.
   - name: mimtm11_plate
