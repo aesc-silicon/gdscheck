@@ -303,7 +303,23 @@ pub fn run(
     // The first tight pair in the array, as (via, neighbour, across a row), so the
     // marker can sit on the gap that is short rather than on the array's centroid - a
     // 68-row stack's centroid lands between vias, on nothing anyone can look at.
-    let tight_pair_in = |members: &[usize]| -> Option<(usize, usize, bool)> {
+    //
+    // A pair counts only where the array is at least `rows` deep *over the pair*: more
+    // than `rows` of the stack's runs have to span the pair's own x-range.  The blob
+    // the pitch groups can carry more than the array - a 12x3 finger of vias at 0.28
+    // hanging off a legal 4x28 block was reported as the block's, where the finger is
+    // three rows and no part of any 4x4.  The foundry deck answers the same case by
+    // dropping the whole blob when any part of it is thinner than four vias, which
+    // also drops a tight pair in the block's own middle (`tail`); asking per pair keeps
+    // that one and exempts the finger.
+    let covered = |stack: &[usize], sx0: f64, sx1: f64| -> bool {
+        stack
+            .iter()
+            .filter(|&&r| runs[r].x0 <= sx0 + half && runs[r].x1 >= sx1 - half)
+            .count()
+            > rows_thr
+    };
+    let tight_pair_in = |stack: &[usize], members: &[usize]| -> Option<(usize, usize, bool)> {
         let set: std::collections::HashSet<usize> = members.iter().copied().collect();
         members.iter().find_map(|&i| {
             let a = &vias[i];
@@ -326,7 +342,12 @@ pub fn run(
                             let col = a.x1.min(b.x1) - a.x0.max(b.x0) + half > projection.max(half)
                                 && ygap >= 0.0
                                 && ygap + half < value;
-                            (row || col).then_some((i, j, row))
+                            let (sx0, sx1) = if row {
+                                (a.x0.min(b.x0), a.x1.max(b.x1))
+                            } else {
+                                (a.x0.max(b.x0), a.x1.min(b.x1))
+                            };
+                            ((row || col) && covered(stack, sx0, sx1)).then_some((i, j, row))
                         })
                     }
                 })
@@ -347,7 +368,7 @@ pub fn run(
             continue;
         }
         let pair = if axes >= 2 {
-            tight_pair_in(&members)
+            tight_pair_in(stack, &members)
         } else {
             None
         };
