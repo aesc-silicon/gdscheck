@@ -660,7 +660,6 @@ virtual_layers:
   - name: PsdRingHole
     op: holes
     mode: lazy
-    radius: 10.0
     layers: [pSD]
   - name: NpnTieHole
     op: with_text
@@ -749,7 +748,6 @@ virtual_layers:
   - name: NWellRing
     op: with_holes
     mode: lazy
-    radius: 10.0
     layers: [NWell]
   - name: SalBlockIso
     op: overlapping

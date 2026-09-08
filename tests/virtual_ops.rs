@@ -658,3 +658,60 @@ fn enclosure_above_spans_the_margin_that_exceeds_the_bound() {
 
     assert!(run(VirtualOp::EnclosureAbove(30), &outer, &inner).is_empty());
 }
+
+// ---------------------------------------------------------------------------
+// holes / with_holes on a ring no tile holds whole
+//
+// A ring's hole exists only once the ring is whole.  On 100-DBU tiles a 300-DBU ring is
+// never whole in any tile, so both ops have to read the stitched region: the pieces
+// unioned, the seams the cut left gone.  Before, that needed the source tiled with a
+// halo declared to reach round the ring - which on a chip-perimeter guard ring meant
+// every dense layer under it copied hundreds of times over.
+// ---------------------------------------------------------------------------
+
+/// A square ring, outer 0..300, band 100 wide, drawn as four bars; and a solid square
+/// clear of it at 500..600.
+fn ring_and_square() -> Vec<GdsBoundary> {
+    vec![
+        rect(A, 0, 0, 300, 100),
+        rect(A, 0, 200, 300, 300),
+        rect(A, 0, 100, 100, 200),
+        rect(A, 200, 100, 300, 200),
+        rect(A, 500, 500, 600, 600),
+    ]
+}
+
+#[test]
+fn holes_of_a_ring_spanning_tiles() {
+    assert_eq!(
+        run_tiled(VirtualOp::Holes, &ring_and_square(), &[], 100),
+        vec![(100, 100, 200, 200)],
+        "the ring's interior, and nothing for the solid square"
+    );
+}
+
+#[test]
+fn with_holes_keeps_a_ring_spanning_tiles_and_drops_a_solid() {
+    let out = run_tiled(VirtualOp::WithHoles, &ring_and_square(), &[], 100);
+    assert!(!out.is_empty(), "the ring has a hole and must survive");
+    let (x0, y0, x1, y1) = out
+        .iter()
+        .fold((i32::MAX, i32::MAX, i32::MIN, i32::MIN), |acc, b| {
+            (
+                acc.0.min(b.0),
+                acc.1.min(b.1),
+                acc.2.max(b.2),
+                acc.3.max(b.3),
+            )
+        });
+    assert_eq!(
+        (x0, y0, x1, y1),
+        (0, 0, 300, 300),
+        "the ring, in whatever pieces"
+    );
+    assert!(
+        out.iter().all(|b| b.2 <= 300 && b.3 <= 300),
+        "the solid square has no hole and must not appear: {out:?}"
+    );
+}
+

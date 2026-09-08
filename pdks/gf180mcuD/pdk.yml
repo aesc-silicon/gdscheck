@@ -2414,7 +2414,6 @@ virtual_layers:
   - name: pcomp_holes
     op: holes
     mode: lazy
-    radius: 200.0
     layers: [pcomp]
   - name: mdn_gate_poly
     op: intersection
@@ -2877,7 +2876,6 @@ virtual_layers:
   - name: dnwell_ring
     op: with_holes
     mode: lazy
-    radius: 200.0
     layers: [dnwell]
   - name: mdp17c_viol
     op: not_covering
@@ -4118,7 +4116,6 @@ virtual_layers:
   - name: nplus_holes
     op: holes
     mode: lazy
-    radius: 200.0
     layers: [nplus]
   - name: mdp3_device_a
     op: union
@@ -4180,7 +4177,6 @@ virtual_layers:
   - name: mdp17_ring
     op: holes
     mode: lazy
-    radius: 200.0
     layers: [mdp17_ring_a]
   - name: mdp17a_viol
     op: not_interacting

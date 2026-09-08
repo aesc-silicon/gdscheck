@@ -678,14 +678,13 @@ pub enum VirtualOp {
     /// e.g. Padc.f's disallowed shapes).
     NotCircle,
     /// Unary: the *hole* areas of each source region, as filled polygons (KLayout
-    /// `.holes` — e.g. the interior of a pSD substrate-tie ring).  Only valid for
-    /// device-scale rings that assemble whole within one tile bucket; a chip-perimeter
-    /// ring's hole is not tile-local (the `with_holes` limitation).
+    /// `.holes` — e.g. the interior of a pSD substrate-tie ring).  Read on the stitched
+    /// region, so a ring of any size has its hole - a guard ring round a pad frame as
+    /// much as one round a device - and the source needs no halo for it.
     Holes,
     /// Unary shape filter: keep source regions that contain at least one hole (KLayout
-    /// `.with_holes` — e.g. the ring-shaped NWell encircling an iso-PWell).  Same
-    /// tile-locality limitation as [`VirtualOp::Holes`]: the ring must assemble whole
-    /// within one tile bucket (declare the max ring extent via the def's `radius`).
+    /// `.with_holes` — e.g. the ring-shaped NWell encircling an iso-PWell).  Read on
+    /// the stitched region like [`VirtualOp::Holes`].
     WithHoles,
     /// Unary shape filter: keep regions whose outline is a filled axis-aligned rectangle
     /// (KLayout `rectangles`).  [`Square`] is the special case with equal sides.
@@ -973,26 +972,9 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
             .filter(|m| !is_circle(m))
             .cloned()
             .collect(),
-        // The hole areas of each region, as filled polygons.  Hole contours are stored
-        // clockwise (see MergedPoly); reverse to CCW so downstream ops see solid regions.
-        VirtualOp::Holes => sources[0]
-            .iter()
-            .flat_map(|m| {
-                m.holes.iter().map(|h| {
-                    let mut outer = h.clone();
-                    outer.reverse();
-                    MergedPoly {
-                        outer,
-                        holes: Vec::new(),
-                    }
-                })
-            })
-            .collect(),
-        VirtualOp::WithHoles => sources[0]
-            .iter()
-            .filter(|m| !m.holes.is_empty())
-            .cloned()
-            .collect(),
+        VirtualOp::Holes | VirtualOp::WithHoles => {
+            unreachable!("holes are read on stitched regions, see build_holes_tiles")
+        }
         VirtualOp::Rectangle => sources[0]
             .iter()
             .filter(|m| is_rectangle(m))
@@ -3070,6 +3052,238 @@ fn build_extents_tiles(cand: &TileMap, tile_dbu: i32) -> TileMap {
     out
 }
 
+/// `holes` and `with_holes`, read on stitched regions.  A ring's hole exists only once
+/// the ring is whole, and a ring can be any size - a guard ring round a pad frame spans
+/// the chip - so reading it per tile meant every tile had to hold the whole ring, at a
+/// halo that multiplied a dense layer by hundreds (COMP at the 200 µm a guard-ring rule
+/// declared was 441 copies of 2.6 million shapes, and the run died there).  Stitched,
+/// a region within one tile is read as it is and one spanning tiles is its pieces
+/// unioned, the seams the cut left vanishing in the union; the source needs no halo.
+///
+/// `keep_regions` selects `with_holes`, the regions that have a hole, filed as their
+/// pieces were.  Otherwise the holes themselves, as filled polygons, filed by core: a
+/// hole goes whole into every core it spans while those copies are cheap, and one
+/// spanning the chip - the pad frame's interior, ten thousand tiles by a thousand
+/// vertices - is cut along the grid, because that polygon copied whole into every
+/// tile it covers is what an OOM looks like.  Whole wherever affordable, since a
+/// reader like `covering` wants the copy to extend over whatever it is asked about;
+/// what a reader gets is assembled from the pieces by the caller, per its contract.
+fn build_holes_tiles(cand: &TileMap, tile_dbu: i32, keep_regions: bool) -> TileMap {
+    let labeled = stitch_labeled(cand, tile_dbu);
+    let mut pieces: Vec<Vec<((i32, i32), MergedPoly)>> =
+        (0..labeled.regions.len()).map(|_| Vec::new()).collect();
+    for (tile, polys) in labeled.by_tile {
+        for (poly, rid) in polys {
+            pieces[rid].push((tile, poly));
+        }
+    }
+    let per_region: Vec<(Vec<((i32, i32), MergedPoly)>, Vec<MergedPoly>)> = pieces
+        .into_par_iter()
+        .map(|ps| {
+            let holes: Vec<MergedPoly> = if ps.len() == 1 {
+                holes_of(&ps[0].1)
+            } else {
+                let parts: Vec<MergedPoly> = ps.iter().map(|(_, p)| p.clone()).collect();
+                shapes_to_merged(tile_shapes(&parts).simplify_shape(FillRule::NonZero))
+                    .iter()
+                    .flat_map(holes_of)
+                    .collect()
+            };
+            (ps, holes)
+        })
+        .collect();
+    let mut out: TileMap = HashMap::new();
+    let mut all_holes: Vec<MergedPoly> = Vec::new();
+    let mut n_regions = 0usize;
+    for (ps, holes) in per_region {
+        if keep_regions {
+            if !holes.is_empty() {
+                n_regions += 1;
+                for (tile, poly) in ps {
+                    out.entry(tile).or_default().push(poly);
+                }
+            }
+            continue;
+        }
+        all_holes.extend(holes);
+    }
+    let n_holes = all_holes.len();
+    let mut n_large = 0;
+    if !keep_regions {
+        (out, n_large) = file_by_core(all_holes, tile_dbu);
+    }
+    if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+        let copies: usize = out.values().map(|v| v.len()).sum();
+        if keep_regions {
+            eprintln!("holes: {n_regions} regions with a hole kept, {copies} pieces");
+        } else {
+            eprintln!(
+                "holes: {n_holes} holes, {n_large} too large to copy whole and cut along \
+                 the grid, {copies} pieces over {} cores",
+                out.len()
+            );
+        }
+    }
+    out
+}
+
+/// Vertices a polygon may cost as whole copies - its vertex count times the cores it
+/// spans - before it is cut along the grid instead.  Two million is sixteen megabytes
+/// of points; a device ring's hole is a few hundred, a pad frame's tens of millions.
+const WHOLE_COPY_BUDGET: i64 = 2_000_000;
+
+/// File global polygons by core: whole into every core a polygon spans while that is
+/// within [`WHOLE_COPY_BUDGET`], cut along the grid otherwise.  Returns the map and
+/// how many were cut.
+fn file_by_core(polys: Vec<MergedPoly>, tile_dbu: i32) -> (TileMap, usize) {
+    let t = tile_dbu as i64;
+    let mut out: TileMap = HashMap::new();
+    let mut large: Vec<MergedPoly> = Vec::new();
+    for poly in polys {
+        let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
+        let (tx0, tx1) = (x0.div_euclid(t), (x1 - 1).max(x0).div_euclid(t));
+        let (ty0, ty1) = (y0.div_euclid(t), (y1 - 1).max(y0).div_euclid(t));
+        let cores = (tx1 - tx0 + 1) * (ty1 - ty0 + 1);
+        if cores * poly.outer.len() as i64 > WHOLE_COPY_BUDGET {
+            large.push(poly);
+            continue;
+        }
+        for tx in tx0..=tx1 {
+            for ty in ty0..=ty1 {
+                out.entry((tx as i32, ty as i32))
+                    .or_default()
+                    .push(poly.clone());
+            }
+        }
+    }
+    let n_large = large.len();
+    if !large.is_empty() {
+        for (tile, mut ps) in cut_along_grid(&large, tile_dbu) {
+            out.entry(tile).or_default().append(&mut ps);
+        }
+    }
+    (out, n_large)
+}
+
+/// Cut `polys` along the tile grid: the piece of each polygon inside every core it
+/// spans, keyed by core.  One overlay per grid phase rather than one per core, so a
+/// polygon covering ten thousand tiles costs four sweeps and not ten thousand clips.
+/// Cores of one phase - same parity of both indices - never touch, so the overlay hands
+/// their pieces back apart, and each piece lies in exactly one core.  Polygons that
+/// overlap each other come back merged, as a region layer reads them anyway.
+fn cut_along_grid(polys: &[MergedPoly], tile_dbu: i32) -> TileMap {
+    let t = tile_dbu as i64;
+    let mut out: TileMap = HashMap::new();
+    let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+    for p in polys {
+        let b = outer_bbox(&p.outer);
+        x0 = x0.min(b.0);
+        y0 = y0.min(b.1);
+        x1 = x1.max(b.2);
+        y1 = y1.max(b.3);
+    }
+    if x1 <= x0 || y1 <= y0 {
+        return out;
+    }
+    let (tx0, tx1) = (x0.div_euclid(t), (x1 - 1).div_euclid(t));
+    let (ty0, ty1) = (y0.div_euclid(t), (y1 - 1).div_euclid(t));
+    let subject = tile_shapes(polys).simplify_shape(FillRule::NonZero);
+    let phases: Vec<TileMap> = (0..4i64)
+        .into_par_iter()
+        .map(|phase| {
+            let mut rects: Vec<Vec<Vec<[f64; 2]>>> = Vec::new();
+            for tx in tx0..=tx1 {
+                if tx.rem_euclid(2) != (phase & 1) {
+                    continue;
+                }
+                for ty in ty0..=ty1 {
+                    if ty.rem_euclid(2) != (phase >> 1) {
+                        continue;
+                    }
+                    let (cx0, cy0) = ((tx * t) as f64, (ty * t) as f64);
+                    let (cx1, cy1) = (((tx + 1) * t) as f64, ((ty + 1) * t) as f64);
+                    rects.push(vec![vec![[cx0, cy0], [cx1, cy0], [cx1, cy1], [cx0, cy1]]]);
+                }
+            }
+            let mut m: TileMap = HashMap::new();
+            if rects.is_empty() {
+                return m;
+            }
+            let cut = subject.overlay(&rects, OverlayRule::Intersect, FillRule::NonZero);
+            for piece in shapes_to_merged(cut) {
+                let b = outer_bbox(&piece.outer);
+                let (cx, cy) = ((b.0 + b.2) / 2, (b.1 + b.3) / 2);
+                m.entry((cx.div_euclid(t) as i32, cy.div_euclid(t) as i32))
+                    .or_default()
+                    .push(piece);
+            }
+            m
+        })
+        .collect();
+    for m in phases {
+        for (tile, mut ps) in m {
+            out.entry(tile).or_default().append(&mut ps);
+        }
+    }
+    out
+}
+
+/// One copy per tile of a layer held as core pieces: the pieces of every core within
+/// `halo_dbu` of the tile, and never less than the tile's neighbours, unioned into
+/// whole polygons.  Exact within the tile's zone and truncated past it, which is the
+/// contract a drawn layer's copies keep and what a reader of polygons is written for;
+/// a hole filed whole comes out whole.
+fn assemble_zone_copies(pieces: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
+    let (h, t) = (halo_dbu.max(0) as i64, tile_dbu as i64);
+    let r = (((h + t - 1) / t) as i32).max(1);
+    let mut targets: HashSet<(i32, i32)> = HashSet::new();
+    for &(tx, ty) in pieces.keys() {
+        for dx in -r..=r {
+            for dy in -r..=r {
+                targets.insert((tx + dx, ty + dy));
+            }
+        }
+    }
+    targets
+        .into_par_iter()
+        .filter_map(|(tx, ty)| {
+            let mut block: Vec<MergedPoly> = Vec::new();
+            for dx in -r..=r {
+                for dy in -r..=r {
+                    if let Some(ps) = pieces.get(&(tx + dx, ty + dy)) {
+                        block.extend(ps.iter().cloned());
+                    }
+                }
+            }
+            if block.is_empty() {
+                return None;
+            }
+            let copy = if block.len() == 1 {
+                block
+            } else {
+                shapes_to_merged(tile_shapes(&block).simplify_shape(FillRule::NonZero))
+            };
+            Some(((tx, ty), copy))
+        })
+        .collect()
+}
+
+/// A region's holes as filled polygons.  Hole contours are stored clockwise (see
+/// [`MergedPoly`]); reversed to CCW so downstream ops see solid regions.
+fn holes_of(m: &MergedPoly) -> Vec<MergedPoly> {
+    m.holes
+        .iter()
+        .map(|h| {
+            let mut outer = h.clone();
+            outer.reverse();
+            MergedPoly {
+                outer,
+                holes: Vec::new(),
+            }
+        })
+        .collect()
+}
+
 fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> TileMap {
     let labeled = stitch_labeled(cand, tile_dbu);
     // A region's bounding box is the union of its pieces' — the pieces tile its core, so
@@ -4341,6 +4555,21 @@ impl MergedCache {
                 .sum();
             if def.op == VirtualOp::Extents {
                 let tiles = build_extents_tiles(&self.layers[&def.sources[0]], self.tile_dbu);
+                self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
+                return;
+            }
+            if matches!(def.op, VirtualOp::Holes | VirtualOp::WithHoles) {
+                let keep_regions = def.op == VirtualOp::WithHoles;
+                let tiles =
+                    build_holes_tiles(&self.layers[&def.sources[0]], self.tile_dbu, keep_regions);
+                let tiles = if self.clippable.contains(&key) {
+                    tiles
+                } else if keep_regions {
+                    let whole = self.whole_chain.contains(&key);
+                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), !whole)
+                } else {
+                    assemble_zone_copies(tiles, self.tile_dbu, self.stitch_halo(key))
+                };
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
             }
