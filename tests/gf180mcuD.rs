@@ -83,28 +83,63 @@ fn counts_at(deck: &str, path: &str, topcell: &str) -> Vec<(String, usize)> {
 // invented, so an improvement passes and only a regression fails; and the generated
 // good/bad patterns below say whether a rule is *right*, on geometry drawn here for it.
 
-/// A real seal ring, and the shape the generated patterns are modelled on: a band 16 µm
-/// wide with a 45° chamfer across each corner, its active drawn as four corner pieces and
-/// four bars, the marker one annulus over the same outline, and contacts and vias 0.7 µm
-/// apart filling it.  Upstream implements no GR rule at all - `guard_ring_mk` appears in
-/// KLayout's deck only as an exclusion for other sections - so there is no reference to
-/// score this against and the count below is a golden, not a verdict on the design.
-///
-/// GR.2 is the one that fires: the prime die's metal stands 8.8 µm off the marker on every
-/// level, where the table asks for ten.  Everything else the ring satisfies, two of them
-/// exactly - its active is 16 µm against GR.6's minimum of 16, and its contacts and vias
-/// sit at 0.7000 µm against GR.7 and GR.8's 0.7.
-///
-/// It is also the case that found the halo the region selectors were missing: GR.2 reads
-/// `metal1_prime` and its siblings, which are selections, and a selection comes back with
-/// one piece per region per tile and no halo copies; five of these walls fell in a
-/// neighbouring tile's core and went unreported until the count below was 130.
+/// A seal ring at 400 x 300 µm with the die it guards: metal on every level standing
+/// 8.8 µm off the marker, where GR.2 asks ten, and everything else the ring satisfies,
+/// two of them exactly - its active is 16 µm against GR.6's minimum of 16, and its
+/// contacts and vias sit at 0.7000 µm against GR.7 and GR.8's 0.7.  Upstream implements
+/// no GR rule at all, so there is no reference to score this against; what the drawing
+/// says is that nothing but GR.2 fires, and that it fires once for every block of the
+/// die's metal - 10 µm blocks at a 15 µm pitch along each wall, 23 along the 350.4 µm
+/// bottom and top, 15 along the 234.4 µm the left and right columns have between the
+/// rows, on five levels - and that is what is asked.  The ring spans twenty tiles each
+/// way, which is the point: a block a tile reads from its neighbour's copy has to be
+/// reported by someone, and five such walls once went unreported.
 #[test]
-fn guard_ring_on_a_real_seal_ring() {
-    assert_eq!(
-        counts("guard_ring", "guardring.gds.gz", "TOP"),
-        vec![("GR.2".to_string(), 145)]
-    );
+fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
+    let violations = run_drc(
+        &format!("{GENERATED}/guard_ring/seal.gds.gz"),
+        PDK,
+        &["guard_ring"],
+        None,
+        "TOP",
+        true,
+    )
+    .expect("DRC run failed");
+    let others: Vec<_> = violations.iter().filter(|v| v.rule_id != "GR.2").collect();
+    assert!(others.is_empty(), "only GR.2 may fire: {others:?}");
+    // The die's metal starts 24.8 µm in from the ring's outline at 10; a marker's gap
+    // lies on the side it is nearest.
+    let (x0, y0, x1, y1) = (10.0 + 24.8, 10.0 + 24.8, 410.0 - 24.8, 310.0 - 24.8);
+    let mut seen: std::collections::BTreeSet<(&str, &str)> = Default::default();
+    for v in &violations {
+        let level = ["metal1", "metal2", "metal3", "metal4", "metal5"]
+            .into_iter()
+            .find(|m| v.message.contains(&format!("between {m} and")))
+            .expect("GR.2 names its metal");
+        let (mx, my) = match v.geometry {
+            gdscheck::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                ((x1 + x2) * 0.5, (y1 + y2) * 0.5)
+            }
+            gdscheck::violation::ViolationGeometry::Point { x, y } => (x, y),
+            gdscheck::violation::ViolationGeometry::None => continue,
+        };
+        let side = if mx <= x0 {
+            "left"
+        } else if mx >= x1 {
+            "right"
+        } else if my <= y0 {
+            "bottom"
+        } else if my >= y1 {
+            "top"
+        } else {
+            panic!("marker inside the die at ({mx}, {my})");
+        };
+        seen.insert((level, side));
+    }
+    assert_eq!(seen.len(), 20, "every level on every side: {seen:?}");
+    let along = |len: f64| ((len - 10.0) / 15.0).floor() as usize + 1;
+    let blocks = 2 * along(x1 - x0) + 2 * along(y1 - y0 - 2.0 * 8.0);
+    assert_eq!(violations.len(), 5 * blocks, "one marker per block on every level");
 }
 
 /// Every rule the deck declares must appear in the run above. A rule that resolves to an
