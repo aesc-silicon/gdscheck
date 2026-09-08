@@ -591,6 +591,15 @@ fn halo_table(
         // non-empty - the inflating rules in practice reference base layers.)
         let inflating = matches!(rule.check.as_str(), "min_space" | "min_notch")
             && rule.layers.iter().any(is_empty_base);
+        // `wide_uncovered` erodes by reading the neighbouring tiles itself, and the
+        // extent checks measure stitched regions; neither asks anything of the halo.
+        // A value-sized one put Metal1 at 30 µm for Slt.c and COMP at 50 µm for
+        // MDP.13a's `max_length`.
+        let dist = dist
+            && !matches!(
+                rule.check.as_str(),
+                "wide_uncovered" | "min_dim" | "max_dim" | "min_length" | "max_length"
+            );
         let h = if dist && !inflating {
             (merge::MIN_HALO_UM.max(rule.value) / dbu_to_um).ceil() as i32
         } else {
@@ -713,6 +722,10 @@ fn clippable_layers(
                 | O::WithArea(_, _)
                 | O::WithBBoxMin(_, _)
                 | O::WithBBoxMax(_, _)
+                | O::Rectangle
+                | O::NotRectangle
+                | O::Square
+                | O::NotSquare
                 | O::Holes
                 | O::WithHoles
                 | O::Extents
@@ -732,6 +745,10 @@ fn clippable_layers(
                 | O::WithArea(_, _)
                 | O::WithBBoxMin(_, _)
                 | O::WithBBoxMax(_, _)
+                | O::Rectangle
+                | O::NotRectangle
+                | O::Square
+                | O::NotSquare
         )
     };
     let mut read_whole: std::collections::HashSet<(i16, i16)> = rules
