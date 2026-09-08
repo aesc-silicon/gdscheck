@@ -4451,6 +4451,11 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
         }
     }
 
+    if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+        let max = buckets.values().map(|v| v.len()).max().unwrap_or(0);
+        let total: usize = buckets.values().map(|v| v.len()).sum();
+        eprintln!("  buckets={} refs={total} max_bucket={max}", buckets.len());
+    }
     buckets
         .into_par_iter()
         .map(|(key, shapes)| (key, merge_refs(&shapes)))
@@ -5148,6 +5153,13 @@ impl MergedCache {
                 .filter_map(|s| self.layers.get(s))
                 .map(|m| m.values().map(|v| v.len()).sum::<usize>())
                 .sum();
+            if trace {
+                eprintln!(
+                    "virtual {} op={:?} start src_copies={src_copies} halo={want}dbu",
+                    self.name_of(key),
+                    def.op
+                );
+            }
             if def.op == VirtualOp::Extents {
                 let tiles = build_extents_tiles(&self.layers[&def.sources[0]], self.tile_dbu);
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
@@ -5283,6 +5295,9 @@ impl MergedCache {
         let tile = self.tile_dbu;
         let halo = want;
         let raw = layout.get(layer, datatype);
+        if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+            eprintln!("merge {layer}/{datatype} start raw={} halo={halo}dbu", raw.len());
+        }
         let t0 = std::time::Instant::now();
         let tiles = build_tiled_merge(raw, tile, halo);
         if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
