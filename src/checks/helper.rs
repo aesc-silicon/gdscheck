@@ -1191,10 +1191,15 @@ fn outer_over(
     }
     let g = value_dbu.ceil() as i64 + 1;
     let (x0, y0, x1, y1) = (x0 - g, y0 - g, x1 + g, y1 + g);
-    if x0 >= core.x0 - halo && y0 >= core.y0 - halo && x1 <= core.x1 + halo && y1 <= core.y1 + halo {
+    if x0 >= core.x0 - halo && y0 >= core.y0 - halo && x1 <= core.x1 + halo && y1 <= core.y1 + halo
+    {
         return None;
     }
-    Some(crate::merge::assemble_over(map_a, tile as i32, (x0, y0, x1, y1)))
+    Some(crate::merge::assemble_over(
+        map_a,
+        tile as i32,
+        (x0, y0, x1, y1),
+    ))
 }
 
 /// Whether a point (µm) lies inside the layer's merged geometry, tested against the

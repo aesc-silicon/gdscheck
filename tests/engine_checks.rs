@@ -179,5 +179,9 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
     #[case] pattern: &str,
     #[case] expected: usize,
 ) {
-    assert_eq!(count("max_space", pattern, "SPC.max"), expected, "{pattern}");
+    assert_eq!(
+        count("max_space", pattern, "SPC.max"),
+        expected,
+        "{pattern}"
+    );
 }
