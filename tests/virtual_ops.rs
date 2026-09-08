@@ -715,3 +715,77 @@ fn with_holes_keeps_a_ring_spanning_tiles_and_drops_a_solid() {
     );
 }
 
+/// A ring's interior read through a boolean and a counted selection, the shape of
+/// GF180's DN.3, with a chip-sized ring round everything: the pad frame.  Its hole is a
+/// polygon covering every tile, and `holes - pcomp` then `interacting(dnwell, 1..1)` has
+/// to find the small ring's interior as its own region, separated from the frame's
+/// interior by the small ring - which it is only if every tile's copy of the boolean
+/// is exact where it is read.  A frame 10 tiles across, a ring 2 tiles across inside
+/// it, one deep well in the ring and two more out in the frame.
+#[test]
+fn ring_interior_inside_a_chip_sized_ring() {
+    let band = |x0: i32, y0: i32, x1: i32, y1: i32, w: i32| {
+        vec![
+            rect(A, x0, y0, x1, y0 + w),
+            rect(A, x0, y1 - w, x1, y1),
+            rect(A, x0, y0, x0 + w, y1),
+            rect(A, x1 - w, y0, x1, y1),
+        ]
+    };
+    let mut a = band(0, 0, 1000, 1000, 50);
+    a.extend(band(300, 300, 500, 500, 20));
+    let b = vec![
+        rect(B, 350, 350, 450, 450),
+        rect(B, 600, 600, 700, 700),
+        rect(B, 800, 800, 900, 900),
+    ];
+    let mut layout = FlatLayout::new();
+    for s in &a {
+        layout.insert(A.0, A.1, s.clone());
+    }
+    for s in &b {
+        layout.insert(B.0, B.1, s.clone());
+    }
+    const HOLES: (i16, i16) = (901, 0);
+    const INTERIOR: (i16, i16) = (902, 0);
+    let mut cache = MergedCache::new(100, 0, HashMap::new());
+    cache.register_virtual(HOLES, VirtualOp::Holes, vec![A], None);
+    cache.register_virtual(INTERIOR, VirtualOp::Difference, vec![HOLES, A], None);
+    cache.register_virtual(
+        OUT,
+        VirtualOp::Interacting(Some(1), Some(1)),
+        vec![INTERIOR, B],
+        None,
+    );
+    // What `clippable_layers` would say: every reader of the holes and of the interior
+    // works on regions, so both travel as core pieces.
+    cache.set_clippable(std::collections::HashSet::from([HOLES, INTERIOR]));
+    cache.ensure(&layout, OUT.0, OUT.1);
+    let mut out: Vec<(i32, i32, i32, i32)> = cache
+        .tiles(OUT.0, OUT.1)
+        .values()
+        .flatten()
+        .map(bbox)
+        .collect();
+    out.sort_unstable();
+    out.dedup();
+    assert!(
+        !out.is_empty(),
+        "the small ring's interior touches one well and must be kept"
+    );
+    let (x0, y0, x1, y1) = out
+        .iter()
+        .fold((i32::MAX, i32::MAX, i32::MIN, i32::MIN), |acc, b| {
+            (
+                acc.0.min(b.0),
+                acc.1.min(b.1),
+                acc.2.max(b.2),
+                acc.3.max(b.3),
+            )
+        });
+    assert_eq!(
+        (x0, y0, x1, y1),
+        (320, 320, 480, 480),
+        "only the small ring's interior; the frame's touches two wells: {out:?}"
+    );
+}

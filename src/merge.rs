@@ -1334,6 +1334,20 @@ impl Core {
         x >= self.x0 as f64 && x < self.x1 as f64 && y >= self.y0 as f64 && y < self.y1 as f64
     }
 
+    /// Whether this tile owns a violation reported at a *region's* centroid `(x, y)`,
+    /// in DBU.  Half-open, unlike [`Core::owns`]: a region's centroid is the average of
+    /// its outer vertices, so it can only land on a tile line when the region has
+    /// vertices on both sides - and a region straddling the line is filed in both tiles,
+    /// so either may own it and the upper one does.  Claiming it from both, as `owns`
+    /// must for a point between two shapes, relied on the two tiles' copies of the
+    /// region being byte-identical for the duplicate to fold, and they are not once the
+    /// region outreaches the halo: IHP's npnG2.c reported one tie ring's wall twice,
+    /// the ring centred on a tile line and each tile's pSD copy merged with a different
+    /// neighbouring bar.
+    pub fn owns_region(&self, x: f64, y: f64) -> bool {
+        self.contains(x, y)
+    }
+
     /// Whether this tile owns a violation reported at `(x, y)`, in DBU.
     ///
     /// Ownership is what stops a pair two tiles can both see from being reported twice,
@@ -3443,6 +3457,107 @@ fn piece_meets(kind: SelectionKind, poly: &MergedPoly, fp: &MergedPoly) -> bool 
 /// polygons in different tiles are two shapes or one; a count gets that wrong the moment a
 /// filter region straddles a tile edge, so both sides are labelled and the pairs are
 /// collected by region id rather than tallied per piece.
+/// `covering` / `not_covering`, on core pieces: a candidate region covers a filter
+/// region when every core piece of the filter lies within that one candidate region's
+/// polygons in the same core, and the candidate is the same region in every core the
+/// filter touches.  Asked per core it is exact wherever the copies are, since a copy is
+/// exact inside its core.  Asked of a whole copy - does the filter fit inside one
+/// candidate polygon - it needed the candidate to extend over the filter in one piece,
+/// which held for drawn geometry and not for a boolean over a chip-sized operand: a
+/// guard ring's interior, `holes - pcomp` with the pad frame's hole among the holes,
+/// carried in each tile whatever the frame's hole left where the ring was out of
+/// reach, and DN.3 read a ring round one deep well as shared.  `count` bounds how many
+/// filter regions a kept candidate covers.
+fn build_covering_tiles(
+    cand: &TileMap,
+    filt: &TileMap,
+    keep: bool,
+    (min, max): Count,
+    tile_dbu: i32,
+) -> TileMap {
+    let cl = stitch_labeled(cand, tile_dbu);
+    let fl = stitch_labeled(filt, tile_dbu);
+    let t = tile_dbu as i64;
+    // Per tile: for each filter piece, the candidate regions whose polygons hold it.
+    let per_tile: Vec<Vec<(usize, Vec<usize>)>> = fl
+        .by_tile
+        .par_iter()
+        .map(|(tile, fpolys)| {
+            let Some(cpolys) = cl.by_tile.get(tile) else {
+                return fpolys.iter().map(|(_, frid)| (*frid, Vec::new())).collect();
+            };
+            let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
+            let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
+            let mut by_rid: HashMap<usize, Vec<MergedPoly>> = HashMap::new();
+            for (p, rid) in cpolys {
+                by_rid.entry(*rid).or_default().push(p.clone());
+            }
+            let rid_box: Vec<(usize, (i32, i32, i32, i32))> = by_rid
+                .iter()
+                .map(|(rid, ps)| {
+                    let b = ps
+                        .iter()
+                        .map(poly_bbox)
+                        .fold((i32::MAX, i32::MAX, i32::MIN, i32::MIN), |a, b| {
+                            (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3))
+                        });
+                    (*rid, b)
+                })
+                .collect();
+            fpolys
+                .iter()
+                .map(|(fp, frid)| {
+                    let mut rids: Option<Vec<usize>> = None;
+                    for piece in clip_to_box(vec![fp.clone()], cx0, cy0, cx1, cy1) {
+                        let (px0, py0, px1, py1) = poly_bbox(&piece);
+                        let here: Vec<usize> = rid_box
+                            .iter()
+                            .filter(|(_, (bx0, by0, bx1, by1))| {
+                                px0 >= *bx0 && py0 >= *by0 && px1 <= *bx1 && py1 <= *by1
+                            })
+                            .filter(|(rid, _)| poly_within(&piece, &by_rid[rid]))
+                            .map(|(rid, _)| *rid)
+                            .collect();
+                        rids = Some(match rids {
+                            None => here,
+                            Some(prev) => prev.into_iter().filter(|r| here.contains(r)).collect(),
+                        });
+                    }
+                    (*frid, rids.unwrap_or_default())
+                })
+                .collect()
+        })
+        .collect();
+    // A filter region is covered by the candidate regions that hold every one of its
+    // pieces, in every tile it has one.
+    let mut cover: Vec<Option<Vec<usize>>> = vec![None; fl.regions.len()];
+    for v in per_tile {
+        for (frid, rids) in v {
+            cover[frid] = Some(match cover[frid].take() {
+                None => rids,
+                Some(prev) => prev.into_iter().filter(|r| rids.contains(r)).collect(),
+            });
+        }
+    }
+    let mut n = vec![0u32; cl.regions.len()];
+    for rids in cover.into_iter().flatten() {
+        for rid in rids {
+            n[rid] += 1;
+        }
+    }
+    let lo = min.unwrap_or(1);
+    let mut out: TileMap = HashMap::new();
+    for (tile, polys) in cl.by_tile {
+        for (poly, rid) in polys {
+            let hit = n[rid] >= lo && max.is_none_or(|hi| n[rid] <= hi);
+            if hit == keep {
+                out.entry(tile).or_default().push(poly);
+            }
+        }
+    }
+    out
+}
+
 fn build_counted_selection_tiles(
     cand: &TileMap,
     filt: &TileMap,
@@ -3453,19 +3568,40 @@ fn build_counted_selection_tiles(
 ) -> TileMap {
     let cl = stitch_labeled(cand, tile_dbu);
     let fl = stitch_labeled(filt, tile_dbu);
-    let mut met: HashSet<(usize, usize)> = HashSet::new();
-    for (tile, polys) in &cl.by_tile {
-        let Some(fpolys) = fl.by_tile.get(tile) else {
-            continue;
-        };
-        for (poly, rid) in polys {
-            for (fp, frid) in fpolys {
-                if !met.contains(&(*rid, *frid)) && piece_meets(kind, poly, fp) {
-                    met.insert((*rid, *frid));
+    let t = tile_dbu as i64;
+    // Only the part of the candidate this tile owns is tested, as the uncounted path
+    // does: a copy is exact within its core and no further, and the meeting point of
+    // two regions is owned by some core, which tests it against copies exact there.
+    let met: HashSet<(usize, usize)> = cl
+        .by_tile
+        .par_iter()
+        .flat_map_iter(|(tile, polys)| {
+            let mut pairs: Vec<(usize, usize)> = Vec::new();
+            let Some(fpolys) = fl.by_tile.get(tile) else {
+                return pairs.into_iter();
+            };
+            let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
+            let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
+            for (poly, rid) in polys {
+                for piece in clip_to_box(vec![poly.clone()], cx0, cy0, cx1, cy1) {
+                    let (x0, y0, x1, y1) = poly_bbox(&piece);
+                    for (fp, frid) in fpolys {
+                        if pairs.contains(&(*rid, *frid)) {
+                            continue;
+                        }
+                        let (fx0, fy0, fx1, fy1) = poly_bbox(fp);
+                        if x1 < fx0 || fx1 < x0 || y1 < fy0 || fy1 < y0 {
+                            continue;
+                        }
+                        if piece_meets(kind, &piece, fp) {
+                            pairs.push((*rid, *frid));
+                        }
+                    }
                 }
             }
-        }
-    }
+            pairs.into_iter()
+        })
+        .collect();
     let mut n = vec![0u32; cl.regions.len()];
     for (rid, _) in met {
         n[rid] += 1;
@@ -3497,6 +3633,9 @@ fn build_selection_tiles(
     // dense candidate (e.g. `covering [GatPolyRes, Rsil]` on a chip with no resistors).
     if filt.values().all(|v| v.is_empty()) {
         return if keep { TileMap::new() } else { cand.clone() };
+    }
+    if kind == SelectionKind::Covers {
+        return build_covering_tiles(cand, filt, keep, count, tile_dbu);
     }
     if count != (None, None) {
         return build_counted_selection_tiles(cand, filt, kind, keep, count, tile_dbu);
