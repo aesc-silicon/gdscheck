@@ -308,7 +308,13 @@ fn seal(pdk: &PdkConfig) {
     for m in METALS {
         elems.extend(band_at(layer(pdk, m), B - 1.0, ring));
     }
-    elems.push(rect(layer(pdk, "pad"), x1 - 12.0, y1 - 12.0, x1 - 2.0, y1 - 2.0));
+    elems.push(rect(
+        layer(pdk, "pad"),
+        x1 - 12.0,
+        y1 - 12.0,
+        x1 - 2.0,
+        y1 - 2.0,
+    ));
     // The die's metal along each wall as a row of blocks, each its own region and so its
     // own GR.2 marker: a spacing rule reports one pair once, and a die drawn as one plate
     // would be one marker per level however many tiles its walls cross.
@@ -333,7 +339,10 @@ fn seal(pdk: &PdkConfig) {
             y += BLOCK_PITCH;
         }
     }
-    for (i, lname) in ["contact", "via1", "via2", "via3", "via4"].iter().enumerate() {
+    for (i, lname) in ["contact", "via1", "via2", "via3", "via4"]
+        .iter()
+        .enumerate()
+    {
         let l = layer(pdk, lname);
         let y = O + 2.0 + i as f64 * 2.0;
         let mut x = O + 30.0;

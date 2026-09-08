@@ -418,7 +418,12 @@ pub fn shrink_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
 pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
     let t = tile_dbu as i64;
     let core_of = |tx: i32, ty: i32| {
-        (tx as i64 * t, ty as i64 * t, (tx as i64 + 1) * t, (ty as i64 + 1) * t)
+        (
+            tx as i64 * t,
+            ty as i64 * t,
+            (tx as i64 + 1) * t,
+            (ty as i64 + 1) * t,
+        )
     };
     // The reference as grown rectangles, filed under the tile whose core the piece
     // lies in; every rectangle lies within `value` of that core.
@@ -511,10 +516,16 @@ fn rectangles_of(m: &MergedPoly) -> Vec<(i32, i32, i32, i32)> {
     ys.dedup();
     ys.windows(2)
         .flat_map(|w| {
-            clip_to_box(vec![m.clone()], bx0 as i64, w[0] as i64, bx1 as i64, w[1] as i64)
-                .iter()
-                .map(poly_bbox)
-                .collect::<Vec<_>>()
+            clip_to_box(
+                vec![m.clone()],
+                bx0 as i64,
+                w[0] as i64,
+                bx1 as i64,
+                w[1] as i64,
+            )
+            .iter()
+            .map(poly_bbox)
+            .collect::<Vec<_>>()
         })
         .collect()
 }
@@ -5323,7 +5334,10 @@ impl MergedCache {
         let halo = want;
         let raw = layout.get(layer, datatype);
         if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
-            eprintln!("merge {layer}/{datatype} start raw={} halo={halo}dbu", raw.len());
+            eprintln!(
+                "merge {layer}/{datatype} start raw={} halo={halo}dbu",
+                raw.len()
+            );
         }
         let t0 = std::time::Instant::now();
         let tiles = build_tiled_merge(raw, tile, halo);
@@ -5440,7 +5454,10 @@ impl MergedCache {
     /// with no shapes yields an empty map.
     /// The halo (DBU) a cached layer's copies are exact out to, past their core.
     pub fn halo_of(&self, layer: i16, datatype: i16) -> i32 {
-        self.layer_halo.get(&(layer, datatype)).copied().unwrap_or(0)
+        self.layer_halo
+            .get(&(layer, datatype))
+            .copied()
+            .unwrap_or(0)
     }
 
     pub fn tiles(&self, layer: i16, datatype: i16) -> &TileMap {
