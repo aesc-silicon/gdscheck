@@ -3284,6 +3284,17 @@ fn holes_of(m: &MergedPoly) -> Vec<MergedPoly> {
         .collect()
 }
 
+/// Whether a derived layer is empty as soon as its `i`-th source is: a selection, a
+/// filter, a size or a measurement with nothing to work on, a difference with no
+/// subject, an intersection missing any of its terms.  A union needs every source.
+fn empty_when_source_empty(op: VirtualOp, i: usize) -> bool {
+    match op {
+        VirtualOp::Union | VirtualOp::WithText => false,
+        VirtualOp::Intersection => true,
+        _ => i == 0,
+    }
+}
+
 fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> TileMap {
     let labeled = stitch_labeled(cand, tile_dbu);
     // A region's bounding box is the union of its pieces' — the pieces tile its core, so
@@ -4112,12 +4123,35 @@ impl MergedCache {
             return;
         };
         // An op's sources are polygons, edges, or one of each; resolve accordingly.
+        // A subject with nothing in it makes the layer empty before the filter is
+        // built, and the filter can be the expensive half: MDP.4b cuts the edges of a
+        // deep well nothing here draws against the guard rings' interiors.
         for (i, &src) in def.sources.iter().enumerate() {
             let is_poly = def.op.takes_polygons() || (def.op.mixes() && i == 1);
             if is_poly {
                 self.ensure(layout, src.0, src.1);
             } else {
                 self.ensure_edges(layout, src);
+            }
+            if i == 0 && def.op != EdgeOp::Or {
+                let empty = if is_poly {
+                    self.layers[&src].is_empty()
+                } else {
+                    self.edge_layers[&src].is_empty()
+                };
+                if empty {
+                    if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+                        eprintln!(
+                            "edges {} op={:?} empty: source {} holds nothing",
+                            self.name_of(key),
+                            def.op,
+                            self.name_of(src)
+                        );
+                    }
+                    self.edge_layers.insert(key, EdgeTileMap::new());
+                    self.edge_spans.insert(key, EdgeTileMap::new());
+                    return;
+                }
             }
         }
 
@@ -4536,15 +4570,56 @@ impl MergedCache {
                 self.layer_halo.insert(key, want);
                 return;
             }
+            // A layer with nothing to work on is empty, and nothing else in its chain
+            // needs building to say so: a deep-well rule on a design with no deep well
+            // used to merge COMP at the guard ring's reach before finding that out.
+            // Drawn sources are asked first, since that costs nothing; a derived one
+            // is asked as soon as it is built, before the sources after it are.
+            let trace = std::env::var("GDSCHECK_MERGE_TRACE").is_ok();
+            let mut empty_source = def
+                .sources
+                .iter()
+                .enumerate()
+                .find(|(i, src)| {
+                    empty_when_source_empty(def.op, *i)
+                        && self.is_drawn(**src)
+                        && layout.get(src.0, src.1).is_empty()
+                })
+                .map(|(i, _)| i);
             // A selector's filter may be an *edge* layer rather than a polygon one -
             // GF180's PRES.9a keeps the RES_MK markings whose boundary does not follow
             // the resistor's - so those sources are built as edges, not merged.
-            for &(sg, sd) in &def.sources {
-                if self.is_edge_layer((sg, sd)) {
-                    self.ensure_edges(layout, (sg, sd));
-                } else {
+            if empty_source.is_none() {
+                for (i, &(sg, sd)) in def.sources.iter().enumerate() {
+                    if self.is_edge_layer((sg, sd)) {
+                        self.ensure_edges(layout, (sg, sd));
+                        continue;
+                    }
                     self.ensure(layout, sg, sd);
+                    if empty_when_source_empty(def.op, i) && self.layers[&(sg, sd)].is_empty() {
+                        empty_source = Some(i);
+                        break;
+                    }
                 }
+            }
+            if let Some(i) = empty_source {
+                if trace {
+                    eprintln!(
+                        "virtual {} op={:?} empty: source {} holds nothing",
+                        self.name_of(key),
+                        def.op,
+                        self.name_of(def.sources[i])
+                    );
+                }
+                self.insert_virtual(
+                    key,
+                    def.op,
+                    0,
+                    TileMap::new(),
+                    std::time::Instant::now(),
+                    want,
+                );
+                return;
             }
             let t0 = std::time::Instant::now();
             let src_copies: usize = def
