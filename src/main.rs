@@ -271,21 +271,39 @@ fn run(args: RunArgs) {
     println!("Topcell: {}", args.topcell);
     println!("DRC completed in {:.3}s", elapsed.as_secs_f64());
 
+    let waived_total = violations.iter().filter(|v| v.waived.is_some()).count();
+    let headline = if waived_total > 0 {
+        format!("{} violation(s), {waived_total} waived:", violations.len())
+    } else {
+        format!("{} violation(s):", violations.len())
+    };
     if violations.is_empty() {
         println!("DRC clean.");
     } else if args.verbose {
-        println!("{} violation(s):", violations.len());
+        println!("{headline}");
         for v in &violations {
-            println!("  [{}] {}", v.rule_id, v.message);
+            match &v.waived {
+                Some(why) => println!("  [{}] {} (waived: {why})", v.rule_id, v.message),
+                None => println!("  [{}] {}", v.rule_id, v.message),
+            }
         }
     } else {
-        println!("{} violation(s):", violations.len());
-        let mut counts: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+        println!("{headline}");
+        let mut counts: std::collections::BTreeMap<&str, (usize, usize)> =
+            std::collections::BTreeMap::new();
         for v in &violations {
-            *counts.entry(v.rule_id.as_str()).or_insert(0) += 1;
+            let e = counts.entry(v.rule_id.as_str()).or_insert((0, 0));
+            e.0 += 1;
+            if v.waived.is_some() {
+                e.1 += 1;
+            }
         }
-        for (rule_id, count) in counts {
-            println!("  [{rule_id}] {count}");
+        for (rule_id, (count, waived)) in counts {
+            if waived > 0 {
+                println!("  [{rule_id}] {count} ({waived} waived)");
+            } else {
+                println!("  [{rule_id}] {count}");
+            }
         }
     }
 

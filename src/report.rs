@@ -89,6 +89,10 @@ pub fn write_lyrdb(
     writer.write_event(Event::Start(BytesStart::new("items")))?;
     for v in violations {
         writer.write_event(Event::Start(BytesStart::new("item")))?;
+        // KLayout's marker browser shows a `waived` tag as such and can hide them.
+        if v.waived.is_some() {
+            write_text(&mut writer, "tags", "waived")?;
+        }
         write_text(&mut writer, "category", &v.rule_id)?;
         write_text(&mut writer, "cell", topcell)?;
         write_text(&mut writer, "visited", "false")?;

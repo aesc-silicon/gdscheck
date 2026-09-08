@@ -85,7 +85,7 @@ fn hierarchy_lib() -> GdsLibrary {
 #[test]
 fn flatten_resolves_refs_arrays_and_rotation() {
     let lib = hierarchy_lib();
-    let layout = flatten_to_elems("TOP", &lib, None);
+    let layout = flatten_to_elems("TOP", &lib, None, &[]);
 
     let boxes: Vec<(i32, i32, i32, i32)> = layout.get(10, 0).iter().map(bbox).collect();
 
@@ -570,4 +570,77 @@ fn a_rings_marker_lies_on_the_ring_not_in_its_hole() {
     assert!(!in_hole, "marker landed in the hole at ({x}, {y})");
     let in_bbox = (0.0..=300.0).contains(&x) && (0.0..=300.0).contains(&y);
     assert!(in_bbox, "marker escaped the shape at ({x}, {y})");
+}
+
+// ---------------------------------------------------------------------------
+// Waivers: a violation inside a placed instance of a cell the PDK names is reported,
+// marked waived, and only for the rules the waiver covers.
+// ---------------------------------------------------------------------------
+
+/// A 2 µm Outer square with an Inner square 0.1 µm inside its walls - 0.4 µm short of
+/// the 0.5 µm ENC.proj asks - once inside a `PADLIB_A` cell and once drawn straight
+/// into the top cell ten microns to the right.
+fn waiver_lib() -> GdsLibrary {
+    let rect = |l: i16, x0: i32, y0: i32, x1: i32, y1: i32| {
+        GdsElement::GdsBoundary(GdsBoundary {
+            layer: l,
+            datatype: 0,
+            xy: GdsPoint::vec(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+            ..Default::default()
+        })
+    };
+    let mut pad = GdsStruct::new("PADLIB_A");
+    pad.elems.push(rect(1, 0, 0, 2000, 2000));
+    pad.elems.push(rect(2, 100, 100, 1900, 1900));
+    let mut top = GdsStruct::new("TOP");
+    top.elems.push(GdsElement::GdsStructRef(GdsStructRef {
+        name: "PADLIB_A".into(),
+        xy: GdsPoint::new(0, 0),
+        ..Default::default()
+    }));
+    top.elems.push(rect(1, 10000, 0, 12000, 2000));
+    top.elems.push(rect(2, 10100, 100, 11900, 1900));
+    let mut lib = GdsLibrary::new("WAIVE");
+    lib.units = gds21::GdsUnits(1e-6, 1e-9);
+    lib.structs = vec![pad, top];
+    lib
+}
+
+#[test]
+fn waiver_marks_violations_inside_a_named_cell_for_its_rules_only() {
+    let lib = waiver_lib();
+    let v = gdscheck::run_drc_with(
+        &lib,
+        "tests/data/engine/pdk.yml",
+        &["min_enclosure"],
+        None,
+        "TOP",
+        false,
+    )
+    .expect("run");
+    let inside = |v: &gdscheck::violation::Violation| match v.geometry {
+        gdscheck::violation::ViolationGeometry::Point { x, .. } => x < 5.0,
+        gdscheck::violation::ViolationGeometry::Edge { x1, x2, .. } => (x1 + x2) * 0.5 < 5.0,
+        gdscheck::violation::ViolationGeometry::None => false,
+    };
+    let proj: Vec<_> = v.iter().filter(|v| v.rule_id == "ENC.proj").collect();
+    assert!(
+        proj.iter().any(|v| inside(v) && v.waived.is_some()),
+        "the short enclosure inside PADLIB_A is ENC.proj's business and the PDK waives it: {proj:?}"
+    );
+    assert!(
+        proj.iter().any(|v| !inside(v) && v.waived.is_none()),
+        "the same shape drawn in the top cell is not waived: {proj:?}"
+    );
+    assert!(
+        proj.iter().all(|v| inside(v) == v.waived.is_some()),
+        "waived exactly inside the instance: {proj:?}"
+    );
+    let eucl: Vec<_> = v.iter().filter(|v| v.rule_id == "ENC.eucl").collect();
+    assert!(
+        !eucl.is_empty() && eucl.iter().all(|v| v.waived.is_none()),
+        "the waiver names ENC.proj only, so ENC.eucl inside the cell stands: {eucl:?}"
+    );
+    let waived = proj.iter().find(|v| v.waived.is_some()).unwrap();
+    assert_eq!(waived.waived.as_deref(), Some("PADLIB_A: library cell"));
 }

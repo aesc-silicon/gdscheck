@@ -1075,7 +1075,7 @@ fn run_drc_impl(
         Some(n)
     };
 
-    let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref());
+    let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref(), &pdk.waivers);
     phase.end("flatten");
     pdk.compute_virtual_layers(&mut layout, dbu_to_um);
     phase.end("global virtuals");
@@ -1397,6 +1397,36 @@ fn run_drc_impl(
     violations.dedup_by(|a, b| {
         a.rule_id == b.rule_id && a.message == b.message && a.geometry == b.geometry
     });
+    // A marker inside a placed instance of a cell the PDK waives for its rule is kept
+    // and marked, so the report still shows it and the summary counts it apart.
+    let instances = layout.waived_instances();
+    if !instances.is_empty() {
+        for v in &mut violations {
+            let (x, y) = match v.geometry {
+                violation::ViolationGeometry::Point { x, y } => (x, y),
+                violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                    ((x1 + x2) * 0.5, (y1 + y2) * 0.5)
+                }
+                violation::ViolationGeometry::None => continue,
+            };
+            let (px, py) = (x / dbu_to_um, y / dbu_to_um);
+            let hit = instances.iter().find(|inst| {
+                px >= inst.x0 as f64
+                    && px <= inst.x1 as f64
+                    && py >= inst.y0 as f64
+                    && py <= inst.y1 as f64
+                    && pdk.waivers[inst.waiver].covers_rule(&v.rule_id)
+            });
+            if let Some(inst) = hit {
+                let reason = &pdk.waivers[inst.waiver].reason;
+                v.waived = Some(if reason.is_empty() {
+                    inst.cell.clone()
+                } else {
+                    format!("{}: {reason}", inst.cell)
+                });
+            }
+        }
+    }
     phase.end("sort+dedup");
     Ok(violations)
 }
