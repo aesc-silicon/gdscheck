@@ -646,9 +646,9 @@ type LayerSet = std::collections::HashSet<(i16, i16)>;
 /// Pieces are a region only to a consumer that reads them as one.  A boolean unions
 /// them; a size unions them first (see `shrink`); a selection stitches them along the
 /// cuts, and a region filter sums their areas.  Anything that looks at a polygon on its
-/// own - a rectangle or circle filter, a hole finder, an extents box, a `covering` whose
-/// filter has to fit inside one candidate polygon, an edge cut, a rule measuring a wall -
-/// would see the cuts, and a layer with such a consumer stays whole.  A selection or
+/// own - a rectangle or circle filter, an edge cut, a rule measuring a wall - would see
+/// the cuts, and a layer with such a consumer stays whole.  A hole finder, an extents
+/// box and a `covering` read the stitched region, pieces and all.  A selection or
 /// region filter passes its candidate's pieces straight through to its own output, so it
 /// qualifies only if it qualifies itself, which is why this runs to a fixed point.
 fn clippable_layers(
@@ -669,6 +669,8 @@ fn clippable_layers(
                 | O::NotInteracting(_, _)
                 | O::Inside
                 | O::NotInside
+                | O::Covering(_, _)
+                | O::NotCovering(_, _)
                 | O::Grow(_, _)
                 | O::GrowX(_)
                 | O::GrowY(_)
@@ -694,6 +696,8 @@ fn clippable_layers(
                 | O::NotInteracting(_, _)
                 | O::Inside
                 | O::NotInside
+                | O::Covering(_, _)
+                | O::NotCovering(_, _)
                 | O::WithArea(_, _)
                 | O::WithBBoxMin(_, _)
                 | O::WithBBoxMax(_, _)
@@ -720,11 +724,13 @@ fn clippable_layers(
     // report folded them to one (CUP.2 on a millimetre of 0.3 µm metal went from one
     // marker to fifty).  It is the enclosure engine, which tests every vertex of the
     // enclosed shape against the copy of the enclosing layer in the tile that owns the
-    // shape, and `covering`, which asks whether its filter fits inside one candidate
-    // copy - both right only when the copy happens to extend over the other shape,
-    // which whole copies of drawn geometry do (MIMTM.3 encloses a sixty-micron fuse
-    // window in a derived plate).  And it is an edge cut, whose segments feed the edge
-    // checks.  What is left for pieces is a chain that ends in `nonempty`, a coverage
+    // shape - right only when the copy happens to extend over the other shape, which
+    // whole copies of drawn geometry do (MIMTM.3 encloses a sixty-micron fuse window
+    // in a derived plate).  And it is an edge cut, whose segments feed the edge
+    // checks.  `covering` used to be here for the same reason and is not any more: it
+    // asks per core whether the filter's piece lies within the candidate's, which is
+    // exact on pieces, and on a whole copy of a boolean over a chip-sized operand it
+    // was wrong.  What is left for pieces is a chain that ends in `nonempty`, a coverage
     // residual, an area or a density - and the slotting chains, the ones that cost
     // the most, are exactly that.
     let mut sources_of: std::collections::HashMap<(i16, i16), &[(i16, i16)]> =
@@ -748,11 +754,6 @@ fn clippable_layers(
         .collect();
     for spec in edge_specs {
         stack.extend(spec.sources.iter().copied());
-    }
-    for (spec, op) in tiled_virtuals {
-        if matches!(op, O::Covering(_, _) | O::NotCovering(_, _)) {
-            stack.extend(spec.sources.first().copied());
-        }
     }
     let mut whole_chain: std::collections::HashSet<(i16, i16)> = std::collections::HashSet::new();
     while let Some(k) = stack.pop() {

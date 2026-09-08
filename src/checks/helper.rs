@@ -674,7 +674,7 @@ pub fn run_boolean_residual(
                 .into_iter()
                 .filter_map(move |m| {
                     let (cx, cy) = merged_centroid_dbu(&m);
-                    if !core.owns(cx, cy) {
+                    if !core.owns_region(cx, cy) {
                         return None;
                     }
                     let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -893,7 +893,7 @@ pub fn run_enclosed_area(
                     for hole in &m.holes {
                         let (area_dbu, cx, cy) = ring_area_centroid(hole);
                         let area = area_dbu * d2;
-                        if area >= value || !core.owns(cx, cy) {
+                        if area >= value || !core.owns_region(cx, cy) {
                             continue;
                         }
                         let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -1498,7 +1498,7 @@ pub fn run_enclosure(
             let mut out = Vec::new();
             for bm in b_polys {
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.owns(cxd, cyd) {
+                if !core.owns_region(cxd, cyd) {
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else { continue };
@@ -1778,7 +1778,7 @@ pub fn run_max_enclosure(
             let mut out = Vec::new();
             for bm in b_polys {
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.owns(cxd, cyd) {
+                if !core.owns_region(cxd, cyd) {
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else {
