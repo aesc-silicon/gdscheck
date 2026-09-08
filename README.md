@@ -6,6 +6,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # gdscheck
 
+![gdscheck](https://raw.githubusercontent.com/aesc-silicon/gdscheck/main/images/gdscheck-logo.svg)
+
 A fast, open-source **DRC (Design Rule Check) engine for GDSII layouts**,
 written in Rust.
 
