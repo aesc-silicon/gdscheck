@@ -5450,8 +5450,6 @@ impl MergedCache {
         self.edge_halo.remove(&key);
     }
 
-    /// Per-tile merged geometry of a layer.  Must be `ensure`d first; a layer
-    /// with no shapes yields an empty map.
     /// The halo (DBU) a cached layer's copies are exact out to, past their core.
     pub fn halo_of(&self, layer: i16, datatype: i16) -> i32 {
         self.layer_halo
@@ -5460,6 +5458,8 @@ impl MergedCache {
             .unwrap_or(0)
     }
 
+    /// Per-tile merged geometry of a layer.  Must be `ensure`d first; a layer
+    /// with no shapes yields an empty map.
     pub fn tiles(&self, layer: i16, datatype: i16) -> &TileMap {
         self.layers
             .get(&(layer, datatype))
