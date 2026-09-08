@@ -3179,6 +3179,131 @@ fn file_by_core(polys: Vec<MergedPoly>, tile_dbu: i32) -> (TileMap, usize) {
     (out, n_large)
 }
 
+/// Whether an erosion by `r` is read on stitched regions rather than per tile.  Per
+/// tile, `shrink` and `open` charge their source a halo of one and two radii, and the
+/// copies grow with the square of that: DF.2b's 50 µm opening of COMP on a 20 µm tile
+/// is 121 copies of 2.6 million shapes.  On stitched regions the source needs no halo:
+/// a region narrower than `2r` in either direction is gone entirely, and the few that
+/// are not are unioned from their pieces and eroded whole.  Small radii stay per tile,
+/// where a dense layer is cheaper in bulk than region by region.
+pub fn erosion_on_regions(r: i32, tile_dbu: i32) -> bool {
+    r * 4 >= tile_dbu
+}
+
+/// Which erosion [`build_erosion_tiles`] performs.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Erosion {
+    Open,
+    Shrink,
+    ShrinkX,
+    ShrinkY,
+}
+
+/// An erosion by a radius past [`erosion_on_regions`], on stitched regions.  A region
+/// narrower than `2r` across the eroded axis has no point `r` from its boundary that
+/// way and is gone; that is nearly every region of a dense layer.  What survives is
+/// eroded core by core: the pieces of the cores within reach of a core - `r` for an
+/// erosion, `2r` for an opening, whose dilation needs eroded geometry that far - are
+/// unioned, eroded, and cut back to the core.  Never the whole region at once: a
+/// power mesh is one region spanning the chip with millions of vertices, and eroding
+/// it in one piece is the memory the per-tile path was avoiding.
+fn build_erosion_tiles(cand: &TileMap, tile_dbu: i32, r: i32, how: Erosion) -> TileMap {
+    let labeled = stitch_labeled(cand, tile_dbu);
+    let mut pieces: Vec<Vec<((i32, i32), MergedPoly)>> =
+        (0..labeled.regions.len()).map(|_| Vec::new()).collect();
+    for (tile, polys) in labeled.by_tile {
+        for (poly, rid) in polys {
+            pieces[rid].push((tile, poly));
+        }
+    }
+    let n_regions = pieces.len();
+    let t = tile_dbu as i64;
+    let survivors: Vec<Vec<((i32, i32), MergedPoly)>> = pieces
+        .into_iter()
+        .filter(|ps| {
+            let (x0, y0, x1, y1) = ps
+                .iter()
+                .map(|(_, p)| outer_bbox(&p.outer))
+                .fold((i64::MAX, i64::MAX, i64::MIN, i64::MIN), |a, b| {
+                    (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3))
+                });
+            let (narrow_x, narrow_y) = (x1 - x0 < 2 * r as i64, y1 - y0 < 2 * r as i64);
+            !match how {
+                Erosion::Open | Erosion::Shrink => narrow_x || narrow_y,
+                Erosion::ShrinkX => narrow_x,
+                Erosion::ShrinkY => narrow_y,
+            }
+        })
+        .collect();
+    let n_survivors = survivors.len();
+    let reach = match how {
+        Erosion::Open => 2 * r as i64,
+        _ => r as i64,
+    };
+    let k = ((reach + t - 1) / t) as i32;
+    let core_box = |c: (i32, i32)| {
+        (
+            c.0 as i64 * t,
+            c.1 as i64 * t,
+            (c.0 as i64 + 1) * t,
+            (c.1 as i64 + 1) * t,
+        )
+    };
+    let parts: Vec<((i32, i32), Vec<MergedPoly>)> = survivors
+        .into_par_iter()
+        .flat_map_iter(|ps| {
+            // A copy is exact within its own core, so each is cut to it before the
+            // block is unioned; a whole copy could carry what its tile computed past
+            // its zone.
+            let mut by_core: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
+            for (core, poly) in ps {
+                let (x0, y0, x1, y1) = core_box(core);
+                by_core
+                    .entry(core)
+                    .or_default()
+                    .extend(clip_to_box(vec![poly], x0, y0, x1, y1));
+            }
+            let cores: Vec<(i32, i32)> = by_core.keys().copied().collect();
+            cores
+                .into_iter()
+                .filter_map(|c| {
+                    let mut block: Vec<MergedPoly> = Vec::new();
+                    for dx in -k..=k {
+                        for dy in -k..=k {
+                            if let Some(v) = by_core.get(&(c.0 + dx, c.1 + dy)) {
+                                block.extend(v.iter().cloned());
+                            }
+                        }
+                    }
+                    let eroded = match how {
+                        Erosion::Open => opening(&block, r as f64),
+                        Erosion::Shrink => shrink(&block, r as f64),
+                        Erosion::ShrinkX => shrink_x(&block, r as f64),
+                        Erosion::ShrinkY => shrink_y(&block, r as f64),
+                    };
+                    let (x0, y0, x1, y1) = core_box(c);
+                    let inside = clip_to_box(eroded, x0, y0, x1, y1);
+                    (!inside.is_empty()).then_some((c, inside))
+                })
+                .collect::<Vec<_>>()
+                .into_iter()
+        })
+        .collect();
+    let mut out: TileMap = HashMap::new();
+    for (c, ps) in parts {
+        out.entry(c).or_default().extend(ps);
+    }
+    if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+        let copies: usize = out.values().map(|v| v.len()).sum();
+        eprintln!(
+            "erosion {how:?} r={r}dbu on regions: {n_regions} regions, {n_survivors} wide enough, \
+             {copies} pieces over {} cores",
+            out.len()
+        );
+    }
+    out
+}
+
 /// Cut `polys` along the tile grid: the piece of each polygon inside every core it
 /// spans, keyed by core.  One overlay per grid phase rather than one per core, so a
 /// polygon covering ten thousand tiles costs four sweeps and not ten thousand clips.
@@ -4769,6 +4894,28 @@ impl MergedCache {
                 .sum();
             if def.op == VirtualOp::Extents {
                 let tiles = build_extents_tiles(&self.layers[&def.sources[0]], self.tile_dbu);
+                self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
+                return;
+            }
+            if let VirtualOp::Open(r)
+            | VirtualOp::Shrink(r)
+            | VirtualOp::ShrinkX(r)
+            | VirtualOp::ShrinkY(r) = def.op
+                && erosion_on_regions(r, self.tile_dbu)
+            {
+                let how = match def.op {
+                    VirtualOp::Open(_) => Erosion::Open,
+                    VirtualOp::Shrink(_) => Erosion::Shrink,
+                    VirtualOp::ShrinkX(_) => Erosion::ShrinkX,
+                    _ => Erosion::ShrinkY,
+                };
+                let tiles =
+                    build_erosion_tiles(&self.layers[&def.sources[0]], self.tile_dbu, r, how);
+                let tiles = if self.clippable.contains(&key) {
+                    tiles
+                } else {
+                    assemble_zone_copies(tiles, self.tile_dbu, self.stitch_halo(key))
+                };
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
             }
