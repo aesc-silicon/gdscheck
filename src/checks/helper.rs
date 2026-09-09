@@ -1062,7 +1062,7 @@ pub fn run_extent(
     };
 
     let labeled = crate::merge::stitch_labeled(merged.tiles(gl, gd), merged.tile_dbu());
-    let per_tile: Vec<Vec<(usize, (i32, i32, i32, i32))>> = labeled
+    let per_tile: Vec<Vec<(usize, crate::merge::BBoxDbu)>> = labeled
         .by_tile
         .par_iter()
         .map(|(&(tx, ty), polys)| {

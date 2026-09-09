@@ -398,8 +398,7 @@ fn inside_ring_op_fills_ring_and_keeps_only_enclosed() {
 #[test]
 fn lazy_layer_in_inside_boundary_is_rejected() {
     let err = run_drc("unused.gds", SYNTH, &["badlazy"], None, "TOP", true)
-        .err()
-        .expect("lazy layer under inside_boundary must error");
+        .expect_err("lazy layer under inside_boundary must error");
     assert!(
         err.contains("lazy virtual layer"),
         "unexpected error: {err}"

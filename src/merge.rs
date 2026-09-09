@@ -415,6 +415,9 @@ pub fn shrink_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
 /// after a handful of batches, and unioning every grown rectangle in reach at once is
 /// what made i_overlay's `simplify` blow up.  What is left is stitched across the tile
 /// lines and reported once per gap.
+/// A reference rectangle grown by the value, in DBU: `(x0, y0, x1, y1)`.
+type GrownRect = (f64, f64, f64, f64);
+
 pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
     let t = tile_dbu as i64;
     let core_of = |tx: i32, ty: i32| {
@@ -427,7 +430,7 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
     };
     // The reference as grown rectangles, filed under the tile whose core the piece
     // lies in; every rectangle lies within `value` of that core.
-    let grown: HashMap<(i32, i32), Vec<(f64, f64, f64, f64)>> = b
+    let grown: HashMap<(i32, i32), Vec<GrownRect>> = b
         .par_iter()
         .filter_map(|(&(tx, ty), polys)| {
             let (x0, y0, x1, y1) = core_of(tx, ty);
@@ -1335,6 +1338,9 @@ impl Core {
 
 /// Merged geometry of one layer, indexed by global tile `(tx, ty)`.
 pub type TileMap = HashMap<(i32, i32), Vec<MergedPoly>>;
+
+/// A bounding box in DBU: `(x0, y0, x1, y1)`.
+pub type BBoxDbu = (i32, i32, i32, i32);
 
 // ===========================================================================
 // Edge layers
@@ -3273,6 +3279,9 @@ fn build_extents_tiles(cand: &TileMap, tile_dbu: i32) -> TileMap {
 /// tile it covers is what an OOM looks like.  Whole wherever affordable, since a
 /// reader like `covering` wants the copy to extend over whatever it is asked about;
 /// what a reader gets is assembled from the pieces by the caller, per its contract.
+/// A region's core pieces, each with the tile it lies in.
+type RegionPieces = Vec<((i32, i32), MergedPoly)>;
+
 fn build_holes_tiles(cand: &TileMap, tile_dbu: i32, keep_regions: bool) -> TileMap {
     let labeled = stitch_labeled(cand, tile_dbu);
     let mut pieces: Vec<Vec<((i32, i32), MergedPoly)>> =
@@ -3282,7 +3291,7 @@ fn build_holes_tiles(cand: &TileMap, tile_dbu: i32, keep_regions: bool) -> TileM
             pieces[rid].push((tile, poly));
         }
     }
-    let per_region: Vec<(Vec<((i32, i32), MergedPoly)>, Vec<MergedPoly>)> = pieces
+    let per_region: Vec<(RegionPieces, Vec<MergedPoly>)> = pieces
         .into_par_iter()
         .map(|ps| {
             let holes: Vec<MergedPoly> = if ps.len() == 1 {
@@ -3660,7 +3669,7 @@ fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> 
     let t = tile_dbu as i64;
     let mut bb: Vec<Option<(i64, i64, i64, i64)>> = vec![None; labeled.regions.len()];
     if !matches!(f, RegionFilter::Area(_, _)) {
-        let per_tile: Vec<Vec<(usize, (i32, i32, i32, i32))>> = labeled
+        let per_tile: Vec<Vec<(usize, BBoxDbu)>> = labeled
             .by_tile
             .par_iter()
             .map(|(&(tx, ty), polys)| {
@@ -5649,7 +5658,8 @@ mod pieces_are_a_region {
     fn every_size_operator_unions_abutting_pieces_first() {
         let whole = vec![rect(0, 0, 2000, 1000)];
         let halves = vec![rect(0, 0, 1000, 1000), rect(1000, 0, 2000, 1000)];
-        let ops: [(&str, fn(&[MergedPoly]) -> Vec<MergedPoly>); 7] = [
+        type Op = fn(&[MergedPoly]) -> Vec<MergedPoly>;
+        let ops: [(&str, Op); 7] = [
             ("shrink", |p| shrink(p, 100.0)),
             ("shrink_x", |p| shrink_x(p, 100.0)),
             ("shrink_y", |p| shrink_y(p, 100.0)),
