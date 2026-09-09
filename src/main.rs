@@ -311,7 +311,10 @@ fn run(args: RunArgs) {
         let (t_rep, c_rep) = (std::time::Instant::now(), gdscheck::cpu_seconds());
         match report::write_lyrdb(report, &args.topcell, &violations) {
             Ok(()) => println!("Report written to: {report}"),
-            Err(e) => eprintln!("Error writing report: {e}"),
+            Err(e) => {
+                eprintln!("Error writing report: {e}");
+                std::process::exit(1);
+            }
         }
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
             let (w, c) = (
@@ -323,5 +326,10 @@ fn run(args: RunArgs) {
                 c / w.max(1e-9)
             );
         }
+    }
+
+    // Exit codes: 0 clean, 1 error (bad input, PDK, report), 2 violations found.
+    if !violations.is_empty() {
+        std::process::exit(2);
     }
 }
