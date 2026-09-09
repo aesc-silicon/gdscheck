@@ -22,6 +22,12 @@ developer tasks:
 
 Run ``just check`` before opening a change — it's the same gate CI runs.
 
+CI additionally runs the ``main`` suite over the real layouts in
+`aesc-silicon/reference-designs <https://github.com/aesc-silicon/reference-designs>`_
+(``ci/run-designs.sh``, one Travis job per PDK) to catch crashes, hangs and false
+violations that the synthetic fixtures cannot. Run it locally with
+``just designs <process>`` against a sibling checkout of that repository.
+
 
 Adding a rule to a deck
 --------------------------

@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Run the main suite over the real designs in aesc-silicon/reference-designs, one
+# job per PDK, to catch crashes, hangs and false violations. The synthetic fixtures
+# under tests/ cover per-rule behaviour; this covers real layouts.
+
+language: rust
+rust: stable
+os: linux
+dist: jammy
+cache: cargo
+
+branches:
+  only:
+    - main
+
+env:
+  global:
+    - REFERENCE_DESIGNS=$HOME/reference-designs
+    - REPORTS=$TRAVIS_BUILD_DIR/ci/reports
+  jobs:
+    - PDK=ihp-sg13g2
+    - PDK=ihp-sg13cmos5l
+
+before_install:
+  - git clone --depth 1 https://github.com/aesc-silicon/reference-designs "$REFERENCE_DESIGNS"
+
+install:
+  - cargo build --release
+
+script:
+  - ci/run-designs.sh "$PDK"
+
+# Upload the .lyrdb reports of failed designs so they can be opened in KLayout.
+# Needs ARTIFACTS_KEY, ARTIFACTS_SECRET and ARTIFACTS_BUCKET in the repository
+# settings; without them the addon only logs a warning.
+addons:
+  artifacts:
+    paths:
+      - ci/reports
+    target_paths: /$TRAVIS_REPO_SLUG/$TRAVIS_BUILD_NUMBER/$PDK
