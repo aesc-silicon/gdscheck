@@ -149,6 +149,9 @@ Command-line reference
    * - ``-v, --verbose``
      - Print every violation's message, not just per-rule counts.
 
+Exit status: ``0`` when the layout is clean, ``2`` when violations were found, ``1`` on
+any error (unreadable input, unknown PDK, deck or suite, failed report write).
+
 ``list-decks`` / ``list-suites``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

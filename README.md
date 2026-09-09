@@ -143,6 +143,10 @@ gdscheck show-deck   --process ihp-sg13g2 --deck metal1
 `list-decks` and `list-suites` take only `-p, --process`; `show-deck` also
 takes `-d, --deck` (the deck to dump).
 
+`run` exits with `0` when the layout is clean, `2` when violations were found,
+and `1` on any error (unreadable input, unknown PDK, deck or suite, failed
+report write), so scripts can branch on the status without parsing output.
+
 ## PDK, deck and suite format
 
 A **PDK file** declares the layer table, the available decks and suites, and

@@ -27,6 +27,10 @@ gen-testdata: (gen-testdata-for "ihp-sg13g2") (gen-testdata-for "gf180mcuD")
 gen-testdata-for pdk:
     cargo run --release --features dev-tools --bin gen-testdata -- --pdk pdks/{{pdk}}/pdk.yml
 
+# Run the main suite over the reference designs of one PDK (needs ../reference-designs).
+designs process="ihp-sg13g2":
+    ci/run-designs.sh {{process}}
+
 # Format, lint, and test — the pre-commit gate.
 check: clippy test
     cargo fmt --check
