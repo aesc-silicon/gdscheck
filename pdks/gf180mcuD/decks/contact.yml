@@ -1,0 +1,101 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Contact.  All 15 rules in this section.
+rules:
+  - id: CO.1
+    check: exact_width
+    layers: [contact]
+    value: 0.22
+  - id: CO.2a
+    check: min_space
+    layers: [contact]
+    value: 0.25
+  - id: CO.2a
+    check: min_notch
+    layers: [contact]
+    value: 0.25
+  - id: CO.2b
+    check: min_array_space
+    layers: [contact]
+    value: 0.28
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.32
+      count: 16
+  - id: CO.3
+    check: min_enclosure
+    layers: [poly2_drawn, contact_no_sram]
+    value: 0.07
+    params:
+      interacting_only: 1
+  - id: CO.3
+    check: nonempty
+    layers: [co_3_crossing]
+    value: 0.0
+  - id: CO.4
+    check: min_enclosure
+    layers: [comp, contact_no_sram]
+    value: 0.07
+    params:
+      interacting_only: 1
+  - id: CO.4
+    check: nonempty
+    layers: [co_4_crossing]
+    value: 0.0
+  - id: CO.5a
+    check: min_enclosure
+    layers: [ncomp_butted_only, contact_on_ncomp_butted]
+    value: 0.1
+    params:
+      interacting_only: 1
+  - id: CO.5b
+    check: min_enclosure
+    layers: [pcomp_butted_only, contact_on_pcomp_butted]
+    value: 0.1
+    params:
+      interacting_only: 1
+  - id: CO.6
+    check: min_enclosure
+    layers: [metal1, contact]
+    value: 0.005
+  - id: CO.6a
+    check: min_enclosure
+    layers: [metal1, contact]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.24
+    str_params:
+      sides: line_end
+  - id: CO.6b
+    check: min_enclosure
+    layers: [metal1, contact_no_sram]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: CO.7
+    check: min_space
+    layers: [contact_on_comp_no_otp, tgate_no_otp]
+    value: 0.15
+  - id: CO.8
+    check: min_space
+    layers: [contact_on_poly, comp]
+    value: 0.17
+  - id: CO.9
+    check: nonempty
+    layers: [co9_viol]
+    value: 0.0
+  - id: CO.10
+    check: nonempty
+    layers: [co10_viol]
+    value: 0.0
+  - id: CO.11
+    check: nonempty
+    layers: [co11_viol]
+    value: 0.0

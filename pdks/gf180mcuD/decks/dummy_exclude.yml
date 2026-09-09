@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Dummy-fill exclude markers.  All 3 rules in this section.
+rules:
+  - id: DE.2
+    check: min_width
+    layers: [ndmy_or_pmndmy]
+    value: 0.8
+  - id: DE.3
+    check: max_area
+    layers: [ndmy]
+    value: 15000.0
+  - id: DE.4
+    check: min_space
+    layers: [ndmy]
+    value: 20.0
+  - id: DE.4
+    check: min_notch
+    layers: [ndmy]
+    value: 20.0

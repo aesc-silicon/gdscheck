@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Metal 1-4.
+rules:
+  - id: M1.1
+    check: min_width
+    layers: [metal1_no_sram]
+    value: 0.23
+  - id: M1.2a
+    check: min_space
+    layers: [metal1_drawn]
+    value: 0.23
+  - id: M1.2a
+    check: min_notch
+    layers: [metal1_drawn]
+    value: 0.23
+  - id: M1.2b
+    check: min_space
+    layers: [metal1_drawn, metal1_wide10]
+    value: 0.3
+  - id: M1.3
+    check: min_area
+    layers: [metal1_drawn]
+    value: 0.1444
+  - id: M2.1
+    check: min_width
+    layers: [metal2_drawn]
+    value: 0.28
+  - id: M2.2a
+    check: min_space
+    layers: [metal2_drawn]
+    value: 0.28
+  - id: M2.2a
+    check: min_notch
+    layers: [metal2_drawn]
+    value: 0.28
+  - id: M2.2b
+    check: min_space
+    layers: [metal2_drawn, metal2_wide10]
+    value: 0.3
+  - id: M2.3
+    check: min_area
+    layers: [metal2_drawn]
+    value: 0.1444
+  - id: M3.1
+    check: min_width
+    layers: [metal3_drawn]
+    value: 0.28
+  - id: M3.2a
+    check: min_space
+    layers: [metal3_drawn]
+    value: 0.28
+  - id: M3.2a
+    check: min_notch
+    layers: [metal3_drawn]
+    value: 0.28
+  - id: M3.2b
+    check: min_space
+    layers: [metal3_drawn, metal3_wide10]
+    value: 0.3
+  - id: M3.3
+    check: min_area
+    layers: [metal3_drawn]
+    value: 0.1444
+  - id: M4.1
+    check: min_width
+    layers: [metal4_drawn]
+    value: 0.28
+  - id: M4.2a
+    check: min_space
+    layers: [metal4_drawn]
+    value: 0.28
+  - id: M4.2a
+    check: min_notch
+    layers: [metal4_drawn]
+    value: 0.28
+  - id: M4.2b
+    check: min_space
+    layers: [metal4_drawn, metal4_wide10]
+    value: 0.3
+  - id: M4.3
+    check: min_area
+    layers: [metal4_drawn]
+    value: 0.1444

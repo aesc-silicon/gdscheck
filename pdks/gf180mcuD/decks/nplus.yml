@@ -1,0 +1,127 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Nplus implant.  All 25 rules in this section.
+rules:
+  - id: NP.1
+    check: min_width
+    layers: [nplus]
+    value: 0.4
+  - id: NP.2
+    check: min_space
+    layers: [nplus]
+    value: 0.4
+  - id: NP.2
+    check: min_notch
+    layers: [nplus]
+    value: 0.4
+  - id: NP.3a
+    check: min_space
+    layers: [np3_nplus, np3a_pcomp]
+    value: 0.16
+  - id: NP.3bi
+    check: min_space
+    layers: [np3_nplus_in_lvpwell, np3bi_pcomp]
+    value: 0.16
+  - id: NP.3bii
+    check: min_space
+    layers: [np3_nplus_in_lvpwell, np3bii_pcomp]
+    value: 0.08
+  - id: NP.3ci
+    check: min_space
+    layers: [np3_nplus_out_dn, np3ci_pcomp]
+    value: 0.16
+  - id: NP.3cii
+    check: min_space
+    layers: [np3_nplus_out_dn, np3cii_pcomp]
+    value: 0.08
+  - id: NP.3d
+    check: nonempty
+    layers: [np3d_viol]
+    value: 0.0
+  - id: NP.3e
+    check: nonempty
+    layers: [np3e_viol]
+    value: 0.0
+  - id: NP.4a
+    check: min_space
+    layers: [nplus_butted_edges, pgate.edges]
+    value: 0.32
+  - id: NP.4b
+    check: min_space
+    layers: [nplus.edges, np4b_poly]
+    value: 0.22
+  - id: NP.5a
+    check: min_enclosure
+    layers: [nplus, ngate]
+    value: 0.23
+    params:
+      interacting_only: 1
+  - id: NP.5a
+    check: nonempty
+    layers: [np_5a_crossing]
+    value: 0.0
+  - id: NP.5b
+    check: min_enclosure
+    layers: [np5b_nplus, ncomp.edges]
+    value: 0.16
+  - id: NP.5ci
+    check: min_enclosure
+    layers: [np5c_bg, np5ci_fg]
+    value: 0.16
+  - id: NP.5cii
+    check: min_enclosure
+    layers: [np5c_bg, np5cii_fg]
+    value: 0.02
+  - id: NP.5di
+    check: min_enclosure
+    layers: [np5d_bg_all, np5di_fg]
+    value: 0.16
+  - id: NP.5dii
+    check: min_enclosure
+    layers: [np5dii_bg, np5dii_fg]
+    value: 0.02
+  - id: NP.6
+    check: min_enclosure
+    layers: [comp_at_nplus, pcomp_at_nplus]
+    value: 0.22
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: NP.7
+    check: min_space
+    layers: [nplus, poly_sab_only]
+    value: 0.18
+  - id: NP.8a
+    check: min_area
+    layers: [nplus]
+    value: 0.35
+  - id: NP.8b
+    check: min_enclosed_area
+    layers: [nplus]
+    value: 0.35
+  - id: NP.9
+    check: min_enclosure
+    layers: [nplus, poly_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: NP.9
+    check: nonempty
+    layers: [np_9_crossing]
+    value: 0.0
+  - id: NP.10
+    check: min_enclosure
+    layers: [nplus, comp_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: NP.11
+    check: nonempty
+    layers: [np11_viol]
+    value: 0.0
+  - id: NP.12
+    check: nonempty
+    layers: [np12_viol]
+    value: 0.0

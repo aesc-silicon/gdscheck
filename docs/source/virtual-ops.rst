@@ -29,15 +29,15 @@ Each entry in ``virtual_layers:`` takes an optional ``mode``:
   inserted into the flattened layout under the virtual layer's synthetic ``(gds_layer,
   gds_datatype)``. Every downstream check reads it exactly like a drawn layer, with no
   further cost. Only five ops are supported eagerly: ``union``, ``intersection``
-  (``and``), ``difference`` (``not``), ``inside``, and ``close``.
+  (``and``), ``difference`` (``not``), ``inside_ring``, and ``close``.
 * **Lazy (``mode: lazy``)** — registered with the tiled :doc:`merge cache
   <architecture>` instead: a synthetic key built per tile, on first use, from its
   (recursively resolved) source layers' *tiles*. Costs nothing until a rule actually needs
   it, and its memory profile is the same tile+halo bound as a drawn layer — required for
   any derivation chain that touches a dense, chip-wide layer (``Activ``, ``GatPoly``,
   metals), since eager evaluation unions the *whole chip* in one shot and does not scale
-  to those. All fifteen ops below are available lazily; only the five above are available
-  eagerly.
+  to those. Every op below except ``inside_ring`` is available lazily; only the five
+  above are available eagerly.
 
 A rule can only reference a lazily-evaluated layer once the deck actually runs a check
 against it — see :doc:`faq` if a lazy virtual layer produces no results or an unexpected
@@ -72,30 +72,49 @@ The first source layer minus every other source layer (e.g.
 *Eager and lazy.*
 
 
-``interacting``
------------------
+Region selectors
+----------------
 
-Lazy only. Keeps whole regions of ``layers[0]`` that touch (overlap) any region of
-``layers[1]``, region membership resolved by stitching each source's tile-local pieces
-into whole connected regions first (see :doc:`architecture`) so a region is kept or
-dropped as a unit, never split by a tile boundary. Mirrors KLayout's
-``Region#interacting``.
+Six ops keep or drop *whole regions* of ``layers[0]`` according to how they relate to
+``layers[1]``. All are lazy only, and all resolve region membership by stitching each
+source's tile-local pieces into whole connected regions first (see :doc:`architecture`),
+so a region is kept or dropped as a unit and never split by a tile boundary. Each has a
+negated form that keeps exactly the regions the positive form drops.
 
+The names follow KLayout's, including its distinction between *overlapping* and
+*interacting* — they differ only on zero-area contact, and choosing the wrong one is a
+silent error, so both exist under the names a rule author reading a foundry deck expects:
 
-``not_interacting``
-----------------------
+.. list-table::
+   :header-rows: 1
+   :widths: 22 22 56
 
-Lazy only. The complement of ``interacting``: keeps whole regions of ``layers[0]`` that
-touch *no* region of ``layers[1]``. Mirrors KLayout's
-``interacting(..., inverted: true)``.
+   * - Op
+     - Negated form
+     - Keeps a region of ``layers[0]`` when it…
+   * - ``overlapping``
+     - ``not_overlapping``
+     - shares **positive area** with ``layers[1]``. Edge contact alone does *not* count.
+   * - ``interacting``
+     - ``not_interacting``
+     - shares area **or merely touches** ``layers[1]`` — coincident edges and shared
+       corners count.
+   * - ``inside``
+     - ``not_inside``
+     - lies **entirely within** ``layers[1]``; no part of it may fall outside.
+   * - ``covering``
+     - ``not_covering``
+     - **fully contains** at least one whole region of ``layers[1]``.
 
+``overlapping`` is also spelled ``not_outside`` and ``not_overlapping`` is also spelled
+``outside``, matching KLayout's aliases for the same two relations.
 
-``covering``
-------------
+An empty ``layers[1]`` matches nothing, so the four positive ops yield an empty layer and
+the four negated ops pass ``layers[0]`` through unchanged — ``inside`` included, since
+nothing is contained in nothing.
 
-Lazy only. Keeps whole regions of ``layers[0]`` that fully contain a region of
-``layers[1]``. Computed the same way as ``interacting`` — every real use in the bundled
-PDKs has ``layers[1] ⊆ layers[0]`` already, where "covers" and "interacts" coincide.
+``inside`` is the one selector that reduces with **and** across a region's pieces: every
+piece must be covered, where the others need only one piece to match.
 
 
 ``grow``
@@ -180,11 +199,140 @@ circle — e.g. flagging disallowed bond-pad shapes.
 Lazy only. Like ``not_circle``, but also excludes regular octagons.
 
 
-``inside``
-----------
+``rectangle``
+-------------
+
+Lazy only. Unary shape filter: keeps regions whose outline is a filled axis-aligned
+rectangle. ``square`` is the stricter special case with equal sides; a region with a hole
+is not filled and so is not a rectangle.
+
+
+``not_rectangle``
+-----------------
+
+Lazy only. The complement of ``rectangle`` — e.g. GF180's "slot is not a rectangle".
+
+
+``with_bbox_min`` / ``with_bbox_max``
+----------------------------------------
+
+Lazy only. Unary filters on a region's bounding box: ``with_bbox_min`` tests the
+**shorter** side, ``with_bbox_max`` the **longer** one. Both take the def's ``min`` and
+``max`` fields (µm) as a half-open range ``[min, max)`` — a side sitting exactly on
+``min`` is kept, one sitting exactly on ``max`` is not. Either bound may be omitted for
+an open end, but omitting both is an error rather than a filter that keeps everything.
+
+.. code-block:: yaml
+
+   - name: NarrowSlots
+     op: with_bbox_min
+     mode: lazy
+     layers: [MetalSlot]
+     max: 2.0            # short side < 2 µm
+
+Mirrors KLayout's ``with_bbox_min(a..b)`` / ``with_bbox_max(a..b)``.
+
+
+``grow_x`` / ``grow_y`` / ``shrink_x`` / ``shrink_y``
+--------------------------------------------------------
+
+Lazy only. Directional sizing by the def's ``radius`` µm along one axis, leaving the
+perpendicular extent exactly as drawn — unlike ``grow``/``open``/``close``, which size in
+every direction. Mirrors KLayout's ``sized(r, 0)``, ``sized(0, r)``, ``sized(-r, 0)`` and
+``sized(0, -r)``.
+
+A region narrower than ``2 × radius`` along the shrink axis disappears entirely, which
+makes the erode usable as a "narrower than X" test. Chaining all four is a morphological
+opening with a box structuring element — the standard wide-metal idiom, keeping only
+regions at least ``2 × radius`` across in *both* axes:
+
+.. code-block:: yaml
+
+   - {name: WideM1a, op: shrink_x, mode: lazy, radius: 5.0, layers: [Metal1]}
+   - {name: WideM1b, op: shrink_y, mode: lazy, radius: 5.0, layers: [WideM1a]}
+   - {name: WideM1c, op: grow_x,   mode: lazy, radius: 5.0, layers: [WideM1b]}
+   - {name: WideM1,  op: grow_y,   mode: lazy, radius: 5.0, layers: [WideM1c]}
+
+
+``inside_ring``
+---------------
 
 Eager only, two layers exactly: ``layers[0]`` (the target) and ``layers[1]`` (a ring).
 The part of the target that lies within the area *enclosed* by the ring — the ring's own
 holes are filled first (so a seal frame becomes "frame + interior"), since there is
 usually no drawn layer for that interior region. Both sources must be real (drawn)
-layers; ``inside`` does not support one virtual layer feeding another.
+layers; ``inside_ring`` does not support one virtual layer feeding another.
+
+Not to be confused with the ``inside`` *selector* above: this one clips and fills, that
+one keeps or drops whole regions.
+
+
+Edge layers
+-----------
+
+A polygon layer's atom is a filled region: booleans combine areas, selectors keep or drop
+whole regions, and the checks measure between facing walls. That leaves a class of rules
+unsayable, because they are about *one piece of a boundary* rather than about a region. A
+transistor's channel width is the length of the Activ boundary running under the gate; no
+region has that length, and the source/drain region's own width is a different quantity.
+
+``edge_layers:`` declares layers whose elements are boundary **segments**. They are
+declared beside ``virtual_layers:``, take synthetic layer numbers from the same range, and
+are referenced by rules exactly like any other layer — a check that accepts one says so,
+and rejects a polygon layer rather than silently reporting nothing.
+
+.. code-block:: yaml
+
+   edge_layers:
+     - name: sd.edges
+       op: edges
+       layers: [SourceDrain]
+     - name: gate.edges
+       op: edges
+       layers: [GatPoly]
+     - name: channel_edges
+       op: and
+       layers: [sd.edges, gate.edges]
+
+The ops:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 24 20 56
+
+   * - Op
+     - Sources
+     - Result
+   * - ``edges``
+     - one polygon layer
+     - every contour segment, holes included.
+   * - ``and``
+     - two edge layers
+     - the stretches they share **collinearly**. Not an area intersection: two layers
+       that overlap in area but share no wall have no common edge at all, and a partial
+       overlap yields the fragment rather than either whole segment.
+   * - ``not``
+     - two edge layers
+     - the first with every shared stretch removed, so one segment can become two.
+   * - ``inside_part`` / ``outside_part``
+     - edge layer, polygon layer
+     - the parts lying inside (or outside) the polygon, **cut** at its boundary. Every
+       polygon selector keeps or drops a region whole; these keep a piece of a segment.
+   * - ``with_length`` / ``without_length``
+     - one edge layer
+     - segments whose length is in the half-open range ``[min, max)`` µm, or the
+       complement.
+   * - ``with_angle`` / ``without_angle``
+     - one edge layer
+     - segments whose orientation in degrees is in ``[min, max]``, normalised to
+       ``[0, 180)`` so a wall reads the same whichever way its contour is walked.
+
+Checks that take an edge layer: ``min_edge_length`` and ``max_edge_length``.
+
+.. note::
+
+   An edge *expression* upstream is not always an edge *problem*. ``poly.edges.and(
+   gate.edges).width(v)`` is the gate-length shape — the poly's own width, measured only
+   where it forms a gate — which ``gate_length`` answers with a masked measurement and no
+   edge layer at all. Reach for an edge layer when the rule measures a property of the
+   boundary itself: a segment's length, or which edge of a shape is the line end.

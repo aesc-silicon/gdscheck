@@ -1,0 +1,274 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Via 1-4.
+#
+# V#.3.3 and V#.4.3 are the only ids here that are not the foundry's: they are the
+# recommended 0.12 um enclosures, which the DRM documents and the KLayout deck does not
+# check, and they are in the `recommended` suite rather than `main`.
+rules:
+  - id: V1.1
+    check: exact_width
+    layers: [via1]
+    value: 0.26
+  - id: V1.2a
+    check: min_space
+    layers: [via1]
+    value: 0.26
+  - id: V1.2a
+    check: min_notch
+    layers: [via1]
+    value: 0.26
+  - id: V1.2b
+    check: min_array_space
+    layers: [via1]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+      min_extent: 1.86
+      projection: 0.26
+  - id: V1.3a
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.0
+  - id: V1.3c
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V1.3d
+    check: min_enclosure
+    layers: [metal1, via1]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V1.4a
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.01
+  - id: V1.4b
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V1.4c
+    check: min_enclosure
+    layers: [metal2, via1]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V2.1
+    check: exact_width
+    layers: [via2]
+    value: 0.26
+  - id: V2.2a
+    check: min_space
+    layers: [via2]
+    value: 0.26
+  - id: V2.2a
+    check: min_notch
+    layers: [via2]
+    value: 0.26
+  - id: V2.2b
+    check: min_array_space
+    layers: [via2]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+      min_extent: 1.86
+      projection: 0.26
+  - id: V2.3b
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.01
+  - id: V2.3c
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V2.3d
+    check: min_enclosure
+    layers: [metal2, via2]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V2.4a
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.01
+  - id: V2.4b
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V2.4c
+    check: min_enclosure
+    layers: [metal3, via2]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V3.1
+    check: exact_width
+    layers: [via3]
+    value: 0.26
+  - id: V3.2a
+    check: min_space
+    layers: [via3]
+    value: 0.26
+  - id: V3.2a
+    check: min_notch
+    layers: [via3]
+    value: 0.26
+  - id: V3.2b
+    check: min_array_space
+    layers: [via3]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+      min_extent: 1.86
+      projection: 0.26
+  - id: V3.3b
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.01
+  - id: V3.3c
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V3.3d
+    check: min_enclosure
+    layers: [metal3, via3]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V3.4a
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.01
+  - id: V3.4b
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V3.4c
+    check: min_enclosure
+    layers: [metal4, via3]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V4.1
+    check: exact_width
+    layers: [via4]
+    value: 0.26
+  - id: V4.2a
+    check: min_space
+    layers: [via4]
+    value: 0.26
+  - id: V4.2a
+    check: min_notch
+    layers: [via4]
+    value: 0.26
+  - id: V4.2b
+    check: min_array_space
+    layers: [via4]
+    value: 0.36
+    params:
+      rows: 3
+      cols: 3
+      axes: 2
+      pitch: 0.4
+      count: 16
+      min_extent: 1.86
+      projection: 0.26
+  - id: V4.3b
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.01
+  - id: V4.3c
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V4.3d
+    check: min_enclosure
+    layers: [metal4, via4]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent
+  - id: V4.4a
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.01
+  - id: V4.4b
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.06
+    params:
+      max_width: 0.34
+      min_length: 0.28
+    str_params:
+      sides: line_end
+  - id: V4.4c
+    check: min_enclosure
+    layers: [metal5, via4]
+    value: 0.06
+    params:
+      trigger: 0.04
+    str_params:
+      sides: adjacent

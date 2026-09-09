@@ -1,0 +1,336 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Antenna ratios.  All 24 rules of the five-metal, MIM-B variant.
+rules:
+  - id: ANT.1
+    check: antenna_ratio
+    layers: [tgate, poly2_drawn]
+    value: 200.0
+    params:
+      antenna_layers: 1
+      level: 0
+      metric: 1
+      thickness: 0.2
+    layer_params:
+      gate_net_layer: poly2_drawn
+  - id: ANT.8
+    check: antenna_ratio
+    layers: [tgate, contact]
+    value: 10.0
+    params:
+      antenna_layers: 1
+      level: 10
+    layer_params:
+      gate_net_layer: poly2_drawn
+  - id: ANT.16_i_ANT.2
+    check: antenna_ratio
+    layers: [nom_gate, metal1_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 11
+      diode_factor: 2
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.3
+    check: antenna_ratio
+    layers: [nom_gate, metal2_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 13
+      diode_factor: 2
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.4
+    check: antenna_ratio
+    layers: [nom_gate, metal3_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 15
+      diode_factor: 2
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.5
+    check: antenna_ratio
+    layers: [nom_gate, metal4_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 18
+      diode_factor: 2
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.6
+    check: antenna_ratio
+    layers: [nom_gate, metal5_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 20
+      diode_factor: 2
+      metric: 1
+      thickness: 1.19
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.9
+    check: antenna_ratio
+    layers: [nom_gate, via1, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 12
+      diode_factor: 2
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.10
+    check: antenna_ratio
+    layers: [nom_gate, via2, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 14
+      diode_factor: 2
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.11
+    check: antenna_ratio
+    layers: [nom_gate, via3, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 17
+      diode_factor: 2
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_i_ANT.12
+    check: antenna_ratio
+    layers: [nom_gate, via4, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 19
+      diode_factor: 2
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.2
+    check: antenna_ratio
+    layers: [thick_gate, metal1_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 11
+      diode_factor: 15
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.3
+    check: antenna_ratio
+    layers: [thick_gate, metal2_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 13
+      diode_factor: 15
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.4
+    check: antenna_ratio
+    layers: [thick_gate, metal3_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 15
+      diode_factor: 15
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.5
+    check: antenna_ratio
+    layers: [thick_gate, metal4_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 18
+      diode_factor: 15
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.6
+    check: antenna_ratio
+    layers: [thick_gate, metal5_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 20
+      diode_factor: 15
+      metric: 1
+      thickness: 1.19
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.9
+    check: antenna_ratio
+    layers: [thick_gate, via1, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 12
+      diode_factor: 15
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.10
+    check: antenna_ratio
+    layers: [thick_gate, via2, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 14
+      diode_factor: 15
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.11
+    check: antenna_ratio
+    layers: [thick_gate, via3, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 17
+      diode_factor: 15
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_ii_ANT.12
+    check: antenna_ratio
+    layers: [thick_gate, via4, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 19
+      diode_factor: 15
+    layer_params:
+      gate_net_layer: poly2_drawn
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_iii_ANT.14_M4_MIMB
+    check: antenna_ratio
+    layers: [fusetop, metal4_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 18
+      diode_factor: 15
+      metric: 1
+      thickness: 0.54
+    layer_params:
+      gate_net_layer: fusetop
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_iii_ANT.14_M5_MIMB
+    check: antenna_ratio
+    layers: [fusetop, metal5_drawn, n_diode, p_diode, nwell]
+    value: 400.0
+    params:
+      antenna_layers: 1
+      level: 20
+      diode_factor: 15
+      metric: 1
+      thickness: 1.19
+    layer_params:
+      gate_net_layer: fusetop
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_iii_ANT.15_V3_MIMB
+    check: antenna_ratio
+    layers: [fusetop, via3, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 17
+      diode_factor: 15
+    layer_params:
+      gate_net_layer: fusetop
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell
+  - id: ANT.16_iii_ANT.15_V4_MIMB
+    check: antenna_ratio
+    layers: [fusetop, via4, n_diode, p_diode, nwell]
+    value: 20.0
+    params:
+      antenna_layers: 1
+      level: 19
+      diode_factor: 15
+    layer_params:
+      gate_net_layer: fusetop
+      diode_net_layer: ncomp_con
+      diode_net_layer_1: pcomp_con
+      diode_net_layer_2: nwell

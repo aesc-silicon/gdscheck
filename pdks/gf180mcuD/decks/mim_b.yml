@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# MIM capacitor, option B - the variant this PDK build selects.  All 12 rules in this section.
+#
+rules:
+  - id: MIMTM.1
+    check: min_space
+    layers: [topmin1_metal, mimtm_virtual]
+    value: 1.2
+  - id: MIMTM.2
+    check: min_enclosure
+    layers: [topmin1_metal, mimtm_via]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: MIMTM.2
+    check: nonempty
+    layers: [mimtm_2_crossing]
+    value: 0.0
+  - id: MIMTM.3
+    check: min_enclosure
+    layers: [mimtm_virtual, fusetop]
+    value: 0.6
+  - id: MIMTM.4
+    check: min_enclosure
+    layers: [fusetop, top_via]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: MIMTM.4
+    check: nonempty
+    layers: [mimtm_4_crossing]
+    value: 0.0
+  - id: MIMTM.5
+    check: min_space
+    layers: [fusetop, top_via_on_topmin1_metal]
+    value: 0.4
+  - id: MIMTM.6
+    check: min_space
+    layers: [fusetop]
+    value: 0.6
+  - id: MIMTM.6
+    check: min_notch
+    layers: [fusetop]
+    value: 0.6
+  - id: MIMTM.7
+    check: nonempty
+    layers: [fusetop_outside_cap_mk]
+    value: 0.0
+    description: "MIMTM.7: Min FuseTop enclosure by CAP_MK: 0 um"
+  - id: MIMTM.8a
+    check: min_area
+    layers: [fusetop]
+    value: 25.0
+  - id: MIMTM.8b
+    check: max_area
+    layers: [fusetop]
+    value: 10000.0
+  - id: MIMTM.9
+    check: min_space
+    layers: [top_via_in_fusetop]
+    value: 0.5
+  - id: MIMTM.9
+    check: min_notch
+    layers: [top_via_in_fusetop]
+    value: 0.5
+  - id: MIMTM.10
+    check: nonempty
+    layers: [topmin1_via_on_mim_bottom]
+    value: 0.0
+    description: "MIMTM.10: no Via3 may touch the MIM bottom plate"
+  - id: MIMTM.11
+    check: max_contained_area
+    layers: [mimtm11_plate, fusetop]
+    value: 10000.0

@@ -1,0 +1,106 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Salicide block.  All 19 rules in this section.
+#
+# Known: SB.15b reports 3 false positives.  Needs a reduced case.
+rules:
+  - id: SB.1
+    check: min_width
+    layers: [sab]
+    value: 0.42
+  - id: SB.2
+    check: min_space
+    layers: [sab_out_otp]
+    value: 0.42
+  - id: SB.2
+    check: min_notch
+    layers: [sab_out_otp]
+    value: 0.42
+  - id: SB.3
+    check: min_space
+    layers: [sab_out_otp, comp_unrelated_sab]
+    value: 0.22
+  - id: SB.4
+    check: min_space
+    layers: [sab_out_otp, contact]
+    value: 0.15
+  - id: SB.4
+    check: nonempty
+    layers: [sab_on_contact]
+    value: 0.0
+  - id: SB.5a
+    check: min_space
+    layers: [sab_out_otp, poly_field_no_sab]
+    value: 0.3
+  - id: SB.5b
+    check: min_space
+    layers: [sab_out_otp, poly_on_comp]
+    value: 0.28
+  - id: SB.6
+    check: min_enclosure
+    layers: [sab, comp_sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: SB.7
+    check: min_enclosure
+    layers: [comp_sab, sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: SB.8
+    check: nonempty
+    layers: [contact_on_sab]
+    value: 0.0
+  - id: SB.9
+    check: min_enclosure
+    layers: [sab_out_otp, poly_sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: SB.10
+    check: min_enclosure
+    layers: [poly_sab, sab]
+    value: 0.22
+    params:
+      interacting_only: 1
+  - id: SB.11
+    check: min_overlap
+    layers: [sab_out_otp, comp_sab]
+    value: 0.22
+  - id: SB.12
+    check: min_overlap
+    layers: [sab_out_esd, poly_sab]
+    value: 0.22
+  - id: SB.13
+    check: min_area
+    layers: [sab_out_otp]
+    value: 2.0
+  - id: SB.14a
+    check: min_space
+    layers: [sab_poly_np, sab_poly_pp]
+    value: 0.56
+    str_params:
+      metric: square
+  - id: SB.14b
+    check: min_space
+    layers: [sab_poly_np, pgate]
+    value: 0.56
+    str_params:
+      metric: square
+  - id: SB.15a
+    check: min_space
+    layers: [sab_poly, implant_unrelated_sab]
+    value: 0.18
+  - id: SB.15b
+    check: min_space
+    layers: [sb15b_poly, sb15b_np]
+    value: 0.32
+  - id: SB.16
+    check: nonempty
+    layers: [sb16_viol]
+    value: 0.0

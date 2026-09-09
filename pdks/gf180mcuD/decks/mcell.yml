@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Memory cell marker.  All 4 rules in this section.
+rules:
+  - id: MC.1
+    check: min_width
+    layers: [mcell_feol_mk]
+    value: 0.4
+  - id: MC.2
+    check: min_space
+    layers: [mcell_feol_mk]
+    value: 0.4
+  - id: MC.2
+    check: min_notch
+    layers: [mcell_feol_mk]
+    value: 0.4
+  - id: MC.3
+    check: min_area
+    layers: [mcell_feol_mk]
+    value: 0.35
+  - id: MC.4
+    check: min_enclosed_area
+    layers: [mcell_feol_mk]
+    value: 0.35

@@ -12,92 +12,19 @@
 //! rejects.  Each check supplies that predicate (`< min`, `> max`, `≠ exact`).
 //! Other common check utilities can move here as they're factored out.
 
+use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, MergedPoly, VirtualOp, compose_tile, merged_centroid_dbu};
+use crate::merge::{
+    Core, MergedCache, MergedPoly, VirtualOp, compose_tile, merged_centroid_dbu,
+    representative_point,
+};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
-use i_overlay::i_float::int::point::IntPoint;
 use rayon::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-/// Vertical edge: `left_wall` true ⇒ metal to its right (edge directed down).
-pub(crate) struct VEdge {
-    pub x: i32,
-    pub ylo: i32,
-    pub yhi: i32,
-    pub left_wall: bool,
-}
-/// Horizontal edge: `bottom_wall` true ⇒ metal above it (edge directed right).
-pub(crate) struct HEdge {
-    pub y: i32,
-    pub xlo: i32,
-    pub xhi: i32,
-    pub bottom_wall: bool,
-}
-/// An oblique directed edge `a → b`; metal is on its left.
-pub(crate) struct OEdge {
-    pub ax: i32,
-    pub ay: i32,
-    pub bx: i32,
-    pub by: i32,
-}
-
-/// Split a merged region's contours (outer + holes) into axis-aligned and oblique
-/// directed edges — the shared input of the width scan and its notch dual.
-pub(crate) fn collect_edges(
-    poly: &MergedPoly,
-    vedges: &mut Vec<VEdge>,
-    hedges: &mut Vec<HEdge>,
-    oedges: &mut Vec<OEdge>,
-) {
-    let mut add = |contour: &[IntPoint]| {
-        let n = contour.len();
-        if n < 3 {
-            return;
-        }
-        for i in 0..n {
-            let a = contour[i];
-            let b = contour[if i + 1 == n { 0 } else { i + 1 }];
-            let dx = b.x - a.x;
-            let dy = b.y - a.y;
-            if dx == 0 && dy != 0 {
-                vedges.push(VEdge {
-                    x: a.x,
-                    ylo: a.y.min(b.y),
-                    yhi: a.y.max(b.y),
-                    left_wall: dy < 0,
-                });
-            } else if dy == 0 && dx != 0 {
-                hedges.push(HEdge {
-                    y: a.y,
-                    xlo: a.x.min(b.x),
-                    xhi: a.x.max(b.x),
-                    bottom_wall: dx > 0,
-                });
-            } else if dx != 0 && dy != 0 {
-                oedges.push(OEdge {
-                    ax: a.x,
-                    ay: a.y,
-                    bx: b.x,
-                    by: b.y,
-                });
-            }
-        }
-    };
-    add(&poly.outer);
-    for h in &poly.holes {
-        add(h);
-    }
-}
-
-pub(crate) fn sorted_unique(mut v: Vec<i32>) -> Vec<i32> {
-    v.sort_unstable();
-    v.dedup();
-    v
-}
-
-/// Find facing-wall widths in one merged region and report both walls of any
-/// width for which `viol(width_dbu)` holds.
+/// The width scan as a rule reports it: [`width_pairs`] measured, then each wall written
+/// out as one violation.
 #[allow(clippy::too_many_arguments)]
 fn scan_widths(
     poly: &MergedPoly,
@@ -112,10 +39,8 @@ fn scan_widths(
     cmp: &str,
     viol: impl Fn(f64) -> bool,
     oblique_only: bool,
+    mixed: bool,
     min_run: f64,
-    // Optional mask: a rectilinear width pair is only reported when its centre lies inside
-    // one of these regions (µm).  Used by gate-length rules to measure the poly width but
-    // only where the poly forms the relevant device gate.
     mask: Option<&[Poly]>,
 ) -> Vec<Violation> {
     let in_mask = |cx: f64, cy: f64| match mask {
@@ -124,158 +49,84 @@ fn scan_widths(
             .iter()
             .any(|p| p.contains_point(cx * dbu_to_um, cy * dbu_to_um)),
     };
-    let mut vedges = Vec::new();
-    let mut hedges = Vec::new();
-    let mut oedges = Vec::new();
-    collect_edges(poly, &mut vedges, &mut hedges, &mut oedges);
-
-    let mut out = Vec::new();
-    let mut push_edge = |x1: f64, y1: f64, x2: f64, y2: f64, w_dbu: f64| {
-        let w = w_dbu * dbu_to_um;
-        out.push(Violation::edge(
-            rule_id,
-            label,
-            format!(
-                "{}: width {:.4} µm {} {:.4} µm at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
-                layer,
-                w,
-                cmp,
-                limit_um,
+    width_pairs(poly, core, viol, in_mask, oblique_only, mixed, min_run)
+        .into_iter()
+        .map(|(x1, y1, x2, y2, w_dbu)| {
+            let w = w_dbu * dbu_to_um;
+            Violation::edge(
+                rule_id,
+                label,
+                format!(
+                    "{}: width {:.4} µm {} {:.4} µm at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                    layer,
+                    w,
+                    cmp,
+                    limit_um,
+                    x1 * dbu_to_um,
+                    y1 * dbu_to_um,
+                    x2 * dbu_to_um,
+                    y2 * dbu_to_um
+                ),
                 x1 * dbu_to_um,
                 y1 * dbu_to_um,
                 x2 * dbu_to_um,
-                y2 * dbu_to_um
-            ),
-            x1 * dbu_to_um,
-            y1 * dbu_to_um,
-            x2 * dbu_to_um,
-            y2 * dbu_to_um,
-        ));
-    };
-
-    // Rectilinear widths (skipped for oblique-only rules such as a 45° width check).
-    if !oblique_only {
-        // Horizontal widths: scan y bands, pair vertical edges across x.
-        let y_events = sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect());
-        for w in y_events.windows(2) {
-            let (yb, yb1) = (w[0], w[1]);
-            if yb1 <= yb {
-                continue;
-            }
-            let mut active: Vec<&VEdge> = vedges
-                .iter()
-                .filter(|e| e.ylo <= yb && e.yhi >= yb1)
-                .collect();
-            active.sort_unstable_by_key(|e| (e.x, e.left_wall));
-            for pair in active.windows(2) {
-                let (l, r) = (pair[0], pair[1]);
-                if l.left_wall && !r.left_wall {
-                    let width = r.x - l.x;
-                    if width > 0 && viol(width as f64) {
-                        let cx = (l.x as f64 + r.x as f64) * 0.5;
-                        let cy = (yb as f64 + yb1 as f64) * 0.5;
-                        if core.contains(cx, cy) && in_mask(cx, cy) {
-                            push_edge(l.x as f64, yb as f64, l.x as f64, yb1 as f64, width as f64);
-                            push_edge(r.x as f64, yb as f64, r.x as f64, yb1 as f64, width as f64);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Vertical widths: scan x bands, pair horizontal edges across y.
-        let x_events = sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect());
-        for w in x_events.windows(2) {
-            let (xb, xb1) = (w[0], w[1]);
-            if xb1 <= xb {
-                continue;
-            }
-            let mut active: Vec<&HEdge> = hedges
-                .iter()
-                .filter(|e| e.xlo <= xb && e.xhi >= xb1)
-                .collect();
-            active.sort_unstable_by_key(|e| (e.y, e.bottom_wall));
-            for pair in active.windows(2) {
-                let (b, t) = (pair[0], pair[1]);
-                if b.bottom_wall && !t.bottom_wall {
-                    let height = t.y - b.y;
-                    if height > 0 && viol(height as f64) {
-                        let cx = (xb as f64 + xb1 as f64) * 0.5;
-                        let cy = (b.y as f64 + t.y as f64) * 0.5;
-                        if core.contains(cx, cy) && in_mask(cx, cy) {
-                            push_edge(xb as f64, b.y as f64, xb1 as f64, b.y as f64, height as f64);
-                            push_edge(xb as f64, t.y as f64, xb1 as f64, t.y as f64, height as f64);
-                        }
-                    }
-                }
-            }
-        }
-    } // end !oblique_only
-
-    oblique_widths(&oedges, core, &mut push_edge, viol, min_run);
-    out
+                y2 * dbu_to_um,
+            )
+        })
+        .collect()
 }
 
-/// Oblique widths: anti-parallel edge pairs with metal between them.  A pair is only
-/// reported when the parallel run (`hi - lo`) exceeds `min_run` DBU — small chamfers
-/// are ignored, and a 45°-bent-width rule can require a minimum bent length.
-fn oblique_widths(
-    oedges: &[OEdge],
-    core: Core,
-    push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
-    viol: impl Fn(f64) -> bool,
-    min_run: f64,
-) {
-    let n = oedges.len();
-    for i in 0..n {
-        let ei = &oedges[i];
-        let (dix, diy) = ((ei.bx - ei.ax) as f64, (ei.by - ei.ay) as f64);
-        let li = dix.hypot(diy);
-        if li == 0.0 {
-            continue;
-        }
-        let (ux, uy) = (dix / li, diy / li);
-        let (nx, ny) = (-diy / li, dix / li);
-        for ej in &oedges[i + 1..] {
-            let (djx, djy) = ((ej.bx - ej.ax) as f64, (ej.by - ej.ay) as f64);
-            if (dix * djy - diy * djx).abs() > 1e-6 || (dix * djx + diy * djy) >= 0.0 {
-                continue;
+/// Points where a layer's own material narrows to nothing: two pieces of it meeting at
+/// an isolated vertex.
+///
+/// Both are one shape pinched to a point — two squares corner to corner are drawn as a
+/// bow-tie and merge into two polygons that touch, so the width there is zero and no pair
+/// of facing edges exists to measure it between. The spacing checks deliberately send
+/// this case here rather than calling it a gap of zero, so this is where it has to be
+/// caught.
+///
+/// A shared *run* of boundary is not a pinch: two pieces drawn edge to edge are one wide
+/// shape, and the width across it is whatever the scan measures.
+fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
+    // Every vertex filed once under its coordinates; a pinch is a vertex two polygons
+    // share.  Trying every pair of polygons through a set intersection was quadratic in
+    // the tile, and a tile of five hundred vias - none of which touch anything - paid
+    // a hundred thousand intersections to learn that, on every width rule of the deck.
+    let mut at: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+    for (i, p) in polys.iter().enumerate() {
+        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+            let owners = at.entry((q.x, q.y)).or_default();
+            if owners.last() != Some(&i) {
+                owners.push(i);
             }
-            let dist = (ej.ax - ei.ax) as f64 * nx + (ej.ay - ei.ay) as f64 * ny;
-            if dist <= 0.5 || !viol(dist) {
-                continue;
-            }
-            let taj = (ej.ax - ei.ax) as f64 * ux + (ej.ay - ei.ay) as f64 * uy;
-            let tbj = (ej.bx - ei.ax) as f64 * ux + (ej.by - ei.ay) as f64 * uy;
-            let lo = taj.min(tbj).max(0.0);
-            let hi = taj.max(tbj).min(li);
-            if hi - lo <= min_run {
-                continue;
-            }
-            let mid = (lo + hi) * 0.5;
-            let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
-            let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
-            if !core.contains(mx, my) {
-                continue;
-            }
-            push_edge(
-                ei.ax as f64 + lo * ux,
-                ei.ay as f64 + lo * uy,
-                ei.ax as f64 + hi * ux,
-                ei.ay as f64 + hi * uy,
-                dist,
-            );
-            let span = tbj - taj;
-            let (f_lo, f_hi) = ((lo - taj) / span, (hi - taj) / span);
-            push_edge(
-                ej.ax as f64 + f_lo * djx,
-                ej.ay as f64 + f_lo * djy,
-                ej.ax as f64 + f_hi * djx,
-                ej.ay as f64 + f_hi * djy,
-                dist,
-            );
         }
     }
+    // The shared vertices of each pair, so a pair is judged once however many it shares.
+    let mut shared_by: HashMap<(usize, usize), Vec<(i32, i32)>> = HashMap::new();
+    for (&v, owners) in &at {
+        for a in 0..owners.len() {
+            for b in a + 1..owners.len() {
+                shared_by.entry((owners[a], owners[b])).or_default().push(v);
+            }
+        }
+    }
+    let mut out = Vec::new();
+    let mut pairs: Vec<_> = shared_by.into_iter().collect();
+    pairs.sort_unstable();
+    for ((i, j), mut shared) in pairs {
+        let (a, b) = (
+            poly_from_merged(&polys[i], 1.0),
+            poly_from_merged(&polys[j], 1.0),
+        );
+        if let (Some(a), Some(b)) = (a, b)
+            && shares_boundary_run(&a, &b, 0.5)
+        {
+            continue; // abutting, not pinched
+        }
+        shared.sort_unstable();
+        out.extend(shared.into_iter().map(|(x, y)| (x as f64, y as f64)));
+    }
+    out
 }
 
 /// Drive a width check over the cached tiles: `viol(width_dbu)` decides a
@@ -291,6 +142,7 @@ pub fn run_width(
     label: &str,
     viol: impl Fn(f64) -> bool + Copy + Sync,
     oblique_only: bool,
+    mixed: bool,
     min_run_dbu: f64,
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
@@ -324,9 +176,28 @@ pub fn run_width(
                     x1: (tx as i64 + 1) * tile,
                     y1: (ty as i64 + 1) * tile,
                 };
-                polys
+                let mut pinches: Vec<Violation> = Vec::new();
+                if !oblique_only && viol(0.0) {
+                    for (px, py) in pinch_points(polys) {
+                        if !core.owns(px, py) {
+                            continue; // owned by the tile the point falls in
+                        }
+                        let (x, y) = (px * dbu_to_um, py * dbu_to_um);
+                        pinches.push(Violation::point(
+                            rid,
+                            label,
+                            format!(
+                                "{lname}: width 0.0000 µm {cmp} {limit:.2} µm at \
+                                 ({x:.4}, {y:.4}) µm — the layer pinches to a point"
+                            ),
+                            x,
+                            y,
+                        ));
+                    }
+                }
+                let scanned: Vec<Violation> = polys
                     .iter()
-                    .flat_map(move |poly| {
+                    .flat_map(|poly| {
                         scan_widths(
                             poly,
                             core,
@@ -338,12 +209,13 @@ pub fn run_width(
                             cmp,
                             viol,
                             oblique_only,
+                            mixed,
                             min_run_dbu,
                             None,
                         )
                     })
-                    .collect::<Vec<_>>()
-                    .into_iter()
+                    .collect();
+                pinches.into_iter().chain(scanned)
             })
             .collect();
 
@@ -415,6 +287,9 @@ pub fn run_gate_length(
                     "<",
                     viol,
                     false,
+                    // Gate length measures the poly's facing-wall width under a mask; a
+                    // mixed pair has no single width to attribute to a mask region.
+                    false,
                     0.5,
                     Some(&mps),
                 ));
@@ -435,369 +310,17 @@ pub fn run_gate_length(
 // once.
 // ===========================================================================
 
-/// Distance from `p` to segment `a-b`, plus the closest point on the segment.
-fn point_to_segment_closest(
-    px: f64,
-    py: f64,
-    ax: f64,
-    ay: f64,
-    bx: f64,
-    by: f64,
-) -> (f64, f64, f64) {
-    let dx = bx - ax;
-    let dy = by - ay;
-    let len_sq = dx * dx + dy * dy;
-    if len_sq == 0.0 {
-        return ((px - ax).hypot(py - ay), ax, ay);
-    }
-    let t = (((px - ax) * dx + (py - ay) * dy) / len_sq).clamp(0.0, 1.0);
-    let (qx, qy) = (ax + t * dx, ay + t * dy);
-    ((px - qx).hypot(py - qy), qx, qy)
-}
-
-#[inline]
-fn cross2(px: f64, py: f64, qx: f64, qy: f64, rx: f64, ry: f64) -> f64 {
-    (qx - px) * (ry - py) - (qy - py) * (rx - px)
-}
-
-#[allow(clippy::too_many_arguments)]
-fn segments_intersect(
-    ax: f64,
-    ay: f64,
-    bx: f64,
-    by: f64,
-    cx: f64,
-    cy: f64,
-    dx: f64,
-    dy: f64,
-) -> bool {
-    let d1 = cross2(cx, cy, dx, dy, ax, ay);
-    let d2 = cross2(cx, cy, dx, dy, bx, by);
-    let d3 = cross2(ax, ay, bx, by, cx, cy);
-    let d4 = cross2(ax, ay, bx, by, dx, dy);
-    ((d1 > 0.0 && d2 < 0.0) || (d1 < 0.0 && d2 > 0.0))
-        && ((d3 > 0.0 && d4 < 0.0) || (d3 < 0.0 && d4 > 0.0))
-}
-
-/// Closest distance between segments `a-b` and `c-d`, plus the closest point on
-/// each (first on `a-b`, second on `c-d`) — used to draw the spacing marker across
-/// the gap rather than along one region's edge.
-#[allow(clippy::too_many_arguments)]
-pub(crate) fn segment_closest_points(
-    ax: f64,
-    ay: f64,
-    bx: f64,
-    by: f64,
-    cx: f64,
-    cy: f64,
-    dx: f64,
-    dy: f64,
-) -> (f64, (f64, f64), (f64, f64)) {
-    if segments_intersect(ax, ay, bx, by, cx, cy, dx, dy) {
-        return (0.0, (ax, ay), (ax, ay));
-    }
-    let (d1, q1x, q1y) = point_to_segment_closest(ax, ay, cx, cy, dx, dy);
-    let (d2, q2x, q2y) = point_to_segment_closest(bx, by, cx, cy, dx, dy);
-    let (d3, p3x, p3y) = point_to_segment_closest(cx, cy, ax, ay, bx, by);
-    let (d4, p4x, p4y) = point_to_segment_closest(dx, dy, ax, ay, bx, by);
-    let mut best = (d1, (ax, ay), (q1x, q1y));
-    if d2 < best.0 {
-        best = (d2, (bx, by), (q2x, q2y));
-    }
-    if d3 < best.0 {
-        best = (d3, (p3x, p3y), (cx, cy));
-    }
-    if d4 < best.0 {
-        best = (d4, (p4x, p4y), (dx, dy));
-    }
-    best
-}
-
-/// Even-odd ray-casting point-in-polygon test.
-pub(crate) fn point_in_polygon(px: f64, py: f64, pts: &[(f64, f64)]) -> bool {
-    let n = pts.len();
-    let mut inside = false;
-    let mut j = n - 1;
-    for i in 0..n {
-        let (xi, yi) = pts[i];
-        let (xj, yj) = pts[j];
-        if ((yi > py) != (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
-            inside = !inside;
-        }
-        j = i;
-    }
-    inside
-}
-
-/// True if either region has a vertex strictly inside the other (containment or
-/// positive-gap overlap).  Merged same-layer regions never overlap; for two layers
-/// an overlap is allowed (not a spacing violation), so such pairs are skipped.
-/// Hole-aware: a region sitting inside the other's *hole* (e.g. an iso-PWell Activ
-/// inside its NWell isolation ring) does not overlap it — its spacing to the hole
-/// boundary is a real, checkable gap (nmosi.c).
-fn overlapping(a: &Poly, b: &Poly) -> bool {
-    a.vertices().any(|&(x, y)| b.contains_point(x, y))
-        || b.vertices().any(|&(x, y)| a.contains_point(x, y))
-}
-
+/// Which pairs a spacing rule is about, in which direction, and in which metric.
 #[derive(Clone, Copy)]
-pub struct BBox {
-    xmin: f64,
-    ymin: f64,
-    xmax: f64,
-    ymax: f64,
-}
-
-impl BBox {
-    fn from_pts(pts: &[(f64, f64)]) -> Option<Self> {
-        let mut xmin = f64::INFINITY;
-        let mut ymin = f64::INFINITY;
-        let mut xmax = f64::NEG_INFINITY;
-        let mut ymax = f64::NEG_INFINITY;
-        for &(x, y) in pts {
-            xmin = xmin.min(x);
-            ymin = ymin.min(y);
-            xmax = xmax.max(x);
-            ymax = ymax.max(y);
-        }
-        if xmin == f64::INFINITY {
-            None
-        } else {
-            Some(BBox {
-                xmin,
-                ymin,
-                xmax,
-                ymax,
-            })
-        }
-    }
-
-    /// True if the boxes could be within `threshold` (L∞ lower bound).
-    fn possibly_within(&self, other: &BBox, threshold: f64) -> bool {
-        let gap_x = (self.xmin - other.xmax)
-            .max(other.xmin - self.xmax)
-            .max(0.0);
-        let gap_y = (self.ymin - other.ymax)
-            .max(other.ymin - self.ymax)
-            .max(0.0);
-        gap_x < threshold && gap_y < threshold
-    }
-
-    /// Largest side margin by which `self` (the enclosing box) extends beyond
-    /// `inner` — the best-enclosed side, used for the endcap rule.  Negative if
-    /// `inner` sticks out on every side.
-    pub fn max_side_margin(&self, inner: &BBox) -> f64 {
-        (inner.xmin - self.xmin) // left
-            .max(self.xmax - inner.xmax) // right
-            .max(inner.ymin - self.ymin) // bottom
-            .max(self.ymax - inner.ymax) // top
-    }
-}
-
-/// A merged region's outer contour, in µm, prepared for distance queries.
-pub struct Poly {
-    pts: Vec<(f64, f64)>,
-    /// Hole contours (CW, material on the left — same convention as `MergedPoly`).
-    holes: Vec<Vec<(f64, f64)>>,
-    pub bbox: BBox,
-    /// Outer *and* hole edges: both are real region boundary (spacing, width and
-    /// enclosure are all measured against holes too).
-    edges: Vec<(f64, f64, f64, f64)>,
-}
-
-impl Poly {
-    /// All contour vertices, outer ring and holes.
-    fn vertices(&self) -> impl Iterator<Item = &(f64, f64)> {
-        self.pts.iter().chain(self.holes.iter().flatten())
-    }
-
-    /// Point strictly inside the region: inside the outer ring and in no hole.
-    fn contains_point(&self, x: f64, y: f64) -> bool {
-        point_in_polygon(x, y, &self.pts) && !self.holes.iter().any(|h| point_in_polygon(x, y, h))
-    }
-
-    /// True if any 45°/angled edge of this region lies within `max_gap` of `other`.
-    /// The bend must be near the spacing being checked, not on a distant Manhattan part
-    /// of the same net — otherwise one diagonal anywhere would bump every spacing of the
-    /// whole polygon to the wider value.
-    pub fn has_diagonal_near(&self, other: &Poly, max_gap: f64) -> bool {
-        for &(ax, ay, bx, by) in &self.edges {
-            if ax == bx || ay == by {
-                continue; // axis-aligned edge
-            }
-            for &(cx, cy, dx, dy) in &other.edges {
-                if segment_closest_points(ax, ay, bx, by, cx, cy, dx, dy).0 < max_gap {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    /// True parallel-run length between two regions: the longest projected overlap of
-    /// a pair of anti-parallel facing edges (one from each region) whose perpendicular
-    /// separation is below `max_gap`.
-    ///
-    /// A bounding-box overlap is exact only for plain rectangles; for an L-shaped,
-    /// stepped or comb-like pad (common in IO cells) the boxes can overlap for tens of
-    /// microns while the metal only truly runs alongside its neighbour for a fraction
-    /// of that — which otherwise yields false parallel-run-spacing violations.
-    ///
-    /// `min_run` is the parallel-run threshold and `wide_width` the "wide line" width;
-    /// returns true when some facing-edge pair within `max_gap` overlaps for more than
-    /// `min_run` **and** at least one of the two lines is wider than `wide_width` there.
-    /// Line width is the metal depth behind the facing edge (see [`Self::edge_depth`]),
-    /// not the bounding-box dimension — an L-shaped narrow trace has a wide box but a
-    /// narrow line, and must not satisfy the "wide" condition.
-    pub fn prl_applies(&self, other: &Poly, max_gap: f64, wide_width: f64, min_run: f64) -> bool {
-        let mut depth_a: Vec<Option<f64>> = vec![None; self.edges.len()];
-        let mut depth_b: Vec<Option<f64>> = vec![None; other.edges.len()];
-        for (i, &(ax, ay, bx, by)) in self.edges.iter().enumerate() {
-            let (dx, dy) = (bx - ax, by - ay);
-            let len = dx.hypot(dy);
-            if len == 0.0 {
-                continue;
-            }
-            let (ux, uy) = (dx / len, dy / len); // unit along this edge
-            let (nx, ny) = (-uy, ux); // unit normal
-            for (j, &(cx, cy, ex, ey)) in other.edges.iter().enumerate() {
-                let (fx, fy) = (ex - cx, ey - cy);
-                // Facing edges run in opposite directions and are collinear in angle.
-                if dx * fx + dy * fy >= 0.0 {
-                    continue;
-                }
-                let flen = fx.hypot(fy);
-                if flen == 0.0 || (dx * fy - dy * fx).abs() > 1e-6 * len * flen {
-                    continue;
-                }
-                // Perpendicular separation of the two parallel lines (the gap).
-                let perp = ((cx - ax) * nx + (cy - ay) * ny).abs();
-                if perp <= 0.0 || perp >= max_gap {
-                    continue;
-                }
-                // Overlap of the two edges projected onto this edge's direction.
-                let (tc0, tc1) = (
-                    (cx - ax) * ux + (cy - ay) * uy,
-                    (ex - ax) * ux + (ey - ay) * uy,
-                );
-                let run = (tc0.max(tc1).min(len)) - (tc0.min(tc1).max(0.0));
-                if run <= min_run {
-                    continue;
-                }
-                let da = *depth_a[i].get_or_insert_with(|| self.edge_depth(i));
-                let db = *depth_b[j].get_or_insert_with(|| other.edge_depth(j));
-                if da > wide_width || db > wide_width {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    /// Metal depth behind contour edge `i`: the perpendicular distance, measured along
-    /// the inward normal, to the nearest anti-parallel edge of this same region that
-    /// overlaps edge `i` in projection.  This is the local line width at that edge — a
-    /// thin trace reads narrow here even where its bounding box is large.
-    fn edge_depth(&self, i: usize) -> f64 {
-        let (ax, ay, bx, by) = self.edges[i];
-        let (dx, dy) = (bx - ax, by - ay);
-        let len = dx.hypot(dy);
-        if len == 0.0 {
-            return f64::INFINITY;
-        }
-        let (ux, uy) = (dx / len, dy / len);
-        let (nx, ny) = (-uy, ux); // inward normal (outer contour is CCW)
-        let mut best = f64::INFINITY;
-        for (j, &(cx, cy, ex, ey)) in self.edges.iter().enumerate() {
-            if j == i {
-                continue;
-            }
-            let (fx, fy) = (ex - cx, ey - cy);
-            if dx * fx + dy * fy >= 0.0 {
-                continue;
-            }
-            let flen = fx.hypot(fy);
-            if flen == 0.0 || (dx * fy - dy * fx).abs() > 1e-6 * len * flen {
-                continue;
-            }
-            let perp = (cx - ax) * nx + (cy - ay) * ny; // signed inward distance
-            if perp <= 0.0 {
-                continue;
-            }
-            let (tc0, tc1) = (
-                (cx - ax) * ux + (cy - ay) * uy,
-                (ex - ax) * ux + (ey - ay) * uy,
-            );
-            if tc0.max(tc1).min(len) - tc0.min(tc1).max(0.0) <= 0.0 {
-                continue;
-            }
-            best = best.min(perp);
-        }
-        best
-    }
-}
-
-fn poly_from_merged(m: &MergedPoly, dbu_to_um: f64) -> Option<Poly> {
-    let scale = |ring: &[i_overlay::i_float::int::point::IntPoint]| -> Vec<(f64, f64)> {
-        ring.iter()
-            .map(|p| (p.x as f64 * dbu_to_um, p.y as f64 * dbu_to_um))
-            .collect()
-    };
-    let ring_edges = |pts: &[(f64, f64)], edges: &mut Vec<(f64, f64, f64, f64)>| {
-        let n = pts.len();
-        for i in 0..n {
-            let (ax, ay) = pts[i];
-            let (bx, by) = pts[(i + 1) % n];
-            if ax != bx || ay != by {
-                edges.push((ax, ay, bx, by));
-            }
-        }
-    };
-    let pts = scale(&m.outer);
-    if pts.len() < 3 {
-        return None;
-    }
-    let bbox = BBox::from_pts(&pts)?;
-    let mut edges = Vec::new();
-    ring_edges(&pts, &mut edges);
-    let holes: Vec<Vec<(f64, f64)>> = m
-        .holes
-        .iter()
-        .map(|h| scale(h))
-        .filter(|h| h.len() >= 3)
-        .collect();
-    for h in &holes {
-        ring_edges(h, &mut edges);
-    }
-    Some(Poly {
-        pts,
-        holes,
-        bbox,
-        edges,
-    })
-}
-
-/// Closest edge-to-edge distance between two regions, with the closest point on
-/// each (first on `a`, second on `b`) so the marker can span the gap.  Stops early
-/// once a touching pair is found (`< half_dbu`).
-fn closest(a: &Poly, b: &Poly, half_dbu: f64) -> (f64, (f64, f64), (f64, f64)) {
-    let mut min_dist = f64::INFINITY;
-    let mut pa = (0.0, 0.0);
-    let mut pb = (0.0, 0.0);
-    'outer: for &(ax, ay, bx, by) in &a.edges {
-        for &(cx, cy, dx, dy) in &b.edges {
-            let (d, qa, qb) = segment_closest_points(ax, ay, bx, by, cx, cy, dx, dy);
-            if d < min_dist {
-                min_dist = d;
-                pa = qa;
-                pb = qb;
-                if min_dist < half_dbu {
-                    break 'outer;
-                }
-            }
-        }
-    }
-    (min_dist, pa, pb)
+pub struct SpaceMode {
+    /// Scan pairs that share area for their narrowest empty gap, rather than pairs that
+    /// share none for their closest approach.  See [`facing_gaps`].
+    overlapping: bool,
+    /// Measure L-infinity rather than euclidian.  See [`seg_seg_closest_square`].
+    square: bool,
+    /// Measure how deeply the pair penetrates rather than how far apart it is - the
+    /// same facing-edge scan run inward.  Implies `overlapping`.
+    inward: bool,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -811,19 +334,40 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     rule_id: &str,
     name_a: &str,
     name_b: &str,
+    mode: SpaceMode,
     gate: &G,
 ) -> Vec<Violation> {
     let half = dbu_to_um * 0.5;
     // Each polygon keeps its source region's DBU marker: `poly_from_merged` can drop a
     // polygon, so zipping here is what keeps `Poly` and `MergedPoly` aligned for the gate.
-    let conv = |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, merged_centroid_dbu(m)));
-    let pa: Vec<(Poly, Marker)> = a_polys.iter().filter_map(conv).collect();
-    let pb: Vec<(Poly, Marker)> = if same_layer {
-        Vec::new()
+    //
+    // The marker must be a point *on* the shape, not its centroid: a net-aware gate
+    // resolves the net by looking the marker up, and a ring's centroid sits in its hole -
+    // where, in GF180's DN.2b fixture, an unrelated island sits. Both sides then read as
+    // one net and the rule goes quiet on a real violation.
+    let conv =
+        |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, representative_point(m)));
+    // Whether a merged piece is real material or a shaving the merge left behind.  A 45°
+    // wall is drawn with a one-nanometre chamfer at each corner, and rounding that corner
+    // detaches the chamfer as a triangle of half a square nanometre touching the body at
+    // a vertex.  The width checks want it - KLayout keeps the same feature and reports
+    // the notch - but a *gap* of nothing to a shaving is not a spacing violation, and
+    // reading it as one is five false positives each on LRES.2 and PRES.2.  Nothing drawn
+    // is this small: a hundred square DBU is a ten-nanometre square.
+    let material = |m: &MergedPoly| crate::merge::merged_area_dbu(m) >= SHAVING_DBU2;
+    let prep = |ms: &[MergedPoly]| -> (Vec<(Poly, Marker)>, Vec<bool>) {
+        ms.iter()
+            .filter_map(|m| conv(m).map(|p| (p, material(m))))
+            .unzip()
+    };
+    let (pa, mat_a) = prep(a_polys);
+    let (pb, mat_b) = if same_layer {
+        (Vec::new(), Vec::new())
     } else {
-        b_polys.iter().filter_map(conv).collect()
+        prep(b_polys)
     };
     let bs: &[(Poly, Marker)] = if same_layer { &pa } else { &pb };
+    let mat_bs: &[bool] = if same_layer { &mat_a } else { &mat_b };
 
     let mut out = Vec::new();
     for (i, (a, ma)) in pa.iter().enumerate() {
@@ -834,14 +378,64 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
             if !a.bbox.possibly_within(&b.bbox, value) {
                 continue;
             }
-            if overlapping(a, b) {
-                continue;
+            let overlaps = overlapping(a, b);
+            if overlaps != mode.overlapping {
+                continue; // this rule is about the other kind of pair
             }
-            let (min_dist, (ax, ay), (bx, by)) = closest(a, b, half);
-            // Touching: shapes share a boundary -> no spacing.
-            if min_dist < half {
-                continue;
-            }
+            let (min_dist, (ax, ay), (bx, by)) = if mode.overlapping {
+                // The pair shares area, so its closest approach is zero and meaningless.
+                // Take the narrowest facing gap that is genuinely empty instead.
+                let mut best: Option<Gap> = None;
+                for (gap, p, q) in facing_gaps(a, b, value, half, mode.inward) {
+                    let (px, py) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
+                    let wrong = if mode.inward {
+                        // An overlap has to be material of both, or the "facing" pair
+                        // reaches across a notch in one of them.
+                        !(a.contains_point(px, py) && b.contains_point(px, py))
+                    } else {
+                        let (mx, my) = (px / dbu_to_um, py / dbu_to_um);
+                        a_polys
+                            .iter()
+                            .chain(b_polys)
+                            .any(|m| crate::merge::point_in_merged(mx, my, m))
+                    };
+                    if wrong {
+                        continue; // another arm of one of the shapes lies in the gap
+                    }
+                    if best.is_none_or(|(d, _, _)| gap < d) {
+                        best = Some((gap, p, q));
+                    }
+                }
+                match best {
+                    Some(v) => v,
+                    None => continue,
+                }
+            } else {
+                let m = closest(a, b, half, mode.square);
+                // A contact between two layers is a separation of *zero*, and reported:
+                // two shapes meeting at a corner have a gap that happens to be nothing
+                // wide, which is the worst spacing there is. KLayout reads it that way and
+                // this engine used to drop it, silently, wherever it occurred.
+                //
+                // Within one layer it is a gap of zero too, and KLayout reports it: two
+                // wells meeting corner to corner merge into one self-touching shape, and
+                // `space` marks the touch point. This engine excluded the same-layer case
+                // for a while, on the grounds that such a contact is a pinch and belongs
+                // to the width checks; that reading cost 82 logical violations across
+                // eighteen gf180mcu decks - the whole of what `nwell` and `lvpwell` were
+                // missing on their well-spacing rules - and the pinch is reported anyway,
+                // by whichever width rule covers the layer.
+                //
+                // A contact along a *run* is not a gap: two shapes drawn edge to edge
+                // abut, with no space between them anywhere. IHP's butted substrate ties
+                // are exactly that by construction. Only a contact at isolated points is
+                // a separation of zero, whichever layers it is between.
+                let shaving = !mat_a[i] || !mat_bs[j];
+                if m.0 < half && (shaving || shares_boundary_run(a, b, half)) {
+                    continue;
+                }
+                m
+            };
             if min_dist < value - half {
                 if !gate(a, b, *ma, *mb) {
                     continue;
@@ -849,14 +443,19 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
                 // Own the violation by the gap midpoint; mark the gap itself.
                 let mx = (ax + bx) * 0.5;
                 let my = (ay + by) * 0.5;
-                if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
+                if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                     continue;
                 }
+                let (title, what) = if mode.inward {
+                    ("Minimum overlap violation", "overlap")
+                } else {
+                    ("Minimum space violation", "space")
+                };
                 out.push(Violation::edge(
                     rule_id,
-                    "Minimum space violation",
+                    title,
                     format!(
-                        "space {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                        "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
                         min_dist, value, name_a, name_b, ax, ay, bx, by
                     ),
                     ax, ay, bx, by,
@@ -867,19 +466,45 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     out
 }
 
-/// A merged region's marker point in DBU — its [`merged_centroid_dbu`].  Passed to the
-/// gate so a net-aware rule can resolve each region to a net without a second merge.
-pub type Marker = (f64, f64);
-
 /// Tiled region-pair spacing over the cached merge.  A pair within `value` is
 /// reported only if `gate(a, b, marker_a, marker_b)` holds, letting conditional spacing
 /// rules add width / parallel-run / same-net conditions without duplicating the merge,
 /// tiling and edge-distance work.
+/// Depth of mutual penetration where two layers overlap - KLayout's `overlap` check.
+/// The facing-edge scan of [`run_gated`] run inward: see [`facing_gaps`].
+pub fn run_overlap(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    let mode = SpaceMode {
+        overlapping: true,
+        square: false,
+        inward: true,
+    };
+    run_gated_with(rule, layout, dbu_to_um, merged, Some(mode), |_, _, _, _| {
+        true
+    })
+}
+
 pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
+    gate: G,
+) -> Vec<Violation> {
+    run_gated_with(rule, layout, dbu_to_um, merged, None, gate)
+}
+
+/// `forced` overrides what `str_params` would say, for a check that *is* a mode.
+fn run_gated_with<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+    forced: Option<SpaceMode>,
     gate: G,
 ) -> Vec<Violation> {
     let layer_a = &rule.layers[0];
@@ -899,6 +524,43 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     }
 
     let value = rule.value;
+    // Which pairs the rule is about.  `disjoint` (the default) is the ordinary reading:
+    // two shapes that share no area, measured at their closest approach.  `overlapping`
+    // is for a rule whose two shapes overlap *by definition* - GF180's S.PL.5b_MV asks
+    // the space from a poly to the COMP it gates - where the closest approach is zero and
+    // the gap meant is between facing edges elsewhere along the same two shapes.
+    let overlapping_pairs = match rule.str_params.get("pairs").map(String::as_str) {
+        Some("overlapping") => true,
+        Some("disjoint") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown pairs '{other}' — expected disjoint or overlapping; \
+                 using disjoint",
+                rule.id
+            );
+            false
+        }
+    };
+    // `square` is KLayout's L-infinity metric, which a rule words as "must not fall
+    // within a d x d square at the corner".  It separates *less* than euclidian, so the
+    // default stays euclidian and only a rule that asks for it pays the wider net.
+    let square = match rule.str_params.get("metric").map(String::as_str) {
+        Some("square") => true,
+        Some("euclidian") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown metric '{other}' — expected euclidian or square; \
+                 using euclidian",
+                rule.id
+            );
+            false
+        }
+    };
+    let mode = forced.unwrap_or(SpaceMode {
+        overlapping: overlapping_pairs,
+        square,
+        inward: false,
+    });
     let tile = merged.tile_dbu() as i64;
     let rid = rule.id.as_str();
     let name_a = layer_a.name.as_str();
@@ -927,7 +589,8 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
             let a_polys = &map_a[&(tx, ty)];
             let b_polys = map_b.get(&(tx, ty)).unwrap_or(&empty);
             check_tile(
-                a_polys, b_polys, same_layer, core, value, dbu_to_um, rid, name_a, name_b, &gate,
+                a_polys, b_polys, same_layer, core, value, dbu_to_um, rid, name_a, name_b, mode,
+                &gate,
             )
             .into_iter()
         })
@@ -983,20 +646,7 @@ pub fn run_boolean_residual(
             }
             acc.into_iter().collect()
         }
-        VirtualOp::Union
-        | VirtualOp::Square
-        | VirtualOp::NotSquare
-        | VirtualOp::Close(_)
-        | VirtualOp::Open(_)
-        | VirtualOp::Grow(_)
-        | VirtualOp::Interacting
-        | VirtualOp::NotInteracting
-        | VirtualOp::Covering
-        | VirtualOp::NotCircleOrOctagon
-        | VirtualOp::NotCircle
-        | VirtualOp::Holes
-        | VirtualOp::WithHoles
-        | VirtualOp::WithText => maps
+        _ => maps
             .iter()
             .flat_map(|m| m.keys().copied())
             .collect::<HashSet<_>>()
@@ -1024,7 +674,7 @@ pub fn run_boolean_residual(
                 .into_iter()
                 .filter_map(move |m| {
                     let (cx, cy) = merged_centroid_dbu(&m);
-                    if !core.contains(cx, cy) {
+                    if !core.owns_region(cx, cy) {
                         return None;
                     }
                     let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -1141,7 +791,7 @@ pub fn run_extension(
                     // Build a violation edge along the under-extended span of this edge.
                     let make = |sx: f64, sy: f64, ex: f64, ey: f64, worst: f64| {
                         let (mx, my) = ((sx + ex) / 2.0, (sy + ey) / 2.0);
-                        if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
+                        if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                             return None;
                         }
                         // Expand a single-sample span into a short edge along the boundary.
@@ -1208,30 +858,6 @@ pub fn run_extension(
 // reliable — each is owned by the tile whose core holds its centroid.
 // ===========================================================================
 
-/// Absolute area (DBU²) and centroid (DBU) of a closed contour, either winding.
-fn ring_area_centroid(c: &[IntPoint]) -> (f64, f64, f64) {
-    let n = c.len();
-    let (mut sum, mut cx, mut cy) = (0.0_f64, 0.0_f64, 0.0_f64);
-    for i in 0..n {
-        let j = if i + 1 == n { 0 } else { i + 1 };
-        let (xi, yi) = (c[i].x as f64, c[i].y as f64);
-        let (xj, yj) = (c[j].x as f64, c[j].y as f64);
-        let cross = xi * yj - xj * yi;
-        sum += cross;
-        cx += (xi + xj) * cross;
-        cy += (yi + yj) * cross;
-    }
-    let area = sum.abs() / 2.0;
-    if sum.abs() < 1e-9 {
-        let (sx, sy) = c
-            .iter()
-            .fold((0.0, 0.0), |(sx, sy), p| (sx + p.x as f64, sy + p.y as f64));
-        let m = n.max(1) as f64;
-        return (area, sx / m, sy / m);
-    }
-    (area, cx / (3.0 * sum), cy / (3.0 * sum))
-}
-
 /// Drive a minimum-enclosed-area check: report every hole smaller than `value` (µm²).
 pub fn run_enclosed_area(
     rule: &RuleDefinition,
@@ -1267,7 +893,7 @@ pub fn run_enclosed_area(
                     for hole in &m.holes {
                         let (area_dbu, cx, cy) = ring_area_centroid(hole);
                         let area = area_dbu * d2;
-                        if area >= value || !core.contains(cx, cy) {
+                        if area >= value || !core.owns_region(cx, cy) {
                             continue;
                         }
                         let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
@@ -1307,6 +933,10 @@ pub fn run_no_angle(
 
     let forbidden = rule.params.get("angle").copied(); // specific forbidden orientation
     let tol = rule.params.get("tolerance").copied().unwrap_or(1.0);
+    // Allowed orientations are multiples of `step` degrees; 90 (the default) permits
+    // only axis-aligned edges, 45 also permits the diagonals.  GF180's ACUTE rules want
+    // the latter - they allow 0, 45, 90 and -45 and flag everything else.
+    let step = rule.params.get("step").copied().unwrap_or(90.0);
 
     match forbidden {
         Some(a) => println!(
@@ -1349,13 +979,18 @@ pub fn run_no_angle(
                         |a: f64, b: f64| (a - b).abs() <= tol || (a - b).abs() >= 180.0 - tol;
                     let flag = match target {
                         Some(t) => near(ang, t),
-                        None => !(near(ang, 0.0) || near(ang, 90.0)),
+                        None => {
+                            // Not on the allowed lattice: distance to the nearest
+                            // multiple of `step` exceeds the tolerance.
+                            let k = (ang / step).round() * step;
+                            !near(ang, k)
+                        }
                     };
                     if !flag {
                         continue;
                     }
                     let (mx, my) = ((ax + bx) / 2.0, (ay + by) / 2.0);
-                    if !core.contains(mx / dbu_to_um, my / dbu_to_um) {
+                    if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                         continue;
                     }
                     out.push(Violation::edge(
@@ -1388,8 +1023,12 @@ pub fn run_no_angle(
 // this never confuses a bar's length for its width.
 // ===========================================================================
 
-/// Drive a bounding-box extent check over the cached tiles.  One point violation per
-/// offending region (owned by the tile whose core holds its centroid).
+/// Drive a bounding-box extent check over the layer's stitched regions: one point
+/// violation per offending region, at the region's marker.  The extent is the union of
+/// the region's pieces' bounding boxes, each piece cut to its tile core, so a region of
+/// any size is measured whole without any tile holding a whole copy of it - which is
+/// what the check used to need, a halo the size of its value on the drawn layers under
+/// the region: MDP.13a's 50 µm on a dense COMP was 21 copies of every shape.
 #[allow(clippy::too_many_arguments)]
 pub fn run_extent(
     rule: &RuleDefinition,
@@ -1422,56 +1061,59 @@ pub fn run_extent(
         _ => "≠",
     };
 
-    merged
-        .tiles(gl, gd)
+    let labeled = crate::merge::stitch_labeled(merged.tiles(gl, gd), merged.tile_dbu());
+    let per_tile: Vec<Vec<(usize, crate::merge::BBoxDbu)>> = labeled
+        .by_tile
         .par_iter()
-        .flat_map_iter(move |(&(tx, ty), polys)| {
-            let core = Core {
-                x0: tx as i64 * tile,
-                y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile,
-                y1: (ty as i64 + 1) * tile,
-            };
+        .map(|(&(tx, ty), polys)| {
+            let core = (
+                tx as i64 * tile,
+                ty as i64 * tile,
+                (tx as i64 + 1) * tile,
+                (ty as i64 + 1) * tile,
+            );
             polys
                 .iter()
-                .filter_map(move |m| {
-                    let (mut x0, mut y0) = (i32::MAX, i32::MAX);
-                    let (mut x1, mut y1) = (i32::MIN, i32::MIN);
-                    for p in &m.outer {
-                        x0 = x0.min(p.x);
-                        y0 = y0.min(p.y);
-                        x1 = x1.max(p.x);
-                        y1 = y1.max(p.y);
-                    }
-                    let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
-                    let extent = if long { w.max(h) } else { w.min(h) };
-                    if !viol(extent) {
-                        return None;
-                    }
-                    let (cx, cy) = merged_centroid_dbu(m);
-                    if !core.contains(cx, cy) {
-                        return None;
-                    }
-                    let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
-                    Some(Violation::point(
-                        rid,
-                        label,
-                        format!(
-                            "{}: {} {:.4} µm {} {:.4} µm at ({:.4}, {:.4}) µm",
-                            lname,
-                            word,
-                            extent * dbu_to_um,
-                            cmp,
-                            limit,
-                            ux,
-                            uy
-                        ),
-                        ux,
-                        uy,
-                    ))
-                })
-                .collect::<Vec<_>>()
-                .into_iter()
+                .filter_map(|(m, r)| crate::merge::core_clipped_bbox(m, core).map(|b| (*r, b)))
+                .collect()
+        })
+        .collect();
+    let mut bbox: Vec<Option<(i32, i32, i32, i32)>> = vec![None; labeled.regions.len()];
+    for v in per_tile {
+        for (r, b) in v {
+            bbox[r] = Some(match bbox[r] {
+                None => b,
+                Some(a) => (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3)),
+            });
+        }
+    }
+    bbox.iter()
+        .enumerate()
+        .filter_map(|(r, b)| {
+            let (x0, y0, x1, y1) = (*b)?;
+            let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
+            let extent = if long { w.max(h) } else { w.min(h) };
+            if !viol(extent) {
+                return None;
+            }
+            let (cx, cy) = labeled.regions[r].marker;
+            let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
+            Some(Violation::point(
+                rid,
+                label,
+                format!(
+                    "{}: {} {:.4} µm {} {:.4} µm at ({:.4}, {:.4}) µm",
+                    lname,
+                    word,
+                    extent * dbu_to_um,
+                    cmp,
+                    limit,
+                    ux,
+                    uy
+                ),
+                ux,
+                uy,
+            ))
         })
         .collect()
 }
@@ -1485,41 +1127,6 @@ pub fn run_extent(
 // requires it on at least *one* side (the best/max side ≥ value — a wire endcap).
 // `endcap` selects the per-region reduction; everything else is shared.
 // ===========================================================================
-
-fn point_to_segment_dist(px: f64, py: f64, ax: f64, ay: f64, bx: f64, by: f64) -> f64 {
-    point_to_segment_closest(px, py, ax, ay, bx, by).0
-}
-
-/// Vertex inside the outer region or on its boundary (within `tol`) — the boundary
-/// case lets value-0 rules pass when the inner shape touches the outer edge.
-/// Hole-aware: a vertex inside the outer region's hole is *not* inside (its edges,
-/// which include the hole contours, still grant the on-boundary tolerance).
-fn vertex_inside_or_on(px: f64, py: f64, outer: &Poly, tol: f64) -> bool {
-    outer.contains_point(px, py)
-        || outer
-            .edges
-            .iter()
-            .any(|&(ax, ay, bx, by)| point_to_segment_dist(px, py, ax, ay, bx, by) <= tol)
-}
-
-fn all_vertices_inside(inner: &Poly, outer: &Poly, tol: f64) -> bool {
-    inner
-        .vertices()
-        .all(|&(x, y)| vertex_inside_or_on(x, y, outer, tol))
-}
-
-/// Whether two polygons overlap (one has a vertex inside the other).  A cheap bbox prefilter
-/// guards the point-in-polygon tests; for the via-over-device case it cannot miss (a via
-/// crossing the device edge has vertices inside it).
-fn polys_interact(a: &Poly, b: &Poly) -> bool {
-    // Overlapping boxes have a clamped gap of exactly 0.0, so the threshold must be
-    // positive — with 0.0 the prefilter rejects every pair (`gap < 0.0` never holds).
-    if !a.bbox.possibly_within(&b.bbox, f64::MIN_POSITIVE) {
-        return false;
-    }
-    a.vertices().any(|&(x, y)| b.contains_point(x, y))
-        || b.vertices().any(|&(x, y)| a.contains_point(x, y))
-}
 
 // ===========================================================================
 // Enclosure measurement: facing edge pairs (KLayout's `projection` metric).
@@ -1538,75 +1145,61 @@ fn polys_interact(a: &Poly, b: &Poly) -> bool {
 // the NW.e/Seal.d false-positive class).
 // ===========================================================================
 
-/// One candidate enclosure violation: a facing inner/outer edge pair below the rule
-/// value, with a probe point just beyond the measured outer wall for the reality check.
-struct EnclosurePair {
-    dist: f64,
-    edge: (f64, f64, f64, f64),
-    probe: (f64, f64),
-}
-
 /// Facing-pair scan of `inner` against one containing `outer` candidate (see
 /// the module comment above on the projection metric and coincidence semantics).
 /// Returns the pairs with `dist < cutoff` plus whether any coincident segment was seen.
-fn enclosure_pairs(
-    inner: &Poly,
-    outer: &Poly,
-    cutoff: f64,
-    skip_coincident: bool,
-    tol: f64,
-) -> (Vec<EnclosurePair>, bool) {
-    let mut pairs = Vec::new();
-    let mut saw_coincident = false;
-    for &(ax, ay, bx, by) in &inner.edges {
-        let (dix, diy) = (bx - ax, by - ay);
-        let li = dix.hypot(diy);
-        if li <= 0.0 {
-            continue;
-        }
-        let (ux, uy) = (dix / li, diy / li);
-        // Right-hand normal of a CCW contour points *outward* — toward the enclosing wall.
-        let (nx, ny) = (uy, -ux);
-        for &(cx, cy, dx, dy) in &outer.edges {
-            let (dox, doy) = (dx - cx, dy - cy);
-            let lo = dox.hypot(doy);
-            if lo <= 0.0 || (dix * doy - diy * dox).abs() > 1e-6 * li * lo {
-                continue; // not parallel: no projection pairing
-            }
-            // Projected overlap of the outer edge onto the inner edge's span.
-            let t0 = (cx - ax) * ux + (cy - ay) * uy;
-            let t1 = (dx - ax) * ux + (dy - ay) * uy;
-            let (s0, s1) = (t0.min(t1).max(0.0), t0.max(t1).min(li));
-            if s1 - s0 <= tol {
-                continue;
-            }
-            // Perpendicular offset of the outer edge's line, signed outward.
-            let d0 = (cx - ax) * nx + (cy - ay) * ny;
-            let dist = if d0.abs() <= tol {
-                saw_coincident = true;
-                if skip_coincident {
-                    continue;
-                }
-                0.0
-            } else if d0 > 0.0 {
-                d0
-            } else {
-                continue; // outer wall on the interior side: not an enclosure margin
-            };
-            if dist < cutoff {
-                let mid = (s0 + s1) * 0.5;
-                pairs.push(EnclosurePair {
-                    dist,
-                    edge: (ax + s0 * ux, ay + s0 * uy, ax + s1 * ux, ay + s1 * uy),
-                    probe: (
-                        ax + mid * ux + nx * (dist + 2.0 * tol),
-                        ay + mid * uy + ny * (dist + 2.0 * tol),
-                    ),
-                });
-            }
+/// Which metric an enclosure rule measures its margin in.
+///
+/// KLayout's own default is euclidian, and most of GF180's enclosure rules ask for it
+/// explicitly; `projection` restricts the measurement to facing parallel runs. The two
+/// agree on orthogonal geometry and part company at any corner that is not square.
+fn enclosure_is_euclidian(rule: &RuleDefinition) -> bool {
+    match rule.str_params.get("metric").map(String::as_str) {
+        Some("euclidian") => true,
+        Some("projection") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown metric '{other}' — expected euclidian or projection; \
+                 using projection",
+                rule.id
+            );
+            false
         }
     }
-    (pairs, saw_coincident)
+}
+
+/// The enclosing layer over an enclosed shape that reaches past the zone this tile's
+/// copy is exact in, assembled from the cores the shape's box grown by the value
+/// touches; `None` when the tile's own copy covers it.  A copy is exact out to its halo
+/// and no further, and an enclosed shape can be longer than that - a row of abutting
+/// cells' Activ merges into one bar - so the tile's copy of the enclosing layer ended
+/// short of the bar's far end, and NW.c reported the bar not enclosed at all.
+fn outer_over(
+    map_a: &crate::merge::TileMap,
+    tile: i64,
+    halo: i64,
+    core: &Core,
+    bm: &MergedPoly,
+    value_dbu: f64,
+) -> Option<Vec<MergedPoly>> {
+    let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+    for p in &bm.outer {
+        x0 = x0.min(p.x as i64);
+        y0 = y0.min(p.y as i64);
+        x1 = x1.max(p.x as i64);
+        y1 = y1.max(p.y as i64);
+    }
+    let g = value_dbu.ceil() as i64 + 1;
+    let (x0, y0, x1, y1) = (x0 - g, y0 - g, x1 + g, y1 + g);
+    if x0 >= core.x0 - halo && y0 >= core.y0 - halo && x1 <= core.x1 + halo && y1 <= core.y1 + halo
+    {
+        return None;
+    }
+    Some(crate::merge::assemble_over(
+        map_a,
+        tile as i32,
+        (x0, y0, x1, y1),
+    ))
 }
 
 /// Whether a point (µm) lies inside the layer's merged geometry, tested against the
@@ -1635,6 +1228,220 @@ fn point_in_layer_at_own_tile(
     })
 }
 
+/// Which sides of an enclosed shape have to make the margin.
+///
+/// All three read the same per-side numbers and differ only in the verdict, which is why
+/// they are one check rather than three.  `Adjacent` needs a second threshold and knows
+/// which side borders which, so it is the one genuine extension of the family.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Sides {
+    /// Every side (the worst side ≥ value).  The default.
+    All,
+    /// At least one side (the best side ≥ value) — a wire endcap.
+    Any,
+    /// A side below `trigger` forces the sides bordering it to reach `value`.
+    Adjacent,
+    /// Only the side facing a *line end* of the enclosing layer: the cap across the tip
+    /// of a track narrower than `max_width` and at least `min_length` long.
+    ///
+    /// This is the one mode whose condition comes from the enclosing layer's own shape
+    /// rather than from the enclosure margins, because that is what the rule is about: a
+    /// narrow line's tip pulls back during processing, so metal that merely reaches the
+    /// via on paper may not reach it on silicon. The sidewalls are governed by the
+    /// ordinary rule.
+    LineEnd,
+}
+
+impl Sides {
+    pub fn of(rule: &RuleDefinition) -> Self {
+        match rule.str_params.get("sides").map(String::as_str) {
+            Some("any") => Sides::Any,
+            Some("adjacent") => Sides::Adjacent,
+            Some("line_end") => Sides::LineEnd,
+            Some("all") | None => Sides::All,
+            Some(other) => {
+                eprintln!(
+                    "[{}] unknown sides '{other}' — expected all, any, adjacent or \
+                     line_end; using all",
+                    rule.id
+                );
+                Sides::All
+            }
+        }
+    }
+}
+
+/// Per-edge enclosure margin of `inner` inside `outers`, in `inner.edges` order.
+///
+/// Unlike [`enclosure_pairs`] this keeps one number per side and does not clip the edge
+/// to the projected overlap, because the `Adjacent` verdict has to know which side
+/// borders which — and a clipped segment no longer shares an endpoint with its
+/// neighbour. A side with no facing wall at all scores 0: nothing encloses it.
+fn side_margins(inner: &Poly, outers: &[&Poly], tol: f64) -> Vec<f64> {
+    inner
+        .edges
+        .iter()
+        .map(|&(ax, ay, bx, by)| {
+            let (dix, diy) = (bx - ax, by - ay);
+            let li = dix.hypot(diy);
+            if li <= 0.0 {
+                return f64::INFINITY;
+            }
+            let (ux, uy) = (dix / li, diy / li);
+            let (nx, ny) = (uy, -ux); // outward for a CCW contour
+            let mut best = f64::INFINITY;
+            for o in outers {
+                for &(cx, cy, dx, dy) in &o.edges {
+                    let (dox, doy) = (dx - cx, dy - cy);
+                    let lo = dox.hypot(doy);
+                    if lo <= 0.0 {
+                        continue;
+                    }
+                    // The outer edge over the part of it that projects onto this side:
+                    // where along the side each end lands, and how far out it is there.
+                    // The margin is the projection metric's, the shortest normal distance
+                    // over the overlap, which for an edge at any angle is at one end of
+                    // it.  Only parallel edges were measured before, and a side whose
+                    // facing wall is a 45° chamfer - every via on a power ring corner -
+                    // came back as an enclosure of nothing at all, a quarter of a million
+                    // times on one design.
+                    let t0 = (cx - ax) * ux + (cy - ay) * uy;
+                    let t1 = (dx - ax) * ux + (dy - ay) * uy;
+                    let n0 = (cx - ax) * nx + (cy - ay) * ny;
+                    let n1 = (dx - ax) * nx + (dy - ay) * ny;
+                    let (lo_t, hi_t) = (t0.min(t1).max(0.0), t0.max(t1).min(li));
+                    if hi_t - lo_t <= tol {
+                        continue; // no projected overlap
+                    }
+                    // Normal distance at the two ends of the overlap, by interpolation.
+                    let at = |t: f64| {
+                        if (t1 - t0).abs() < 1e-12 {
+                            n0.min(n1)
+                        } else {
+                            n0 + (n1 - n0) * (t - t0) / (t1 - t0)
+                        }
+                    };
+                    let (m0, m1) = (at(lo_t), at(hi_t));
+                    if m0.max(m1) < -tol {
+                        continue; // wholly behind the side: the far wall, not this one
+                    }
+                    // An edge that crosses the side's line within the overlap touches it.
+                    let m = if m0.min(m1) < -tol {
+                        0.0
+                    } else {
+                        m0.min(m1).max(0.0)
+                    };
+                    best = best.min(m);
+                }
+            }
+            if best.is_finite() { best } else { 0.0 }
+        })
+        .collect()
+}
+
+/// The line-end edges of `a`: the caps across the tip of any track narrower than
+/// `max_width` that runs for at least `min_length`.
+///
+/// A track shows up as two of the polygon's own edges facing each other closer than
+/// `max_width`; the cap is the edge joining them both. Requiring the facing run to reach
+/// `min_length` is what keeps a small notch bitten out of a wide plate from reading as a
+/// line — it has the two facing edges but not the length.
+fn line_end_edges(
+    a: &Poly,
+    max_width: f64,
+    min_length: f64,
+    tol: f64,
+) -> Vec<(f64, f64, f64, f64)> {
+    let n = a.edges.len();
+    let mut walls: Vec<(usize, usize)> = Vec::new();
+    for i in 0..n {
+        let (ax, ay, bx, by) = a.edges[i];
+        let (dix, diy) = (bx - ax, by - ay);
+        let li = dix.hypot(diy);
+        if li < min_length - tol {
+            continue;
+        }
+        let (ux, uy) = (dix / li, diy / li);
+        let (nx, ny) = (uy, -ux);
+        for j in (i + 1)..n {
+            let (cx, cy, dx, dy) = a.edges[j];
+            let (dox, doy) = (dx - cx, dy - cy);
+            let lo = dox.hypot(doy);
+            if lo < min_length - tol || (dix * doy - diy * dox).abs() > 1e-6 * li * lo {
+                continue; // too short, or not parallel
+            }
+            if dix * dox + diy * doy >= 0.0 {
+                continue; // same direction: the far side of the shape, not a facing wall
+            }
+            // Facing across the *inside* of the shape: the other wall lies on the
+            // inward side, which for a CCW contour is the negative normal.
+            // Strictly narrower than `max_width`, at grid resolution: upstream keeps a
+            // cap only while its length is under the width bound, so a track exactly
+            // 0.34 µm wide is not a narrow line, and a float length a hair under 0.34
+            // must not make it one (13,675 CO.6a markers on 0.340 µm stubs).
+            let sep = -((cx - ax) * nx + (cy - ay) * ny);
+            if sep <= tol || sep >= max_width - tol {
+                continue;
+            }
+            let t0 = (cx - ax) * ux + (cy - ay) * uy;
+            let t1 = (dx - ax) * ux + (dy - ay) * uy;
+            if t0.max(t1).min(li) - t0.min(t1).max(0.0) < min_length - tol {
+                continue; // the narrow run is not long enough to be a line
+            }
+            walls.push((i, j));
+        }
+    }
+    if walls.is_empty() {
+        return Vec::new();
+    }
+    // The cap is an edge short enough to span the track that touches both of its walls.
+    let touches = |e: usize, w: usize| {
+        let (ax, ay, bx, by) = a.edges[e];
+        let (cx, cy, dx, dy) = a.edges[w];
+        let same =
+            |p: (f64, f64), q: (f64, f64)| (p.0 - q.0).abs() <= tol && (p.1 - q.1).abs() <= tol;
+        same((ax, ay), (cx, cy))
+            || same((ax, ay), (dx, dy))
+            || same((bx, by), (cx, cy))
+            || same((bx, by), (dx, dy))
+    };
+    // An edge that is itself a wall of some narrow pair is not a cap, even of a different
+    // pair.  A pad narrower than `max_width` in *both* directions has every side facing
+    // another, and taking one of them as the cap of the perpendicular pair would read a
+    // small square as a line end - which it is not, having no line.  KLayout says the same
+    // thing as `.not(first_edges).not(second_edges)`.
+    let is_wall: std::collections::HashSet<usize> =
+        walls.iter().flat_map(|&(i, j)| [i, j]).collect();
+    (0..n)
+        .filter(|&e| {
+            let (ax, ay, bx, by) = a.edges[e];
+            (bx - ax).hypot(by - ay) < max_width - tol
+                && !is_wall.contains(&e)
+                && walls.iter().any(|&(i, j)| touches(e, i) && touches(e, j))
+        })
+        .map(|e| a.edges[e])
+        .collect()
+}
+
+/// Indices of the edges bordering edge `i`, by shared endpoint.
+///
+/// Index arithmetic would be wrong for a shape with holes, whose edge list is several
+/// rings end to end; sharing a vertex is the same test and holds for both.
+fn bordering(edges: &[(f64, f64, f64, f64)], i: usize, tol: f64) -> Vec<usize> {
+    let (ax, ay, bx, by) = edges[i];
+    let same = |p: (f64, f64), q: (f64, f64)| (p.0 - q.0).abs() <= tol && (p.1 - q.1).abs() <= tol;
+    (0..edges.len())
+        .filter(|&j| j != i)
+        .filter(|&j| {
+            let (cx, cy, dx, dy) = edges[j];
+            same((ax, ay), (cx, cy))
+                || same((ax, ay), (dx, dy))
+                || same((bx, by), (cx, cy))
+                || same((bx, by), (dx, dy))
+        })
+        .collect()
+}
+
 /// Enclosure margin of `inner` within `outer` for the **endcap** reduction only: the
 /// largest directional margin from the bounding boxes — edge-to-contour distance is
 /// corner-limited and would understate a long endcap.
@@ -1651,7 +1458,7 @@ pub fn run_enclosure(
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
-    endcap: bool,
+    sides: Sides,
 ) -> Vec<Violation> {
     let enclosing_layer = &rule.layers[0];
     let enclosed_layer = &rule.layers[1];
@@ -1666,6 +1473,7 @@ pub fn run_enclosure(
 
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
+    let a_halo = merged.halo_of(al, ad) as i64;
 
     println!(
         "[{}] Checking {} >= {:.2} µm of {} within {}",
@@ -1700,6 +1508,18 @@ pub fn run_enclosure(
     // also halo-robust: the clip is a local property of the region, unlike its remaining
     // margins whose tile ownership can shift with per-suite halos.
     let skip_clipped = rule.params.get("skip_clipped").is_some_and(|v| *v != 0.0);
+    // `sides: adjacent` only: the margin below which a side starts asking something of
+    // the sides bordering it.
+    let trigger = rule.params.get("trigger").copied().unwrap_or(0.0);
+    // `sides: line_end` only: what counts as a narrow track, and how far it must run
+    // before it is a line rather than a notch.
+    let max_width = rule
+        .params
+        .get("max_width")
+        .copied()
+        .unwrap_or(f64::INFINITY);
+    let min_length = rule.params.get("min_length").copied().unwrap_or(0.0);
+    let euclidian = enclosure_is_euclidian(rule);
 
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
@@ -1724,26 +1544,39 @@ pub fn run_enclosure(
             let mut out = Vec::new();
             for bm in b_polys {
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.contains(cxd, cyd) {
+                if !core.owns_region(cxd, cyd) {
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else { continue };
+                let assembled: Vec<Poly>;
+                let a_here: &Vec<Poly> =
+                    match outer_over(map_a, tile, a_halo, &core, bm, value / dbu_to_um) {
+                        Some(polys) => {
+                            assembled = polys
+                                .iter()
+                                .filter_map(|m| poly_from_merged(m, dbu_to_um))
+                                .collect();
+                            &assembled
+                        }
+                        None => &a_conv,
+                    };
+
 
                 // Best-case enclosing shape (greatest margin) among those containing B.
                 let mut best_dist = f64::NEG_INFINITY;
                 let mut best_edge = None;
                 let mut any_contained = false;
                 let mut clipped = false;
-                for a in &a_conv {
+                for a in a_here {
                     if !all_vertices_inside(&bp, a, tol) {
                         continue;
                     }
                     any_contained = true;
-                    let (dist, edge) = if endcap {
+                    let (dist, edge) = if sides == Sides::Any {
                         enclosure_dist_endcap(&bp, a)
                     } else {
                         let (pairs, coincident) =
-                            enclosure_pairs(&bp, a, value, skip_coincident, tol);
+                            enclosure_pairs(&bp, a, value, skip_coincident, euclidian, tol);
                         clipped |= coincident;
                         // Wall reality check: a pair measured against outer geometry
                         // beyond this bucket's reliable zone can see a fake wall where
@@ -1770,12 +1603,103 @@ pub fn run_enclosure(
                     continue; // reaches the enclosing boundary: not "surrounded entirely"
                 }
 
+                // `line_end` measures only where the enclosing shape's track ends: find
+                // the caps, then the via side facing one.
+                if sides == Sides::LineEnd {
+                    let caps: Vec<(f64, f64, f64, f64)> = a_here
+                        .iter()
+                        .filter(|a| all_vertices_inside(&bp, a, tol) || polys_interact(&bp, a))
+                        .flat_map(|a| line_end_edges(a, max_width, min_length, tol))
+                        .collect();
+                    for &(ax, ay, bx, by) in &bp.edges {
+                        let (dix, diy) = (bx - ax, by - ay);
+                        let li = dix.hypot(diy);
+                        if li <= 0.0 {
+                            continue;
+                        }
+                        let (ux, uy) = (dix / li, diy / li);
+                        let (nx, ny) = (uy, -ux);
+                        let mut margin = f64::INFINITY;
+                        for &(cx, cy, dx, dy) in &caps {
+                            let (dox, doy) = (dx - cx, dy - cy);
+                            let lo = dox.hypot(doy);
+                            if lo <= 0.0 || (dix * doy - diy * dox).abs() > 1e-6 * li * lo {
+                                continue;
+                            }
+                            let t0 = (cx - ax) * ux + (cy - ay) * uy;
+                            let t1 = (dx - ax) * ux + (dy - ay) * uy;
+                            if t0.max(t1).min(li) - t0.min(t1).max(0.0) <= tol {
+                                continue;
+                            }
+                            let d0 = (cx - ax) * nx + (cy - ay) * ny;
+                            if d0 >= -tol {
+                                margin = margin.min(d0.max(0.0));
+                            }
+                        }
+                        if margin.is_finite() && margin + tol < value {
+                            out.push(Violation::edge(
+                                rid,
+                                "Minimum enclosure violation",
+                                format!(
+                                    "{bname} at a {aname} line end: enclosed {margin:.4} µm \
+                                     < {value:.2} µm at ({ax:.4}, {ay:.4})-({bx:.4}, {by:.4}) µm"
+                                ),
+                                ax, ay, bx, by,
+                            ));
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
+                // `adjacent` is decided per side rather than by a reduction: a side under
+                // `trigger` is allowed to be short only if the sides bordering it are not.
+                if sides == Sides::Adjacent {
+                    let containing: Vec<&Poly> = a_here
+                        .iter()
+                        .filter(|a| all_vertices_inside(&bp, a, tol) || polys_interact(&bp, a))
+                        .collect();
+                    if containing.is_empty() {
+                        continue;
+                    }
+                    let m = side_margins(&bp, &containing, tol);
+                    for i in 0..m.len() {
+                        if m[i] + tol >= trigger {
+                            continue; // this side is not short: it asks nothing of its neighbours
+                        }
+                        let Some(&worst) = bordering(&bp.edges, i, tol)
+                            .iter()
+                            .map(|&j| &m[j])
+                            .min_by(|a, b| a.total_cmp(b))
+                        else {
+                            continue;
+                        };
+                        if worst + tol >= value {
+                            continue;
+                        }
+                        let (x1, y1, x2, y2) = bp.edges[i];
+                        out.push(Violation::edge(
+                            rid,
+                            "Minimum enclosure violation",
+                            format!(
+                                "{bname} within {aname}: side enclosed {:.4} µm < {trigger:.2} µm \
+                                 and a bordering side only {worst:.4} µm < {value:.2} µm at \
+                                 ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm",
+                                m[i]
+                            ),
+                            x1, y1, x2, y2,
+                        ));
+                        break; // one report per shape, not one per short side
+                    }
+                    continue;
+                }
+
                 if !any_contained {
                     if interacting_only {
                         // Skip shapes that overlap no enclosing region at all — they
                         // are not subject to this enclosure rule.
                         let touching: Vec<&Poly> =
-                            a_conv.iter().filter(|a| polys_interact(&bp, a)).collect();
+                            a_here.iter().filter(|a| polys_interact(&bp, a)).collect();
                         if touching.is_empty() {
                             continue;
                         }
@@ -1793,7 +1717,7 @@ pub fn run_enclosure(
                         let mut worst = f64::INFINITY;
                         let mut worst_edge = None;
                         for a in touching {
-                            let (pairs, _) = enclosure_pairs(&bp, a, value, skip_coincident, tol);
+                            let (pairs, _) = enclosure_pairs(&bp, a, value, skip_coincident, euclidian, tol);
                             for p in pairs {
                                 let (x1, y1, x2, y2) = p.edge;
                                 let (mx, my) = ((x1 + x2) * 0.5, (y1 + y2) * 0.5);
@@ -1861,6 +1785,7 @@ pub fn run_max_enclosure(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
+    let euclidian = enclosure_is_euclidian(rule);
     let enclosing_layer = &rule.layers[0];
     let enclosed_layer = &rule.layers[1];
     let (al, ad) = (
@@ -1874,6 +1799,7 @@ pub fn run_max_enclosure(
 
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
+    let a_halo = merged.halo_of(al, ad) as i64;
 
     println!(
         "[{}] Checking {} <= {:.2} µm of {} within {}",
@@ -1912,16 +1838,28 @@ pub fn run_max_enclosure(
             let mut out = Vec::new();
             for bm in b_polys {
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.contains(cxd, cyd) {
+                if !core.owns_region(cxd, cyd) {
                     continue;
                 }
                 let Some(bp) = poly_from_merged(bm, dbu_to_um) else {
                     continue;
                 };
+                let assembled: Vec<Poly>;
+                let a_here: &Vec<Poly> =
+                    match outer_over(map_a, tile, a_halo, &core, bm, value / dbu_to_um) {
+                        Some(polys) => {
+                            assembled = polys
+                                .iter()
+                                .filter_map(|m| poly_from_merged(m, dbu_to_um))
+                                .collect();
+                            &assembled
+                        }
+                        None => &a_conv,
+                    };
 
                 let mut best_dist = f64::NEG_INFINITY;
                 let mut best_edge = None;
-                for a in &a_conv {
+                for a in a_here {
                     if !all_vertices_inside(&bp, a, tol) {
                         continue;
                     }
@@ -1929,7 +1867,7 @@ pub fn run_max_enclosure(
                     // skip flag is irrelevant here; keep them (false) for the worst-margin.
                     // No wall reality check either: a fake wall only *shrinks* the measured
                     // worst margin, which for a max bound errs toward passing — harmless.
-                    let (pairs, _) = enclosure_pairs(&bp, a, f64::INFINITY, false, tol);
+                    let (pairs, _) = enclosure_pairs(&bp, a, f64::INFINITY, false, euclidian, tol);
                     let mut dist = f64::INFINITY;
                     let mut edge = bp.edges.first().copied().unwrap_or_default();
                     for p in pairs {
@@ -1968,6 +1906,7 @@ pub fn run_max_enclosure(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use i_overlay::i_float::int::point::IntPoint;
 
     fn pt(x: i32, y: i32) -> IntPoint {
         IntPoint::new(x, y)
@@ -1980,6 +1919,40 @@ mod tests {
             x1: 1_000_000,
             y1: 1_000_000,
         }
+    }
+
+    /// The square metric is L-infinity, so a purely diagonal separation reads as the
+    /// larger of the two axis distances and not the hypotenuse. Two collinear-facing
+    /// points 3 across and 4 up are 5 apart euclidian and 4 apart here — which is the
+    /// whole reason a rule worded as a square at a corner has to ask for it.
+    #[test]
+    fn square_metric_is_the_larger_axis_distance() {
+        let (d, _, _) = seg_seg_closest_square((0.0, 0.0), (0.0, 0.0), (3.0, 4.0), (3.0, 4.0));
+        assert!((d - 4.0).abs() < 1e-9, "expected 4, got {d}");
+        let (e, _, _) = segment_closest_points(0.0, 0.0, 0.0, 0.0, 3.0, 4.0, 3.0, 4.0);
+        assert!(
+            (e - 5.0).abs() < 1e-9,
+            "euclidian should still be 5, got {e}"
+        );
+    }
+
+    /// The minimum sits on the `|dx| = |dy|` fold, not at the euclidian closest approach,
+    /// and that is the case the fold-vertex search exists for. Two parallel 45° walls
+    /// offset by 6 in y are 4.243 apart euclidian; the largest square that fits between
+    /// them has side 3, reached by sliding along both until the axis distances match.
+    #[test]
+    fn square_metric_measures_across_the_diagonal_fold() {
+        let a = ((0.0, 0.0), (4.0, 4.0));
+        let b = ((0.0, 6.0), (4.0, 10.0));
+        let (d, pa, pb) = seg_seg_closest_square(a.0, a.1, b.0, b.1);
+        assert!((d - 3.0).abs() < 1e-9, "expected 3, got {d}");
+        // Both axis distances equal the result: that is what being on the fold means.
+        assert!((pa.0 - pb.0).abs() - 3.0 < 1e-9 && (pa.1 - pb.1).abs() - 3.0 < 1e-9);
+        let (e, _, _) = segment_closest_points(0.0, 0.0, 4.0, 4.0, 0.0, 6.0, 4.0, 10.0);
+        assert!(
+            (e - 6.0 / 2f64.sqrt()).abs() < 1e-9,
+            "euclidian is 4.243, got {e}"
+        );
     }
 
     /// Thin 45° trace (~99 DBU walls) flagged by a `< 160` (min-width) predicate:
@@ -2001,6 +1974,7 @@ mod tests {
             "<",
             |w| w < 160.0 - 0.5,
             false,
+            true,
             0.5,
             None,
         );
@@ -2024,10 +1998,60 @@ mod tests {
             "<",
             |w| w < 160.0 - 0.5,
             false,
+            true,
             0.5,
             None,
         );
         assert!(v.is_empty(), "got {}", v.len());
+    }
+
+    /// A well with a 45° chamfer across one corner: the strip above the chamfer is only
+    /// 500 DBU wide, bounded by the chamfer on one side and the vertical edge on the
+    /// other.  No pass pairs those two — vertical-with-vertical, horizontal-with-
+    /// horizontal, oblique-with-anti-parallel-oblique — so before `mixed_widths` this
+    /// shape came back clean at any rule value.  Taken from the gf180mcu nwell test case,
+    /// where it is the single most common miss.
+    #[test]
+    fn chamfered_corner_narrows_against_the_opposite_wall() {
+        let poly = MergedPoly {
+            outer: vec![
+                pt(0, 0),
+                pt(1000, 0),
+                pt(1000, 2000),
+                pt(500, 2000),
+                pt(0, 1500),
+            ],
+            holes: vec![],
+        };
+        let scan = |limit_dbu: f64, mixed: bool| {
+            scan_widths(
+                &poly,
+                core(),
+                0.001,
+                "T",
+                "min",
+                "L",
+                limit_dbu / 1000.0,
+                "<",
+                |w| w < limit_dbu - 0.5,
+                false,
+                mixed,
+                0.5,
+                None,
+            )
+        };
+        // 860 DBU rule: the 500-wide strip violates, and the marker spans the gap.
+        let v = scan(860.0, true);
+        assert_eq!(v.len(), 1, "got {}", v.len());
+        assert!(
+            v[0].message.contains("width 0.5000"),
+            "measured the wrong span: {}",
+            v[0].message
+        );
+        // Below the narrow strip the shape is a clean 1000 wide, so a 500 rule passes.
+        assert!(scan(500.0, true).is_empty());
+        // And without the mixed pass the violation is invisible — the regression itself.
+        assert!(scan(860.0, false).is_empty());
     }
 
     /// A 200×200 DBU square flagged by a `> 150` (max-width) predicate: both
@@ -2048,6 +2072,7 @@ mod tests {
             0.15,
             ">",
             |w| w > 150.0 + 0.5,
+            false,
             false,
             0.5,
             None,

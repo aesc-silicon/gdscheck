@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Low-voltage P-well.  All 10 rules in this section.
+rules:
+  - id: LPW.1_LV
+    check: min_width
+    layers: [lvpwell_dn]
+    value: 0.6
+  - id: LPW.1_MV
+    check: min_width
+    layers: [lvpwell_dn_mv]
+    value: 0.74
+  - id: LPW.2a_LV
+    check: min_space_different_net
+    layers: [lvpwell_dn_lv]
+    value: 1.4
+  - id: LPW.2a_MV
+    check: min_space_different_net
+    layers: [lvpwell_dn_mv]
+    value: 1.7
+  - id: LPW.2b_LV
+    check: min_space
+    layers: [lvpwell_dn_lv]
+    value: 0.86
+  - id: LPW.2b_LV
+    check: min_notch
+    layers: [lvpwell_dn_lv]
+    value: 0.86
+  - id: LPW.2b_MV
+    check: min_space
+    layers: [lvpwell_dn_mv]
+    value: 0.86
+  - id: LPW.2b_MV
+    check: min_notch
+    layers: [lvpwell_dn_mv]
+    value: 0.86
+  - id: LPW.3
+    check: min_enclosure
+    layers: [dnwell, lvpwell_dn]
+    value: 2.5
+    params:
+      interacting_only: 1
+  - id: LPW.5
+    check: nonempty
+    layers: [lpw5_viol]
+    value: 0.0
+  - id: LPW.11
+    check: min_space
+    layers: [lvpwell_out_dn, dnwell]
+    value: 1.5
+  - id: LPW.12
+    check: nonempty
+    layers: [lpw12_viol]
+    value: 0.0

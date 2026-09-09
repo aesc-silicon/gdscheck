@@ -85,7 +85,7 @@ fn hierarchy_lib() -> GdsLibrary {
 #[test]
 fn flatten_resolves_refs_arrays_and_rotation() {
     let lib = hierarchy_lib();
-    let layout = flatten_to_elems("TOP", &lib, None);
+    let layout = flatten_to_elems("TOP", &lib, None, &[]);
 
     let boxes: Vec<(i32, i32, i32, i32)> = layout.get(10, 0).iter().map(bbox).collect();
 
@@ -360,11 +360,13 @@ fn eager_global_difference_materialises_lazy_does_not() {
     );
 }
 
-/// The `inside` op fills a ring (drops its hole) and intersects the target with it,
+/// The `inside_ring` op fills a ring (drops its hole) and intersects the target with it,
 /// so a target shape inside the ring is kept and one outside is dropped — there is no
-/// drawn layer for "the area a seal ring encloses", so the op derives it.
+/// drawn layer for "the area a seal ring encloses", so the op derives it.  Distinct from
+/// the `inside` *selector*, which keeps whole regions of one layer contained in another
+/// (see tests/virtual_ops.rs); this one clips and fills.
 #[test]
-fn inside_op_fills_ring_and_keeps_only_enclosed() {
+fn inside_ring_op_fills_ring_and_keeps_only_enclosed() {
     let pdk = PdkConfig::load(SYNTH).expect("load synthetic pdk");
     let mut layout = FlatLayout::new();
     // LayerB (2/0) drawn as a ring frame; filled it is the solid 0..100 square.
@@ -396,10 +398,248 @@ fn inside_op_fills_ring_and_keeps_only_enclosed() {
 #[test]
 fn lazy_layer_in_inside_boundary_is_rejected() {
     let err = run_drc("unused.gds", SYNTH, &["badlazy"], None, "TOP", true)
-        .err()
-        .expect("lazy layer under inside_boundary must error");
+        .expect_err("lazy layer under inside_boundary must error");
     assert!(
         err.contains("lazy virtual layer"),
         "unexpected error: {err}"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Region perimeter (src/merge.rs) — the antenna rules measure it
+// ---------------------------------------------------------------------------
+
+/// Perimeter has to survive tiling. A shape wider than one tile is merged in pieces, and
+/// the naive sum of piece boundaries counts the tile cuts — twice each, once from either
+/// side. Only the polygon's own edges are counted here, so the answer is the same
+/// whatever the tile size, which is what these two cases pin.
+#[test]
+fn region_perimeter_ignores_tile_cuts() {
+    for tile in [10_000_000, 30] {
+        region_perimeter_case(tile);
+    }
+}
+
+fn region_perimeter_case(tile: i32) {
+    let mut layout = FlatLayout::new();
+    layout.insert(
+        1,
+        0,
+        GdsBoundary {
+            layer: 1,
+            datatype: 0,
+            xy: GdsPoint::vec(&[(0, 0), (100, 0), (100, 20), (0, 20), (0, 0)]),
+            ..Default::default()
+        },
+    );
+    let mut cache = MergedCache::new(tile, 40, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1, "one shape, one region");
+    assert!(
+        (regions[0].perimeter_dbu - 240.0).abs() < 1e-6,
+        "expected 2*(100+20)=240, got {}",
+        regions[0].perimeter_dbu
+    );
+    assert!((regions[0].area_dbu - 2000.0).abs() < 1e-6);
+}
+
+/// A hole's wall is boundary too: the antenna metric counts the whole contour.
+#[test]
+fn region_perimeter_includes_holes() {
+    let mut layout = FlatLayout::new();
+    for (x0, y0, x1, y1) in [
+        (0, 0, 100, 20),
+        (0, 80, 100, 100),
+        (0, 0, 20, 100),
+        (80, 0, 100, 100),
+    ] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1);
+    // Outer 4*100 = 400, hole 4*60 = 240.
+    assert!(
+        (regions[0].perimeter_dbu - 640.0).abs() < 1e-6,
+        "expected 400 outer + 240 hole, got {}",
+        regions[0].perimeter_dbu
+    );
+}
+
+/// Two shapes meeting at a single corner are **one** region, as they are in KLayout.
+/// A corner touch is not an overlap, so the tile boolean leaves two polygons and nothing
+/// dissolves them; the region stitcher has to join them itself. Getting this wrong is a
+/// false-positive generator for every area rule: GF180's `DF.9` read one 0.38 µm² active
+/// as a 0.11 and a 0.27, and failed both against a 0.2025 µm² minimum.
+#[test]
+fn shapes_touching_at_a_corner_are_one_region() {
+    let mut layout = FlatLayout::new();
+    for (x0, y0) in [(0, 0), (100, 100)] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[
+                    (x0, y0),
+                    (x0 + 100, y0),
+                    (x0 + 100, y0 + 100),
+                    (x0, y0 + 100),
+                    (x0, y0),
+                ]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1, "corner touch should be one region");
+    assert!((regions[0].area_dbu - 20000.0).abs() < 1e-6);
+}
+
+/// The converse: shapes that merely come close stay separate, so the fix above cannot
+/// quietly glue a layout together.
+#[test]
+fn shapes_that_do_not_touch_stay_separate() {
+    let mut layout = FlatLayout::new();
+    for (x0, y0) in [(0, 0), (101, 101)] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[
+                    (x0, y0),
+                    (x0 + 100, y0),
+                    (x0 + 100, y0 + 100),
+                    (x0, y0 + 100),
+                    (x0, y0),
+                ]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    assert_eq!(cache.regions(&layout, 1, 0).len(), 2);
+}
+
+/// A region's marker must be a point *on* the region. The centroid is not: a ring's
+/// centroid sits in its hole, and the marker is what a net-aware rule looks up to decide
+/// which net a shape is on. GF180's `DN.2b` fixture has a deep-well ring with an
+/// unrelated 1 µm island in that hole, 3.9 µm clear of it — resolving the ring through
+/// its centroid put both on the island's net, and the spacing rule went quiet on four
+/// real violations.
+#[test]
+fn a_rings_marker_lies_on_the_ring_not_in_its_hole() {
+    let mut layout = FlatLayout::new();
+    // A 100-wide square annulus: outer 0..300, hole 100..200.
+    for (x0, y0, x1, y1) in [
+        (0, 0, 300, 100),
+        (0, 200, 300, 300),
+        (0, 0, 100, 300),
+        (200, 0, 300, 300),
+    ] {
+        layout.insert(
+            1,
+            0,
+            GdsBoundary {
+                layer: 1,
+                datatype: 0,
+                xy: GdsPoint::vec(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+                ..Default::default()
+            },
+        );
+    }
+    let mut cache = MergedCache::new(10_000_000, 0, HashMap::new());
+    let regions = cache.regions(&layout, 1, 0);
+    assert_eq!(regions.len(), 1, "the annulus is one region");
+    let (x, y) = regions[0].marker;
+    let in_hole = (100.0..200.0).contains(&x) && (100.0..200.0).contains(&y);
+    assert!(!in_hole, "marker landed in the hole at ({x}, {y})");
+    let in_bbox = (0.0..=300.0).contains(&x) && (0.0..=300.0).contains(&y);
+    assert!(in_bbox, "marker escaped the shape at ({x}, {y})");
+}
+
+// ---------------------------------------------------------------------------
+// Waivers: a violation inside a placed instance of a cell the PDK names is reported,
+// marked waived, and only for the rules the waiver covers.
+// ---------------------------------------------------------------------------
+
+/// A 2 µm Outer square with an Inner square 0.1 µm inside its walls - 0.4 µm short of
+/// the 0.5 µm ENC.proj asks - once inside a `PADLIB_A` cell and once drawn straight
+/// into the top cell ten microns to the right.
+fn waiver_lib() -> GdsLibrary {
+    let rect = |l: i16, x0: i32, y0: i32, x1: i32, y1: i32| {
+        GdsElement::GdsBoundary(GdsBoundary {
+            layer: l,
+            datatype: 0,
+            xy: GdsPoint::vec(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]),
+            ..Default::default()
+        })
+    };
+    let mut pad = GdsStruct::new("PADLIB_A");
+    pad.elems.push(rect(1, 0, 0, 2000, 2000));
+    pad.elems.push(rect(2, 100, 100, 1900, 1900));
+    let mut top = GdsStruct::new("TOP");
+    top.elems.push(GdsElement::GdsStructRef(GdsStructRef {
+        name: "PADLIB_A".into(),
+        xy: GdsPoint::new(0, 0),
+        ..Default::default()
+    }));
+    top.elems.push(rect(1, 10000, 0, 12000, 2000));
+    top.elems.push(rect(2, 10100, 100, 11900, 1900));
+    let mut lib = GdsLibrary::new("WAIVE");
+    lib.units = gds21::GdsUnits(1e-6, 1e-9);
+    lib.structs = vec![pad, top];
+    lib
+}
+
+#[test]
+fn waiver_marks_violations_inside_a_named_cell_for_its_rules_only() {
+    let lib = waiver_lib();
+    let v = gdscheck::run_drc_with(
+        &lib,
+        "tests/data/engine/pdk.yml",
+        &["min_enclosure"],
+        None,
+        "TOP",
+        false,
+    )
+    .expect("run");
+    let inside = |v: &gdscheck::violation::Violation| match v.geometry {
+        gdscheck::violation::ViolationGeometry::Point { x, .. } => x < 5.0,
+        gdscheck::violation::ViolationGeometry::Edge { x1, x2, .. } => (x1 + x2) * 0.5 < 5.0,
+        gdscheck::violation::ViolationGeometry::None => false,
+    };
+    let proj: Vec<_> = v.iter().filter(|v| v.rule_id == "ENC.proj").collect();
+    assert!(
+        proj.iter().any(|v| inside(v) && v.waived.is_some()),
+        "the short enclosure inside PADLIB_A is ENC.proj's business and the PDK waives it: {proj:?}"
+    );
+    assert!(
+        proj.iter().any(|v| !inside(v) && v.waived.is_none()),
+        "the same shape drawn in the top cell is not waived: {proj:?}"
+    );
+    assert!(
+        proj.iter().all(|v| inside(v) == v.waived.is_some()),
+        "waived exactly inside the instance: {proj:?}"
+    );
+    let eucl: Vec<_> = v.iter().filter(|v| v.rule_id == "ENC.eucl").collect();
+    assert!(
+        !eucl.is_empty() && eucl.iter().all(|v| v.waived.is_none()),
+        "the waiver names ENC.proj only, so ENC.eucl inside the cell stands: {eucl:?}"
+    );
+    let waived = proj.iter().find(|v| v.waived.is_some()).unwrap();
+    assert_eq!(waived.waived.as_deref(), Some("PADLIB_A: library cell"));
 }

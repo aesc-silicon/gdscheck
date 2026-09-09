@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use clap::{ArgGroup, Parser, Subcommand};
-use gdscheck::{load_gds, pdk::PdkConfig, report, run_drc};
+use gdscheck::{load_gds, pdk::PdkConfig, report, run_drc_with};
 use rayon::ThreadPoolBuilder;
 
 /// gdscheck — Open Source DRC engine
@@ -228,6 +228,8 @@ fn run(args: RunArgs) {
         println!("Deck: {}", args.deck.join(","));
     }
 
+    let t_load = std::time::Instant::now();
+    let c_load = gdscheck::cpu_seconds();
     let lib = match load_gds(&args.input) {
         Ok(l) => l,
         Err(e) => {
@@ -237,11 +239,21 @@ fn run(args: RunArgs) {
     };
 
     println!("Library: {}", lib.name);
+    if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+        let (w, c) = (
+            t_load.elapsed().as_secs_f64(),
+            gdscheck::cpu_seconds() - c_load,
+        );
+        eprintln!(
+            "phase load wall={w:.1}s cpu={c:.1}s cores={:.1}",
+            c / w.max(1e-9)
+        );
+    }
 
     let decks: Vec<&str> = args.deck.iter().map(String::as_str).collect();
     let start = std::time::Instant::now();
-    let violations = match run_drc(
-        &args.input,
+    let violations = match run_drc_with(
+        &lib,
         &args.process,
         &decks,
         args.suite.as_deref(),
@@ -259,28 +271,57 @@ fn run(args: RunArgs) {
     println!("Topcell: {}", args.topcell);
     println!("DRC completed in {:.3}s", elapsed.as_secs_f64());
 
+    let waived_total = violations.iter().filter(|v| v.waived.is_some()).count();
+    let headline = if waived_total > 0 {
+        format!("{} violation(s), {waived_total} waived:", violations.len())
+    } else {
+        format!("{} violation(s):", violations.len())
+    };
     if violations.is_empty() {
         println!("DRC clean.");
     } else if args.verbose {
-        println!("{} violation(s):", violations.len());
+        println!("{headline}");
         for v in &violations {
-            println!("  [{}] {}", v.rule_id, v.message);
+            match &v.waived {
+                Some(why) => println!("  [{}] {} (waived: {why})", v.rule_id, v.message),
+                None => println!("  [{}] {}", v.rule_id, v.message),
+            }
         }
     } else {
-        println!("{} violation(s):", violations.len());
-        let mut counts: std::collections::BTreeMap<&str, usize> = std::collections::BTreeMap::new();
+        println!("{headline}");
+        let mut counts: std::collections::BTreeMap<&str, (usize, usize)> =
+            std::collections::BTreeMap::new();
         for v in &violations {
-            *counts.entry(v.rule_id.as_str()).or_insert(0) += 1;
+            let e = counts.entry(v.rule_id.as_str()).or_insert((0, 0));
+            e.0 += 1;
+            if v.waived.is_some() {
+                e.1 += 1;
+            }
         }
-        for (rule_id, count) in counts {
-            println!("  [{rule_id}] {count}");
+        for (rule_id, (count, waived)) in counts {
+            if waived > 0 {
+                println!("  [{rule_id}] {count} ({waived} waived)");
+            } else {
+                println!("  [{rule_id}] {count}");
+            }
         }
     }
 
     if let Some(report) = &args.report {
+        let (t_rep, c_rep) = (std::time::Instant::now(), gdscheck::cpu_seconds());
         match report::write_lyrdb(report, &args.topcell, &violations) {
             Ok(()) => println!("Report written to: {report}"),
             Err(e) => eprintln!("Error writing report: {e}"),
+        }
+        if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            let (w, c) = (
+                t_rep.elapsed().as_secs_f64(),
+                gdscheck::cpu_seconds() - c_rep,
+            );
+            eprintln!(
+                "phase report wall={w:.1}s cpu={c:.1}s cores={:.1}",
+                c / w.max(1e-9)
+            );
         }
     }
 }

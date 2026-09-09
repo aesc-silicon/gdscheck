@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# BJT LVS marker.  All 1 rules in this section.
+rules:
+  - id: LVS_BJT.1
+    check: nonempty
+    layers: [lvsbjt1_viol]
+    value: 0.0

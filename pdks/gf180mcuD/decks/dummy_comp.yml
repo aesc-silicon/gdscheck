@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# COMP dummy fill.  All 10 rules in this section.
+rules:
+  - id: DCF.2b
+    check: min_space
+    layers: [comp_dummy]
+    value: 1.9
+  - id: DCF.2b
+    check: min_notch
+    layers: [comp_dummy]
+    value: 1.9
+  - id: DCF.4
+    check: min_space
+    layers: [comp_dummy, comp]
+    value: 3.5
+  - id: DCF.5
+    check: min_space
+    layers: [comp_dummy, poly2_drawn]
+    value: 1.5
+  - id: DCF.6a
+    check: min_space
+    layers: [comp_dummy, nwell]
+    value: 1.3
+  - id: DCF.6b
+    check: min_space
+    layers: [comp_dummy, dnwell]
+    value: 4.0
+  - id: DCF.6c
+    check: min_space
+    layers: [comp_dummy, lvpwell]
+    value: 1.3
+  - id: DCF.6d
+    check: min_space
+    layers: [comp_dummy, dualgate]
+    value: 1.3
+  - id: DCF.8a
+    check: min_space
+    layers: [comp_dummy, res_mk]
+    value: 3.5
+  - id: DCF.11a
+    check: min_space
+    layers: [comp_dummy, ndmy]
+    value: 3.5
+  - id: DCF.12
+    check: min_space
+    layers: [comp_dummy, ind_mk]
+    value: 3.0

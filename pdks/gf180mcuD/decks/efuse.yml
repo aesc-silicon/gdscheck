@@ -1,0 +1,142 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# eFuse.  All 27 rules in this section.
+rules:
+  - id: EF.01
+    check: nonempty
+    layers: [ef01_viol]
+    value: 0.0
+  - id: EF.02
+    check: min_width
+    layers: [plfuse]
+    value: 0.18
+  - id: EF.02
+    check: max_dim
+    layers: [plfuse]
+    value: 0.18
+  - id: EF.03
+    check: nonempty
+    layers: [ef03_viol]
+    value: 0.0
+  - id: EF.04a
+    check: nonempty
+    layers: [ef04a_viol]
+    value: 0.0
+  - id: EF.04a
+    check: nonempty
+    layers: [ef04a_long_off]
+    value: 0.0
+  - id: EF.04b
+    check: nonempty
+    layers: [plfuse_not_rect]
+    value: 0.0
+  - id: EF.04c
+    check: nonempty
+    layers: [cathode_not_rect]
+    value: 0.0
+  - id: EF.04d
+    check: nonempty
+    layers: [anode_not_rect]
+    value: 0.0
+  - id: EF.05
+    check: nonempty
+    layers: [ef05_viol_a]
+    value: 0.0
+  - id: EF.05
+    check: nonempty
+    layers: [ef05_viol_b]
+    value: 0.0
+  - id: EF.06
+    check: nonempty
+    layers: [ef_06_viol]
+    value: 0.0
+  - id: EF.07
+    check: nonempty
+    layers: [ef_07_viol]
+    value: 0.0
+  - id: EF.08
+    check: nonempty
+    layers: [ef_08_viol]
+    value: 0.0
+  - id: EF.09
+    check: nonempty
+    layers: [ef_09_viol]
+    value: 0.0
+  - id: EF.10
+    check: min_space
+    layers: [cathode]
+    value: 0.26
+  - id: EF.10
+    check: min_notch
+    layers: [cathode]
+    value: 0.26
+  - id: EF.11
+    check: min_space
+    layers: [anode]
+    value: 0.26
+  - id: EF.11
+    check: min_notch
+    layers: [anode]
+    value: 0.26
+  - id: EF.12
+    check: min_space
+    layers: [plfuse_efuse, cont_cathode]
+    value: 0.155
+  - id: EF.12
+    check: nonempty
+    layers: [cont_on_plfuse]
+    value: 0.0
+  - id: EF.13
+    check: min_space
+    layers: [plfuse_efuse, cont_anode]
+    value: 0.14
+  - id: EF.14
+    check: nonempty
+    layers: [ef14_viol]
+    value: 0.0
+  - id: EF.15
+    check: nonempty
+    layers: [plfuse_at_contact]
+    value: 0.0
+  - id: EF.16a
+    check: nonempty
+    layers: [ef16a_viol]
+    value: 0.0
+  - id: EF.16b
+    check: nonempty
+    layers: [ef16b_viol]
+    value: 0.0
+  - id: EF.17
+    check: min_space
+    layers: [efuse_mk]
+    value: 0.26
+  - id: EF.17
+    check: min_notch
+    layers: [efuse_mk]
+    value: 0.26
+  - id: EF.18
+    check: nonempty
+    layers: [ef18_viol]
+    value: 0.0
+  - id: EF.19
+    check: nonempty
+    layers: [ef19_viol]
+    value: 0.0
+  - id: EF.20
+    check: min_space
+    layers: [plfuse, ef20_neighbours]
+    value: 2.73
+  - id: EF.21
+    check: nonempty
+    layers: [ef21_viol]
+    value: 0.0
+  - id: EF.22a
+    check: nonempty
+    layers: [ef_22a_viol]
+    value: 0.0
+  - id: EF.22b
+    check: nonempty
+    layers: [ef_22b_viol]
+    value: 0.0

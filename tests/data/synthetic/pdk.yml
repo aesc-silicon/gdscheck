@@ -43,7 +43,7 @@ virtual_layers:
     layers: [LayerA, LayerB]
   # `inside`: LayerA restricted to the area enclosed by the LayerB ring (filled).
   - name: InsideRing
-    op: inside
+    op: inside_ring
     layers: [LayerA, LayerB]
 
 layers:

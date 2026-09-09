@@ -948,11 +948,11 @@ fn test_nmosi(
 const DECK_NPN: &str = "npn";
 
 #[rstest]
-// npnG2.c fires twice on one ring: the check reports the worst pair per enclosed
-// polygon per owning tile bucket, and the tie ring straddles a tile boundary
-// (KLayout reports the same violation as 8 edge pairs — same device, same rule).
+// The tie ring is under-enclosed by 0.05 the whole way round; npnG2.c reports the
+// worst wall once (KLayout reports the same violation as 8 edge pairs — same device,
+// same rule).
 #[case::npn_g2("npn/npnG2.gds.gz", "TOP",
-    vec!["npnG2.b", "npnG2.c", "npnG2.c", "npnG2.d", "npnG2.e"], vec![])]
+    vec!["npnG2.b", "npnG2.c", "npnG2.d", "npnG2.e"], vec![])]
 // One marker per emitter case: min/max for G2 (=0.90), L (1.00..2.50), V (1.00..5.00).
 // KLayout's shipped emitter rules are dead code (µm/dbu bug in ext_with_length's
 // ">" branch) — limits here follow the PDF; see the deck comment.
@@ -1079,10 +1079,15 @@ const DECK_SEALRING: &str = "sealring";
 // Seal.n (ring-covering) is incidental to the synthetic ring and ignored here.
 #[case::seal_ef("sealring/Seal.ef.gds.gz", "TOP", { let mut v = vec!["Seal.e"; 8]; v.push("Seal.f"); v }, vec!["Seal.n"])]
 #[case::seal_b("sealring/Seal.b.gds.gz", "TOP", vec!["Seal.b"; 2], vec!["Seal.l"])]
-// Two seal frames: Cont ring at 0.80 from the frame edge (< 1.30, fires ×4 — one per ring
-// side, exact match with KLayout's 4 markers) and at 1.50 (clean).  Seal.l is synthetic
-// two-frame collateral.
-#[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 4], vec!["Seal.l"])]
+// Two seal frames: Cont ring at 0.80 from the frame edge (< 1.30) and at 1.50 (clean).
+// Seal.l is synthetic two-frame collateral.
+//
+// Three markers, all on the frame's right side: the side entire, and a sliver at each of
+// its corners. This case used to read four and be described as one marker per side, an
+// exact match with KLayout's count — but the fourth was a byte-identical copy of the
+// second, and the match was arithmetic rather than agreement. The other three sides are
+// genuinely missed.
+#[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 3], vec!["Seal.l"])]
 fn test_sealring(
     #[case] gds: &str,
     #[case] topcell: &str,

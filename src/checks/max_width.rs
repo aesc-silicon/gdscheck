@@ -18,6 +18,9 @@ pub fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
+    if super::edge_distance::on_edge_layers(rule, merged, "max_width") {
+        return super::edge_distance::run_max_width(rule, layout, dbu_to_um, merged);
+    }
     let max_w_dbu = rule.value / dbu_to_um;
     run_width(
         rule,
@@ -28,6 +31,7 @@ pub fn run(
         "<=",
         "Maximum width violation",
         move |w| w > max_w_dbu + 0.5,
+        false,
         false,
         0.5,
     )

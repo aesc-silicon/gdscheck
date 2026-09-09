@@ -100,10 +100,62 @@ pub struct VirtualLayerDef {
     /// Text pattern for the `with_text` op (exact match, or prefix if it ends in `*`).
     #[serde(default)]
     pub text: Option<String>,
+    /// Inclusive lower bound (µm) for the `with_bbox_min`/`with_bbox_max` filters;
+    /// absent means unbounded below.
+    #[serde(default)]
+    pub min: Option<f64>,
+    /// Exclusive upper bound (µm) for the `with_bbox_min`/`with_bbox_max` filters;
+    /// absent means unbounded above.
+    #[serde(default)]
+    pub max: Option<f64>,
+    /// Extra reach (µm) for `grow`, beyond its radius.  Absent means none.
+    ///
+    /// Wanted only when the grown layer is a *selection radius* — "everything within X of
+    /// this" — because a shape at exactly X then merely touches the grown region, and a
+    /// whole-region test reads a zero-area touch as no overlap.  A hair of slack turns
+    /// that into a hairline overlap and the shape is selected.
+    ///
+    /// Wanted nowhere else, and it used to be the default: a band that decides which of
+    /// two limits applies, or a region a rule must not reach into, is judged wrong by any
+    /// slack at all.  That cost five rules across four decks before the default was
+    /// flipped, each one over-reporting plausibly rather than failing.
+    #[serde(default)]
+    pub slack: Option<f64>,
+}
+
+/// A derived *edge* layer: boundary segments rather than regions.  Declared in
+/// `pdk.yml` under `edge_layers:` and referenced by rules exactly like any other layer.
+///
+/// `min`/`max` carry the op's bounds — µm for the length filters, degrees for the angle
+/// ones — and are ignored by the ops that take none.
+#[derive(Debug, Deserialize, Clone)]
+pub struct EdgeLayerDef {
+    pub name: String,
+    pub op: String,
+    pub layers: Vec<String>,
+    #[serde(default)]
+    pub min: Option<f64>,
+    #[serde(default)]
+    pub max: Option<f64>,
+    /// `centers` only: the middle part to keep, as a fraction of each edge's length.
+    #[serde(default)]
+    pub fraction: Option<f64>,
+}
+
+/// An edge layer resolved to GDS numbers, ready for the merge cache.
+#[derive(Debug)]
+pub struct TiledEdgeSpec {
+    pub name: String,
+    pub key: (i16, i16),
+    pub op: String,
+    pub sources: Vec<(i16, i16)>,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub fraction: Option<f64>,
 }
 
 /// A lazy virtual layer resolved to GDS numbers, ready for the merge cache.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TiledVirtualSpec {
     /// The virtual layer's name (for diagnostics).
     pub name: String,
@@ -113,11 +165,15 @@ pub struct TiledVirtualSpec {
     pub op: String,
     /// Resolved source layer keys.
     pub sources: Vec<(i16, i16)>,
-    /// Radius (µm) for the parameterised ops (`close`/`open`/`grow`; for
-    /// `holes`/`with_holes` it declares the max expected ring extent for halos).
+    /// Radius (µm) for the parameterised ops (`close`/`open`/`grow`).
     pub radius: Option<f64>,
     /// Text pattern for the `with_text` op.
     pub text: Option<String>,
+    /// Extra reach (µm) for `grow`; see [`VirtualLayerDef::slack`].
+    pub slack: Option<f64>,
+    /// Bounding-box side bounds (µm) for the `with_bbox_min`/`with_bbox_max` filters.
+    pub min: Option<f64>,
+    pub max: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -136,6 +192,18 @@ struct RuleRaw {
     /// `forbidden_unless_labeled`).  `params` only carries numbers.
     #[serde(default)]
     pub text: Option<String>,
+    /// Params whose value is a word rather than a number - a mode selector such as
+    /// `sides: adjacent`.  `params` holds only numbers, and a mode encoded as one would
+    /// be unreadable in the deck, which is the thing these files exist to be.
+    #[serde(default)]
+    pub str_params: HashMap<String, String>,
+    /// Params whose value is a *layer*, given by name.  `params` holds only numbers, so
+    /// a check that takes a layer as a parameter (rather than as one of `layers`) would
+    /// otherwise need its GDS number written into the deck - impossible for a derived
+    /// layer, whose number is assigned by position in `virtual_layers`.  Each entry is
+    /// resolved at load time into `params` as `<name>` and `<name>_dt`.
+    #[serde(default)]
+    pub layer_params: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -145,6 +213,8 @@ pub struct RuleDefinition {
     pub layers: Vec<Layer>,
     pub value: f64,
     pub params: HashMap<String, f64>,
+    /// Word-valued params; see [`RuleRaw::str_params`].
+    pub str_params: HashMap<String, String>,
     pub ignore: Vec<Layer>,
     pub text: Option<String>,
 }
@@ -205,9 +275,70 @@ struct PdkRaw {
     pub suites: Vec<DeckRefRaw>,
     #[serde(default)]
     pub virtual_layers: Vec<VirtualLayerDef>,
+    /// Derived edge layers (boundary segments rather than regions).
+    #[serde(default)]
+    pub edge_layers: Vec<EdgeLayerDef>,
     /// Electrical connect graph for net extraction (used by net-aware checks).
     #[serde(default)]
     pub connectivity: Vec<ConnectivityRaw>,
+    /// Cells checked as delivered; a base PDK's waivers are inherited.
+    #[serde(default)]
+    pub waivers: Vec<Waiver>,
+}
+
+/// A waiver: violations of the named rules whose marker lies inside a placed instance
+/// of a matching cell are reported, but as waived.  A PDK states these for the cells
+/// it ships checked as delivered - a foundry's pad and IO library - and nothing else
+/// does: a waiver is a statement about geometry, not a run option, so it is not on
+/// the command line where it would be reached for instead of a fix.
+#[derive(Debug, Deserialize, Clone)]
+pub struct Waiver {
+    /// Cell name patterns; `*` matches any run of characters.
+    pub cells: Vec<String>,
+    /// Rule ids the waiver covers; absent means every rule.
+    #[serde(default)]
+    pub rules: Option<Vec<String>>,
+    #[serde(default)]
+    pub reason: String,
+}
+
+impl Waiver {
+    pub fn matches_cell(&self, cell: &str) -> bool {
+        self.cells.iter().any(|p| glob_matches(p, cell))
+    }
+
+    pub fn covers_rule(&self, rule_id: &str) -> bool {
+        self.rules
+            .as_ref()
+            .is_none_or(|ids| ids.iter().any(|id| id == rule_id))
+    }
+}
+
+/// `pattern` against `s`, where `*` stands for any run of characters, including none.
+pub fn glob_matches(pattern: &str, s: &str) -> bool {
+    let parts: Vec<&str> = pattern.split('*').collect();
+    if parts.len() == 1 {
+        return pattern == s;
+    }
+    let mut rest = s;
+    for (i, part) in parts.iter().enumerate() {
+        if i == 0 {
+            let Some(r) = rest.strip_prefix(part) else {
+                return false;
+            };
+            rest = r;
+        } else if i == parts.len() - 1 {
+            return rest.ends_with(part);
+        } else if part.is_empty() {
+            continue;
+        } else {
+            let Some(at) = rest.find(part) else {
+                return false;
+            };
+            rest = &rest[at + part.len()..];
+        }
+    }
+    true
 }
 
 #[derive(Debug, Deserialize)]
@@ -245,13 +376,29 @@ pub struct PdkConfig {
     /// Suites (curated rule selections) resolved by `load_suite`, alongside decks.
     pub suites: Vec<DeckRef>,
     pub virtual_layers: Vec<VirtualLayerDef>,
+    /// Derived edge layers, referenced by rules like any other layer.
+    pub edge_layers: Vec<EdgeLayerDef>,
     /// Resolved connect graph for net extraction; empty if the PDK declares none.
     pub connectivity: Vec<crate::connectivity::ConnectSpec>,
+    /// Cells whose violations are reported waived (see [`Waiver`]).
+    pub waivers: Vec<Waiver>,
     layer_map: HashMap<String, Layer>,
     source: PdkSource,
 }
 
 impl PdkConfig {
+    /// Every embedded process name, i.e. every directory under `pdks/` holding a
+    /// `pdk.yml`.  Sorted, so callers that iterate are deterministic.
+    pub fn embedded_processes() -> Vec<&'static str> {
+        let mut v: Vec<&'static str> = EMBEDDED_PDKS
+            .iter()
+            .filter_map(|(path, _)| path.strip_suffix("/pdk.yml"))
+            .filter(|p| !p.contains('/'))
+            .collect();
+        v.sort_unstable();
+        v
+    }
+
     /// Load a PDK by process name (embedded, e.g. `"ihp-sg13g2"`) or by path to a
     /// `pdk.yml` (for custom/out-of-tree PDKs).
     pub fn for_process(spec: &str) -> Result<Self, Box<dyn std::error::Error>> {
@@ -293,8 +440,14 @@ impl PdkConfig {
             let mut layers = base.layers;
             layers.extend(raw.layers);
             raw.layers = layers;
+            let mut waivers = base.waivers;
+            waivers.extend(raw.waivers);
+            raw.waivers = waivers;
             // Base virtuals first, the child's appended; a child entry with the same
             // name *replaces* the base one (keep the last of each name).
+            let mut edges = base.edge_layers;
+            edges.extend(raw.edge_layers);
+            raw.edge_layers = edges;
             let mut virtuals = base.virtual_layers;
             virtuals.extend(raw.virtual_layers);
             virtuals.reverse();
@@ -302,6 +455,25 @@ impl PdkConfig {
             virtuals.retain(|v| seen.insert(v.name.clone()));
             virtuals.reverse();
             raw.virtual_layers = virtuals;
+        }
+
+        // A name may be declared once. A virtual layer's synthetic number comes from its
+        // position in the list, so a second declaration under the same name leaves the
+        // first one built but unreachable and every rule naming it silently measuring the
+        // other — which is exactly as quiet, and as wrong, as it sounds. (The `extends`
+        // merge above has already collapsed a child's deliberate override of a base
+        // entry, so anything left here is a collision within one file.)
+        let mut declared: HashSet<&str> = HashSet::new();
+        for name in raw
+            .layers
+            .iter()
+            .map(|l| l.name.as_str())
+            .chain(raw.virtual_layers.iter().map(|v| v.name.as_str()))
+            .chain(raw.edge_layers.iter().map(|e| e.name.as_str()))
+        {
+            if !declared.insert(name) {
+                return Err(format!("layer '{name}' is declared more than once").into());
+            }
         }
 
         let mut layer_map: HashMap<String, Layer> = raw
@@ -318,6 +490,19 @@ impl PdkConfig {
                 Layer {
                     name: vl.name.clone(),
                     gds_layer: VIRTUAL_LAYER_BASE + i as u16,
+                    gds_datatype: 0,
+                },
+            );
+        }
+        // Edge layers continue the same synthetic range, so a rule names one exactly as
+        // it names a drawn or virtual layer; the cache decides which kind it is.
+        let edge_base = VIRTUAL_LAYER_BASE + raw.virtual_layers.len() as u16;
+        for (i, el) in raw.edge_layers.iter().enumerate() {
+            layer_map.insert(
+                el.name.clone(),
+                Layer {
+                    name: el.name.clone(),
+                    gds_layer: edge_base + i as u16,
                     gds_datatype: 0,
                 },
             );
@@ -370,7 +555,9 @@ impl PdkConfig {
             decks,
             suites,
             virtual_layers: raw.virtual_layers,
+            edge_layers: raw.edge_layers,
             connectivity,
+            waivers: raw.waivers,
             layer_map,
             source,
         })
@@ -536,8 +723,8 @@ impl PdkConfig {
                         }
                     }
                 }
-                "inside" => {
-                    // `inside(target, ring)` = the part of `target` (layers[0]) that
+                "inside_ring" => {
+                    // `inside_ring(target, ring)` = the part of `target` (layers[0]) that
                     // lies within the area enclosed by `ring` (layers[1]).  The ring's
                     // holes are filled, so a seal *frame* becomes "seal + interior" —
                     // there is no drawn layer for that region, so we derive it here.
@@ -545,7 +732,7 @@ impl PdkConfig {
                     // another (which `compute_virtual_layers` does not support).
                     if vl_def.layers.len() < 2 {
                         eprintln!(
-                            "Virtual layer '{}': inside needs 2 layers (target, ring)",
+                            "Virtual layer '{}': inside_ring needs 2 layers (target, ring)",
                             vl_def.name
                         );
                         continue;
@@ -612,7 +799,7 @@ impl PdkConfig {
                 }
                 other => {
                     eprintln!(
-                        "Virtual layer '{}': unsupported op '{}' (supported: union, intersection, difference, inside, close)",
+                        "Virtual layer '{}': unsupported op '{}' (supported: union, intersection, difference, inside_ring, close)",
                         vl_def.name, other
                     );
                 }
@@ -622,6 +809,44 @@ impl PdkConfig {
         for (layer, dt, b) in to_insert {
             layout.insert(layer, dt, b);
         }
+    }
+
+    /// Edge layers resolved to GDS numbers, ready for the merge cache.  A source that
+    /// does not resolve is a hard skip, same as for virtual layers.
+    pub fn tiled_edge_layers(&self) -> Vec<TiledEdgeSpec> {
+        let key = |name: &str| {
+            self.layer_map
+                .get(name)
+                .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
+        };
+        let mut out = Vec::new();
+        for el in &self.edge_layers {
+            let Some(ekey) = key(&el.name) else { continue };
+            let mut sources = Vec::with_capacity(el.layers.len());
+            let mut ok = true;
+            for s in &el.layers {
+                match key(s) {
+                    Some(k) => sources.push(k),
+                    None => {
+                        eprintln!("Edge layer '{}': source layer '{}' not found", el.name, s);
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            if ok {
+                out.push(TiledEdgeSpec {
+                    name: el.name.clone(),
+                    key: ekey,
+                    op: el.op.clone(),
+                    sources,
+                    min: el.min,
+                    max: el.max,
+                    fraction: el.fraction,
+                });
+            }
+        }
+        out
     }
 
     /// Lazy (tiled) virtual layers, resolved to GDS numbers: `(synthetic key, op,
@@ -661,7 +886,10 @@ impl PdkConfig {
                     op: vl.op.clone(),
                     sources,
                     radius: vl.radius,
+                    slack: vl.slack,
                     text: vl.text.clone(),
+                    min: vl.min,
+                    max: vl.max,
                 });
             }
         }
@@ -782,12 +1010,25 @@ impl PdkConfig {
                     })
                     .collect();
 
+                let mut params = r.params;
+                for (key, name) in &r.layer_params {
+                    let l = self.layer_map.get(name).ok_or_else(|| {
+                        format!(
+                            "Rule '{}' layer_param '{key}' references unknown layer '{name}'",
+                            r.id
+                        )
+                    })?;
+                    params.insert(key.clone(), l.gds_layer as f64);
+                    params.insert(format!("{key}_dt"), l.gds_datatype as f64);
+                }
+
                 Ok(RuleDefinition {
                     id: r.id,
                     check: r.check,
                     layers,
                     value: r.value,
-                    params: r.params,
+                    params,
+                    str_params: r.str_params,
                     ignore,
                     text: r.text,
                 })
@@ -795,5 +1036,21 @@ impl PdkConfig {
             .collect::<Result<Vec<_>, String>>()?;
 
         Ok(rules)
+    }
+}
+
+#[cfg(test)]
+mod waiver_tests {
+    use super::glob_matches;
+
+    #[test]
+    fn glob_star_matches_any_run() {
+        assert!(glob_matches("gf180mcu_fd_io__*", "gf180mcu_fd_io__in_c"));
+        assert!(glob_matches("Bondpad_*", "Bondpad_5LM"));
+        assert!(glob_matches("*_fill_*", "COMP_fill_cell"));
+        assert!(glob_matches("exact", "exact"));
+        assert!(!glob_matches("exact", "exactly"));
+        assert!(!glob_matches("Bondpad_*", "xBondpad_5LM"));
+        assert!(glob_matches("*", ""));
     }
 }

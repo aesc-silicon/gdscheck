@@ -1,0 +1,212 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Metal slotting.
+rules:
+  - id: MSLOT1.0
+    check: nonempty
+    layers: [metal1_slot_not_rect]
+    value: 0.0
+    description: "MSLOT1.0: Slot is not a rectangle"
+  - id: MSLOT1.1
+    check: nonempty
+    layers: [metal1_needs_slot]
+    value: 0.0
+    description: "MSLOT1.1: Maximum metal width without slotting: 30 um"
+  - id: MSLOT1.2
+    check: min_dim
+    layers: [metal1_slot_rect]
+    value: 2.0
+  - id: MSLOT1.3
+    check: min_length
+    layers: [metal1_slot_rect]
+    value: 10.0
+  - id: MSLOT1.3
+    check: max_length
+    layers: [metal1_slot_rect]
+    value: 250.0
+  - id: MSLOT1.4
+    check: min_space
+    layers: [metal1_slot_rect]
+    value: 10.0
+  - id: MSLOT1.5
+    check: min_enclosure
+    layers: [metal1_drawn, metal1_slot_rect]
+    value: 10.0
+  - id: MSLOT1.7
+    check: min_space
+    layers: [metal1_slot_rect, via1]
+    value: 0.2
+  - id: MSLOT1.8
+    check: min_space
+    layers: [metal1_slot_rect, contact]
+    value: 0.2
+  - id: MSLOT1.9
+    check: min_space
+    layers: [metal1_slot_rect, dont_slot]
+    value: 5.0
+  - id: MSLOT2.0
+    check: nonempty
+    layers: [metal2_slot_not_rect]
+    value: 0.0
+    description: "MSLOT2.0: Slot is not a rectangle"
+  - id: MSLOT2.1
+    check: nonempty
+    layers: [metal2_needs_slot]
+    value: 0.0
+    description: "MSLOT2.1: Maximum metal width without slotting: 30 um"
+  - id: MSLOT2.2
+    check: min_dim
+    layers: [metal2_slot_rect]
+    value: 2.0
+  - id: MSLOT2.3
+    check: min_length
+    layers: [metal2_slot_rect]
+    value: 10.0
+  - id: MSLOT2.3
+    check: max_length
+    layers: [metal2_slot_rect]
+    value: 250.0
+  - id: MSLOT2.4
+    check: min_space
+    layers: [metal2_slot_rect]
+    value: 10.0
+  - id: MSLOT2.5
+    check: min_enclosure
+    layers: [metal2_drawn, metal2_slot_rect]
+    value: 10.0
+  - id: MSLOT2.7
+    check: min_space
+    layers: [metal2_slot_rect, via2]
+    value: 0.2
+  - id: MSLOT2.8
+    check: min_space
+    layers: [metal2_slot_rect, via1]
+    value: 0.2
+  - id: MSLOT2.9
+    check: min_space
+    layers: [metal2_slot_rect, dont_slot]
+    value: 5.0
+  - id: MSLOT3.0
+    check: nonempty
+    layers: [metal3_slot_not_rect]
+    value: 0.0
+    description: "MSLOT3.0: Slot is not a rectangle"
+  - id: MSLOT3.1
+    check: nonempty
+    layers: [metal3_needs_slot]
+    value: 0.0
+    description: "MSLOT3.1: Maximum metal width without slotting: 30 um"
+  - id: MSLOT3.2
+    check: min_dim
+    layers: [metal3_slot_rect]
+    value: 2.0
+  - id: MSLOT3.3
+    check: min_length
+    layers: [metal3_slot_rect]
+    value: 10.0
+  - id: MSLOT3.3
+    check: max_length
+    layers: [metal3_slot_rect]
+    value: 250.0
+  - id: MSLOT3.4
+    check: min_space
+    layers: [metal3_slot_rect]
+    value: 10.0
+  - id: MSLOT3.5
+    check: min_enclosure
+    layers: [metal3_drawn, metal3_slot_rect]
+    value: 10.0
+  - id: MSLOT3.7
+    check: min_space
+    layers: [metal3_slot_rect, via3]
+    value: 0.2
+  - id: MSLOT3.8
+    check: min_space
+    layers: [metal3_slot_rect, via2]
+    value: 0.2
+  - id: MSLOT3.9
+    check: min_space
+    layers: [metal3_slot_rect, dont_slot]
+    value: 5.0
+  - id: MSLOT4.0
+    check: nonempty
+    layers: [metal4_slot_not_rect]
+    value: 0.0
+    description: "MSLOT4.0: Slot is not a rectangle"
+  - id: MSLOT4.1
+    check: nonempty
+    layers: [metal4_needs_slot]
+    value: 0.0
+    description: "MSLOT4.1: Maximum metal width without slotting: 30 um"
+  - id: MSLOT4.2
+    check: min_dim
+    layers: [metal4_slot_rect]
+    value: 2.0
+  - id: MSLOT4.3
+    check: min_length
+    layers: [metal4_slot_rect]
+    value: 10.0
+  - id: MSLOT4.3
+    check: max_length
+    layers: [metal4_slot_rect]
+    value: 250.0
+  - id: MSLOT4.4
+    check: min_space
+    layers: [metal4_slot_rect]
+    value: 10.0
+  - id: MSLOT4.5
+    check: min_enclosure
+    layers: [metal4_drawn, metal4_slot_rect]
+    value: 10.0
+  - id: MSLOT4.7
+    check: min_space
+    layers: [metal4_slot_rect, via4]
+    value: 0.2
+  - id: MSLOT4.8
+    check: min_space
+    layers: [metal4_slot_rect, via3]
+    value: 0.2
+  - id: MSLOT4.9
+    check: min_space
+    layers: [metal4_slot_rect, dont_slot]
+    value: 5.0
+  - id: MSLOT5.0
+    check: nonempty
+    layers: [metal5_slot_not_rect]
+    value: 0.0
+    description: "MSLOT5.0: Slot is not a rectangle"
+  - id: MSLOT5.1
+    check: nonempty
+    layers: [metal5_needs_slot]
+    value: 0.0
+    description: "MSLOT5.1: Maximum metal width without slotting: 30 um"
+  - id: MSLOT5.2
+    check: min_dim
+    layers: [metal5_slot_rect]
+    value: 2.0
+  - id: MSLOT5.3
+    check: min_length
+    layers: [metal5_slot_rect]
+    value: 10.0
+  - id: MSLOT5.3
+    check: max_length
+    layers: [metal5_slot_rect]
+    value: 250.0
+  - id: MSLOT5.4
+    check: min_space
+    layers: [metal5_slot_rect]
+    value: 10.0
+  - id: MSLOT5.5
+    check: min_enclosure
+    layers: [metal5_drawn, metal5_slot_rect]
+    value: 10.0
+  - id: MSLOT5.8
+    check: min_space
+    layers: [metal5_slot_rect, via4]
+    value: 0.2
+  - id: MSLOT5.9
+    check: min_space
+    layers: [metal5_slot_rect, dont_slot]
+    value: 5.0

@@ -21,8 +21,8 @@
 //! exactly as the plain geometric rule would.  A wrong net can therefore only ever cost a
 //! false positive, never a false clean.
 
-use crate::checks::helper::Marker;
 use crate::connectivity::{Connectivity, LayerKey};
+use crate::geom::Marker;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -66,6 +66,18 @@ pub fn run(
         |_, _, ma: Marker, mb: Marker| {
             let na = conn.net_at(key_a, ma.0, ma.1);
             let nb = conn.net_at(key_b, mb.0, mb.1);
+            if std::env::var("GDSCHECK_NET_TRACE").is_ok() && na != nb {
+                eprintln!(
+                    "net {} ({:.3},{:.3})={:?} vs ({:.3},{:.3})={:?}",
+                    rule.id,
+                    ma.0 * dbu_to_um,
+                    ma.1 * dbu_to_um,
+                    na,
+                    mb.0 * dbu_to_um,
+                    mb.1 * dbu_to_um,
+                    nb
+                );
+            }
             match (na, nb) {
                 // Both resolved and equal: one net, so the different-net rule does not apply.
                 (Some(a), Some(b)) => a != b,

@@ -1,0 +1,5334 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GlobalFoundries 180 nm MCU (gf180mcu), variant D: 5 metal layers, 11K top metal,
+# MIM option B.  Upstream ships one KLayout deck for every variant and selects
+# behaviour from those three options at run time, so the rule set below is the
+# variant-D projection of it, not a different rule set: decks that only apply to
+# another variant (mim_a on option A, metaltop_30k on a 30K top metal) are absent,
+# and the per-level metal/via decks stop at the 5LM stack.
+#
+# Skeleton.  The layer table, derived layers, connect graph, decks and suites are
+# in place; the decks themselves are still empty.
+name: GlobalFoundries GF180MCU (variant D)
+version: "0.1"
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every deck
+  - name: core
+    path: suites/core.yml
+    description: Geometric DRC - main minus antenna and density
+  - name: density
+    path: suites/density.yml
+    description: Global coverage checks
+  - name: antenna
+    path: suites/antenna.yml
+    description: Antenna checks only
+  - name: recommended
+    path: suites/recommended.yml
+    description: Guidance the foundry documents but does not check
+
+decks:
+  - name: acute
+    path: decks/acute.yml
+    description: Angles that are not a multiple of 45 degrees
+  - name: antenna
+    path: decks/antenna.yml
+    description: Antenna ratios
+  - name: comp
+    path: decks/comp.yml
+    description: Active area (COMP)
+  - name: contact
+    path: decks/contact.yml
+    description: Contact
+  - name: cup
+    path: decks/cup.yml
+    description: Cu pillar
+  - name: density
+    path: decks/density.yml
+    description: Global layer density (COMP, Poly2, Metal)
+  - name: dnwell
+    path: decks/dnwell.yml
+    description: Deep N-well
+  - name: drc_bjt
+    path: decks/drc_bjt.yml
+    description: BJT geometry
+  - name: dualgate
+    path: decks/dualgate.yml
+    description: Dual gate oxide (5/6 V devices)
+  - name: dummy_comp
+    path: decks/dummy_comp.yml
+    description: COMP dummy fill
+  - name: dummy_exclude
+    path: decks/dummy_exclude.yml
+    description: Dummy-fill exclude marker
+  - name: dummy_metal
+    path: decks/dummy_metal.yml
+    description: Metal dummy fill
+  - name: dummy_poly2
+    path: decks/dummy_poly2.yml
+    description: Poly2 dummy fill
+  - name: efuse
+    path: decks/efuse.yml
+    description: eFuse
+  - name: esd
+    path: decks/esd.yml
+    description: ESD implant
+  - name: guard_ring
+    path: decks/guard_ring.yml
+    description: Guard ring
+  - name: hres
+    path: decks/hres.yml
+    description: High-sheet poly resistor
+  - name: ldnmos
+    path: decks/ldnmos.yml
+    description: LDMOS NFET
+  - name: ldpmos
+    path: decks/ldpmos.yml
+    description: LDMOS PFET
+  - name: lres
+    path: decks/lres.yml
+    description: Low-sheet poly resistor
+  - name: lvpwell
+    path: decks/lvpwell.yml
+    description: Low-voltage P-well
+  - name: lvs_bjt
+    path: decks/lvs_bjt.yml
+    description: BJT LVS marker
+  - name: mcell
+    path: decks/mcell.yml
+    description: Memory cell
+  - name: metal
+    path: decks/metal.yml
+    description: Metal 1-4
+  - name: metaltop
+    path: decks/metaltop.yml
+    description: Top metal (Metal5 on 5LM)
+  - name: mim_b
+    path: decks/mim_b.yml
+    description: MIM capacitor (option B)
+  - name: mslot
+    path: decks/mslot.yml
+    description: Metal slots
+  - name: nat
+    path: decks/nat.yml
+    description: Native-VT device
+  - name: nplus
+    path: decks/nplus.yml
+    description: N+ implant
+  - name: nwell
+    path: decks/nwell.yml
+    description: N-well
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Off-grid vertices
+  - name: otp_mk
+    path: decks/otp_mk.yml
+    description: OTP marker
+  - name: poly2
+    path: decks/poly2.yml
+    description: Gate poly
+  - name: pplus
+    path: decks/pplus.yml
+    description: P+ implant
+  - name: pres
+    path: decks/pres.yml
+    description: P+ poly resistor
+  - name: sab
+    path: decks/sab.yml
+    description: Salicide block
+  - name: sram_3p3
+    path: decks/sram_3p3.yml
+    description: SRAM 3.3 V
+  - name: sram_5p0
+    path: decks/sram_5p0.yml
+    description: SRAM 5.0 V
+  - name: via
+    path: decks/via.yml
+    description: Via 1-4
+  - name: via_recommended
+    path: decks/via_recommended.yml
+    description: Via enclosure guidance
+  - name: ymtp_mk
+    path: decks/ymtp_mk.yml
+    description: YMTP marker
+
+# Cells checked as delivered.  A violation of the listed rules whose marker lies inside
+# a placed instance of one is reported, but as waived.  The foundry's bond pads and IO
+# cells draw their pad metal with 0.3 um slots against the 1 um CUP.3 asks of a
+# wire-bonded pad, and the reference deck reports those as well.
+waivers:
+  - cells: ["Bondpad_*", "gf180mcu_fd_io__*"]
+    rules: [CUP.3]
+    reason: foundry pad and IO library, qualified as delivered
+
+# Drawn layers: the GDS layer/datatype pairs the derived layers below are built from.
+# Variant D is a 5LM stack, so the 6LM-only layers (via5 and the metaltop family) are
+# absent.
+layers:
+  - name: comp
+    gds_layer: 22
+    gds_datatype: 0
+  - name: dnwell
+    gds_layer: 12
+    gds_datatype: 0
+  - name: nwell
+    gds_layer: 21
+    gds_datatype: 0
+  - name: lvpwell
+    gds_layer: 204
+    gds_datatype: 0
+  - name: dualgate
+    gds_layer: 55
+    gds_datatype: 0
+  - name: poly2_drawn
+    gds_layer: 30
+    gds_datatype: 0
+  - name: nplus
+    gds_layer: 32
+    gds_datatype: 0
+  - name: pplus
+    gds_layer: 31
+    gds_datatype: 0
+  - name: sab
+    gds_layer: 49
+    gds_datatype: 0
+  - name: esd
+    gds_layer: 24
+    gds_datatype: 0
+  - name: resistor
+    gds_layer: 62
+    gds_datatype: 0
+  - name: fhres
+    gds_layer: 227
+    gds_datatype: 0
+  - name: fusetop
+    gds_layer: 75
+    gds_datatype: 0
+  - name: fusewindow_d
+    gds_layer: 96
+    gds_datatype: 1
+  - name: polyfuse
+    gds_layer: 220
+    gds_datatype: 0
+  - name: mvsd
+    gds_layer: 210
+    gds_datatype: 0
+  - name: mvpsd
+    gds_layer: 11
+    gds_datatype: 39
+  - name: nat
+    gds_layer: 5
+    gds_datatype: 0
+  - name: comp_dummy
+    gds_layer: 22
+    gds_datatype: 4
+  - name: poly2_dummy
+    gds_layer: 30
+    gds_datatype: 4
+  - name: schottky_diode
+    gds_layer: 241
+    gds_datatype: 0
+  - name: zener
+    gds_layer: 178
+    gds_datatype: 0
+  - name: res_mk
+    gds_layer: 110
+    gds_datatype: 5
+  - name: opc_drc
+    gds_layer: 124
+    gds_datatype: 5
+  - name: v5_xtor
+    gds_layer: 112
+    gds_datatype: 1
+  - name: cap_mk
+    gds_layer: 117
+    gds_datatype: 5
+  - name: mos_cap_mk
+    gds_layer: 166
+    gds_datatype: 5
+  - name: ind_mk
+    gds_layer: 151
+    gds_datatype: 5
+  - name: diode_mk
+    gds_layer: 115
+    gds_datatype: 5
+  - name: drc_bjt
+    gds_layer: 127
+    gds_datatype: 5
+  - name: lvs_bjt
+    gds_layer: 118
+    gds_datatype: 5
+  - name: mim_l_mk
+    gds_layer: 117
+    gds_datatype: 10
+  - name: latchup_mk
+    gds_layer: 137
+    gds_datatype: 5
+  - name: guard_ring_mk
+    gds_layer: 167
+    gds_datatype: 5
+  - name: otp_mk
+    gds_layer: 173
+    gds_datatype: 5
+  - name: mtpmark
+    gds_layer: 122
+    gds_datatype: 5
+  - name: neo_ee_mk
+    gds_layer: 88
+    gds_datatype: 17
+  - name: sramcore
+    gds_layer: 108
+    gds_datatype: 5
+  - name: lvs_rf
+    gds_layer: 100
+    gds_datatype: 5
+  - name: lvs_drain
+    gds_layer: 100
+    gds_datatype: 7
+  - name: hvpolyrs
+    gds_layer: 123
+    gds_datatype: 5
+  - name: lvs_io
+    gds_layer: 119
+    gds_datatype: 5
+  - name: probe_mk
+    gds_layer: 13
+    gds_datatype: 17
+  - name: esd_mk
+    gds_layer: 24
+    gds_datatype: 5
+  - name: lvs_source
+    gds_layer: 100
+    gds_datatype: 8
+  - name: well_diode_mk
+    gds_layer: 153
+    gds_datatype: 51
+  - name: ldmos_xtor
+    gds_layer: 226
+    gds_datatype: 0
+  - name: plfuse
+    gds_layer: 125
+    gds_datatype: 5
+  - name: efuse_mk
+    gds_layer: 80
+    gds_datatype: 5
+  - name: mcell_feol_mk
+    gds_layer: 11
+    gds_datatype: 17
+  - name: ymtp_mk
+    gds_layer: 86
+    gds_datatype: 17
+  - name: dev_wf_mk
+    gds_layer: 128
+    gds_datatype: 17
+  - name: comp_label
+    gds_layer: 22
+    gds_datatype: 10
+  - name: poly2_label
+    gds_layer: 30
+    gds_datatype: 10
+  - name: mdiode
+    gds_layer: 116
+    gds_datatype: 5
+  - name: ndmy
+    gds_layer: 111
+    gds_datatype: 5
+  - name: pmndmy
+    gds_layer: 152
+    gds_datatype: 5
+  - name: pad
+    gds_layer: 37
+    gds_datatype: 0
+  - name: ubmpperi
+    gds_layer: 183
+    gds_datatype: 0
+  - name: ubmparray
+    gds_layer: 184
+    gds_datatype: 0
+  - name: ubmeplate
+    gds_layer: 185
+    gds_datatype: 0
+  - name: pr_bndry
+    gds_layer: 0
+    gds_datatype: 0
+  - name: border
+    gds_layer: 63
+    gds_datatype: 0
+  - name: contact
+    gds_layer: 33
+    gds_datatype: 0
+  - name: metal1_drawn
+    gds_layer: 34
+    gds_datatype: 0
+  - name: metal1_slot
+    gds_layer: 34
+    gds_datatype: 3
+  - name: metal1_dummy
+    gds_layer: 34
+    gds_datatype: 4
+  - name: metal1_label
+    gds_layer: 34
+    gds_datatype: 10
+  - name: metal1_blk
+    gds_layer: 34
+    gds_datatype: 5
+  - name: metal1_res
+    gds_layer: 110
+    gds_datatype: 11
+  - name: via1
+    gds_layer: 35
+    gds_datatype: 0
+  - name: metal2_drawn
+    gds_layer: 36
+    gds_datatype: 0
+  - name: metal2_slot
+    gds_layer: 36
+    gds_datatype: 3
+  - name: metal2_dummy
+    gds_layer: 36
+    gds_datatype: 4
+  - name: metal2_blk
+    gds_layer: 36
+    gds_datatype: 5
+  - name: metal2_label
+    gds_layer: 36
+    gds_datatype: 10
+  - name: metal2_res
+    gds_layer: 110
+    gds_datatype: 12
+  - name: via2
+    gds_layer: 38
+    gds_datatype: 0
+  - name: metal3_drawn
+    gds_layer: 42
+    gds_datatype: 0
+  - name: metal3_slot
+    gds_layer: 42
+    gds_datatype: 3
+  - name: metal3_dummy
+    gds_layer: 42
+    gds_datatype: 4
+  - name: metal3_blk
+    gds_layer: 42
+    gds_datatype: 5
+  - name: metal3_label
+    gds_layer: 42
+    gds_datatype: 10
+  - name: metal3_res
+    gds_layer: 110
+    gds_datatype: 13
+  - name: via3
+    gds_layer: 40
+    gds_datatype: 0
+  - name: metal4_drawn
+    gds_layer: 46
+    gds_datatype: 0
+  - name: metal4_slot
+    gds_layer: 46
+    gds_datatype: 3
+  - name: metal4_dummy
+    gds_layer: 46
+    gds_datatype: 4
+  - name: metal4_blk
+    gds_layer: 46
+    gds_datatype: 5
+  - name: metal4_label
+    gds_layer: 46
+    gds_datatype: 10
+  - name: metal4_res
+    gds_layer: 110
+    gds_datatype: 14
+  - name: via4
+    gds_layer: 41
+    gds_datatype: 0
+  - name: metal5_drawn
+    gds_layer: 81
+    gds_datatype: 0
+  - name: metal5_slot
+    gds_layer: 81
+    gds_datatype: 3
+  - name: metal5_dummy
+    gds_layer: 81
+    gds_datatype: 4
+  - name: metal5_blk
+    gds_layer: 81
+    gds_datatype: 5
+  - name: metal5_label
+    gds_layer: 81
+    gds_datatype: 10
+  - name: metal5_res
+    gds_layer: 110
+    gds_datatype: 15
+
+# Net extraction.  Upstream states connectivity as bare `connect(a, b)` pairs; this
+# engine is connector-based - a via/contact layer bridges the conductors it sits
+# inside - so the pairs that have no drawn connector (a well tie, an LDMOS drain)
+# get one derived for them below, named `*_tap`.  One conductor per entry, ordered
+# bottom-up, so an antenna rule can cut the stack at a given level.
+connectivity:
+  # ORDERED.  The antenna deck selects a net by *prefix* of this list - the stack as it
+  # exists partway through processing - so the index of every step is load-bearing and
+  # the order mirrors the antenna rules' own connect phases: gates and diffusions
+  # first, then the wells, then the metal stack one level at a time.  Inserting a step
+  # shifts every level above it; tests/pdk_integrity.rs pins the list so that breaks
+  # loudly.  Indices are noted where an antenna rule names them.
+  - connector: contact           # 0
+    layers: [poly2_drawn]
+  - connector: contact           # 1
+    layers: [ncomp_con]
+  - connector: contact           # 2
+    layers: [pcomp_con]
+  - connector: contact           # 3
+    layers: [natcomp_con]
+  # Well ties and device bodies: the tap diffusion is the connector between the well
+  # and the contacted active it straps.  These sit ahead of the metal stack because
+  # upstream's antenna phases have the wells connected from the contact level up.
+  - connector: ntap              # 4
+    layers: [nwell, nw_lv, nw_mv, ncomp_con]
+  # `dnwell` itself is listed beside `dnwell_n` so the deep well has a net of its own:
+  # DN.2a/DN.2b are the same-potential/different-potential spacing pair, and without the
+  # drawn layer in the graph neither can resolve one.
+  - connector: ntap_dn           # 5
+    layers: [dnwell_n, ncomp_con, dnwell]
+  - connector: ptap              # 6
+    layers: [lvpwell, lvpwell_dn_lv, lvpwell_dn_mv, pcomp_con]
+  - connector: mvsd_tap          # 7
+    layers: [mvsd, ncomp_con]
+  - connector: ntap              # 8
+    layers: [nwell, mvsd]
+  - connector: mvpsd_tap         # 9
+    layers: [mvpsd, pcomp_con]
+  - connector: contact           # 10 - end of the pre-metal net (ANT.8)
+    layers: [metal1_drawn]
+  - connector: via1              # 11
+    layers: [metal1_drawn]
+  - connector: via1              # 12
+    layers: [metal2_drawn]
+  - connector: via2              # 13
+    layers: [metal2_drawn]
+  - connector: via2              # 14
+    layers: [metal3_drawn]
+  - connector: via3              # 15
+    layers: [metal3_drawn]
+  # MIM option B ties the cap plate in at the Via3 phase (`connect(via3, fusetop)` in
+  # antenna.rb).  It sits inside the Via3 phase, before Via3 reaches Metal4, so the
+  # MIM antenna rules see the plate on the same net as the via that lands on it.
+  - connector: via3              # 16
+    layers: [fusetop]
+  - connector: via3              # 17
+    layers: [metal4_drawn]
+  - connector: via4              # 18
+    layers: [metal4_drawn]
+  - connector: via4              # 19
+    layers: [metal5_drawn]
+  # Outside every antenna phase: the electrical bridge from the MIM plate to the top
+  # metal, which the geometry decks' net-aware checks need but the antenna phases,
+  # following upstream, do not have.
+  - connector: mimcap_top_tap    # 20
+    layers: [fusetop, metal5_drawn]
+
+# The derived layer table every deck is written against (the design rules' generic
+# layers, plus the metal aliases).  Upstream chains these
+# several levels deep - psd_dn rests on pgate_dn on pgate on pactive on pcomp on
+# comp - and only `mode: lazy` layers may reference another virtual layer, so the
+# whole table is lazy.  A deck needing one of these under a whole-layout check
+# (inside_boundary) must mark that entry `mode: global` and flatten the chain.
+#
+# Where upstream composes several operations in one expression, the intermediate
+# steps are named here rather than inlined; they carry the suffix that says what is
+# still to be removed (`_all`, `_touching`).
+virtual_layers:
+  # ---- Wells --------------------------------------------------------------
+  - name: dnwell_n
+    op: difference
+    mode: lazy
+    layers: [dnwell, lvpwell]
+  - name: dnwell_p
+    op: intersection
+    mode: lazy
+    layers: [dnwell, lvpwell]
+  - name: all_nwell
+    op: union
+    mode: lazy
+    layers: [dnwell_n, nwell]
+
+  # ---- Comps and gates ----------------------------------------------------
+  - name: ncomp
+    op: intersection
+    mode: lazy
+    layers: [comp, nplus]
+  - name: pcomp
+    op: intersection
+    mode: lazy
+    layers: [comp, pplus]
+  - name: ncomp_con
+    op: difference
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: pcomp_con
+    op: difference
+    mode: lazy
+    layers: [pcomp, poly2_drawn]
+  - name: tgate_all
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, comp]
+  - name: tgate
+    op: difference
+    mode: lazy
+    layers: [tgate_all, res_mk]
+
+  # ---- N devices ----------------------------------------------------------
+  - name: nactive
+    op: difference
+    mode: lazy
+    layers: [ncomp, all_nwell]
+  - name: n_diode
+    op: difference
+    mode: lazy
+    layers: [ncomp_con, nwell]
+  - name: ngate
+    op: intersection
+    mode: lazy
+    layers: [nactive, tgate]
+  # Source/drain: the active regions that meet a gate, gate itself removed.  Upstream
+  # uses KLayout `interacting`, so a region abutting the gate with no overlap counts.
+  - name: nsd_touching
+    op: interacting
+    mode: lazy
+    layers: [nactive, ngate]
+  - name: nsd
+    op: difference
+    mode: lazy
+    layers: [nsd_touching, ngate, res_mk]
+  - name: ptap
+    op: difference
+    mode: lazy
+    layers: [pcomp, all_nwell, res_mk]
+
+  # ---- P devices ----------------------------------------------------------
+  - name: pactive
+    op: intersection
+    mode: lazy
+    layers: [pcomp, all_nwell]
+  - name: p_diode
+    op: intersection
+    mode: lazy
+    layers: [pcomp_con, nwell]
+  - name: pgate
+    op: intersection
+    mode: lazy
+    layers: [pactive, tgate]
+  - name: psd_touching
+    op: interacting
+    mode: lazy
+    layers: [pactive, pgate]
+  - name: ntap_all
+    op: intersection
+    mode: lazy
+    layers: [ncomp, all_nwell]
+  - name: ntap
+    op: difference
+    mode: lazy
+    layers: [ntap_all, res_mk]
+
+  # ---- Inside the deep N-well --------------------------------------------
+  - name: ngate_dn
+    op: intersection
+    mode: lazy
+    layers: [ngate, dnwell_p]
+  - name: ptap_dn_all
+    op: intersection
+    mode: lazy
+    layers: [ptap, dnwell_p]
+  - name: pgate_dn
+    op: intersection
+    mode: lazy
+    layers: [pgate, dnwell_n]
+  - name: ntap_dn
+    op: intersection
+    mode: lazy
+    layers: [ntap, dnwell_n]
+  - name: pcomp_dn
+    op: intersection
+    mode: lazy
+    layers: [pcomp, dnwell_n]
+  - name: psd_dn_touching
+    op: interacting
+    mode: lazy
+    layers: [pcomp_dn, pgate_dn]
+  - name: psd_dn
+    op: difference
+    mode: lazy
+    layers: [psd_dn_touching, pgate_dn, res_mk]
+  - name: ncomp_dn
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell_p]
+  - name: nsd_dn_touching
+    op: interacting
+    mode: lazy
+    layers: [ncomp_dn, ngate_dn]
+  - name: nsd_dn
+    op: difference
+    mode: lazy
+    layers: [nsd_dn_touching, ngate_dn, res_mk]
+
+  # ---- Native-VT device ---------------------------------------------------
+  - name: natcomp
+    op: intersection
+    mode: lazy
+    layers: [nat, comp]
+  - name: natcomp_con
+    op: difference
+    mode: lazy
+    layers: [natcomp, poly2_drawn]
+
+  # ---- Gate voltage classes ----------------------------------------------
+  # dualgate marks the thick-oxide (5/6 V) devices; v5_xtor then splits those into
+  # 5 V (inside it) and 6 V (outside it).
+  - name: nom_gate
+    op: difference
+    mode: lazy
+    layers: [tgate, dualgate]
+  - name: thick_gate
+    op: intersection
+    mode: lazy
+    layers: [tgate, dualgate]
+  - name: ngate_56v
+    op: intersection
+    mode: lazy
+    layers: [ngate, dualgate]
+  - name: pgate_56v
+    op: intersection
+    mode: lazy
+    layers: [pgate, dualgate]
+  - name: ngate_5v
+    op: intersection
+    mode: lazy
+    layers: [ngate_56v, v5_xtor]
+  - name: pgate_5v
+    op: intersection
+    mode: lazy
+    layers: [pgate_56v, v5_xtor]
+  - name: ngate_6v
+    op: difference
+    mode: lazy
+    layers: [ngate_56v, v5_xtor]
+  - name: pgate_6v
+    op: difference
+    mode: lazy
+    layers: [pgate_56v, v5_xtor]
+
+  # ---- Deep N-well voltage classes ---------------------------------------
+  # Whole-region selectors, not booleans: a deep well is 3.3 V only if it touches
+  # neither marker anywhere, and 5/6 V if it overlaps dualgate anywhere.
+  - name: dnwell_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [dnwell, v5_xtor]
+  - name: dnwell_3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [dnwell_no_v5, dualgate]
+  - name: dnwell_56v
+    op: overlapping
+    mode: lazy
+    layers: [dnwell, dualgate]
+
+  # ---- LVPWELL ------------------------------------------------------------
+  - name: lvpwell_dn
+    op: interacting
+    mode: lazy
+    layers: [lvpwell, dnwell]
+  - name: lvpwell_out
+    op: not_interacting
+    mode: lazy
+    layers: [lvpwell, dnwell]
+  - name: lvpwell_dn3p3v
+    op: intersection
+    mode: lazy
+    layers: [lvpwell, dnwell_3p3v]
+  - name: lvpwell_dn56v
+    op: intersection
+    mode: lazy
+    layers: [lvpwell, dnwell_56v]
+
+  # ---- NWELL --------------------------------------------------------------
+  # NW.5's other half: an N-well that overlaps the DNWELL but runs outside it. There is no
+  # margin to measure there - the well crosses the boundary - so the enclosure check
+  # cannot see it, and upstream ORs this in as a second violation set. The MV variant
+  # takes plain `nwell` where the LV one takes `nw_lv`; that asymmetry is upstream's.
+  - name: nw5_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [nw_lv, dnwell]
+  - name: nw5_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [nw5_lv_crossing_all, dnwell]
+  - name: nw5_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [nwell, dnwell]
+  - name: nw5_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [nw5_mv_crossing_all, dnwell]
+  - name: nwell_n_dn
+    op: not_interacting
+    mode: lazy
+    layers: [nwell, dnwell]
+
+  # ---- Drawn plus dummy ---------------------------------------------------
+  # Most rules run on the conductor as fabricated, which includes the fill.
+  - name: poly2
+    op: union
+    mode: lazy
+    layers: [poly2_drawn, poly2_dummy]
+  - name: metal1
+    op: union
+    mode: lazy
+    layers: [metal1_drawn, metal1_dummy]
+  - name: metal2
+    op: union
+    mode: lazy
+    layers: [metal2_drawn, metal2_dummy]
+  - name: metal3
+    op: union
+    mode: lazy
+    layers: [metal3_drawn, metal3_dummy]
+  - name: metal4
+    op: union
+    mode: lazy
+    layers: [metal4_drawn, metal4_dummy]
+  - name: metal5
+    op: union
+    mode: lazy
+    layers: [metal5_drawn, metal5_dummy]
+
+  # ---- Top-of-stack aliases ----------------------------------------------
+  # Metal5 and Via4.  Upstream's METAL_STACK_MAP gives 5LM `top_metal: metal5` and
+  # `top_via: via4`, and registers no MetalTop or Via5 at all for this variant.
+  #
+  # A single-source union is the alias: it renames without copying a rule set.
+  - name: top_metal
+    op: union
+    mode: lazy
+    layers: [metal5]
+  - name: topmin1_metal
+    op: union
+    mode: lazy
+    layers: [metal4]
+  - name: top_via
+    op: union
+    mode: lazy
+    layers: [via4]
+  - name: topmin1_via
+    op: union
+    mode: lazy
+    layers: [via3]
+
+  # ---- N-well voltage classes (nwell deck) --------------------------------
+  # Upstream builds these as deck-local variables (`nw_lv`, `nw_mv`); they are named
+  # here so a rule can reference them, keeping the upstream names for traceability.
+  # A well is low-voltage only if it touches neither marker *anywhere*, so these are
+  # whole-region selectors and not booleans against the markers.
+  - name: nw_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [nwell, v5_xtor]
+  - name: nw_lv
+    op: not_interacting
+    mode: lazy
+    layers: [nw_no_v5, dualgate]
+  - name: nw_mv
+    op: overlapping
+    mode: lazy
+    layers: [nwell, dualgate]
+  # NW.2a exempts the YMTP marker.  Upstream drops the violation markers that fall
+  # inside it; filtering the well instead is not the same thing where a marker covers
+  # the gap but not the wells, so revisit this if a YMTP design disagrees.
+  - name: nw_lv_no_ymtp
+    op: not_inside
+    mode: lazy
+    layers: [nw_lv, ymtp_mk]
+  - name: nw_mv_no_ymtp
+    op: not_inside
+    mode: lazy
+    layers: [nw_mv, ymtp_mk]
+  # NW.1b: an N-well used as a resistor.  The marker has to reach beyond the well it
+  # marks (`interacting` then `not_inside`), which is what separates a resistor from a
+  # marker sitting wholly within a well for some other reason.
+  - name: res_mk_at_nwell
+    op: interacting
+    mode: lazy
+    layers: [res_mk, nwell]
+  - name: nw_res_mk
+    op: not_inside
+    mode: lazy
+    layers: [res_mk_at_nwell, nwell]
+  - name: nw_lv_out_dnwell
+    op: not_overlapping
+    mode: lazy
+    layers: [nw_lv, dnwell]
+  - name: nw_mv_out_dnwell
+    op: not_overlapping
+    mode: lazy
+    layers: [nw_mv, dnwell]
+  - name: nw_res_lv
+    op: intersection
+    mode: lazy
+    layers: [nw_lv_out_dnwell, nw_res_mk]
+  - name: nw_res_mv
+    op: intersection
+    mode: lazy
+    layers: [nw_mv_out_dnwell, nw_res_mk]
+  # NW.4 and NW.6 are "this must not exist" rules: the layer is the error.
+  - name: nwell_on_lvpwell
+    op: intersection
+    mode: lazy
+    layers: [nwell, lvpwell]
+  - name: nwell_in_res_mk
+    op: inside
+    mode: lazy
+    layers: [nwell, res_mk]
+  - name: nwell_res_in_dnwell
+    op: intersection
+    mode: lazy
+    layers: [nwell_in_res_mk, dnwell]
+
+  # ---- COMP voltage classes (comp deck) -----------------------------------
+  # Same shape as the well classes: low-voltage COMP touches neither marker
+  # anywhere, medium-voltage COMP overlaps dualgate.
+  - name: comp_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [comp, v5_xtor]
+  - name: comp_3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [comp_no_v5, dualgate]
+  - name: comp_56v
+    op: overlapping
+    mode: lazy
+    layers: [comp, dualgate]
+  - name: drc_bjt_two_comp
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [drc_bjt, comp_56v]
+  - name: df3c_viol
+    op: intersection
+    mode: lazy
+    layers: [comp_56v, drc_bjt_two_comp]
+  - name: mvsd_or_mvpsd
+    op: union
+    mode: lazy
+    layers: [mvsd, mvpsd]
+  - name: comp_56v_no_mv
+    op: difference
+    mode: lazy
+    layers: [comp_56v, mvsd_or_mvpsd]
+  - name: comp_moscap
+    op: intersection
+    mode: lazy
+    layers: [comp, mos_cap_mk]
+  - name: comp_no_moscap
+    op: difference
+    mode: lazy
+    layers: [comp, mos_cap_mk]
+  # DF.2b caps COMP width at 100 um.  Upstream writes it as sized(-50).sized(50),
+  # which is an opening: anything not at least 100 um across erodes away, so
+  # whatever survives is the violation.
+  - name: comp_over_100um
+    op: open
+    mode: lazy
+    radius: 50.0
+    layers: [comp_no_moscap]
+  - name: comp_3p3v_no_otp
+    op: difference
+    mode: lazy
+    layers: [comp_3p3v, otp_mk]
+  - name: comp_56v_no_otp
+    op: difference
+    mode: lazy
+    layers: [comp_56v, otp_mk]
+  - name: comp_3p3v_bjt
+    op: intersection
+    mode: lazy
+    layers: [comp_3p3v, drc_bjt]
+  - name: comp_no_otp
+    op: difference
+    mode: lazy
+    layers: [comp, otp_mk]
+
+  # DF.3b: NCOMP butted to PCOMP.  Butting is allowed only when the two sit in the
+  # same well; upstream's not_outside is this engine's overlapping.
+  - name: ncomp_butted
+    op: interacting
+    mode: lazy
+    layers: [ncomp, pcomp]
+  - name: ntap_on_pactive
+    op: overlapping
+    mode: lazy
+    layers: [ntap, pactive]
+  - name: ptap_on_nactive
+    op: overlapping
+    mode: lazy
+    layers: [ptap, nactive]
+  - name: df3b_same_well
+    op: union
+    mode: lazy
+    layers: [ntap_on_pactive, ptap_on_nactive]
+  - name: df3b_moscap
+    op: intersection
+    mode: lazy
+    layers: [ncomp_butted, mos_cap_mk]
+  - name: df3b_bad
+    op: union
+    mode: lazy
+    layers: [df3b_same_well, df3b_moscap]
+  - name: df3b_viol
+    op: intersection
+    mode: lazy
+    layers: [comp, df3b_bad]
+  - name: comp_butted
+    op: interacting
+    mode: lazy
+    layers: [comp, ncomp_butted]
+
+  # ---- Taps and COMP inside the deep N-well -------------------------------
+  - name: ntap_dn3p3v
+    op: intersection
+    mode: lazy
+    layers: [ntap_dn, dnwell_3p3v]
+  - name: ntap_dn56v
+    op: intersection
+    mode: lazy
+    layers: [ntap_dn, dnwell_56v]
+  - name: pcomp_dn3p3v
+    op: intersection
+    mode: lazy
+    layers: [pcomp, dnwell_3p3v]
+  - name: pcomp_dn56v
+    op: intersection
+    mode: lazy
+    layers: [pcomp, dnwell_56v]
+  - name: pcomp_dn56v_no_sram
+    op: difference
+    mode: lazy
+    layers: [pcomp_dn56v, sramcore]
+  - name: ptap_lvpwell_dn3p3v
+    op: intersection
+    mode: lazy
+    layers: [ptap, lvpwell_dn3p3v]
+  - name: ptap_lvpwell_dn56v
+    op: intersection
+    mode: lazy
+    layers: [ptap, lvpwell_dn56v]
+  - name: ncomp_dn3p3v
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell_3p3v]
+  - name: ncomp_dn56v
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell_56v]
+  - name: df8_ncomp3p3v
+    op: intersection
+    mode: lazy
+    layers: [ncomp_dn3p3v, lvpwell_dn3p3v]
+  - name: df8_ncomp56v_all
+    op: intersection
+    mode: lazy
+    layers: [ncomp_dn56v, lvpwell_dn56v]
+  - name: df8_ncomp56v
+    op: difference
+    mode: lazy
+    layers: [df8_ncomp56v_all, sramcore]
+
+  # ---- N-well overlap of COMP outside the deep N-well ---------------------
+  - name: nwell_n_dn_no_sram
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn, sramcore]
+  - name: nw_ndn_sram_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [nwell_n_dn_no_sram, v5_xtor]
+  - name: nw_ndn_sram_3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [nw_ndn_sram_no_v5, dualgate]
+  - name: nw_ndn_sram_56v
+    op: overlapping
+    mode: lazy
+    layers: [nwell_n_dn_no_sram, dualgate]
+  - name: df4c_pcomp3p3v
+    op: intersection
+    mode: lazy
+    layers: [pcomp, nw_ndn_sram_3p3v]
+  - name: df4c_pcomp56v
+    op: intersection
+    mode: lazy
+    layers: [pcomp, nw_ndn_sram_56v]
+  - name: df4d_nwell
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn, ymtp_mk, neo_ee_mk]
+  - name: ncomp_3p3v
+    op: intersection
+    mode: lazy
+    layers: [nplus, comp_3p3v]
+  - name: ncomp_56v
+    op: intersection
+    mode: lazy
+    layers: [nplus, comp_56v]
+  - name: pcomp_3p3v
+    op: intersection
+    mode: lazy
+    layers: [pplus, comp_3p3v]
+  - name: pcomp_56v
+    op: intersection
+    mode: lazy
+    layers: [pplus, comp_56v]
+  - name: df4d_ncomp3p3v
+    op: intersection
+    mode: lazy
+    layers: [ncomp_3p3v, df4d_nwell]
+  - name: df4d_ncomp56v
+    op: intersection
+    mode: lazy
+    layers: [ncomp_56v, df4d_nwell]
+
+  # ---- DF.6: COMP must extend beyond the gate ----------------------------
+  - name: df6_exclude
+    op: union
+    mode: lazy
+    layers: [otp_mk, ymtp_mk, sramcore, mvsd, mvpsd]
+  - name: comp_at_tgate
+    op: interacting
+    mode: lazy
+    layers: [comp, tgate]
+  - name: df6_comp
+    op: difference
+    mode: lazy
+    layers: [comp_at_tgate, df6_exclude]
+  - name: df6_poly
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, df6_exclude]
+  - name: df6_comp3p3v
+    op: intersection
+    mode: lazy
+    layers: [comp_3p3v, df6_comp]
+  - name: df6_comp56v
+    op: intersection
+    mode: lazy
+    layers: [comp_56v, df6_comp]
+
+  # ---- COMP outside both wells, and the N-well it must stay clear of -----
+  - name: ncomp_out_nw_dn
+    op: difference
+    mode: lazy
+    layers: [ncomp, nwell, dnwell]
+  - name: pcomp_out_nw_dn
+    op: difference
+    mode: lazy
+    layers: [pcomp, nwell, dnwell]
+  - name: nwell_n_dn_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [nwell_n_dn, v5_xtor]
+  - name: nwell_n_dn3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [nwell_n_dn_no_v5, dualgate]
+  - name: nwell_n_dn56v
+    op: overlapping
+    mode: lazy
+    layers: [nwell_n_dn, dualgate]
+  - name: nwell_n_dn3p3v_no_ymtp
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn3p3v, ymtp_mk]
+  - name: nwell_n_dn56v_no_ymtp
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn56v, ymtp_mk]
+  - name: ymtp_or_sram
+    op: union
+    mode: lazy
+    layers: [ymtp_mk, sramcore]
+  - name: df16_ncomp_lv_all
+    op: interacting
+    mode: lazy
+    layers: [ncomp_out_nw_dn, ncomp_3p3v]
+  - name: df16_ncomp_lv
+    op: difference
+    mode: lazy
+    layers: [df16_ncomp_lv_all, ymtp_or_sram]
+  - name: df16_ncomp_mv_all
+    op: interacting
+    mode: lazy
+    layers: [ncomp_out_nw_dn, ncomp_56v]
+  - name: df16_ncomp_mv
+    op: not_inside
+    mode: lazy
+    layers: [df16_ncomp_mv_all, ymtp_or_sram]
+  - name: df17_pcomp_lv
+    op: intersection
+    mode: lazy
+    layers: [pcomp_3p3v, pcomp_out_nw_dn]
+  - name: df17_pcomp_mv
+    op: intersection
+    mode: lazy
+    layers: [pcomp_56v, pcomp_out_nw_dn]
+
+  # ---- DF.12 / DF.13 / DF.14 ---------------------------------------------
+  - name: comp_no_schottky
+    op: not_interacting
+    mode: lazy
+    layers: [comp, schottky_diode]
+  - name: comp_no_implant
+    op: difference
+    mode: lazy
+    layers: [comp_no_schottky, nplus, pplus]
+  - name: pactive_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [pactive, v5_xtor]
+  - name: pactive_3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [pactive_no_v5, dualgate]
+  - name: pactive_56v
+    op: overlapping
+    mode: lazy
+    layers: [pactive, dualgate]
+  - name: nactive_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [nactive, v5_xtor]
+  - name: nactive_3p3v
+    op: not_interacting
+    mode: lazy
+    layers: [nactive_no_v5, dualgate]
+  - name: nactive_56v
+    op: overlapping
+    mode: lazy
+    layers: [nactive, dualgate]
+
+  # ---- BJT recognition (drc_bjt / lvs_bjt decks) --------------------------
+  # An NPN is recognised by a DRC_BJT marker meeting all three terminals; the rule
+  # then asks whether that marker actually covers the deep well beneath it.
+  - name: vnpn_e
+    op: intersection
+    mode: lazy
+    layers: [ncomp, lvs_bjt, dnwell, drc_bjt]
+  - name: vnpn_b
+    op: intersection
+    mode: lazy
+    layers: [pcomp, lvpwell, dnwell, drc_bjt]
+  - name: vnpn_c_all
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell, drc_bjt]
+  - name: vnpn_c
+    op: difference
+    mode: lazy
+    layers: [vnpn_c_all, lvs_bjt]
+  - name: bjt_npn_e
+    op: interacting
+    mode: lazy
+    layers: [drc_bjt, vnpn_e]
+  - name: bjt_npn_eb
+    op: interacting
+    mode: lazy
+    layers: [bjt_npn_e, vnpn_b]
+  - name: bjt_npn
+    op: interacting
+    mode: lazy
+    layers: [bjt_npn_eb, vnpn_c]
+  - name: bjt1_viol
+    op: not_covering
+    mode: lazy
+    layers: [bjt_npn, dnwell]
+  - name: pcomp_psub
+    op: not_overlapping
+    mode: lazy
+    layers: [pcomp, all_nwell]
+  - name: pcomp_psub_bjt
+    op: interacting
+    mode: lazy
+    layers: [pcomp_psub, drc_bjt]
+  - name: bjt2_viol
+    op: not_covering
+    mode: lazy
+    layers: [drc_bjt, pcomp_psub_bjt]
+  - name: comp_outside_bjt
+    op: not_overlapping
+    mode: lazy
+    layers: [comp, drc_bjt]
+  - name: ncomp_at_lvsbjt
+    op: interacting
+    mode: lazy
+    layers: [ncomp, lvs_bjt]
+  - name: vnpn_emitter
+    op: inside
+    mode: lazy
+    layers: [ncomp_at_lvsbjt, dnwell]
+  - name: pcomp_at_lvsbjt
+    op: interacting
+    mode: lazy
+    layers: [pcomp, lvs_bjt]
+  - name: vpnp_emitter
+    op: inside
+    mode: lazy
+    layers: [pcomp_at_lvsbjt, nwell]
+  - name: bjt_emitters
+    op: union
+    mode: lazy
+    layers: [vnpn_emitter, vpnp_emitter]
+  - name: lvsbjt1_viol
+    op: difference
+    mode: lazy
+    layers: [bjt_emitters, lvs_bjt]
+
+  # ---- Dualgate -----------------------------------------------------------
+  # DV.6 exempts the substrate tap, which is PCOMP outside the N-well.
+  - name: pcomp_outside_nwell
+    op: not_overlapping
+    mode: lazy
+    layers: [pcomp, nwell]
+  - name: comp_dv
+    op: difference
+    mode: lazy
+    layers: [comp, pcomp_outside_nwell]
+  - name: comp_outside_dualgate
+    op: not_overlapping
+    mode: lazy
+    layers: [comp, dualgate]
+  # DV.7: a dualgate that meets a COMP but does not contain it is a partial overlap.
+  - name: dv_over_comp
+    op: overlapping
+    mode: lazy
+    layers: [dualgate, comp_dv]
+  - name: dv_covering_comp
+    op: covering
+    mode: lazy
+    layers: [dualgate, comp_dv]
+  - name: dv7_viol
+    op: difference
+    mode: lazy
+    layers: [dv_over_comp, dv_covering_comp]
+  # DV.9: one N-well holding both a 5/6 V and a 3.3 V PMOS gate.
+  - name: pgate_dualgate
+    op: intersection
+    mode: lazy
+    layers: [pgate, dualgate]
+  - name: pgate_no_v5
+    op: not_inside
+    mode: lazy
+    layers: [pgate, v5_xtor]
+  - name: pgate_lv
+    op: not_inside
+    mode: lazy
+    layers: [pgate_no_v5, dualgate]
+  - name: nwell_with_mv_pgate
+    op: covering
+    mode: lazy
+    layers: [nwell, pgate_dualgate]
+  - name: dv9_viol
+    op: covering
+    mode: lazy
+    layers: [nwell_with_mv_pgate, pgate_lv]
+
+  # ---- Dummy exclude ------------------------------------------------------
+  - name: ndmy_or_pmndmy
+    op: union
+    mode: lazy
+    layers: [ndmy, pmndmy]
+
+  # ---- Metal, Cu pillar and guard ring -----------------------------------
+  # M1.1 exempts the 3.3 V SRAM core, which has its own S.M1.1_LV rule.
+  - name: sram_lv_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [sramcore, v5_xtor]
+  - name: sram_lv
+    op: not_interacting
+    mode: lazy
+    layers: [sram_lv_no_v5, dualgate]
+  - name: metal1_no_sram
+    op: difference
+    mode: lazy
+    layers: [metal1_drawn, sram_lv]
+  - name: metal1_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_drawn]
+  - name: metal1_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_wide10_a]
+  - name: metal1_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_wide10_b]
+  - name: metal1_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal1_wide10_c]
+  - name: metal1_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal1_wide10_d, metal1_drawn]
+  - name: metal2_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_drawn]
+  - name: metal2_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_wide10_a]
+  - name: metal2_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_wide10_b]
+  - name: metal2_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal2_wide10_c]
+  - name: metal2_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal2_wide10_d, metal2_drawn]
+  - name: metal3_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_drawn]
+  - name: metal3_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_wide10_a]
+  - name: metal3_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_wide10_b]
+  - name: metal3_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_wide10_c]
+  - name: metal3_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal3_wide10_d, metal3_drawn]
+  - name: metal4_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_drawn]
+  - name: metal4_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_wide10_a]
+  - name: metal4_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_wide10_b]
+  - name: metal4_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [metal4_wide10_c]
+  - name: metal4_wide10
+    op: intersection
+    mode: lazy
+    layers: [metal4_wide10_d, metal4_drawn]
+  - name: top_metal_wide10_a
+    op: shrink_x
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal]
+  - name: top_metal_wide10_b
+    op: shrink_y
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_wide10_a]
+  - name: top_metal_wide10_c
+    op: grow_x
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_wide10_b]
+  - name: top_metal_wide10_d
+    op: grow_y
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_wide10_c]
+  - name: top_metal_wide10
+    op: intersection
+    mode: lazy
+    layers: [top_metal_wide10_d, top_metal]
+  - name: dm8_sensitive
+    op: union
+    mode: lazy
+    layers: [fusetop, polyfuse, fusewindow_d, pmndmy, mtpmark, otp_mk]
+  - name: comp_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [comp, guard_ring_mk]
+  - name: contact_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [contact, guard_ring_mk]
+  - name: via1_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via1, guard_ring_mk]
+  - name: via2_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via2, guard_ring_mk]
+  - name: via3_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via3, guard_ring_mk]
+  - name: via4_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [via4, guard_ring_mk]
+  - name: pcomp_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [pcomp, guard_ring_mk]
+  - name: gr1_mk_viol
+    op: difference
+    mode: lazy
+    layers: [guard_ring_mk, comp_in_guard_ring]
+  - name: gr1_comp_viol
+    op: difference
+    mode: lazy
+    layers: [comp_in_guard_ring, guard_ring_mk]
+  - name: gr3_viol
+    op: difference
+    mode: lazy
+    layers: [comp_in_guard_ring, pplus]
+  - name: guard_ring_no_pad
+    op: not_interacting
+    mode: lazy
+    layers: [guard_ring_mk, pad]
+  - name: metal1_pad
+    op: interacting
+    mode: lazy
+    layers: [metal1_drawn, pad]
+  - name: metal1_pad_nogr
+    op: not_interacting
+    mode: lazy
+    layers: [metal1_pad, guard_ring_mk]
+  - name: metal1_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [metal1, guard_ring_mk]
+  - name: metal2_pad
+    op: interacting
+    mode: lazy
+    layers: [metal2_drawn, pad]
+  - name: metal2_pad_nogr
+    op: not_interacting
+    mode: lazy
+    layers: [metal2_pad, guard_ring_mk]
+  - name: metal2_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [metal2, guard_ring_mk]
+  - name: metal3_pad
+    op: interacting
+    mode: lazy
+    layers: [metal3_drawn, pad]
+  - name: metal3_pad_nogr
+    op: not_interacting
+    mode: lazy
+    layers: [metal3_pad, guard_ring_mk]
+  - name: metal3_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [metal3, guard_ring_mk]
+  - name: metal4_pad
+    op: interacting
+    mode: lazy
+    layers: [metal4_drawn, pad]
+  - name: metal4_pad_nogr
+    op: not_interacting
+    mode: lazy
+    layers: [metal4_pad, guard_ring_mk]
+  - name: metal4_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [metal4, guard_ring_mk]
+  - name: metal5_pad
+    op: interacting
+    mode: lazy
+    layers: [metal5_drawn, pad]
+  - name: metal5_pad_nogr
+    op: not_interacting
+    mode: lazy
+    layers: [metal5_pad, guard_ring_mk]
+  - name: metal5_in_guard_ring
+    op: overlapping
+    mode: lazy
+    layers: [metal5, guard_ring_mk]
+
+  # ---- Native-VT device (nat deck) ----------------------------------------
+  - name: ncomp_outside_nwell
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp, nwell]
+  - name: nat_ncomp
+    op: interacting
+    mode: lazy
+    layers: [ncomp_outside_nwell, nat]
+  - name: comp_outside_nat
+    op: not_overlapping
+    mode: lazy
+    layers: [comp, nat]
+  # NAT.8: the part of a NAT that overlaps dualgate but reaches outside it.
+  - name: nat_over_dualgate
+    op: overlapping
+    mode: lazy
+    layers: [nat, dualgate]
+  - name: nat8_viol
+    op: difference
+    mode: lazy
+    layers: [nat_over_dualgate, dualgate]
+  - name: dpf1_viol
+    op: not_covering
+    mode: lazy
+    layers: [poly2_dummy, comp_dummy]
+  - name: poly_nat_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [poly_nat, v5_xtor]
+  - name: poly_nat_lv
+    op: not_interacting
+    mode: lazy
+    layers: [poly_nat_no_v5, dualgate]
+  - name: poly_nat_mv
+    op: overlapping
+    mode: lazy
+    layers: [poly_nat, dualgate]
+  - name: nat10_viol
+    op: intersection
+    mode: lazy
+    layers: [nwell, nat]
+  - name: ncomp_in_nat
+    op: intersection
+    mode: lazy
+    layers: [ncomp, nat]
+  - name: nat11_viol
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp_in_nat, poly2_drawn]
+  - name: poly_nat
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, nat]
+  - name: poly_nat_no_comp
+    op: not_interacting
+    mode: lazy
+    layers: [poly_nat, comp]
+  - name: poly_nat_res
+    op: intersection
+    mode: lazy
+    layers: [poly_nat, res_mk]
+  # NAT.9: poly under the marker that runs from one of its gates to another is an
+  # interconnect, and poly that belongs to no gate of it has to keep its distance.
+  - name: nat9_gate
+    op: intersection
+    mode: lazy
+    layers: [ngate, nat]
+  - name: nat9_interconnect
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [poly_nat, nat9_gate]
+  - name: poly_off_nat
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, nat]
+  - name: nat12_viol
+    op: union
+    mode: lazy
+    layers: [poly_nat_no_comp, poly_nat_res]
+
+  # ---- LVPWELL ------------------------------------------------------------
+  - name: lvpwell_dn_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [lvpwell_dn, v5_xtor]
+  - name: lvpwell_dn_lv
+    op: not_interacting
+    mode: lazy
+    layers: [lvpwell_dn_no_v5, dualgate]
+  - name: lvpwell_dn_mv
+    op: overlapping
+    mode: lazy
+    layers: [lvpwell_dn, dualgate]
+  - name: lvpwell_out_dn
+    op: not_overlapping
+    mode: lazy
+    layers: [lvpwell, dnwell]
+  - name: lpw12_viol
+    op: intersection
+    mode: lazy
+    layers: [lvpwell_out_dn, nwell]
+  # LPW.5: an LVPWELL used as a resistor must sit inside a deep well.
+  - name: lpw_well_exclude
+    op: union
+    mode: lazy
+    layers: [poly2_drawn, dualgate, resistor, sab]
+  - name: lvpwell_at_pcomp
+    op: interacting
+    mode: lazy
+    layers: [lvpwell, pcomp]
+  - name: lvpwell_res_all
+    op: intersection
+    mode: lazy
+    layers: [lvpwell_at_pcomp, res_mk]
+  - name: lvpwell_res
+    op: difference
+    mode: lazy
+    layers: [lvpwell_res_all, lpw_well_exclude]
+  - name: lpw5_viol
+    op: difference
+    mode: lazy
+    layers: [lvpwell_res, dnwell]
+
+  # ---- ESD implant --------------------------------------------------------
+  - name: poly_esd
+    op: interacting
+    mode: lazy
+    layers: [poly2_mv, esd]
+  - name: esd_on_pcomp
+    op: overlapping
+    mode: lazy
+    layers: [esd, pcomp]
+  - name: nplus_or_pplus
+    op: union
+    mode: lazy
+    layers: [nplus, pplus]
+  - name: esd_no_dualgate
+    op: not_overlapping
+    mode: lazy
+    layers: [esd, dualgate]
+  - name: comp_esd
+    op: intersection
+    mode: lazy
+    layers: [comp, esd]
+  - name: comp_esd_at_lvsio
+    op: overlapping
+    mode: lazy
+    layers: [comp_esd, lvs_io]
+  - name: esd10_viol
+    op: difference
+    mode: lazy
+    layers: [comp_esd_at_lvsio, lvs_io]
+
+  # ---- Contact ------------------------------------------------------------
+  # The SRAM core has its own contact rules (S.CO.*), so the main ones exclude it.
+  - name: contact_no_sram
+    op: difference
+    mode: lazy
+    layers: [contact, sramcore]
+  # A butted COMP touches the opposite implant without overlapping it.
+  - name: ncomp_butted_only
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp_butted, pcomp]
+  - name: pcomp_butted_all
+    op: interacting
+    mode: lazy
+    layers: [pcomp, ncomp]
+  - name: pcomp_butted_only
+    op: not_overlapping
+    mode: lazy
+    layers: [pcomp_butted_all, ncomp]
+  - name: contact_on_ncomp_butted
+    op: interacting
+    mode: lazy
+    layers: [contact, ncomp_butted_only]
+  - name: contact_on_pcomp_butted
+    op: interacting
+    mode: lazy
+    layers: [contact, pcomp_butted_only]
+  - name: contact_on_comp
+    op: intersection
+    mode: lazy
+    layers: [contact, comp]
+  - name: contact_on_comp_no_otp
+    op: difference
+    mode: lazy
+    layers: [contact_on_comp, otp_mk]
+  - name: tgate_no_otp
+    op: difference
+    mode: lazy
+    layers: [tgate, otp_mk]
+  - name: contact_on_poly
+    op: intersection
+    mode: lazy
+    layers: [contact, poly2_drawn]
+  - name: co10_viol
+    op: intersection
+    mode: lazy
+    layers: [contact, tgate]
+  - name: co11_viol
+    op: difference
+    mode: lazy
+    layers: [contact, poly2_drawn, comp]
+
+  # ---- SRAM 3.3 V ---------------------------------------------------------
+  - name: pcomp_out_dnwell
+    op: not_overlapping
+    mode: lazy
+    layers: [pcomp, dnwell]
+  - name: pcomp_out_dn_sram
+    op: intersection
+    mode: lazy
+    layers: [pcomp_out_dnwell, sram_lv]
+  - name: nwell_n_dn_sram
+    op: intersection
+    mode: lazy
+    layers: [nwell_n_dn, sram_lv]
+  - name: ncomp_out_nw_dn_sram
+    op: intersection
+    mode: lazy
+    layers: [ncomp_out_nw_dn, sram_lv]
+  - name: contact_sram
+    op: intersection
+    mode: lazy
+    layers: [contact, sramcore]
+  - name: poly_sram
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, sramcore]
+  - name: comp_sram
+    op: intersection
+    mode: lazy
+    layers: [comp, sramcore]
+  - name: metal1_sram
+    op: intersection
+    mode: lazy
+    layers: [metal1_drawn, sramcore]
+
+  - name: comp_3p3v_no_poly
+    op: difference
+    mode: lazy
+    layers: [comp_3p3v, poly2_drawn]
+  - name: comp_56v_no_poly
+    op: difference
+    mode: lazy
+    layers: [comp_56v, poly2_drawn]
+
+  # ---- Gate poly (poly2 deck) ---------------------------------------------
+  - name: poly2_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, v5_xtor]
+  - name: poly2_lv
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_no_v5, dualgate]
+  - name: poly2_mv
+    op: overlapping
+    mode: lazy
+    layers: [poly2_drawn, dualgate]
+  # PL.1 splits on the poly fuse: the interconnect rule applies outside it, a separate
+  # one inside.  `inside`/`not_overlapping` select whole regions, as upstream does.
+  - name: poly2_lv_out_plfuse_all
+    op: not_overlapping
+    mode: lazy
+    layers: [poly2_lv, plfuse]
+  - name: poly2_lv_out_plfuse
+    op: difference
+    mode: lazy
+    layers: [poly2_lv_out_plfuse_all, ymtp_mk]
+  - name: poly2_mv_out_plfuse_all
+    op: not_overlapping
+    mode: lazy
+    layers: [poly2_mv, plfuse]
+  - name: poly2_mv_out_plfuse
+    op: difference
+    mode: lazy
+    layers: [poly2_mv_out_plfuse_all, ymtp_mk]
+  - name: poly2_lv_in_plfuse
+    op: inside
+    mode: lazy
+    layers: [poly2_lv, plfuse]
+  - name: poly2_mv_in_plfuse
+    op: inside
+    mode: lazy
+    layers: [poly2_mv, plfuse]
+  # The "pl" layers drop every marker that carries its own rule set.
+  - name: pl_exclude
+    op: union
+    mode: lazy
+    layers: [otp_mk, ymtp_mk, mvsd, mvpsd]
+  - name: poly_pl_lv
+    op: difference
+    mode: lazy
+    layers: [poly2_lv, pl_exclude]
+  - name: poly_pl_mv_all
+    op: difference
+    mode: lazy
+    layers: [poly2_mv, pl_exclude]
+  - name: poly_pl_mv
+    op: not_overlapping
+    mode: lazy
+    layers: [poly_pl_mv_all, sramcore]
+  - name: comp_pl
+    op: difference
+    mode: lazy
+    layers: [comp, pl_exclude]
+  # PL.2: the gate region the channel-length measurement is masked to.
+  - name: tgate_at_poly2_lv
+    op: interacting
+    mode: lazy
+    layers: [tgate, poly2_lv]
+  - name: tgate_pl2_lv
+    op: difference
+    mode: lazy
+    layers: [tgate_at_poly2_lv, otp_mk, ymtp_mk]
+  # PL.3a: poly on COMP plus field poly, which is where the spacing rule applies.
+  - name: poly2_field
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, comp]
+  - name: poly2_on_comp_or_field
+    op: union
+    mode: lazy
+    layers: [tgate, poly2_field]
+  - name: pl3a_poly
+    op: difference
+    mode: lazy
+    layers: [poly2_on_comp_or_field, otp_mk]
+  # PL.9: one poly interconnect touching both a 3.3 V and a 5/6 V area.
+  - name: poly2_lv_area
+    op: difference
+    mode: lazy
+    layers: [poly2_no_v5, dualgate]
+  - name: poly2_dualgate
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate]
+  - name: pl9_a
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, poly2_lv_area]
+  - name: pl9_viol
+    op: interacting
+    mode: lazy
+    layers: [pl9_a, poly2_dualgate]
+  # PL.11 / PL.12: the V5_XTOR marker must enclose what it marks.
+  - name: dualgate_or_otp
+    op: union
+    mode: lazy
+    layers: [dualgate, otp_mk]
+  - name: pl11_viol
+    op: not_interacting
+    mode: lazy
+    layers: [v5_xtor, dualgate_or_otp]
+  - name: comp_at_poly2
+    op: interacting
+    mode: lazy
+    layers: [comp, poly2_drawn]
+  - name: comp_at_v5
+    op: interacting
+    mode: lazy
+    layers: [comp_at_poly2, v5_xtor]
+  - name: pl12_viol
+    op: difference
+    mode: lazy
+    layers: [comp_at_v5, v5_xtor]
+
+  # ---- Salicide block (sab deck) ------------------------------------------
+  - name: sab_out_otp
+    op: not_overlapping
+    mode: lazy
+    layers: [sab, otp_mk]
+  - name: poly_sab
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, sab]
+  - name: comp_sab
+    op: interacting
+    mode: lazy
+    layers: [comp, sab]
+  - name: sab_poly
+    op: intersection
+    mode: lazy
+    layers: [sab, poly2_drawn]
+  - name: comp_unrelated_sab
+    op: not_overlapping
+    mode: lazy
+    layers: [comp, sab_out_otp]
+  - name: poly_field_no_sab_all
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, comp]
+  - name: poly_field_no_sab
+    op: not_overlapping
+    mode: lazy
+    layers: [poly_field_no_sab_all, sab]
+  - name: poly_on_comp
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, comp]
+  - name: sab_on_contact
+    op: intersection
+    mode: lazy
+    layers: [sab_out_otp, contact]
+  - name: contact_on_sab
+    op: intersection
+    mode: lazy
+    layers: [contact, sab]
+  - name: sab_poly_np
+    op: intersection
+    mode: lazy
+    layers: [sab_poly, nplus]
+  - name: sab_poly_pp
+    op: intersection
+    mode: lazy
+    layers: [sab_poly, pplus]
+  - name: implant_np
+    op: union
+    mode: lazy
+    layers: [nplus, pplus]
+  - name: implant_unrelated_sab
+    op: not_overlapping
+    mode: lazy
+    layers: [implant_np, sab_poly]
+  - name: sb15b_np_all
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, sab_out_otp]
+  - name: sb15b_np
+    op: interacting
+    mode: lazy
+    layers: [implant_np, sb15b_np_all]
+  - name: sb15b_poly_all
+    op: overlapping
+    mode: lazy
+    layers: [poly2_drawn, sb15b_np]
+  - name: sb15b_poly
+    op: intersection
+    mode: lazy
+    layers: [sb15b_poly_all, sab_out_otp]
+  - name: sab_out_esd
+    op: not_overlapping
+    mode: lazy
+    layers: [sab_out_otp, esd_mk]
+  - name: lvsio_or_esdmk
+    op: union
+    mode: lazy
+    layers: [lvs_io, esd_mk]
+  - name: sab_core
+    op: not_overlapping
+    mode: lazy
+    layers: [sab_out_otp, lvsio_or_esdmk]
+  - name: sb16_viol
+    op: interacting
+    mode: lazy
+    layers: [sab_core, tgate]
+
+  # ---- Implants (nplus / pplus decks) --------------------------------------
+  # The 0.429 um sizings split each spacing rule into a near and a far case: PCOMP
+  # within that distance of a well edge gets the looser limit.  `shrink` carries a 5 nm
+  # margin by construction, which is far below the rule scale.
+  - name: nwell_n_dn_sized_in
+    op: shrink
+    mode: lazy
+    radius: 0.429
+    layers: [nwell_n_dn]
+  - name: lvpwell_dn_sized_in
+    op: shrink
+    mode: lazy
+    radius: 0.429
+    layers: [lvpwell_dn]
+  - name: nwell_dn_edge_band
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn, nwell_n_dn_sized_in]
+  # NP.11 excludes the band *outside* the N-well and *inside* the LVPWELL; PP.11 excludes
+  # the other two. The pair is not symmetric, and reusing one for the other is silent.
+  # The same 0.429 um reach outward, with no slack, for deciding which of two limits an
+  # edge is judged by: the test case draws structures exactly on it, and 5 nm of slack
+  # puts a splinter of the wrong edge on the wrong side.
+  - name: nwell_n_dn_reach
+    op: grow
+    mode: lazy
+    radius: 0.429
+    layers: [nwell_n_dn]
+  - name: nwell_dn_outer_band
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn_reach, nwell_n_dn]
+  - name: lvpwell_dn_outer_band
+    op: difference
+    mode: lazy
+    layers: [lvpwell_dn_reach, lvpwell_dn]
+  - name: pplus_in_lvpwell_dn_all
+    op: overlapping
+    mode: lazy
+    layers: [pplus, lvpwell]
+  - name: pplus_in_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [pplus_in_lvpwell_dn_all, dnwell]
+  - name: pcomp_in_lvpwell_dn_all
+    op: overlapping
+    mode: lazy
+    layers: [pcomp, lvpwell]
+  - name: pcomp_in_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [pcomp_in_lvpwell_dn_all, dnwell]
+  # PP.12 / NP.12: the gate's own extension along the Poly2 it sits on, within 0.32 um of
+  # the channel.  Upstream grows the gate with KLayout's `size_inside` in three steps,
+  # which clips each step to the Poly2 so the reach follows the conductor rather than
+  # crossing open ground to a neighbouring one.  Three grow-and-clip rounds are that,
+  # written out: a step that leaves the Poly2 is cut before the next one starts from it.
+  # Each round asks for no slack, or three rounds of it would add 15 nm to the reach.
+  - name: ngate_reach1
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    layers: [ngate]
+  - name: ngate_step1
+    op: intersection
+    mode: lazy
+    layers: [ngate_reach1, poly2_drawn]
+  - name: ngate_reach2
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    layers: [ngate_step1]
+  - name: ngate_step2
+    op: intersection
+    mode: lazy
+    layers: [ngate_reach2, poly2_drawn]
+  - name: ngate_reach3
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    layers: [ngate_step2]
+  - name: ngate_step3
+    op: intersection
+    mode: lazy
+    layers: [ngate_reach3, poly2_drawn]
+  - name: pgate_reach1
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    layers: [pgate]
+  - name: pgate_step1
+    op: intersection
+    mode: lazy
+    layers: [pgate_reach1, poly2_drawn]
+  - name: pgate_reach2
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    layers: [pgate_step1]
+  - name: pgate_step2
+    op: intersection
+    mode: lazy
+    layers: [pgate_reach2, poly2_drawn]
+  - name: pgate_reach3
+    op: grow
+    mode: lazy
+    radius: 0.10633
+    layers: [pgate_step2]
+  - name: pgate_step3
+    op: intersection
+    mode: lazy
+    layers: [pgate_reach3, poly2_drawn]
+  # PP.4b / NP.4b: the Poly2 boundary within 0.32 um of the opposite-channel gate. The
+  # reach is a plain grow of the gate, not the confined one PP.12 uses, and it is drawn
+  # with no slack: the test case puts an implant island exactly 0.32 um above a channel,
+  # and 5 nm of reach past that is the difference between one violation and two.
+  - name: ngate_reach_flat
+    op: grow
+    mode: lazy
+    radius: 0.32
+    layers: [ngate]
+  - name: pgate_reach_flat
+    op: grow
+    mode: lazy
+    radius: 0.32
+    layers: [pgate]
+  - name: pp12_viol
+    op: interacting
+    mode: lazy
+    layers: [pplus, ngate_step3]
+  - name: np12_viol
+    op: interacting
+    mode: lazy
+    layers: [nplus, pgate_step3]
+  - name: nplus_n_dn
+    op: difference
+    mode: lazy
+    layers: [nplus, dnwell]
+  - name: nplus_out_lvpwell
+    op: not_inside
+    mode: lazy
+    layers: [nplus, lvpwell]
+  - name: nplus_out_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [nplus_out_lvpwell, dnwell]
+  - name: ncomp_out_lvpwell
+    op: not_inside
+    mode: lazy
+    layers: [ncomp, lvpwell]
+  - name: ncomp_out_lvpwell_dn
+    op: inside
+    mode: lazy
+    layers: [ncomp_out_lvpwell, dnwell]
+  - name: nplus_at_nwell
+    op: overlapping
+    mode: lazy
+    layers: [nplus_n_dn, nwell]
+  - name: ncomp_at_nwell_all
+    op: overlapping
+    mode: lazy
+    layers: [ncomp, nwell]
+  - name: ncomp_at_nwell
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp_at_nwell_all, dnwell]
+  - name: pplus_no_guard_ring
+    op: not_interacting
+    mode: lazy
+    layers: [pplus, guard_ring_mk]
+  - name: pplus_outside_dn
+    op: not_overlapping
+    mode: lazy
+    layers: [pplus_no_guard_ring, dnwell]
+  - name: np3_nplus
+    op: not_interacting
+    mode: lazy
+    layers: [nplus, ncomp_butted]
+  - name: pcomp_in_nwell
+    op: intersection
+    mode: lazy
+    layers: [pcomp, nwell]
+  - name: pcomp_no_lvpwell
+    op: difference
+    mode: lazy
+    layers: [pcomp, lvpwell]
+  - name: pcomp_no_lvpwell_dn
+    op: intersection
+    mode: lazy
+    layers: [pcomp_no_lvpwell, dnwell]
+  - name: np3a_pcomp
+    op: union
+    mode: lazy
+    layers: [pcomp_in_nwell, pcomp_no_lvpwell_dn]
+  - name: lvpwell_dn_edge_band
+    op: difference
+    mode: lazy
+    layers: [lvpwell_dn, lvpwell_dn_sized_in]
+  - name: np3bi_pcomp
+    op: intersection
+    mode: lazy
+    layers: [pcomp, lvpwell_dn_edge_band]
+  - name: np3bii_pcomp
+    op: intersection
+    mode: lazy
+    layers: [pcomp, lvpwell_dn_sized_in]
+  - name: np3_nplus_in_lvpwell
+    op: intersection
+    mode: lazy
+    layers: [np3_nplus, lvpwell_dn]
+  - name: pcomp_out_dn
+    op: difference
+    mode: lazy
+    layers: [pcomp, dnwell]
+  - name: np3ci_pcomp
+    op: intersection
+    mode: lazy
+    layers: [pcomp_out_dn, nwell_n_dn_reach]
+  - name: np3cii_pcomp
+    op: difference
+    mode: lazy
+    layers: [pcomp_out_dn, nwell_n_dn_reach]
+  - name: np3_nplus_out_dn
+    op: difference
+    mode: lazy
+    layers: [np3_nplus, dnwell]
+  - name: np3d_viol
+    op: intersection
+    mode: lazy
+    layers: [ncomp, pcomp]
+  - name: np3e_viol
+    op: intersection
+    mode: lazy
+    layers: [nplus, pcomp]
+  - name: poly_sab_only
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, sab]
+  # PP.9 leaves marked resistors alone: a high-resistance poly resistor has its heads
+  # implanted and its body under the salicide block bare, and its implant edges are
+  # the device's, not the rule's.
+  - name: poly_no_res
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, resistor]
+  - name: poly_sab_no_res
+    op: intersection
+    mode: lazy
+    layers: [poly_no_res, sab]
+  - name: comp_sab_only
+    op: intersection
+    mode: lazy
+    layers: [comp, sab]
+  - name: comp_at_nplus
+    op: interacting
+    mode: lazy
+    layers: [comp, nplus]
+  - name: pcomp_at_nplus
+    op: interacting
+    mode: lazy
+    layers: [pcomp, nplus]
+  - name: comp_at_pplus
+    op: interacting
+    mode: lazy
+    layers: [comp, pplus]
+  - name: ncomp_at_pplus
+    op: interacting
+    mode: lazy
+    layers: [ncomp, pplus]
+  - name: pp3_pplus
+    op: not_interacting
+    mode: lazy
+    layers: [pplus, ncomp_butted]
+  - name: pp3d_viol
+    op: intersection
+    mode: lazy
+    layers: [pcomp, ncomp]
+  - name: pp3e_viol
+    op: intersection
+    mode: lazy
+    layers: [pplus, ncomp]
+
+  # ---- pplus 3a/3b/3c: the mirror of the nplus family ---------------------
+  - name: lvpwell_dn_reach
+    op: grow
+    mode: lazy
+    radius: 0.429
+    layers: [lvpwell_dn]
+  - name: ncomp_in_lvpwell
+    op: intersection
+    mode: lazy
+    layers: [ncomp, lvpwell]
+  - name: ncomp_out_nwell
+    op: difference
+    mode: lazy
+    layers: [ncomp, nwell_n_dn]
+  - name: pp3a_ncomp
+    op: union
+    mode: lazy
+    layers: [ncomp_in_lvpwell, ncomp_out_nwell]
+  - name: pp3bi_ncomp
+    op: difference
+    mode: lazy
+    layers: [ncomp, lvpwell_dn_reach]
+  - name: pp3bii_ncomp
+    op: intersection
+    mode: lazy
+    layers: [ncomp, lvpwell_dn_reach]
+  - name: pp3_pplus_in_dn
+    op: intersection
+    mode: lazy
+    layers: [pp3_pplus, dnwell]
+  - name: pp3ci_ncomp
+    op: intersection
+    mode: lazy
+    layers: [ncomp, nwell_n_dn_sized_in]
+  - name: nwell_n_dn_band
+    op: difference
+    mode: lazy
+    layers: [nwell_n_dn, nwell_n_dn_sized_in]
+  - name: pp3cii_ncomp
+    op: intersection
+    mode: lazy
+    layers: [ncomp, nwell_n_dn_band]
+  - name: pp3_pplus_in_nwell
+    op: intersection
+    mode: lazy
+    layers: [pp3_pplus, nwell_n_dn]
+
+  # ---- LDNMOS (ldnmos deck) -----------------------------------------------
+  # The HV device is recognised by LDMOS_XTOR over Dualgate; MVSD marks its drain.
+  - name: poly_ld
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, ldmos_xtor, dualgate]
+  - name: poly_mdn
+    op: intersection
+    mode: lazy
+    layers: [poly_ld, ncomp]
+  - name: ldnmos_body
+    op: difference
+    mode: lazy
+    layers: [poly_mdn, mvsd]
+  - name: comp_mdn
+    op: intersection
+    mode: lazy
+    layers: [comp, ldmos_xtor, dualgate]
+  - name: ncomp_ld
+    op: intersection
+    mode: lazy
+    layers: [ncomp, ldmos_xtor]
+  - name: ncomp_mdn
+    op: intersection
+    mode: lazy
+    layers: [ncomp_ld, dualgate]
+  - name: pcomp_mdn
+    op: intersection
+    mode: lazy
+    layers: [pcomp, ldmos_xtor, dualgate]
+  - name: mvsd_mdn
+    op: intersection
+    mode: lazy
+    layers: [mvsd, dualgate, ldmos_xtor]
+  - name: pcomp_holes
+    op: holes
+    mode: lazy
+    layers: [pcomp]
+  - name: mdn_gate_poly
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_xtor, mvsd]
+  - name: ncomp_at_gate
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdn_gate_poly]
+  - name: ldnmos_source
+    op: difference
+    mode: lazy
+    layers: [ncomp_at_gate, poly2_drawn]
+  # MDN.5a splits on whether the body tap is butted to the source.
+  - name: pcomp_mdn5ai
+    op: not_interacting
+    mode: lazy
+    layers: [pcomp_mdn, ncomp]
+  - name: pcomp_mdn5aii
+    op: interacting
+    mode: lazy
+    layers: [pcomp_mdn, ncomp]
+  - name: mdn5ai_touch
+    op: intersection
+    mode: lazy
+    layers: [mvsd, pcomp_mdn5ai]
+  - name: mdn5aii_touch
+    op: intersection
+    mode: lazy
+    layers: [mvsd, pcomp_mdn5aii]
+  - name: mdn5b_touch
+    op: intersection
+    mode: lazy
+    layers: [ldnmos_source, pcomp_mdn]
+  # MDN.6/7/7a: the marker layers must cover the device.
+  - name: mdn_device
+    op: union
+    mode: lazy
+    layers: [ncomp, poly2_drawn, mvsd]
+  - name: mdn_device_ld
+    op: intersection
+    mode: lazy
+    layers: [mdn_device, ldmos_xtor]
+  - name: mdn6_viol
+    op: difference
+    mode: lazy
+    layers: [mdn_device_ld, dualgate]
+  - name: dualgate_on_ldmos
+    op: overlapping
+    mode: lazy
+    layers: [dualgate, ldmos_xtor]
+  - name: mdn7a_viol
+    op: difference
+    mode: lazy
+    layers: [dualgate_on_ldmos, ldmos_xtor]
+  - name: dualgate_mvsd
+    op: intersection
+    mode: lazy
+    layers: [dualgate, mvsd]
+  - name: mdn7a_viol_b
+    op: difference
+    mode: lazy
+    layers: [dualgate_mvsd, ldmos_xtor]
+  - name: mvsd_on_nwell
+    op: overlapping
+    mode: lazy
+    layers: [mvsd, nwell]
+  - name: mvsd_on_dnwell
+    op: overlapping
+    mode: lazy
+    layers: [mvsd, dnwell]
+  - name: ncomp_not_mvsd
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, mvsd]
+  # MDN.10: the gate poly of a device whose drain is marked.
+  - name: ldmos_xtor_at_mvsd
+    op: interacting
+    mode: lazy
+    layers: [ldmos_xtor, mvsd]
+  - name: poly_mdn10
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_xtor_at_mvsd]
+  - name: poly_mdn10_gated
+    op: intersection
+    mode: lazy
+    layers: [poly_mdn10, nplus]
+  - name: poly_mdn10_link
+    op: difference
+    mode: lazy
+    layers: [poly_mdn10, nplus]
+  - name: mdn10f_interconnect
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [poly_mdn10_link, poly_mdn10_gated]
+  - name: poly_ld_outside
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, ldmos_xtor]
+  - name: poly_xtor
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, ldmos_xtor]
+  - name: mdn10f_reaching_out
+    op: interacting
+    mode: lazy
+    layers: [poly_xtor, poly_ld_outside]
+  - name: poly_ld_gated
+    op: intersection
+    mode: lazy
+    layers: [poly_ld, pplus]
+  - name: poly_ld_link
+    op: difference
+    mode: lazy
+    layers: [poly_ld, pplus]
+  - name: mdp9f_interconnect
+    op: interacting
+    min: 2
+    mode: lazy
+    layers: [poly_ld_link, poly_ld_gated]
+  # MDP.3c: every side of an N+ tab in the deep well must reach the P+ within 15 um.
+  - name: mdp3c_ncomp_x
+    op: inside
+    mode: lazy
+    layers: [ncomp_in_dnwell, ldmos_xtor]
+  - name: mdp3c_ncomp
+    op: inside
+    mode: lazy
+    layers: [mdp3c_ncomp_x, dualgate]
+  # MDN.5c: the substrate tab, taken as the bounding box of the closed drain N+.
+  - name: mdn5c_tab_a
+    op: interacting
+    mode: lazy
+    layers: [ncomp_mdn, mvsd]
+  - name: mdn5c_tab_b
+    op: close
+    radius: 0.36
+    mode: lazy
+    layers: [mdn5c_tab_a]
+  - name: mdn5c_tab
+    op: extents
+    mode: lazy
+    layers: [mdn5c_tab_b]
+  # MDP.4b: every DNWELL edge inside the guard ring must have the ring within 15 um.
+  - name: mdp4b_dnwell_x
+    op: inside
+    mode: lazy
+    layers: [dnwell, ldmos_xtor]
+  - name: mdp4b_dnwell
+    op: inside
+    mode: lazy
+    layers: [mdp4b_dnwell_x, dualgate]
+  - name: mdp4b_pcomp_x
+    op: inside
+    mode: lazy
+    layers: [pcomp, ldmos_xtor_at_mvpsd]
+  - name: mdp4b_pcomp_y
+    op: inside
+    mode: lazy
+    layers: [mdp4b_pcomp_x, dualgate]
+  - name: mdp4b_pcomp
+    op: not_interacting
+    mode: lazy
+    layers: [mdp4b_pcomp_y, mvpsd]
+  - name: pcomp_not_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [pcomp, ncomp]
+  - name: pcomp_at_ncomp
+    op: interacting
+    mode: lazy
+    layers: [pcomp, ncomp]
+  - name: mdn10ei_touch
+    op: intersection
+    mode: lazy
+    layers: [poly_mdn10, pcomp_not_ncomp]
+  # MDN.15b: a contact on the drain COMP must sit inside it.
+  - name: ncomp_drain
+    op: intersection
+    mode: lazy
+    layers: [ncomp_mdn, mvsd]
+  - name: ncomp_drain_all
+    op: intersection
+    mode: lazy
+    layers: [ncomp, mvsd]
+  - name: contact_at_drain
+    op: interacting
+    mode: lazy
+    layers: [contact, ncomp_drain]
+  - name: mdn15b_viol
+    op: difference
+    mode: lazy
+    layers: [contact_at_drain, ncomp_drain_all]
+  # MDN.17: the guard ring should surround the device.
+  - name: mdn17_pcomp
+    op: intersection
+    mode: lazy
+    layers: [pcomp_holes, ldmos_xtor_at_mvsd]
+  - name: mdn17_ldnmos
+    op: union
+    mode: lazy
+    layers: [ncomp_ld, poly_ld, mvsd_mdn]
+  - name: mdn17_viol_a
+    op: not_inside
+    mode: lazy
+    layers: [mdn17_ldnmos, mdn17_pcomp]
+  - name: ldmos_dg
+    op: intersection
+    mode: lazy
+    layers: [ldmos_xtor, dualgate]
+  - name: ldmos_dg_at_mvsd
+    op: interacting
+    mode: lazy
+    layers: [ldmos_dg, mvsd]
+  - name: mdn17_viol_b
+    op: not_covering
+    mode: lazy
+    layers: [ldmos_dg_at_mvsd, pcomp]
+
+  # ---- LDPMOS (ldpmos deck) -----------------------------------------------
+  # Mirror of the LDNMOS structure with MVPSD marking the drain, but the rule ids and
+  # much of the shape differ, so nothing here is shared with the ldnmos layers.
+  - name: poly_pcomp
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, pcomp]
+  - name: poly_pcomp_ld
+    op: inside
+    mode: lazy
+    layers: [poly_pcomp, ldmos_xtor]
+  - name: poly_mdp
+    op: inside
+    mode: lazy
+    layers: [poly_pcomp_ld, dualgate]
+  - name: ldpmos_body
+    op: difference
+    mode: lazy
+    layers: [poly_mdp, mvpsd]
+  - name: dnwell_mdp
+    op: intersection
+    mode: lazy
+    layers: [dnwell, dualgate, ldmos_xtor]
+  - name: ldmos_dualgate
+    op: intersection
+    mode: lazy
+    layers: [ldmos_xtor, dualgate]
+  # MDP.3a splits on whether the body tap is butted to the source.
+  - name: ncomp_not_pcomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, pcomp]
+  - name: ncomp_mdp3ai
+    op: intersection
+    mode: lazy
+    layers: [ncomp_not_pcomp, ldmos_xtor, dualgate]
+  - name: ncomp_mdp3aii
+    op: intersection
+    mode: lazy
+    layers: [ncomp_butted, ldmos_xtor, dualgate]
+  - name: mdp3ai_touch
+    op: interacting
+    mode: lazy
+    layers: [mvpsd, ncomp_mdp3ai]
+  - name: mdp3aii_touch
+    op: interacting
+    mode: lazy
+    layers: [mvpsd, ncomp_mdp3aii]
+  - name: ncomp_mdp3b_all
+    op: intersection
+    mode: lazy
+    layers: [ncomp, ldmos_xtor, dualgate]
+  - name: ncomp_mdp3b
+    op: difference
+    mode: lazy
+    layers: [ncomp_mdp3b_all, poly2_drawn, mvpsd]
+  - name: pcomp_mdp3b_all
+    op: intersection
+    mode: lazy
+    layers: [pcomp, dnwell, ldmos_xtor, dualgate]
+  - name: pcomp_mdp3b
+    op: difference
+    mode: lazy
+    layers: [pcomp_mdp3b_all, poly2_drawn, mvpsd]
+  # MDP.5: everything belonging to the device, outside the Dualgate that must cover it.
+  - name: pcomp_no_poly
+    op: difference
+    mode: lazy
+    layers: [pcomp, poly2_drawn, mvpsd]
+  - name: pgate_no_mvpsd
+    op: difference
+    mode: lazy
+    layers: [pgate, mvpsd]
+  - name: pcomp_mvpsd
+    op: intersection
+    mode: lazy
+    layers: [pcomp, mvpsd]
+  - name: mdp5_device
+    op: union
+    mode: lazy
+    layers: [pcomp_no_poly, pgate_no_mvpsd, pcomp_mvpsd]
+  - name: mdp5_device_ld
+    op: intersection
+    mode: lazy
+    layers: [mdp5_device, ldmos_xtor]
+  - name: mdp5_viol
+    op: difference
+    mode: lazy
+    layers: [mdp5_device_ld, dualgate]
+  - name: pcomp_mdp5a
+    op: inside
+    mode: lazy
+    layers: [pcomp, ldmos_xtor]
+  - name: mdp6_viol
+    op: not_inside
+    mode: lazy
+    layers: [mvpsd, ldmos_xtor]
+  - name: mdp6a_viol
+    op: not_covering
+    mode: lazy
+    layers: [ldmos_xtor, dualgate]
+  - name: nwell_out_ldmos
+    op: not_overlapping
+    mode: lazy
+    layers: [nwell, ldmos_xtor]
+  - name: ncomp_out_ldmos
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp, ldmos_xtor]
+  - name: poly_in_dnwell_mdp
+    op: inside
+    mode: lazy
+    layers: [poly2_drawn, dnwell_mdp]
+  # MDP.9d: the drain COMP, grown by the rule distance.
+  - name: mvpsd_pcomp
+    op: intersection
+    mode: lazy
+    layers: [mvpsd, pcomp]
+  - name: mdp9d_drain
+    op: difference
+    mode: lazy
+    layers: [mvpsd_pcomp, poly2_drawn]
+  # No slack: `grow`'s default 5 nm exists to turn an exact touch into a hairline overlap
+  # so a whole-region test resolves it, and here that is precisely wrong. An LDMOS drain
+  # grown 0.16 um runs *alongside* its gate poly and should touch it; five more nanometres
+  # make it genuinely overlap, and `overlapping` then selects nearly every gate in the
+  # fixture instead of the ten upstream selects.
+  - name: mdp9d_exclude
+    op: grow
+    mode: lazy
+    radius: 0.16
+    layers: [mdp9d_drain]
+  - name: poly_ld_dg
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_xtor]
+  - name: ldmos_at_mvpsd
+    op: interacting
+    mode: lazy
+    layers: [ldmos_xtor, mvpsd]
+  - name: poly_ld_dg_mvpsd
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_at_mvpsd]
+  # MDP.9e: the LDPMOS gate poly, and the N+ guard ring it must clear.
+  - name: pgate_dg_no_mvpsd
+    op: difference
+    mode: lazy
+    layers: [pgate_dualgate, mvpsd]
+  - name: ldpmos_gate_poly
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, pgate_dg_no_mvpsd]
+  - name: ldpmos_gate_ld
+    op: inside
+    mode: lazy
+    layers: [ldpmos_gate_poly, dualgate]
+  - name: ldpmos_gate_mdp
+    op: inside
+    mode: lazy
+    layers: [ldpmos_gate_ld, ldmos_xtor]
+  - name: ncomp_no_pplus
+    op: difference
+    mode: lazy
+    layers: [ncomp, pplus]
+  - name: pcomp_no_nplus
+    op: difference
+    mode: lazy
+    layers: [pcomp, nplus]
+  - name: ncomp_unbutted_a
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp_no_pplus, pcomp_no_nplus]
+  - name: ncomp_over_pcomp
+    op: overlapping
+    mode: lazy
+    layers: [ncomp, pcomp]
+  - name: ncomp_not_butted
+    op: union
+    mode: lazy
+    layers: [ncomp_unbutted_a, ncomp_over_pcomp]
+  - name: mdp9ei_touch
+    op: intersection
+    mode: lazy
+    layers: [ldpmos_gate_mdp, ncomp_not_butted]
+  - name: mdp9eii_touch
+    op: intersection
+    mode: lazy
+    layers: [ldpmos_gate_mdp, ncomp_butted]
+  # MDP.12 / MDP.15 / MDP.16
+  - name: ncomp_in_dg
+    op: inside
+    mode: lazy
+    layers: [ncomp, dualgate]
+  - name: ncomp_guard
+    op: inside
+    mode: lazy
+    layers: [ncomp_in_dg, ldmos_xtor]
+  - name: dnwell_over_mvpsd
+    op: covering
+    mode: lazy
+    layers: [dnwell, mvpsd]
+  - name: dnwell_mvpsd_dg
+    op: inside
+    mode: lazy
+    layers: [dnwell_over_mvpsd, dualgate]
+  - name: dnwell_mvpsd_mdp
+    op: inside
+    mode: lazy
+    layers: [dnwell_mvpsd_dg, ldmos_xtor]
+  - name: comp_in_mvpsd
+    op: inside
+    mode: lazy
+    layers: [comp, mvpsd]
+  - name: comp_drain_dg
+    op: inside
+    mode: lazy
+    layers: [comp_in_mvpsd, dualgate]
+  - name: comp_drain_mdp
+    op: inside
+    mode: lazy
+    layers: [comp_drain_dg, ldmos_xtor]
+  - name: pcomp_in_mvpsd
+    op: inside
+    mode: lazy
+    layers: [pcomp, mvpsd]
+  - name: pcomp_drain_mdp
+    op: intersection
+    mode: lazy
+    layers: [pcomp_in_mvpsd, dualgate, ldmos_xtor]
+  - name: contact_at_pdrain
+    op: interacting
+    mode: lazy
+    layers: [contact, pcomp_drain_mdp]
+  - name: mdp16b_viol
+    op: not_inside
+    mode: lazy
+    layers: [contact_at_pdrain, pcomp_in_mvpsd]
+  - name: dnwell_ring
+    op: with_holes
+    mode: lazy
+    layers: [dnwell]
+  - name: mdp17c_viol
+    op: not_covering
+    mode: lazy
+    layers: [dnwell_ring, ncomp]
+
+  # ---- Poly2 resistors (lres / pres / hres decks) -------------------------
+  # A poly resistor is poly under a salicide block, marked by RES_MK; the implant
+  # picks the type and RESISTOR distinguishes the high-sheet one.
+  - name: poly_nplus_res
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, nplus]
+  - name: lres_poly_sab
+    op: interacting
+    mode: lazy
+    layers: [poly_nplus_res, sab]
+  - name: lres_poly
+    op: interacting
+    mode: lazy
+    layers: [lres_poly_sab, res_mk]
+  - name: poly2_unrelated
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, sab]
+  - name: comp_on_lres
+    op: overlapping
+    mode: lazy
+    layers: [comp, lres_poly]
+  - name: cont_lres
+    op: intersection
+    mode: lazy
+    layers: [contact, lres_poly]
+  - name: cont_lres_on_sab
+    op: interacting
+    mode: lazy
+    layers: [cont_lres, sab]
+  - name: poly_pplus_res
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, pplus]
+  - name: pres_poly_sab
+    op: interacting
+    mode: lazy
+    layers: [poly_pplus_res, sab]
+  - name: pres_poly_mk
+    op: interacting
+    mode: lazy
+    layers: [pres_poly_sab, res_mk]
+  - name: pres_poly
+    op: not_interacting
+    mode: lazy
+    layers: [pres_poly_mk, resistor]
+  - name: comp_on_pres
+    op: overlapping
+    mode: lazy
+    layers: [comp, pres_poly]
+  - name: cont_pres
+    op: intersection
+    mode: lazy
+    layers: [contact, pres_poly]
+  - name: cont_pres_on_sab
+    op: interacting
+    mode: lazy
+    layers: [cont_pres, sab]
+  - name: pres_outline
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, pplus, sab]
+  - name: res_mk_on_pres
+    op: interacting
+    mode: lazy
+    layers: [res_mk, pres_poly]
+  - name: pres9a_viol
+    op: interacting
+    mode: lazy
+    layers: [res_mk_on_pres, res_mk_off_outline]
+  - name: res_mk_big_area
+    op: with_area
+    min: 15000.001
+    mode: lazy
+    layers: [res_mk]
+  - name: res_mk_big
+    op: with_bbox_min
+    min: 80.001
+    mode: lazy
+    layers: [res_mk_big_area]
+  - name: hres_poly_pp
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, pplus]
+  - name: hres_poly_sab
+    op: interacting
+    mode: lazy
+    layers: [hres_poly_pp, sab]
+  # HRES.10: where the P+ implant and the block overlap on the resistor, the overlap has
+  # one width and the rule fixes it.
+  - name: hres10_overlap
+    op: intersection
+    mode: lazy
+    layers: [pplus, hres9_sab]
+  - name: hres1_poly
+    op: interacting
+    mode: lazy
+    layers: [hres_poly_sab, res_mk]
+  - name: hres_poly
+    op: interacting
+    mode: lazy
+    layers: [hres1_poly, resistor]
+  - name: hres_resistor
+    op: interacting
+    mode: lazy
+    layers: [resistor, hres1_poly]
+  - name: hres_contact
+    op: intersection
+    mode: lazy
+    layers: [contact, hres_poly]
+  - name: comp_on_hres
+    op: overlapping
+    mode: lazy
+    layers: [comp, hres_resistor]
+  - name: hres_cont_on_sab
+    op: interacting
+    mode: lazy
+    layers: [hres_contact, sab]
+  - name: hres9_sab_pp
+    op: interacting
+    mode: lazy
+    layers: [sab, pplus]
+  - name: hres9_sab_mk
+    op: interacting
+    mode: lazy
+    layers: [hres9_sab_pp, res_mk]
+  - name: hres9_sab
+    op: interacting
+    mode: lazy
+    layers: [hres9_sab_mk, resistor]
+
+  # ---- OTP marker (otp_mk deck) -------------------------------------------
+  - name: comp_otp
+    op: intersection
+    mode: lazy
+    layers: [comp, otp_mk]
+  - name: poly_otp
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, otp_mk]
+  - name: comp_otp_no_poly
+    op: difference
+    mode: lazy
+    layers: [comp_otp, poly_otp]
+  - name: sab_otp_on_contact
+    op: intersection
+    mode: lazy
+    layers: [sab_otp, contact]
+  - name: sab_otp
+    op: intersection
+    mode: lazy
+    layers: [sab, otp_mk]
+  - name: poly_unsalicided_otp
+    op: intersection
+    mode: lazy
+    layers: [poly_otp, sab_otp]
+  - name: tgate_otp
+    op: intersection
+    mode: lazy
+    layers: [tgate, otp_mk]
+  - name: poly_field_otp_all
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, comp]
+  - name: opl3a_poly_all
+    op: union
+    mode: lazy
+    layers: [tgate, poly_field_otp_all]
+  - name: opl3a_poly
+    op: intersection
+    mode: lazy
+    layers: [opl3a_poly_all, otp_mk]
+  - name: sab_out_comp
+    op: not_overlapping
+    mode: lazy
+    layers: [sab, comp]
+  - name: sab_out_comp_otp
+    op: intersection
+    mode: lazy
+    layers: [sab_out_comp, otp_mk]
+  - name: comp_out_sab
+    op: not_overlapping
+    mode: lazy
+    layers: [comp, sab]
+  - name: sab_otp_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [sab_otp, v5_xtor]
+  - name: sab_otp_lv
+    op: not_interacting
+    mode: lazy
+    layers: [sab_otp_no_v5, dualgate]
+  - name: sab_otp_mv
+    op: intersection
+    mode: lazy
+    layers: [sab_otp, v5_xtor]
+  - name: tgate_out_sab
+    op: not_overlapping
+    mode: lazy
+    layers: [tgate, sab]
+  - name: contact_in_comp_otp
+    op: overlapping
+    mode: lazy
+    layers: [contact, comp_otp]
+
+  # ---- YMTP marker (ymtp_mk deck) -----------------------------------------
+  # A tighter rule set inside the marker, split by voltage the usual way.
+  - name: ymtp_no_v5
+    op: not_interacting
+    mode: lazy
+    layers: [ymtp_mk, v5_xtor]
+  - name: ymtp_mk_lv
+    op: not_interacting
+    mode: lazy
+    layers: [ymtp_no_v5, dualgate]
+  - name: ymtp_mk_mv
+    op: overlapping
+    mode: lazy
+    layers: [ymtp_mk, dualgate]
+  - name: comp_ymtp_lv
+    op: intersection
+    mode: lazy
+    layers: [comp, ymtp_mk_lv]
+  - name: comp_ymtp_mv
+    op: intersection
+    mode: lazy
+    layers: [comp, ymtp_mk_mv]
+  - name: poly_ymtp_lv
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, ymtp_mk_lv]
+  - name: poly_ymtp_mv
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, ymtp_mk_mv]
+  - name: nwell_ymtp_lv
+    op: intersection
+    mode: lazy
+    layers: [nwell_n_dn, ymtp_mk_lv]
+  - name: nwell_ymtp_mv
+    op: intersection
+    mode: lazy
+    layers: [nwell_n_dn, ymtp_mk_mv]
+  - name: comp_no_otp_ymtp_mv
+    op: intersection
+    mode: lazy
+    layers: [comp_no_otp, ymtp_mk_mv]
+  - name: ncomp_ymtp_lv
+    op: intersection
+    mode: lazy
+    layers: [ncomp, ymtp_mk_lv]
+  - name: ncomp_ymtp_lv_out
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp_ymtp_lv, all_nwell]
+  - name: ncomp_ymtp_mv
+    op: intersection
+    mode: lazy
+    layers: [ncomp, ymtp_mk_mv]
+  - name: ncomp_ymtp_mv_out
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp_ymtp_mv, all_nwell]
+  - name: poly_ymtp_lv_out_pf
+    op: not_overlapping
+    mode: lazy
+    layers: [poly_ymtp_lv, plfuse]
+  - name: poly_ymtp_mv_out_pf
+    op: not_overlapping
+    mode: lazy
+    layers: [poly_ymtp_mv, plfuse]
+
+  # ---- SRAM 5.0 V (sram_5p0 deck) -----------------------------------------
+  - name: sram_mv
+    op: overlapping
+    mode: lazy
+    layers: [sramcore, v5_xtor]
+  - name: nw_n_dn_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [nwell_n_dn, sram_mv]
+  - name: poly_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, sram_mv]
+  - name: comp_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [comp, sram_mv]
+  - name: contact_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [contact, sram_mv]
+  - name: lvpwell_dn_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [lvpwell_dn, sram_mv]
+  - name: ncomp_in_dnwell
+    op: inside
+    mode: lazy
+    layers: [ncomp, dnwell]
+  - name: ncomp_dn_sram
+    op: intersection
+    mode: lazy
+    layers: [ncomp_in_dnwell, sramcore]
+  - name: pcomp_out_dn_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [pcomp_out_dnwell, sram_mv]
+  - name: pcomp_in_dnwell
+    op: inside
+    mode: lazy
+    layers: [pcomp, dnwell]
+  - name: pcomp_dn_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [pcomp_in_dnwell, sram_mv]
+  - name: ncomp_out_nw_dn_sram_mv
+    op: intersection
+    mode: lazy
+    layers: [ncomp_out_nw_dn, sram_mv]
+  - name: poly_sram_field
+    op: not_overlapping
+    mode: lazy
+    layers: [poly_sram_mv, comp_sram_mv]
+  - name: poly_sram_related
+    op: overlapping
+    mode: lazy
+    layers: [poly_sram_mv, comp_sram_mv]
+
+  # ---- eFuse (efuse deck) --------------------------------------------------
+  # A poly fuse sits on field oxide between a cathode and an anode, all inside
+  # EFUSE_MK; LVS_Source picks out the anode end.
+  - name: efuse_mk_pplus
+    op: intersection
+    mode: lazy
+    layers: [efuse_mk, pplus]
+  - name: poly2_at_plfuse
+    op: interacting
+    mode: lazy
+    layers: [poly2_drawn, plfuse]
+  - name: ef21_fuse
+    op: inside
+    mode: lazy
+    layers: [poly2_at_plfuse, efuse_mk_pplus]
+  - name: ef21_fuse_box
+    op: extents
+    mode: lazy
+    layers: [ef21_fuse]
+  - name: plfuse_efuse
+    op: intersection
+    mode: lazy
+    layers: [plfuse, efuse_mk]
+  - name: poly_efuse
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, efuse_mk]
+  - name: lvs_source_or_plfuse
+    op: union
+    mode: lazy
+    layers: [lvs_source, plfuse]
+  - name: cathode
+    op: difference
+    mode: lazy
+    layers: [poly_efuse, lvs_source_or_plfuse]
+  - name: ef16a_viol
+    op: not_covering
+    min: 4
+    max: 4
+    mode: lazy
+    layers: [cathode, contact]
+  - name: ef16b_viol
+    op: not_covering
+    min: 4
+    max: 4
+    mode: lazy
+    layers: [anode, contact]
+  - name: anode
+    op: intersection
+    mode: lazy
+    layers: [poly_efuse, lvs_source]
+  - name: plfuse_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [plfuse]
+  - name: cathode_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [cathode]
+  - name: anode_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [anode]
+  # EF.01: the fuse and its poly must lie inside the marked P+ region.
+  - name: poly_or_plfuse
+    op: union
+    mode: lazy
+    layers: [poly2_drawn, plfuse]
+  - name: poly_at_efuse_mk
+    op: interacting
+    mode: lazy
+    layers: [poly_or_plfuse, efuse_mk]
+  - name: ef04a_no_source
+    op: not_interacting
+    mode: lazy
+    layers: [plfuse_efuse, lvs_source]
+  - name: ef04a_no_poly
+    op: not_interacting
+    mode: lazy
+    layers: [plfuse_efuse, poly2_drawn]
+  - name: ef04a_viol
+    op: union
+    mode: lazy
+    layers: [ef04a_no_source, ef04a_no_poly]
+  - name: ef01_viol
+    op: not_inside
+    mode: lazy
+    layers: [poly_at_efuse_mk, efuse_mk_pplus]
+  # EF.05: LVS_Source and the anode poly must coincide exactly.
+  - name: poly_efuse_no_fuse
+    op: difference
+    mode: lazy
+    layers: [poly_efuse, plfuse]
+  - name: poly_efuse_at_src
+    op: interacting
+    mode: lazy
+    layers: [poly_efuse_no_fuse, lvs_source]
+  - name: ef05_viol_a
+    op: difference
+    mode: lazy
+    layers: [poly_efuse_at_src, lvs_source]
+  - name: lvs_source_no_poly
+    op: difference
+    mode: lazy
+    layers: [lvs_source, poly2_drawn]
+  - name: ef05_viol_b
+    op: intersection
+    mode: lazy
+    layers: [lvs_source_no_poly, efuse_mk]
+  # EF.12 / EF.13: a contact may not touch the fuse itself.
+  - name: cont_on_plfuse
+    op: intersection
+    mode: lazy
+    layers: [contact, plfuse_efuse]
+  - name: cont_cathode
+    op: intersection
+    mode: lazy
+    layers: [contact, cathode]
+  - name: cont_anode
+    op: intersection
+    mode: lazy
+    layers: [contact, anode]
+  # EF.14: EFUSE_MK must enclose LVS_Source.
+  - name: lvs_source_at_mk
+    op: overlapping
+    mode: lazy
+    layers: [lvs_source, efuse_mk]
+  - name: ef14_viol
+    op: difference
+    mode: lazy
+    layers: [lvs_source_at_mk, efuse_mk]
+  - name: plfuse_at_contact
+    op: interacting
+    mode: lazy
+    layers: [plfuse, contact]
+  # EF.18 / EF.19: the fuse must sit on bare field oxide.
+  - name: ef18_forbidden
+    op: union
+    mode: lazy
+    layers: [comp, nplus, esd, sab, resistor, metal1, metal2]
+  - name: ef18_viol
+    op: overlapping
+    mode: lazy
+    layers: [plfuse, ef18_forbidden]
+  - name: ef19_forbidden
+    op: union
+    mode: lazy
+    layers: [metal1, metal2]
+  - name: ef19_viol
+    op: overlapping
+    mode: lazy
+    layers: [plfuse, ef19_forbidden]
+  - name: ef20_neighbours
+    op: union
+    mode: lazy
+    layers: [comp, nplus, esd, sab, resistor]
+
+  # ---- Connect-graph bridges ---------------------------------------------
+  # Derived stand-ins for upstream's connector-less `connect(a, b)` pairs; see the
+  # connectivity block above.
+  - name: mvsd_tap
+    op: intersection
+    mode: lazy
+    layers: [mvsd, ncomp_con]
+  - name: mvpsd_tap
+    op: intersection
+    mode: lazy
+    layers: [mvpsd, pcomp_con]
+  - name: mimcap_top_tap
+    op: intersection
+    mode: lazy
+    layers: [fusetop, metal5_drawn]
+
+  # ---- Metal slotting (mslot deck) ---------------------------------------
+  # `dont_slot` is the union of the four keep-out regions upstream builds, each an
+  # intersection of the top metal (or the MIM bottom plate) with a pad-level opening,
+  # grown by 5 um.  Dilation distributes over union, so the three UBM flavours are
+  # unioned first and grown once instead of three times.
+  - name: top_metal_under_pad_raw
+    op: intersection
+    mode: lazy
+    layers: [top_metal, pad]
+  - name: top_metal_under_pad
+    op: grow
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_under_pad_raw]
+  - name: mim_bottom_under_fusetop_raw
+    op: intersection
+    mode: lazy
+    layers: [metal4_drawn, fusetop]
+  - name: mim_bottom_under_fusetop
+    op: grow
+    radius: 5.0
+    mode: lazy
+    layers: [mim_bottom_under_fusetop_raw]
+  - name: top_metal_under_fusewindow_raw
+    op: intersection
+    mode: lazy
+    layers: [top_metal, fusewindow_d]
+  - name: top_metal_under_fusewindow
+    op: grow
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_under_fusewindow_raw]
+  - name: ubm_all
+    op: union
+    mode: lazy
+    layers: [ubmpperi, ubmparray, ubmeplate]
+  - name: top_metal_under_ubm_raw
+    op: intersection
+    mode: lazy
+    layers: [top_metal, ubm_all]
+  - name: top_metal_under_ubm
+    op: grow
+    radius: 5.0
+    mode: lazy
+    layers: [top_metal_under_ubm_raw]
+  - name: dont_slot
+    op: union
+    mode: lazy
+    layers:
+      - top_metal_under_pad
+      - mim_bottom_under_fusetop
+      - top_metal_under_fusewindow
+      - top_metal_under_ubm
+
+
+  # The vias are grown by 0.2 um before subtraction so that MSLOT#.1's "wide metal that
+  # still needs a slot" excludes the strip a slot may not occupy anyway (MSLOT#.7/8).
+  - name: contact_slot_keepout
+    op: grow
+    radius: 0.2
+    mode: lazy
+    layers: [contact]
+  - name: via1_slot_keepout
+    op: grow
+    radius: 0.2
+    mode: lazy
+    layers: [via1]
+  - name: via2_slot_keepout
+    op: grow
+    radius: 0.2
+    mode: lazy
+    layers: [via2]
+  - name: via3_slot_keepout
+    op: grow
+    radius: 0.2
+    mode: lazy
+    layers: [via3]
+  - name: via4_slot_keepout
+    op: grow
+    radius: 0.2
+    mode: lazy
+    layers: [via4]
+
+  # Per level: the slot marks split into rectangles and non-rectangles, and the
+  # "wide metal" derivation.  Upstream opens the metal with a 30 um structuring element
+  # built from two directional passes (`sized(0,-15).sized(-15,0).sized(0,15).sized(15,0)`),
+  # which keeps only what survives a 30 um square - i.e. metal wide enough to need a
+  # slot.  That chain is four virtual layers here because each directional size is its
+  # own op.  It runs twice: once to pre-select wide metal before the vias and slots are
+  # subtracted, and once afterwards, on the remainder, which is the rule proper.
+  - name: metal1_slot_rect
+    op: rectangle
+    mode: lazy
+    layers: [metal1_slot]
+  - name: metal1_slot_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [metal1_slot]
+  - name: metal1_wide_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_drawn]
+  - name: metal1_wide_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_wide_a]
+  - name: metal1_wide_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_wide_b]
+  - name: metal1_wide
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_wide_c]
+  - name: metal1_wide_unslotted
+    op: difference
+    mode: lazy
+    layers: [metal1_wide, metal1_slot, dont_slot, contact_slot_keepout, via1_slot_keepout]
+  - name: metal1_unslotted_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_wide_unslotted]
+  - name: metal1_unslotted_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_unslotted_a]
+  - name: metal1_unslotted_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_unslotted_b]
+  - name: metal1_needs_slot
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal1_unslotted_c]
+  - name: metal2_slot_rect
+    op: rectangle
+    mode: lazy
+    layers: [metal2_slot]
+  - name: metal2_slot_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [metal2_slot]
+  - name: metal2_wide_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_drawn]
+  - name: metal2_wide_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_wide_a]
+  - name: metal2_wide_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_wide_b]
+  - name: metal2_wide
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_wide_c]
+  - name: metal2_wide_unslotted
+    op: difference
+    mode: lazy
+    layers: [metal2_wide, metal2_slot, dont_slot, via1_slot_keepout, via2_slot_keepout]
+  - name: metal2_unslotted_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_wide_unslotted]
+  - name: metal2_unslotted_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_unslotted_a]
+  - name: metal2_unslotted_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_unslotted_b]
+  - name: metal2_needs_slot
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal2_unslotted_c]
+  - name: metal3_slot_rect
+    op: rectangle
+    mode: lazy
+    layers: [metal3_slot]
+  - name: metal3_slot_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [metal3_slot]
+  - name: metal3_wide_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_drawn]
+  - name: metal3_wide_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_wide_a]
+  - name: metal3_wide_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_wide_b]
+  - name: metal3_wide
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_wide_c]
+  - name: metal3_wide_unslotted
+    op: difference
+    mode: lazy
+    layers: [metal3_wide, metal3_slot, dont_slot, via2_slot_keepout, via3_slot_keepout]
+  - name: metal3_unslotted_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_wide_unslotted]
+  - name: metal3_unslotted_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_unslotted_a]
+  - name: metal3_unslotted_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_unslotted_b]
+  - name: metal3_needs_slot
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal3_unslotted_c]
+  - name: metal4_slot_rect
+    op: rectangle
+    mode: lazy
+    layers: [metal4_slot]
+  - name: metal4_slot_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [metal4_slot]
+  - name: metal4_wide_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_drawn]
+  - name: metal4_wide_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_wide_a]
+  - name: metal4_wide_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_wide_b]
+  - name: metal4_wide
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_wide_c]
+  - name: metal4_wide_unslotted
+    op: difference
+    mode: lazy
+    layers: [metal4_wide, metal4_slot, dont_slot, via3_slot_keepout, via4_slot_keepout]
+  - name: metal4_unslotted_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_wide_unslotted]
+  - name: metal4_unslotted_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_unslotted_a]
+  - name: metal4_unslotted_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_unslotted_b]
+  - name: metal4_needs_slot
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal4_unslotted_c]
+  - name: metal5_slot_rect
+    op: rectangle
+    mode: lazy
+    layers: [metal5_slot]
+  - name: metal5_slot_not_rect
+    op: not_rectangle
+    mode: lazy
+    layers: [metal5_slot]
+  - name: metal5_wide_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_drawn]
+  - name: metal5_wide_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_wide_a]
+  - name: metal5_wide_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_wide_b]
+  - name: metal5_wide
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_wide_c]
+  - name: metal5_wide_unslotted
+    op: difference
+    mode: lazy
+    layers: [metal5_wide, metal5_slot, dont_slot, via4_slot_keepout]
+  - name: metal5_unslotted_a
+    op: shrink_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_wide_unslotted]
+  - name: metal5_unslotted_b
+    op: shrink_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_unslotted_a]
+  - name: metal5_unslotted_c
+    op: grow_y
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_unslotted_b]
+  - name: metal5_needs_slot
+    op: grow_x
+    radius: 15.0
+    mode: lazy
+    layers: [metal5_unslotted_c]
+
+  # ---- MIM capacitor, option B (mim_b deck) ------------------------------
+  # The bottom plate is not drawn.  Upstream reconstructs it as `mimtm_virtual`: the
+  # top plate oversized by 1.06 um, clipped to whichever Metal4 shape the top plate
+  # actually sits on.  Every enclosure rule in the deck is measured against that
+  # reconstruction rather than against Metal4 itself, so a routing shape elsewhere on
+  # the same net is not mistaken for the plate.
+  # A selection radius - "the plate reaches this far" - so it wants the slack: a via at
+  # exactly 1.06 um only touches the grown region, and a whole-region test reads a
+  # zero-area touch as no overlap. This is the one grow in either PDK that needs it.
+  - name: fusetop_oversize
+    op: grow
+    radius: 1.06
+    slack: 0.005
+    mode: lazy
+    layers: [fusetop]
+  - name: topmin1_metal_at_fusetop
+    op: interacting
+    mode: lazy
+    layers: [topmin1_metal, fusetop]
+  - name: mimtm_virtual
+    op: intersection
+    mode: lazy
+    layers: [fusetop_oversize, topmin1_metal_at_fusetop]
+  # The vias that land on the reconstructed bottom plate, which MIMTM.2 measures.
+  - name: mimtm_via
+    op: overlapping
+    mode: lazy
+    layers: [top_via, mimtm_virtual]
+  # MIMTM.5 measures the top plate against the vias that reach the *bottom* plate,
+  # which are the ones touching Metal4.
+  - name: top_via_on_topmin1_metal
+    op: interacting
+    mode: lazy
+    layers: [top_via, topmin1_metal]
+  # MIMTM.9 is the sea-of-via pitch on top of the plate, so only the vias fully on it.
+  - name: top_via_in_fusetop
+    op: inside
+    mode: lazy
+    layers: [top_via, fusetop]
+  - name: fusetop_outside_cap_mk
+    op: difference
+    mode: lazy
+    layers: [fusetop, cap_mk]
+  # MIMTM.10: the bottom plate may only be contacted from above, so a Via3 landing on
+  # the plate under the top plate is a violation wherever it appears.
+  - name: topmin1_via_on_mim_bottom
+    op: intersection
+    mode: lazy
+    layers: [topmin1_via, topmin1_metal, fusetop]
+
+  # ---- DN.3: the PCOMP guard ring around a deep well --------------------
+  # A PCOMP ring shows up as a hole in the merged PCOMP layer; the hole minus PCOMP
+  # itself is the area the ring encloses.
+  - name: pcomp_ring_interior
+    op: difference
+    mode: lazy
+    layers: [pcomp_holes, pcomp]
+  # A deep well with no ring around it at all.
+  # The ring's interior as a box: a DNWELL has PCOMP devices of its own inside the ring,
+  # and subtracting every PCOMP from the hole punched them out of the interior, so the
+  # well was "not inside" the ring that surrounds it.  Upstream takes the extents of
+  # the interior that touches exactly one DNWELL, and so does this.
+  - name: pcomp_ring_one
+    op: interacting
+    min: 1
+    max: 1
+    mode: lazy
+    layers: [pcomp_ring_interior, dnwell]
+  - name: pcomp_ring_box
+    op: extents
+    mode: lazy
+    layers: [pcomp_ring_one]
+  - name: dnwell_outside_ring
+    op: not_inside
+    mode: lazy
+    layers: [dnwell, pcomp_ring_box]
+  # "Directly surrounded" also fails when the ring encloses somebody else's n-type
+  # geometry as well - the ring is then shared rather than this well's own.
+  - name: n_type_all
+    op: union
+    mode: lazy
+    layers: [nat, ncomp, nwell]
+  - name: foreign_n_type
+    op: not_interacting
+    mode: lazy
+    layers: [n_type_all, dnwell]
+  - name: pcomp_ring_shared
+    op: covering
+    mode: lazy
+    layers: [pcomp_ring_interior, foreign_n_type]
+  - name: dnwell_in_shared_ring
+    op: inside
+    mode: lazy
+    layers: [dnwell, pcomp_ring_shared]
+  - name: dn3_viol
+    op: union
+    mode: lazy
+    layers: [dnwell_outside_ring, dnwell_in_shared_ring]
+
+  # ---- PL.6: right-angle poly bends over active ---------------------------
+  # The rule exempts YMTP_MK, and the exemption applies to the *corner*, not to the poly:
+  # subtracting the marker from poly2 first would invent new corners along the marker's
+  # own edge.  So poly2 is examined whole and the corner is filtered instead.
+  - name: comp_no_ymtp
+    op: difference
+    mode: lazy
+    layers: [comp, ymtp_mk]
+
+  # MIMTM.11: the bottom plate several MIM caps may share.  Their areas add up against
+  # the same cap MIMTM.8b puts on one of them.
+  - name: mimtm11_plate
+    op: interacting
+    mode: lazy
+    layers: [topmin1_metal, fusetop]
+  # MIM.11 is the same rule on option A, where the plate is Metal2.
+  - name: mim11_plate
+    op: interacting
+    mode: lazy
+    layers: [metal2, fusetop]
+  # NAT.6: the active under a NAT marker.  Two of them at different potential are not
+  # allowed under one marker.
+  - name: nat6_comp
+    op: intersection
+    mode: lazy
+    layers: [comp, nat]
+  # ---- MT30.8 -------------------------------------------------------------
+  # The DRM splits this in two: a single top via at one location (MT30.8a) and the 2x2
+  # array a location needs (MT30.8b).  Upstream emits one id for both.  Neither applies in
+  # the seal ring, which the guard ring marker identifies.
+  - name: mt308_via
+    op: difference
+    mode: lazy
+    layers: [top_via, guard_ring_mk]
+  - name: mt308_x_a
+    op: intersection
+    mode: lazy
+    layers: [top_metal, topmin1_metal]
+  - name: mt308_x_b
+    op: difference
+    mode: lazy
+    layers: [mt308_x_a, guard_ring_mk]
+  - name: mt308_x
+    op: interacting
+    mode: lazy
+    layers: [mt308_x_b, mt308_via]
+  # Fewer than four vias at one location cannot be a 2x2 array, and one of them is
+  # MT30.8a's single via outright.
+  - name: mt308_few
+    op: interacting
+    mode: lazy
+    min: 1
+    max: 3
+    layers: [mt308_x, mt308_via]
+  # ---- MDP.10, the P-side twin of MDN.11 ----------------------------------
+  - name: mvpsd_mdp
+    op: intersection
+    mode: lazy
+    layers: [mvpsd, dualgate, ldmos_xtor]
+  # MDP.10: the channel the drift overlaps, fixed at 0.4 in both directions.
+  - name: mdp10_overlap
+    op: intersection
+    mode: lazy
+    layers: [ldmos_xtor, mvpsd, comp, poly2_drawn, pplus]
+  - name: mdp10_wide
+    op: open
+    radius: 0.2
+    mode: lazy
+    layers: [mdp10_overlap]
+  - name: mdp10_no_channel
+    op: not_interacting
+    mode: lazy
+    layers: [mvpsd_mdp, mdp10_overlap]
+  # ---- MDN.11 -------------------------------------------------------------
+  # The channel the drift overlaps: the rule fixes its width at 0.4 in both directions,
+  # and separately forbids a drift with no channel under it and no drain in it.
+  - name: mdn11_overlap
+    op: intersection
+    mode: lazy
+    layers: [ldmos_xtor, mvsd, comp, poly2_drawn, nplus]
+  # The parts wider than 0.4.  An opening by half of it survives only where the region is
+  # thicker than that, which is what upstream's "region minus its narrow parts" means; a
+  # max_width scan would call the overlap's own length a width.
+  - name: mdn11_wide
+    op: open
+    mode: lazy
+    radius: 0.2
+    layers: [mdn11_overlap]
+  - name: mdn11_uniform
+    op: not_interacting
+    mode: lazy
+    layers: [mdn11_overlap, mdn11_wide]
+  # The selections run on the drawn drift and the device markers are intersected after -
+  # clipping first changes which shapes a whole-polygon selection sees.
+  - name: mdn11_over_ncomp
+    op: covering
+    mode: lazy
+    layers: [mvsd, ncomp]
+  - name: mdn11_no_gate_sel
+    op: not_overlapping
+    mode: lazy
+    layers: [mdn11_over_ncomp, tgate]
+  - name: mdn11_no_gate
+    op: intersection
+    mode: lazy
+    layers: [mdn11_no_gate_sel, dualgate, ldmos_xtor]
+  - name: mdn11_bare_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: mdn11_no_drain_sel
+    op: not_covering
+    mode: lazy
+    layers: [mvsd, mdn11_bare_ncomp]
+  - name: mdn11_no_drain
+    op: intersection
+    mode: lazy
+    layers: [mdn11_no_drain_sel, dualgate, ldmos_xtor]
+  - name: mdn11_no_channel
+    op: union
+    mode: lazy
+    layers: [mdn11_no_gate, mdn11_no_drain]
+  # ---- MDN.10c ------------------------------------------------------------
+  # The field poly must overhang the active by exactly 0.2 towards the drain, so both
+  # directions are violations - and only where the drain's own box, the drift and the poly
+  # all coincide.  MDN.10b measures the same NCOMP boundary against the gate's own
+  # boundary.
+  - name: mdn10c_ncomp
+    op: interacting
+    mode: lazy
+    layers: [ncomp, poly_mdn10]
+  - name: mdn10c_short
+    op: enclosure_below
+    max: 0.2
+    mode: lazy
+    layers: [poly_mdn10, mdn10c_ncomp]
+  - name: mdn10c_long
+    op: enclosure_above
+    min: 0.2
+    mode: lazy
+    layers: [poly_mdn10, mdn10c_ncomp]
+  - name: mdn10c_off
+    op: union
+    mode: lazy
+    layers: [mdn10c_short, mdn10c_long]
+  - name: mdn10c_box_a
+    op: close
+    radius: 0.36
+    mode: lazy
+    layers: [ncomp_mdn]
+  - name: mdn10c_box
+    op: extents
+    mode: lazy
+    layers: [mdn10c_box_a]
+  - name: mdn10c_region
+    op: intersection
+    mode: lazy
+    layers: [mdn10c_box, mvsd, poly2_drawn]
+  - name: mdn10c_viol
+    op: intersection
+    mode: lazy
+    layers: [mdn10c_off, mdn10c_region]
+  # ---- MDN.12 -------------------------------------------------------------
+  # The drain's active must sit 0.5 inside the drift, and a drift with no drain in it at
+  # all is the other half of the rule.  The two halves read different actives: the
+  # enclosure is measured on the marked device's, the missing drain on any.
+  - name: mdn12_bare_ncomp_mdn
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp_mdn, poly2_drawn]
+  - name: mdn12_bare_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: mdn12_drift
+    op: covering
+    mode: lazy
+    layers: [mvsd_mdn, mdn12_bare_ncomp_mdn]
+  - name: mdn12_short
+    op: enclosure_below
+    max: 0.5
+    mode: lazy
+    layers: [mdn12_drift, ncomp_mdn]
+  - name: mdn12_short_off_poly
+    op: not_overlapping
+    mode: lazy
+    layers: [mdn12_short, poly2_drawn]
+  - name: mdn12_no_drain
+    op: not_covering
+    mode: lazy
+    layers: [mvsd_mdn, mdn12_bare_ncomp]
+  - name: mdn12_viol
+    op: union
+    mode: lazy
+    layers: [mdn12_short_off_poly, mdn12_no_drain]
+  # ---- LDPMOS: the source and the gate ends, mirroring the N-side ----------
+  - name: mdp_gate_in_mvpsd
+    op: intersection
+    mode: lazy
+    layers: [poly_mdp, mvpsd]
+  - name: mdp_source_touch
+    op: interacting
+    mode: lazy
+    layers: [pcomp, mdp_gate_in_mvpsd]
+  - name: mdp_source
+    op: difference
+    mode: lazy
+    layers: [mdp_source_touch, poly2_drawn]
+  # MDP.13b: fingers alternate source and drain.
+  - name: mdp13b_l1
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [ldpmos_body, mdp_source]
+  - name: mdp13b_l2
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [ldpmos_body, mvpsd]
+  - name: mdp13b_l3
+    op: interacting
+    mode: lazy
+    layers: [mdp_source, mvpsd]
+  - name: mdp13b_viol
+    op: union
+    mode: lazy
+    layers: [mdp13b_l1, mdp13b_l2, mdp13b_l3]
+  # MDP.13c: a finger with source on both sides, directly or through a shared tap.
+  - name: mdp13c_shared
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdp_source, ldpmos_body]
+  - name: mdp13c_tap
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [ncomp, mdp_source]
+  - name: mdp13c_via_tap
+    op: interacting
+    mode: lazy
+    layers: [mdp_source, mdp13c_tap]
+  - name: mdp13c_shared_any
+    op: union
+    mode: lazy
+    layers: [mdp13c_shared, mdp13c_via_tap]
+  - name: mdp13c_source_side
+    op: interacting
+    mode: lazy
+    layers: [ldpmos_body, mdp13c_shared_any]
+  - name: mdp13c_bare_pcomp
+    op: not_interacting
+    mode: lazy
+    layers: [pcomp, poly2_drawn]
+  - name: mdp13c_drain
+    op: covering
+    mode: lazy
+    layers: [mvpsd, mdp13c_bare_pcomp]
+  - name: mdp13c_two_pcomp
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdp13c_drain, pcomp]
+  - name: mdp13c_viol
+    op: interacting
+    mode: lazy
+    layers: [mdp13c_two_pcomp, mdp13c_source_side]
+  # MDP.3: an unbroken N+ guard ring inside DNWELL around each device - device material
+  # that no ring hole contains, and a ring hole that holds no tapped source or more than
+  # one drift.
+  - name: nplus_holes
+    op: holes
+    mode: lazy
+    layers: [nplus]
+  - name: mdp3_device_a
+    op: union
+    mode: lazy
+    layers: [ldpmos_body, mvpsd, mdp_source]
+  - name: mdp3_device
+    op: intersection
+    mode: lazy
+    layers: [mdp3_device_a, dualgate, ldmos_xtor]
+  - name: mdp3_a
+    op: not_interacting
+    mode: lazy
+    layers: [mdp3_device, nplus_holes]
+  - name: mdp3_ring
+    op: intersection
+    mode: lazy
+    layers: [nplus_holes, dualgate, ldmos_xtor]
+  - name: mdp3_tap
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdp_source]
+  - name: mdp3_b1
+    op: not_interacting
+    mode: lazy
+    layers: [mdp3_ring, mdp3_tap]
+  - name: mdp3_b
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [mdp3_b1, mvpsd]
+  # MDP.17a: a DNWELL guard ring is wanted between a marked drift and any N+ active
+  # outside the wells, whenever they come within 40 um of each other.
+  - name: mdp17_drift_a
+    op: inside
+    mode: lazy
+    layers: [mvpsd, dnwell]
+  - name: mdp17_drift
+    op: inside
+    mode: lazy
+    layers: [mdp17_drift_a, ldmos_xtor]
+  - name: mdp17_ncomp_a
+    op: not_overlapping
+    mode: lazy
+    layers: [ncomp, dnwell]
+  - name: mdp17_ncomp
+    op: not_overlapping
+    mode: lazy
+    layers: [mdp17_ncomp_a, nwell]
+  - name: mdp17_near
+    op: separation_below
+    max: 40.0
+    mode: lazy
+    layers: [mdp17_drift, mdp17_ncomp]
+  - name: mdp17_ring_a
+    op: intersection
+    mode: lazy
+    layers: [ncomp, dnwell]
+  - name: mdp17_ring
+    op: holes
+    mode: lazy
+    layers: [mdp17_ring_a]
+  - name: mdp17a_viol
+    op: not_interacting
+    mode: lazy
+    layers: [mdp17_near, mdp17_ring]
+  # ---- MDN.13c ------------------------------------------------------------
+  # A finger with source on both sides: the source is the active meeting a gate that is
+  # inside a drift, minus the gate; a source meeting two gates is one shared between
+  # fingers, and the drain that sits by such a finger is what the rule reports.
+  - name: mdn13c_gate_in_mvsd
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate, ldmos_xtor, mvsd]
+  - name: mdn13c_source_touch
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdn13c_gate_in_mvsd]
+  - name: mdn13c_source
+    op: difference
+    mode: lazy
+    layers: [mdn13c_source_touch, poly2_drawn]
+  - name: mdn13c_finger
+    op: difference
+    mode: lazy
+    layers: [poly_mdn, mvsd]
+  - name: mdn13c_shared
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13c_source, mdn13c_finger]
+  - name: mdn13c_tap
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [pcomp, mdn13c_source]
+  - name: mdn13c_via_tap
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_source, mdn13c_tap]
+  - name: mdn13c_shared_any
+    op: union
+    mode: lazy
+    layers: [mdn13c_shared, mdn13c_via_tap]
+  - name: mdn13c_source_side
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_finger, mdn13c_shared_any]
+  - name: mdn13c_bare_ncomp
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  - name: mdn13c_drain
+    op: covering
+    mode: lazy
+    layers: [mvsd, mdn13c_bare_ncomp]
+  - name: mdn13c_two_ncomp
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13c_drain, ncomp]
+  - name: mdn13c_viol
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_two_ncomp, mdn13c_source_side]
+  # MDN.13b: fingers alternate source and drain, so a finger meets exactly one source and
+  # exactly one drift, and no source reaches a drift.  It reads the same source and finger
+  # MDN.13c does.
+  - name: mdn13b_l1
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [mdn13c_finger, mdn13c_source]
+  - name: mdn13b_l2
+    op: not_interacting
+    mode: lazy
+    min: 1
+    max: 1
+    layers: [mdn13c_finger, mvsd]
+  - name: mdn13b_l3
+    op: interacting
+    mode: lazy
+    layers: [mdn13c_source, mvsd]
+  - name: mdn13b_viol
+    op: union
+    mode: lazy
+    layers: [mdn13b_l1, mdn13b_l2, mdn13b_l3]
+  # ---- MDN.13d ---------------------------------------------------
+  # A finger's source: NCOMP touching a gate that is inside the marker (the MDN.13c
+  # gate layer), minus the gate.
+  - name: mdn_source_touch
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mdn13c_gate_in_mvsd]
+  - name: mdn_source
+    op: difference
+    mode: lazy
+    layers: [mdn_source_touch, poly2_drawn]
+  - name: mdn_ldnmos
+    op: difference
+    mode: lazy
+    layers: [poly_mdn, mvsd]
+  - name: mdn_ncomp_no_poly
+    op: not_interacting
+    mode: lazy
+    layers: [ncomp, poly2_drawn]
+  # MDN.13d: the P-sub ring around every two fingers, and the butted-tap case it excludes.
+  - name: mdn13d_drain
+    op: covering
+    mode: lazy
+    layers: [mvsd_mdn, mdn_ncomp_no_poly]
+  - name: mdn13d_single
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13d_drain, ncomp]
+  - name: mdn13d_multi
+    op: interacting
+    mode: lazy
+    min: 3
+    max: 3
+    layers: [mdn13d_drain, ncomp]
+  - name: mdn13d_source_closed
+    op: close
+    mode: lazy
+    radius: 1.0
+    layers: [mdn_source]
+  - name: mdn13d_source_ext
+    op: extents
+    mode: lazy
+    layers: [mdn13d_source_closed]
+  - name: mdn13d_no_tap
+    op: difference
+    mode: lazy
+    layers: [mdn13d_source_ext, pcomp]
+  - name: mdn13d_butted_well
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [mdn13d_no_tap, mdn_ldnmos]
+  - name: mdn13d_l1
+    op: covering
+    mode: lazy
+    min: 2
+    layers: [pcomp_holes, mdn13d_single]
+  - name: mdn13d_l2a
+    op: covering
+    mode: lazy
+    layers: [pcomp_holes, mdn13d_single]
+  - name: mdn13d_l2
+    op: covering
+    mode: lazy
+    layers: [mdn13d_l2a, mdn13d_multi]
+  - name: mdn13d_viol
+    op: union
+    mode: lazy
+    layers: [mdn13d_l1, mdn13d_l2, mdn13d_butted_well]
+  # ---- LDMOS rules the engine can already say ------------------------------
+  # MDN.7: NCOMP or gate reaching an MVSD, or COMP inside one, outside the LDMOS marker.
+  - name: mdn7_ncomp_at_mvsd
+    op: interacting
+    mode: lazy
+    layers: [ncomp, mvsd]
+  - name: mdn7_a1
+    op: difference
+    mode: lazy
+    layers: [mdn7_ncomp_at_mvsd, poly2_drawn]
+  - name: mdn7_a
+    op: difference
+    mode: lazy
+    layers: [mdn7_a1, mvsd]
+  - name: mdn7_ngate_at_mvsd
+    op: interacting
+    mode: lazy
+    layers: [ngate, mvsd]
+  - name: mdn7_b
+    op: difference
+    mode: lazy
+    layers: [mdn7_ngate_at_mvsd, mvsd]
+  - name: mdn7_c
+    op: intersection
+    mode: lazy
+    layers: [ncomp, mvsd]
+  - name: mdn7_all
+    op: union
+    mode: lazy
+    layers: [mdn7_a, mdn7_b, mdn7_c]
+  - name: mdn7_dg
+    op: intersection
+    mode: lazy
+    layers: [mdn7_all, dualgate]
+  - name: mdn7_viol
+    op: difference
+    mode: lazy
+    layers: [mdn7_dg, ldmos_xtor]
+
+  # MDP.9d: gate poly overlapping the sized source region, or not reaching it at all.
+  - name: mdp9d_poly_dg
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, dualgate]
+  - name: mdp9d_poly
+    op: intersection
+    mode: lazy
+    layers: [mdp9d_poly_dg, ldmos_xtor]
+  - name: mdp9d_l1
+    op: overlapping
+    mode: lazy
+    layers: [mdp9d_poly, mdp9d_exclude]
+  - name: ldmos_xtor_at_mvpsd
+    op: interacting
+    mode: lazy
+    layers: [ldmos_xtor, mvpsd]
+  - name: mdp9d_poly_mv
+    op: intersection
+    mode: lazy
+    layers: [mdp9d_poly_dg, ldmos_xtor_at_mvpsd]
+  - name: mdp9d_l2
+    op: not_interacting
+    mode: lazy
+    layers: [mdp9d_poly_mv, mdp9d_exclude]
+  - name: mdp9d_viol
+    op: union
+    mode: lazy
+    layers: [mdp9d_l1, mdp9d_l2]
+
+  # MDP.3d / MDP.4: COMP under an LDMOS marker but not under Metal1, whose uncovered
+  # boundary runs longer than 10 um.
+  - name: mdp3d_ncomp
+    op: interacting
+    mode: lazy
+    layers: [ncomp, ldmos_xtor_at_mvpsd]
+  - name: mdp3d_ncomp_dg
+    op: interacting
+    mode: lazy
+    layers: [mdp3d_ncomp, dualgate]
+  - name: mdp3d_bare
+    op: difference
+    mode: lazy
+    layers: [mdp3d_ncomp_dg, metal1]
+  - name: mdp4_pcomp_off
+    op: not_interacting
+    mode: lazy
+    layers: [pcomp, mvpsd]
+  - name: mdp4_pcomp_at
+    op: interacting
+    mode: lazy
+    layers: [mdp4_pcomp_off, ldmos_xtor_at_mvpsd]
+  - name: mdp4_pcomp_dg
+    op: interacting
+    mode: lazy
+    layers: [mdp4_pcomp_at, dualgate]
+  - name: mdp4_bare
+    op: difference
+    mode: lazy
+    layers: [mdp4_pcomp_dg, metal1]
+
+
+  # ---- "Crosses out" halves ------------------------------------------------
+  # Every enclosure rule below is an OR upstream: the margin, and a shape that overlaps
+  # what should contain it but runs outside. The second has no margin to measure - the
+  # shape crosses the boundary - so the enclosure check is structurally blind to it, and
+  # each of these is that half, reported under the same rule id.
+  - name: co_3_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_no_sram, poly2_drawn]
+  - name: co_3_crossing
+    op: difference
+    mode: lazy
+    layers: [co_3_crossing_all, poly2_drawn]
+  - name: co_4_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_no_sram, comp]
+  - name: co_4_crossing
+    op: difference
+    mode: lazy
+    layers: [co_4_crossing_all, comp]
+  - name: dv_1_crossing
+    op: difference
+    mode: lazy
+    layers: [dnwell_56v, dualgate]
+  - name: dv_6_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [comp_dv, dualgate]
+  - name: dv_6_crossing
+    op: difference
+    mode: lazy
+    layers: [dv_6_crossing_all, dualgate]
+  - name: dv_8_crossing
+    op: difference
+    mode: lazy
+    layers: [poly2_mv, dualgate]
+  - name: hres_4_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [hres_poly, resistor]
+  - name: hres_4_crossing
+    op: difference
+    mode: lazy
+    layers: [hres_4_crossing_all, resistor]
+  - name: hres_7_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [hres_contact, pplus]
+  - name: hres_7_crossing
+    op: difference
+    mode: lazy
+    layers: [hres_7_crossing_all, pplus]
+  - name: mdp_12_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [ncomp_guard, dnwell_mdp]
+  - name: mdp_12_crossing
+    op: difference
+    mode: lazy
+    layers: [mdp_12_crossing_all, dnwell_mdp]
+  - name: lres_5_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [lres_poly, nplus]
+  - name: lres_5_crossing
+    op: difference
+    mode: lazy
+    layers: [lres_5_crossing_all, nplus]
+  - name: mimtm_2_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [mimtm_via, topmin1_metal]
+  - name: mimtm_2_crossing
+    op: difference
+    mode: lazy
+    layers: [mimtm_2_crossing_all, topmin1_metal]
+  - name: mimtm_4_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [top_via, fusetop]
+  - name: mimtm_4_crossing
+    op: difference
+    mode: lazy
+    layers: [mimtm_4_crossing_all, fusetop]
+  - name: np_5a_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [ngate, nplus]
+  - name: np_5a_crossing
+    op: difference
+    mode: lazy
+    layers: [np_5a_crossing_all, nplus]
+  - name: np_9_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [poly_sab_only, nplus]
+  - name: np_9_crossing
+    op: difference
+    mode: lazy
+    layers: [np_9_crossing_all, nplus]
+  - name: pp_5a_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pgate, pplus]
+  - name: pp_5a_crossing
+    op: difference
+    mode: lazy
+    layers: [pp_5a_crossing_all, pplus]
+  - name: pp_9_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [poly_sab_no_res, pplus]
+  - name: pp_9_crossing
+    op: difference
+    mode: lazy
+    layers: [pp_9_crossing_all, pplus]
+  - name: pres_5_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pres_poly, pplus]
+  - name: pres_5_crossing
+    op: difference
+    mode: lazy
+    layers: [pres_5_crossing_all, pplus]
+  - name: s_df_4c_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pcomp_out_dn_sram, nwell_n_dn_sram]
+  - name: s_df_4c_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_df_4c_lv_crossing_all, nwell_n_dn_sram]
+  - name: s_co_3_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_sram, poly_sram]
+  - name: s_co_3_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_co_3_lv_crossing_all, poly_sram]
+  - name: s_co_4_lv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_sram, comp_sram]
+  - name: s_co_4_lv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_co_4_lv_crossing_all, comp_sram]
+  - name: s_df_4c_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [pcomp_out_dn_sram_mv, nw_n_dn_sram_mv]
+  - name: s_df_4c_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_df_4c_mv_crossing_all, nw_n_dn_sram_mv]
+  - name: s_df_8_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [ncomp_dn_sram, lvpwell_dn_sram_mv]
+  - name: s_df_8_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_df_8_mv_crossing_all, lvpwell_dn_sram_mv]
+  - name: s_co_4_mv_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_sram_mv, comp_sram_mv]
+  - name: s_co_4_mv_crossing
+    op: difference
+    mode: lazy
+    layers: [s_co_4_mv_crossing_all, comp_sram_mv]
+  # HRES.12a / LRES.9a: the RES_MK marking must follow its resistor's outline - the
+  # PRES.9a shape against the other two resistor types. HRES.12b / LRES.9b are PRES.9b:
+  # a marking over 15000 um2 with both sides over 80 um needs 20 um to the next.
+  - name: poly2_no_pplus
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, pplus]
+  - name: poly_nplus_lres
+    op: intersection
+    mode: lazy
+    layers: [poly2_drawn, nplus]
+  - name: hres_outline
+    op: intersection
+    mode: lazy
+    layers: [poly2_no_pplus, sab]
+  - name: lres_outline
+    op: intersection
+    mode: lazy
+    layers: [poly_nplus_lres, sab]
+  - name: res_mk_on_hres
+    op: interacting
+    mode: lazy
+    layers: [res_mk, resistor]
+  - name: res_mk_on_lres
+    op: interacting
+    mode: lazy
+    layers: [res_mk, lres_poly]
+  - name: hres12a_viol
+    op: interacting
+    mode: lazy
+    layers: [res_mk_on_hres, res_mk_off_hres]
+  - name: lres9a_viol
+    op: interacting
+    mode: lazy
+    layers: [res_mk_on_lres, res_mk_off_lres]
+  # CO.9: a contact sitting on a butted N/P COMP boundary.
+  - name: co9_viol
+    op: interacting
+    mode: lazy
+    layers: [contact, ncomp_pcomp_butting_edges]
+  # DF.11: the COMP touching a butted NCOMP has its own width minimum.
+  - name: comp_at_ncomp_butted
+    op: interacting
+    mode: lazy
+    layers: [comp, ncomp_butted]
+
+# Derived edge layers: boundary segments rather than regions.  A rule names one exactly
+# as it names any other layer; the checks that accept one say so.
+
+edge_layers:
+  # DF.2a, minimum channel width.  W is the length of the source/drain boundary that
+  # runs under the gate - a property of that segment, not of any region, which is why
+  # it needs an edge layer at all.
+  - name: res_mk.edges
+    op: edges
+    layers: [res_mk]
+  - name: hres_outline.edges
+    op: edges
+    layers: [hres_outline]
+  - name: res_mk_off_hres_all
+    op: not
+    layers: [res_mk.edges, hres_outline.edges]
+  - name: res_mk_off_hres
+    op: inside_part
+    layers: [res_mk_off_hres_all, poly2_drawn]
+  - name: lres_outline.edges
+    op: edges
+    layers: [lres_outline]
+  - name: res_mk_off_lres_all
+    op: not
+    layers: [res_mk.edges, lres_outline.edges]
+  - name: res_mk_off_lres
+    op: inside_part
+    layers: [res_mk_off_lres_all, poly2_drawn]
+  - name: ncomp_pcomp_butting_edges
+    op: and
+    layers: [ncomp.edges, pcomp.edges]
+  # ESD.4a: the ESD boundary away from any PCOMP, enclosing the NCOMP boundary.
+  - name: esd.edges
+    op: edges
+    layers: [esd]
+  - name: esd_edges_no_pcomp
+    op: not_interacting
+    layers: [esd.edges, pcomp]
+  # ESD.6: the ESD boundary enclosing the poly edges that reach a gate.
+  - name: poly2.edges2
+    op: edges
+    layers: [poly2_drawn]
+  - name: esd6_poly
+    op: interacting_edges
+    layers: [poly2.edges2, tgate.edges]
+  # EF.06-09, EF.22a/b: the cathode and anode are rectangles whose width and length are
+  # both fixed. Upstream separates the two by which edges reach the fuse: those, plus the
+  # ones facing them, are the *width*; the remainder is the *length*. `without_length`
+  # then flags anything not exactly the value, hence the max of one DBU past it.
+  - name: cathode.edges
+    op: edges
+    layers: [cathode]
+  - name: anode.edges
+    op: edges
+    layers: [anode]
+  - name: plfuse.edges
+    op: edges
+    layers: [plfuse]
+  # The LDMOS body is the gate poly over the active with the drift marker taken out, so
+  # wherever the active cut it its boundary *is* the active's.  That is the split the
+  # channel rules need: the walls the gate brought with it stand across the channel and
+  # the distance between them is its length, while the ones the active cut stand at the
+  # ends and the distance between them is the transistor's width.
+  - name: ldnmos_body.edges
+    op: edges
+    layers: [ldnmos_body]
+  - name: ldnmos_gate_sides
+    op: not
+    layers: [ldnmos_body.edges, ncomp.edges]
+  - name: ldnmos_gate_ends
+    op: and
+    layers: [ldnmos_body.edges, ncomp.edges]
+  - name: mdn4a_narrow
+    op: width_below
+    max: 4.0
+    layers: [ldnmos_body]
+  - name: mdn4a_viol
+    op: and
+    layers: [ldnmos_gate_ends, mdn4a_narrow]
+  - name: ldpmos_body.edges
+    op: edges
+    layers: [ldpmos_body]
+  - name: ldpmos_gate_ends
+    op: and
+    layers: [ldpmos_body.edges, pcomp.edges]
+  - name: mdp2_narrow
+    op: width_below
+    max: 4.0
+    layers: [ldpmos_body]
+  - name: mdp2_viol
+    op: and
+    layers: [ldpmos_gate_ends, mdp2_narrow]
+  - name: ldpmos_gate_sides
+    op: not
+    layers: [ldpmos_body.edges, pcomp.edges]
+  - name: mdp3c_ncomp.edges
+    op: edges
+    layers: [mdp3c_ncomp]
+  - name: mdp3c_edges
+    op: centers
+    fraction: 0.99
+    layers: [mdp3c_ncomp.edges]
+  - name: mdn5c_tab.edges
+    op: edges
+    layers: [mdn5c_tab]
+  - name: mdn5c_centers
+    op: centers
+    fraction: 0.99
+    layers: [mdn5c_tab.edges]
+  - name: mdn5c_on_ncomp
+    op: inside_part
+    layers: [mdn5c_centers, ncomp]
+  - name: mdn5c_edges
+    op: inside_part
+    layers: [mdn5c_on_ncomp, pcomp_holes]
+  - name: mdp4b_dnwell.edges
+    op: edges
+    layers: [mdp4b_dnwell]
+  - name: mdp4b_dnwell_centers
+    op: centers
+    fraction: 0.99
+    layers: [mdp4b_dnwell.edges]
+  - name: mdp4b_edges
+    op: inside_part
+    layers: [mdp4b_dnwell_centers, pcomp_holes]
+  - name: ef03_shared
+    op: and
+    layers: [poly2.edges, plfuse.edges]
+  - name: ef03_shared_centers
+    op: centers
+    fraction: 0.95
+    layers: [ef03_shared]
+  - name: ef03_fuse_length
+    op: interacting_edges
+    layers: [plfuse.edges, ef03_shared_centers]
+  - name: ef03_viol
+    op: without_length
+    min: 1.26
+    max: 1.261
+    layers: [ef03_fuse_length]
+  - name: cathode_at_fuse
+    op: interacting
+    layers: [cathode.edges, plfuse]
+  - name: cathode_facing
+    op: not_interacting_edges
+    layers: [cathode.edges, cathode_at_fuse]
+  - name: cathode_width
+    op: or
+    layers: [cathode_facing, cathode_at_fuse]
+  - name: cathode_length
+    op: not
+    layers: [cathode.edges, cathode_width]
+  - name: anode_at_fuse
+    op: interacting
+    layers: [anode.edges, plfuse]
+  - name: anode_facing
+    op: not_interacting_edges
+    layers: [anode.edges, anode_at_fuse]
+  - name: anode_width
+    op: or
+    layers: [anode_facing, anode_at_fuse]
+  - name: anode_length
+    op: not
+    layers: [anode.edges, anode_width]
+  - name: ef21_fuse_box.edges
+    op: edges
+    layers: [ef21_fuse_box]
+  - name: ef21_far
+    op: or
+    layers: [anode_facing, cathode_facing]
+  - name: ef21_far_centers
+    op: centers
+    fraction: 0.95
+    layers: [ef21_far]
+  - name: ef21_clear
+    op: not_interacting_edges
+    layers: [ef21_fuse_box.edges, ef21_far_centers]
+  - name: ef21_viol
+    op: without_length
+    min: 5.53
+    max: 5.531
+    layers: [ef21_clear]
+  - name: ef22a_edges
+    op: not
+    layers: [cathode_at_fuse, plfuse.edges]
+  - name: ef22b_edges
+    op: not
+    layers: [anode_at_fuse, plfuse.edges]
+  - name: ef_06_viol
+    op: without_length
+    min: 2.26
+    max: 2.261
+    layers: [cathode_width]
+  - name: ef_07_viol
+    op: without_length
+    min: 1.84
+    max: 1.841
+    layers: [cathode_length]
+  - name: ef_08_viol
+    op: without_length
+    min: 1.06
+    max: 1.061
+    layers: [anode_width]
+  - name: ef_09_viol
+    op: without_length
+    min: 2.43
+    max: 2.431
+    layers: [anode_length]
+  - name: ef_22a_viol
+    op: without_length
+    min: 1.04
+    max: 1.041
+    layers: [ef22a_edges]
+  - name: ef_22b_viol
+    op: without_length
+    min: 0.44
+    max: 0.441
+    layers: [ef22b_edges]
+  # MDP.3d / MDP.4 and MDN.10b, as edge layers.
+  - name: mdp3d_bare.edges
+    op: edges
+    layers: [mdp3d_bare]
+  - name: mdp3d_uncovered
+    op: outside_part
+    layers: [mdp3d_bare.edges, metal1]
+  - name: mdp3d_viol
+    op: with_length
+    min: 10.001
+    layers: [mdp3d_uncovered]
+  - name: mdp4_bare.edges
+    op: edges
+    layers: [mdp4_bare]
+  - name: mdp4_uncovered
+    op: outside_part
+    layers: [mdp4_bare.edges, metal1]
+  - name: mdp4_viol
+    op: with_length
+    min: 10.001
+    layers: [mdp4_uncovered]
+  - name: mdn10b_ncomp.edges
+    op: edges
+    layers: [mdn10c_ncomp]
+  - name: ncomp_off_poly
+    op: not_interacting
+    layers: [ncomp.edges, poly2_drawn]
+  - name: mdn10b_edges
+    op: interacting_edges
+    layers: [mdn10b_ncomp.edges, ncomp_off_poly]
+  - name: poly_mdn10.edges
+    op: edges
+    layers: [poly_mdn10]
+  # MDP.9b: the gate's own edge where it leaves the drift - the width direction - which
+  # is what has to clear the active by 0.4.
+  - name: poly_in_dnwell_mdp.edges
+    op: edges
+    layers: [poly_in_dnwell_mdp]
+  - name: mdp9b_at_drift
+    op: interacting
+    layers: [poly_in_dnwell_mdp.edges, mvpsd]
+  - name: mdp9b_edges
+    op: outside_part
+    layers: [mdp9b_at_drift, mvpsd]
+  - name: mdp9b_touch
+    op: interacting
+    layers: [mdp9b_edges, pcomp]
+  - name: comp.edges
+    op: edges
+    layers: [comp]
+  # MDP.11: the drift's own edge where no active runs along it, which is the edge that
+  # has to hold the drain active by 0.8; where one does run along it the enclosure is
+  # nothing at all, and that shared edge is the other half of the rule.
+  - name: mvpsd.edges
+    op: edges
+    layers: [mvpsd]
+  - name: mdp11_edges
+    op: not_interacting_edges
+    layers: [mvpsd.edges, pcomp.edges]
+  - name: mdp11_flush
+    op: and
+    layers: [mvpsd.edges, pcomp.edges]
+  - name: pres_outline.edges
+    op: edges
+    layers: [pres_outline]
+  - name: res_mk_off_outline_all
+    op: not
+    layers: [res_mk.edges, pres_outline.edges]
+  - name: res_mk_off_outline
+    op: inside_part
+    layers: [res_mk_off_outline_all, poly2_drawn]
+  - name: pplus.edges
+    op: edges
+    layers: [pplus]
+  - name: nplus.edges
+    op: edges
+    layers: [nplus]
+  - name: ncomp.edges
+    op: edges
+    layers: [ncomp]
+  - name: pcomp.edges
+    op: edges
+    layers: [pcomp]
+  - name: ngate.edges
+    op: edges
+    layers: [ngate]
+  - name: pplus_butted_edges
+    op: and
+    layers: [pplus.edges, ncomp.edges]
+
+  # PP.11: a butting Pplus/NCOMP edge is forbidden in the band either side of a well edge.
+  - name: pp11_at_nwell
+    op: inside_part
+    layers: [pplus_butted_edges, nwell_dn_edge_band]
+  - name: pp11_at_lvpwell
+    op: inside_part
+    layers: [pplus_butted_edges, lvpwell_dn_outer_band]
+  - name: pp11_viol
+    op: or
+    layers: [pp11_at_nwell, pp11_at_lvpwell]
+
+  # PP.5b: the Pplus boundary that is not a butting edge, where it lies in an N-well or
+  # inside DNWELL but out of the LVPWELL, against the COMP boundary it must extend past.
+  - name: pp5b_pplus_all
+    op: not
+    layers: [pplus.edges, pplus_butted_edges]
+  - name: pp5b_in_nwell
+    op: inside_part
+    layers: [pp5b_pplus_all, nwell]
+  - name: pp5b_out_lvpwell
+    op: outside_part
+    layers: [pp5b_pplus_all, lvpwell]
+  - name: pp5b_in_dnwell
+    op: inside_part
+    layers: [pp5b_out_lvpwell, dnwell]
+  - name: pp5b_pplus
+    op: or
+    layers: [pp5b_in_nwell, pp5b_in_dnwell]
+
+  # PP.5ci / PP.5cii: inside DNWELL and inside LVPWELL, split by whether the COMP edge
+  # sits in the well's inner region or in the band along its edge.
+  - name: pp5c_bg_all
+    op: edges
+    layers: [pplus_in_lvpwell_dn]
+  - name: pp5c_bg
+    op: not
+    layers: [pp5c_bg_all, nplus.edges]
+  - name: pp5c_fg_all
+    op: edges
+    layers: [pcomp_in_lvpwell_dn]
+  - name: pp5c_fg_no_nplus
+    op: not
+    layers: [pp5c_fg_all, nplus.edges]
+  - name: pp5ci_fg
+    op: inside_part
+    layers: [pp5c_fg_no_nplus, lvpwell_dn_sized_in]
+  - name: pp5cii_fg
+    op: inside_part
+    layers: [pp5c_fg_no_nplus, lvpwell_dn_edge_band]
+
+  # PP.5di / PP.5dii: outside DNWELL, split by whether the COMP edge is within 0.429 um
+  # of an N-well.
+  - name: pp5d_bg
+    op: edges
+    layers: [pplus_outside_dn]
+  - name: pp5d_pcomp
+    op: edges
+    layers: [pcomp_out_dnwell]
+  - name: pp5d_fg_all
+    op: not
+    layers: [pp5d_pcomp, nplus.edges]
+  - name: pp5di_fg_all
+    op: outside_part
+    layers: [pp5d_fg_all, nwell_n_dn_reach]
+  - name: pp5dii_fg_all
+    op: inside_part
+    layers: [pp5d_fg_all, nwell_n_dn_reach]
+  - name: pp5di_fg
+    op: or
+    layers: [pp5di_fg_all]
+  - name: pp5dii_fg
+    op: or
+    layers: [pp5dii_fg_all]
+
+  - name: pgate.edges
+    op: edges
+    layers: [pgate]
+  - name: poly2.edges
+    op: edges
+    layers: [poly2_drawn]
+  - name: plfuse_efuse.edges
+    op: edges
+    layers: [plfuse_efuse]
+  - name: ef04a_off_poly
+    op: not
+    layers: [plfuse_efuse.edges, poly2.edges]
+  - name: ef04a_long_off
+    op: outside_part
+    layers: [ef04a_off_poly, poly2_drawn]
+  # NP.4b / PP.4b: the gate extension's sides, not the whole poly outline near the gate.
+  # The gate's edges that are not active edges are its sides, along the poly; the poly
+  # edges that carry them are the sides of the extension too, trimmed by a percent so a
+  # corner touch does not pull in the end cap, and cut to 0.32 um of the channel.  An
+  # implant edge butting the extension's end cap is the cap's business, not this rule's.
+  - name: ngate_sides
+    op: not
+    layers: [ngate.edges, ncomp.edges]
+  - name: ngate_side_poly
+    op: interacting_edges
+    layers: [poly2.edges, ngate_sides]
+  - name: ngate_side_poly_c
+    op: centers
+    fraction: 0.99
+    layers: [ngate_side_poly]
+  - name: pp4b_poly
+    op: inside_part
+    layers: [ngate_side_poly_c, ngate_reach_flat]
+  - name: pgate_sides
+    op: not
+    layers: [pgate.edges, pcomp.edges]
+  - name: pgate_side_poly
+    op: interacting_edges
+    layers: [poly2.edges, pgate_sides]
+  - name: pgate_side_poly_c
+    op: centers
+    fraction: 0.99
+    layers: [pgate_side_poly]
+  - name: np4b_poly
+    op: inside_part
+    layers: [pgate_side_poly_c, pgate_reach_flat]
+  - name: nplus_butted_edges
+    op: and
+    layers: [nplus.edges, pcomp.edges]
+
+  # NP.11: mirror of PP.11, on the other implant.
+  - name: np11_at_nwell
+    op: inside_part
+    layers: [nplus_butted_edges, nwell_dn_outer_band]
+  - name: np11_at_lvpwell
+    op: inside_part
+    layers: [nplus_butted_edges, lvpwell_dn_edge_band]
+  - name: np11_viol
+    op: or
+    layers: [np11_at_nwell, np11_at_lvpwell]
+
+  # NP.5b: the Nplus boundary that is not a butting edge, in an LVPWELL or clear of both
+  # NWELL and DNWELL, against the NCOMP boundary it must extend past.
+  - name: np5b_nplus_all
+    op: not
+    layers: [nplus.edges, nplus_butted_edges]
+  - name: np5b_in_lvpwell
+    op: inside_part
+    layers: [np5b_nplus_all, lvpwell]
+  - name: np5b_out_nwell
+    op: outside_part
+    layers: [np5b_nplus_all, nwell]
+  - name: np5b_out_both
+    op: outside_part
+    layers: [np5b_out_nwell, dnwell]
+  - name: np5b_nplus
+    op: or
+    layers: [np5b_in_lvpwell, np5b_out_both]
+
+  # NP.5ci / NP.5cii: inside DNWELL but out of the LVPWELL, split by whether the NCOMP
+  # edge falls within 0.429 um of the LVPWELL.
+  - name: np5c_bg
+    op: edges
+    layers: [nplus_out_lvpwell_dn]
+  - name: np5c_fg_all
+    op: edges
+    layers: [ncomp_out_lvpwell_dn]
+  - name: np5c_fg_no_pplus
+    op: not
+    layers: [np5c_fg_all, pplus.edges]
+  - name: np5ci_fg_all
+    op: inside_part
+    layers: [np5c_fg_no_pplus, lvpwell_dn_reach]
+  - name: np5cii_fg_all
+    op: outside_part
+    layers: [np5c_fg_no_pplus, lvpwell_dn_reach]
+  - name: np5ci_fg
+    op: or
+    layers: [np5ci_fg_all]
+  - name: np5cii_fg
+    op: or
+    layers: [np5cii_fg_all]
+
+  # NP.5di / NP.5dii: at an N-well and outside DNWELL, split by whether the NCOMP edge
+  # sits in the band along the well edge or in its inner region.
+  - name: np5d_bg_all
+    op: edges
+    layers: [nplus_at_nwell]
+  - name: np5dii_bg
+    op: not
+    layers: [np5d_bg_all, pplus.edges]
+  - name: np5d_fg_all
+    op: edges
+    layers: [ncomp_at_nwell]
+  - name: np5d_fg_no_pplus
+    op: not
+    layers: [np5d_fg_all, pplus.edges]
+  - name: np5di_fg_all
+    op: inside_part
+    layers: [np5d_fg_no_pplus, nwell_dn_edge_band]
+  - name: np5dii_fg_all
+    op: inside_part
+    layers: [np5d_fg_no_pplus, nwell_n_dn_sized_in]
+  - name: np5di_fg
+    op: with_length
+    min: 0.006
+    layers: [np5di_fg_all]
+  - name: np5dii_fg
+    op: with_length
+    min: 0.006
+    layers: [np5dii_fg_all]
+
+  # O.PL.2: the OTP gate's own two walls, and the poly width between them.
+  - name: poly_otp.edges
+    op: edges
+    layers: [poly_otp]
+  - name: opl2_channel
+    op: and
+    layers: [poly_otp.edges, tgate.edges]
+
+  # O.PL.ORT: an orientation-restricted gate's width must run along x, so a channel edge
+  # that is not horizontal is the violation.
+  - name: comp_otp_no_poly.edges
+    op: edges
+    layers: [comp_otp_no_poly]
+  - name: oplort_channel
+    op: and
+    layers: [comp_otp_no_poly.edges, tgate.edges]
+  - name: oplort_turned
+    op: without_angle
+    min: 0
+    max: 0
+    layers: [oplort_channel]
+  - name: oplort_viol
+    op: outside_part
+    layers: [oplort_turned, v5_xtor]
+  # Channel length: the gate's own edges where they run inside the COMP, and the width
+  # between them. Upstream says every one of these as an edge measurement, so they are
+  # `min_width` on an edge layer rather than a region check with a mask.
+  - name: tgate_pl2_lv.edges
+    op: edges
+    layers: [tgate_pl2_lv]
+  - name: pl2_lv_channel
+    op: inside_part
+    layers: [tgate_pl2_lv.edges, comp]
+  - name: ngate_5v.edges
+    op: edges
+    layers: [ngate_5v]
+  - name: pl2_mv_n_channel
+    op: inside_part
+    layers: [ngate_5v.edges, comp]
+  - name: pgate_5v.edges
+    op: edges
+    layers: [pgate_5v]
+  - name: pl2_mv_p_channel
+    op: inside_part
+    layers: [pgate_5v.edges, comp]
+  - name: ngate_6v.edges
+    op: edges
+    layers: [ngate_6v]
+  - name: pl2_6v_n_channel
+    op: inside_part
+    layers: [ngate_6v.edges, comp]
+  - name: pgate_6v.edges
+    op: edges
+    layers: [pgate_6v]
+  - name: pl2_6v_p_channel
+    op: inside_part
+    layers: [pgate_6v.edges, comp]
+  - name: poly_nat_lv.edges
+    op: edges
+    layers: [poly_nat_lv]
+  - name: nat4_shared
+    op: and
+    layers: [poly_nat_lv.edges, ngate.edges]
+  - name: nat4_channel
+    op: outside_part
+    layers: [nat4_shared, nwell]
+  - name: poly_nat_mv.edges
+    op: edges
+    layers: [poly_nat_mv]
+  - name: nat5_shared
+    op: and
+    layers: [poly_nat_mv.edges, ngate.edges]
+  - name: nat5_channel
+    op: outside_part
+    layers: [nat5_shared, nwell]
+  - name: poly_ymtp_lv.edges
+    op: edges
+    layers: [poly_ymtp_lv]
+  - name: ypl2_lv_shared
+    op: and
+    layers: [poly_ymtp_lv.edges, tgate.edges]
+  - name: ypl2_lv_channel
+    op: outside_part
+    layers: [ypl2_lv_shared, otp_mk]
+  - name: poly_ymtp_mv.edges
+    op: edges
+    layers: [poly_ymtp_mv]
+  - name: ypl2_mv_shared
+    op: and
+    layers: [poly_ymtp_mv.edges, tgate.edges]
+  - name: ypl2_mv_channel
+    op: outside_part
+    layers: [ypl2_mv_shared, otp_mk]
+
+  # PL.7: the width across a gate that bends at 45 degrees, measured between the gate's
+  # own diagonal edges where they run inside the COMP. Angles normalise to [0, 180), so
+  # upstream's 25..65 and -65..-25 are 25..65 and 115..155 here.
+  - name: nom_gate.edges
+    op: edges
+    layers: [nom_gate]
+  - name: nom_gate_in_comp
+    op: inside_part
+    layers: [nom_gate.edges, comp]
+  - name: pl7_nom_rise
+    op: with_angle
+    min: 25
+    max: 65
+    layers: [nom_gate_in_comp]
+  - name: pl7_nom_fall
+    op: with_angle
+    min: 115
+    max: 155
+    layers: [nom_gate_in_comp]
+  - name: pl7_nom
+    op: or
+    layers: [pl7_nom_rise, pl7_nom_fall]
+  - name: thick_gate.edges
+    op: edges
+    layers: [thick_gate]
+  - name: thick_gate_in_comp
+    op: inside_part
+    layers: [thick_gate.edges, comp]
+  - name: pl7_thick_rise
+    op: with_angle
+    min: 25
+    max: 65
+    layers: [thick_gate_in_comp]
+  - name: pl7_thick_fall
+    op: with_angle
+    min: 115
+    max: 155
+    layers: [thick_gate_in_comp]
+  - name: pl7_thick
+    op: or
+    layers: [pl7_thick_rise, pl7_thick_fall]
+  - name: comp_3p3v_no_poly.edges
+    op: edges
+    layers: [comp_3p3v_no_poly]
+  - name: comp_56v_no_poly.edges
+    op: edges
+    layers: [comp_56v_no_poly]
+  - name: tgate.edges
+    op: edges
+    layers: [tgate]
+  - name: channel_edges_3p3v
+    op: and
+    layers: [comp_3p3v_no_poly.edges, tgate.edges]
+  - name: channel_edges_56v
+    op: and
+    layers: [comp_56v_no_poly.edges, tgate.edges]

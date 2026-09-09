@@ -1,0 +1,564 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Acute angles: every drawn layer may turn only by multiples of 45 degrees.
+rules:
+  - id: comp_ACUTE
+    check: no_angle
+    layers: [comp]
+    value: 0.0
+    params:
+      step: 45
+  - id: dnwell_ACUTE
+    check: no_angle
+    layers: [dnwell]
+    value: 0.0
+    params:
+      step: 45
+  - id: nwell_ACUTE
+    check: no_angle
+    layers: [nwell]
+    value: 0.0
+    params:
+      step: 45
+  - id: lvpwell_ACUTE
+    check: no_angle
+    layers: [lvpwell]
+    value: 0.0
+    params:
+      step: 45
+  - id: dualgate_ACUTE
+    check: no_angle
+    layers: [dualgate]
+    value: 0.0
+    params:
+      step: 45
+  - id: poly2_ACUTE
+    check: no_angle
+    layers: [poly2_drawn]
+    value: 0.0
+    params:
+      step: 45
+  - id: nplus_ACUTE
+    check: no_angle
+    layers: [nplus]
+    value: 0.0
+    params:
+      step: 45
+  - id: pplus_ACUTE
+    check: no_angle
+    layers: [pplus]
+    value: 0.0
+    params:
+      step: 45
+  - id: sab_ACUTE
+    check: no_angle
+    layers: [sab]
+    value: 0.0
+    params:
+      step: 45
+  - id: esd_ACUTE
+    check: no_angle
+    layers: [esd]
+    value: 0.0
+    params:
+      step: 45
+  - id: resistor_ACUTE
+    check: no_angle
+    layers: [resistor]
+    value: 0.0
+    params:
+      step: 45
+  - id: fhres_ACUTE
+    check: no_angle
+    layers: [fhres]
+    value: 0.0
+    params:
+      step: 45
+  - id: fusetop_ACUTE
+    check: no_angle
+    layers: [fusetop]
+    value: 0.0
+    params:
+      step: 45
+  - id: fusewindow_d_ACUTE
+    check: no_angle
+    layers: [fusewindow_d]
+    value: 0.0
+    params:
+      step: 45
+  - id: polyfuse_ACUTE
+    check: no_angle
+    layers: [polyfuse]
+    value: 0.0
+    params:
+      step: 45
+  - id: mvsd_ACUTE
+    check: no_angle
+    layers: [mvsd]
+    value: 0.0
+    params:
+      step: 45
+  - id: mvpsd_ACUTE
+    check: no_angle
+    layers: [mvpsd]
+    value: 0.0
+    params:
+      step: 45
+  - id: nat_ACUTE
+    check: no_angle
+    layers: [nat]
+    value: 0.0
+    params:
+      step: 45
+  - id: comp_dummy_ACUTE
+    check: no_angle
+    layers: [comp_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: poly2_dummy_ACUTE
+    check: no_angle
+    layers: [poly2_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: schottky_diode_ACUTE
+    check: no_angle
+    layers: [schottky_diode]
+    value: 0.0
+    params:
+      step: 45
+  - id: zener_ACUTE
+    check: no_angle
+    layers: [zener]
+    value: 0.0
+    params:
+      step: 45
+  - id: res_mk_ACUTE
+    check: no_angle
+    layers: [res_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: opc_drc_ACUTE
+    check: no_angle
+    layers: [opc_drc]
+    value: 0.0
+    params:
+      step: 45
+  - id: ndmy_ACUTE
+    check: no_angle
+    layers: [ndmy]
+    value: 0.0
+    params:
+      step: 45
+  - id: pmndmy_ACUTE
+    check: no_angle
+    layers: [pmndmy]
+    value: 0.0
+    params:
+      step: 45
+  - id: v5_xtor_ACUTE
+    check: no_angle
+    layers: [v5_xtor]
+    value: 0.0
+    params:
+      step: 45
+  - id: cap_mk_ACUTE
+    check: no_angle
+    layers: [cap_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: mos_cap_mk_ACUTE
+    check: no_angle
+    layers: [mos_cap_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: ind_mk_ACUTE
+    check: no_angle
+    layers: [ind_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: diode_mk_ACUTE
+    check: no_angle
+    layers: [diode_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: drc_bjt_ACUTE
+    check: no_angle
+    layers: [drc_bjt]
+    value: 0.0
+    params:
+      step: 45
+  - id: lvs_bjt_ACUTE
+    check: no_angle
+    layers: [lvs_bjt]
+    value: 0.0
+    params:
+      step: 45
+  - id: mim_l_mk_ACUTE
+    check: no_angle
+    layers: [mim_l_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: latchup_mk_ACUTE
+    check: no_angle
+    layers: [latchup_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: guard_ring_mk_ACUTE
+    check: no_angle
+    layers: [guard_ring_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: otp_mk_ACUTE
+    check: no_angle
+    layers: [otp_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: mtpmark_ACUTE
+    check: no_angle
+    layers: [mtpmark]
+    value: 0.0
+    params:
+      step: 45
+  - id: neo_ee_mk_ACUTE
+    check: no_angle
+    layers: [neo_ee_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: sramcore_ACUTE
+    check: no_angle
+    layers: [sramcore]
+    value: 0.0
+    params:
+      step: 45
+  - id: lvs_rf_ACUTE
+    check: no_angle
+    layers: [lvs_rf]
+    value: 0.0
+    params:
+      step: 45
+  - id: lvs_drain_ACUTE
+    check: no_angle
+    layers: [lvs_drain]
+    value: 0.0
+    params:
+      step: 45
+  - id: hvpolyrs_ACUTE
+    check: no_angle
+    layers: [hvpolyrs]
+    value: 0.0
+    params:
+      step: 45
+  - id: lvs_io_ACUTE
+    check: no_angle
+    layers: [lvs_io]
+    value: 0.0
+    params:
+      step: 45
+  - id: probe_mk_ACUTE
+    check: no_angle
+    layers: [probe_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: esd_mk_ACUTE
+    check: no_angle
+    layers: [esd_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: lvs_source_ACUTE
+    check: no_angle
+    layers: [lvs_source]
+    value: 0.0
+    params:
+      step: 45
+  - id: well_diode_mk_ACUTE
+    check: no_angle
+    layers: [well_diode_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: ldmos_xtor_ACUTE
+    check: no_angle
+    layers: [ldmos_xtor]
+    value: 0.0
+    params:
+      step: 45
+  - id: plfuse_ACUTE
+    check: no_angle
+    layers: [plfuse]
+    value: 0.0
+    params:
+      step: 45
+  - id: efuse_mk_ACUTE
+    check: no_angle
+    layers: [efuse_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: mcell_feol_mk_ACUTE
+    check: no_angle
+    layers: [mcell_feol_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: ymtp_mk_ACUTE
+    check: no_angle
+    layers: [ymtp_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: dev_wf_mk_ACUTE
+    check: no_angle
+    layers: [dev_wf_mk]
+    value: 0.0
+    params:
+      step: 45
+  - id: comp_label_ACUTE
+    check: no_angle
+    layers: [comp_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: poly2_label_ACUTE
+    check: no_angle
+    layers: [poly2_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: mdiode_ACUTE
+    check: no_angle
+    layers: [mdiode]
+    value: 0.0
+    params:
+      step: 45
+  - id: contact_ACUTE
+    check: no_angle
+    layers: [contact]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal1_ACUTE
+    check: no_angle
+    layers: [metal1_drawn]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal1_slot_ACUTE
+    check: no_angle
+    layers: [metal1_slot]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal1_blk_ACUTE
+    check: no_angle
+    layers: [metal1_blk]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal1_label_ACUTE
+    check: no_angle
+    layers: [metal1_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal1_res_ACUTE
+    check: no_angle
+    layers: [metal1_res]
+    value: 0.0
+    params:
+      step: 45
+  - id: via1_ACUTE
+    check: no_angle
+    layers: [via1]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal2_ACUTE
+    check: no_angle
+    layers: [metal2_drawn]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal2_label_ACUTE
+    check: no_angle
+    layers: [metal2_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal2_slot_ACUTE
+    check: no_angle
+    layers: [metal2_slot]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal2_blk_ACUTE
+    check: no_angle
+    layers: [metal2_blk]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal2_res_ACUTE
+    check: no_angle
+    layers: [metal2_res]
+    value: 0.0
+    params:
+      step: 45
+  - id: via2_ACUTE
+    check: no_angle
+    layers: [via2]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal3_ACUTE
+    check: no_angle
+    layers: [metal3_drawn]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal3_dummy_ACUTE
+    check: no_angle
+    layers: [metal3_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal3_label_ACUTE
+    check: no_angle
+    layers: [metal3_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal3_blk_ACUTE
+    check: no_angle
+    layers: [metal3_blk]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal3_res_ACUTE
+    check: no_angle
+    layers: [metal3_res]
+    value: 0.0
+    params:
+      step: 45
+  - id: via3_ACUTE
+    check: no_angle
+    layers: [via3]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal4_ACUTE
+    check: no_angle
+    layers: [metal4_drawn]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal4_dummy_ACUTE
+    check: no_angle
+    layers: [metal4_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal4_label_ACUTE
+    check: no_angle
+    layers: [metal4_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal4_blk_ACUTE
+    check: no_angle
+    layers: [metal4_blk]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal4_res_ACUTE
+    check: no_angle
+    layers: [metal4_res]
+    value: 0.0
+    params:
+      step: 45
+  - id: via4_ACUTE
+    check: no_angle
+    layers: [via4]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal5_ACUTE
+    check: no_angle
+    layers: [metal5_drawn]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal5_dummy_ACUTE
+    check: no_angle
+    layers: [metal5_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal5_label_ACUTE
+    check: no_angle
+    layers: [metal5_label]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal5_blk_ACUTE
+    check: no_angle
+    layers: [metal5_blk]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal5_res_ACUTE
+    check: no_angle
+    layers: [metal5_res]
+    value: 0.0
+    params:
+      step: 45
+  - id: pad_ACUTE
+    check: no_angle
+    layers: [pad]
+    value: 0.0
+    params:
+      step: 45
+  - id: ubmpperi_ACUTE
+    check: no_angle
+    layers: [ubmpperi]
+    value: 0.0
+    params:
+      step: 45
+  - id: ubmparray_ACUTE
+    check: no_angle
+    layers: [ubmparray]
+    value: 0.0
+    params:
+      step: 45
+  - id: ubmeplate_ACUTE
+    check: no_angle
+    layers: [ubmeplate]
+    value: 0.0
+    params:
+      step: 45
+  - id: pr_bndry_ACUTE
+    check: no_angle
+    layers: [pr_bndry]
+    value: 0.0
+    params:
+      step: 45
+  - id: border_ACUTE
+    check: no_angle
+    layers: [border]
+    value: 0.0
+    params:
+      step: 45

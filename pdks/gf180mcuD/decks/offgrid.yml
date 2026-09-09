@@ -1,0 +1,378 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Off-grid vertices: every drawn layer must sit on the 5 nm manufacturing grid.
+rules:
+  - id: comp_OFFGRID
+    check: offgrid
+    layers: [comp]
+    value: 0.005
+  - id: dnwell_OFFGRID
+    check: offgrid
+    layers: [dnwell]
+    value: 0.005
+  - id: nwell_OFFGRID
+    check: offgrid
+    layers: [nwell]
+    value: 0.005
+  - id: lvpwell_OFFGRID
+    check: offgrid
+    layers: [lvpwell]
+    value: 0.005
+  - id: dualgate_OFFGRID
+    check: offgrid
+    layers: [dualgate]
+    value: 0.005
+  - id: poly2_OFFGRID
+    check: offgrid
+    layers: [poly2_drawn]
+    value: 0.005
+  - id: nplus_OFFGRID
+    check: offgrid
+    layers: [nplus]
+    value: 0.005
+  - id: pplus_OFFGRID
+    check: offgrid
+    layers: [pplus]
+    value: 0.005
+  - id: sab_OFFGRID
+    check: offgrid
+    layers: [sab]
+    value: 0.005
+  - id: esd_OFFGRID
+    check: offgrid
+    layers: [esd]
+    value: 0.005
+  - id: resistor_OFFGRID
+    check: offgrid
+    layers: [resistor]
+    value: 0.005
+  - id: fhres_OFFGRID
+    check: offgrid
+    layers: [fhres]
+    value: 0.005
+  - id: fusetop_OFFGRID
+    check: offgrid
+    layers: [fusetop]
+    value: 0.005
+  - id: fusewindow_d_OFFGRID
+    check: offgrid
+    layers: [fusewindow_d]
+    value: 0.005
+  - id: polyfuse_OFFGRID
+    check: offgrid
+    layers: [polyfuse]
+    value: 0.005
+  - id: mvsd_OFFGRID
+    check: offgrid
+    layers: [mvsd]
+    value: 0.005
+  - id: mvpsd_OFFGRID
+    check: offgrid
+    layers: [mvpsd]
+    value: 0.005
+  - id: nat_OFFGRID
+    check: offgrid
+    layers: [nat]
+    value: 0.005
+  - id: comp_dummy_OFFGRID
+    check: offgrid
+    layers: [comp_dummy]
+    value: 0.005
+  - id: poly2_dummy_OFFGRID
+    check: offgrid
+    layers: [poly2_dummy]
+    value: 0.005
+  - id: schottky_diode_OFFGRID
+    check: offgrid
+    layers: [schottky_diode]
+    value: 0.005
+  - id: zener_OFFGRID
+    check: offgrid
+    layers: [zener]
+    value: 0.005
+  - id: res_mk_OFFGRID
+    check: offgrid
+    layers: [res_mk]
+    value: 0.005
+  - id: opc_drc_OFFGRID
+    check: offgrid
+    layers: [opc_drc]
+    value: 0.005
+  - id: ndmy_OFFGRID
+    check: offgrid
+    layers: [ndmy]
+    value: 0.005
+  - id: pmndmy_OFFGRID
+    check: offgrid
+    layers: [pmndmy]
+    value: 0.005
+  - id: v5_xtor_OFFGRID
+    check: offgrid
+    layers: [v5_xtor]
+    value: 0.005
+  - id: cap_mk_OFFGRID
+    check: offgrid
+    layers: [cap_mk]
+    value: 0.005
+  - id: mos_cap_mk_OFFGRID
+    check: offgrid
+    layers: [mos_cap_mk]
+    value: 0.005
+  - id: ind_mk_OFFGRID
+    check: offgrid
+    layers: [ind_mk]
+    value: 0.005
+  - id: diode_mk_OFFGRID
+    check: offgrid
+    layers: [diode_mk]
+    value: 0.005
+  - id: drc_bjt_OFFGRID
+    check: offgrid
+    layers: [drc_bjt]
+    value: 0.005
+  - id: lvs_bjt_OFFGRID
+    check: offgrid
+    layers: [lvs_bjt]
+    value: 0.005
+  - id: mim_l_mk_OFFGRID
+    check: offgrid
+    layers: [mim_l_mk]
+    value: 0.005
+  - id: latchup_mk_OFFGRID
+    check: offgrid
+    layers: [latchup_mk]
+    value: 0.005
+  - id: guard_ring_mk_OFFGRID
+    check: offgrid
+    layers: [guard_ring_mk]
+    value: 0.005
+  - id: otp_mk_OFFGRID
+    check: offgrid
+    layers: [otp_mk]
+    value: 0.005
+  - id: mtpmark_OFFGRID
+    check: offgrid
+    layers: [mtpmark]
+    value: 0.005
+  - id: neo_ee_mk_OFFGRID
+    check: offgrid
+    layers: [neo_ee_mk]
+    value: 0.005
+  - id: sramcore_OFFGRID
+    check: offgrid
+    layers: [sramcore]
+    value: 0.005
+  - id: lvs_rf_OFFGRID
+    check: offgrid
+    layers: [lvs_rf]
+    value: 0.005
+  - id: lvs_drain_OFFGRID
+    check: offgrid
+    layers: [lvs_drain]
+    value: 0.005
+  - id: hvpolyrs_OFFGRID
+    check: offgrid
+    layers: [hvpolyrs]
+    value: 0.005
+  - id: lvs_io_OFFGRID
+    check: offgrid
+    layers: [lvs_io]
+    value: 0.005
+  - id: probe_mk_OFFGRID
+    check: offgrid
+    layers: [probe_mk]
+    value: 0.005
+  - id: esd_mk_OFFGRID
+    check: offgrid
+    layers: [esd_mk]
+    value: 0.005
+  - id: lvs_source_OFFGRID
+    check: offgrid
+    layers: [lvs_source]
+    value: 0.005
+  - id: well_diode_mk_OFFGRID
+    check: offgrid
+    layers: [well_diode_mk]
+    value: 0.005
+  - id: ldmos_xtor_OFFGRID
+    check: offgrid
+    layers: [ldmos_xtor]
+    value: 0.005
+  - id: plfuse_OFFGRID
+    check: offgrid
+    layers: [plfuse]
+    value: 0.005
+  - id: efuse_mk_OFFGRID
+    check: offgrid
+    layers: [efuse_mk]
+    value: 0.005
+  - id: mcell_feol_mk_OFFGRID
+    check: offgrid
+    layers: [mcell_feol_mk]
+    value: 0.005
+  - id: ymtp_mk_OFFGRID
+    check: offgrid
+    layers: [ymtp_mk]
+    value: 0.005
+  - id: dev_wf_mk_OFFGRID
+    check: offgrid
+    layers: [dev_wf_mk]
+    value: 0.005
+  - id: comp_label_OFFGRID
+    check: offgrid
+    layers: [comp_label]
+    value: 0.005
+  - id: poly2_label_OFFGRID
+    check: offgrid
+    layers: [poly2_label]
+    value: 0.005
+  - id: mdiode_OFFGRID
+    check: offgrid
+    layers: [mdiode]
+    value: 0.005
+  - id: contact_OFFGRID
+    check: offgrid
+    layers: [contact]
+    value: 0.005
+  - id: metal1_OFFGRID
+    check: offgrid
+    layers: [metal1_drawn]
+    value: 0.005
+  - id: metal1_slot_OFFGRID
+    check: offgrid
+    layers: [metal1_slot]
+    value: 0.005
+  - id: metal1_blk_OFFGRID
+    check: offgrid
+    layers: [metal1_blk]
+    value: 0.005
+  - id: metal1_label_OFFGRID
+    check: offgrid
+    layers: [metal1_label]
+    value: 0.005
+  - id: metal1_res_OFFGRID
+    check: offgrid
+    layers: [metal1_res]
+    value: 0.005
+  - id: via1_OFFGRID
+    check: offgrid
+    layers: [via1]
+    value: 0.005
+  - id: metal2_OFFGRID
+    check: offgrid
+    layers: [metal2_drawn]
+    value: 0.005
+  - id: metal2_label_OFFGRID
+    check: offgrid
+    layers: [metal2_label]
+    value: 0.005
+  - id: metal2_slot_OFFGRID
+    check: offgrid
+    layers: [metal2_slot]
+    value: 0.005
+  - id: metal2_blk_OFFGRID
+    check: offgrid
+    layers: [metal2_blk]
+    value: 0.005
+  - id: metal2_res_OFFGRID
+    check: offgrid
+    layers: [metal2_res]
+    value: 0.005
+  - id: via2_OFFGRID
+    check: offgrid
+    layers: [via2]
+    value: 0.005
+  - id: metal3_OFFGRID
+    check: offgrid
+    layers: [metal3_drawn]
+    value: 0.005
+  - id: metal3_dummy_OFFGRID
+    check: offgrid
+    layers: [metal3_dummy]
+    value: 0.005
+  - id: metal3_label_OFFGRID
+    check: offgrid
+    layers: [metal3_label]
+    value: 0.005
+  - id: metal3_blk_OFFGRID
+    check: offgrid
+    layers: [metal3_blk]
+    value: 0.005
+  - id: metal3_res_OFFGRID
+    check: offgrid
+    layers: [metal3_res]
+    value: 0.005
+  - id: via3_OFFGRID
+    check: offgrid
+    layers: [via3]
+    value: 0.005
+  - id: metal4_OFFGRID
+    check: offgrid
+    layers: [metal4_drawn]
+    value: 0.005
+  - id: metal4_dummy_OFFGRID
+    check: offgrid
+    layers: [metal4_dummy]
+    value: 0.005
+  - id: metal4_label_OFFGRID
+    check: offgrid
+    layers: [metal4_label]
+    value: 0.005
+  - id: metal4_blk_OFFGRID
+    check: offgrid
+    layers: [metal4_blk]
+    value: 0.005
+  - id: metal4_res_OFFGRID
+    check: offgrid
+    layers: [metal4_res]
+    value: 0.005
+  - id: via4_OFFGRID
+    check: offgrid
+    layers: [via4]
+    value: 0.005
+  - id: metal5_OFFGRID
+    check: offgrid
+    layers: [metal5_drawn]
+    value: 0.005
+  - id: metal5_dummy_OFFGRID
+    check: offgrid
+    layers: [metal5_dummy]
+    value: 0.005
+  - id: metal5_label_OFFGRID
+    check: offgrid
+    layers: [metal5_label]
+    value: 0.005
+  - id: metal5_blk_OFFGRID
+    check: offgrid
+    layers: [metal5_blk]
+    value: 0.005
+  - id: metal5_res_OFFGRID
+    check: offgrid
+    layers: [metal5_res]
+    value: 0.005
+  - id: pad_OFFGRID
+    check: offgrid
+    layers: [pad]
+    value: 0.005
+  - id: ubmpperi_OFFGRID
+    check: offgrid
+    layers: [ubmpperi]
+    value: 0.005
+  - id: ubmparray_OFFGRID
+    check: offgrid
+    layers: [ubmparray]
+    value: 0.005
+  - id: ubmeplate_OFFGRID
+    check: offgrid
+    layers: [ubmeplate]
+    value: 0.005
+  - id: pr_bndry_OFFGRID
+    check: offgrid
+    layers: [pr_bndry]
+    value: 0.005
+  - id: border_OFFGRID
+    check: offgrid
+    layers: [border]
+    value: 0.005

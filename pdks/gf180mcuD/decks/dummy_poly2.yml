@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Poly2 dummy fill.  All 16 rules in this section.
+rules:
+  - id: DPF.1
+    check: nonempty
+    layers: [dpf1_viol]
+    value: 0.0
+  - id: DPF.2b
+    check: min_space
+    layers: [poly2_dummy]
+    value: 1.1
+  - id: DPF.2b
+    check: min_notch
+    layers: [poly2_dummy]
+    value: 1.1
+  - id: DPF.4
+    check: min_space
+    layers: [poly2_dummy, comp]
+    value: 3.2
+  - id: DPF.5
+    check: min_space
+    layers: [poly2_dummy, poly2_drawn]
+    value: 5.0
+  - id: DPF.6a
+    check: min_space
+    layers: [poly2_dummy, nwell]
+    value: 1.0
+  - id: DPF.6b
+    check: min_space
+    layers: [poly2_dummy, dnwell]
+    value: 2.0
+  - id: DPF.6c
+    check: min_space
+    layers: [poly2_dummy, lvpwell]
+    value: 1.0
+  - id: DPF.6d
+    check: min_space
+    layers: [poly2_dummy, dualgate]
+    value: 1.0
+  - id: DPF.8
+    check: min_space
+    layers: [poly2_dummy, res_mk]
+    value: 19.7
+  - id: DPF.9
+    check: min_space
+    layers: [poly2_dummy, pad]
+    value: 6.7
+  - id: DPF.11
+    check: min_space
+    layers: [poly2_dummy, ndmy]
+    value: 29.7
+  - id: DPF.12
+    check: min_space
+    layers: [poly2_dummy, metal1_drawn]
+    value: 2.0
+  - id: DPF.13
+    check: min_space
+    layers: [poly2_dummy, metal2_drawn]
+    value: 2.0
+  - id: DPF.14
+    check: min_space
+    layers: [poly2_dummy, ind_mk]
+    value: 3.0
+  - id: DPF.16
+    check: min_space
+    layers: [poly2_dummy, mtpmark]
+    value: 3.0
+  - id: DPF.19
+    check: min_space
+    layers: [poly2_dummy, pmndmy]
+    value: 8.0

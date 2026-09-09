@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Dual gate oxide (5/6 V devices).  All 8 rules in this section.
+rules:
+  - id: DV.1
+    check: min_enclosure
+    layers: [dualgate, dnwell]
+    value: 0.5
+    params:
+      interacting_only: 1
+  - id: DV.1
+    check: nonempty
+    layers: [dv_1_crossing]
+    value: 0.0
+  - id: DV.2
+    check: min_space
+    layers: [dualgate]
+    value: 0.44
+  - id: DV.2
+    check: min_notch
+    layers: [dualgate]
+    value: 0.44
+  - id: DV.3
+    check: min_space
+    layers: [dualgate, comp_outside_dualgate]
+    value: 0.24
+  - id: DV.5
+    check: min_width
+    layers: [dualgate]
+    value: 0.7
+  - id: DV.6
+    check: min_enclosure
+    layers: [dualgate, comp_dv]
+    value: 0.24
+    params:
+      interacting_only: 1
+  - id: DV.6
+    check: nonempty
+    layers: [dv_6_crossing]
+    value: 0.0
+  - id: DV.7
+    check: nonempty
+    layers: [dv7_viol]
+    value: 0.0
+  - id: DV.8
+    check: min_enclosure
+    layers: [dualgate, poly2_drawn]
+    value: 0.4
+    params:
+      interacting_only: 1
+  - id: DV.8
+    check: nonempty
+    layers: [dv_8_crossing]
+    value: 0.0
+  - id: DV.9
+    check: nonempty
+    layers: [dv9_viol]
+    value: 0.0

@@ -25,6 +25,7 @@ use crate::layout::FlatLayout;
 use crate::merge::{
     LabeledRegions, MergedCache, UnionFind, point_in_merged, stitch_labeled, stitch_regions,
 };
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -112,10 +113,20 @@ impl Connectivity {
         // Build labeled regions per layer and assign a contiguous block of node ids.
         let mut layers: HashMap<LayerKey, LayerData> = HashMap::new();
         let mut next_base = 0usize;
+        // `GDSCHECK_CONN_TRACE=1` reports what extraction costs per layer.  The two
+        // numbers that matter are `polys` against `regions` - how many polygon copies the
+        // tiling holds for each region it yields, which is where a halo shows up - and
+        // `n_nodes`, which sets what every prefix partition costs.
+        let trace = std::env::var("GDSCHECK_CONN_TRACE").is_ok();
         for &key in &keys {
+            let t0 = std::time::Instant::now();
             cache.ensure(layout, key.0, key.1);
+            let t_merge = t0.elapsed().as_secs_f64();
             let tiles = cache.tiles(key.0, key.1);
-            let labeled = if needs_index.contains(&key) {
+            let (n_tiles, n_polys) = (tiles.len(), tiles.values().map(|v| v.len()).sum::<usize>());
+            let t1 = std::time::Instant::now();
+            let indexed = needs_index.contains(&key);
+            let labeled = if indexed {
                 stitch_labeled(tiles, tile_dbu)
             } else {
                 LabeledRegions {
@@ -123,9 +134,32 @@ impl Connectivity {
                     by_tile: HashMap::new(),
                 }
             };
+            if trace {
+                eprintln!(
+                    "conn {}/{} halo={} indexed={} tiles={} polys={} regions={} \
+                     merge={:.1}s stitch={:.1}s",
+                    key.0,
+                    key.1,
+                    cache.halo_dbu(key.0, key.1),
+                    indexed,
+                    n_tiles,
+                    n_polys,
+                    labeled.regions.len(),
+                    t_merge,
+                    t1.elapsed().as_secs_f64()
+                );
+            }
             let base = next_base;
             next_base += labeled.regions.len();
             layers.insert(key, LayerData { labeled, base });
+        }
+        if trace {
+            eprintln!(
+                "conn n_nodes={} steps={} prefix partitions cost {:.1} GB",
+                next_base,
+                specs.len(),
+                (next_base * (specs.len() + 1) * 8) as f64 / 1e9
+            );
         }
 
         let mut conn = Connectivity {
@@ -139,7 +173,14 @@ impl Connectivity {
                 net_count: 0,
             }),
         };
+        let t2 = std::time::Instant::now();
         conn.partitions = conn.compute_partitions();
+        if trace {
+            eprintln!(
+                "conn partitions built in {:.1}s",
+                t2.elapsed().as_secs_f64()
+            );
+        }
         conn.full = Arc::clone(&conn.partitions[&specs.len()]);
         conn
     }
@@ -160,50 +201,80 @@ impl Connectivity {
         cache.insert(0, Arc::new(self.snapshot(&mut uf)));
         for (k, s) in self.specs.iter().enumerate() {
             if let Some(conn) = self.layers.get(&s.connector) {
-                for (r, region) in conn.labeled.regions.iter().enumerate() {
-                    let conn_node = conn.base + r;
-                    let (mx, my) = region.marker;
-                    for &lk in &s.layers {
-                        if let Some(node) = region_node_at(&self.layers, lk, mx, my, self.tile_dbu)
-                        {
-                            uf.union(conn_node, node);
-                        }
-                    }
+                // The lookups are the work - a point-in-polygon per via per bridged
+                // layer, millions of them - and they only read; the unions are cheap and
+                // replayed in order, so the result is the same as the serial loop's.
+                let pairs: Vec<(usize, usize)> = conn
+                    .labeled
+                    .regions
+                    .par_iter()
+                    .enumerate()
+                    .flat_map_iter(|(r, region)| {
+                        let conn_node = conn.base + r;
+                        let (mx, my) = region.anchor;
+                        s.layers
+                            .iter()
+                            .filter_map(move |&lk| {
+                                region_node_at(&self.layers, lk, mx, my, self.tile_dbu)
+                                    .map(|node| (conn_node, node))
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .collect();
+                for (a, b) in pairs {
+                    uf.union(a, b);
                 }
             }
             cache.insert(k + 1, Arc::new(self.snapshot(&mut uf)));
+            if std::env::var("GDSCHECK_CONN_TRACE").is_ok() {
+                let rss = std::fs::read_to_string("/proc/self/statm")
+                    .ok()
+                    .and_then(|s| s.split_whitespace().nth(1).map(|v| v.to_string()))
+                    .unwrap_or_default();
+                eprintln!(
+                    "conn step {k} done, nets={} rss={:.1} GB",
+                    cache[&(k + 1)].net_count,
+                    rss.parse::<f64>().unwrap_or(0.0) * 4096.0 / 1e9
+                );
+            }
         }
         cache
     }
 
     /// Compact the current union-find roots into a dense net id per node.
     fn snapshot(&self, uf: &mut UnionFind) -> Partition {
-        let mut root_net: HashMap<usize, usize> = HashMap::new();
+        // A root is a node id, so a vector indexed by root numbers the nets without a
+        // hash per node - twenty million nodes, twenty-two times over.
+        let mut root_net = vec![usize::MAX; self.n_nodes];
+        let mut net_count = 0usize;
         let mut node_net = vec![0usize; self.n_nodes];
         for (node, slot) in node_net.iter_mut().enumerate() {
             let root = uf.find(node);
-            let net = match root_net.get(&root) {
-                Some(&n) => n,
-                None => {
-                    let n = root_net.len();
-                    root_net.insert(root, n);
-                    n
-                }
-            };
-            *slot = net;
+            if root_net[root] == usize::MAX {
+                root_net[root] = net_count;
+                net_count += 1;
+            }
+            *slot = root_net[root];
         }
         Partition {
             node_net,
-            net_count: root_net.len(),
+            net_count,
         }
     }
 
     /// The first connect step index at which `layer` becomes connected (its `*_ratio` net),
     /// i.e. the prefix length to pass to [`partition`].  `None` if it never connects.
+    ///
+    /// A layer can join the graph as either end of a step, and a via joins as the
+    /// *connector*: `Via1` bridges Metal1 to Metal2 and appears in no step's `layers`.
+    /// Matching only `layers` therefore left every via unresolvable, and an antenna rule
+    /// measuring via area silently contributed nothing at all - the failure mode this
+    /// engine works hardest to avoid.  A connector is connected from the step that
+    /// introduces it, which is the step it bridges its first pair at.
     pub fn connect_prefix(&self, layer: LayerKey) -> Option<usize> {
         self.specs
             .iter()
-            .position(|s| s.layers.contains(&layer))
+            .position(|s| s.layers.contains(&layer) || s.connector == layer)
             .map(|i| i + 1)
     }
 

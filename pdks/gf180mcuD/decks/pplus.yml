@@ -1,0 +1,127 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Pplus implant.  All 25 rules in this section.
+rules:
+  - id: PP.1
+    check: min_width
+    layers: [pplus]
+    value: 0.4
+  - id: PP.2
+    check: min_space
+    layers: [pplus]
+    value: 0.4
+  - id: PP.2
+    check: min_notch
+    layers: [pplus]
+    value: 0.4
+  - id: PP.3a
+    check: min_space
+    layers: [pp3_pplus, pp3a_ncomp]
+    value: 0.16
+  - id: PP.3bi
+    check: min_space
+    layers: [pp3_pplus_in_dn, pp3bi_ncomp]
+    value: 0.08
+  - id: PP.3bii
+    check: min_space
+    layers: [pp3_pplus_in_dn, pp3bii_ncomp]
+    value: 0.16
+  - id: PP.3ci
+    check: min_space
+    layers: [pp3_pplus_in_nwell, pp3ci_ncomp]
+    value: 0.08
+  - id: PP.3cii
+    check: min_space
+    layers: [pp3_pplus_in_nwell, pp3cii_ncomp]
+    value: 0.16
+  - id: PP.3d
+    check: nonempty
+    layers: [pp3d_viol]
+    value: 0.0
+  - id: PP.3e
+    check: nonempty
+    layers: [pp3e_viol]
+    value: 0.0
+  - id: PP.4a
+    check: min_space
+    layers: [pplus_butted_edges, ngate.edges]
+    value: 0.32
+  - id: PP.4b
+    check: min_space
+    layers: [pplus.edges, pp4b_poly]
+    value: 0.22
+  - id: PP.5a
+    check: min_enclosure
+    layers: [pplus, pgate]
+    value: 0.23
+    params:
+      interacting_only: 1
+  - id: PP.5a
+    check: nonempty
+    layers: [pp_5a_crossing]
+    value: 0.0
+  - id: PP.5b
+    check: min_enclosure
+    layers: [pp5b_pplus, pcomp.edges]
+    value: 0.16
+  - id: PP.5ci
+    check: min_enclosure
+    layers: [pp5c_bg, pp5ci_fg]
+    value: 0.02
+  - id: PP.5cii
+    check: min_enclosure
+    layers: [pp5c_bg_all, pp5cii_fg]
+    value: 0.16
+  - id: PP.5di
+    check: min_enclosure
+    layers: [pp5d_bg, pp5di_fg]
+    value: 0.02
+  - id: PP.5dii
+    check: min_enclosure
+    layers: [pp5d_bg, pp5dii_fg]
+    value: 0.16
+  - id: PP.6
+    check: min_enclosure
+    layers: [comp_at_pplus, ncomp_at_pplus]
+    value: 0.22
+    params:
+      interacting_only: 1
+      skip_coincident: 1
+  - id: PP.7
+    check: min_space
+    layers: [pplus, poly_sab_only]
+    value: 0.18
+  - id: PP.8a
+    check: min_area
+    layers: [pplus]
+    value: 0.35
+  - id: PP.8b
+    check: min_enclosed_area
+    layers: [pplus]
+    value: 0.35
+  - id: PP.9
+    check: min_enclosure
+    layers: [pplus, poly_sab_no_res]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: PP.9
+    check: nonempty
+    layers: [pp_9_crossing]
+    value: 0.0
+  - id: PP.10
+    check: min_enclosure
+    layers: [pplus, comp_sab_only]
+    value: 0.18
+    params:
+      interacting_only: 1
+  - id: PP.11
+    check: nonempty
+    layers: [pp11_viol]
+    value: 0.0
+  - id: PP.12
+    check: nonempty
+    layers: [pp12_viol]
+    value: 0.0

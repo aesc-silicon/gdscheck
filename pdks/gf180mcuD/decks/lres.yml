@@ -1,0 +1,61 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# N+ poly resistor.  All 9 rules in this section.
+#
+# Known: LRES.1 reports seven extra pinch points, at 45 degree corners where our merge
+# keeps a one-nanometre spur that KLayout's absorbs into the contour.
+rules:
+  - id: LRES.1
+    check: min_width
+    layers: [lres_poly]
+    value: 0.8
+  - id: LRES.2
+    check: min_space
+    layers: [lres_poly]
+    value: 0.4
+  - id: LRES.3
+    check: min_space
+    layers: [lres_poly, comp]
+    value: 0.6
+  - id: LRES.3
+    check: nonempty
+    layers: [comp_on_lres]
+    value: 0.0
+  - id: LRES.4
+    check: min_space
+    layers: [lres_poly, poly2_unrelated]
+    value: 0.6
+  - id: LRES.5
+    check: min_enclosure
+    layers: [nplus, lres_poly]
+    value: 0.3
+    params:
+      interacting_only: 1
+  - id: LRES.5
+    check: nonempty
+    layers: [lres_5_crossing]
+    value: 0.0
+  - id: LRES.6
+    check: min_enclosure
+    layers: [sab, lres_poly]
+    value: 0.28
+    params:
+      interacting_only: 1
+  - id: LRES.7
+    check: min_space
+    layers: [cont_lres, sab]
+    value: 0.22
+  - id: LRES.7
+    check: nonempty
+    layers: [cont_lres_on_sab]
+    value: 0.0
+  - id: LRES.9a
+    check: nonempty
+    layers: [lres9a_viol]
+    value: 0.0
+  - id: LRES.9b
+    check: min_space
+    layers: [res_mk_big, res_mk]
+    value: 20.0

@@ -1,0 +1,190 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# LDMOS PFET.  35 of the 38 rules in this section.
+#
+# Not ported: MDP.3, MDP.3c, MDP.9c.
+rules:
+  - id: MDP.1
+    check: min_enclosure
+    layers: [poly_mdp, mvpsd]
+    value: 0.6
+    params:
+      interacting_only: 1
+  - id: MDP.1a
+    check: max_width
+    layers: [ldpmos_gate_sides]
+    value: 20.0
+  - id: MDP.2
+    check: nonempty
+    layers: [mdp2_viol]
+    value: 0.0
+  - id: MDP.3ai
+    check: min_space
+    layers: [ncomp_mdp3ai, mvpsd]
+    value: 1.0
+  - id: MDP.3ai
+    check: nonempty
+    layers: [mdp3ai_touch]
+    value: 0.0
+  - id: MDP.3aii
+    check: min_space
+    layers: [ncomp_mdp3aii, mvpsd]
+    value: 0.92
+  - id: MDP.3aii
+    check: nonempty
+    layers: [mdp3aii_touch]
+    value: 0.0
+  - id: MDP.3b
+    check: min_space
+    layers: [ncomp_mdp3b, pcomp_mdp3b]
+    value: 0.4
+  - id: MDP.3d
+    check: nonempty
+    layers: [mdp3d_viol]
+    value: 0.0
+  - id: MDP.4
+    check: nonempty
+    layers: [mdp4_viol]
+    value: 0.0
+  - id: MDP.4a
+    check: min_space
+    layers: [pcomp_mdn, dnwell_mdp]
+    value: 2.5
+  - id: MDP.4b
+    check: max_distance
+    layers: [mdp4b_edges, mdp4b_pcomp]
+    value: 15.0
+  - id: MDP.5
+    check: nonempty
+    layers: [mdp5_viol]
+    value: 0.0
+  - id: MDP.5a
+    check: min_enclosure
+    layers: [ldmos_dualgate, pcomp_mdp5a]
+    value: 0.5
+    params:
+      interacting_only: 1
+  - id: MDP.6
+    check: nonempty
+    layers: [mdp6_viol]
+    value: 0.0
+  - id: MDP.6a
+    check: nonempty
+    layers: [mdp6a_viol]
+    value: 0.0
+  - id: MDP.7
+    check: min_space
+    layers: [ldmos_xtor, nwell_out_ldmos]
+    value: 2.0
+  - id: MDP.8
+    check: min_space
+    layers: [ldmos_xtor, ncomp_out_ldmos]
+    value: 1.5
+  - id: MDP.9a
+    check: min_width
+    layers: [poly_in_dnwell_mdp]
+    value: 1.2
+  - id: MDP.9b
+    check: min_enclosure
+    layers: [mdp9b_edges, comp.edges]
+    value: 0.4
+  - id: MDP.9b
+    check: nonempty
+    layers: [mdp9b_touch]
+    value: 0.0
+  - id: MDP.9d
+    check: nonempty
+    layers: [mdp9d_viol]
+    value: 0.0
+  - id: MDP.9ei
+    check: min_space
+    layers: [ldpmos_gate_mdp, ncomp_not_butted]
+    value: 0.4
+  - id: MDP.9ei
+    check: nonempty
+    layers: [mdp9ei_touch]
+    value: 0.0
+  - id: MDP.9eii
+    check: min_space
+    layers: [ldpmos_gate_mdp, ncomp_butted]
+    value: 0.32
+  - id: MDP.9eii
+    check: nonempty
+    layers: [mdp9eii_touch]
+    value: 0.0
+  - id: MDP.9f
+    check: nonempty
+    layers: [mdp9f_interconnect]
+    value: 0.0
+  - id: MDP.10
+    check: nonempty
+    layers: [mdp10_wide]
+    value: 0.0
+  - id: MDP.10
+    check: nonempty
+    layers: [mdp10_no_channel]
+    value: 0.0
+  - id: MDP.10a
+    check: min_space_different_net
+    layers: [mvpsd]
+    value: 2.0
+  - id: MDP.10b
+    check: min_space
+    layers: [mvpsd]
+    value: 1.0
+  - id: MDP.10b
+    check: min_notch
+    layers: [mvpsd]
+    value: 1.0
+  - id: MDP.11
+    check: min_enclosure
+    layers: [mdp11_edges, pcomp.edges]
+    value: 0.8
+  - id: MDP.11
+    check: nonempty
+    layers: [mdp11_flush]
+    value: 0.0
+  - id: MDP.12
+    check: min_enclosure
+    layers: [dnwell_mdp, ncomp_guard]
+    value: 0.66
+    params:
+      interacting_only: 1
+  - id: MDP.12
+    check: nonempty
+    layers: [mdp_12_crossing]
+    value: 0.0
+  - id: MDP.13a
+    check: max_length
+    layers: [ldpmos_body]
+    value: 50.0
+  - id: MDP.13b
+    check: nonempty
+    layers: [mdp13b_viol]
+    value: 0.0
+  - id: MDP.13c
+    check: nonempty
+    layers: [mdp13c_viol]
+    value: 0.0
+  - id: MDP.15
+    check: min_space
+    layers: [dnwell, dnwell_mvpsd_mdp]
+    value: 6.0
+  - id: MDP.16a
+    check: min_width
+    layers: [comp_drain_mdp]
+    value: 0.22
+  - id: MDP.16b
+    check: nonempty
+    layers: [mdp16b_viol]
+    value: 0.0
+  - id: MDP.17a
+    check: nonempty
+    layers: [mdp17a_viol]
+    value: 0.0
+  - id: MDP.17c
+    check: nonempty
+    layers: [mdp17c_viol]
+    value: 0.0

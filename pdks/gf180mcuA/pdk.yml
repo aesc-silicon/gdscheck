@@ -1,0 +1,252 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GlobalFoundries 180 nm MCU (gf180mcu), variant A: 3 metal layers, 30K top metal,
+# MIM option A.  Upstream ships one KLayout deck for every variant and selects
+# behaviour from those three options at run time; this is the variant-A projection
+# of it, sharing every variant-independent deck with gf180mcuD and overriding only
+# what the three options change.
+#
+# The stack is where most of that lands.  `top_metal` and its neighbours are aliases
+# in the base PDK, so re-pointing them at Metal3 / Metal2 / Via2 / Via1 moves every
+# rule written against the top of the stack down two levels at once.
+#
+# The antenna deck is absent.  Its rules read a net by prefix of the connect graph, and
+# the only antenna fixtures upstream ships are variant E - so a variant-A antenna deck
+# could be written but not measured, and an unmeasured net-aware rule is worse than none.
+name: GlobalFoundries GF180MCU (variant A)
+version: "0.1"
+extends: ../gf180mcuD/pdk.yml
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every deck
+  - name: core
+    path: suites/core.yml
+    description: Geometric DRC - main minus antenna and density
+  - name: density
+    path: suites/density.yml
+    description: Global coverage checks
+  - name: recommended
+    path: suites/recommended.yml
+    description: Guidance the foundry documents but does not check
+
+decks:
+  - name: acute
+    path: ../gf180mcuD/decks/acute.yml
+    description: Angles that are not a multiple of 45 degrees
+  - name: comp
+    path: ../gf180mcuD/decks/comp.yml
+    description: Active area (COMP)
+  - name: contact
+    path: ../gf180mcuD/decks/contact.yml
+    description: Contact
+  - name: cup
+    path: decks/cup.yml
+    description: Cu pillar
+  - name: density
+    path: decks/density.yml
+    description: Global layer density (COMP, Poly2, Metal)
+  - name: dnwell
+    path: ../gf180mcuD/decks/dnwell.yml
+    description: Deep N-well
+  - name: drc_bjt
+    path: ../gf180mcuD/decks/drc_bjt.yml
+    description: BJT geometry
+  - name: dualgate
+    path: ../gf180mcuD/decks/dualgate.yml
+    description: Dual gate oxide (5/6 V devices)
+  - name: dummy_comp
+    path: ../gf180mcuD/decks/dummy_comp.yml
+    description: COMP dummy fill
+  - name: dummy_exclude
+    path: ../gf180mcuD/decks/dummy_exclude.yml
+    description: Dummy-fill exclude marker
+  - name: dummy_metal
+    path: decks/dummy_metal.yml
+    description: Metal dummy fill
+  - name: dummy_poly2
+    path: ../gf180mcuD/decks/dummy_poly2.yml
+    description: Poly2 dummy fill
+  - name: efuse
+    path: ../gf180mcuD/decks/efuse.yml
+    description: eFuse
+  - name: esd
+    path: ../gf180mcuD/decks/esd.yml
+    description: ESD implant
+  - name: guard_ring
+    path: decks/guard_ring.yml
+    description: Guard ring
+  - name: hres
+    path: ../gf180mcuD/decks/hres.yml
+    description: High-sheet poly resistor
+  - name: ldnmos
+    path: ../gf180mcuD/decks/ldnmos.yml
+    description: LDMOS NFET
+  - name: ldpmos
+    path: ../gf180mcuD/decks/ldpmos.yml
+    description: LDMOS PFET
+  - name: lres
+    path: ../gf180mcuD/decks/lres.yml
+    description: Low-sheet poly resistor
+  - name: lvpwell
+    path: ../gf180mcuD/decks/lvpwell.yml
+    description: Low-voltage P-well
+  - name: lvs_bjt
+    path: ../gf180mcuD/decks/lvs_bjt.yml
+    description: BJT LVS marker
+  - name: mcell
+    path: ../gf180mcuD/decks/mcell.yml
+    description: Memory cell
+  - name: metal
+    path: decks/metal.yml
+    description: Metal 1-2
+  - name: metaltop_30k
+    path: decks/metaltop_30k.yml
+    description: Top metal (Metal3 on 3LM), 30 kA thick
+  - name: mim_a
+    path: decks/mim_a.yml
+    description: MIM capacitor (option A)
+  - name: mslot
+    path: decks/mslot.yml
+    description: Metal slots
+  - name: nat
+    path: ../gf180mcuD/decks/nat.yml
+    description: Native-VT device
+  - name: nplus
+    path: ../gf180mcuD/decks/nplus.yml
+    description: N+ implant
+  - name: nwell
+    path: ../gf180mcuD/decks/nwell.yml
+    description: N-well
+  - name: offgrid
+    path: ../gf180mcuD/decks/offgrid.yml
+    description: Off-grid vertices
+  - name: otp_mk
+    path: ../gf180mcuD/decks/otp_mk.yml
+    description: OTP marker
+  - name: poly2
+    path: ../gf180mcuD/decks/poly2.yml
+    description: Gate poly
+  - name: pplus
+    path: ../gf180mcuD/decks/pplus.yml
+    description: P+ implant
+  - name: pres
+    path: ../gf180mcuD/decks/pres.yml
+    description: P+ poly resistor
+  - name: sab
+    path: ../gf180mcuD/decks/sab.yml
+    description: Salicide block
+  - name: sram_3p3
+    path: ../gf180mcuD/decks/sram_3p3.yml
+    description: SRAM 3.3 V
+  - name: sram_5p0
+    path: ../gf180mcuD/decks/sram_5p0.yml
+    description: SRAM 5.0 V
+  - name: via
+    path: decks/via.yml
+    description: Via 1-2
+  - name: ymtp_mk
+    path: ../gf180mcuD/decks/ymtp_mk.yml
+    description: YMTP marker
+
+connectivity:
+  # ORDERED, and shorter than the base PDK's: the antenna deck reads a net by *prefix*
+  # of this list, so the metal stack has to end where the variant's does.  Steps 0-10
+  # are the pre-metal net and are identical to variant D's.
+  # ORDERED.  The antenna deck selects a net by *prefix* of this list - the stack as it
+  # exists partway through processing - so the index of every step is load-bearing and
+  # the order mirrors the antenna rules' own connect phases: gates and diffusions
+  # first, then the wells, then the metal stack one level at a time.  Inserting a step
+  # shifts every level above it; tests/pdk_integrity.rs pins the list so that breaks
+  # loudly.  Indices are noted where an antenna rule names them.
+  - connector: contact           # 0
+    layers: [poly2_drawn]
+  - connector: contact           # 1
+    layers: [ncomp_con]
+  - connector: contact           # 2
+    layers: [pcomp_con]
+  - connector: contact           # 3
+    layers: [natcomp_con]
+  # Well ties and device bodies: the tap diffusion is the connector between the well
+  # and the contacted active it straps.  These sit ahead of the metal stack because
+  # upstream's antenna phases have the wells connected from the contact level up.
+  - connector: ntap              # 4
+    layers: [nwell, nw_lv, nw_mv, ncomp_con]
+  # `dnwell` itself is listed beside `dnwell_n` so the deep well has a net of its own:
+  # DN.2a/DN.2b are the same-potential/different-potential spacing pair, and without the
+  # drawn layer in the graph neither can resolve one.
+  - connector: ntap_dn           # 5
+    layers: [dnwell_n, ncomp_con, dnwell]
+  - connector: ptap              # 6
+    layers: [lvpwell, lvpwell_dn_lv, lvpwell_dn_mv, pcomp_con]
+  - connector: mvsd_tap          # 7
+    layers: [mvsd, ncomp_con]
+  - connector: ntap              # 8
+    layers: [nwell, mvsd]
+  - connector: mvpsd_tap         # 9
+    layers: [mvpsd, pcomp_con]
+  - connector: contact           # 10 - end of the pre-metal net (ANT.8)
+    layers: [metal1_drawn]
+  - connector: via1              # 11
+    layers: [metal1_drawn]
+  - connector: via1              # 12
+    layers: [metal2_drawn]
+  - connector: via2              # 13
+    layers: [metal2_drawn]
+  # MIM option A ties the cap plate in at the Via2 phase (`connect(via2, fusetop)` in
+  # antenna.rb), one level below where option B does.
+  - connector: via2              # 14
+    layers: [fusetop]
+  - connector: via2              # 15
+    layers: [metal3_drawn]
+  - connector: mimcap_top_tap    # 16
+    layers: [fusetop, metal3_drawn]
+
+virtual_layers:
+  # The 3LM stack.  These four names are what every top-of-stack rule is written
+  # against, so overriding them here re-points the whole family at once.
+  - name: top_metal
+    op: union
+    mode: lazy
+    layers: [metal3]
+  - name: topmin1_metal
+    op: union
+    mode: lazy
+    layers: [metal2]
+  - name: top_via
+    op: union
+    mode: lazy
+    layers: [via2]
+  - name: topmin1_via
+    op: union
+    mode: lazy
+    layers: [via1]
+  # MIM.9 measures via spacing over the top plate on the vias *clipped* to it, where
+  # option B selects the vias lying wholly inside it.
+  - name: top_via_and_fusetop
+    op: intersection
+    mode: lazy
+    layers: [top_via, fusetop]
+  # MT30.1b: a line is "long" if any of its own edges runs 1000 um or more.
+  - name: top_metal_long_line
+    op: interacting
+    mode: lazy
+    layers: [top_metal, top_metal_long_edges]
+  # MT30.5 forbids a via outside the top metal outright, which no enclosure margin can
+  # measure - there is nothing to measure between.
+  - name: top_via_not_in_top_metal
+    op: not_inside
+    mode: lazy
+    layers: [top_via, top_metal]
+
+edge_layers:
+  - name: top_metal.edges
+    op: edges
+    layers: [top_metal]
+  - name: top_metal_long_edges
+    op: with_length
+    min: 1000.0
+    layers: [top_metal.edges]

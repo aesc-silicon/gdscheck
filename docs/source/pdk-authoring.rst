@@ -128,10 +128,20 @@ Virtual layers
 ``virtual_layers:`` declares derived layers computed from drawn (or other virtual) ones —
 see :doc:`virtual-ops` for the full operator reference and the eager/lazy evaluation
 trade-off. Each entry needs ``name``, ``op`` and ``layers`` (the sources); ``mode: lazy``,
-``radius`` (for ``close``/``open``/``grow``) and ``text`` (for ``with_text``) are
-optional, op-specific. A virtual layer is assigned a synthetic GDS layer number
+``radius`` (for ``close``/``open``/``grow`` and the directional
+``grow_x``/``grow_y``/``shrink_x``/``shrink_y``), ``text`` (for ``with_text``) and
+``min``/``max`` (for ``with_bbox_min``/``with_bbox_max``) are optional, op-specific. All
+distances are in µm. A virtual layer is assigned a synthetic GDS layer number
 automatically (starting at 30000) and can be referenced by rules exactly like a drawn
 layer.
+
+
+``edge_layers:`` declares derived layers whose elements are boundary *segments* rather
+than regions — needed by rules that measure a piece of a boundary, such as a transistor's
+channel width. Each entry takes ``name``, ``op`` and ``layers``; ``min``/``max`` carry the
+op's bounds, in µm for the length filters and degrees for the angle ones. They share the
+synthetic layer-number range with ``virtual_layers`` and are referenced by rules the same
+way. See :doc:`virtual-ops`.
 
 
 The connectivity graph

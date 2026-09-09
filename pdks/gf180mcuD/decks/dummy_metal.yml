@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Metal dummy fill.
+rules:
+  - id: DM1.2b
+    check: min_space
+    layers: [metal1_dummy]
+    value: 0.98
+  - id: DM1.2b
+    check: min_notch
+    layers: [metal1_dummy]
+    value: 0.98
+  - id: DM1.3
+    check: min_space
+    layers: [metal1_dummy, metal1_drawn]
+    value: 2.0
+  - id: DM1.8
+    check: min_space
+    layers: [metal1_dummy, dm8_sensitive]
+    value: 6.0
+  - id: DM2.2b
+    check: min_space
+    layers: [metal2_dummy]
+    value: 0.98
+  - id: DM2.2b
+    check: min_notch
+    layers: [metal2_dummy]
+    value: 0.98
+  - id: DM2.3
+    check: min_space
+    layers: [metal2_dummy, metal2_drawn]
+    value: 2.0
+  - id: DM2.8
+    check: min_space
+    layers: [metal2_dummy, dm8_sensitive]
+    value: 6.0
+  - id: DM3.2b
+    check: min_space
+    layers: [metal3_dummy]
+    value: 0.98
+  - id: DM3.2b
+    check: min_notch
+    layers: [metal3_dummy]
+    value: 0.98
+  - id: DM3.3
+    check: min_space
+    layers: [metal3_dummy, metal3_drawn]
+    value: 2.0
+  - id: DM3.8
+    check: min_space
+    layers: [metal3_dummy, dm8_sensitive]
+    value: 6.0
+  - id: DM4.2b
+    check: min_space
+    layers: [metal4_dummy]
+    value: 0.98
+  - id: DM4.2b
+    check: min_notch
+    layers: [metal4_dummy]
+    value: 0.98
+  - id: DM4.3
+    check: min_space
+    layers: [metal4_dummy, metal4_drawn]
+    value: 2.0
+  - id: DM4.8
+    check: min_space
+    layers: [metal4_dummy, dm8_sensitive]
+    value: 6.0
+  - id: DM5.2b
+    check: min_space
+    layers: [metal5_dummy]
+    value: 0.98
+  - id: DM5.2b
+    check: min_notch
+    layers: [metal5_dummy]
+    value: 0.98
+  - id: DM5.3
+    check: min_space
+    layers: [metal5_dummy, metal5_drawn]
+    value: 2.0
+  - id: DM5.8
+    check: min_space
+    layers: [metal5_dummy, dm8_sensitive]
+    value: 6.0

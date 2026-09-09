@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# BJT geometry.  All 3 rules in this section.
+rules:
+  - id: BJT.1
+    check: nonempty
+    layers: [bjt1_viol]
+    value: 0.0
+  - id: BJT.2
+    check: nonempty
+    layers: [bjt2_viol]
+    value: 0.0
+  - id: BJT.3
+    check: min_space
+    layers: [comp_outside_bjt, drc_bjt]
+    value: 0.1

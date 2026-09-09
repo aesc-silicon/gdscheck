@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Top metal.  All 4 rules in this section.
+rules:
+  - id: MT.1
+    check: min_width
+    layers: [top_metal]
+    value: 0.44
+  - id: MT.2a
+    check: min_space
+    layers: [top_metal]
+    value: 0.46
+  - id: MT.2a
+    check: min_notch
+    layers: [top_metal]
+    value: 0.46
+  - id: MT.2b
+    check: min_space
+    layers: [top_metal, top_metal_wide10]
+    value: 0.6
+  - id: MT.4
+    check: min_area
+    layers: [top_metal]
+    value: 0.5625
