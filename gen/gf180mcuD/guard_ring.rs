@@ -250,7 +250,7 @@ pub fn generate(pdk: &PdkConfig) {
         if short > 0.0 {
             elems.retain(|e| {
                 !matches!(e, GdsElement::GdsBoundary(b)
-                if (b.layer, b.datatype) == (pplus.0 as i16, pplus.1 as i16))
+                if (b.layer, b.datatype) == pplus)
             });
             // The implant slides off one end of the band rather than narrowing it, so the
             // active it leaves bare is GR.3's business and stays GR.6's right width.
