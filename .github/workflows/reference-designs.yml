@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Run the main suite over the real designs in aesc-silicon/reference-designs, one
+# job per PDK, to catch crashes, hangs and false violations. The synthetic fixtures
+# under tests/ cover per-rule behaviour; this covers real layouts.
+
+name: Reference Designs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. new pushes to a PR branch).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  designs:
+    name: ${{ matrix.pdk }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        pdk: [ihp-sg13g2, ihp-sg13cmos5l, gf180mcuD]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the reference designs
+        uses: actions/checkout@v4
+        with:
+          repository: aesc-silicon/reference-designs
+          path: reference-designs
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run the designs
+        env:
+          REFERENCE_DESIGNS: ${{ github.workspace }}/reference-designs
+          TIMEOUT: 60m
+        run: ci/run-designs.sh ${{ matrix.pdk }}
+
+      # The .lyrdb reports of failed designs open in KLayout.
+      - name: Upload reports of failed designs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ matrix.pdk }}
+          path: ci/reports
+          if-no-files-found: ignore
