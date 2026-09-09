@@ -27,3 +27,6 @@ docs/build/
 *.gds
 *.gds.gz
 !tests/data/**/*.gds.gz
+
+# Reference-design DRC reports (ci/run-designs.sh)
+/ci/reports/
