@@ -280,7 +280,15 @@ fn run(args: RunArgs) {
     if let Some(report) = &args.report {
         match report::write_lyrdb(report, &args.topcell, &violations) {
             Ok(()) => println!("Report written to: {report}"),
-            Err(e) => eprintln!("Error writing report: {e}"),
+            Err(e) => {
+                eprintln!("Error writing report: {e}");
+                std::process::exit(1);
+            }
         }
+    }
+
+    // Exit codes: 0 clean, 1 error (bad input, PDK, report), 2 violations found.
+    if !violations.is_empty() {
+        std::process::exit(2);
     }
 }
