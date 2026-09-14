@@ -525,7 +525,9 @@ const DIST_CHECKS: &[&str] = &[
     "max_length",
     "min_dim",
     "max_dim",
-    "gate_length",
+    "min_gate_length",
+    "max_gate_length",
+    "exact_gate_length",
     "min_edge_length",
 ];
 

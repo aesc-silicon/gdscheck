@@ -333,6 +333,9 @@ Checks that take an edge layer: ``min_edge_length`` and ``max_edge_length``.
 
    An edge *expression* upstream is not always an edge *problem*. ``poly.edges.and(
    gate.edges).width(v)`` is the gate-length shape — the poly's own width, measured only
-   where it forms a gate — which ``gate_length`` answers with a masked measurement and no
-   edge layer at all. Reach for an edge layer when the rule measures a property of the
-   boundary itself: a segment's length, or which edge of a shape is the line end.
+   between the walls it shares with the gate outline — which ``min_gate_length`` answers on
+   the region, choosing the walls, and no edge layer at all; ``walls: unshared`` picks the
+   other kind, ``outside:`` cuts them to a region's exterior and ``angle: bent`` keeps the
+   45° runs, which between them say every channel-length rule in GF180. Reach for an edge
+   layer when the rule measures a property of the boundary itself: a segment's length, or
+   which edge of a shape is the line end.

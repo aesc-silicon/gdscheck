@@ -1784,7 +1784,7 @@ fn compose_edge_tile(
                                 y1: core.3,
                             },
                             limit,
-                            |_, _| true,
+                            None,
                             false,
                             true,
                             0,

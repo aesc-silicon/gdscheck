@@ -5,9 +5,10 @@
 //! The width scan as the checks drive it: [`width_pairs`](crate::geom::width_pairs)
 //! measured tile by tile, the pinch points no pair of walls can express, and each result
 //! written out as a violation.  Every rule in [`super`](super) comes through
-//! [`run_width`]; the gate length comes through [`run_gate_length`], which is the same
-//! scan under a mask.
+//! [`run_width`]; the gate rules come through [`run_gate`], which is the same scan with
+//! a [`WallFilter`] choosing the walls.
 
+use super::Kind;
 use crate::geom::*;
 use crate::layout::FlatLayout;
 use crate::merge::{Core, MergedCache, MergedPoly};
@@ -34,15 +35,9 @@ fn scan_widths(
     oblique_only: bool,
     mixed: bool,
     min_run: i64,
-    mask: Option<&[Poly]>,
+    walls: Option<&WallFilter>,
 ) -> Vec<Violation> {
-    let in_mask = |cx: f64, cy: f64| match mask {
-        None => true,
-        Some(m) => m
-            .iter()
-            .any(|p| p.contains_point(cx * dbu_to_um, cy * dbu_to_um)),
-    };
-    width_pairs(poly, core, limit, in_mask, oblique_only, mixed, min_run)
+    width_pairs(poly, core, limit, walls, oblique_only, mixed, min_run)
         .into_iter()
         .map(|(x1, y1, x2, y2, w_dbu)| {
             let w = w_dbu * dbu_to_um;
@@ -218,38 +213,95 @@ pub fn run_width(
     violations
 }
 
-/// Gate-length check: measure the facing-wall width of `layers[0]` (the gate poly)
-/// but only where it forms the device gate given by the mask `layers[1]` (e.g.
-/// GatPolyOverPsdActivTGO).  Measuring the poly — not the clipped channel — gives the gate
-/// *length* (the poly width); the channel *width* W, bounded by Activ edges, never enters.
-pub fn run_gate_length(
+/// The facing-wall width of `layers[0]` measured between the walls it shares with the
+/// boundary of `layers[1]` - or, with `walls: unshared`, between the ones it does not.
+/// `layer_params: outside: X` keeps only the stretches outside `X`, and `str_params:
+/// angle: bent` only the 45° runs.
+///
+/// A gate has two kinds of wall.  The ones the poly brought with it stand across the
+/// channel and the distance between them is the gate's length; the ones the active cut
+/// stand at the ends and the distance between them is the transistor's width.  Both are
+/// widths of one region, and which walls take part is the whole difference - so the rule
+/// names the region and the reference, and the [`WallFilter`] cuts every pair the scan
+/// finds to the stretch along which both walls sit on (or off) the reference boundary.
+/// A poly stripe over a channel mask shares its two long walls with the mask's boundary
+/// exactly where they cross the active, and the channel width, bounded by active edges
+/// that are no walls of the poly, never enters; a body whose ends the active cut has its
+/// channel-length walls off the active's boundary.
+///
+/// Measured per tile from that tile's copies of both layers, and owned by the stretch's
+/// own midpoint - so a stripe that crosses many actives reports each gate from the tile
+/// it falls in, whatever the stripe's own midpoint is.
+pub fn run_gate(
+    kind: Kind,
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    let poly = &rule.layers[0];
-    let mask = &rule.layers[1];
-    let (pl, pd) = (poly.gds_layer as i16, poly.gds_datatype as i16);
-    let (ml, md) = (mask.gds_layer as i16, mask.gds_datatype as i16);
-    merged.ensure(layout, pl, pd);
-    merged.ensure(layout, ml, md);
-
+    let name = kind.gate_name();
+    let (Some(body), Some(reference)) = (rule.layers.first(), rule.layers.get(1)) else {
+        eprintln!("[{}] {name} needs a region and a reference layer", rule.id);
+        return vec![];
+    };
+    let on = match rule.str_params.get("walls").map(String::as_str) {
+        None | Some("shared") => true,
+        Some("unshared") => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] {name}: walls must be `shared` or `unshared`, not `{other}`",
+                rule.id
+            );
+            return vec![];
+        }
+    };
+    let bent_only = match rule.str_params.get("angle").map(String::as_str) {
+        None => false,
+        Some("bent") => true,
+        Some(other) => {
+            eprintln!(
+                "[{}] {name}: angle can only be `bent`, not `{other}`",
+                rule.id
+            );
+            return vec![];
+        }
+    };
+    let outside = match (rule.params.get("outside"), rule.params.get("outside_dt")) {
+        (Some(&l), Some(&d)) => Some((l as i16, d as i16)),
+        _ => None,
+    };
+    let (bl, bd) = (body.gds_layer as i16, body.gds_datatype as i16);
+    let (rl, rd) = (reference.gds_layer as i16, reference.gds_datatype as i16);
+    merged.ensure(layout, bl, bd);
+    merged.ensure(layout, rl, rd);
+    if let Some((ol, od)) = outside {
+        merged.ensure(layout, ol, od);
+    }
     println!(
-        "[{}] Checking gate_length >= {:.2} µm of {} over {}",
-        rule.id, rule.value, poly.name, mask.name
+        "[{}] Checking {name} {} {:.2} µm of {} between its walls {} with the boundary of {}",
+        rule.id,
+        kind.op(),
+        rule.value,
+        body.name,
+        if on { "shared" } else { "unshared" },
+        reference.name
     );
-
-    let limit = Limit::at_least(rule.value, dbu_to_um);
+    let limit = kind.limit(rule.value, dbu_to_um);
+    let cmp = kind.cmp();
+    let label = match kind {
+        Kind::Min => "Minimum gate-length violation",
+        Kind::Max => "Maximum gate-length violation",
+        Kind::Exact => "Exact gate-length violation",
+    };
     let tile = merged.tile_dbu() as i64;
-    let pmap = merged.tiles(pl, pd);
-    let mmap = merged.tiles(ml, md);
+    let bmap = merged.tiles(bl, bd);
+    let rmap = merged.tiles(rl, rd);
+    let omap = outside.map(|(ol, od)| merged.tiles(ol, od));
+    let none: Vec<MergedPoly> = Vec::new();
     let rid = rule.id.as_str();
-    let pname = poly.name.as_str();
+    let bname = body.name.as_str();
     let limit_um = rule.value;
-    let empty: Vec<MergedPoly> = Vec::new();
-
-    pmap.par_iter()
+    bmap.par_iter()
         .flat_map_iter(move |(&(tx, ty), polys)| {
             let core = Core {
                 x0: tx as i64 * tile,
@@ -257,33 +309,32 @@ pub fn run_gate_length(
                 x1: (tx as i64 + 1) * tile,
                 y1: (ty as i64 + 1) * tile,
             };
-            let mps: Vec<Poly> = mmap
-                .get(&(tx, ty))
-                .unwrap_or(&empty)
-                .iter()
-                .filter_map(|m| poly_from_merged(m, dbu_to_um))
-                .collect();
             let mut out = Vec::new();
-            if mps.is_empty() {
+            // With no reference here nothing is shared with its boundary, and everything
+            // is unshared: an `unshared` rule still measures the body's plain width.
+            let refs = rmap.get(&(tx, ty)).unwrap_or(&none);
+            if on && refs.is_empty() {
                 return out.into_iter();
             }
+            let excluded = omap.map(|m| m.get(&(tx, ty)).unwrap_or(&none).as_slice());
+            let walls = WallFilter::new(refs, on, excluded);
             for p in polys {
                 out.extend(scan_widths(
                     p,
                     core,
                     dbu_to_um,
                     rid,
-                    "Minimum gate-length violation",
-                    pname,
+                    label,
+                    bname,
                     limit_um,
-                    "<",
+                    cmp,
                     limit,
-                    false,
-                    // Gate length measures the poly's facing-wall width under a mask; a
-                    // mixed pair has no single width to attribute to a mask region.
+                    bent_only,
+                    // The gate's width is between two walls of one kind; a chamfer
+                    // facing a straight wall has no stretch to cut to a boundary.
                     false,
                     0,
-                    Some(&mps),
+                    Some(&walls),
                 ));
             }
             out.into_iter()
