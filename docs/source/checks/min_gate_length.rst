@@ -57,6 +57,11 @@ Parameters
    A region the kept stretches must lie outside of — GF180's NAT.4 reads the native
    gate's length off the poly walls that are not under the well.
 
+``params: length``
+   As for :doc:`min_width`, read on the kept stretch: the gate is measured only where the
+   walls it shares with the reference run longer than this — a length rule that binds
+   only channels wider than so much.
+
 
 Violation markers
 ------------------

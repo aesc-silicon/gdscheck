@@ -254,7 +254,7 @@ pub fn run_width(
                     y1: (ty as i64 + 1) * tile,
                 };
                 let mut pinches: Vec<Violation> = Vec::new();
-                if !oblique_only && matches!(limit, Limit::AtLeast(_)) {
+                if !oblique_only && min_run_dbu == 0 && matches!(limit, Limit::AtLeast(_)) {
                     for (px, py) in pinch_points(polys) {
                         if !core.owns(px, py) {
                             continue; // owned by the tile the point falls in
@@ -304,8 +304,8 @@ pub fn run_width(
 
 /// The facing-wall width of `layers[0]` measured between the walls it shares with the
 /// boundary of `layers[1]` - or, with `walls: unshared`, between the ones it does not.
-/// `layer_params: outside: X` keeps only the stretches outside `X`, and `str_params:
-/// angle: bent` only the 45° runs.
+/// `layer_params: outside: X` keeps only the stretches outside `X`, `str_params: angle:
+/// bent` only the 45° runs, and `params: length` only pairs sharing more than that run.
 ///
 /// A gate has two kinds of wall.  The ones the poly brought with it stand across the
 /// channel and the distance between them is the gate's length; the ones the active cut
@@ -355,6 +355,7 @@ pub fn run_gate(
             return vec![];
         }
     };
+    let min_run = super::min_run(rule, dbu_to_um);
     let outside = match (rule.params.get("outside"), rule.params.get("outside_dt")) {
         (Some(&l), Some(&d)) => Some((l as i16, d as i16)),
         _ => None,
@@ -408,8 +409,9 @@ pub fn run_gate(
             let excluded = omap.map(|m| m.get(&(tx, ty)).unwrap_or(&none).as_slice());
             let walls = WallFilter::new(refs, on, excluded);
             // A pinch is a width of zero at a vertex; it counts where the filter would
-            // keep that point.  A bent-only rule reads 45° runs and a vertex has none.
-            if kind == Kind::Min && !bent_only {
+            // keep that point.  A bent-only rule reads 45° runs and a vertex has none, and
+            // neither has one a required run.
+            if kind == Kind::Min && !bent_only && min_run == 0 {
                 for (px, py) in pinch_points(polys) {
                     if !core.owns(px, py) || !walls.keeps_point(px as i32, py as i32) {
                         continue;
@@ -442,7 +444,7 @@ pub fn run_gate(
                     // The gate's width is between two walls of one kind; a chamfer
                     // facing a straight wall has no stretch to cut to a boundary.
                     false,
-                    0,
+                    min_run,
                     Some(&walls),
                 ));
             }

@@ -119,8 +119,7 @@ pub fn run(
     }
     let limit = kind.limit(rule.value, dbu_to_um);
     // `angle: bent` reads the 45° runs alone - the axis-aligned material is a plain
-    // rule's business - and only where the run is long enough to be a trace rather than
-    // a chamfer, `bent_length` µm; the others drop nothing.
+    // rule's business.
     let bent = match rule.str_params.get("angle").map(String::as_str) {
         None => false,
         Some("bent") => true,
@@ -133,12 +132,10 @@ pub fn run(
             return vec![];
         }
     };
-    let min_run_dbu = if bent {
-        let bent_um = rule.params.get("bent_length").copied().unwrap_or(0.5);
-        on_grid(bent_um / dbu_to_um, f64::ceil)
-    } else {
-        0
-    };
+    // `length` binds the rule to wall pairs sharing more than so much run: a width asked
+    // only of lines longer than that, or of a bend long enough to be a trace rather than
+    // a chamfer.
+    let min_run_dbu = min_run(rule, dbu_to_um);
     // A chamfer facing a straight wall has no single width to be too large or unequal,
     // so only a minimum reads the mixed pass.
     let (oblique_only, mixed) = (bent, kind == Kind::Min && !bent);
@@ -155,6 +152,12 @@ pub fn run(
         mixed,
         min_run_dbu,
     )
+}
+
+/// The `length` param as DBU of run.
+pub fn min_run(rule: &RuleDefinition, dbu_to_um: f64) -> i64 {
+    let um = rule.params.get("length").copied().unwrap_or(0.0);
+    on_grid(um / dbu_to_um, f64::ceil)
 }
 
 /// The width of `layers[0]` between the walls it shares with the boundary of
