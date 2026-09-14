@@ -30,6 +30,13 @@ Runs the shared facing-edge width scan (:doc:`shared with max_width and exact_wi
   the run it shares still bounds a width.
 - **Mixed pass**: a diagonal edge facing an axis-aligned one — the chamfered corner of a
   well against the straight wall opposite — is measured at its closest approach.
+- **Corner pass**: two facing walls whose projections do not overlap — the steps of a
+  jog, the two stubs either side of a chamfer — are measured from the near end of one to
+  the near end of the other, as KLayout's euclidian metric reads them.
+- **Pinches and acute corners**: a vertex the layer touches itself at (two pieces corner
+  to corner, a notch tip on a straight wall, a contour through one point twice) is a
+  width of zero, reported as a point; so is a corner with less than a right angle of
+  material in it, since the wedge narrows to nothing at the tip.
 
 A width is only reported once its projected overlap between the two walls is real (not
 just touching at a point), and only from the tile whose core contains the gap's midpoint,

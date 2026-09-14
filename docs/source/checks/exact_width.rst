@@ -37,7 +37,8 @@ Violation markers
 ------------------
 
 One edge marker for **each of the two facing walls** of any width that differs from
-``value`` (two markers per violation location), at the actual wall geometry.
+``value`` (two markers per violation location), at the actual wall geometry. A pinch or
+an acute corner is not a span and is not reported here; :doc:`min_width` reports those.
 
 
 KLayout equivalent
