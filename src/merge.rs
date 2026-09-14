@@ -16,7 +16,7 @@
 //! rounded back to integer DBU.
 
 use crate::geom::{
-    ENCLOSURE_MAX_REACH, EnclosurePair, FacingRun, closest, enclosure_pairs, facing_runs,
+    ENCLOSURE_MAX_REACH, EnclosurePair, FacingRun, Limit, closest, enclosure_pairs, facing_runs,
     poly_from_merged, width_pairs,
 };
 use crate::layout::FlatLayout;
@@ -1772,7 +1772,7 @@ fn compose_edge_tile(
         EdgeOp::WidthBelow(v) => poly_srcs
             .first()
             .map(|ps| {
-                let limit = v as f64;
+                let limit = Limit::AtLeast(v as i64);
                 ps.iter()
                     .flat_map(|p| {
                         width_pairs(
@@ -1783,11 +1783,11 @@ fn compose_edge_tile(
                                 x1: core.2,
                                 y1: core.3,
                             },
-                            |w| w < limit,
+                            limit,
                             |_, _| true,
                             false,
                             true,
-                            0.0,
+                            0,
                         )
                     })
                     .map(|(x1, y1, x2, y2, _)| Edge {
