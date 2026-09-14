@@ -16,6 +16,7 @@
 
 pub mod scan;
 
+use crate::geom::{Limit, on_grid};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -84,17 +85,14 @@ pub fn run(
             }
         };
     }
-    let limit = rule.value / dbu_to_um;
-    // Half a DBU either way: the limit is a µm value converted to the grid, and the
-    // spans are integers, so anything closer than that is conversion noise.
-    let viol: Box<dyn Fn(f64) -> bool + Sync> = match kind {
-        Kind::Min => Box::new(move |w| w < limit - 0.5),
-        Kind::Max => Box::new(move |w| w > limit + 0.5),
-        Kind::Exact => Box::new(move |w| (w - limit).abs() > 0.5),
+    let limit = match kind {
+        Kind::Min => Limit::at_least(rule.value, dbu_to_um),
+        Kind::Max => Limit::at_most(rule.value, dbu_to_um),
+        Kind::Exact => Limit::exactly(rule.value, dbu_to_um),
     };
     // `angle: bent` reads the 45° runs alone - the axis-aligned material is a plain
     // rule's business - and only where the run is long enough to be a trace rather than
-    // a chamfer, `bent_length` µm.
+    // a chamfer, `bent_length` µm; the others drop nothing.
     let bent = match rule.str_params.get("angle").map(String::as_str) {
         None => false,
         Some("bent") => true,
@@ -108,9 +106,10 @@ pub fn run(
         }
     };
     let min_run_dbu = if bent {
-        rule.params.get("bent_length").copied().unwrap_or(0.5) / dbu_to_um
+        let bent_um = rule.params.get("bent_length").copied().unwrap_or(0.5);
+        on_grid(bent_um / dbu_to_um, f64::ceil)
     } else {
-        0.5
+        0
     };
     // A chamfer facing a straight wall has no single width to be too large or unequal,
     // so only a minimum reads the mixed pass.
@@ -123,7 +122,7 @@ pub fn run(
         kind.width_name(),
         kind.op(),
         kind.label(),
-        &*viol,
+        limit,
         oblique_only,
         mixed,
         min_run_dbu,

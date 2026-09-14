@@ -131,24 +131,100 @@ pub fn sorted_unique(mut v: Vec<i32>) -> Vec<i32> {
     v
 }
 
-/// Find facing-wall widths in one merged region and report both walls of any
-/// width for which `viol(width_dbu)` holds.
-#[allow(clippy::too_many_arguments)]
-/// Every facing-wall pair of `poly` whose span satisfies `viol`, as
-/// `(x1, y1, x2, y2, width)` in DBU - two entries per pair, one for each wall.
+/// A width rule's bound, stated on the grid.
+///
+/// The rule's value is a µm figure and the spans it bounds are integers, so the value is
+/// put on the grid once, rounded the way that keeps the rule's meaning: a minimum rounds
+/// up (a span under a fractional limit is under the next whole DBU too), a maximum rounds
+/// down, an exact value rounds to nearest.  After that every comparison is exact.  An
+/// axis-aligned span is the difference of two coordinates; an oblique one is a square
+/// root, so it is compared *squared*, as the ratio of two integers - which is why the
+/// bound is asked two ways.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Limit {
+    /// No span under this many DBU.
+    AtLeast(i64),
+    /// No span over this many DBU.
+    AtMost(i64),
+    /// Every span this many DBU.
+    Exactly(i64),
+}
+
+impl Limit {
+    pub fn at_least(um: f64, dbu_to_um: f64) -> Self {
+        Limit::AtLeast(on_grid(um / dbu_to_um, f64::ceil))
+    }
+
+    pub fn at_most(um: f64, dbu_to_um: f64) -> Self {
+        Limit::AtMost(on_grid(um / dbu_to_um, f64::floor))
+    }
+
+    pub fn exactly(um: f64, dbu_to_um: f64) -> Self {
+        Limit::Exactly(on_grid(um / dbu_to_um, f64::round))
+    }
+
+    /// The bound in DBU.
+    pub fn dbu(self) -> i64 {
+        match self {
+            Limit::AtLeast(v) | Limit::AtMost(v) | Limit::Exactly(v) => v,
+        }
+    }
+
+    /// Whether a span of `w` DBU breaks the bound.
+    pub fn broken_by(self, w: i64) -> bool {
+        match self {
+            Limit::AtLeast(v) => w < v,
+            Limit::AtMost(v) => w > v,
+            Limit::Exactly(v) => w != v,
+        }
+    }
+
+    /// Whether a span whose *square* is `num / den` breaks the bound.  `den` is positive.
+    pub fn broken_by_sq(self, num: i128, den: i128) -> bool {
+        let v = self.dbu() as i128;
+        let rhs = v * v * den;
+        match self {
+            Limit::AtLeast(_) => num < rhs,
+            Limit::AtMost(_) => num > rhs,
+            Limit::Exactly(_) => num != rhs,
+        }
+    }
+}
+
+/// `x` on the grid: the integer it already is, allowing for the noise a µm-to-DBU
+/// division leaves (0.15 / 0.001 is 149.99999999999997), else `round` applied.
+pub fn on_grid(x: f64, round: fn(f64) -> f64) -> i64 {
+    let n = x.round();
+    if (x - n).abs() < 1e-6 {
+        n as i64
+    } else {
+        round(x) as i64
+    }
+}
+
+/// Every facing-wall pair of `poly` whose span breaks `limit`, as `(x1, y1, x2, y2, width)`
+/// in DBU - two entries per pair, one for each wall.
 ///
 /// This is the measurement without the reporting: the width checks format these into
 /// violations, and an edge layer built from a width can take the same pairs as geometry.
 /// The mask is a predicate rather than a region list so that the scan needs no notion of
 /// what a `Poly` is.
+///
+/// The arithmetic is exact.  Coordinates are integers, so an axis-aligned span is one,
+/// and an oblique span - a square root - is compared squared, as a ratio of two integers
+/// in `i128`.  A chip is under 2^28 DBU across, so a cross product of two edge vectors is
+/// under 2^57 and its square under 2^114, which leaves room.  Only the reported
+/// coordinates and the width in the message are floats, since the walls of an oblique
+/// pair are cut at points that are not on the grid.
+#[allow(clippy::too_many_arguments)]
 pub fn width_pairs(
     poly: &MergedPoly,
     core: Core,
-    viol: impl Fn(f64) -> bool,
+    limit: Limit,
     in_mask: impl Fn(f64, f64) -> bool,
     oblique_only: bool,
     mixed: bool,
-    min_run: f64,
+    min_run: i64,
 ) -> Vec<(f64, f64, f64, f64, f64)> {
     let mut out = Vec::new();
     // An axis-aligned rectangle - every via, most contacts - has one width and one
@@ -160,14 +236,14 @@ pub fn width_pairs(
         }
         let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
         if core.owns(cx, cy) && in_mask(cx, cy) {
-            let (w, h) = ((x1 - x0) as f64, (y1 - y0) as f64);
-            if w > 0.0 && viol(w) {
-                out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w));
-                out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w));
+            let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
+            if w > 0 && limit.broken_by(w) {
+                out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w as f64));
+                out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w as f64));
             }
-            if h > 0.0 && viol(h) {
-                out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h));
-                out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h));
+            if h > 0 && limit.broken_by(h) {
+                out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h as f64));
+                out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h as f64));
             }
         }
         return out;
@@ -197,8 +273,8 @@ pub fn width_pairs(
             for pair in active.windows(2) {
                 let (l, r) = (pair[0], pair[1]);
                 if l.left_wall && !r.left_wall {
-                    let width = r.x - l.x;
-                    if width > 0 && viol(width as f64) {
+                    let width = r.x as i64 - l.x as i64;
+                    if width > 0 && limit.broken_by(width) {
                         let cx = (l.x as f64 + r.x as f64) * 0.5;
                         let cy = (yb as f64 + yb1 as f64) * 0.5;
                         if core.owns(cx, cy) && in_mask(cx, cy) {
@@ -225,8 +301,8 @@ pub fn width_pairs(
             for pair in active.windows(2) {
                 let (b, t) = (pair[0], pair[1]);
                 if b.bottom_wall && !t.bottom_wall {
-                    let height = t.y - b.y;
-                    if height > 0 && viol(height as f64) {
+                    let height = t.y as i64 - b.y as i64;
+                    if height > 0 && limit.broken_by(height) {
                         let cx = (xb as f64 + xb1 as f64) * 0.5;
                         let cy = (b.y as f64 + t.y as f64) * 0.5;
                         if core.owns(cx, cy) && in_mask(cx, cy) {
@@ -240,9 +316,9 @@ pub fn width_pairs(
     } // end !oblique_only
 
     if mixed {
-        mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, &viol);
+        mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, limit);
     }
-    oblique_widths(&oedges, core, &mut push_edge, viol, min_run);
+    oblique_widths(&oedges, core, &mut push_edge, limit, min_run);
     out
 }
 
@@ -280,6 +356,96 @@ pub fn seg_seg_closest(
     best
 }
 
+/// The closest approach of a point to a segment, exactly: the squared distance as
+/// `num / den`, the closest point, and the vector from the point to it scaled by `den` -
+/// a facing test needs only the direction, and `den` is positive, so the scale keeps the
+/// sign and keeps it an integer.
+struct Approach {
+    num: i128,
+    den: i128,
+    at: (f64, f64),
+    towards: (i128, i128),
+}
+
+fn point_seg_sq(p: (i64, i64), q0: (i64, i64), q1: (i64, i64)) -> Approach {
+    let (dx, dy) = ((q1.0 - q0.0) as i128, (q1.1 - q0.1) as i128);
+    let len2 = dx * dx + dy * dy;
+    let (wx, wy) = ((p.0 - q0.0) as i128, (p.1 - q0.1) as i128);
+    let t = wx * dx + wy * dy;
+    let endpoint = |q: (i64, i64)| {
+        let v = ((q.0 - p.0) as i128, (q.1 - p.1) as i128);
+        Approach {
+            num: v.0 * v.0 + v.1 * v.1,
+            den: 1,
+            at: (q.0 as f64, q.1 as f64),
+            towards: v,
+        }
+    };
+    if len2 == 0 || t <= 0 {
+        return endpoint(q0);
+    }
+    if t >= len2 {
+        return endpoint(q1);
+    }
+    // Inside the segment: the foot of the perpendicular, at fraction `t / len2` along.
+    let cross = wx * dy - wy * dx;
+    let f = t as f64 / len2 as f64;
+    Approach {
+        num: cross * cross,
+        den: len2,
+        at: (q0.0 as f64 + f * dx as f64, q0.1 as f64 + f * dy as f64),
+        towards: (-wx * len2 + t * dx, -wy * len2 + t * dy),
+    }
+}
+
+/// Closest points of two segments, exactly: the squared distance as `num / den`, the
+/// point on each, and the direction from `a`'s point to `b`'s scaled by `den`.
+struct Closest {
+    num: i128,
+    den: i128,
+    on_a: (f64, f64),
+    on_b: (f64, f64),
+    towards: (i128, i128),
+}
+
+/// Segments here are polygon edges that never properly cross, so the minimum sits at an
+/// endpoint of one projected onto the other, or at a shared endpoint.  The four
+/// candidates are ranked as floats - which is nearest is never a close call on real
+/// geometry - and the winner keeps its exact ratio for the comparison against the limit.
+fn seg_seg_closest_sq(a0: (i64, i64), a1: (i64, i64), b0: (i64, i64), b1: (i64, i64)) -> Closest {
+    let mut best: Option<Closest> = None;
+    let mut consider = |c: Closest| {
+        let d = c.num as f64 / c.den as f64;
+        if best
+            .as_ref()
+            .is_none_or(|b| d < b.num as f64 / b.den as f64)
+        {
+            best = Some(c);
+        }
+    };
+    for p in [a0, a1] {
+        let x = point_seg_sq(p, b0, b1);
+        consider(Closest {
+            num: x.num,
+            den: x.den,
+            on_a: (p.0 as f64, p.1 as f64),
+            on_b: x.at,
+            towards: x.towards,
+        });
+    }
+    for p in [b0, b1] {
+        let x = point_seg_sq(p, a0, a1);
+        consider(Closest {
+            num: x.num,
+            den: x.den,
+            on_a: x.at,
+            on_b: (p.0 as f64, p.1 as f64),
+            towards: (-x.towards.0, -x.towards.1),
+        });
+    }
+    best.expect("four candidates")
+}
+
 /// Widths bounded by an **oblique edge facing an axis-aligned one** — the chamfered
 /// corner of a well against the straight edge opposite it.
 ///
@@ -296,117 +462,127 @@ pub fn seg_seg_closest(
 /// A pair only bounds material when each edge's interior lies toward the other, which the
 /// two interior normals decide: for an oblique edge `a → b` the interior is to its left,
 /// and for an axis-aligned edge it is the side its wall flag names.  Adjacent edges share
-/// a vertex and so measure zero, which the `dist <= 0.5` guard drops along with the
-/// coincident-edge noise the other passes filter the same way.
+/// a vertex and so measure zero, which drops them along with coincident-edge noise the
+/// other passes filter the same way.
 fn mixed_widths(
     oedges: &[OEdge],
     vedges: &[VEdge],
     hedges: &[HEdge],
     core: Core,
     push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
-    viol: impl Fn(f64) -> bool,
+    limit: Limit,
 ) {
     for o in oedges {
-        let (ax, ay) = (o.ax as f64, o.ay as f64);
-        let (bx, by) = (o.bx as f64, o.by as f64);
-        let len = (bx - ax).hypot(by - ay);
-        if len == 0.0 {
+        let (a, b) = ((o.ax as i64, o.ay as i64), (o.bx as i64, o.by as i64));
+        let (dx, dy) = ((b.0 - a.0) as i128, (b.1 - a.1) as i128);
+        if dx == 0 && dy == 0 {
             continue;
         }
-        // Interior normal of the oblique edge: metal is on the left of a → b.
-        let (nox, noy) = (-(by - ay) / len, (bx - ax) / len);
+        // Interior normal of the oblique edge, unnormalised: metal is on the left of a → b.
+        let (nox, noy) = (-dy, dx);
 
         // (segment endpoints, interior normal) for every axis-aligned edge.
         let axis = vedges
             .iter()
             .map(|v| {
-                let n = if v.left_wall { (1.0, 0.0) } else { (-1.0, 0.0) };
-                ((v.x as f64, v.ylo as f64), (v.x as f64, v.yhi as f64), n)
+                let n = if v.left_wall { (1, 0) } else { (-1, 0) };
+                ((v.x as i64, v.ylo as i64), (v.x as i64, v.yhi as i64), n)
             })
             .chain(hedges.iter().map(|h| {
-                let n = if h.bottom_wall {
-                    (0.0, 1.0)
-                } else {
-                    (0.0, -1.0)
-                };
-                ((h.xlo as f64, h.y as f64), (h.xhi as f64, h.y as f64), n)
+                let n = if h.bottom_wall { (0, 1) } else { (0, -1) };
+                ((h.xlo as i64, h.y as i64), (h.xhi as i64, h.y as i64), n)
             }));
 
         for (q0, q1, (nax, nay)) in axis {
-            let (dist, po, pa) = seg_seg_closest((ax, ay), (bx, by), q0, q1);
-            if dist <= 0.5 || !viol(dist) {
+            let c = seg_seg_closest_sq(a, b, q0, q1);
+            if c.num == 0 || !limit.broken_by_sq(c.num, c.den) {
                 continue;
             }
             // Each edge's interior must face the other, or the gap is outside the shape.
-            let (vx, vy) = (pa.0 - po.0, pa.1 - po.1);
-            if vx * nox + vy * noy <= 0.0 || -vx * nax - vy * nay <= 0.0 {
+            let (vx, vy) = c.towards;
+            if vx * nox + vy * noy <= 0 || -vx * nax - vy * nay <= 0 {
                 continue;
             }
-            let (mx, my) = ((po.0 + pa.0) * 0.5, (po.1 + pa.1) * 0.5);
+            let (mx, my) = ((c.on_a.0 + c.on_b.0) * 0.5, (c.on_a.1 + c.on_b.1) * 0.5);
             if !core.owns(mx, my) {
                 continue;
             }
-            push_edge(po.0, po.1, pa.0, pa.1, dist);
+            let dist = (c.num as f64 / c.den as f64).sqrt();
+            push_edge(c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1, dist);
         }
     }
 }
 
 /// Oblique widths: anti-parallel edge pairs with metal between them.  A pair is only
-/// reported when the parallel run (`hi - lo`) exceeds `min_run` DBU — small chamfers
-/// are ignored, and a 45°-bent-width rule can require a minimum bent length.
+/// reported when the parallel run exceeds `min_run` DBU — small chamfers are ignored, and
+/// a 45°-bent-width rule can require a minimum bent length.
+///
+/// Two edges pair when their direction vectors are exactly anti-parallel, which on
+/// integer coordinates is a cross product of zero.  The perpendicular distance between
+/// them is `c / |d|` for an integer `c`, so it is compared squared; the run they share is
+/// measured along `d` in units of `|d|²`, and compared squared the same way.
 fn oblique_widths(
     oedges: &[OEdge],
     core: Core,
     push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
-    viol: impl Fn(f64) -> bool,
-    min_run: f64,
+    limit: Limit,
+    min_run: i64,
 ) {
+    let min_run2 = (min_run as i128) * (min_run as i128);
     let n = oedges.len();
     for i in 0..n {
         let ei = &oedges[i];
-        let (dix, diy) = ((ei.bx - ei.ax) as f64, (ei.by - ei.ay) as f64);
-        let li = dix.hypot(diy);
-        if li == 0.0 {
+        let (dix, diy) = ((ei.bx - ei.ax) as i128, (ei.by - ei.ay) as i128);
+        let len2 = dix * dix + diy * diy;
+        if len2 == 0 {
             continue;
         }
-        let (ux, uy) = (dix / li, diy / li);
-        let (nx, ny) = (-diy / li, dix / li);
+        let li = (len2 as f64).sqrt();
+        let (ux, uy) = (dix as f64 / li, diy as f64 / li);
+        let (nx, ny) = (-diy as f64 / li, dix as f64 / li);
         for ej in &oedges[i + 1..] {
-            let (djx, djy) = ((ej.bx - ej.ax) as f64, (ej.by - ej.ay) as f64);
-            if (dix * djy - diy * djx).abs() > 1e-6 || (dix * djx + diy * djy) >= 0.0 {
+            let (djx, djy) = ((ej.bx - ej.ax) as i128, (ej.by - ej.ay) as i128);
+            if dix * djy - diy * djx != 0 || dix * djx + diy * djy >= 0 {
                 continue;
             }
-            let dist = (ej.ax - ei.ax) as f64 * nx + (ej.ay - ei.ay) as f64 * ny;
-            if dist <= 0.5 || !viol(dist) {
+            // Signed distance of ej's start from ei's line, along ei's interior normal,
+            // times |d|: positive means ej lies on the material side.
+            let (wx, wy) = ((ej.ax - ei.ax) as i128, (ej.ay - ei.ay) as i128);
+            let c = dix * wy - diy * wx;
+            if c <= 0 || !limit.broken_by_sq(c * c, len2) {
                 continue;
             }
-            let taj = (ej.ax - ei.ax) as f64 * ux + (ej.ay - ei.ay) as f64 * uy;
-            let tbj = (ej.bx - ei.ax) as f64 * ux + (ej.by - ei.ay) as f64 * uy;
-            let lo = taj.min(tbj).max(0.0);
-            let hi = taj.max(tbj).min(li);
-            if hi - lo <= min_run {
+            // Where ej's ends project onto ei, in units of len2 along d.
+            let taj = wx * dix + wy * diy;
+            let tbj = (ej.bx - ei.ax) as i128 * dix + (ej.by - ei.ay) as i128 * diy;
+            let lo = taj.min(tbj).max(0);
+            let hi = taj.max(tbj).min(len2);
+            let run = hi - lo;
+            if run <= 0 || run * run <= min_run2 * len2 {
                 continue;
             }
-            let mid = (lo + hi) * 0.5;
+            let dist = c as f64 / li;
+            let (lo_f, hi_f) = (lo as f64 / li, hi as f64 / li);
+            let mid = (lo_f + hi_f) * 0.5;
             let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
             let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
             if !core.owns(mx, my) {
                 continue;
             }
             push_edge(
-                ei.ax as f64 + lo * ux,
-                ei.ay as f64 + lo * uy,
-                ei.ax as f64 + hi * ux,
-                ei.ay as f64 + hi * uy,
+                ei.ax as f64 + lo_f * ux,
+                ei.ay as f64 + lo_f * uy,
+                ei.ax as f64 + hi_f * ux,
+                ei.ay as f64 + hi_f * uy,
                 dist,
             );
-            let span = tbj - taj;
-            let (f_lo, f_hi) = ((lo - taj) / span, (hi - taj) / span);
+            let span = (tbj - taj) as f64;
+            let (f_lo, f_hi) = ((lo - taj) as f64 / span, (hi - taj) as f64 / span);
             push_edge(
-                ej.ax as f64 + f_lo * djx,
-                ej.ay as f64 + f_lo * djy,
-                ej.ax as f64 + f_hi * djx,
-                ej.ay as f64 + f_hi * djy,
+                ej.ax as f64 + f_lo * djx as f64,
+                ej.ay as f64 + f_lo * djy as f64,
+                ej.ax as f64 + f_hi * djx as f64,
+                ej.ay as f64 + f_hi * djy as f64,
                 dist,
             );
         }
@@ -1322,4 +1498,70 @@ pub fn point_in_polygon(px: f64, py: f64, pts: &[(f64, f64)]) -> bool {
         j = i;
     }
     inside
+}
+
+#[cfg(test)]
+mod width_tests {
+    use super::*;
+
+    fn poly(pts: &[(i32, i32)]) -> MergedPoly {
+        MergedPoly {
+            outer: pts.iter().map(|&(x, y)| IntPoint::new(x, y)).collect(),
+            holes: vec![],
+        }
+    }
+
+    /// Walls reported on `p` under `limit`, every pass on.
+    fn walls(p: &MergedPoly, limit: Limit) -> usize {
+        let core = Core {
+            x0: -1_000_000,
+            y0: -1_000_000,
+            x1: 1_000_000,
+            y1: 1_000_000,
+        };
+        width_pairs(p, core, limit, |_, _| true, false, true, 0).len()
+    }
+
+    /// 0.15 / 0.001 is 149.99999999999997 in floating point.  That is 150 on the grid,
+    /// and a value genuinely off the grid rounds the way that keeps the rule's meaning.
+    #[test]
+    fn a_micron_limit_lands_on_the_grid() {
+        assert_eq!(Limit::at_least(0.15, 0.001), Limit::AtLeast(150));
+        assert_eq!(Limit::at_most(0.15, 0.001), Limit::AtMost(150));
+        assert_eq!(Limit::exactly(0.15, 0.001), Limit::Exactly(150));
+        assert_eq!(Limit::at_least(0.1504, 0.001), Limit::AtLeast(151));
+        assert_eq!(Limit::at_most(0.1504, 0.001), Limit::AtMost(150));
+    }
+
+    /// A span equal to the limit satisfies a minimum and a maximum alike, and one DBU
+    /// past it breaks them - on the box fast path and through the sweep.
+    #[test]
+    fn a_span_on_the_limit_is_on_the_right_side_of_it() {
+        let boxed = |w: i32, h: i32| poly(&[(0, 0), (w, 0), (w, h), (0, h)]);
+        assert_eq!(walls(&boxed(150, 1000), Limit::AtLeast(150)), 0);
+        assert_eq!(walls(&boxed(149, 1000), Limit::AtLeast(150)), 2);
+        assert_eq!(walls(&boxed(150, 150), Limit::AtMost(150)), 0);
+        assert_eq!(walls(&boxed(151, 150), Limit::AtMost(150)), 2);
+        assert_eq!(walls(&boxed(150, 150), Limit::Exactly(150)), 0);
+        assert_eq!(walls(&boxed(150, 151), Limit::Exactly(150)), 2);
+        // An L with two arms `w` wide: not a box, so the sweep measures it.
+        let ell = |w: i32| poly(&[(0, 0), (1000, 0), (1000, w), (w, w), (w, 1000), (0, 1000)]);
+        assert_eq!(walls(&ell(150), Limit::AtLeast(150)), 0);
+        assert_eq!(walls(&ell(150), Limit::AtLeast(151)), 4);
+    }
+
+    /// An oblique width is a square root and is compared squared, so it is exact too.
+    /// A 45° bar whose walls sit 226 apart in y is 159.81 wide: under 160 by a fifth of a
+    /// DBU, which is a violation and not noise.  A bar along (300, 400) whose walls are
+    /// offset by (1, 268) is exactly 160 wide - the cross product is 80000 over a length
+    /// of 500 - and passes.
+    #[test]
+    fn an_oblique_span_is_compared_exactly() {
+        let bar = |dy: i32| poly(&[(0, 0), (1000, 1000), (1000, 1000 + dy), (0, dy)]);
+        assert_eq!(walls(&bar(226), Limit::AtLeast(160)), 2);
+        assert_eq!(walls(&bar(227), Limit::AtLeast(160)), 0);
+        let exact = poly(&[(0, 0), (300, 400), (301, 668), (1, 268)]);
+        assert_eq!(walls(&exact, Limit::AtLeast(160)), 0);
+        assert_eq!(walls(&exact, Limit::AtLeast(161)), 2);
+    }
 }

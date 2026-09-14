@@ -30,10 +30,10 @@ fn scan_widths(
     layer: &str,
     limit_um: f64,
     cmp: &str,
-    viol: impl Fn(f64) -> bool,
+    limit: Limit,
     oblique_only: bool,
     mixed: bool,
-    min_run: f64,
+    min_run: i64,
     mask: Option<&[Poly]>,
 ) -> Vec<Violation> {
     let in_mask = |cx: f64, cy: f64| match mask {
@@ -42,7 +42,7 @@ fn scan_widths(
             .iter()
             .any(|p| p.contains_point(cx * dbu_to_um, cy * dbu_to_um)),
     };
-    width_pairs(poly, core, viol, in_mask, oblique_only, mixed, min_run)
+    width_pairs(poly, core, limit, in_mask, oblique_only, mixed, min_run)
         .into_iter()
         .map(|(x1, y1, x2, y2, w_dbu)| {
             let w = w_dbu * dbu_to_um;
@@ -122,8 +122,8 @@ fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     out
 }
 
-/// Drive a width check over the cached tiles: `viol(width_dbu)` decides a
-/// violation, `op`/`check_name`/`label` shape the log and the report.
+/// Drive a width check over the cached tiles: `limit` decides a violation,
+/// `op`/`check_name`/`label` shape the log and the report.
 #[allow(clippy::too_many_arguments)]
 pub fn run_width(
     rule: &RuleDefinition,
@@ -133,10 +133,10 @@ pub fn run_width(
     check_name: &str,
     op: &str,
     label: &str,
-    viol: impl Fn(f64) -> bool + Copy + Sync,
+    limit: Limit,
     oblique_only: bool,
     mixed: bool,
-    min_run_dbu: f64,
+    min_run_dbu: i64,
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
     let tile = merged.tile_dbu() as i64;
@@ -158,7 +158,7 @@ pub fn run_width(
             _ => "≠",
         };
         let lname = layer.name.as_str();
-        let limit = rule.value;
+        let limit_um = rule.value;
         let mut layer_violations: Vec<Violation> = merged
             .tiles(gl, gd)
             .par_iter()
@@ -170,7 +170,7 @@ pub fn run_width(
                     y1: (ty as i64 + 1) * tile,
                 };
                 let mut pinches: Vec<Violation> = Vec::new();
-                if !oblique_only && viol(0.0) {
+                if !oblique_only && limit.broken_by(0) {
                     for (px, py) in pinch_points(polys) {
                         if !core.owns(px, py) {
                             continue; // owned by the tile the point falls in
@@ -180,7 +180,7 @@ pub fn run_width(
                             rid,
                             label,
                             format!(
-                                "{lname}: width 0.0000 µm {cmp} {limit:.2} µm at \
+                                "{lname}: width 0.0000 µm {cmp} {limit_um:.2} µm at \
                                  ({x:.4}, {y:.4}) µm — the layer pinches to a point"
                             ),
                             x,
@@ -198,9 +198,9 @@ pub fn run_width(
                             rid,
                             label,
                             lname,
-                            limit,
+                            limit_um,
                             cmp,
-                            viol,
+                            limit,
                             oblique_only,
                             mixed,
                             min_run_dbu,
@@ -240,14 +240,13 @@ pub fn run_gate_length(
         rule.id, rule.value, poly.name, mask.name
     );
 
-    let min_w_dbu = rule.value / dbu_to_um;
-    let viol = move |w: f64| w < min_w_dbu - 0.5;
+    let limit = Limit::at_least(rule.value, dbu_to_um);
     let tile = merged.tile_dbu() as i64;
     let pmap = merged.tiles(pl, pd);
     let mmap = merged.tiles(ml, md);
     let rid = rule.id.as_str();
     let pname = poly.name.as_str();
-    let limit = rule.value;
+    let limit_um = rule.value;
     let empty: Vec<MergedPoly> = Vec::new();
 
     pmap.par_iter()
@@ -276,14 +275,14 @@ pub fn run_gate_length(
                     rid,
                     "Minimum gate-length violation",
                     pname,
-                    limit,
+                    limit_um,
                     "<",
-                    viol,
+                    limit,
                     false,
                     // Gate length measures the poly's facing-wall width under a mask; a
                     // mixed pair has no single width to attribute to a mask region.
                     false,
-                    0.5,
+                    0,
                     Some(&mps),
                 ));
             }
@@ -327,10 +326,10 @@ mod tests {
             "L",
             0.16,
             "<",
-            |w| w < 160.0 - 0.5,
+            Limit::AtLeast(160),
             false,
             true,
-            0.5,
+            0,
             None,
         );
         assert_eq!(v.len(), 2, "got {}", v.len());
@@ -351,10 +350,10 @@ mod tests {
             "L",
             0.16,
             "<",
-            |w| w < 160.0 - 0.5,
+            Limit::AtLeast(160),
             false,
             true,
-            0.5,
+            0,
             None,
         );
         assert!(v.is_empty(), "got {}", v.len());
@@ -377,7 +376,7 @@ mod tests {
             ],
             holes: vec![],
         };
-        let scan = |limit_dbu: f64, mixed: bool| {
+        let scan = |limit_dbu: i64, mixed: bool| {
             scan_widths(
                 &poly,
                 core(),
@@ -385,17 +384,17 @@ mod tests {
                 "T",
                 "min",
                 "L",
-                limit_dbu / 1000.0,
+                limit_dbu as f64 / 1000.0,
                 "<",
-                |w| w < limit_dbu - 0.5,
+                Limit::AtLeast(limit_dbu),
                 false,
                 mixed,
-                0.5,
+                0,
                 None,
             )
         };
         // 860 DBU rule: the 500-wide strip violates, and the marker spans the gap.
-        let v = scan(860.0, true);
+        let v = scan(860, true);
         assert_eq!(v.len(), 1, "got {}", v.len());
         assert!(
             v[0].message.contains("width 0.5000"),
@@ -403,9 +402,9 @@ mod tests {
             v[0].message
         );
         // Below the narrow strip the shape is a clean 1000 wide, so a 500 rule passes.
-        assert!(scan(500.0, true).is_empty());
+        assert!(scan(500, true).is_empty());
         // And without the mixed pass the violation is invisible — the regression itself.
-        assert!(scan(860.0, false).is_empty());
+        assert!(scan(860, false).is_empty());
     }
 
     /// A 200×200 DBU square flagged by a `> 150` (max-width) predicate: both
@@ -425,10 +424,10 @@ mod tests {
             "L",
             0.15,
             ">",
-            |w| w > 150.0 + 0.5,
+            Limit::AtMost(150),
             false,
             false,
-            0.5,
+            0,
             None,
         );
         assert_eq!(v.len(), 4, "got {}", v.len());
