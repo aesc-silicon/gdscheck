@@ -24,7 +24,7 @@ Runs the shared facing-edge width scan (:doc:`shared with max_width and exact_wi
 - **Oblique pass**: pairs of mutually anti-parallel diagonal edges (same absolute angle,
   opposite direction) are measured directly, so a 45° trace's width is caught too — this
   pass always runs, even for a plain ``min_width`` rule; it isn't gated on a "bent length"
-  the way :doc:`min_45_width` is.
+  the way ``angle: bent`` is.
 
 A width is only reported once its projected overlap between the two walls is real (not
 just touching at a point), and only from the tile whose core contains the gap's midpoint,
@@ -50,7 +50,16 @@ A single layer, ``layers[0]``.
 Parameters
 ----------
 
-None — only ``value`` (µm).
+``str_params: angle``
+   ``bent`` measures only the 45° runs, and only where a run is longer than
+   ``bent_length``. A fab may ask more width of a diagonal than of a straight trace, since
+   the grid resolves a diagonal as a staircase; that rule sits beside the plain one with
+   its own value, and a short chamfer at a corner is not a trace and is left to the plain
+   rule.
+
+``params: bent_length``
+   With ``angle: bent``: the run (µm) a diagonal wall pair must share before its width is
+   considered. Optional, defaults to ``0.5``.
 
 
 Violation markers
@@ -76,3 +85,11 @@ Example
       check: min_width
       layers: [TopMetal2]
       value: 2.00
+    - id: M2.g
+      check: min_width
+      layers: [Metal2]
+      value: 0.24
+      str_params:
+        angle: bent
+      params:
+        bent_length: 0.50

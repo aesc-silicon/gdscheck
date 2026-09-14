@@ -28,7 +28,9 @@ A single layer, ``layers[0]``.
 Parameters
 ----------
 
-None — only ``value`` (µm).
+``str_params: angle`` and ``params: bent_length``
+   As for :doc:`min_width`: ``angle: bent`` restricts the rule to 45° runs longer than
+   ``bent_length``.
 
 
 Violation markers
