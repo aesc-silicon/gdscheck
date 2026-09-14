@@ -27,9 +27,8 @@
 //! direction of the contour they were extracted from, so an edge still knows which side
 //! its material is on however many booleans later it is read.
 
-use crate::geom::MAX_REACH;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, Edge, IntPoint, MergedCache};
+use crate::merge::{Core, Edge, MergedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -66,9 +65,6 @@ enum Rel {
     Enclosure,
     /// Facing boundaries, normals opposed, the span on the outside of both: empty ground.
     Space,
-    /// Facing boundaries, normals opposed, the span on the *inside* of both: material.
-    /// One edge layer against itself — the two walls of a gate, and the width between.
-    Width,
 }
 
 /// The outer layer's boundary must sit at least `value` outside the inner layer's.
@@ -78,7 +74,7 @@ pub fn run_enclosure(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Enclosure, false)
+    run(rule, layout, dbu_to_um, merged, Rel::Enclosure)
 }
 
 /// The two layers' boundaries must stay at least `value` apart.
@@ -88,109 +84,11 @@ pub fn run_space(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Space, false)
-}
-
-/// An edge layer's own facing pairs must span at least `value` of material — KLayout's
-/// `width` on an edge collection. GF180's `O.PL.2` is the OTP gate length: the two walls
-/// of the poly where it crosses the active, and no region carries that distance.
-pub fn run_width(
-    rule: &RuleDefinition,
-    layout: &FlatLayout,
-    dbu_to_um: f64,
-    merged: &mut MergedCache,
-) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Width, false)
-}
-
-/// The same span, bounded from above: the material between two facing walls must not be
-/// *more* than `value` thick.  A transistor's channel length is the width between the
-/// gate's own sides and GF180 caps it - MDN.3b at 20 µm - which no region carries either.
-///
-/// The measurement is the same one and the comparison is the only difference, but the
-/// *search* is not.  A minimum only ever looks within its own limit, and the pairing
-/// takes advantage of that by pairing edges filed in one tile; a maximum is violated
-/// exactly by the pairs beyond the limit, which are the ones that reading never
-/// generates.  So this path gathers the partner from the tiles the edge can see out to
-/// [`MAX_REACH`] limits and reports the *nearest* partner it finds - the nearest is the
-/// one the width is measured to, a wall further off having material in between.
-pub fn run_max_width(
-    rule: &RuleDefinition,
-    layout: &FlatLayout,
-    dbu_to_um: f64,
-    merged: &mut MergedCache,
-) -> Vec<Violation> {
-    run(rule, layout, dbu_to_um, merged, Rel::Width, true)
+    run(rule, layout, dbu_to_um, merged, Rel::Space)
 }
 
 /// One offending pair: the margin measured, and the two points that measure it.
 type Pair = (f64, (f64, f64), (f64, f64));
-
-/// Where the open span `p`..`q` crosses the segment `a`..`b`, as a fraction along it.
-fn crossing(p: (f64, f64), q: (f64, f64), a: IntPoint, b: IntPoint) -> Option<f64> {
-    let r = (q.0 - p.0, q.1 - p.1);
-    let sg = ((b.x - a.x) as f64, (b.y - a.y) as f64);
-    let denom = r.0 * sg.1 - r.1 * sg.0;
-    if denom.abs() < 1e-9 {
-        return None; // parallel: running along a wall is not crossing it
-    }
-    let d = (a.x as f64 - p.0, a.y as f64 - p.1);
-    let u = (d.0 * r.1 - d.1 * r.0) / denom;
-    if !(0.0..=1.0).contains(&u) {
-        return None;
-    }
-    Some((d.0 * sg.1 - d.1 * sg.0) / denom)
-}
-
-/// Whether the span from `p` to `q` stays in `tiles`' material the whole way.
-///
-/// A width is the thickness of *something*.  Two walls can face each other, each with its
-/// own material behind it, and still have nothing but field in between - the outer sides
-/// of two fingers of one gate, the two arms of a comb - and the distance across that gap
-/// is not a thickness, it is a gap plus two thicknesses.  Pairing edges is a local test
-/// and cannot tell the two apart: it sees the normals oppose and the partner lie on the
-/// inward side, which is as true across a device as it is across a wall.
-///
-/// So the span is put to the region the edges were cut from.  It begins on one wall and
-/// ends on the other, and if anything but those two ends interrupts it then the material
-/// stops somewhere in between and there is no width here to measure.
-fn span_is_material(
-    tiles: &crate::merge::TileMap,
-    tile: i64,
-    p: (f64, f64),
-    q: (f64, f64),
-) -> bool {
-    let len = (q.0 - p.0).hypot(q.1 - p.1);
-    if len <= 1.0 {
-        return true; // under a DBU: nothing can fit in it
-    }
-    // The span's own two ends sit on walls, which are boundary too; skip them.
-    let eps = (0.5 / len).min(0.05);
-    let (x0, x1) = (p.0.min(q.0), p.0.max(q.0));
-    let (y0, y1) = (p.1.min(q.1), p.1.max(q.1));
-    for tx in (x0 as i64).div_euclid(tile)..=(x1 as i64).div_euclid(tile) {
-        for ty in (y0 as i64).div_euclid(tile)..=(y1 as i64).div_euclid(tile) {
-            let Some(polys) = tiles.get(&(tx as i32, ty as i32)) else {
-                continue;
-            };
-            for m in polys {
-                for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
-                    for i in 0..ring.len() {
-                        let a = ring[i];
-                        let b = ring[(i + 1) % ring.len()];
-                        if let Some(t) = crossing(p, q, a, b)
-                            && t > eps
-                            && t < 1.0 - eps
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    true
-}
 
 /// A segment as `origin`, unit direction, unit outward normal and length, all in DBU.
 struct Seg {
@@ -225,24 +123,13 @@ fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
     rel: Rel,
-    at_most: bool,
 ) -> Vec<Violation> {
-    let name = match (rel, at_most) {
-        (Rel::Enclosure, _) => "min_enclosure",
-        (Rel::Space, _) => "min_space",
-        (Rel::Width, false) => "min_width",
-        (Rel::Width, true) => "max_width",
+    let name = match rel {
+        Rel::Enclosure => "min_enclosure",
+        Rel::Space => "min_space",
     };
-    // A width is one layer against itself; the others take two.
-    let (Some(la), lb) = (
-        rule.layers.first(),
-        rule.layers.get(1).or(rule.layers.first()),
-    ) else {
-        eprintln!("[{}] {name} needs a layer", rule.id);
-        return vec![];
-    };
-    let Some(lb) = lb else {
-        eprintln!("[{}] {name} needs a layer", rule.id);
+    let (Some(la), Some(lb)) = (rule.layers.first(), rule.layers.get(1)) else {
+        eprintln!("[{}] {name} needs two layers", rule.id);
         return vec![];
     };
     let ka = (la.gds_layer as i16, la.gds_datatype as i16);
@@ -261,26 +148,10 @@ fn run(
     }
     merged.ensure_edges(layout, ka);
     merged.ensure_edges(layout, kb);
-    // A width is measured *through* material, so the region the walls were cut from has
-    // to be on hand to say whether the span stays in it.  The other two relations do not
-    // need it: an enclosure and a spacing are both spans across ground the layers do not
-    // claim, and neither says anything about what is in between.
-    let base = if rel == Rel::Width && ka == kb {
-        merged.edge_base_region(ka)
-    } else {
-        None
-    };
-    if let Some(b) = base {
-        merged.ensure(layout, b.0, b.1);
-    }
 
     println!(
-        "[{}] Checking {name} {} {:.2} µm between edge layers {} and {}",
-        rule.id,
-        if at_most { "<=" } else { ">=" },
-        rule.value,
-        la.name,
-        lb.name
+        "[{}] Checking {name} >= {:.2} µm between edge layers {} and {}",
+        rule.id, rule.value, la.name, lb.name
     );
 
     let limit = rule.value / dbu_to_um;
@@ -293,34 +164,15 @@ fn run(
         .get("skip_coincident")
         .is_some_and(|v| *v != 0.0);
     let tile = merged.tile_dbu() as i64;
-    let base_tiles = base.map(|b| merged.tiles(b.0, b.1));
     // Half a DBU: coordinates are integers, so anything under this is a rounding artefact.
     let tol = 0.5;
     let mut out = Vec::new();
 
     // A minimum pairs within one tile: it only looks as far as its own limit, and an edge
-    // is filed under the tile its midpoint falls in.  A maximum has to reach further, so
-    // it collects the partner from the block of tiles its reach covers.
-    let reach = if at_most { limit * MAX_REACH } else { 0.0 };
-    let span = (reach / tile as f64).ceil() as i32 + 1;
+    // is filed under the tile its midpoint falls in.
     for (&(tx, ty), a_edges) in merged.edges(ka) {
-        let gathered: Vec<Edge>;
-        let b_edges: &[Edge] = if at_most {
-            let mut v = Vec::new();
-            for dx in -span..=span {
-                for dy in -span..=span {
-                    if let Some(es) = merged.edges(kb).get(&(tx + dx, ty + dy)) {
-                        v.extend(es.iter().copied());
-                    }
-                }
-            }
-            gathered = v;
-            &gathered
-        } else {
-            match merged.edges(kb).get(&(tx, ty)) {
-                Some(v) => v.as_slice(),
-                None => continue,
-            }
+        let Some(b_edges) = merged.edges(kb).get(&(tx, ty)) else {
+            continue;
         };
         let core = Core {
             x0: tx as i64 * tile,
@@ -357,13 +209,11 @@ fn run(
                     continue;
                 }
                 // Which side of a the span lies on: outward for a spacing, inward for an
-                // enclosure or a width. One sign covers all three.
+                // enclosure. One sign covers both.
                 let along = (sb.o.0 - sa.o.0) * sa.n.0 + (sb.o.1 - sa.o.1) * sa.n.1;
                 let margin = if rel == Rel::Space { along } else { -along };
-                // Behind this edge either way.  A minimum also drops everything already
-                // far enough; a maximum needs those, since the nearest partner is what it
-                // compares, and it caps the search at its reach instead.
-                if margin < -tol || (!at_most && margin >= limit) || margin > reach.max(limit) {
+                // Behind this edge either way, or already far enough.
+                if margin < -tol || margin >= limit {
                     continue;
                 }
                 if skip_coincident && margin <= tol {
@@ -379,67 +229,31 @@ fn run(
                 if worst.is_some_and(|(m, _, _)| m <= margin) {
                     continue;
                 }
-                if let Some(t) = base_tiles {
-                    // Measure across the middle of the run the two share, which is where
-                    // a width is thickest if it varies along it at all.
-                    let mid = (s0 + s1) * 0.5;
-                    let f = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
-                    let g = (f.0 - sa.n.0 * margin, f.1 - sa.n.1 * margin);
-                    if !span_is_material(t, tile, f, g) {
-                        continue;
-                    }
-                }
-                // A minimum marks the span it measured, which is short enough to stand
-                // for where the violation is.  A maximum's span is by definition longer
-                // than the rule allows, and its middle is nowhere near either wall - so
-                // that one marks the offending wall itself, the stretch of this edge that
-                // faces the far one, which is what the reference draws too.
-                let (p, q) = if at_most {
-                    (
-                        (sa.o.0 + s0 * sa.u.0, sa.o.1 + s0 * sa.u.1),
-                        (sa.o.0 + s1 * sa.u.0, sa.o.1 + s1 * sa.u.1),
-                    )
+                // The marker is the span measured, across the middle of the run the two
+                // share, which is short enough to stand for where the violation is.
+                let mid = (s0 + s1) * 0.5;
+                let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
+                let q = if rel != Rel::Space {
+                    (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
                 } else {
-                    let mid = (s0 + s1) * 0.5;
-                    let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
-                    let q = if rel != Rel::Space {
-                        (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
-                    } else {
-                        (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
-                    };
-                    (p, q)
+                    (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
                 };
                 worst = Some((margin, p, q));
             }
             let Some((margin, p, q)) = worst else {
                 continue;
             };
-            if at_most && margin <= limit + tol {
-                continue; // the nearest facing wall is close enough
-            }
             // The pair is owned by the tile holding the middle of what it measures, so an
             // edge seen from two tiles is reported once.
             let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
             if !core.owns(mx, my) {
                 continue;
             }
-            let what = match rel {
-                Rel::Enclosure => "enclosure",
-                Rel::Space => "space",
-                Rel::Width => "width",
+            let (what, title) = match rel {
+                Rel::Enclosure => ("enclosure", "Minimum enclosure violation"),
+                Rel::Space => ("space", "Minimum space violation"),
             };
-            let (title, cmp) = if at_most {
-                ("Maximum width violation", ">")
-            } else {
-                (
-                    match rel {
-                        Rel::Enclosure => "Minimum enclosure violation",
-                        Rel::Space => "Minimum space violation",
-                        Rel::Width => "Minimum width violation",
-                    },
-                    "<",
-                )
-            };
+            let cmp = "<";
             out.push(Violation::edge(
                 &rule.id,
                 title,
@@ -467,6 +281,7 @@ fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::merge::IntPoint;
 
     fn seg(ax: i32, ay: i32, bx: i32, by: i32) -> Seg {
         Seg::of(&Edge {
@@ -508,69 +323,5 @@ mod tests {
         // ...while a wall at a real angle drifts far past it on any run worth measuring.
         assert!(drift(&flat, &seg(0, 500, 100_000, 600)) > 1.5);
         assert!(drift(&flat, &seg(0, 500, 1_000, 600)) > 1.5);
-    }
-
-    fn poly(pts: &[(i32, i32)]) -> crate::merge::MergedPoly {
-        crate::merge::MergedPoly {
-            outer: pts.iter().map(|&(x, y)| IntPoint { x, y }).collect(),
-            holes: vec![],
-        }
-    }
-
-    /// Two bars 100 DBU apart with a gap between them: the span from the outer wall of
-    /// one to the outer wall of the other is 300 wide and is not a width of anything.
-    #[test]
-    fn a_span_across_a_gap_is_not_a_width() {
-        let mut tiles = crate::merge::TileMap::new();
-        tiles.insert(
-            (0, 0),
-            vec![
-                poly(&[(0, 0), (100, 0), (100, 500), (0, 500)]),
-                poly(&[(200, 0), (300, 0), (300, 500), (200, 500)]),
-            ],
-        );
-        // Inside one bar: material all the way.
-        assert!(span_is_material(
-            &tiles,
-            20_000,
-            (0.0, 250.0),
-            (100.0, 250.0)
-        ));
-        // Across both bars and the gap between them: interrupted.
-        assert!(!span_is_material(
-            &tiles,
-            20_000,
-            (0.0, 250.0),
-            (300.0, 250.0)
-        ));
-    }
-
-    /// A U leaves its two arms facing each other with material behind each, which is what
-    /// the pairing sees; the span between them crosses the opening.
-    #[test]
-    fn a_span_across_the_mouth_of_a_u_is_not_a_width() {
-        let mut tiles = crate::merge::TileMap::new();
-        tiles.insert(
-            (0, 0),
-            vec![poly(&[
-                (0, 0),
-                (300, 0),
-                (300, 500),
-                (200, 500),
-                (200, 100),
-                (100, 100),
-                (100, 500),
-                (0, 500),
-            ])],
-        );
-        // Across the base of the U, which is solid.
-        assert!(span_is_material(&tiles, 20_000, (0.0, 50.0), (300.0, 50.0)));
-        // Across its mouth, which is not.
-        assert!(!span_is_material(
-            &tiles,
-            20_000,
-            (0.0, 300.0),
-            (300.0, 300.0)
-        ));
     }
 }

@@ -9,12 +9,12 @@
 //! V5_XTOR marker on top of that separates 5 V from 6 V.  So a fixture picks its column
 //! by what it draws over the poly, and one drawn for one column is silent in the other.
 //!
-//! Two of the width rules read the gate's *edges* rather than the poly: PL.2 measures the
-//! stretch of gate edge that lies on the active, which is the channel, and PL.7 measures
-//! only the stretches running at 45°.  PL.7's fixtures are therefore the only diagonal
-//! ones here, and its medium-voltage device is a P-channel: at 6 V the deck asks 0.7 µm
-//! of an N channel and 0.55 of a P one, and a fixture bending PL.7's 0.7 µm limit would
-//! break the N-channel rule on the way past.
+//! Two of the width rules read the gate between chosen walls rather than the poly whole:
+//! PL.2 measures between the gate's walls that lie inside the active, which is the
+//! channel, and PL.7 only between the ones running at 45°.  PL.7's fixtures are therefore
+//! the only diagonal ones here, and its medium-voltage device is a P-channel: at 6 V the
+//! deck asks 0.7 µm of an N channel and 0.55 of a P one, and a fixture bending PL.7's
+//! 0.7 µm limit would break the N-channel rule on the way past.
 //!
 //! `PL.6`, "90 degree bends on the COMP are not allowed", is a rule about a *vertex*, not an edge,
 //! and its good pattern has to say so from several directions at once: a bend is fine off

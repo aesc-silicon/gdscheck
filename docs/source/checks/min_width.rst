@@ -24,7 +24,12 @@ Runs the shared facing-edge width scan (:doc:`shared with max_width and exact_wi
 - **Oblique pass**: pairs of mutually anti-parallel diagonal edges (same absolute angle,
   opposite direction) are measured directly, so a 45° trace's width is caught too — this
   pass always runs, even for a plain ``min_width`` rule; it isn't gated on a "bent length"
-  the way ``angle: bent`` is.
+  the way ``angle: bent`` is. Anti-parallel is read as far as the grid can say: a
+  boolean cuts a 45° wall and rounds its new end to the DBU, so the two sides of one bar
+  can come out 0.05° apart, and a pair whose gap drifts by under a DBU and a half over
+  the run it shares still bounds a width.
+- **Mixed pass**: a diagonal edge facing an axis-aligned one — the chamfered corner of a
+  well against the straight wall opposite — is measured at its closest approach.
 
 A width is only reported once its projected overlap between the two walls is real (not
 just touching at a point), and only from the tile whose core contains the gap's midpoint,
@@ -34,11 +39,11 @@ This scan measures **facing walls of one region**, unlike :doc:`min_dim`, which 
 a whole region's bounding box — a min_width rule catches a narrow neck anywhere in an
 irregular shape; min_dim only catches the shape's bounding box being too narrow overall.
 
-It does *not* pair a rectilinear wall against an oblique one (a diagonal stroke closing in
-on a straight stem) — only rectilinear-vs-rectilinear and oblique-vs-oblique pairs are
-currently measured for width. :doc:`min_notch` had the same limitation for its dual
-(the empty-space case) until it was closed by adding a mixed rectilinear/oblique pass;
-the width side of that gap is still open.
+The comparison is exact. The rule's µm value is put on the grid once — rounded up for a
+minimum, down for a maximum, to nearest for an exact width — and after that an
+axis-aligned span is compared as the integer it is, an oblique one squared as a ratio of
+integers. A 45° bar drawn 226 DBU apart in y is 159.81 DBU wide, and a 160 rule reports
+it.
 
 
 Layers

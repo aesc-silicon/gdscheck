@@ -27,7 +27,7 @@ rules:
     layers: [comp_otp]
     value: 0.1444
   - id: O.PL.2
-    check: gate_length
+    check: min_gate_length
     layers: [poly_otp, tgate]
     value: 0.22
   - id: O.PL.3a

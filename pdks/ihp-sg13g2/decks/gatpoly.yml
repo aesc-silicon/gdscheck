@@ -8,19 +8,19 @@ rules:
     layers: [GatPoly]
     value: 0.13
   - id: Gat.a1
-    check: gate_length
+    check: min_gate_length
     layers: [GatPoly, GatPolyOverNsdActivNoTGO]
     value: 0.13
   - id: Gat.a2
-    check: gate_length
+    check: min_gate_length
     layers: [GatPoly, GatPolyOverPsdActivNoTGO]
     value: 0.13
   - id: Gat.a3
-    check: gate_length
+    check: min_gate_length
     layers: [GatPoly, GatPolyOverNsdActivTGO]
     value: 0.45
   - id: Gat.a4
-    check: gate_length
+    check: min_gate_length
     layers: [GatPoly, GatPolyOverPsdActivTGO]
     value: 0.40
   - id: Gat.b

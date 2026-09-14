@@ -13,6 +13,7 @@
 //! apart, how far enclosed — and nothing that knows what a rule or a violation is.
 
 use crate::merge::{Core, MergedPoly};
+use std::collections::HashMap;
 
 /// How far past its own limit a maximum looks for the facing wall, in multiples of the
 /// limit.  A width that exceeds the limit by more than this is not measured and so not
@@ -202,13 +203,273 @@ pub fn on_grid(x: f64, round: fn(f64) -> f64) -> i64 {
     }
 }
 
+/// The walls of a region that lie on another region's boundary - or the ones that do not.
+///
+/// A gate has two kinds of wall.  The ones the poly brought with it stand across the
+/// channel, and the distance between them is the gate's length; the ones the active cut
+/// stand at the ends, and the distance between them is the transistor's width.  Both are
+/// widths of the same region, and only which walls take part tells them apart.  A width
+/// scan run with this filter keeps, of every facing pair it finds, the stretch along
+/// which *both* walls lie on the reference boundary (`on`), or along which neither does
+/// (`off`), and drops the pair where that stretch is empty.
+///
+/// Collinearity is exact: a wall lies on the reference boundary where a reference
+/// segment runs along the same line and the two overlap.  The overlap itself is kept as
+/// an interval of the wall - integers for an axis-aligned wall, fractions of its length
+/// for an oblique one, where only the clipping of the marker depends on it.
+///
+/// An `outside` region cuts each wall's stretches further to the parts lying outside it
+/// (KLayout's `edges.not(region)`): a native gate's length is read off the poly walls
+/// that are not under the well.
+pub struct WallFilter<'a> {
+    on: bool,
+    outside: Option<&'a [MergedPoly]>,
+    /// Reference vertical segments by x, as `(ylo, yhi)`.
+    verticals: HashMap<i32, Vec<(i64, i64)>>,
+    /// Reference horizontal segments by y, as `(xlo, xhi)`.
+    horizontals: HashMap<i32, Vec<(i64, i64)>>,
+    /// Reference oblique segments, undirected.
+    obliques: Vec<((i64, i64), (i64, i64))>,
+}
+
+impl<'a> WallFilter<'a> {
+    /// Keep the stretches on the boundary of `reference` (`on`), or off it, and in either
+    /// case only where they lie outside `outside`.
+    pub fn new(reference: &[MergedPoly], on: bool, outside: Option<&'a [MergedPoly]>) -> Self {
+        let mut f = WallFilter {
+            on,
+            outside,
+            verticals: HashMap::new(),
+            horizontals: HashMap::new(),
+            obliques: Vec::new(),
+        };
+        for m in reference {
+            for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+                let n = ring.len();
+                for i in 0..n {
+                    let (a, b) = (ring[i], ring[(i + 1) % n]);
+                    if a.x == b.x && a.y != b.y {
+                        f.verticals
+                            .entry(a.x)
+                            .or_default()
+                            .push((a.y.min(b.y) as i64, a.y.max(b.y) as i64));
+                    } else if a.y == b.y && a.x != b.x {
+                        f.horizontals
+                            .entry(a.y)
+                            .or_default()
+                            .push((a.x.min(b.x) as i64, a.x.max(b.x) as i64));
+                    } else if a != b {
+                        f.obliques
+                            .push(((a.x as i64, a.y as i64), (b.x as i64, b.y as i64)));
+                    }
+                }
+            }
+        }
+        f
+    }
+
+    /// The stretches of a vertical wall at `x` over `[lo, hi]` that this filter keeps.
+    fn keep_v(&self, x: i32, lo: i64, hi: i64) -> Vec<(i64, i64)> {
+        let kept = self.keep(self.verticals.get(&x).map_or(&[][..], |v| v), lo, hi);
+        self.cut_axis(kept, (x as f64, 0.0), (0.0, 1.0))
+    }
+
+    /// The stretches of a horizontal wall at `y` over `[lo, hi]` that this filter keeps.
+    fn keep_h(&self, y: i32, lo: i64, hi: i64) -> Vec<(i64, i64)> {
+        let kept = self.keep(self.horizontals.get(&y).map_or(&[][..], |v| v), lo, hi);
+        self.cut_axis(kept, (0.0, y as f64), (1.0, 0.0))
+    }
+
+    fn keep(&self, on_line: &[(i64, i64)], lo: i64, hi: i64) -> Vec<(i64, i64)> {
+        let covered = union(
+            on_line
+                .iter()
+                .map(|&(a, b)| (a.max(lo), b.min(hi)))
+                .filter(|(a, b)| b > a)
+                .collect(),
+        );
+        if self.on {
+            covered
+        } else {
+            complement(&covered, lo, hi)
+        }
+    }
+
+    /// Axis-aligned stretches, as coordinates along `u` from `origin`, cut to the parts
+    /// outside the `outside` region.  A cut lands on the grid for a rectilinear region;
+    /// against a chamfer it is rounded, which moves a marker's end by under a DBU.
+    fn cut_axis(
+        &self,
+        kept: Vec<(i64, i64)>,
+        origin: (f64, f64),
+        u: (f64, f64),
+    ) -> Vec<(i64, i64)> {
+        let Some(region) = self.outside else {
+            return kept;
+        };
+        kept.into_iter()
+            .flat_map(|(a, b)| outside_part(region, origin, u, a as f64, b as f64))
+            .map(|(a, b)| (a.round() as i64, b.round() as i64))
+            .filter(|(a, b)| b > a)
+            .collect()
+    }
+
+    /// The stretches of the oblique wall `a → b` this filter keeps, as fractions of its
+    /// length.
+    fn keep_o(&self, a: (i64, i64), b: (i64, i64)) -> Vec<(f64, f64)> {
+        let (dx, dy) = ((b.0 - a.0) as i128, (b.1 - a.1) as i128);
+        let len2 = dx * dx + dy * dy;
+        let along = |p: (i64, i64)| -> Option<i128> {
+            let (wx, wy) = ((p.0 - a.0) as i128, (p.1 - a.1) as i128);
+            (wx * dy - wy * dx == 0).then_some(wx * dx + wy * dy)
+        };
+        let mut covered = Vec::new();
+        for &(c, d) in &self.obliques {
+            let (Some(tc), Some(td)) = (along(c), along(d)) else {
+                continue; // not on this wall's line
+            };
+            let (t0, t1) = (tc.min(td).max(0), tc.max(td).min(len2));
+            if t1 > t0 {
+                covered.push((t0 as f64 / len2 as f64, t1 as f64 / len2 as f64));
+            }
+        }
+        let covered = union(covered);
+        let kept = if self.on {
+            covered
+        } else {
+            complement(&covered, 0.0, 1.0)
+        };
+        let Some(region) = self.outside else {
+            return kept;
+        };
+        let len = (len2 as f64).sqrt();
+        let u = (dx as f64 / len, dy as f64 / len);
+        kept.into_iter()
+            .flat_map(|(s0, s1)| {
+                outside_part(region, (a.0 as f64, a.1 as f64), u, s0 * len, s1 * len)
+            })
+            .map(|(s0, s1)| (s0 / len, s1 / len))
+            .collect()
+    }
+}
+
+/// The parts of the line `origin + s·u` for `s` in `[lo, hi]` that lie outside `region`.
+///
+/// The interval is split wherever a boundary segment of the region crosses the line, and
+/// each piece is classified by its midpoint - a piece never straddles a boundary, so its
+/// midpoint speaks for all of it.  A wall running *along* a boundary is decided by the
+/// midpoint too, which is the one place the answer depends on which side of the line the
+/// ray-casting falls; the rules that cut this way keep their regions clear of the walls
+/// they measure.
+fn outside_part(
+    region: &[MergedPoly],
+    origin: (f64, f64),
+    u: (f64, f64),
+    lo: f64,
+    hi: f64,
+) -> Vec<(f64, f64)> {
+    let mut cuts = vec![lo, hi];
+    for m in region {
+        for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+            let n = ring.len();
+            for i in 0..n {
+                let (p, q) = (ring[i], ring[(i + 1) % n]);
+                let (px, py) = (p.x as f64 - origin.0, p.y as f64 - origin.1);
+                let (ex, ey) = ((q.x - p.x) as f64, (q.y - p.y) as f64);
+                let denom = u.0 * ey - u.1 * ex;
+                if denom.abs() < 1e-12 {
+                    continue; // parallel: no crossing, or collinear
+                }
+                let s = (px * ey - py * ex) / denom;
+                let v = (px * u.1 - py * u.0) / denom;
+                if (0.0..=1.0).contains(&v) && s > lo && s < hi {
+                    cuts.push(s);
+                }
+            }
+        }
+    }
+    cuts.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    cuts.dedup();
+    let inside = |x: f64, y: f64| {
+        region.iter().any(|m| {
+            let ring = |r: &[IntPoint]| -> Vec<(f64, f64)> {
+                r.iter().map(|p| (p.x as f64, p.y as f64)).collect()
+            };
+            point_in_polygon(x, y, &ring(&m.outer))
+                && !m.holes.iter().any(|h| point_in_polygon(x, y, &ring(h)))
+        })
+    };
+    cuts.windows(2)
+        .filter(|w| w[1] > w[0])
+        .filter(|w| {
+            let mid = (w[0] + w[1]) * 0.5;
+            !inside(origin.0 + mid * u.0, origin.1 + mid * u.1)
+        })
+        .map(|w| (w[0], w[1]))
+        .collect()
+}
+
+/// Sorted, merged, non-empty intervals.
+fn union<T: Copy + PartialOrd>(mut v: Vec<(T, T)>) -> Vec<(T, T)> {
+    v.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    let mut out: Vec<(T, T)> = Vec::new();
+    for (a, b) in v {
+        if b <= a {
+            continue;
+        }
+        match out.last_mut() {
+            Some(last) if a <= last.1 => {
+                if b > last.1 {
+                    last.1 = b;
+                }
+            }
+            _ => out.push((a, b)),
+        }
+    }
+    out
+}
+
+/// The common stretches of two interval lists, each sorted and merged.
+fn intersect<T: Copy + PartialOrd>(a: &[(T, T)], b: &[(T, T)]) -> Vec<(T, T)> {
+    let mut out = Vec::new();
+    for &(a0, a1) in a {
+        for &(b0, b1) in b {
+            let lo = if a0 > b0 { a0 } else { b0 };
+            let hi = if a1 < b1 { a1 } else { b1 };
+            if hi > lo {
+                out.push((lo, hi));
+            }
+        }
+    }
+    out
+}
+
+/// What `[lo, hi]` has left once the (sorted, merged) intervals are taken out.
+fn complement<T: Copy + PartialOrd>(covered: &[(T, T)], lo: T, hi: T) -> Vec<(T, T)> {
+    let mut out = Vec::new();
+    let mut at = lo;
+    for &(a, b) in covered {
+        if a > at {
+            out.push((at, a));
+        }
+        if b > at {
+            at = b;
+        }
+    }
+    if hi > at {
+        out.push((at, hi));
+    }
+    out
+}
+
 /// Every facing-wall pair of `poly` whose span breaks `limit`, as `(x1, y1, x2, y2, width)`
 /// in DBU - two entries per pair, one for each wall.
 ///
 /// This is the measurement without the reporting: the width checks format these into
 /// violations, and an edge layer built from a width can take the same pairs as geometry.
-/// The mask is a predicate rather than a region list so that the scan needs no notion of
-/// what a `Poly` is.
+/// With a [`WallFilter`] the pairs are cut to the stretches whose walls the filter keeps,
+/// and a pair with no such stretch is dropped; the mixed pass is not filtered, since the
+/// rules that filter do not ask for it.
 ///
 /// The arithmetic is exact.  Coordinates are integers, so an axis-aligned span is one,
 /// and an oblique span - a square root - is compared squared, as a ratio of two integers
@@ -221,7 +482,7 @@ pub fn width_pairs(
     poly: &MergedPoly,
     core: Core,
     limit: Limit,
-    in_mask: impl Fn(f64, f64) -> bool,
+    walls: Option<&WallFilter>,
     oblique_only: bool,
     mixed: bool,
     min_run: i64,
@@ -229,13 +490,16 @@ pub fn width_pairs(
     let mut out = Vec::new();
     // An axis-aligned rectangle - every via, most contacts - has one width and one
     // height, and the sweep below would find exactly the two pairs the box gives
-    // directly.  Same pairs, same order, same ownership test, without the sweep.
-    if let Some((x0, y0, x1, y1)) = axis_rect(poly) {
+    // directly.  Same pairs, same order, same ownership test, without the sweep.  A
+    // filtered scan goes through the sweep, which is where the cutting happens.
+    if walls.is_none()
+        && let Some((x0, y0, x1, y1)) = axis_rect(poly)
+    {
         if oblique_only {
             return out;
         }
         let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
-        if core.owns(cx, cy) && in_mask(cx, cy) {
+        if core.owns(cx, cy) {
             let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
             if w > 0 && limit.broken_by(w) {
                 out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w as f64));
@@ -275,11 +539,30 @@ pub fn width_pairs(
                 if l.left_wall && !r.left_wall {
                     let width = r.x as i64 - l.x as i64;
                     if width > 0 && limit.broken_by(width) {
+                        let (yb, yb1) = (yb as i64, yb1 as i64);
+                        let stretches = match walls {
+                            None => vec![(yb, yb1)],
+                            Some(f) => intersect(&f.keep_v(l.x, yb, yb1), &f.keep_v(r.x, yb, yb1)),
+                        };
                         let cx = (l.x as f64 + r.x as f64) * 0.5;
-                        let cy = (yb as f64 + yb1 as f64) * 0.5;
-                        if core.owns(cx, cy) && in_mask(cx, cy) {
-                            push_edge(l.x as f64, yb as f64, l.x as f64, yb1 as f64, width as f64);
-                            push_edge(r.x as f64, yb as f64, r.x as f64, yb1 as f64, width as f64);
+                        for (s0, s1) in stretches {
+                            let cy = (s0 as f64 + s1 as f64) * 0.5;
+                            if core.owns(cx, cy) {
+                                push_edge(
+                                    l.x as f64,
+                                    s0 as f64,
+                                    l.x as f64,
+                                    s1 as f64,
+                                    width as f64,
+                                );
+                                push_edge(
+                                    r.x as f64,
+                                    s0 as f64,
+                                    r.x as f64,
+                                    s1 as f64,
+                                    width as f64,
+                                );
+                            }
                         }
                     }
                 }
@@ -303,11 +586,30 @@ pub fn width_pairs(
                 if b.bottom_wall && !t.bottom_wall {
                     let height = t.y as i64 - b.y as i64;
                     if height > 0 && limit.broken_by(height) {
-                        let cx = (xb as f64 + xb1 as f64) * 0.5;
+                        let (xb, xb1) = (xb as i64, xb1 as i64);
+                        let stretches = match walls {
+                            None => vec![(xb, xb1)],
+                            Some(f) => intersect(&f.keep_h(b.y, xb, xb1), &f.keep_h(t.y, xb, xb1)),
+                        };
                         let cy = (b.y as f64 + t.y as f64) * 0.5;
-                        if core.owns(cx, cy) && in_mask(cx, cy) {
-                            push_edge(xb as f64, b.y as f64, xb1 as f64, b.y as f64, height as f64);
-                            push_edge(xb as f64, t.y as f64, xb1 as f64, t.y as f64, height as f64);
+                        for (s0, s1) in stretches {
+                            let cx = (s0 as f64 + s1 as f64) * 0.5;
+                            if core.owns(cx, cy) {
+                                push_edge(
+                                    s0 as f64,
+                                    b.y as f64,
+                                    s1 as f64,
+                                    b.y as f64,
+                                    height as f64,
+                                );
+                                push_edge(
+                                    s0 as f64,
+                                    t.y as f64,
+                                    s1 as f64,
+                                    t.y as f64,
+                                    height as f64,
+                                );
+                            }
                         }
                     }
                 }
@@ -318,7 +620,7 @@ pub fn width_pairs(
     if mixed {
         mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, limit);
     }
-    oblique_widths(&oedges, core, &mut push_edge, limit, min_run);
+    oblique_widths(&oedges, core, &mut push_edge, limit, min_run, walls);
     out
 }
 
@@ -517,16 +819,28 @@ fn mixed_widths(
 /// reported when the parallel run exceeds `min_run` DBU — small chamfers are ignored, and
 /// a 45°-bent-width rule can require a minimum bent length.
 ///
-/// Two edges pair when their direction vectors are exactly anti-parallel, which on
-/// integer coordinates is a cross product of zero.  The perpendicular distance between
-/// them is `c / |d|` for an integer `c`, so it is compared squared; the run they share is
-/// measured along `d` in units of `|d|²`, and compared squared the same way.
+/// Two edges pair when they are anti-parallel *as far as the grid can say*.  A boolean
+/// cuts a 45° wall and rounds its new end to the DBU, so the two sides of one bar come
+/// out as (1160, 1160) and (1160, 1161): 0.05° apart, and a test for an exact cross
+/// product of zero paired nothing and measured nothing between them - the miss that made
+/// PL.7's own fixture read clean.  What matters is whether the gap stays put along the
+/// run the two share.  The cross product over the product of the lengths is the sine of
+/// the angle, so times the shorter run it is how far the far end drifts, and a drift of
+/// a DBU and a half is a straight gap on this grid: `|cross| · min(li, lj) / (li · lj) ≤
+/// 1.5`, which is `4·cross² ≤ 9·max(len2)` in integers.  The gap then varies by under
+/// that along the run, and the rule is read at its worst: the nearer end for a minimum,
+/// the farther for a maximum.
+///
+/// The perpendicular distance is `c / |d|` for an integer `c`, so it is compared squared;
+/// the run they share is measured along `d` in units of `|d|²`, and compared squared the
+/// same way.
 fn oblique_widths(
     oedges: &[OEdge],
     core: Core,
     push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
     limit: Limit,
     min_run: i64,
+    walls: Option<&WallFilter>,
 ) {
     let min_run2 = (min_run as i128) * (min_run as i128);
     let n = oedges.len();
@@ -542,19 +856,27 @@ fn oblique_widths(
         let (nx, ny) = (-diy as f64 / li, dix as f64 / li);
         for ej in &oedges[i + 1..] {
             let (djx, djy) = ((ej.bx - ej.ax) as i128, (ej.by - ej.ay) as i128);
-            if dix * djy - diy * djx != 0 || dix * djx + diy * djy >= 0 {
+            let lenj2 = djx * djx + djy * djy;
+            let cross = dix * djy - diy * djx;
+            if 4 * cross * cross > 9 * len2.max(lenj2) || dix * djx + diy * djy >= 0 {
                 continue;
             }
-            // Signed distance of ej's start from ei's line, along ei's interior normal,
-            // times |d|: positive means ej lies on the material side.
+            // Signed distance of each end of ej from ei's line, along ei's interior
+            // normal, times |d|: positive means ej lies on the material side.  The two
+            // differ only by the drift, and the rule reads the worse one.
             let (wx, wy) = ((ej.ax - ei.ax) as i128, (ej.ay - ei.ay) as i128);
-            let c = dix * wy - diy * wx;
-            if c <= 0 || !limit.broken_by_sq(c * c, len2) {
+            let (vx, vy) = ((ej.bx - ei.ax) as i128, (ej.by - ei.ay) as i128);
+            let (ca, cb) = (dix * wy - diy * wx, dix * vy - diy * vx);
+            let c = match limit {
+                Limit::AtMost(_) => ca.max(cb),
+                Limit::AtLeast(_) | Limit::Exactly(_) => ca.min(cb),
+            };
+            if ca <= 0 || cb <= 0 || !limit.broken_by_sq(c * c, len2) {
                 continue;
             }
             // Where ej's ends project onto ei, in units of len2 along d.
             let taj = wx * dix + wy * diy;
-            let tbj = (ej.bx - ei.ax) as i128 * dix + (ej.by - ei.ay) as i128 * diy;
+            let tbj = vx * dix + vy * diy;
             let lo = taj.min(tbj).max(0);
             let hi = taj.max(tbj).min(len2);
             let run = hi - lo;
@@ -562,29 +884,55 @@ fn oblique_widths(
                 continue;
             }
             let dist = c as f64 / li;
+            // Everything from here is in DBU along ei, measured from its start.
             let (lo_f, hi_f) = (lo as f64 / li, hi as f64 / li);
-            let mid = (lo_f + hi_f) * 0.5;
-            let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
-            let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
-            if !core.owns(mx, my) {
-                continue;
+            let (taj_f, tbj_f) = (taj as f64 / li, tbj as f64 / li);
+            let stretches = match walls {
+                None => vec![(lo_f, hi_f)],
+                Some(f) => {
+                    let on_i: Vec<(f64, f64)> = f
+                        .keep_o((ei.ax as i64, ei.ay as i64), (ei.bx as i64, ei.by as i64))
+                        .into_iter()
+                        .map(|(a, b)| (a * li, b * li))
+                        .collect();
+                    // ej runs the other way: its fraction s sits at taj + s·(tbj − taj).
+                    let on_j: Vec<(f64, f64)> = union(
+                        f.keep_o((ej.ax as i64, ej.ay as i64), (ej.bx as i64, ej.by as i64))
+                            .into_iter()
+                            .map(|(a, b)| {
+                                let (p, q) =
+                                    (taj_f + a * (tbj_f - taj_f), taj_f + b * (tbj_f - taj_f));
+                                (p.min(q), p.max(q))
+                            })
+                            .collect(),
+                    );
+                    intersect(&intersect(&on_i, &on_j), &[(lo_f, hi_f)])
+                }
+            };
+            for (s0, s1) in stretches {
+                let mid = (s0 + s1) * 0.5;
+                let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
+                let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
+                if !core.owns(mx, my) {
+                    continue;
+                }
+                push_edge(
+                    ei.ax as f64 + s0 * ux,
+                    ei.ay as f64 + s0 * uy,
+                    ei.ax as f64 + s1 * ux,
+                    ei.ay as f64 + s1 * uy,
+                    dist,
+                );
+                let span = tbj_f - taj_f;
+                let (f_lo, f_hi) = ((s0 - taj_f) / span, (s1 - taj_f) / span);
+                push_edge(
+                    ej.ax as f64 + f_lo * djx as f64,
+                    ej.ay as f64 + f_lo * djy as f64,
+                    ej.ax as f64 + f_hi * djx as f64,
+                    ej.ay as f64 + f_hi * djy as f64,
+                    dist,
+                );
             }
-            push_edge(
-                ei.ax as f64 + lo_f * ux,
-                ei.ay as f64 + lo_f * uy,
-                ei.ax as f64 + hi_f * ux,
-                ei.ay as f64 + hi_f * uy,
-                dist,
-            );
-            let span = (tbj - taj) as f64;
-            let (f_lo, f_hi) = ((lo - taj) as f64 / span, (hi - taj) as f64 / span);
-            push_edge(
-                ej.ax as f64 + f_lo * djx as f64,
-                ej.ay as f64 + f_lo * djy as f64,
-                ej.ax as f64 + f_hi * djx as f64,
-                ej.ay as f64 + f_hi * djy as f64,
-                dist,
-            );
         }
     }
 }
@@ -1519,7 +1867,7 @@ mod width_tests {
             x1: 1_000_000,
             y1: 1_000_000,
         };
-        width_pairs(p, core, limit, |_, _| true, false, true, 0).len()
+        width_pairs(p, core, limit, None, false, true, 0).len()
     }
 
     /// 0.15 / 0.001 is 149.99999999999997 in floating point.  That is 150 on the grid,
@@ -1563,5 +1911,92 @@ mod width_tests {
         let exact = poly(&[(0, 0), (300, 400), (301, 668), (1, 268)]);
         assert_eq!(walls(&exact, Limit::AtLeast(160)), 0);
         assert_eq!(walls(&exact, Limit::AtLeast(161)), 2);
+    }
+}
+
+#[cfg(test)]
+mod wall_filter_tests {
+    use super::*;
+
+    fn poly(pts: &[(i32, i32)]) -> MergedPoly {
+        MergedPoly {
+            outer: pts.iter().map(|&(x, y)| IntPoint::new(x, y)).collect(),
+            holes: vec![],
+        }
+    }
+
+    fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
+        poly(&[(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    }
+
+    /// Wall markers on `body` under `limit`, between the walls the filter keeps.
+    fn walls(body: &MergedPoly, limit: Limit, f: &WallFilter) -> Vec<(f64, f64, f64, f64, f64)> {
+        let core = Core {
+            x0: -1_000_000,
+            y0: -1_000_000,
+            x1: 1_000_000,
+            y1: 1_000_000,
+        };
+        width_pairs(body, core, limit, Some(f), false, false, 0)
+    }
+
+    /// A poly stripe 300 tall crossing a channel mask 200 wide: the stripe's two long
+    /// walls are shared with the mask's boundary over the crossing and nowhere else, so
+    /// the gate length is measured there and cut to it.  The stripe's own width is 300;
+    /// a 301 rule sees the gate, a 300 rule does not.
+    #[test]
+    fn a_gate_is_measured_where_the_walls_share_the_mask() {
+        let stripe = rect(0, 0, 1000, 300);
+        let mask = [rect(400, 0, 600, 300)];
+        let f = WallFilter::new(&mask, true, None);
+        let v = walls(&stripe, Limit::AtLeast(301), &f);
+        assert_eq!(v.len(), 2, "{v:?}");
+        for (x1, _, x2, _, w) in &v {
+            assert_eq!((x1.min(*x2), x1.max(*x2), *w), (400.0, 600.0, 300.0));
+        }
+        assert!(walls(&stripe, Limit::AtLeast(300), &f).is_empty());
+    }
+
+    /// The gate at the far end of a long stripe, nowhere near the stripe's own midpoint:
+    /// a midpoint mask missed it, a wall filter finds it.
+    #[test]
+    fn a_gate_far_from_the_stripes_midpoint_is_found() {
+        let stripe = rect(0, 0, 20_000, 300);
+        let mask = [rect(19_000, 0, 19_200, 300)];
+        let f = WallFilter::new(&mask, true, None);
+        assert_eq!(walls(&stripe, Limit::AtLeast(301), &f).len(), 2);
+    }
+
+    /// An LDMOS body 1000 by 300 whose short walls lie on the active's boundary: the
+    /// shared walls give the device width (1000), the unshared ones the channel length
+    /// (300), and a rule reading one never sees the other.
+    #[test]
+    fn shared_and_unshared_walls_measure_the_two_directions() {
+        let body = rect(0, 0, 1000, 300);
+        let active = [rect(-500, -100, 0, 400), rect(1000, -100, 1500, 400)];
+        let shared = WallFilter::new(&active, true, None);
+        let unshared = WallFilter::new(&active, false, None);
+        assert_eq!(walls(&body, Limit::AtMost(999), &shared).len(), 2);
+        assert!(walls(&body, Limit::AtLeast(301), &shared).is_empty());
+        assert_eq!(walls(&body, Limit::AtLeast(301), &unshared).len(), 2);
+        assert!(walls(&body, Limit::AtMost(999), &unshared).is_empty());
+    }
+
+    /// A native gate under a well on one half of its crossing: the stretch under the well
+    /// is cut away, and the marker covers only what is left.
+    #[test]
+    fn stretches_under_the_excluded_region_are_cut() {
+        let stripe = rect(0, 0, 1000, 300);
+        let mask = [rect(400, 0, 600, 300)];
+        let well = [rect(500, -100, 2000, 400)];
+        let f = WallFilter::new(&mask, true, Some(&well));
+        let v = walls(&stripe, Limit::AtLeast(301), &f);
+        assert_eq!(v.len(), 2, "{v:?}");
+        for (x1, _, x2, _, _) in &v {
+            assert_eq!((x1.min(*x2), x1.max(*x2)), (400.0, 500.0));
+        }
+        let all = [rect(0, -100, 2000, 400)];
+        let f = WallFilter::new(&mask, true, Some(&all));
+        assert!(walls(&stripe, Limit::AtLeast(301), &f).is_empty());
     }
 }
