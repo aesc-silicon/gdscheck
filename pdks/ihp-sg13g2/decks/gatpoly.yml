@@ -52,9 +52,11 @@ rules:
     layers: [GatPolyOverActiv]
     value: 0.0
   - id: Gat.g
-    check: min_45_width
+    check: min_width
     layers: [GatPoly]
     value: 0.16
+    str_params:
+      angle: bent
     params:
       bent_length: 0.39
   - id: GFil.a

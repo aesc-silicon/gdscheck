@@ -28,7 +28,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    max_total_area
    max_width
    max_windowed_density
-   min_45_width
    min_area
    min_array_space
    min_density
