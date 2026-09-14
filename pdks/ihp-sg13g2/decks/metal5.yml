@@ -48,7 +48,7 @@ rules:
     str_params:
       angle: bent
     params:
-      bent_length: 0.50
+      length: 0.50
   - id: M5.i
     check: min_space_bent
     layers: [Metal5]

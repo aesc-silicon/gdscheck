@@ -28,9 +28,9 @@ A single layer, ``layers[0]``.
 Parameters
 ----------
 
-``str_params: angle`` and ``params: bent_length``
-   As for :doc:`min_width`: ``angle: bent`` restricts the rule to 45° runs longer than
-   ``bent_length``.
+``str_params: angle`` and ``params: length``
+   As for :doc:`min_width`: ``angle: bent`` restricts the rule to 45° runs, ``length`` to
+   wall pairs sharing more than that run.
 
 
 Violation markers
