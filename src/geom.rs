@@ -13,7 +13,7 @@
 //! apart, how far enclosed — and nothing that knows what a rule or a violation is.
 
 use crate::merge::{Core, MergedPoly};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// How far past its own limit a maximum looks for the facing wall, in multiples of the
 /// limit.  A width that exceeds the limit by more than this is not measured and so not
@@ -266,6 +266,27 @@ impl<'a> WallFilter<'a> {
             }
         }
         f
+    }
+
+    /// Whether the filter keeps a *point* - one on the reference boundary for `shared`,
+    /// one off it for `unshared` - which is what a pinch, a width of zero at a vertex,
+    /// asks of it.
+    pub fn keeps_point(&self, x: i32, y: i32) -> bool {
+        let on = self
+            .verticals
+            .get(&x)
+            .is_some_and(|v| v.iter().any(|&(lo, hi)| lo <= y as i64 && y as i64 <= hi))
+            || self
+                .horizontals
+                .get(&y)
+                .is_some_and(|v| v.iter().any(|&(lo, hi)| lo <= x as i64 && x as i64 <= hi))
+            || self.obliques.iter().any(|&(a, b)| {
+                let (dx, dy) = ((b.0 - a.0) as i128, (b.1 - a.1) as i128);
+                let (wx, wy) = ((x as i64 - a.0) as i128, (y as i64 - a.1) as i128);
+                let t = wx * dx + wy * dy;
+                wx * dy - wy * dx == 0 && t >= 0 && t <= dx * dx + dy * dy
+            });
+        on == self.on
     }
 
     /// The stretches of a vertical wall at `x` over `[lo, hi]` that this filter keeps.
@@ -620,8 +641,182 @@ pub fn width_pairs(
     if mixed {
         mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, limit);
     }
+    if !oblique_only && walls.is_none() && matches!(limit, Limit::AtLeast(_)) {
+        corner_widths(&vedges, &hedges, core, &mut push_edge, limit);
+        acute_corners(poly, core, &mut push_edge);
+    }
     oblique_widths(&oedges, core, &mut push_edge, limit, min_run, walls);
     out
+}
+
+/// The nearest ends of two bars that share no stretch: the squared distance and the two
+/// ends, in DBU.
+type EndPair = (i128, (i128, i128), (i128, i128));
+
+/// An **acute corner**: two edges meeting at a vertex with less than a right angle of
+/// material between them.  The wedge narrows to nothing at the tip, so there is no
+/// minimum it satisfies, and KLayout's `width` reports the pair of edges at any value:
+/// they are at distance zero and within its angle limit.  Reported as a width of zero at
+/// the vertex, once per corner; the sweeps never see it, since the two edges share a
+/// vertex and every pass drops a pair that touches.  Material is on the left of every
+/// ring, so an acute corner is a left turn through more than a right angle - more by a
+/// margin the grid cannot produce on its own: a 45° bar's square end, rounded to the
+/// DBU, is a right angle a hair off, and the dot product of its two edges is then at
+/// most the longer edge's length, where a real acute corner's is a good fraction of the
+/// product of the two.
+fn acute_corners(
+    poly: &MergedPoly,
+    core: Core,
+    push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
+) {
+    for ring in std::iter::once(&poly.outer).chain(poly.holes.iter()) {
+        let n = ring.len();
+        if n < 3 {
+            continue;
+        }
+        for i in 0..n {
+            let (p, v, q) = (ring[(i + n - 1) % n], ring[i], ring[(i + 1) % n]);
+            let u = ((v.x - p.x) as i128, (v.y - p.y) as i128);
+            let w = ((q.x - v.x) as i128, (q.y - v.y) as i128);
+            let left_turn = u.0 * w.1 - u.1 * w.0 > 0;
+            let dot = u.0 * w.0 + u.1 * w.1;
+            let longest2 = (u.0 * u.0 + u.1 * u.1).max(w.0 * w.0 + w.1 * w.1);
+            let past_right_angle = dot < 0 && 4 * dot * dot > 9 * longest2;
+            if left_turn && past_right_angle && core.owns(v.x as f64, v.y as f64) {
+                push_edge(v.x as f64, v.y as f64, v.x as f64, v.y as f64, 0.0);
+            }
+        }
+    }
+}
+
+/// A span between two grid points, filed with its lower end first so that the same span
+/// read from either end compares equal.
+type Span = ((i64, i64), (i64, i64));
+
+/// Widths read **across a corner**: two facing axis-aligned walls whose projections do
+/// not overlap, measured from the near end of one to the near end of the other.
+///
+/// The band sweeps pair walls along the stretch they share, and a pair that shares none
+/// (the bottom wall of one step of a jog and the top wall of the next, the two short
+/// stubs either side of a chamfer) was measured by nothing.  KLayout's `width` reads
+/// those under its euclidian metric: two edges with their material sides toward each
+/// other, closer than the value at their nearest points, are a width however they sit,
+/// and a jog whose steps are a few DBU apart is pinched there as surely as a neck.  The
+/// facing test is the band sweep's: a left wall against a right wall to its right, a
+/// bottom wall against a top wall above it.  Only a minimum reads this way; a maximum
+/// or an exact width is about the span the walls share.
+///
+/// Every right wall's two ends are filed by a cell the size of the limit, so a left wall
+/// asks only the cells around its own ends and a comb of a thousand fingers does not
+/// pay a million pairs.
+fn corner_widths(
+    vedges: &[VEdge],
+    hedges: &[HEdge],
+    core: Core,
+    push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
+    limit: Limit,
+) {
+    let l = limit.dbu();
+    if l <= 0 {
+        return;
+    }
+    let cell = |v: i64| v.div_euclid(l);
+    // A wall as (position across, lo, hi along) with the material on its high side
+    // (`near` = true: left or bottom wall) or its low side.
+    let run = |walls: Vec<(i64, i64, i64, bool)>,
+               swap: bool,
+               push: &mut dyn FnMut(f64, f64, f64, f64, f64),
+               seen: &mut HashSet<Span>| {
+        let mut grid: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
+        for (i, &(x, lo, hi, near)) in walls.iter().enumerate() {
+            if !near {
+                for y in [lo, hi] {
+                    grid.entry((cell(x), cell(y))).or_default().push(i);
+                }
+            }
+        }
+        for &(x, lo, hi, near) in &walls {
+            if !near {
+                continue;
+            }
+            let mut tried: HashSet<usize> = HashSet::new();
+            for y in [lo, hi] {
+                for dx in -1..=1 {
+                    for dy in -1..=1 {
+                        let Some(v) = grid.get(&(cell(x) + dx, cell(y) + dy)) else {
+                            continue;
+                        };
+                        for &j in v {
+                            if !tried.insert(j) {
+                                continue;
+                            }
+                            let (rx, rlo, rhi, _) = walls[j];
+                            let across = rx - x;
+                            if across <= 0 || across >= l {
+                                continue; // behind, or too far to be under the limit
+                            }
+                            // The gap along the walls between their near ends; negative
+                            // means they share a stretch, which the band sweep measured.
+                            let gap = (rlo - hi).max(lo - rhi);
+                            if gap < 0 {
+                                continue;
+                            }
+                            let dist2 =
+                                (across as i128) * (across as i128) + (gap as i128) * (gap as i128);
+                            if dist2 == 0 || !limit.broken_by_sq(dist2, 1) {
+                                continue;
+                            }
+                            let (p, q) = if rlo >= hi {
+                                ((x, hi), (rx, rlo))
+                            } else {
+                                ((x, lo), (rx, rhi))
+                            };
+                            let (p, q) = if swap {
+                                ((p.1, p.0), (q.1, q.0))
+                            } else {
+                                (p, q)
+                            };
+                            let (mx, my) = ((p.0 + q.0) as f64 * 0.5, (p.1 + q.1) as f64 * 0.5);
+                            if !core.owns(mx, my) {
+                                continue;
+                            }
+                            // A diagonal neck has a vertical and a horizontal wall at
+                            // each of its two corners, so both passes find it; the
+                            // span is filed by its ends so that it is written once.
+                            if seen.insert((p.min(q), p.max(q))) {
+                                push(
+                                    p.0 as f64,
+                                    p.1 as f64,
+                                    q.0 as f64,
+                                    q.1 as f64,
+                                    (dist2 as f64).sqrt(),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+    let mut seen: HashSet<Span> = HashSet::new();
+    run(
+        vedges
+            .iter()
+            .map(|v| (v.x as i64, v.ylo as i64, v.yhi as i64, v.left_wall))
+            .collect(),
+        false,
+        push_edge,
+        &mut seen,
+    );
+    run(
+        hedges
+            .iter()
+            .map(|h| (h.y as i64, h.xlo as i64, h.xhi as i64, h.bottom_wall))
+            .collect(),
+        true,
+        push_edge,
+        &mut seen,
+    );
 }
 
 /// Closest points of two segments and the distance between them, all in DBU.  Segments
@@ -880,7 +1075,45 @@ fn oblique_widths(
             let lo = taj.min(tbj).max(0);
             let hi = taj.max(tbj).min(len2);
             let run = hi - lo;
-            if run <= 0 || run * run <= min_run2 * len2 {
+            if run <= 0 {
+                // No shared stretch: two bars end to end, offset.  A minimum still reads
+                // the distance between their nearest ends, as `corner_widths` does for
+                // axis-aligned walls, when the filter is not choosing walls.
+                if walls.is_none() && matches!(limit, Limit::AtLeast(_)) {
+                    let ends_i = [
+                        (ei.ax as i128, ei.ay as i128),
+                        (ei.bx as i128, ei.by as i128),
+                    ];
+                    let ends_j = [
+                        (ej.ax as i128, ej.ay as i128),
+                        (ej.bx as i128, ej.by as i128),
+                    ];
+                    let mut best: Option<EndPair> = None;
+                    for p in ends_i {
+                        for q in ends_j {
+                            let d2 = (q.0 - p.0) * (q.0 - p.0) + (q.1 - p.1) * (q.1 - p.1);
+                            if best.is_none_or(|b| d2 < b.0) {
+                                best = Some((d2, p, q));
+                            }
+                        }
+                    }
+                    let (d2, p, q) = best.expect("two ends each");
+                    if d2 > 0 && limit.broken_by_sq(d2, 1) {
+                        let (mx, my) = ((p.0 + q.0) as f64 * 0.5, (p.1 + q.1) as f64 * 0.5);
+                        if core.owns(mx, my) {
+                            push_edge(
+                                p.0 as f64,
+                                p.1 as f64,
+                                q.0 as f64,
+                                q.1 as f64,
+                                (d2 as f64).sqrt(),
+                            );
+                        }
+                    }
+                }
+                continue;
+            }
+            if run * run <= min_run2 * len2 {
                 continue;
             }
             let dist = c as f64 / li;
@@ -1899,16 +2132,17 @@ mod width_tests {
     }
 
     /// An oblique width is a square root and is compared squared, so it is exact too.
-    /// A 45° bar whose walls sit 226 apart in y is 159.81 wide: under 160 by a fifth of a
-    /// DBU, which is a violation and not noise.  A bar along (300, 400) whose walls are
-    /// offset by (1, 268) is exactly 160 wide - the cross product is 80000 over a length
-    /// of 500 - and passes.
+    /// A 45° bar with square ends whose walls are offset by (-113, 113) is 159.81 wide:
+    /// under 160 by a fifth of a DBU, which is a violation and not noise; offset by
+    /// (-114, 114) it is 161.2 and passes.  A bar along (300, 400) whose walls are offset
+    /// by (-128, 96) is exactly 160 wide - the cross product is 80000 over a length of
+    /// 500 - and passes.
     #[test]
     fn an_oblique_span_is_compared_exactly() {
-        let bar = |dy: i32| poly(&[(0, 0), (1000, 1000), (1000, 1000 + dy), (0, dy)]);
-        assert_eq!(walls(&bar(226), Limit::AtLeast(160)), 2);
-        assert_eq!(walls(&bar(227), Limit::AtLeast(160)), 0);
-        let exact = poly(&[(0, 0), (300, 400), (301, 668), (1, 268)]);
+        let bar = |k: i32| poly(&[(0, 0), (1000, 1000), (1000 - k, 1000 + k), (-k, k)]);
+        assert_eq!(walls(&bar(113), Limit::AtLeast(160)), 2);
+        assert_eq!(walls(&bar(114), Limit::AtLeast(160)), 0);
+        let exact = poly(&[(0, 0), (300, 400), (172, 496), (-128, 96)]);
         assert_eq!(walls(&exact, Limit::AtLeast(160)), 0);
         assert_eq!(walls(&exact, Limit::AtLeast(161)), 2);
     }
