@@ -503,7 +503,6 @@ const DIST_CHECKS: &[&str] = &[
     "min_width",
     "max_width",
     "exact_width",
-    "min_45_width",
     "max_distance",
     "min_space",
     "min_space_different_net",

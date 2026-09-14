@@ -8,13 +8,11 @@ pub mod coverage;
 pub mod density;
 pub mod edge_distance;
 pub mod edge_length;
-pub mod exact_width;
 pub mod extent;
 pub mod forbidden;
 pub mod forbidden_overlap;
 pub mod forbidden_unless_labeled;
 pub mod gate_connected_min_area;
-pub mod gate_length;
 pub mod helper;
 pub mod inside_boundary;
 pub mod max_contained_area;
@@ -23,8 +21,6 @@ pub mod max_enclosure;
 pub mod max_nets_under;
 pub mod max_space;
 pub mod max_total_area;
-pub mod max_width;
-pub mod min_45_width;
 pub mod min_array_space;
 pub mod min_enclosed_area;
 pub mod min_enclosure;
@@ -39,7 +35,6 @@ pub mod min_space_different_net;
 pub mod min_space_prl;
 pub mod min_space_same_net;
 pub mod min_via_array;
-pub mod min_width;
 pub mod must_interact;
 pub mod no_angle;
 pub mod no_corner;
@@ -48,6 +43,7 @@ pub mod nonempty;
 pub mod offgrid;
 pub mod ring_covers_boundary;
 pub mod wide_uncovered;
+pub mod width;
 pub mod windowed_density;
 
 use crate::cache::Cache;
@@ -78,7 +74,7 @@ pub fn run_rule(
         "forbidden_unless_labeled" => {
             forbidden_unless_labeled::run(rule, layout, dbu_to_um, merged)
         }
-        "exact_width" => exact_width::run(rule, layout, dbu_to_um, merged),
+        "exact_width" => width::run(width::Kind::Exact, rule, layout, dbu_to_um, merged),
         "max_distance" => max_distance::run(rule, layout, dbu_to_um, merged),
         "forbidden" => forbidden::run(rule, layout, dbu_to_um),
         "forbidden_overlap" => forbidden_overlap::run(rule, layout, dbu_to_um, merged),
@@ -103,7 +99,7 @@ pub fn run_rule(
         "max_total_area" => max_total_area::run(rule, layout, dbu_to_um, merged),
         "no_angle" => no_angle::run(rule, layout, dbu_to_um, merged),
         "no_corner" => no_corner::run(rule, layout, dbu_to_um, merged),
-        "gate_length" => gate_length::run(rule, layout, dbu_to_um, merged),
+        "gate_length" => width::scan::run_gate_length(rule, layout, dbu_to_um, merged),
         "min_region_density" => min_region_density::run(rule, layout, dbu_to_um, merged),
         "wide_uncovered" => wide_uncovered::run(rule, layout, dbu_to_um, merged),
         "no_ring" => no_ring::run(rule, layout, dbu_to_um),
@@ -123,9 +119,8 @@ pub fn run_rule(
         "min_space_bent" => min_space_bent::run(rule, layout, dbu_to_um, merged),
         "min_array_space" => min_array_space::run(rule, layout, dbu_to_um, merged),
         "min_space_prl" => min_space_prl::run(rule, layout, dbu_to_um, merged),
-        "min_45_width" => min_45_width::run(rule, layout, dbu_to_um, merged),
-        "min_width" => min_width::run(rule, layout, dbu_to_um, merged),
-        "max_width" => max_width::run(rule, layout, dbu_to_um, merged),
+        "min_width" => width::run(width::Kind::Min, rule, layout, dbu_to_um, merged),
+        "max_width" => width::run(width::Kind::Max, rule, layout, dbu_to_um, merged),
         "min_windowed_density" => windowed_density::run_min(rule, layout, dbu_to_um, merged),
         "max_windowed_density" => windowed_density::run_max(rule, layout, dbu_to_um, merged),
         "offgrid" => offgrid::run(rule, layout, dbu_to_um, merged),

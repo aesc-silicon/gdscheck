@@ -42,9 +42,11 @@ rules:
       wide_width: 10.00
       parallel_run: 10.00
   - id: M4.g
-    check: min_45_width
+    check: min_width
     layers: [Metal4]
     value: 0.24
+    str_params:
+      angle: bent
     params:
       bent_length: 0.50
   - id: M4.i
