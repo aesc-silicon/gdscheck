@@ -11,7 +11,7 @@
 use super::Kind;
 use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, MergedPoly};
+use crate::merge::{Core, IntPoint, MergedCache, MergedPoly};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -75,7 +75,16 @@ fn scan_widths(
 ///
 /// A shared *run* of boundary is not a pinch: two pieces drawn edge to edge are one wide
 /// shape, and the width across it is whatever the scan measures.
-fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
+///
+/// The merge does not always hand the two pieces back as two polygons.  Two squares
+/// corner to corner can come back as *one* contour that passes through the shared
+/// corner twice, and a hole that reaches the outer boundary at a point does the same
+/// between two rings of one polygon; either way the vertex is the same width of zero.
+/// So a vertex a polygon's own rings visit twice is a
+/// pinch too, and so is a vertex that sits on the inside of an edge - the tip of a notch
+/// meeting a straight wall, where the merge keeps the wall as one edge and the touch has
+/// no vertex of its own on that side.
+pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     // Every vertex filed once under its coordinates; a pinch is a vertex two polygons
     // share.  Trying every pair of polygons through a set intersection was quadratic in
     // the tile, and a tile of five hundred vias - none of which touch anything - paid
@@ -99,6 +108,86 @@ fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
         }
     }
     let mut out = Vec::new();
+    // Within one polygon: a vertex its own rings visit twice.
+    for p in polys {
+        let mut count: HashMap<(i32, i32), u32> = HashMap::new();
+        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+            *count.entry((q.x, q.y)).or_default() += 1;
+        }
+        let mut twice: Vec<_> = count
+            .into_iter()
+            .filter(|&(_, n)| n >= 2)
+            .map(|(v, _)| v)
+            .collect();
+        twice.sort_unstable();
+        out.extend(twice.into_iter().map(|(x, y)| (x as f64, y as f64)));
+    }
+    // A vertex on the *interior* of an edge: the tip of a notch touching a straight
+    // wall.  No ring visits that point twice - the wall runs straight through it - so
+    // neither lookup above sees it.  Every edge is filed by the cells its box covers, and
+    // a vertex asks the edges in its own cell.  A vertex whose own edge runs along the
+    // edge it sits on is the end of an abutting run, not a pinch: a layer delivered as
+    // core-clipped pieces meets itself that way along every tile line.
+    const CELL: i64 = 4096;
+    let cell = |v: i32| (v as i64).div_euclid(CELL);
+    let mut edges: Vec<(IntPoint, IntPoint)> = Vec::new();
+    let mut by_cell: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
+    for p in polys {
+        for ring in std::iter::once(&p.outer).chain(p.holes.iter()) {
+            let n = ring.len();
+            for i in 0..n {
+                let (a, b) = (ring[i], ring[(i + 1) % n]);
+                if a == b {
+                    continue;
+                }
+                let k = edges.len();
+                edges.push((a, b));
+                for cx in cell(a.x.min(b.x))..=cell(a.x.max(b.x)) {
+                    for cy in cell(a.y.min(b.y))..=cell(a.y.max(b.y)) {
+                        by_cell.entry((cx, cy)).or_default().push(k);
+                    }
+                }
+            }
+        }
+    }
+    let collinear = |u: (i128, i128), v: (i128, i128)| u.0 * v.1 - u.1 * v.0 == 0;
+    let mut touched: Vec<(i32, i32)> = Vec::new();
+    for p in polys {
+        for ring in std::iter::once(&p.outer).chain(p.holes.iter()) {
+            let n = ring.len();
+            for i in 0..n {
+                let v = ring[i];
+                let (prev, next) = (ring[(i + n - 1) % n], ring[(i + 1) % n]);
+                let own = [
+                    ((v.x - prev.x) as i128, (v.y - prev.y) as i128),
+                    ((next.x - v.x) as i128, (next.y - v.y) as i128),
+                ];
+                let Some(cands) = by_cell.get(&(cell(v.x), cell(v.y))) else {
+                    continue;
+                };
+                for &k in cands {
+                    let (a, b) = edges[k];
+                    if a == v || b == v {
+                        continue; // its own edge, or one that ends here
+                    }
+                    let d = ((b.x - a.x) as i128, (b.y - a.y) as i128);
+                    let w = ((v.x - a.x) as i128, (v.y - a.y) as i128);
+                    let along = w.0 * d.0 + w.1 * d.1;
+                    if !collinear(d, w) || along <= 0 || along >= d.0 * d.0 + d.1 * d.1 {
+                        continue; // not strictly inside this edge
+                    }
+                    if own.iter().any(|&o| collinear(o, d)) {
+                        continue; // runs along it: abutting
+                    }
+                    touched.push((v.x, v.y));
+                    break;
+                }
+            }
+        }
+    }
+    touched.sort_unstable();
+    touched.dedup();
+    out.extend(touched.into_iter().map(|(x, y)| (x as f64, y as f64)));
     let mut pairs: Vec<_> = shared_by.into_iter().collect();
     pairs.sort_unstable();
     for ((i, j), mut shared) in pairs {
@@ -165,7 +254,7 @@ pub fn run_width(
                     y1: (ty as i64 + 1) * tile,
                 };
                 let mut pinches: Vec<Violation> = Vec::new();
-                if !oblique_only && limit.broken_by(0) {
+                if !oblique_only && matches!(limit, Limit::AtLeast(_)) {
                     for (px, py) in pinch_points(polys) {
                         if !core.owns(px, py) {
                             continue; // owned by the tile the point falls in
@@ -318,6 +407,26 @@ pub fn run_gate(
             }
             let excluded = omap.map(|m| m.get(&(tx, ty)).unwrap_or(&none).as_slice());
             let walls = WallFilter::new(refs, on, excluded);
+            // A pinch is a width of zero at a vertex; it counts where the filter would
+            // keep that point.  A bent-only rule reads 45° runs and a vertex has none.
+            if kind == Kind::Min && !bent_only {
+                for (px, py) in pinch_points(polys) {
+                    if !core.owns(px, py) || !walls.keeps_point(px as i32, py as i32) {
+                        continue;
+                    }
+                    let (x, y) = (px * dbu_to_um, py * dbu_to_um);
+                    out.push(Violation::point(
+                        rid,
+                        label,
+                        format!(
+                            "{bname}: width 0.0000 µm {cmp} {limit_um:.2} µm at ({x:.4}, \
+                             {y:.4}) µm — the layer pinches to a point"
+                        ),
+                        x,
+                        y,
+                    ));
+                }
+            }
             for p in polys {
                 out.extend(scan_widths(
                     p,
@@ -360,12 +469,12 @@ mod tests {
         }
     }
 
-    /// Thin 45° trace (~99 DBU walls) flagged by a `< 160` (min-width) predicate:
-    /// both walls reported, nothing from the orthogonal end-caps.
+    /// Thin 45° trace (141 DBU across) flagged by a `< 160` (min-width) predicate:
+    /// both walls reported, nothing from the end-caps, which are square to the trace.
     #[test]
     fn oblique_45_thin_trace_flags_both_walls() {
         let poly = MergedPoly {
-            outer: vec![pt(0, 0), pt(1000, 1000), pt(1000, 1140), pt(0, 140)],
+            outer: vec![pt(0, 0), pt(1000, 1000), pt(900, 1100), pt(-100, 100)],
             holes: vec![],
         };
         let v = scan_widths(
@@ -389,7 +498,7 @@ mod tests {
     #[test]
     fn oblique_45_wide_trace_is_clean() {
         let poly = MergedPoly {
-            outer: vec![pt(0, 0), pt(1000, 1000), pt(1000, 2400), pt(0, 1400)],
+            outer: vec![pt(0, 0), pt(1000, 1000), pt(0, 2000), pt(-1000, 1000)],
             holes: vec![],
         };
         let v = scan_widths(
