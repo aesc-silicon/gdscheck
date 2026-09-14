@@ -34,9 +34,11 @@ pub fn generate(pdk: &PdkConfig) {
 
     // --- O.PL.2: the gate length, measured between the poly's own two walls -----------
     //
-    // The channel edges are `poly.edges and tgate.edges` — the poly's sidewalls where it
-    // crosses the active — and the rule is the distance *through the poly* between them.
-    // No region carries it: the poly region here is 3 um long and the gate is 0.22 wide.
+    // Upstream pairs `poly.edges and tgate.edges` — the poly's sidewalls where it crosses
+    // the active — and the rule is the distance *through the poly* between them.  Here it
+    // is the poly's width masked to the gate: the same two walls, since a poly stripe has
+    // walls in one direction only.  The poly region is 3 um long and the gate 0.22 wide,
+    // so the width and not the length is what the mask keeps.
     //
     // The COMP is drawn wide enough that the poly's overhang clears O.DF.6's 0.22 um and
     // the COMP's own reach clears O.PL.4's 0.14, so nothing but the width is under test.

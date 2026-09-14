@@ -5182,14 +5182,6 @@ edge_layers:
     min: 0.006
     layers: [np5dii_fg_all]
 
-  # O.PL.2: the OTP gate's own two walls, and the poly width between them.
-  - name: poly_otp.edges
-    op: edges
-    layers: [poly_otp]
-  - name: opl2_channel
-    op: and
-    layers: [poly_otp.edges, tgate.edges]
-
   # O.PL.ORT: an orientation-restricted gate's width must run along x, so a channel edge
   # that is not horizontal is the violation.
   - name: comp_otp_no_poly.edges
