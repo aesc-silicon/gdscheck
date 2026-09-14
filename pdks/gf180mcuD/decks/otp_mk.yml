@@ -27,8 +27,8 @@ rules:
     layers: [comp_otp]
     value: 0.1444
   - id: O.PL.2
-    check: min_width
-    layers: [opl2_channel]
+    check: gate_length
+    layers: [poly_otp, tgate]
     value: 0.22
   - id: O.PL.3a
     check: min_space
