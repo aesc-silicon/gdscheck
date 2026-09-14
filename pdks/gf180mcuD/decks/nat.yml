@@ -20,13 +20,17 @@ rules:
     layers: [nat, nwell]
     value: 0.5
   - id: NAT.4
-    check: min_width
-    layers: [nat4_channel]
+    check: min_gate_length
+    layers: [poly_nat_lv, ngate]
     value: 1.8
+    layer_params:
+      outside: nwell
   - id: NAT.5
-    check: min_width
-    layers: [nat5_channel]
+    check: min_gate_length
+    layers: [poly_nat_mv, ngate]
     value: 1.8
+    layer_params:
+      outside: nwell
   - id: NAT.6
     check: max_nets_under
     layers: [nat, nat6_comp, comp]

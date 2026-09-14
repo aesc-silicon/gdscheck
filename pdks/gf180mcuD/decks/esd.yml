@@ -61,6 +61,6 @@ rules:
     layers: [esd10_viol]
     value: 0.0
   - id: ESD.pl
-    check: gate_length
+    check: min_gate_length
     layers: [poly_esd, tgate]
     value: 0.8

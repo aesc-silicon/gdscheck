@@ -141,11 +141,11 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nat(
     "nat", "nat.gds.gz", "10_5_NAT",
-    &[("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2), ("NAT.2", 4), ("NAT.3", 3), ("NAT.4", 24), ("NAT.5", 10), ("NAT.6", 7), ("NAT.7", 2), ("NAT.8", 5), ("NAT.9", 4)]
+    &[("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2), ("NAT.2", 4), ("NAT.3", 3), ("NAT.4", 24), ("NAT.5", 12), ("NAT.6", 7), ("NAT.7", 2), ("NAT.8", 5), ("NAT.9", 4)]
 )]
 #[case::ldnmos(
     "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
-    &[("MDN.1", 44), ("MDN.10a", 65), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 109), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 9), ("MDN.3b", 4), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
+    &[("MDN.1", 44), ("MDN.10a", 65), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 109), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 9), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
 )]
 #[case::lvpwell(
     "lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL",
@@ -177,7 +177,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::poly2(
     "poly2", "poly2.gds.gz", "7_7_Poly2",
-    &[("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 23), ("PL.1_MV", 22), ("PL.1a_LV", 9), ("PL.1a_MV", 9), ("PL.2_LV", 98), ("PL.2_MV", 306), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6), ("PL.6", 718), ("PL.7_LV", 40), ("PL.7_MV", 84), ("PL.9", 11)]
+    &[("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 23), ("PL.1_MV", 22), ("PL.1a_LV", 9), ("PL.1a_MV", 9), ("PL.2_LV", 98), ("PL.2_MV", 394), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6), ("PL.6", 718), ("PL.7_LV", 40), ("PL.7_MV", 88), ("PL.9", 11)]
 )]
 #[case::dnwell(
     "dnwell", "dnwell.gds.gz", "7_2_DNWELL",
@@ -197,7 +197,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ymtp_mk(
     "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
-    &[("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 14), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 99), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 6), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6)]
+    &[("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 14), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 99), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 168), ("Y.PL.4_MV", 6), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6)]
 )]
 #[case::contact(
     "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
@@ -217,7 +217,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
-    &[("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 66), ("O.PL.3a", 14), ("O.PL.4", 9), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 6), ("O.SB.4", 2), ("O.SB.5b_LV", 6), ("O.SB.9", 1)]
+    &[("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 70), ("O.PL.3a", 14), ("O.PL.4", 9), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 6), ("O.SB.4", 2), ("O.SB.5b_LV", 6), ("O.SB.9", 1)]
 )]
 #[case::mcell(
     "mcell", "mcell.gds.gz", "7_17_Mcell",
@@ -817,9 +817,9 @@ fn pl5_touching_corner_is_a_zero_separation() {
 // its misses are all pinch- or 45°-shaped, which no axis-aligned fixture reaches — the
 // other fourteen would pin rules already exact against geometry that is not where the
 // risk is. These two carry engine surface with almost nothing else behind it: `O.PL.2` is
-// the only `gate_length` outside the ESD deck - the poly's width masked to where it
-// crosses the active - and `O.SB.11` one of two users of `min_overlap`, which had no
-// drawn pattern at all.
+// a `min_gate_length` whose reference is the channel itself - the poly's width between the
+// walls it shares with the gate outline - and `O.SB.11` one of two users of
+// `min_overlap`, which had no drawn pattern at all.
 
 #[test]
 fn otp_mk_patterns_cover_the_new_relations() {

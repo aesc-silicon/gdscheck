@@ -31,16 +31,18 @@ rules:
     params:
       interacting_only: 1
   - id: MDN.3b
-    check: max_width
-    layers: [ldnmos_gate_sides]
+    check: max_gate_length
+    layers: [ldnmos_body, ncomp]
     value: 20.0
+    str_params:
+      walls: unshared
   - id: MDN.4a
     check: nonempty
     layers: [mdn4a_viol]
     value: 0.0
   - id: MDN.4b
-    check: max_width
-    layers: [ldnmos_gate_ends]
+    check: max_gate_length
+    layers: [ldnmos_body, ncomp]
     value: 50.0
   - id: MDN.5ai
     check: min_space

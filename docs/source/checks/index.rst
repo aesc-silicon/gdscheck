@@ -12,17 +12,19 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
 
    antenna_ratio
    coverage
+   exact_gate_length
    exact_width
    forbidden
    forbidden_overlap
    forbidden_unless_labeled
    gate_connected_min_area
-   gate_length
    inside_boundary
    max_area
    max_density
    max_dim
    max_enclosure
+   max_gate_length
+   min_gate_length
    max_length
    max_space
    max_total_area

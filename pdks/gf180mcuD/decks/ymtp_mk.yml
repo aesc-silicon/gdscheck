@@ -43,13 +43,17 @@ rules:
     layers: [poly_ymtp_mv_out_pf]
     value: 0.0
   - id: Y.PL.2_LV
-    check: min_width
-    layers: [ypl2_lv_channel]
+    check: min_gate_length
+    layers: [poly_ymtp_lv, tgate]
     value: 0.13
+    layer_params:
+      outside: otp_mk
   - id: Y.PL.2_MV
-    check: min_width
-    layers: [ypl2_mv_channel]
+    check: min_gate_length
+    layers: [poly_ymtp_mv, tgate]
     value: 0.47
+    layer_params:
+      outside: otp_mk
   - id: Y.PL.4_MV
     check: min_enclosure
     layers: [poly_ymtp_mv, comp_ymtp_mv]

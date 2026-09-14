@@ -1908,7 +1908,7 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [comp, pl_exclude]
-  # PL.2: the gate region the channel-length measurement is masked to.
+  # PL.2: the gate region whose channel length is measured.
   - name: tgate_at_poly2_lv
     op: interacting
     mode: lazy
@@ -4727,16 +4727,12 @@ edge_layers:
     op: edges
     layers: [plfuse]
   # The LDMOS body is the gate poly over the active with the drift marker taken out, so
-  # wherever the active cut it its boundary *is* the active's.  That is the split the
-  # channel rules need: the walls the gate brought with it stand across the channel and
-  # the distance between them is its length, while the ones the active cut stand at the
-  # ends and the distance between them is the transistor's width.
+  # wherever the active cut it its boundary *is* the active's: those walls stand at the
+  # ends of the channel.  The gate-length rules pick walls by that directly; these edge
+  # layers serve the rules that read the ends as edges.
   - name: ldnmos_body.edges
     op: edges
     layers: [ldnmos_body]
-  - name: ldnmos_gate_sides
-    op: not
-    layers: [ldnmos_body.edges, ncomp.edges]
   - name: ldnmos_gate_ends
     op: and
     layers: [ldnmos_body.edges, ncomp.edges]
@@ -4760,9 +4756,6 @@ edge_layers:
   - name: mdp2_viol
     op: and
     layers: [ldpmos_gate_ends, mdp2_narrow]
-  - name: ldpmos_gate_sides
-    op: not
-    layers: [ldpmos_body.edges, pcomp.edges]
   - name: mdp3c_ncomp.edges
     op: edges
     layers: [mdp3c_ncomp]
@@ -5198,117 +5191,6 @@ edge_layers:
   - name: oplort_viol
     op: outside_part
     layers: [oplort_turned, v5_xtor]
-  # Channel length: the gate's own edges where they run inside the COMP, and the width
-  # between them. Upstream says every one of these as an edge measurement, so they are
-  # `min_width` on an edge layer rather than a region check with a mask.
-  - name: tgate_pl2_lv.edges
-    op: edges
-    layers: [tgate_pl2_lv]
-  - name: pl2_lv_channel
-    op: inside_part
-    layers: [tgate_pl2_lv.edges, comp]
-  - name: ngate_5v.edges
-    op: edges
-    layers: [ngate_5v]
-  - name: pl2_mv_n_channel
-    op: inside_part
-    layers: [ngate_5v.edges, comp]
-  - name: pgate_5v.edges
-    op: edges
-    layers: [pgate_5v]
-  - name: pl2_mv_p_channel
-    op: inside_part
-    layers: [pgate_5v.edges, comp]
-  - name: ngate_6v.edges
-    op: edges
-    layers: [ngate_6v]
-  - name: pl2_6v_n_channel
-    op: inside_part
-    layers: [ngate_6v.edges, comp]
-  - name: pgate_6v.edges
-    op: edges
-    layers: [pgate_6v]
-  - name: pl2_6v_p_channel
-    op: inside_part
-    layers: [pgate_6v.edges, comp]
-  - name: poly_nat_lv.edges
-    op: edges
-    layers: [poly_nat_lv]
-  - name: nat4_shared
-    op: and
-    layers: [poly_nat_lv.edges, ngate.edges]
-  - name: nat4_channel
-    op: outside_part
-    layers: [nat4_shared, nwell]
-  - name: poly_nat_mv.edges
-    op: edges
-    layers: [poly_nat_mv]
-  - name: nat5_shared
-    op: and
-    layers: [poly_nat_mv.edges, ngate.edges]
-  - name: nat5_channel
-    op: outside_part
-    layers: [nat5_shared, nwell]
-  - name: poly_ymtp_lv.edges
-    op: edges
-    layers: [poly_ymtp_lv]
-  - name: ypl2_lv_shared
-    op: and
-    layers: [poly_ymtp_lv.edges, tgate.edges]
-  - name: ypl2_lv_channel
-    op: outside_part
-    layers: [ypl2_lv_shared, otp_mk]
-  - name: poly_ymtp_mv.edges
-    op: edges
-    layers: [poly_ymtp_mv]
-  - name: ypl2_mv_shared
-    op: and
-    layers: [poly_ymtp_mv.edges, tgate.edges]
-  - name: ypl2_mv_channel
-    op: outside_part
-    layers: [ypl2_mv_shared, otp_mk]
-
-  # PL.7: the width across a gate that bends at 45 degrees, measured between the gate's
-  # own diagonal edges where they run inside the COMP. Angles normalise to [0, 180), so
-  # upstream's 25..65 and -65..-25 are 25..65 and 115..155 here.
-  - name: nom_gate.edges
-    op: edges
-    layers: [nom_gate]
-  - name: nom_gate_in_comp
-    op: inside_part
-    layers: [nom_gate.edges, comp]
-  - name: pl7_nom_rise
-    op: with_angle
-    min: 25
-    max: 65
-    layers: [nom_gate_in_comp]
-  - name: pl7_nom_fall
-    op: with_angle
-    min: 115
-    max: 155
-    layers: [nom_gate_in_comp]
-  - name: pl7_nom
-    op: or
-    layers: [pl7_nom_rise, pl7_nom_fall]
-  - name: thick_gate.edges
-    op: edges
-    layers: [thick_gate]
-  - name: thick_gate_in_comp
-    op: inside_part
-    layers: [thick_gate.edges, comp]
-  - name: pl7_thick_rise
-    op: with_angle
-    min: 25
-    max: 65
-    layers: [thick_gate_in_comp]
-  - name: pl7_thick_fall
-    op: with_angle
-    min: 115
-    max: 155
-    layers: [thick_gate_in_comp]
-  - name: pl7_thick
-    op: or
-    layers: [pl7_thick_rise, pl7_thick_fall]
   - name: comp_3p3v_no_poly.edges
     op: edges
     layers: [comp_3p3v_no_poly]

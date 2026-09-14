@@ -5,8 +5,8 @@
 //! Width: the perpendicular span of material between two facing walls of one merged
 //! region.
 //!
-//! Three rules read it - at least, at most, exactly - and the gate length reads it under
-//! a mask.  All are one measurement, the facing-wall scan in
+//! Three rules read it - at least, at most, exactly - and the gate rules read it between
+//! chosen walls.  All are one measurement, the facing-wall scan in
 //! [`crate::geom::width_pairs`], driven over the tiles by [`scan::run_width`]; what a rule
 //! adds is its bound and which passes of the scan it wants.  A plain rule wants the
 //! axis-aligned sweeps and the oblique pass; one restricted to 45° runs (`angle: bent`)
@@ -43,8 +43,35 @@ impl Kind {
         }
     }
 
+    /// The gate check's name, the same bound between chosen walls.
+    pub fn gate_name(self) -> &'static str {
+        match self {
+            Kind::Min => "min_gate_length",
+            Kind::Max => "max_gate_length",
+            Kind::Exact => "exact_gate_length",
+        }
+    }
+
+    /// The bound on the grid.
+    pub fn limit(self, value_um: f64, dbu_to_um: f64) -> Limit {
+        match self {
+            Kind::Min => Limit::at_least(value_um, dbu_to_um),
+            Kind::Max => Limit::at_most(value_um, dbu_to_um),
+            Kind::Exact => Limit::exactly(value_um, dbu_to_um),
+        }
+    }
+
+    /// The failing comparison, the inverse of [`Self::op`].
+    pub(super) fn cmp(self) -> &'static str {
+        match self {
+            Kind::Min => "<",
+            Kind::Max => ">",
+            Kind::Exact => "≠",
+        }
+    }
+
     /// The requirement, as the log prints it.
-    fn op(self) -> &'static str {
+    pub(super) fn op(self) -> &'static str {
         match self {
             Kind::Min => ">=",
             Kind::Max => "<=",
@@ -69,27 +96,28 @@ pub fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    // An edge layer carries no region to scan: the pairing form in `edge_distance` reads
-    // those, for the two bounds it knows.
-    if super::edge_distance::on_edge_layers(rule, merged, kind.width_name()) {
-        return match kind {
-            Kind::Min => super::edge_distance::run_width(rule, layout, dbu_to_um, merged),
-            Kind::Max => super::edge_distance::run_max_width(rule, layout, dbu_to_um, merged),
-            Kind::Exact => {
-                eprintln!(
-                    "[{}] {}: not defined on an edge layer",
-                    rule.id,
-                    kind.width_name()
-                );
-                vec![]
-            }
-        };
+    // A width is the thickness of a region, and an edge layer carries no region: it used
+    // to be read by pairing its segments, which could not tell a gap from a thickness
+    // without the region anyway.  A rule that wants the width between chosen walls names
+    // the region and the reference with a gate rule instead.  Saying so beats passing
+    // in silence on a layer with no polygons, which is the failure this engine works
+    // hardest to avoid.
+    if let Some(l) = rule
+        .layers
+        .iter()
+        .find(|l| merged.is_edge_layer((l.gds_layer as i16, l.gds_datatype as i16)))
+    {
+        eprintln!(
+            "[{}] {}: '{}' is an edge layer - a width is measured on a region; to measure \
+             between chosen walls, name the region and the reference with {}",
+            rule.id,
+            kind.width_name(),
+            l.name,
+            kind.gate_name()
+        );
+        return vec![];
     }
-    let limit = match kind {
-        Kind::Min => Limit::at_least(rule.value, dbu_to_um),
-        Kind::Max => Limit::at_most(rule.value, dbu_to_um),
-        Kind::Exact => Limit::exactly(rule.value, dbu_to_um),
-    };
+    let limit = kind.limit(rule.value, dbu_to_um);
     // `angle: bent` reads the 45° runs alone - the axis-aligned material is a plain
     // rule's business - and only where the run is long enough to be a trace rather than
     // a chamfer, `bent_length` µm; the others drop nothing.
@@ -127,4 +155,16 @@ pub fn run(
         mixed,
         min_run_dbu,
     )
+}
+
+/// The width of `layers[0]` between the walls it shares with the boundary of
+/// `layers[1]`, under the bound `kind` puts on it.  See [`scan::run_gate`].
+pub fn run_gate(
+    kind: Kind,
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    scan::run_gate(kind, rule, layout, dbu_to_um, merged)
 }
