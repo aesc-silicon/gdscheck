@@ -58,7 +58,7 @@ rules:
     str_params:
       angle: bent
     params:
-      bent_length: 0.39
+      length: 0.39
   - id: GFil.a
     check: max_width
     layers: [GatPoly.filler]

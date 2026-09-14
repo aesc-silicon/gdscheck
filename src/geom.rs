@@ -490,7 +490,13 @@ fn complement<T: Copy + PartialOrd>(covered: &[(T, T)], lo: T, hi: T) -> Vec<(T,
 /// violations, and an edge layer built from a width can take the same pairs as geometry.
 /// With a [`WallFilter`] the pairs are cut to the stretches whose walls the filter keeps,
 /// and a pair with no such stretch is dropped; the mixed pass is not filtered, since the
-/// rules that filter do not ask for it.
+/// rules that filter do not ask for it.  `min_run` is the stretch two walls must share -
+/// the projection of one onto the other, taken over the whole walls and not the band the
+/// sweep happens to be in - before their width counts at all: a rule that binds only
+/// lines longer than so much.  Under a [`WallFilter`] the run is the stretch the filter
+/// kept, since that stretch is the thing being measured.  With a run required, the
+/// readings that have none (across a corner, at a pinch, at an acute tip, between a
+/// chamfer and a wall) are off.
 ///
 /// The arithmetic is exact.  Coordinates are integers, so an axis-aligned span is one,
 /// and an oblique span - a square root - is compared squared, as a ratio of two integers
@@ -522,11 +528,11 @@ pub fn width_pairs(
         let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
         if core.owns(cx, cy) {
             let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
-            if w > 0 && limit.broken_by(w) {
+            if w > 0 && h > min_run && limit.broken_by(w) {
                 out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w as f64));
                 out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w as f64));
             }
-            if h > 0 && limit.broken_by(h) {
+            if h > 0 && w > min_run && limit.broken_by(h) {
                 out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h as f64));
                 out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h as f64));
             }
@@ -559,7 +565,8 @@ pub fn width_pairs(
                 let (l, r) = (pair[0], pair[1]);
                 if l.left_wall && !r.left_wall {
                     let width = r.x as i64 - l.x as i64;
-                    if width > 0 && limit.broken_by(width) {
+                    let run = l.yhi.min(r.yhi) as i64 - l.ylo.max(r.ylo) as i64;
+                    if width > 0 && (walls.is_some() || run > min_run) && limit.broken_by(width) {
                         let (yb, yb1) = (yb as i64, yb1 as i64);
                         let stretches = match walls {
                             None => vec![(yb, yb1)],
@@ -567,6 +574,9 @@ pub fn width_pairs(
                         };
                         let cx = (l.x as f64 + r.x as f64) * 0.5;
                         for (s0, s1) in stretches {
+                            if walls.is_some() && s1 - s0 <= min_run {
+                                continue;
+                            }
                             let cy = (s0 as f64 + s1 as f64) * 0.5;
                             if core.owns(cx, cy) {
                                 push_edge(
@@ -606,7 +616,8 @@ pub fn width_pairs(
                 let (b, t) = (pair[0], pair[1]);
                 if b.bottom_wall && !t.bottom_wall {
                     let height = t.y as i64 - b.y as i64;
-                    if height > 0 && limit.broken_by(height) {
+                    let run = b.xhi.min(t.xhi) as i64 - b.xlo.max(t.xlo) as i64;
+                    if height > 0 && (walls.is_some() || run > min_run) && limit.broken_by(height) {
                         let (xb, xb1) = (xb as i64, xb1 as i64);
                         let stretches = match walls {
                             None => vec![(xb, xb1)],
@@ -614,6 +625,9 @@ pub fn width_pairs(
                         };
                         let cy = (b.y as f64 + t.y as f64) * 0.5;
                         for (s0, s1) in stretches {
+                            if walls.is_some() && s1 - s0 <= min_run {
+                                continue;
+                            }
                             let cx = (s0 as f64 + s1 as f64) * 0.5;
                             if core.owns(cx, cy) {
                                 push_edge(
@@ -638,10 +652,10 @@ pub fn width_pairs(
         }
     } // end !oblique_only
 
-    if mixed {
+    if mixed && min_run == 0 {
         mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, limit);
     }
-    if !oblique_only && walls.is_none() && matches!(limit, Limit::AtLeast(_)) {
+    if !oblique_only && walls.is_none() && min_run == 0 && matches!(limit, Limit::AtLeast(_)) {
         corner_widths(&vedges, &hedges, core, &mut push_edge, limit);
         acute_corners(poly, core, &mut push_edge);
     }
@@ -1078,8 +1092,9 @@ fn oblique_widths(
             if run <= 0 {
                 // No shared stretch: two bars end to end, offset.  A minimum still reads
                 // the distance between their nearest ends, as `corner_widths` does for
-                // axis-aligned walls, when the filter is not choosing walls.
-                if walls.is_none() && matches!(limit, Limit::AtLeast(_)) {
+                // axis-aligned walls, when the filter is not choosing walls and no run is
+                // required.
+                if walls.is_none() && min_run == 0 && matches!(limit, Limit::AtLeast(_)) {
                     let ends_i = [
                         (ei.ax as i128, ei.ay as i128),
                         (ei.bx as i128, ei.by as i128),
@@ -1113,7 +1128,7 @@ fn oblique_widths(
                 }
                 continue;
             }
-            if run * run <= min_run2 * len2 {
+            if walls.is_none() && run * run <= min_run2 * len2 {
                 continue;
             }
             let dist = c as f64 / li;
@@ -1143,6 +1158,9 @@ fn oblique_widths(
                 }
             };
             for (s0, s1) in stretches {
+                if walls.is_some() && s1 - s0 <= min_run as f64 {
+                    continue;
+                }
                 let mid = (s0 + s1) * 0.5;
                 let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
                 let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
@@ -2129,6 +2147,34 @@ mod width_tests {
         let ell = |w: i32| poly(&[(0, 0), (1000, 0), (1000, w), (w, w), (w, 1000), (0, 1000)]);
         assert_eq!(walls(&ell(150), Limit::AtLeast(150)), 0);
         assert_eq!(walls(&ell(150), Limit::AtLeast(151)), 4);
+    }
+
+    /// A bar with a stub on top: the stub splits the sweep's bands, but the run two walls
+    /// share is the projection of the whole walls, so a `min_run` reads the bar's length
+    /// and not the band's.  The bottom wall and the top wall left of the stub share 400.
+    #[test]
+    fn the_run_is_the_walls_projection_not_the_band() {
+        let bar = poly(&[
+            (0, 0),
+            (1000, 0),
+            (1000, 150),
+            (600, 150),
+            (600, 300),
+            (400, 300),
+            (400, 150),
+            (0, 150),
+        ]);
+        let core = Core {
+            x0: -1_000_000,
+            y0: -1_000_000,
+            x1: 1_000_000,
+            y1: 1_000_000,
+        };
+        let with = |run: i64| width_pairs(&bar, core, Limit::AtLeast(151), None, false, true, run);
+        // Both 150-high stretches beside the stub, two walls each.
+        assert_eq!(with(0).len(), 4);
+        assert_eq!(with(399).len(), 4);
+        assert_eq!(with(400).len(), 0);
     }
 
     /// An oblique width is a square root and is compared squared, so it is exact too.

@@ -63,15 +63,17 @@ Parameters
 ----------
 
 ``str_params: angle``
-   ``bent`` measures only the 45° runs, and only where a run is longer than
-   ``bent_length``. A fab may ask more width of a diagonal than of a straight trace, since
-   the grid resolves a diagonal as a staircase; that rule sits beside the plain one with
-   its own value, and a short chamfer at a corner is not a trace and is left to the plain
-   rule.
+   ``bent`` measures only the 45° runs. A fab may ask more width of a diagonal than of a
+   straight trace, since the grid resolves a diagonal as a staircase; that rule sits beside
+   the plain one with its own value.
 
-``params: bent_length``
-   With ``angle: bent``: the run (µm) a diagonal wall pair must share before its width is
-   considered. Optional, defaults to ``0.5``.
+``params: length``
+   The run (µm) two facing walls must share — the projection of one onto the other, over
+   the whole walls — before their width counts. A rule that binds only lines longer than
+   so much, or, with ``angle: bent``, only bends long enough to be a trace rather than a
+   corner chamfer. With a run required, the readings that have none (across a corner, at a
+   pinch or acute tip, between a chamfer and a wall) are off. KLayout's
+   ``projection_limits``. Optional, defaults to ``0``.
 
 
 Violation markers
@@ -104,4 +106,4 @@ Example
       str_params:
         angle: bent
       params:
-        bent_length: 0.50
+        length: 0.50
