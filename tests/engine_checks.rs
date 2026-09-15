@@ -185,3 +185,82 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
         "{pattern}"
     );
 }
+
+/// The width family from a deck: what the drivers add to the measurement.  A pair across
+/// a tile line is reported once; the parameters arrive; a pinch is a point, an acute tip
+/// a point each, a diagonal neck one span; an exact width has no span at a pinch.
+///
+/// - `straddle_min` is a 0.4 µm bar across the line at x = 40 with its midpoint off the
+///   line; `straddle_max` a block 12 µm across it and 8 tall, over W.max's 10 in one
+///   dimension only.
+/// - `bent_trace` is a 45° bar 0.6 across and 5 long, under W.bent's 0.7 and over
+///   W.min's 0.5; `bent_short` the same bar 0.8 long, shorter than W.bent's 1 µm run.
+/// - `length_long` and `length_short` are 0.4 µm bars of Inner 6 and 4 µm long either
+///   side of W.len's 5 µm.
+/// - `exact_ok` is a 0.3 µm via, `exact_off` one 0.3 by 0.32.
+/// - `pinch` is two squares corner to corner, `acute` a right isosceles triangle, and
+///   `corner` two squares overlapping 0.2 µm diagonally, whose neck is 0.28 µm from the
+///   upper square's left wall to the lower square's right wall.
+#[rstest]
+#[case("straddle_min", "W.min", 2)]
+#[case("straddle_min", "W.max", 0)]
+#[case("straddle_max", "W.max", 2)]
+#[case("straddle_max", "W.min", 0)]
+#[case("bent_trace", "W.bent", 2)]
+#[case("bent_trace", "W.min", 0)]
+#[case("bent_short", "W.bent", 0)]
+#[case("length_long", "W.len", 2)]
+#[case("length_short", "W.len", 0)]
+#[case("exact_ok", "W.exact", 0)]
+#[case("exact_off", "W.exact", 2)]
+#[case("pinch", "W.min", 1)]
+#[case("pinch", "W.max", 0)]
+#[case("acute", "W.min", 2)]
+#[case("corner", "W.min", 1)]
+fn width_rules_read_tiles_parameters_and_the_shapes_without_a_run(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("width", pattern, rule), expected, "{pattern}: {rule}");
+}
+
+/// The gate rules from a deck: the walls a rule chooses, and the parameters that cut
+/// them further.  Outer is the body, Inner the reference whose boundary chooses.
+///
+/// - `stripe_far` is a 0.8 µm stripe from x = 30 to 70 with a 2 µm piece of Inner cut
+///   out of it at 58..60, across the tile line from the stripe's midpoint: the shared
+///   walls are the stripe's long walls over the piece, 0.8 apart; the unshared ones
+///   include the stripe's ends, 40 apart.  `stripe_long_run` has a 4 µm piece.
+/// - `ends_on_reference` is a body 4 by 1 µm whose two ends Inner cuts: the shared walls
+///   are 4 apart, the unshared 1; `ends_on_reference_tall` is 4 by 3.5.
+/// - `outside_half` is a 10 µm stripe with the piece at 34..36 and Via from 35 on, so
+///   only the stretch 34..35 lies outside Via; `outside_all` has Via over the whole
+///   piece.
+#[rstest]
+#[case("stripe_far", "G.min", 2)]
+#[case("stripe_far", "G.len", 0)]
+#[case("stripe_far", "G.max_unshared", 2)]
+#[case("stripe_far", "G.max_shared", 0)]
+#[case("stripe_long_run", "G.min", 2)]
+#[case("stripe_long_run", "G.len", 2)]
+#[case("ends_on_reference", "G.max_shared", 2)]
+#[case("ends_on_reference", "G.max_unshared", 0)]
+#[case("ends_on_reference", "G.min", 0)]
+#[case("ends_on_reference_tall", "G.max_shared", 2)]
+#[case("ends_on_reference_tall", "G.max_unshared", 2)]
+#[case("outside_half", "G.outside", 2)]
+#[case("outside_half", "G.min", 2)]
+#[case("outside_all", "G.outside", 0)]
+#[case("outside_all", "G.min", 2)]
+fn gate_rules_choose_their_walls_from_a_deck(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("gate_length", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}
