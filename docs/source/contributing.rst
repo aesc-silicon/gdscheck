@@ -133,9 +133,10 @@ Coding conventions
   ``Violation``: name the layer(s), state ``<measured> <cmp> <limit>`` with units, end
   with the location — consistency here is what makes report diffing and KLayout
   cross-checks tractable.
-* Prefer extending an existing shared primitive (``helper.rs``'s facing-wall scan,
-  region-spacing engine, or boolean-residual/extension engines; ``merge.rs``'s tiled
-  virtual-layer and region-stitching machinery) over writing a new one-off algorithm —
+* Prefer extending an existing shared primitive (``geom.rs``'s facing-wall scan and
+  ``checks/width/``'s drivers, ``helper.rs``'s region-spacing engine and
+  boolean-residual/extension engines; ``merge.rs``'s tiled virtual-layer and
+  region-stitching machinery) over writing a new one-off algorithm —
   most new checks are a variation on an existing measurement, not a new kind of geometry
   problem.
 * Comments explain *why*, not *what* — a hidden constraint, a subtle invariant, a

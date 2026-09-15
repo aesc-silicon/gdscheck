@@ -15,19 +15,12 @@
 use crate::merge::{Core, MergedPoly};
 use std::collections::{HashMap, HashSet};
 
-/// How far past its own limit a maximum looks for the facing wall, in multiples of the
-/// limit.  A width that exceeds the limit by more than this is not measured and so not
-/// reported: the check would rather miss one than invent a width to a wall that is not
-/// really opposite.
-pub const MAX_REACH: f64 = 4.0;
-
-/// The same idea for an *enclosure* maximum, and tighter, because the two measurements
-/// look for different things.  A width's two walls bound the same material, so a wide
-/// shape really does have its opposite wall far off and the search has to reach for it.
-/// An enclosure's margin is bounded by the outer wall nearest the inner one; past a small
-/// multiple of the bound what the search finds is the far side of the enclosing shape,
-/// which never bounded this margin at all.  On GF180's MDN.10c the width's own four
-/// invents eighteen markers where two invents none.
+/// How far past its own bound an *enclosure* maximum looks for the outer wall, in
+/// multiples of the bound.  An enclosure's margin is bounded by the outer wall nearest
+/// the inner one; past a small multiple of the bound what the search finds is the far
+/// side of the enclosing shape, which never bounded this margin at all - the check would
+/// rather miss a margin than invent one to a wall that is not really opposite.  On
+/// GF180's MDN.10c a reach of four invents eighteen markers where two invents none.
 pub const ENCLOSURE_MAX_REACH: f64 = 2.0;
 use i_overlay::i_float::int::point::IntPoint;
 

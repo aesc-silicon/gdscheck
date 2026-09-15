@@ -14,9 +14,13 @@ Semantics
 ---------
 
 Runs the same shared facing-edge width scan as :doc:`min_width`/:doc:`max_width` (see
-:doc:`min_width` for the full rectilinear + oblique pass description), with the predicate
-``|measured − value| > 0`` (within a half-grid tolerance): any width that differs from
-``value`` in either direction is a violation.
+:doc:`min_width` for the full description of the passes), with the predicate
+``measured ≠ value``: any width that differs from ``value`` in either direction is a
+violation. The comparison is exact — ``value`` is put on the grid once, to the nearest
+DBU, and every span is compared to it as an integer — so a via drawn one nanometre off
+is reported and one drawn to size is not. The mixed pass (a chamfer facing a straight
+wall), the corner pass and the pinch and acute-corner readings are left out: none of
+those is a span that could equal anything.
 
 
 Layers
