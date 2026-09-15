@@ -13,8 +13,7 @@ Semantics
 ---------
 
 The dual of :doc:`min_windowed_density`, sharing the same tiling and denominator logic —
-see that page for the full explanation of the ``boundary_layer``/``boundary_datatype``
-params and why they use a bounding box rather than the boundary layer's own drawn area.
+see that page for the full explanation of the ``boundary`` layer param and why it uses a bounding box rather than the boundary layer's own drawn area.
 A ``min_windowed_density``/``max_windowed_density`` pair on the same layers, window and
 boundary forms the usual "keep local fill density within [floor, ceiling]" rule pair,
 evaluated tile-by-tile rather than as one chip-wide number.
@@ -32,12 +31,10 @@ Parameters
 ``window``
    Required. The tile size in µm (square tiles).
 
-``boundary_layer``
-   GDS layer number for the per-window density denominator's bounding box (e.g. a seal
-   ring). Optional — if omitted, each window's full nominal area is the denominator.
-
-``boundary_datatype``
-   GDS datatype paired with ``boundary_layer``. Optional, defaults to ``0``.
+``layer_params: boundary``
+   The layer whose bounding box bounds each window's denominator, by name — a seal ring
+   or a die outline. Optional; if omitted, each window's full nominal area is the
+   denominator.
 
 
 Violation markers
@@ -66,4 +63,5 @@ Example
       value: 75.00
       params:
         window: 800.0
-        boundary_layer: 39  # EdgeSeal — density is only meaningful inside the seal ring
+      layer_params:
+        boundary: EdgeSeal.boundary  # density is only meaningful inside the seal ring

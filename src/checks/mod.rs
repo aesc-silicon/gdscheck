@@ -28,7 +28,6 @@ pub mod min_endcap_enclosure;
 pub mod min_extension;
 pub mod min_notch;
 pub mod min_overlap;
-pub mod min_region_density;
 pub mod min_space;
 pub mod min_space_bent;
 pub mod min_space_different_net;
@@ -44,9 +43,7 @@ pub mod offgrid;
 pub mod ring_covers_boundary;
 pub mod wide_uncovered;
 pub mod width;
-pub mod windowed_density;
 
-use crate::cache::Cache;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::{Layer, RuleDefinition};
@@ -62,7 +59,6 @@ pub fn run_rule(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    cache: &mut Cache,
     merged: &mut MergedCache,
     conn: Option<&crate::connectivity::Connectivity>,
 ) -> Vec<Violation> {
@@ -87,8 +83,22 @@ pub fn run_rule(
         "max_length" => extent::run_max_length(rule, layout, dbu_to_um, merged),
         "inside_boundary" => inside_boundary::run(rule, layout, dbu_to_um),
         "ring_covers_boundary" => ring_covers_boundary::run(rule, layout, dbu_to_um),
-        "min_density" => density::run_min(rule, layout, dbu_to_um, cache, merged),
-        "max_density" => density::run_max(rule, layout, dbu_to_um, cache, merged),
+        "min_density" => density::run(
+            density::Kind::Min,
+            density::Scope::Chip,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "max_density" => density::run(
+            density::Kind::Max,
+            density::Scope::Chip,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
         "min_area" => area::run_min(rule, layout, dbu_to_um, merged),
         "must_interact" => must_interact::run(rule, layout, dbu_to_um),
         "nonempty" => nonempty::run(rule, layout, dbu_to_um, merged),
@@ -102,7 +112,7 @@ pub fn run_rule(
         "min_gate_length" => width::run_gate(width::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_gate_length" => width::run_gate(width::Kind::Max, rule, layout, dbu_to_um, merged),
         "exact_gate_length" => width::run_gate(width::Kind::Exact, rule, layout, dbu_to_um, merged),
-        "min_region_density" => min_region_density::run(rule, layout, dbu_to_um, merged),
+        "min_region_density" => density::region::run(rule, layout, dbu_to_um, merged),
         "wide_uncovered" => wide_uncovered::run(rule, layout, dbu_to_um, merged),
         "no_ring" => no_ring::run(rule, layout, dbu_to_um),
         "min_enclosure" => min_enclosure::run(rule, layout, dbu_to_um, merged),
@@ -123,8 +133,22 @@ pub fn run_rule(
         "min_space_prl" => min_space_prl::run(rule, layout, dbu_to_um, merged),
         "min_width" => width::run(width::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_width" => width::run(width::Kind::Max, rule, layout, dbu_to_um, merged),
-        "min_windowed_density" => windowed_density::run_min(rule, layout, dbu_to_um, merged),
-        "max_windowed_density" => windowed_density::run_max(rule, layout, dbu_to_um, merged),
+        "min_windowed_density" => density::run(
+            density::Kind::Min,
+            density::Scope::Window,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "max_windowed_density" => density::run(
+            density::Kind::Max,
+            density::Scope::Window,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
         "offgrid" => offgrid::run(rule, layout, dbu_to_um, merged),
         other => {
             eprintln!("[{}] Unknown check function: '{}'", rule.id, other);

@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Coverage of Outer, over the box of Inner: as one number for the chip, in 50 µm
+# windows, and per large region of Outer for the Via it carries.
+rules:
+  - id: D.min
+    check: min_density
+    layers: [Outer]
+    value: 50.0
+    layer_params:
+      boundary: Inner
+  - id: D.max
+    check: max_density
+    layers: [Outer]
+    value: 60.0
+    layer_params:
+      boundary: Inner
+  - id: D.wmin
+    check: min_windowed_density
+    layers: [Outer]
+    value: 50.0
+    params:
+      window: 50.0
+    layer_params:
+      boundary: Inner
+  - id: D.wmax
+    check: max_windowed_density
+    layers: [Outer]
+    value: 60.0
+    params:
+      window: 50.0
+    layer_params:
+      boundary: Inner
+  - id: D.region
+    check: min_region_density
+    layers: [Outer, Via]
+    value: 6.0
+    params:
+      min_size: 35.0

@@ -320,7 +320,7 @@ fn gfil_g(pdk: &PdkConfig) {
 }
 
 /// GFil.g boundary handling: an unrelated marker (TRANS) sits outside EdgeSeal and
-/// stretches the chip's raw bounding box, so `boundary_layer`'s *own* bbox — not the raw
+/// stretches the chip's raw bounding box, so `boundary`'s *own* bbox — not the raw
 /// chip bbox — must be the density denominator (`ok`, solid EdgeSeal square).  `ring`
 /// draws EdgeSeal as a hollow ring instead, as a real seal ring actually is: its own
 /// merged area is only the thin frame, so this proves the bbox convention (not the

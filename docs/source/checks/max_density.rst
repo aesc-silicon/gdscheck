@@ -14,7 +14,7 @@ Semantics
 
 The dual of :doc:`min_density`, sharing the same denominator logic: the listed layers'
 merged coverage is summed and divided by the chip's bounding box (or, with
-``boundary_layer`` set, that layer's bounding box — not its own drawn area, for the same
+``boundary`` set, that layer's bounding box — not its own drawn area, for the same
 hollow-seal-ring reason described in :doc:`min_density`).
 
 Together, a ``min_density``/``max_density`` pair on the same layers forms the usual
@@ -30,13 +30,10 @@ One or more layers; their merged areas are summed for the numerator.
 Parameters
 ----------
 
-``boundary_layer``
-   GDS layer number for the density denominator's bounding box. Optional — if omitted (or
-   the layer has no shapes), the bounding box of every shape in the design is used
-   instead.
-
-``boundary_datatype``
-   GDS datatype paired with ``boundary_layer``. Optional, defaults to ``0``.
+``layer_params: boundary``
+   The layer whose bounding box is the density denominator, by name — a seal ring or a
+   die outline. Optional; if omitted, or the layer has no shapes, the bounding box of
+   every shape in the design is used instead.
 
 
 Violation markers
@@ -62,5 +59,5 @@ Example
       check: max_density
       layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]
       value: 70.00
-      params:
-        boundary_layer: 39
+      layer_params:
+        boundary: EdgeSeal.boundary

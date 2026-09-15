@@ -19,16 +19,14 @@ rules:
     check: min_density
     layers: [TopMetal1, TopMetal1.filler, TopMetal1.mask]
     value: 25.00
-    params:
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary
   - id: TM1.d
     check: max_density
     layers: [TopMetal1, TopMetal1.filler, TopMetal1.mask]
     value: 70.00
-    params:
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary
 
   - id: TM1Fil.a
     check: min_width

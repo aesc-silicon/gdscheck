@@ -16,6 +16,8 @@ decks:
     path: decks/min_array_space.yml
   - name: max_space
     path: decks/max_space.yml
+  - name: density
+    path: decks/density.yml
   - name: width
     path: decks/width.yml
   - name: gate_length

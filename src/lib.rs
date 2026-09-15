@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-pub mod cache;
 pub mod checks;
 pub mod connectivity;
 pub mod flatten;
@@ -1018,10 +1017,6 @@ fn run_drc_impl(
             for l in rule.layers.iter().chain(rule.ignore.iter()) {
                 n.insert((l.gds_layer as i16, l.gds_datatype as i16));
             }
-            if let Some(bl) = rule.num("boundary_layer") {
-                let dt = rule.num("boundary_datatype").unwrap_or(0.0);
-                n.insert((bl as i16, dt as i16));
-            }
             // A `layer_params` entry arrives as `<key>` and `<key>_dt`.
             for (k, l) in &rule.params {
                 if let (pdk::Param::Num(l), Some(pdk::Param::Num(dt))) =
@@ -1177,7 +1172,6 @@ fn run_drc_impl(
         }
     }
 
-    let mut cache = cache::Cache::new();
     let virtual_defs = tiled_virtuals.clone();
     let mut merged = merge::MergedCache::new(tile_dbu, halo_dbu, halo_by_layer);
     merged.set_clippable(clippable.clone());
@@ -1360,7 +1354,6 @@ fn run_drc_impl(
             rule,
             &layout,
             dbu_to_um,
-            &mut cache,
             &mut merged,
             net.as_ref(),
         ));

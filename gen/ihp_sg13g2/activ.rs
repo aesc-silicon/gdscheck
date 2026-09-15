@@ -314,7 +314,7 @@ fn afil_g3(pdk: &PdkConfig) {
 /// extends past the true EdgeSeal — a small unrelated marker on TRANS sits outside the
 /// seal ring, at (950, 950)-(1000, 1000), stretching the overall bbox from the sealed
 /// 900x900 die out to 1000x1000.  With an 800 µm window this makes the last row/column
-/// of tiles straddle the seal boundary, so their `boundary_layer`-clipped area (only the
+/// of tiles straddle the seal boundary, so their `boundary`-clipped area (only the
 /// part actually inside EdgeSeal) must be used as the density denominator — not the
 /// nominal (and here doubled) window footprint.  Uniform 40% fill (period-100, height-40
 /// stripes) sits comfortably inside [25%, 65%] everywhere, including the
@@ -343,7 +343,7 @@ fn afil_g2_boundary(pdk: &PdkConfig) {
 /// Same as [`afil_g2_boundary`], but EdgeSeal is drawn as a hollow ring (4 strips)
 /// around the die instead of a solid square — a real seal ring is a frame, not a filled
 /// shape, so its own merged *area* is only the thin frame material, far smaller than the
-/// 900x900 it encloses.  `boundary_layer` must fall back on the ring's bounding box (its
+/// 900x900 it encloses.  `boundary` must fall back on the ring's bounding box (its
 /// die extent), not its drawn area, or the density denominator collapses to almost
 /// nothing and every window reads a wildly inflated (1000%+) density.  Same uniform 40%
 /// fill and out-of-seal TRANS marker; expect a clean DRC exactly as with a solid
