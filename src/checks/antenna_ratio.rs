@@ -189,9 +189,11 @@ pub fn run(
             }
         };
         let mut layer_area: HashMap<usize, f64> = HashMap::new();
-        if let Some(base) = conn.node_base(lkey).filter(|_| antenna_net.is_none()) {
+        if antenna_net.is_none() && conn.in_graph(lkey) {
             for (idx, r) in conn.regions_of(lkey).iter().enumerate() {
-                *layer_area.entry(part.net_of(base + idx)).or_default() += metric(r);
+                if let Some(node) = conn.region_node(lkey, idx) {
+                    *layer_area.entry(part.net_of(node)).or_default() += metric(r);
+                }
             }
         }
         if layer_area.is_empty() {

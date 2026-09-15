@@ -18,8 +18,14 @@
 //! regions are already merged by [`stitch_labeled`], so lateral routing on one layer needs
 //! no bridging — only the vertical via/contact stack does.
 //!
-//! Nets are a union-find over `(layer, region)` nodes; [`Connectivity::net_at`] maps a
-//! point on a layer to its net id.
+//! Nets are a union-find over `(layer, region)` nodes of the *conductor* layers;
+//! [`Connectivity::net_at`] maps a point on a layer to its net id.  A connector that is
+//! never a conductor - every via and contact - is no node: it is the reason two
+//! conductor regions are one net, and once they are joined it has nothing further to
+//! say.  What it keeps is the node of one region it touched, so a rule that sums the
+//! connector's own area per net (the antenna ratio reads via area) can still ask which
+//! net that is.  A design has ten times as many vias as it has conductor regions, and
+//! every prefix partition is one entry per node.
 
 use crate::layout::FlatLayout;
 use crate::merge::{
@@ -43,6 +49,13 @@ struct LayerData {
     labeled: LabeledRegions,
     /// Global node id of this layer's region 0; region `r` is node `base + r`.
     base: usize,
+}
+
+/// A layer that only ever bridges: its regions, and for each the node of a conductor
+/// region it joined - `u32::MAX` where it touched none.
+struct ConnectorData {
+    regions: Vec<crate::merge::Region>,
+    attach: Vec<u32>,
 }
 
 /// A net partition over a prefix of the connect steps: net id per global node.
@@ -79,6 +92,7 @@ impl Partition {
 pub struct Connectivity {
     tile_dbu: i32,
     layers: HashMap<LayerKey, LayerData>,
+    connectors: HashMap<LayerKey, ConnectorData>,
     specs: Vec<ConnectSpec>,
     n_nodes: usize,
     /// Every prefix's partition, keyed by prefix length — computed once in [`build`], so
@@ -106,18 +120,20 @@ impl Connectivity {
             }
         }
 
-        // A layer needs the point-lookup index only if it is *bridged into* (a connector
-        // resolves a point into it) or queried by `node_at`.  Connector-only layers (Cont,
-        // the vias) are never looked into — Ant.c/d/f read their area by region index — so
-        // we skip cloning their (often very dense) polygons into a per-tile index.
-        let needs_index: HashSet<LayerKey> = specs
+        // A conductor - a layer a connector is resolved *into* - is indexed for the point
+        // lookups and carries the nodes.  A layer that only ever bridges (Cont, the vias)
+        // is neither: nobody looks into it, and it is no node, only the reason two are
+        // one.  A rule reading its area per net (Ant.c/d/f) goes by region index.
+        let conductors: HashSet<LayerKey> = specs
             .iter()
             .flat_map(|s| s.layers.iter().copied())
             .collect();
 
-        // Build labeled regions per layer and assign a contiguous block of node ids.
+        // Build labeled regions per conductor and assign a contiguous block of node ids.
         let mut layers: HashMap<LayerKey, LayerData> = HashMap::new();
+        let mut connectors: HashMap<LayerKey, ConnectorData> = HashMap::new();
         let mut next_base = 0usize;
+        let mut n_connector_regions = 0usize;
         // `GDSCHECK_CONN_TRACE=1` reports what extraction costs per layer.  The two
         // numbers that matter are `polys` against `regions` - how many polygon copies the
         // tiling holds for each region it yields, which is where a halo shows up - and
@@ -130,7 +146,7 @@ impl Connectivity {
             let tiles = cache.tiles(key.0, key.1);
             let (n_tiles, n_polys) = (tiles.len(), tiles.values().map(|v| v.len()).sum::<usize>());
             let t1 = std::time::Instant::now();
-            let indexed = needs_index.contains(&key);
+            let indexed = conductors.contains(&key);
             let labeled = if indexed {
                 stitch_labeled(tiles, tile_dbu)
             } else {
@@ -154,22 +170,35 @@ impl Connectivity {
                     t1.elapsed().as_secs_f64()
                 );
             }
-            let base = next_base;
-            next_base += labeled.regions.len();
-            layers.insert(key, LayerData { labeled, base });
+            if indexed {
+                let base = next_base;
+                next_base += labeled.regions.len();
+                layers.insert(key, LayerData { labeled, base });
+            } else {
+                let n = labeled.regions.len();
+                n_connector_regions += n;
+                connectors.insert(
+                    key,
+                    ConnectorData {
+                        regions: labeled.regions,
+                        attach: vec![u32::MAX; n],
+                    },
+                );
+            }
         }
         if trace {
             eprintln!(
-                "conn n_nodes={} steps={} prefix partitions cost {:.1} GB",
+                "conn n_nodes={} connector regions={} steps={} prefix partitions cost {:.1} GB",
                 next_base,
+                n_connector_regions,
                 specs.len(),
                 (next_base * (specs.len() + 1) * std::mem::size_of::<u32>()) as f64 / 1e9
             );
         }
-
         let mut conn = Connectivity {
             tile_dbu,
             layers,
+            connectors,
             specs: specs.to_vec(),
             n_nodes: next_base,
             partitions: HashMap::new(),
@@ -200,15 +229,33 @@ impl Connectivity {
 
     /// Compute the partition at every prefix `0..=specs.len()` incrementally: one
     /// union-find, applying one connect step at a time and snapshotting after each.
-    fn compute_partitions(&self) -> HashMap<usize, Arc<Partition>> {
-        let mut uf = UnionFind::new(self.n_nodes);
+    /// A connector's regions learn here which node they attached to.
+    fn compute_partitions(&mut self) -> HashMap<usize, Arc<Partition>> {
+        let Connectivity {
+            layers,
+            connectors,
+            specs,
+            tile_dbu,
+            n_nodes,
+            ..
+        } = self;
+        let (layers, tile_dbu, n_nodes) = (&*layers, *tile_dbu, *n_nodes);
+        let mut uf = UnionFind::new(n_nodes);
         let mut cache = HashMap::new();
-        cache.insert(0, Arc::new(self.snapshot(&mut uf)));
-        for (k, s) in self.specs.iter().enumerate() {
-            if let Some(conn) = self.layers.get(&s.connector) {
-                // The lookups are the work - a point-in-polygon per via per bridged
-                // layer, millions of them - and they only read; the unions are cheap and
-                // replayed in order, so the result is the same as the serial loop's.
+        cache.insert(0, Arc::new(snapshot(&mut uf, n_nodes)));
+        for (k, s) in specs.iter().enumerate() {
+            // The lookups are the work - a point-in-polygon per via per bridged layer,
+            // millions of them - and they only read; the unions are cheap and replayed
+            // in order, so the result is the same as the serial loop's.
+            let nodes_under = |anchor: (f64, f64)| -> Vec<usize> {
+                s.layers
+                    .iter()
+                    .filter_map(|&lk| region_node_at(layers, lk, anchor.0, anchor.1, tile_dbu))
+                    .collect()
+            };
+            if let Some(conn) = layers.get(&s.connector) {
+                // A connector that is a conductor elsewhere is a node, and joins what it
+                // touches to itself.
                 let pairs: Vec<(usize, usize)> = conn
                     .labeled
                     .regions
@@ -216,21 +263,37 @@ impl Connectivity {
                     .enumerate()
                     .flat_map_iter(|(r, region)| {
                         let conn_node = conn.base + r;
-                        let (mx, my) = region.anchor;
-                        s.layers
-                            .iter()
-                            .filter_map(move |&lk| {
-                                region_node_at(&self.layers, lk, mx, my, self.tile_dbu)
-                                    .map(|node| (conn_node, node))
-                            })
+                        nodes_under(region.anchor)
+                            .into_iter()
+                            .map(move |node| (conn_node, node))
                             .collect::<Vec<_>>()
                     })
                     .collect();
                 for (a, b) in pairs {
                     uf.union(a, b);
                 }
+            } else if let Some(cd) = connectors.get_mut(&s.connector) {
+                // A connector-only layer joins the nodes it touches to each other.  The
+                // first node it ever touches is the one it remembers, and every node it
+                // touches after that - in this step or a later one, since a connect
+                // graph names one conductor per step - is joined to it: the connector is
+                // the hub of its stack without being a node of it.
+                let found: Vec<Vec<usize>> = cd
+                    .regions
+                    .par_iter()
+                    .map(|region| nodes_under(region.anchor))
+                    .collect();
+                for (r, nodes) in found.into_iter().enumerate() {
+                    for n in nodes {
+                        if cd.attach[r] == u32::MAX {
+                            cd.attach[r] = n as u32;
+                        } else {
+                            uf.union(cd.attach[r] as usize, n);
+                        }
+                    }
+                }
             }
-            cache.insert(k + 1, Arc::new(self.snapshot(&mut uf)));
+            cache.insert(k + 1, Arc::new(snapshot(&mut uf, n_nodes)));
             if std::env::var("GDSCHECK_CONN_TRACE").is_ok() {
                 let rss = std::fs::read_to_string("/proc/self/statm")
                     .ok()
@@ -245,29 +308,30 @@ impl Connectivity {
         }
         cache
     }
+}
 
-    /// Compact the current union-find roots into a dense net id per node.
-    fn snapshot(&self, uf: &mut UnionFind) -> Partition {
-        // A root is a node id, so a vector indexed by root numbers the nets without a
-        // hash per node - twenty million nodes, twenty-two times over.
-        let mut root_net = vec![u32::MAX; self.n_nodes];
-        let mut net_count = 0u32;
-        let mut node_net = vec![0u32; self.n_nodes];
-        for (node, slot) in node_net.iter_mut().enumerate() {
-            let root = uf.find(node);
-            if root_net[root] == u32::MAX {
-                root_net[root] = net_count;
-                net_count += 1;
-            }
-            *slot = root_net[root];
+/// Compact the current union-find roots into a dense net id per node.
+fn snapshot(uf: &mut UnionFind, n_nodes: usize) -> Partition {
+    // A root is a node id, so a vector indexed by root numbers the nets without a hash
+    // per node - millions of nodes, twenty-two times over.
+    let mut root_net = vec![u32::MAX; n_nodes];
+    let mut net_count = 0u32;
+    let mut node_net = vec![0u32; n_nodes];
+    for (node, slot) in node_net.iter_mut().enumerate() {
+        let root = uf.find(node);
+        if root_net[root] == u32::MAX {
+            root_net[root] = net_count;
+            net_count += 1;
         }
-        let net_count = net_count as usize;
-        Partition {
-            node_net,
-            net_count,
-        }
+        *slot = root_net[root];
     }
+    Partition {
+        node_net,
+        net_count: net_count as usize,
+    }
+}
 
+impl Connectivity {
     /// The first connect step index at which `layer` becomes connected (its `*_ratio` net),
     /// i.e. the prefix length to pass to [`partition`].  `None` if it never connects.
     ///
@@ -284,16 +348,36 @@ impl Connectivity {
             .map(|i| i + 1)
     }
 
-    /// Regions (area + marker) of `layer`, as built for connectivity.
+    /// Regions (area + marker) of `layer`, as built for connectivity - a conductor's or
+    /// a connector's.
     pub fn regions_of(&self, layer: LayerKey) -> &[crate::merge::Region] {
-        self.layers
+        if let Some(d) = self.layers.get(&layer) {
+            return &d.labeled.regions;
+        }
+        self.connectors
             .get(&layer)
-            .map(|d| d.labeled.regions.as_slice())
+            .map(|c| c.regions.as_slice())
             .unwrap_or(&[])
     }
 
-    /// Global node id of `layer`'s region 0, if the layer is in the connect graph; region
-    /// `r` is then node `base + r`.  Lets a check map its regions to nets in O(1).
+    /// Whether `layer` is in the connect graph at all, as a conductor or a connector.
+    pub fn in_graph(&self, layer: LayerKey) -> bool {
+        self.layers.contains_key(&layer) || self.connectors.contains_key(&layer)
+    }
+
+    /// The global node region `idx` of `layer` belongs with: its own node for a
+    /// conductor, the node of a conductor region it joined for a connector - `None` for
+    /// a connector that touched nothing.  Lets a check map its regions to nets in O(1).
+    pub fn region_node(&self, layer: LayerKey, idx: usize) -> Option<usize> {
+        if let Some(d) = self.layers.get(&layer) {
+            return Some(d.base + idx);
+        }
+        let a = *self.connectors.get(&layer)?.attach.get(idx)?;
+        (a != u32::MAX).then_some(a as usize)
+    }
+
+    /// Global node id of `layer`'s region 0, if the layer is a conductor of the connect
+    /// graph; region `r` is then node `base + r`.
     pub fn node_base(&self, layer: LayerKey) -> Option<usize> {
         self.layers.get(&layer).map(|d| d.base)
     }
