@@ -8,48 +8,41 @@ rules:
     check: min_density
     layers: [comp, comp_dummy]
     value: 25.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry
   - id: DCF.1d
     check: max_density
     layers: [comp, comp_dummy]
     value: 70.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry
   - id: M1.4
     check: min_density
     layers: [metal1_drawn, metal1_dummy]
     value: 30.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry
   - id: M2.4
     check: min_density
     layers: [metal2_drawn, metal2_dummy]
     value: 30.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry
   - id: M3.4
     check: min_density
     layers: [metal3_drawn, metal3_dummy]
     value: 30.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry
   - id: MT30.7
     check: min_density
     layers: [metal3_drawn, metal3_dummy]
     value: 30.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry
   - id: PL.8
     check: min_density
     layers: [poly2_drawn, poly2_dummy]
     value: 14.0
-    params:
-      boundary_layer: 0
-      boundary_datatype: 0
+    layer_params:
+      boundary: pr_bndry

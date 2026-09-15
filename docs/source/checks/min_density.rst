@@ -18,7 +18,7 @@ layers are disjoint (drawing / filler / mask occupy different datatypes), so the
 just their union area.
 
 The denominator is the chip's bounding box — either the bounding box of *every* shape in
-the design, or, if the ``boundary_layer`` param is set, that specific layer's bounding
+the design, or, if the ``boundary`` layer param is set, that specific layer's bounding
 box instead. The bounding box, not the layer's own drawn/merged area, is what's used: a
 seal ring is drawn as a hollow frame around the die, so its own merged area is only the
 thin frame material and would wildly undercount the region it's meant to stand in for.
@@ -39,13 +39,10 @@ One or more layers; their merged areas are summed for the numerator.
 Parameters
 ----------
 
-``boundary_layer``
-   GDS layer number for the density denominator's bounding box. Optional — if omitted (or
-   the layer has no shapes), the bounding box of every shape in the design is used
-   instead.
-
-``boundary_datatype``
-   GDS datatype paired with ``boundary_layer``. Optional, defaults to ``0``.
+``layer_params: boundary``
+   The layer whose bounding box is the density denominator, by name — a seal ring or a
+   die outline. Optional; if omitted, or the layer has no shapes, the bounding box of
+   every shape in the design is used instead.
 
 
 Violation markers
@@ -72,5 +69,5 @@ Example
       check: min_density
       layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]
       value: 25.00
-      params:
-        boundary_layer: 39
+      layer_params:
+        boundary: EdgeSeal.boundary

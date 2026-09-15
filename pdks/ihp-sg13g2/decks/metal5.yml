@@ -56,16 +56,14 @@ rules:
     check: min_density
     layers: [Metal5, Metal5.filler, Metal5.mask]
     value: 35.00
-    params:
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary
   - id: M5.k
     check: max_density
     layers: [Metal5, Metal5.filler, Metal5.mask]
     value: 60.00
-    params:
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary
 
   - id: M5Fil.a1
     check: min_width
@@ -93,13 +91,13 @@ rules:
     value: 25.00
     params:
       window: 800.0
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary
   - id: M5Fil.k
     check: max_windowed_density
     layers: [Metal5, Metal5.filler, Metal5.mask]
     value: 75.00
     params:
       window: 800.0
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary

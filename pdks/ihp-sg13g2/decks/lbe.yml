@@ -51,6 +51,5 @@ rules:
     check: max_density
     layers: [LBE]
     value: 20.00
-    params:
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary

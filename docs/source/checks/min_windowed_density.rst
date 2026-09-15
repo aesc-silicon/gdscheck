@@ -19,11 +19,11 @@ tiled analogue of :doc:`min_density`: instead of one chip-wide percentage, every
 ``window``-sized tile gets its own.
 
 The tile grid always starts at the chip's raw bounding box — the first window is
-``[0, window)`` in each axis, regardless of ``boundary_layer``. Real chip dimensions are
+``[0, window)`` in each axis, regardless of ``boundary``. Real chip dimensions are
 rarely an exact multiple of the window size, so the last row/column of tiles is usually
 smaller than a full window, and may extend past the actual seal ring entirely.
 
-That's what the optional ``boundary_layer``/``boundary_datatype`` params are for — the
+That's what the optional ``boundary`` layer param is for — the
 same convention :doc:`min_density` uses. They restrict *which area within each window
 counts as checkable* to that layer's bounding box, not its drawn area (a seal ring is a
 hollow frame; its own merged area would wildly undercount the die it encloses). Without
@@ -34,8 +34,8 @@ window with zero overlap with the boundary box is skipped outright (density is u
 for a zero-area denominator, not a violation).
 
 This historical failure mode is worth calling out explicitly, since it's exactly the bug
-this param set was added to fix: on a 900×900 µm die with an 800 µm window and no
-``boundary_layer``, the last row and column of tiles are measured against a doubled
+this param was added to fix: on a 900×900 µm die with an 800 µm window and no
+``boundary``, the last row and column of tiles are measured against a doubled
 (200 µm-tall) denominator, of which only the first 100 µm can ever hold real geometry —
 reading roughly half the true density and falsely tripping the floor.
 
@@ -52,12 +52,10 @@ Parameters
 ``window``
    Required. The tile size in µm (square tiles).
 
-``boundary_layer``
-   GDS layer number for the per-window density denominator's bounding box (e.g. a seal
-   ring). Optional — if omitted, each window's full nominal area is the denominator.
-
-``boundary_datatype``
-   GDS datatype paired with ``boundary_layer``. Optional, defaults to ``0``.
+``layer_params: boundary``
+   The layer whose bounding box bounds each window's denominator, by name — a seal ring
+   or a die outline. Optional; if omitted, each window's full nominal area is the
+   denominator.
 
 
 Violation markers
@@ -86,4 +84,5 @@ Example
       value: 25.00
       params:
         window: 800.0
-        boundary_layer: 39  # EdgeSeal — density is only meaningful inside the seal ring
+      layer_params:
+        boundary: EdgeSeal.boundary  # density is only meaningful inside the seal ring

@@ -264,3 +264,38 @@ fn gate_rules_choose_their_walls_from_a_deck(
         "{pattern}: {rule}"
     );
 }
+
+/// The density family from a deck: the coverage of Outer over the box of Inner.
+///
+/// - `chip_40` and `chip_70` put Outer over the lower 40 and 70 µm of a 100 µm box.
+/// - `ring_frame` draws Inner as a hollow 1 µm frame: its box is the die, and Outer
+///   over the lower 25 µm is 25 % of it.
+/// - `window_quarters` fills the lower-left of four 50 µm windows and half of the one
+///   above it; `window_partial` is a 130 by 50 die whose third column of windows is 30
+///   wide, with Outer at 40 % of every window's own area.
+/// - `region_05` and `region_10` are a 100 µm plate with Via over 5 and 10 % of it;
+///   `region_small` a 20 µm plate, too small to count.
+#[rstest]
+#[case("chip_40", "D.min", 1)]
+#[case("chip_40", "D.max", 0)]
+#[case("chip_70", "D.min", 0)]
+#[case("chip_70", "D.max", 1)]
+#[case("ring_frame", "D.min", 1)]
+#[case("window_quarters", "D.wmin", 2)]
+#[case("window_quarters", "D.wmax", 1)]
+#[case("window_partial", "D.wmin", 3)]
+#[case("window_partial", "D.wmax", 0)]
+#[case("region_05", "D.region", 1)]
+#[case("region_10", "D.region", 0)]
+#[case("region_small", "D.region", 0)]
+fn density_rules_read_the_chip_its_windows_and_its_regions(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("density", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}

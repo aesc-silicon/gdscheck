@@ -110,9 +110,8 @@ rules:
     check: min_density
     layers: [GatPoly, GatPoly.filler]
     value: 15.00
-    params:
-      boundary_layer: 39
-      boundary_datatype: 4
+    layer_params:
+      boundary: EdgeSeal.boundary
   - id: GFil.i
     check: max_area
     layers: [GatPoly.nofill]

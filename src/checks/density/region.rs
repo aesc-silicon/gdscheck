@@ -9,8 +9,8 @@
 //! `value` %.  Measuring per region means a single starved region cannot be averaged out
 //! by well-covered neighbours, and the tiled analysis never globally unions dense metal.
 //!
-//! Used by Slt.i (metal-slit density on large metal plates: base = Metal(n)NoExempt with
-//! pads/MIM/IND removed, feature = slit), but the check is layer-agnostic.
+//! The check is layer-agnostic: metal-slit density on large metal plates is one use, the
+//! base being the metal with its exempt regions removed and the feature the slits.
 
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
