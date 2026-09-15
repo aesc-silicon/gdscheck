@@ -4,6 +4,7 @@
 
 pub mod checks;
 pub mod connectivity;
+pub mod expr;
 pub mod flatten;
 pub mod geom;
 pub mod layout;
@@ -1112,26 +1113,14 @@ fn run_drc_impl(
     let n_net = net_rules.len();
     let rules: Vec<pdk::RuleDefinition> = net_rules.into_iter().chain(rest).collect();
 
-    // Lazy (tiled) virtual layers: built per tile in the merge cache rather than
-    // materialised in the layout.  A whole-layout check (`forbidden` past a boundary)
-    // therefore cannot see them, so reject that combination up front rather than
-    // report wrong.
-    let tiled_virtuals = pdk.tiled_virtual_layers();
+    // Which virtual layers the layout has to hold as shapes - the ones a whole-layout
+    // check reads - and which the merge cache builds per tile: everything else.  A
+    // layer that has to be materialised and cannot be is refused here, before the
+    // layout is read, rather than read as empty.
+    let eager = pdk.eager_layers(&rules)?;
+    let tiled_virtuals = pdk.tiled_virtual_layers(&eager);
     let lazy_keys: std::collections::HashSet<(i16, i16)> =
         tiled_virtuals.iter().map(|v| v.key).collect();
-    for rule in &rules {
-        if checks::residual::whole_layout(rule) {
-            for l in rule.layers.iter().chain(rule.ignore.iter()) {
-                if lazy_keys.contains(&(l.gds_layer as i16, l.gds_datatype as i16)) {
-                    return Err(format!(
-                        "Rule '{}' ({}) references a lazy virtual layer, which is not \
-                         materialised for whole-layout checks; mark it `mode: global`",
-                        rule.id, rule.check
-                    ));
-                }
-            }
-        }
-    }
 
     // The rules are validated above before the file is touched, so a bad deck is
     // reported without a layout - and a missing layout is reported after a good deck.
@@ -1250,7 +1239,7 @@ fn run_drc_impl(
         print_stats(&pdk, &layout, &rules, &limit);
         return Ok(vec![]);
     }
-    pdk.compute_virtual_layers(&mut layout, dbu_to_um);
+    pdk.compute_virtual_layers(&mut layout, dbu_to_um, &eager);
     phase.end("global virtuals");
 
     // One tiled-merge cache shared by all geometric checks.

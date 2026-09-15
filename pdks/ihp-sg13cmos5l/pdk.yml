@@ -145,7 +145,4 @@ connectivity:
     layers: [NWell, NWellMergedNoSRAM, NWellExt, Activ]
 
 virtual_layers:
-  - name: DfpadNoTopMetal1
-    op: difference
-    mode: lazy
-    layers: [dfpad, TopMetal1]
+  DfpadNoTopMetal1: dfpad not TopMetal1
