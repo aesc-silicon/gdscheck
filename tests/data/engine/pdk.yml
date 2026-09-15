@@ -16,6 +16,10 @@ decks:
     path: decks/min_array_space.yml
   - name: max_space
     path: decks/max_space.yml
+  - name: width
+    path: decks/width.yml
+  - name: gate_length
+    path: decks/gate_length.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
