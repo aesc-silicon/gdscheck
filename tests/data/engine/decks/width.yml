@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The width family on plain layers: each bound once, and the parameters that narrow a
+# rule to 45° runs or to runs of a length.  Outer carries the bounds and the bent rule,
+# Inner the length rule, Via the exact width, so a pattern for one leaves the others
+# clean.
+rules:
+  - id: W.min
+    check: min_width
+    layers: [Outer]
+    value: 0.5
+  - id: W.max
+    check: max_width
+    layers: [Outer]
+    value: 10.0
+  - id: W.bent
+    check: min_width
+    layers: [Outer]
+    value: 0.7
+    params:
+      angle: bent
+      length: 1.0
+  - id: W.len
+    check: min_width
+    layers: [Inner]
+    value: 0.5
+    params:
+      length: 5.0
+  - id: W.exact
+    check: exact_width
+    layers: [Via]
+    value: 0.3
