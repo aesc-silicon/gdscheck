@@ -38,6 +38,16 @@ use crate::pdk::{Layer, RuleDefinition};
 use crate::violation::Violation;
 use gds21::GdsBoundary;
 
+/// Whether a rule reads its layers from the flat layout rather than the tiled cache,
+/// and so sees a virtual layer only if it was materialised there first: the ring and
+/// vertex readings of a shape, and a `forbidden` past a boundary.
+pub fn reads_layout(rule: &RuleDefinition) -> bool {
+    matches!(
+        rule.check.as_str(),
+        "no_ring" | "ring_covers_boundary" | "max_vertices"
+    ) || residual::whole_layout(rule)
+}
+
 /// Returns a slice of all boundaries on the given layer.
 pub fn boundaries_on<'a>(layout: &'a FlatLayout, layer: &Layer) -> &'a [GdsBoundary] {
     layout.get(layer.gds_layer as i16, layer.gds_datatype as i16)
