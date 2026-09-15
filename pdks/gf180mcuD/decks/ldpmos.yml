@@ -16,7 +16,7 @@ rules:
     check: max_gate_length
     layers: [ldpmos_body, pcomp]
     value: 20.0
-    str_params:
+    params:
       walls: unshared
   - id: MDP.2
     check: nonempty

@@ -62,12 +62,12 @@ A single layer, ``layers[0]``.
 Parameters
 ----------
 
-``str_params: angle``
+``angle``
    ``bent`` measures only the 45° runs. A fab may ask more width of a diagonal than of a
    straight trace, since the grid resolves a diagonal as a staircase; that rule sits beside
    the plain one with its own value.
 
-``params: length``
+``length``
    The run (µm) two facing walls must share — the projection of one onto the other, over
    the whole walls — before their width counts. A rule that binds only lines longer than
    so much, or, with ``angle: bent``, only bends long enough to be a trace rather than a
@@ -103,7 +103,6 @@ Example
       check: min_width
       layers: [Metal2]
       value: 0.24
-      str_params:
-        angle: bent
       params:
+        angle: bent
         length: 0.50

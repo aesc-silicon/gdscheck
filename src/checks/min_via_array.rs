@@ -50,8 +50,8 @@ pub fn run(
         eprintln!("[{}] min_via_array needs two layers", rule.id);
         return Vec::new();
     };
-    let rows = rule.params.get("rows").copied().unwrap_or(2.0) as usize;
-    let cols = rule.params.get("cols").copied().unwrap_or(2.0) as usize;
+    let rows = rule.num("rows").unwrap_or(2.0) as usize;
+    let cols = rule.num("cols").unwrap_or(2.0) as usize;
     if rows != 2 {
         eprintln!("[{}] min_via_array only implements `rows: 2`", rule.id);
         return Vec::new();

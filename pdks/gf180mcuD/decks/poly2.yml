@@ -25,31 +25,31 @@ rules:
     check: min_gate_length
     layers: [tgate_pl2_lv, comp]
     value: 0.28
-    str_params:
+    params:
       walls: unshared
   - id: PL.2_MV
     check: min_gate_length
     layers: [ngate_5v, comp]
     value: 0.6
-    str_params:
+    params:
       walls: unshared
   - id: PL.2_MV
     check: min_gate_length
     layers: [pgate_5v, comp]
     value: 0.5
-    str_params:
+    params:
       walls: unshared
   - id: PL.2_MV
     check: min_gate_length
     layers: [ngate_6v, comp]
     value: 0.7
-    str_params:
+    params:
       walls: unshared
   - id: PL.2_MV
     check: min_gate_length
     layers: [pgate_6v, comp]
     value: 0.55
-    str_params:
+    params:
       walls: unshared
 
   - id: PL.3a
@@ -102,14 +102,14 @@ rules:
     check: min_gate_length
     layers: [nom_gate, comp]
     value: 0.3
-    str_params:
+    params:
       walls: unshared
       angle: bent
   - id: PL.7_MV
     check: min_gate_length
     layers: [thick_gate, comp]
     value: 0.7
-    str_params:
+    params:
       walls: unshared
       angle: bent
 

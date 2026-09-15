@@ -69,7 +69,6 @@ rules:
     params:
       max_width: 0.34
       min_length: 0.24
-    str_params:
       sides: line_end
   - id: CO.6b
     check: min_enclosure
@@ -77,7 +76,6 @@ rules:
     value: 0.06
     params:
       trigger: 0.04
-    str_params:
       sides: adjacent
   - id: CO.7
     check: min_space

@@ -55,9 +55,8 @@ rules:
     check: min_width
     layers: [GatPoly]
     value: 0.16
-    str_params:
-      angle: bent
     params:
+      angle: bent
       length: 0.39
   - id: GFil.a
     check: max_width

@@ -1018,14 +1018,16 @@ fn run_drc_impl(
             for l in rule.layers.iter().chain(rule.ignore.iter()) {
                 n.insert((l.gds_layer as i16, l.gds_datatype as i16));
             }
-            if let Some(&bl) = rule.params.get("boundary_layer") {
-                let dt = rule.params.get("boundary_datatype").copied().unwrap_or(0.0);
+            if let Some(bl) = rule.num("boundary_layer") {
+                let dt = rule.num("boundary_datatype").unwrap_or(0.0);
                 n.insert((bl as i16, dt as i16));
             }
             // A `layer_params` entry arrives as `<key>` and `<key>_dt`.
-            for (k, &l) in &rule.params {
-                if let Some(&dt) = rule.params.get(&format!("{k}_dt")) {
-                    n.insert((l as i16, dt as i16));
+            for (k, l) in &rule.params {
+                if let (pdk::Param::Num(l), Some(pdk::Param::Num(dt))) =
+                    (l, rule.params.get(&format!("{k}_dt")))
+                {
+                    n.insert((*l as i16, *dt as i16));
                 }
             }
         }

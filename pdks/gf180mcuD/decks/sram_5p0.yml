@@ -10,7 +10,6 @@ rules:
     value: 0.04
     params:
       interacting_only: 1
-    str_params:
       metric: euclidian
   - id: S.CO.4_MV
     check: nonempty
@@ -22,7 +21,6 @@ rules:
     value: 0.45
     params:
       interacting_only: 1
-    str_params:
       metric: euclidian
   - id: S.DF.4c_MV
     check: nonempty
@@ -34,7 +32,6 @@ rules:
     value: 0.32
     params:
       interacting_only: 1
-    str_params:
       metric: euclidian
   - id: S.DF.7_MV
     check: min_space
@@ -46,7 +43,6 @@ rules:
     value: 0.45
     params:
       interacting_only: 1
-    str_params:
       metric: euclidian
   - id: S.DF.8_MV
     check: nonempty
@@ -64,5 +60,5 @@ rules:
     check: min_space
     layers: [poly_sram_mv, comp_sram_mv]
     value: 0.12
-    str_params:
+    params:
       pairs: overlapping

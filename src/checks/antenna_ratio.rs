@@ -28,11 +28,10 @@ use crate::violation::Violation;
 use std::collections::HashMap;
 
 fn net_key(rule: &RuleDefinition, name: &str) -> Option<LayerKey> {
-    let l = *rule.params.get(name)? as i16;
+    let l = rule.num(name)? as i16;
     let d = rule
-        .params
-        .get(&format!("{name}_dt"))
-        .map(|v| *v as i16)
+        .num(&format!("{name}_dt"))
+        .map(|v| v as i16)
         .unwrap_or(0);
     Some((l, d))
 }
@@ -87,16 +86,15 @@ pub fn run(
     }
 
     let n_ant = rule
-        .params
-        .get("antenna_layers")
-        .map(|v| *v as usize)
+        .num("antenna_layers")
+        .map(|v| v as usize)
         .unwrap_or(rule.layers.len() - 1);
     let gate = &rule.layers[0];
     let antenna = &rule.layers[1..1 + n_ant];
     let diodes = &rule.layers[(1 + n_ant).min(rule.layers.len())..];
 
     let gate_net = net_key(rule, "gate_net_layer").unwrap_or(key(gate));
-    let require_diode = rule.params.get("require_diode").map(|v| *v != 0.0);
+    let require_diode = rule.num("require_diode").map(|v| v != 0.0);
     // Each diode layer resolves its net through its own base layer: GF180's n-diode is
     // `ncomp_con` outside the well and its p-diode is `pcomp_con` inside one, so a single
     // shared base layer would put both on the wrong net.  Index 0 keeps the unsuffixed
@@ -116,9 +114,9 @@ pub fn run(
     // `diode_factor` times the diode area to the *denominator* instead of switching to a
     // relaxed limit.  Both are off unless the rule asks for them, so IHP's rules keep
     // their own model.
-    let by_perimeter = rule.params.get("metric").is_some_and(|v| *v != 0.0);
-    let thickness = rule.params.get("thickness").copied().unwrap_or(1.0);
-    let diode_factor = rule.params.get("diode_factor").copied();
+    let by_perimeter = rule.num("metric").is_some_and(|v| v != 0.0);
+    let thickness = rule.num("thickness").unwrap_or(1.0);
+    let diode_factor = rule.num("diode_factor");
 
     let d2 = dbu_to_um * dbu_to_um;
     let limit = rule.value;
@@ -156,7 +154,7 @@ pub fn run(
 
     // A fixed connectivity level (Ant.a/c, the "initial" pre-metal net) or, by default,
     // each antenna layer's own connect level (the cumulative metal/via stack).
-    let fixed_level = rule.params.get("level").map(|v| *v as usize);
+    let fixed_level = rule.num("level").map(|v| v as usize);
     // The base layer an antenna region's net is resolved through (poly-on-field sits on
     // GatPoly); defaults to the antenna layer itself (a metal/via/contact is its own net).
     let antenna_net = net_key(rule, "antenna_net_layer");

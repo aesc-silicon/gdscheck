@@ -32,7 +32,7 @@ pub fn run(
     }
     let base = &rule.layers[0];
     let feature = &rule.layers[1];
-    let min_size = rule.params.get("min_size").copied().unwrap_or(35.0);
+    let min_size = rule.num("min_size").unwrap_or(35.0);
     let radius = (min_size / dbu_to_um) / 2.0;
     let min_pct = rule.value;
 

@@ -136,10 +136,7 @@ pub fn run_rule(
     // width of the metal connected to a bond pad, but only where the measurement meets
     // the pad: a millimetre of 0.3 µm line that happens to be on the pad's net is the
     // line's own business.
-    if let (Some(&l), Some(&d)) = (
-        rule.params.get("interacting"),
-        rule.params.get("interacting_dt"),
-    ) {
+    if let (Some(l), Some(d)) = (rule.num("interacting"), rule.num("interacting_dt")) {
         let key = (l as i16, d as i16);
         merged.ensure(layout, key.0, key.1);
         let tiles = merged.tiles(key.0, key.1);

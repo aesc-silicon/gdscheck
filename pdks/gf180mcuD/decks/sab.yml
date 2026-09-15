@@ -84,13 +84,13 @@ rules:
     check: min_space
     layers: [sab_poly_np, sab_poly_pp]
     value: 0.56
-    str_params:
+    params:
       metric: square
   - id: SB.14b
     check: min_space
     layers: [sab_poly_np, pgate]
     value: 0.56
-    str_params:
+    params:
       metric: square
   - id: SB.15a
     check: min_space
