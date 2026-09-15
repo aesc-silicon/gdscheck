@@ -66,8 +66,9 @@ A tile's halo must be at least as large as the biggest distance any rule measure
 layer, or a shape just across the tile boundary could be missed and a real violation (or
 a real pass) computed wrong at the tile's edge. The halo is **per layer, not per run**:
 before the merge cache is built, ``lib.rs`` scans every distance-based rule (``min_width``,
-``max_width``, ``exact_width``, ``min_space``, ``min_notch``, ``min_enclosure``,
-``max_enclosure``) and records, per layer, the largest ``value`` referencing it. A deck-wide
+``max_width``, ``exact_width``, the gate-length rules, ``min_space``, ``min_notch``,
+``min_enclosure``, ``max_enclosure``) and records, per layer, the largest ``value``
+referencing it. A deck-wide
 halo would let one coarse rule (e.g. a 1500 µm ``max_width`` on a guard layer) inflate the
 merge of every fine layer in the deck — for a dense layer that difference is the
 difference between a normal run and one that never finishes.

@@ -14,8 +14,17 @@ Semantics
 ---------
 
 Runs the same shared facing-edge width scan as :doc:`min_width` (see that page for the
-full rectilinear + oblique pass description), just with the opposite predicate: a
-measured width greater than ``value`` is the violation instead of one narrower than it.
+full description of the passes), just with the opposite predicate: a measured width
+greater than ``value`` is the violation instead of one narrower than it. ``value`` is put
+on the grid once, rounded down, and every span is compared to it as an integer. The
+mixed pass, the corner pass and the pinch and acute-corner readings are left out: a
+chamfer facing a straight wall has no single width to be too large, and a width of zero
+is under any maximum.
+
+The far wall of a wide span has to be in the tile's halo to be found, and the halo of a
+layer is the largest ``value`` of any distance rule on it (see :doc:`../architecture`),
+so a maximum finds every span up to its own value and reports the ones over it that its
+halo still reaches.
 
 
 Layers
