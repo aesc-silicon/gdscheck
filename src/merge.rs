@@ -3161,7 +3161,11 @@ fn trim_beyond_zone(tiles: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
                         && (bx0 as f64) < x1
                         && (by1 as f64) > y0
                         && (by0 as f64) < y1;
-                    touches && clipped_area_dbu(p, x0, y0, x1, y1) > 0.0
+                    let within = (bx0 as f64) >= x0
+                        && (bx1 as f64) <= x1
+                        && (by0 as f64) >= y0
+                        && (by1 as f64) <= y1;
+                    touches && (within || clipped_area_dbu(p, x0, y0, x1, y1) > 0.0)
                 })
                 .collect();
             (!kept.is_empty()).then_some(((tx, ty), kept))
@@ -5317,21 +5321,26 @@ impl MergedCache {
             }
             let src_maps: Vec<&TileMap> = def.sources.iter().map(|s| &self.layers[s]).collect();
             let tiles = build_virtual_tiles(def.op, &src_maps);
-            // A boolean of sources cached at different halos - one reused from a
-            // fatter merge an earlier rule made - is exact only out to the thinner
-            // one's reach, and past it the fat source meets a truncated union: Activ
-            // at 7.5 µm against NWell at 1.1 µm left a 40 nm sliver of "tap" seven
-            // microns out, which a selection then copied into the tile that owns that
-            // ground, where min_area read it as a region (pSD.g on ihp-sg13cmos5l,
-            // 1395 times).  Nothing reads a copy past the zone its sources cover, so
-            // what lies wholly beyond it goes.
+            // A boolean is exact only out to the thinner of its sources' reaches, and
+            // past that it is whatever the tile's copies happened to hold: a source
+            // polygon that touched the zone is there whole, the neighbour that would
+            // have cut it is not.  Activ at 7.5 µm against NWell at 1.1 µm left a 40 nm
+            // sliver of "tap" seven microns out, which a selection then copied into the
+            // tile that owns that ground, where min_area read it as a region (pSD.g on
+            // ihp-sg13cmos5l, 1395 times).  Equal reaches are no protection: Activ and
+            // pSD both at 1 µm left a 0.33 µm finger of "tap" 1.4 µm out where the
+            // next cell's pSD had not made it into the copy, and a whole-copy selection
+            // carried it into the owning tile the same way (pSD.g again, ten times, once
+            // the cache budget had every source rebuilt at the same reach).  Nothing
+            // reads a copy past the zone its sources cover, so what lies wholly beyond
+            // it goes.
             let halos: Vec<i32> = def
                 .sources
                 .iter()
                 .filter_map(|s| self.layer_halo.get(s).copied())
                 .collect();
-            let tiles = match (halos.iter().min(), halos.iter().max()) {
-                (Some(&lo), Some(&hi)) if lo != hi && halos.len() == def.sources.len() => {
+            let tiles = match halos.iter().min() {
+                Some(&lo) if halos.len() == def.sources.len() => {
                     trim_beyond_zone(tiles, self.tile_dbu, lo)
                 }
                 _ => tiles,
