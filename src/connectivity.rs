@@ -46,8 +46,13 @@ struct LayerData {
 }
 
 /// A net partition over a prefix of the connect steps: net id per global node.
+///
+/// A net id is a `u32`: a partition is one entry per node, there is one partition per
+/// connect step, and a design of sixteen million nodes over twenty steps is a gigabyte
+/// and a half of them either way - so the width of the entry is the size of the run.
+/// Four billion nets is not a layout anyone checks.
 pub struct Partition {
-    node_net: Vec<usize>,
+    node_net: Vec<u32>,
     net_count: usize,
 }
 
@@ -55,13 +60,13 @@ impl Partition {
     /// Net id of the region of `layer` containing point `(x, y)` (DBU), if any.
     pub fn net_at(&self, conn: &Connectivity, layer: LayerKey, x: f64, y: f64) -> Option<usize> {
         let node = region_node_at(&conn.layers, layer, x, y, conn.tile_dbu)?;
-        Some(self.node_net[node])
+        Some(self.node_net[node] as usize)
     }
 
     /// Net id of a global node — O(1).  Pair with [`Connectivity::node_base`] /
     /// [`Connectivity::node_at`] to avoid a point lookup per level.
     pub fn net_of(&self, node: usize) -> usize {
-        self.node_net[node]
+        self.node_net[node] as usize
     }
 
     pub fn net_count(&self) -> usize {
@@ -158,7 +163,7 @@ impl Connectivity {
                 "conn n_nodes={} steps={} prefix partitions cost {:.1} GB",
                 next_base,
                 specs.len(),
-                (next_base * (specs.len() + 1) * 8) as f64 / 1e9
+                (next_base * (specs.len() + 1) * std::mem::size_of::<u32>()) as f64 / 1e9
             );
         }
 
@@ -245,17 +250,18 @@ impl Connectivity {
     fn snapshot(&self, uf: &mut UnionFind) -> Partition {
         // A root is a node id, so a vector indexed by root numbers the nets without a
         // hash per node - twenty million nodes, twenty-two times over.
-        let mut root_net = vec![usize::MAX; self.n_nodes];
-        let mut net_count = 0usize;
-        let mut node_net = vec![0usize; self.n_nodes];
+        let mut root_net = vec![u32::MAX; self.n_nodes];
+        let mut net_count = 0u32;
+        let mut node_net = vec![0u32; self.n_nodes];
         for (node, slot) in node_net.iter_mut().enumerate() {
             let root = uf.find(node);
-            if root_net[root] == usize::MAX {
+            if root_net[root] == u32::MAX {
                 root_net[root] = net_count;
                 net_count += 1;
             }
             *slot = root_net[root];
         }
+        let net_count = net_count as usize;
         Partition {
             node_net,
             net_count,
