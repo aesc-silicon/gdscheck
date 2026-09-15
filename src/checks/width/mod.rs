@@ -15,6 +15,8 @@
 //! facing a straight wall has no single width to be too large or unequal.
 
 pub mod scan;
+#[cfg(test)]
+mod tests;
 
 use crate::geom::{Limit, on_grid};
 use crate::layout::FlatLayout;
