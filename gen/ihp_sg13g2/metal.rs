@@ -39,6 +39,7 @@ pub fn generate(pdk: &PdkConfig) {
         metal_a(pdk, index, &dir);
         metal_b_space(pdk, index, &dir);
         metal_b_notch(pdk, index, &dir);
+        metal_corner(pdk, index, &dir);
         metal_j(pdk, index, &dir);
         metal_k(pdk, index, &dir);
 
@@ -264,6 +265,23 @@ fn metal_b_notch(pdk: &PdkConfig, index: i32, dir: &str) {
     let elems = notch_pattern(l, 0.25, notch, 1.0, OFFSET, SPACE_DELTA);
     write_gz(
         &format!("{dir}/M{index}.b.notch.gds.gz"),
+        library("TOP", elems),
+    );
+}
+
+/// Two 10 µm squares of Metal{n} touching at one corner.  The layer's width there is
+/// zero - a pinch, M{n}.a - and so is the space between the two, M{n}.b; KLayout reports
+/// both on this drawing, one marker each.  The two squares merge into one region, and
+/// the width of zero is at a vertex no pair of facing walls measures, which is the miss
+/// this drawing came in as.
+fn metal_corner(pdk: &PdkConfig, index: i32, dir: &str) {
+    let l = layer(pdk, &format!("Metal{}", index));
+    let elems = vec![
+        rect(l, OFFSET - 5.0, OFFSET - 5.0, OFFSET + 5.0, OFFSET + 5.0),
+        rect(l, OFFSET + 5.0, OFFSET + 5.0, OFFSET + 15.0, OFFSET + 15.0),
+    ];
+    write_gz(
+        &format!("{dir}/M{index}.corner.gds.gz"),
         library("TOP", elems),
     );
 }
