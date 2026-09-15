@@ -80,8 +80,8 @@ fn run(
         layer_names.join(", ")
     );
 
-    let boundary_layer = rule.params.get("boundary_layer").map(|&l| {
-        let dt = rule.params.get("boundary_datatype").copied().unwrap_or(0.0);
+    let boundary_layer = rule.num("boundary_layer").map(|l| {
+        let dt = rule.num("boundary_datatype").unwrap_or(0.0);
         (l as i16, dt as i16)
     });
 

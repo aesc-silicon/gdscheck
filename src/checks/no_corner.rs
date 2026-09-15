@@ -70,7 +70,7 @@ pub fn run(
         return vec![];
     };
     let target = rule.value.abs();
-    let tol = rule.params.get("tolerance").copied().unwrap_or(1.0);
+    let tol = rule.num("tolerance").unwrap_or(1.0);
 
     let (gl, gd) = key(layer);
     merged.ensure(layout, gl, gd);
@@ -79,15 +79,11 @@ pub fn run(
         merged.ensure(layout, k.0, k.1);
     }
     let outside = rule
-        .params
-        .get("outside_layer")
+        .num("outside_layer")
         .map(|v| {
             (
-                *v as i16,
-                rule.params
-                    .get("outside_layer_dt")
-                    .map(|d| *d as i16)
-                    .unwrap_or(0),
+                v as i16,
+                rule.num("outside_layer_dt").map(|d| d as i16).unwrap_or(0),
             )
         })
         .inspect(|k| merged.ensure(layout, k.0, k.1));

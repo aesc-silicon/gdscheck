@@ -30,7 +30,6 @@ rules:
     value: 0.04
     params:
       trigger: 0.02
-    str_params:
       sides: adjacent
   - id: S.DF.4c_LV
     check: min_enclosure

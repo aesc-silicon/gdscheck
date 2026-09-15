@@ -53,7 +53,6 @@ rules:
     value: 0.25
     params:
       max_width: 2.5
-    str_params:
       sides: line_end
   - id: MT30.8
     check: nonempty

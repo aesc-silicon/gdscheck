@@ -45,9 +45,8 @@ rules:
     check: min_width
     layers: [Metal2]
     value: 0.24
-    str_params:
-      angle: bent
     params:
+      angle: bent
       length: 0.50
   - id: M2.i
     check: min_space_bent

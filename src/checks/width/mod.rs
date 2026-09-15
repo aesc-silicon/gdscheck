@@ -19,7 +19,7 @@ pub mod scan;
 use crate::geom::{Limit, on_grid};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
-use crate::pdk::RuleDefinition;
+use crate::pdk::{Param, RuleDefinition};
 use crate::violation::Violation;
 
 /// Which bound a width rule puts on the span.
@@ -120,17 +120,8 @@ pub fn run(
     let limit = kind.limit(rule.value, dbu_to_um);
     // `angle: bent` reads the 45° runs alone - the axis-aligned material is a plain
     // rule's business.
-    let bent = match rule.str_params.get("angle").map(String::as_str) {
-        None => false,
-        Some("bent") => true,
-        Some(other) => {
-            eprintln!(
-                "[{}] {}: angle can only be `bent`, not `{other}`",
-                rule.id,
-                kind.width_name()
-            );
-            return vec![];
-        }
+    let Some(bent) = bent_only(rule, kind.width_name()) else {
+        return vec![];
     };
     // `length` binds the rule to wall pairs sharing more than so much run: a width asked
     // only of lines longer than that, or of a bend long enough to be a trace rather than
@@ -154,9 +145,46 @@ pub fn run(
     )
 }
 
+/// A mode param written as a number: the rule refuses to run, rather than running as if
+/// the param were absent.
+pub struct NotAWord;
+
+/// A mode param: the word the deck wrote, `None` if it wrote nothing, and [`NotAWord`] -
+/// said aloud - if it wrote a number.
+pub fn mode<'a>(
+    rule: &'a RuleDefinition,
+    name: &str,
+    key: &str,
+) -> Result<Option<&'a str>, NotAWord> {
+    match rule.params.get(key) {
+        None => Ok(None),
+        Some(Param::Word(w)) => Ok(Some(w)),
+        Some(Param::Num(v)) => {
+            eprintln!("[{}] {name}: `{key}` must be a word, not `{v}`", rule.id);
+            Err(NotAWord)
+        }
+    }
+}
+
+/// Whether `angle: bent` restricts the rule to 45° runs; `None` if the rule is malformed.
+pub fn bent_only(rule: &RuleDefinition, name: &str) -> Option<bool> {
+    match mode(rule, name, "angle") {
+        Ok(None) => Some(false),
+        Ok(Some("bent")) => Some(true),
+        Ok(Some(other)) => {
+            eprintln!(
+                "[{}] {name}: angle can only be `bent`, not `{other}`",
+                rule.id
+            );
+            None
+        }
+        Err(NotAWord) => None,
+    }
+}
+
 /// The `length` param as DBU of run.
 pub fn min_run(rule: &RuleDefinition, dbu_to_um: f64) -> i64 {
-    let um = rule.params.get("length").copied().unwrap_or(0.0);
+    let um = rule.num("length").unwrap_or(0.0);
     on_grid(um / dbu_to_um, f64::ceil)
 }
 

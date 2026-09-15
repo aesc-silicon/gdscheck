@@ -29,7 +29,7 @@ Example
       check: max_gate_length
       layers: [ldnmos_body, ncomp]
       value: 20.0
-      str_params:
+      params:
         walls: unshared
     - id: MDN.4b
       check: max_gate_length

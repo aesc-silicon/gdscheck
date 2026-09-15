@@ -26,8 +26,8 @@ pub fn run(
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    let wide_width = rule.params.get("wide_width").copied();
-    let parallel_run = rule.params.get("parallel_run").copied();
+    let wide_width = rule.num("wide_width");
+    let parallel_run = rule.num("parallel_run");
     let (Some(wide_width), Some(parallel_run)) = (wide_width, parallel_run) else {
         eprintln!(
             "[{}] min_space_prl needs `wide_width` and `parallel_run` params",

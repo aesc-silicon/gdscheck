@@ -159,10 +159,7 @@ fn run(
     // not an extension violation - the same reading `min_enclosure` takes, and the same
     // parameter name. GF180 draws Pplus flush to COMP wherever the implant is cut by a
     // neighbouring one, and upstream's `enclosing` reports nothing there.
-    let skip_coincident = rule
-        .params
-        .get("skip_coincident")
-        .is_some_and(|v| *v != 0.0);
+    let skip_coincident = rule.num("skip_coincident").is_some_and(|v| v != 0.0);
     let tile = merged.tile_dbu() as i64;
     // Half a DBU: coordinates are integers, so anything under this is a rounding artefact.
     let tol = 0.5;

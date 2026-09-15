@@ -45,11 +45,11 @@ Positional, exactly two:
 Parameters
 ----------
 
-``str_params: walls``
+``walls``
    ``shared`` (default) keeps the stretches on the reference boundary; ``unshared`` the
    ones off it.
 
-``str_params: angle``
+``angle``
    ``bent`` measures only between 45° walls — GF180's PL.7, the width across a gate that
    bends.
 
@@ -57,7 +57,7 @@ Parameters
    A region the kept stretches must lie outside of — GF180's NAT.4 reads the native
    gate's length off the poly walls that are not under the well.
 
-``params: length``
+``length``
    As for :doc:`min_width`, read on the kept stretch: the gate is measured only where the
    walls it shares with the reference run longer than this — a length rule that binds
    only channels wider than so much.
@@ -91,7 +91,7 @@ Example
       check: min_gate_length
       layers: [tgate_pl2_lv, comp]
       value: 0.28
-      str_params:
+      params:
         walls: unshared
     - id: NAT.4
       check: min_gate_length
