@@ -59,7 +59,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    _merged: &mut MergedCache,
+    merged: &mut MergedCache,
 ) -> Vec<Violation> {
     let layer = &rule.layers[0];
     let value = rule.value;
@@ -90,26 +90,37 @@ pub fn run(
         rule.id, value, axes, rows_thr, cols_thr, layer.name
     );
 
-    // One via per boundary.  Vias are single, non-touching rectangles, so we skip the
-    // global boolean merge (a sweep-line union that is pure overhead — and the dominant
-    // cost — when shapes never overlap) and read each via's bounding box directly, in
-    // parallel.  Identical rectangles are de-duplicated by their integer-DBU extent.
-    let boundaries = layout.get(layer.gds_layer as i16, layer.gds_datatype as i16);
-    let vias: Vec<((i32, i32, i32, i32), Via)> = boundaries
+    // One via per merged piece, read from the tiled cache so that a derived layer - a
+    // via square selected out of the drawn vias - is seen at all; the flat layout holds
+    // drawn shapes only.  Vias are single, non-touching rectangles, so a tile's pieces
+    // are the vias it holds, and each is read as its bounding box in parallel.  A via
+    // in several tiles' halos is the same rectangle in each, and identical rectangles
+    // are de-duplicated by their integer-DBU extent below.  A piece that reaches the
+    // edge of its tile's window is a clip of something larger than the window - a
+    // seal ring drawn on the via layer - and not a via: each tile held a different
+    // fragment of one such ring, and the fragments read as an array.
+    let (gl, gd) = (layer.gds_layer as i16, layer.gds_datatype as i16);
+    merged.ensure(layout, gl, gd);
+    let tile = merged.tile_dbu() as i64;
+    let halo = merged.halo_of(gl, gd) as i64;
+    let pieces: Vec<((i32, i32), &crate::merge::MergedPoly)> = merged
+        .tiles(gl, gd)
+        .iter()
+        .flat_map(|(&t, polys)| polys.iter().map(move |m| (t, m)))
+        .collect();
+    let vias: Vec<((i32, i32, i32, i32), Via)> = pieces
         .par_iter()
-        .filter_map(|b| {
-            if b.xy.len() < 3 {
+        .filter_map(|&((tx, ty), m)| {
+            if m.outer.len() < 3 {
                 return None;
             }
-            let (mut x0, mut y0) = (i32::MAX, i32::MAX);
-            let (mut x1, mut y1) = (i32::MIN, i32::MIN);
-            for p in &b.xy {
-                x0 = x0.min(p.x);
-                y0 = y0.min(p.y);
-                x1 = x1.max(p.x);
-                y1 = y1.max(p.y);
-            }
+            let (x0, y0, x1, y1) = crate::merge::poly_bbox(m);
             if x1 <= x0 || y1 <= y0 {
+                return None;
+            }
+            let (wx0, wy0) = (tx as i64 * tile - halo, ty as i64 * tile - halo);
+            let (wx1, wy1) = ((tx as i64 + 1) * tile + halo, (ty as i64 + 1) * tile + halo);
+            if x0 as i64 <= wx0 || y0 as i64 <= wy0 || x1 as i64 >= wx1 || y1 as i64 >= wy1 {
                 return None;
             }
             let via = Via {

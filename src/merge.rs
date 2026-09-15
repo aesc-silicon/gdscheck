@@ -2878,7 +2878,7 @@ fn point_in_ring_i(px: f64, py: f64, ring: &[IntPoint]) -> bool {
 }
 
 /// Axis-aligned bbox of a merged polygon (DBU).
-fn poly_bbox(m: &MergedPoly) -> (i32, i32, i32, i32) {
+pub fn poly_bbox(m: &MergedPoly) -> (i32, i32, i32, i32) {
     let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
     for p in &m.outer {
         x0 = x0.min(p.x);
