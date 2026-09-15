@@ -63,23 +63,23 @@ pub fn run(
 ) -> Vec<Violation> {
     let layer = &rule.layers[0];
     let value = rule.value;
-    let rows_thr = rule.params.get("rows").copied().unwrap_or(3.0) as usize;
-    let cols_thr = rule.params.get("cols").copied().unwrap_or(3.0) as usize;
-    let axes = rule.params.get("axes").copied().unwrap_or(1.0) as usize;
+    let rows_thr = rule.num("rows").unwrap_or(3.0) as usize;
+    let cols_thr = rule.num("cols").unwrap_or(3.0) as usize;
+    let axes = rule.num("axes").unwrap_or(1.0) as usize;
     // Smallest array, in vias, the rule applies to. The row/column thresholds already
     // bound the shape; this bounds the population, which is how the reference words it
     // ("interacting with 16 or more vias") and what keeps a ragged cluster that happens
     // to span four rows from counting as a 4×4 array.
-    let min_count = rule.params.get("count").copied().unwrap_or(0.0) as usize;
-    let pitch = rule.params.get("pitch").copied().unwrap_or(value);
+    let min_count = rule.num("count").unwrap_or(0.0) as usize;
+    let pitch = rule.num("pitch").unwrap_or(value);
     // Smallest side of the array's bounding box, in µm, for it to count.  GF180 words
     // "4x4 or larger" as a box at least three vias and three spaces across in every
     // direction, so a stack four rows deep at a tighter pitch is not yet an array.
-    let min_extent = rule.params.get("min_extent").copied().unwrap_or(0.0);
+    let min_extent = rule.num("min_extent").unwrap_or(0.0);
     // How far two vias must overlap, across the gap, for the gap to be a space between
     // them at all: KLayout's `projecting >= x`.  Staggered rows overlapping by less are
     // not neighbours in the array sense.
-    let projection = rule.params.get("projection").copied().unwrap_or(0.0);
+    let projection = rule.num("projection").unwrap_or(0.0);
     // What counts as "next to" for the purpose of finding the array. With `axes: 1` that
     // is the same question as the violation, so the two thresholds coincide.
     let link = if axes >= 2 { pitch.max(value) } else { value };

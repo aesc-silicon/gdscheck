@@ -202,17 +202,24 @@ rules, or — as with SG13CMOS5L — a restricted set of forbidden layers).
 Rule parameters
 -----------------
 
-``params:`` is a flat map of ``string -> number`` — every check-specific numeric knob
-beyond the universal ``value`` lives here (e.g. ``window`` for the windowed-density
-checks, ``boundary_layer`` for the seal-ring-aware density checks, ``rows``/``cols`` for
-array-spacing checks). The exact keys a given check reads, with their defaults, are
-listed on that check's reference page under **Parameters** — params the check doesn't
-recognise are silently ignored, so a typo'd param name fails quietly rather than erroring;
-double-check the reference page's exact key spelling.
+``params:`` is a flat map from a name to a number or a word — every check-specific knob
+beyond the universal ``value`` lives here: ``window: 700`` for the windowed-density
+checks, ``rows: 3`` for array spacing, ``sides: adjacent`` or ``metric: square`` for an
+enclosure, ``angle: bent`` for a width. YAML decides which kind a value is (``0.5`` is a
+number, ``bent`` a word), and a check that asked for the other kind says so. Avoid
+YAML's boolean words — ``on``, ``off``, ``yes``, ``no`` — as mode values, or quote them.
+The exact keys a given check reads, with their defaults, are listed on that check's
+reference page under **Parameters** — params the check doesn't recognise are silently
+ignored, so a typo'd param name fails quietly rather than erroring; double-check the
+reference page's exact key spelling.
 
-``text:`` is a separate, sibling field (not inside ``params``, since params only carries
-numbers) for the handful of checks that need a text/label pattern —
-:doc:`checks/forbidden_unless_labeled` is the only current user.
+``layer_params:`` names a *layer* as a parameter, e.g. ``outside: nwell`` for a gate
+length. It is its own block because a layer name and a mode word look alike, and only
+this block is resolved against the PDK's layers; each entry arrives in the check as
+``<name>`` and ``<name>_dt``.
+
+``text:`` is a separate, sibling field for the handful of checks that need a text/label
+pattern — :doc:`checks/forbidden_unless_labeled` is the only current user.
 
 
 Validating a new PDK

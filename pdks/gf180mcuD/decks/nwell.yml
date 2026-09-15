@@ -58,7 +58,6 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
-    str_params:
       metric: euclidian
   - id: NW.5_LV
     check: nonempty
@@ -70,7 +69,6 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
-    str_params:
       metric: euclidian
   - id: NW.5_MV
     check: nonempty

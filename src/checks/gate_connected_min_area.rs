@@ -19,12 +19,11 @@ use crate::violation::Violation;
 use std::collections::HashSet;
 
 fn net_key(rule: &RuleDefinition, name: &str, default: LayerKey) -> LayerKey {
-    match rule.params.get(name) {
+    match rule.num(name) {
         Some(l) => (
-            *l as i16,
-            rule.params
-                .get(&format!("{name}_dt"))
-                .map(|v| *v as i16)
+            l as i16,
+            rule.num(&format!("{name}_dt"))
+                .map(|v| v as i16)
                 .unwrap_or(0),
         ),
         None => default,

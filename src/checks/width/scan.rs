@@ -304,8 +304,8 @@ pub fn run_width(
 
 /// The facing-wall width of `layers[0]` measured between the walls it shares with the
 /// boundary of `layers[1]` - or, with `walls: unshared`, between the ones it does not.
-/// `layer_params: outside: X` keeps only the stretches outside `X`, `str_params: angle:
-/// bent` only the 45° runs, and `params: length` only pairs sharing more than that run.
+/// `outside: X` (a layer param) keeps only the stretches outside `X`, `angle: bent` only
+/// the 45° runs, and `length` only pairs sharing more than that run.
 ///
 /// A gate has two kinds of wall.  The ones the poly brought with it stand across the
 /// channel and the distance between them is the gate's length; the ones the active cut
@@ -333,31 +333,24 @@ pub fn run_gate(
         eprintln!("[{}] {name} needs a region and a reference layer", rule.id);
         return vec![];
     };
-    let on = match rule.str_params.get("walls").map(String::as_str) {
-        None | Some("shared") => true,
-        Some("unshared") => false,
-        Some(other) => {
+    let on = match super::mode(rule, name, "walls") {
+        Ok(None) | Ok(Some("shared")) => true,
+        Ok(Some("unshared")) => false,
+        Ok(Some(other)) => {
             eprintln!(
                 "[{}] {name}: walls must be `shared` or `unshared`, not `{other}`",
                 rule.id
             );
             return vec![];
         }
+        Err(super::NotAWord) => return vec![],
     };
-    let bent_only = match rule.str_params.get("angle").map(String::as_str) {
-        None => false,
-        Some("bent") => true,
-        Some(other) => {
-            eprintln!(
-                "[{}] {name}: angle can only be `bent`, not `{other}`",
-                rule.id
-            );
-            return vec![];
-        }
+    let Some(bent_only) = super::bent_only(rule, name) else {
+        return vec![];
     };
     let min_run = super::min_run(rule, dbu_to_um);
-    let outside = match (rule.params.get("outside"), rule.params.get("outside_dt")) {
-        (Some(&l), Some(&d)) => Some((l as i16, d as i16)),
+    let outside = match (rule.num("outside"), rule.num("outside_dt")) {
+        (Some(l), Some(d)) => Some((l as i16, d as i16)),
         _ => None,
     };
     let (bl, bd) = (body.gds_layer as i16, body.gds_datatype as i16);

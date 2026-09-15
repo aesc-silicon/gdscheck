@@ -182,28 +182,45 @@ struct RuleRaw {
     pub check: String,
     pub layers: Vec<String>,
     pub value: f64,
+    /// A number or a word, as the deck writes it: `rows: 3`, `sides: adjacent`.
     #[serde(default)]
-    pub params: HashMap<String, f64>,
+    pub params: HashMap<String, Param>,
     /// Layer names whose shapes this rule should skip (e.g. inside_boundary not
     /// checking the edge-seal passivation ring).
     #[serde(default)]
     pub ignore: Vec<String>,
     /// Optional text/label pattern a check may need (e.g. the exemption label for
-    /// `forbidden_unless_labeled`).  `params` only carries numbers.
+    /// `forbidden_unless_labeled`).
     #[serde(default)]
     pub text: Option<String>,
-    /// Params whose value is a word rather than a number - a mode selector such as
-    /// `sides: adjacent`.  `params` holds only numbers, and a mode encoded as one would
-    /// be unreadable in the deck, which is the thing these files exist to be.
-    #[serde(default)]
-    pub str_params: HashMap<String, String>,
-    /// Params whose value is a *layer*, given by name.  `params` holds only numbers, so
-    /// a check that takes a layer as a parameter (rather than as one of `layers`) would
-    /// otherwise need its GDS number written into the deck - impossible for a derived
-    /// layer, whose number is assigned by position in `virtual_layers`.  Each entry is
-    /// resolved at load time into `params` as `<name>` and `<name>_dt`.
+    /// Params whose value is a *layer*, given by name.  A check that takes a layer as a
+    /// parameter (rather than as one of `layers`) would otherwise need its GDS number
+    /// written into the deck - impossible for a derived layer, whose number is assigned
+    /// by position in `virtual_layers`.  A layer name and a mode word look alike in YAML,
+    /// so these are their own block; each entry is resolved at load time into `params`
+    /// as `<name>` and `<name>_dt`.
     #[serde(default)]
     pub layer_params: HashMap<String, String>,
+}
+
+/// A rule parameter: the number or the word the deck wrote.  YAML decides which -
+/// `0.5` is a number, `bent` a word - and a check asks for the kind it wants through
+/// [`RuleDefinition::num`] or [`RuleDefinition::word`], which say so when the deck gave
+/// the other.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(untagged)]
+pub enum Param {
+    Num(f64),
+    Word(String),
+}
+
+impl std::fmt::Display for Param {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Param::Num(v) => write!(f, "{v}"),
+            Param::Word(w) => f.write_str(w),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -212,11 +229,40 @@ pub struct RuleDefinition {
     pub check: String,
     pub layers: Vec<Layer>,
     pub value: f64,
-    pub params: HashMap<String, f64>,
-    /// Word-valued params; see [`RuleRaw::str_params`].
-    pub str_params: HashMap<String, String>,
+    /// See [`Param`].  Read through [`Self::num`] and [`Self::word`].
+    pub params: HashMap<String, Param>,
     pub ignore: Vec<Layer>,
     pub text: Option<String>,
+}
+
+impl RuleDefinition {
+    /// The numeric param `key`, or `None` - saying so if the deck wrote a word there.
+    pub fn num(&self, key: &str) -> Option<f64> {
+        match self.params.get(key)? {
+            Param::Num(v) => Some(*v),
+            Param::Word(w) => {
+                eprintln!(
+                    "[{}] {}: param `{key}` must be a number, not `{w}`",
+                    self.id, self.check
+                );
+                None
+            }
+        }
+    }
+
+    /// The word param `key`, or `None` - saying so if the deck wrote a number there.
+    pub fn word(&self, key: &str) -> Option<&str> {
+        match self.params.get(key)? {
+            Param::Word(w) => Some(w),
+            Param::Num(v) => {
+                eprintln!(
+                    "[{}] {}: param `{key}` must be a word, not `{v}`",
+                    self.id, self.check
+                );
+                None
+            }
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -1018,8 +1064,8 @@ impl PdkConfig {
                             r.id
                         )
                     })?;
-                    params.insert(key.clone(), l.gds_layer as f64);
-                    params.insert(format!("{key}_dt"), l.gds_datatype as f64);
+                    params.insert(key.clone(), Param::Num(l.gds_layer as f64));
+                    params.insert(format!("{key}_dt"), Param::Num(l.gds_datatype as f64));
                 }
 
                 Ok(RuleDefinition {
@@ -1028,7 +1074,6 @@ impl PdkConfig {
                     layers,
                     value: r.value,
                     params,
-                    str_params: r.str_params,
                     ignore,
                     text: r.text,
                 })

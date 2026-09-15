@@ -10,13 +10,13 @@ rules:
     check: min_enclosure
     layers: [Outer, Inner]
     value: 0.5
-    str_params:
+    params:
       metric: projection
   - id: ENC.eucl
     check: min_enclosure
     layers: [Outer, Inner]
     value: 0.5
-    str_params:
+    params:
       metric: euclidian
   # KLayout drops a pair measuring exactly zero - a corner resting on the enclosing
   # wall - before it reports.  `skip_coincident` is meant to mirror that, and the
@@ -27,5 +27,4 @@ rules:
     value: 0.5
     params:
       skip_coincident: 1
-    str_params:
       metric: euclidian

@@ -167,7 +167,7 @@ fn show_deck(process: &str, deck: &str) {
                 String::new()
             } else {
                 // Sort params for stable output (HashMap order is non-deterministic).
-                let mut p: Vec<(&String, &f64)> = r.params.iter().collect();
+                let mut p: Vec<(&String, &gdscheck::pdk::Param)> = r.params.iter().collect();
                 p.sort_by(|a, b| a.0.cmp(b.0));
                 let p: Vec<String> = p.iter().map(|(k, v)| format!("{k}={v}")).collect();
                 format!("{{{}}}", p.join(", "))

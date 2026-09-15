@@ -217,7 +217,7 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     run_gated_with(rule, layout, dbu_to_um, merged, None, gate)
 }
 
-/// `forced` overrides what `str_params` would say, for a check that *is* a mode.
+/// `forced` overrides what the `pairs` param would say, for a check that *is* a mode.
 fn run_gated_with<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
@@ -248,7 +248,7 @@ fn run_gated_with<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     // is for a rule whose two shapes overlap *by definition* - GF180's S.PL.5b_MV asks
     // the space from a poly to the COMP it gates - where the closest approach is zero and
     // the gap meant is between facing edges elsewhere along the same two shapes.
-    let overlapping_pairs = match rule.str_params.get("pairs").map(String::as_str) {
+    let overlapping_pairs = match rule.word("pairs") {
         Some("overlapping") => true,
         Some("disjoint") | None => false,
         Some(other) => {
@@ -263,7 +263,7 @@ fn run_gated_with<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
     // `square` is KLayout's L-infinity metric, which a rule words as "must not fall
     // within a d x d square at the corner".  It separates *less* than euclidian, so the
     // default stays euclidian and only a rule that asks for it pays the wider net.
-    let square = match rule.str_params.get("metric").map(String::as_str) {
+    let square = match rule.word("metric") {
         Some("square") => true,
         Some("euclidian") | None => false,
         Some(other) => {
@@ -650,12 +650,12 @@ pub fn run_no_angle(
     let (gl, gd) = (layer.gds_layer as i16, layer.gds_datatype as i16);
     merged.ensure(layout, gl, gd);
 
-    let forbidden = rule.params.get("angle").copied(); // specific forbidden orientation
-    let tol = rule.params.get("tolerance").copied().unwrap_or(1.0);
+    let forbidden = rule.num("angle"); // specific forbidden orientation
+    let tol = rule.num("tolerance").unwrap_or(1.0);
     // Allowed orientations are multiples of `step` degrees; 90 (the default) permits
     // only axis-aligned edges, 45 also permits the diagonals.  GF180's ACUTE rules want
     // the latter - they allow 0, 45, 90 and -45 and flag everything else.
-    let step = rule.params.get("step").copied().unwrap_or(90.0);
+    let step = rule.num("step").unwrap_or(90.0);
 
     match forbidden {
         Some(a) => println!(
@@ -873,7 +873,7 @@ pub fn run_extent(
 /// explicitly; `projection` restricts the measurement to facing parallel runs. The two
 /// agree on orthogonal geometry and part company at any corner that is not square.
 fn enclosure_is_euclidian(rule: &RuleDefinition) -> bool {
-    match rule.str_params.get("metric").map(String::as_str) {
+    match rule.word("metric") {
         Some("euclidian") => true,
         Some("projection") | None => false,
         Some(other) => {
@@ -973,7 +973,7 @@ pub enum Sides {
 
 impl Sides {
     pub fn of(rule: &RuleDefinition) -> Self {
-        match rule.str_params.get("sides").map(String::as_str) {
+        match rule.word("sides") {
             Some("any") => Sides::Any,
             Some("adjacent") => Sides::Adjacent,
             Some("line_end") => Sides::LineEnd,
@@ -1208,36 +1208,26 @@ pub fn run_enclosure(
     // KLayout's `enclosed` only checks enclosed shapes that actually overlap an enclosing
     // region (a via far from any MIM is not a MIM via).  Opt-in via the `interacting_only`
     // param so the default "must be inside" behaviour (e.g. Cont within Metal1) is unchanged.
-    let interacting_only = rule
-        .params
-        .get("interacting_only")
-        .is_some_and(|v| *v != 0.0);
+    let interacting_only = rule.num("interacting_only").is_some_and(|v| v != 0.0);
     // Ignore inner edges coincident with the enclosing contour (clip artifacts of an
     // `intersection`-derived enclosed layer) — mirrors KLayout's `consider_intersecting_
     // edges: false` / `without_distance(0)` rule flags.  Off by default: a genuinely flush
     // edge is a real 0-margin violation (e.g. Rppd.b).
-    let skip_coincident = rule
-        .params
-        .get("skip_coincident")
-        .is_some_and(|v| *v != 0.0);
+    let skip_coincident = rule.num("skip_coincident").is_some_and(|v| v != 0.0);
     // Stronger, region-level variant: skip the *whole* enclosed region if any of its edges
     // is coincident with the enclosing contour — i.e. the region reaches the boundary and
     // is not "surrounded entirely by" the enclosing layer.  NW.e's title says exactly that:
     // a tie crossing the NWell edge is external-tie territory (NW.d), not NW.e's.  This is
     // also halo-robust: the clip is a local property of the region, unlike its remaining
     // margins whose tile ownership can shift with per-suite halos.
-    let skip_clipped = rule.params.get("skip_clipped").is_some_and(|v| *v != 0.0);
+    let skip_clipped = rule.num("skip_clipped").is_some_and(|v| v != 0.0);
     // `sides: adjacent` only: the margin below which a side starts asking something of
     // the sides bordering it.
-    let trigger = rule.params.get("trigger").copied().unwrap_or(0.0);
+    let trigger = rule.num("trigger").unwrap_or(0.0);
     // `sides: line_end` only: what counts as a narrow track, and how far it must run
     // before it is a line rather than a notch.
-    let max_width = rule
-        .params
-        .get("max_width")
-        .copied()
-        .unwrap_or(f64::INFINITY);
-    let min_length = rule.params.get("min_length").copied().unwrap_or(0.0);
+    let max_width = rule.num("max_width").unwrap_or(f64::INFINITY);
+    let min_length = rule.num("min_length").unwrap_or(0.0);
     let euclidian = enclosure_is_euclidian(rule);
 
     let map_a = merged.tiles(al, ad);

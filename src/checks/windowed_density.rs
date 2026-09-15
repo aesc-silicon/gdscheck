@@ -137,8 +137,8 @@ fn run(
     merged: &mut MergedCache,
     is_max: bool,
 ) -> Vec<Violation> {
-    let window = match rule.params.get("window") {
-        Some(&w) => w,
+    let window = match rule.num("window") {
+        Some(w) => w,
         None => {
             eprintln!("[{}] Missing required param 'window'", rule.id);
             return vec![];
@@ -172,8 +172,8 @@ fn run(
         return vec![];
     }
 
-    let boundary_bbox = rule.params.get("boundary_layer").and_then(|&l| {
-        let dt = rule.params.get("boundary_datatype").copied().unwrap_or(0.0);
+    let boundary_bbox = rule.num("boundary_layer").and_then(|l| {
+        let dt = rule.num("boundary_datatype").unwrap_or(0.0);
         layer_bbox_dbu(layout, l as i16, dt as i16)
     });
 
