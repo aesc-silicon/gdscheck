@@ -40,10 +40,14 @@ Parameters
 ----------
 
 ``sides``
-   Optional. ``all`` (the default): no side may exceed ``value``. ``any``: the *best*
-   side may not exceed it — the endcap's maximum, read from the bounding-box margins the
-   way :doc:`min_enclosure`'s ``sides: any`` reads them. ``adjacent`` and ``line_end``
-   are about a margin falling short and have no maximum.
+   Optional. ``all`` (the default): no side may exceed ``value`` — the shape's largest
+   margin is the one read. ``any``: at least one side is within ``value`` — the shape's
+   smallest margin is the one read, and a shape enclosed by more than ``value`` on every
+   side is the violation. Paired with a :doc:`min_enclosure` at the same value, ``all``
+   pins every side to exactly that value and ``any`` pins one side to it (GF180
+   ``HRES.10``: the implant overlaps the salicide block by exactly 0.1 µm where it
+   crosses it, however far it runs past it elsewhere). ``adjacent`` and ``line_end`` are
+   about a margin falling short and have no maximum.
 
 ``metric``
    Optional. ``projection`` (the default) or ``euclidian``, as in :doc:`min_enclosure`.

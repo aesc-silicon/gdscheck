@@ -165,15 +165,24 @@ fn larger(a: (i128, i128), b: (i128, i128)) -> bool {
     a.0 as f64 / a.1 as f64 > b.0 as f64 / b.1 as f64
 }
 
+/// The margin a bound is judged on - and among the regions containing a shape, the
+/// most favourable of those.  A minimum on every side reads the smallest margin and a
+/// maximum on every side the largest; `sides: any` turns each round, at least one side
+/// making the bound: the largest for a minimum, the smallest for a maximum.
+fn worse(largest: bool, a: (i128, i128), b: (i128, i128)) -> bool {
+    if largest { larger(a, b) } else { larger(b, a) }
+}
+
 /// Tiled enclosure engine.  Each enclosed region is owned by the tile holding its
 /// centroid and tested once against the enclosing regions in that tile (core +
 /// halo) — suited to the small features (pins, vias) enclosure targets.
 ///
-/// A maximum reads the same margins and turns the comparison round.  Two things it
-/// leaves out on purpose: a shape no enclosing region contains has no margin to be too
-/// large, so it is skipped rather than reported - that absence is the minimum's
-/// concern - and the coincidence flags and the wall reality check, which only ever
-/// shrink a measured margin and for an upper bound err toward passing.
+/// A maximum reads the same margins and turns the comparison round: the largest margin
+/// of a shape, where a minimum reads the smallest.  Two things it leaves out on
+/// purpose: a shape no enclosing region contains has no margin to be too large, so it
+/// is skipped rather than reported - that absence is the minimum's concern - and the
+/// coincidence flags and the wall reality check, which only ever shrink a measured
+/// margin and for an upper bound err toward passing.
 pub fn run(
     kind: Kind,
     rule: &RuleDefinition,
@@ -183,6 +192,8 @@ pub fn run(
     sides: Sides,
 ) -> Vec<Violation> {
     let max = kind == Kind::Max;
+    // Which margin of a shape the bound is judged on: see `worse`.
+    let largest = max != (sides == Sides::Any);
     let Some(euclidian) = euclidian(rule, kind.name()) else {
         return vec![];
     };
@@ -307,7 +318,7 @@ pub fn run(
                         first.1.0 as f64,
                         first.1.1 as f64,
                     );
-                    let worst: Option<Read> = if sides == Sides::Any {
+                    let worst: Option<Read> = if sides == Sides::Any && !max {
                         let m = endcap_margin(&bp, a) as i128;
                         Some(((m * m, 1), first_edge))
                     } else {
@@ -320,7 +331,7 @@ pub fn run(
                         // probe's own tile (complete there) exposes and drops it.
                         let mut worst: Option<Read> = None;
                         for p in pairs {
-                            if worst.is_some_and(|(w, _)| !larger(w, (p.num, p.den))) {
+                            if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
                                 continue;
                             }
                             if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
@@ -339,7 +350,7 @@ pub fn run(
                         }
                     };
                     if let Some((m, e)) = worst
-                        && best.is_none_or(|(b, _)| larger(m, b))
+                        && best.is_none_or(|(b, _)| worse(largest, b, m))
                     {
                         best = Some((m, e));
                     }
@@ -472,7 +483,7 @@ pub fn run(
                                 if !inside_or_on(am, a, mid) {
                                     continue; // pair on the protruding part
                                 }
-                                if worst.is_some_and(|(w, _)| !larger(w, (p.num, p.den))) {
+                                if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
                                     continue;
                                 }
                                 if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
