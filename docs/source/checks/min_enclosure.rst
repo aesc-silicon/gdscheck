@@ -6,7 +6,9 @@ min_enclosure
 =============
 
 Every shape on the enclosed layer (``layers[1]``) must sit inside an enclosing region
-(``layers[0]``) with at least ``value`` µm of margin on **all** sides.
+(``layers[0]``) with at least ``value`` µm of margin — on all sides, or on the sides
+``sides`` names: at least one (a wire's endcap round a via), the sides bordering a short
+one, or the side facing a narrow track's tip.
 
 
 Semantics
@@ -56,6 +58,49 @@ Two layers, positional:
 Parameters
 ----------
 
+``sides``
+   Optional. Which sides of the enclosed shape have to make the margin. All four read
+   the same per-side margins and differ only in the verdict.
+
+   ``all`` (the default)
+      Every side: the worst side must reach ``value``.
+
+   ``any``
+      At least one side: the *best* side must reach ``value`` — the wire endcap. A via
+      at a metal corner is an endcap on one side, with the ordinary rule at a much
+      smaller value covering the rest (IHP ``V1.c`` at 0.01 µm alongside ``V1.c1`` at
+      0.05 µm with ``sides: any``: mostly flush is fine, but one side needs real
+      margin). The margin is the enclosing region's bounding-box margin on each side,
+      deliberately: an edge-to-contour distance is corner-limited and would understate
+      a long endcap run.
+
+   ``adjacent``
+      A side enclosed by less than ``trigger`` is allowed only if the sides bordering it
+      reach ``value`` (GF180 ``S.CO.6_ii``: a contact may sit flush on one side when the
+      two sides next to it have the full margin).
+
+   ``line_end``
+      Only the side facing a *line end* of the enclosing layer — the cap across the tip
+      of a track narrower than ``max_width`` that runs for at least ``min_length``
+      (GF180 ``CO.6a``). This is the one mode whose condition comes from the enclosing
+      layer's own shape: a narrow line's tip pulls back during processing, so metal that
+      merely reaches the via on paper may not reach it on silicon. The sidewalls are the
+      ordinary rule's business.
+
+``metric``
+   Optional. ``projection`` (the default) pairs each inner edge with the parallel outer
+   edges that project onto it; ``euclidian`` reads the closest approach, which is
+   KLayout's own default. The two agree on orthogonal geometry and part company at any
+   corner that is not square.
+
+``trigger``
+   With ``sides: adjacent``: the margin below which a side starts asking something of
+   the sides bordering it.
+
+``max_width`` / ``min_length``
+   With ``sides: line_end``: what counts as a narrow track, and how far it must run
+   before it is a line rather than a notch.
+
 ``interacting_only``
    Off by default (every enclosed shape must be fully inside some enclosing region, or
    it's a violation). When set, a shape that overlaps no enclosing region at all is out
@@ -83,7 +128,8 @@ Violation markers
   centroid.
 - Contained (or, under ``interacting_only``, partially overlapping) shape whose measured
   margin is below ``value``: one edge marker along the facing outer wall responsible for
-  the worst margin.
+  the worst margin. Under ``sides: any`` the marker sits on the shape's first contour
+  edge, since the bounding-box reduction names no single wall.
 
 
 KLayout equivalent
@@ -92,6 +138,8 @@ KLayout equivalent
 ``inner.enclosed(outer, value, metric: RBA::Region::projection, ...)`` — ``skip_coincident``
 mirrors ``consider_intersecting_edges: false`` / ``without_distance(0)``; ``skip_clipped``
 has no single built-in KLayout flag and is a region-level generalization of the same idea.
+Neither ``sides: any`` nor ``adjacent`` is a single operator; ``line_end`` is the
+``enclosed`` of the via against the enclosing layer's line-end edges alone.
 
 
 Example
@@ -127,3 +175,18 @@ Example
       params:
         skip_coincident: 1
         interacting_only: 1
+
+.. code-block:: yaml
+
+    # V1.c allows the via to be nearly flush with Metal1 on most sides; V1.c1 requires a
+    # real endcap on at least one side.
+    - id: V1.c
+      check: min_enclosure
+      layers: [Metal1, Via1NoSealring]
+      value: 0.01
+    - id: V1.c1
+      check: min_enclosure
+      layers: [Metal1, Via1NoSealring]
+      value: 0.05
+      params:
+        sides: any

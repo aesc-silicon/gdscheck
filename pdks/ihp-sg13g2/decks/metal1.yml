@@ -20,9 +20,11 @@ rules:
     layers: [Metal1, ContNoSealring]
     value: 0.0
   - id: M1.c1
-    check: min_endcap_enclosure
+    check: min_enclosure
     layers: [Metal1, ContNoSealring]
     value: 0.05
+    params:
+      sides: any
   - id: M1.d
     check: min_area
     layers: [Metal1]

@@ -107,14 +107,6 @@ pub fn run_rule(
         "no_ring" => no_ring::run(rule, layout, dbu_to_um),
         "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
-        "min_endcap_enclosure" => enclosure::run_sides(
-            enclosure::Kind::Min,
-            enclosure::Sides::Any,
-            rule,
-            layout,
-            dbu_to_um,
-            merged,
-        ),
         "min_extension" => {
             enclosure::extension::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged)
         }
