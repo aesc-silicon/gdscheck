@@ -96,7 +96,7 @@ rules:
     layers: [poly2_drawn, comp_no_ymtp]
     value: 90.0
     layer_params:
-      outside_layer: ymtp_mk
+      outside: ymtp_mk
 
   - id: PL.7_LV
     check: min_gate_length

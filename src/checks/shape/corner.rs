@@ -19,7 +19,7 @@
 //! `corners(90)` with `corners(-90)`), within `tolerance`.  With `min` and `max` the
 //! rule forbids a range of turns instead - "no corner sharper than a right angle" is
 //! `min: 90.005` and `max: 180` - and `value` is not read.  `layers[1]`, if given,
-//! confines the rule to corners lying inside that layer. `layer_params.outside_layer`,
+//! confines the rule to corners lying inside that layer. `layer_params.outside`,
 //! if given, exempts corners inside that one.
 //!
 //! A right angle is exact: the dot product of two integer edges is zero or it is not.
@@ -90,11 +90,11 @@ pub fn run(
         merged.ensure(layout, k.0, k.1);
     }
     let outside = rule
-        .num("outside_layer")
+        .num("outside")
         .map(|v| {
             (
                 v as i16,
-                rule.num("outside_layer_dt").map(|d| d as i16).unwrap_or(0),
+                rule.num("outside_dt").map(|d| d as i16).unwrap_or(0),
             )
         })
         .inspect(|k| merged.ensure(layout, k.0, k.1));

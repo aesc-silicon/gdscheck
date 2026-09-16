@@ -12,6 +12,9 @@ must be at least ``value``. The dual of :doc:`min_dim`.
 Semantics
 ---------
 
+The extent is a difference of two grid coordinates and is compared exactly against
+``value`` on the grid.
+
 For each merged region on the rule's layer, take its axis-aligned bounding box
 ``(x0, y0)-(x1, y1)`` and compute ``length = max(x1 - x0, y1 - y0)``. A region whose
 length is below ``value`` is a violation.
