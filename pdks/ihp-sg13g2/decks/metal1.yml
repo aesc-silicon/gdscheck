@@ -28,19 +28,19 @@ rules:
     layers: [Metal1]
     value: 0.09
   - id: M1.e
-    check: min_space_prl
+    check: min_space
     layers: [Metal1]
     value: 0.22
     params:
-      wide_width: 0.3
-      parallel_run: 1.0
+      width: 0.3
+      length: 1.0
   - id: M1.f
-    check: min_space_prl
+    check: min_space
     layers: [Metal1]
     value: 0.60
     params:
-      wide_width: 10.00
-      parallel_run: 10.00
+      width: 10.00
+      length: 10.00
   - id: M1.g
     check: min_width
     layers: [Metal1]
@@ -49,9 +49,11 @@ rules:
       angle: bent
       length: 0.50
   - id: M1.i
-    check: min_space_bent
+    check: min_space
     layers: [Metal1]
     value: 0.22
+    params:
+      angle: bent
   - id: M1.j
     check: min_density
     layers: [Metal1, Metal1.filler, Metal1.mask]

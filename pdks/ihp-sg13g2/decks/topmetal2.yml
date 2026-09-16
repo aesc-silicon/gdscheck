@@ -16,12 +16,12 @@ rules:
     layers: [TopMetal2]
     value: 2.00
   - id: TM2.bR
-    check: min_space_prl
+    check: min_space
     layers: [TopMetal2NotIND]
     value: 5.00
     params:
-      wide_width: 5.00
-      parallel_run: 50.00
+      width: 5.00
+      length: 50.00
   - id: TM2.c
     check: min_density
     layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]

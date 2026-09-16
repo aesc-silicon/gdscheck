@@ -152,8 +152,8 @@ KLayout script, where the two disagree:
 * **NW.b / NW.b1** (well spacing at the same / at different potential) are not in the
   shipped KLayout script at all — it omits both potential-dependent rules rather than
   approximate them. gdscheck implements both: NW.b as a plain geometric
-  :doc:`../checks/min_space` at 0.62 µm, and NW.b1 as
-  :doc:`../checks/min_space_different_net` at 1.80 µm, gated on extracted nets. The
+  :doc:`../checks/min_space` at 0.62 µm, and NW.b1 as the same check at 1.80 µm with
+  ``net: different``, gated on extracted nets. The
   ``NActivInNWell`` connect step ties a well to the tap sitting in it (and from there
   through Cont to Metal1), so wells strapped together no longer read as different-net.
   It has to be N+Activ rather than plain ``Activ``: P+Activ in an NWell is a PMOS
@@ -168,13 +168,13 @@ KLayout script, where the two disagree:
   connect graph later belongs at the end for the same reason.
 * **NBL.b / NBL.c** are the buried-layer twins of the pair above, and upstream omits them
   for the same reason. gdscheck implements NBL.b as a plain 1.50 µm
-  :doc:`../checks/min_space` and NBL.c as a 3.20 µm
-  :doc:`../checks/min_space_different_net`. The ``NWellNBuLay`` connect step carries the
+  :doc:`../checks/min_space` and NBL.c as the same check at 3.20 µm with
+  ``net: different``. The ``NWellNBuLay`` connect step carries the
   net down the sinker — the NWell-ring/nBuLay overlap that nmosi.d sizes at 0.62 µm — so
   a buried layer takes the net of the well above it, and through the tap step, of
   whatever ties that well.
 * **NBL.d** is net-dependent too — "Min. PWell width between nBuLay and NWell (different
-  net)" — and is :doc:`../checks/min_space_different_net` in its two-layer form. It needs
+  net)" — and is :doc:`../checks/min_space` with ``net: different`` in its two-layer form. It needs
   nothing new in the connect graph; nBuLay and NWell are both in it for NBL.c.
 * **"unrelated" is not net language.** NBL.e/f ("space to *unrelated* N+/P+Activ") read as
   though they were, but §4.1 defines *unrelated* as "two regions which do not touch each

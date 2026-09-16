@@ -20,12 +20,11 @@ rules:
     layers: [ContBar]
     value: 0.28
   - id: CntB.b1
-    check: min_space_prl
+    check: min_space
     layers: [ContBar]
     value: 0.36
     params:
-      wide_width: 0.0
-      parallel_run: 5.00
+      length: 5.00
   - id: CntB.b2
     check: min_space
     layers: [ContBar, Cont]

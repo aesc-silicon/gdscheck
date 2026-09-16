@@ -9,17 +9,21 @@ rules:
     layers: [dnwell]
     value: 1.7
   - id: DN.2a
-    check: min_space_same_net
+    check: min_space
     layers: [dnwell]
     value: 2.5
+    params:
+      net: same
   - id: DN.2a
     check: min_notch
     layers: [dnwell]
     value: 2.5
   - id: DN.2b
-    check: min_space_different_net
+    check: min_space
     layers: [dnwell]
     value: 5.42
+    params:
+      net: different
   - id: DN.3
     check: nonempty
     layers: [dn3_viol]

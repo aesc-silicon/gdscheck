@@ -13,13 +13,17 @@ rules:
     layers: [lvpwell_dn_mv]
     value: 0.74
   - id: LPW.2a_LV
-    check: min_space_different_net
+    check: min_space
     layers: [lvpwell_dn_lv]
     value: 1.4
+    params:
+      net: different
   - id: LPW.2a_MV
-    check: min_space_different_net
+    check: min_space
     layers: [lvpwell_dn_mv]
     value: 1.7
+    params:
+      net: different
   - id: LPW.2b_LV
     check: min_space
     layers: [lvpwell_dn_lv]
