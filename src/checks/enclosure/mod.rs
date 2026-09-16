@@ -11,10 +11,9 @@
 //! [`scan`], under the `projection` or the `euclidian` metric; what a rule adds is its
 //! bound, its sides, and the three flags for a region cut to its enclosing layer.
 //!
-//! An extension is the same question asked the other way round and only where the
-//! cover crosses the target - see [`extension`].
+//! An extension - a cover reaching past the target it crosses by so much - is the same
+//! margin read on the walls the cover crosses, which `interacting_only` selects.
 
-pub mod extension;
 pub mod scan;
 
 use crate::layout::FlatLayout;
@@ -38,14 +37,6 @@ impl Kind {
         match self {
             Kind::Min => "min_enclosure",
             Kind::Max => "max_enclosure",
-        }
-    }
-
-    /// The extension check's name.
-    pub fn extension_name(self) -> &'static str {
-        match self {
-            Kind::Min => "min_extension",
-            Kind::Max => "max_extension",
         }
     }
 

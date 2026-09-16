@@ -4,17 +4,21 @@
 
 rules:
   - id: TGO.a
-    check: min_extension
+    check: min_enclosure
     layers: [ThickGateOx, Activ]
     value: 0.27
+    params:
+      interacting_only: 1
   - id: TGO.b
     check: min_space
     layers: [ThickGateOx, ActivOutsideTGO]
     value: 0.27
   - id: TGO.c
-    check: min_extension
+    check: min_enclosure
     layers: [ThickGateOxOverActiv, GatPoly]
     value: 0.34
+    params:
+      interacting_only: 1
   - id: TGO.d
     check: min_space
     layers: [ThickGateOx, GatPolyOverActivOutsideTGO]

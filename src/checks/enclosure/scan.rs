@@ -435,7 +435,7 @@ pub fn run(
                 }
 
                 if !any_contained {
-                    if max {
+                    if max && !interacting_only {
                         continue; // nothing contains it: no margin to be too large
                     }
                     if interacting_only {
@@ -459,7 +459,9 @@ pub fn run(
                         // pairs whose inner edge lies inside the enclosing region and
                         // ignores pairs from the protruding part (verified empirically
                         // on pSD.c1: an abutted tie crossing the pSD edge is clean,
-                        // while its inside lateral margins are still checked).
+                        // while its inside lateral margins are still checked).  This is
+                        // what an extension rule is - a cover reaching past the target
+                        // it crosses by so much - and a maximum reads it the same way.
                         let mut worst: Option<Read> = None;
                         for (am, a) in touching {
                             let (pairs, _) =
@@ -473,7 +475,7 @@ pub fn run(
                                 if worst.is_some_and(|(w, _)| !larger(w, (p.num, p.den))) {
                                     continue;
                                 }
-                                if point_in_layer_at_own_tile(map_a, tile, p.probe) {
+                                if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
                                     continue;
                                 }
                                 worst = Some(((p.num, p.den), p.edge));

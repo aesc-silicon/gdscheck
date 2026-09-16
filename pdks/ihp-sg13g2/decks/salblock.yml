@@ -16,9 +16,11 @@ rules:
     layers: [SalBlock]
     value: 0.42
   - id: Sal.c
-    check: min_extension
+    check: min_enclosure
     layers: [SalBlock, ActivOrGatPoly]
     value: 0.20
+    params:
+      interacting_only: 1
   - id: Sal.d
     check: min_space
     layers: [SalBlock, ActivOrGatPoly]

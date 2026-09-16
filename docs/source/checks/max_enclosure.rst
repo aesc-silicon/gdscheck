@@ -48,6 +48,11 @@ Parameters
 ``metric``
    Optional. ``projection`` (the default) or ``euclidian``, as in :doc:`min_enclosure`.
 
+``interacting_only``
+   Optional. As in :doc:`min_enclosure`: a shape that partially overlaps an enclosing
+   region is measured on the facing pairs of its contained side — the maximum of an
+   extension, a cover that may reach past the target it crosses by at most ``value``.
+
 
 Violation markers
 ------------------
