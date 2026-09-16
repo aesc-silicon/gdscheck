@@ -14,9 +14,14 @@
 //! long net bent somewhere else, or a wide rail that dips to a narrow tooth, does not
 //! lend the condition to a gap it is not at.
 //!
+//! A gap between two walls of *one* region is a notch, read by [`notch`] with the width
+//! scan turned the other way round; it takes `angle: bent` and `length` the same way.
+//!
 //! Declared on two *edge* layers, a plain rule measures between segments instead - see
 //! [`edge_distance`](super::edge_distance).  Which one runs is the deck's choice of layer,
 //! not a different rule; the gates read regions and have no meaning there.
+
+pub mod notch;
 
 use super::params::{NotAWord, bent_only, mode};
 use crate::connectivity::{Connectivity, LayerKey};

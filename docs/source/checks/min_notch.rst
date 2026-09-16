@@ -13,31 +13,26 @@ which measures the gap between two *different* regions).
 Semantics
 ---------
 
-Runs on the same per-tile merged cache and facing-wall scan as :doc:`min_width`, but
-inverted: instead of measuring the metal between two facing walls, it measures the
-*empty* gap between them. A notch narrower than ``value`` is a violation; each distinct
-notch is reported once. Three passes run, covering every combination of wall
-orientation:
+Runs on the same per-tile merged cache and the same facing-wall scan as :doc:`min_width`,
+turned the other way round: instead of measuring the material between two walls facing
+each other, it measures the *empty* gap between two walls facing away from each other,
+which is a slot cut into the region or a thin hole through it. A notch narrower than
+``value`` is a violation; each notch is reported once, and the comparison is exact on
+the grid (the value rounds up to whole DBU once, and every span is an integer). Three
+passes run, covering every combination of wall orientation:
 
 - **Rectilinear scan.** Two vertical walls (a horizontal-direction notch) or two
   horizontal walls (a vertical-direction notch), found by sweeping bands across the
   region and pairing facing edges whose empty span is under ``value``.
-- **Oblique pass** (``oblique_notches``). Two mutually anti-parallel diagonal walls —
-  the same style of scan, generalized to non-axis-aligned edges, with the gap measured
-  along each edge's own normal and the reported span limited to where the two edges'
-  projected overlap actually runs.
-- **Mixed pass** (``mixed_notches``). One rectilinear wall facing one diagonal
-  wall — the case neither of the above two passes can see, since they only ever pair
-  edges of the *same* orientation class. This is the shape a diagonal stroke makes
-  closing in on a straight stem (the tip of a "V", the leg of a "K" or "M" — this is
-  exactly what a diagonal font-glyph stroke does, which is how the gap was originally
-  found). It uses the general segment-to-segment closest-point primitive (the same one
-  :doc:`min_space` uses for inter-region gaps) rather than a parallel-corridor
-  projection, since the pair isn't parallel at all; the result is only accepted as a
-  real notch when each edge's closest point on the other lies on its own *empty* (right
-  of direction-of-travel) side — every edge in a merged region carries metal on its left,
-  a convention shared by all three passes — so a pair that's actually metal-filled
-  between the two walls is correctly rejected.
+- **Oblique pass.** Two anti-parallel diagonal walls, with the gap measured along each
+  edge's own normal over the run the two edges share.
+- **Mixed pass.** One rectilinear wall facing one diagonal wall across the gap — the
+  shape a diagonal stroke makes closing in on a straight stem, the tip of a "V" or the
+  leg of a "K". The pair is measured at its closest approach and accepted only when each
+  wall's closest point on the other lies on its own empty side.
+
+What the width scan reads that a notch has no use for is left out: a plain box has no
+notch, and the corner and acute-tip readings are about material narrowing to nothing.
 
 
 Layers
@@ -49,7 +44,14 @@ One layer — the notch is measured within its own merged geometry (holes includ
 Parameters
 ----------
 
-None beyond ``layers`` and ``value`` (µm, the minimum required notch width).
+``angle``
+   Optional. ``bent`` restricts the rule to the 45° gaps alone: the oblique pass runs and
+   the axis-aligned ones stay the plain rule's business.
+
+``length``
+   Optional, µm. Only wall pairs sharing more than this much run count — a notch asked
+   only of slots longer than so much, or of a bent gap long enough to be a slot rather
+   than a chamfer.
 
 
 Violation markers
