@@ -7,9 +7,7 @@ pub mod area;
 pub mod coverage;
 pub mod density;
 pub mod edge_distance;
-pub mod edge_length;
 pub mod enclosure;
-pub mod extent;
 pub mod forbidden;
 pub mod forbidden_overlap;
 pub mod forbidden_unless_labeled;
@@ -30,6 +28,7 @@ pub mod nonempty;
 pub mod offgrid;
 pub mod params;
 pub mod ring_covers_boundary;
+pub mod shape;
 pub mod space;
 pub mod wide_uncovered;
 pub mod width;
@@ -64,12 +63,63 @@ pub fn run_rule(
         "forbidden" => forbidden::run(rule, layout, dbu_to_um),
         "forbidden_overlap" => forbidden_overlap::run(rule, layout, dbu_to_um, merged),
         "coverage" => coverage::run(rule, layout, dbu_to_um, merged),
-        "min_edge_length" => edge_length::run_min(rule, layout, dbu_to_um, merged),
-        "max_edge_length" => edge_length::run_max(rule, layout, dbu_to_um, merged),
-        "min_dim" => extent::run_min_width(rule, layout, dbu_to_um, merged),
-        "max_dim" => extent::run_max_width(rule, layout, dbu_to_um, merged),
-        "min_length" => extent::run_min_length(rule, layout, dbu_to_um, merged),
-        "max_length" => extent::run_max_length(rule, layout, dbu_to_um, merged),
+        "min_edge_length" => {
+            shape::edge_length::run(shape::Kind::Min, rule, layout, dbu_to_um, merged)
+        }
+        "max_edge_length" => {
+            shape::edge_length::run(shape::Kind::Max, rule, layout, dbu_to_um, merged)
+        }
+        "exact_edge_length" => {
+            shape::edge_length::run(shape::Kind::Exact, rule, layout, dbu_to_um, merged)
+        }
+        "min_dim" => shape::extent::run(
+            shape::Kind::Min,
+            shape::extent::Axis::Short,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "max_dim" => shape::extent::run(
+            shape::Kind::Max,
+            shape::extent::Axis::Short,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "exact_dim" => shape::extent::run(
+            shape::Kind::Exact,
+            shape::extent::Axis::Short,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "min_length" => shape::extent::run(
+            shape::Kind::Min,
+            shape::extent::Axis::Long,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "max_length" => shape::extent::run(
+            shape::Kind::Max,
+            shape::extent::Axis::Long,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "exact_length" => shape::extent::run(
+            shape::Kind::Exact,
+            shape::extent::Axis::Long,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
         "inside_boundary" => inside_boundary::run(rule, layout, dbu_to_um),
         "ring_covers_boundary" => ring_covers_boundary::run(rule, layout, dbu_to_um),
         "min_density" => density::run(

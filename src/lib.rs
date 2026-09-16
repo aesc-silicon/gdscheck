@@ -518,6 +518,8 @@ const DIST_CHECKS: &[&str] = &[
     "max_length",
     "min_dim",
     "max_dim",
+    "exact_dim",
+    "exact_length",
     "min_gate_length",
     "max_gate_length",
     "exact_gate_length",
@@ -604,7 +606,13 @@ fn halo_table(
         let dist = dist
             && !matches!(
                 rule.check.as_str(),
-                "wide_uncovered" | "min_dim" | "max_dim" | "min_length" | "max_length"
+                "wide_uncovered"
+                    | "min_dim"
+                    | "max_dim"
+                    | "exact_dim"
+                    | "min_length"
+                    | "max_length"
+                    | "exact_length"
             );
         let h = if dist && !inflating {
             (merge::MIN_HALO_UM.max(rule.value) / dbu_to_um).ceil() as i32
