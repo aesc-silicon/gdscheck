@@ -206,44 +206,51 @@ rules:
     layers: [TopMetal2.slit, TopVia2]
     value: 1.00
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [Metal1NoExempt, Metal1.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [Metal2NoExempt, Metal2.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [Metal3NoExempt, Metal3.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [Metal4NoExempt, Metal4.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [Metal5NoExempt, Metal5.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [TopMetal1NoExempt, TopMetal1.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0
   - id: Slt.i
-    check: min_region_density
+    check: min_density
     layers: [TopMetal2NoExempt, TopMetal2.slit]
     value: 6.00
     params:
+      scope: region
       min_size: 35.0

@@ -341,7 +341,7 @@ fn mfil_c_space(pdk: &PdkConfig, index: i32, dir: &str) {
 fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // min_windowed_density: every 800 µm window must stay above the floor; the
+    // min_density per window: every 800 µm window must stay above the floor; the
     // shapes are split per window rather than spanning the full width.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([
@@ -462,7 +462,7 @@ fn mfil_h_boundary_ring(pdk: &PdkConfig, index: i32, dir: &str) {
 fn mfil_k(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // max_windowed_density: every 800 µm window must stay below the ceiling.
+    // max_density per window: every 800 µm window must stay below the ceiling.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([
         rect(met, 0.0, 0.0, 800.0, 600.0),

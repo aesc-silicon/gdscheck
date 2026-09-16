@@ -90,18 +90,20 @@ rules:
     layers: [Metal5.filler, TRANS]
     value: 1.00
   - id: M5Fil.h
-    check: min_windowed_density
+    check: min_density
     layers: [Metal5, Metal5.filler, Metal5.mask]
     value: 25.00
     params:
+      scope: window
       window: 800.0
     layer_params:
       boundary: EdgeSeal.boundary
   - id: M5Fil.k
-    check: max_windowed_density
+    check: max_density
     layers: [Metal5, Metal5.filler, Metal5.mask]
     value: 75.00
     params:
+      scope: window
       window: 800.0
     layer_params:
       boundary: EdgeSeal.boundary

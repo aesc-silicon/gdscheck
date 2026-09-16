@@ -81,18 +81,20 @@ rules:
     layer_params:
       boundary: EdgeSeal.boundary
   - id: AFil.g2
-    check: min_windowed_density
+    check: min_density
     layers: [Activ, Activ.filler, Activ.mask]
     value: 25.00
     params:
+      scope: window
       window: 800.0
     layer_params:
       boundary: EdgeSeal.boundary
   - id: AFil.g3
-    check: max_windowed_density
+    check: max_density
     layers: [Activ, Activ.filler, Activ.mask]
     value: 65.00
     params:
+      scope: window
       window: 800.0
     layer_params:
       boundary: EdgeSeal.boundary

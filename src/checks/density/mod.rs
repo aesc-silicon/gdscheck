@@ -27,6 +27,7 @@ pub mod region;
 #[cfg(test)]
 mod tests;
 
+use super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
 use crate::merge::{MergedCache, TileMap, clipped_area_dbu};
 use crate::pdk::RuleDefinition;
@@ -41,28 +42,28 @@ pub enum Kind {
 }
 
 impl Kind {
-    fn op(self) -> &'static str {
+    pub fn op(self) -> &'static str {
         match self {
             Kind::Min => ">=",
             Kind::Max => "<=",
         }
     }
 
-    fn cmp(self) -> &'static str {
+    pub fn cmp(self) -> &'static str {
         match self {
             Kind::Min => "<",
             Kind::Max => ">",
         }
     }
 
-    fn bound(self) -> &'static str {
+    pub fn bound(self) -> &'static str {
         match self {
             Kind::Min => "Minimum",
             Kind::Max => "Maximum",
         }
     }
 
-    fn broken_by(self, density: f64, value: f64) -> bool {
+    pub fn broken_by(self, density: f64, value: f64) -> bool {
         match self {
             Kind::Min => density < value,
             Kind::Max => density > value,
@@ -70,22 +71,40 @@ impl Kind {
     }
 }
 
-/// Over what a density is read.
+impl Kind {
+    pub fn name(self) -> &'static str {
+        match self {
+            Kind::Min => "min_density",
+            Kind::Max => "max_density",
+        }
+    }
+}
+
+/// Over what a density is read: the rule's `scope` param.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Scope {
-    /// The whole chip, as one percentage.
+    /// The whole chip, as one percentage (the default).
     Chip,
     /// Every `window × window` tile of a grid over the chip.
     Window,
+    /// Each large connected region of a base layer, see [`region`].
+    Region,
 }
 
 impl Scope {
-    fn name(self, kind: Kind) -> &'static str {
-        match (self, kind) {
-            (Scope::Chip, Kind::Min) => "min_density",
-            (Scope::Chip, Kind::Max) => "max_density",
-            (Scope::Window, Kind::Min) => "min_windowed_density",
-            (Scope::Window, Kind::Max) => "max_windowed_density",
+    fn parse(rule: &RuleDefinition, name: &str) -> Option<Scope> {
+        match mode(rule, name, "scope") {
+            Ok(None) | Ok(Some("chip")) => Some(Scope::Chip),
+            Ok(Some("window")) => Some(Scope::Window),
+            Ok(Some("region")) => Some(Scope::Region),
+            Ok(Some(other)) => {
+                eprintln!(
+                    "[{}] {name}: scope can be `chip`, `window` or `region`, not `{other}`",
+                    rule.id
+                );
+                None
+            }
+            Err(NotAWord) => None,
         }
     }
 }
@@ -158,13 +177,18 @@ fn intersect(a: Box, b: Box) -> Box {
 /// Run one density rule.
 pub fn run(
     kind: Kind,
-    scope: Scope,
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    let name = scope.name(kind);
+    let name = kind.name();
+    let Some(scope) = Scope::parse(rule, name) else {
+        return vec![];
+    };
+    if scope == Scope::Region {
+        return region::run(kind, rule, layout, dbu_to_um, merged);
+    }
     let layer_names = rule
         .layers
         .iter()
@@ -176,10 +200,14 @@ pub fn run(
         Scope::Window => match rule.num("window") {
             Some(w) if w > 0.0 => Some(w),
             _ => {
-                eprintln!("[{}] {name} needs a `window` in µm", rule.id);
+                eprintln!(
+                    "[{}] {name}: `scope: window` needs a `window` in µm",
+                    rule.id
+                );
                 return vec![];
             }
         },
+        Scope::Region => unreachable!(),
     };
     match window_um {
         None => println!(
