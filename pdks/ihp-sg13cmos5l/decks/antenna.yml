@@ -5,57 +5,65 @@
 rules:
   - id: Ant.a
     check: antenna_ratio
-    layers: [GatPolyOverActiv, AntPolyField]
+    layers: [AntPolyField]
     value: 200.0
-    params:
-      antenna_layers: 1
-      gate_net_layer: 5
-      antenna_net_layer: 5
-      level: 2
+    layer_params:
+      gate: GatPolyOverActiv
+      gate_net_of: GatPoly
+      antenna_net_of: GatPoly
+      level: Activ
   - id: Ant.b
     check: antenna_ratio
-    layers: [GatPolyOverActiv, Metal1, Metal2, Metal3, Metal4, TopMetal1, AntDiode]
+    layers: [Metal1, Metal2, Metal3, Metal4, TopMetal1]
     value: 200.0
     params:
-      antenna_layers: 5
-      gate_net_layer: 5
-      diode_net_layer: 1
-      require_diode: 0
+      diode: without
+    layer_params:
+      gate: GatPolyOverActiv
+      gate_net_of: GatPoly
+      diode_1: AntDiode
+      diode_1_net_of: Activ
   - id: Ant.c
     check: antenna_ratio
-    layers: [GatPolyOverActiv, Cont]
+    layers: [Cont]
     value: 20.0
-    params:
-      antenna_layers: 1
-      gate_net_layer: 5
-      level: 2
+    layer_params:
+      gate: GatPolyOverActiv
+      gate_net_of: GatPoly
+      level: Activ
   - id: Ant.d
     check: antenna_ratio
-    layers: [GatPolyOverActiv, Via1, Via2, Via3, TopVia1, AntDiode]
+    layers: [Via1, Via2, Via3, TopVia1]
     value: 20.0
     params:
-      antenna_layers: 4
-      gate_net_layer: 5
-      diode_net_layer: 1
-      require_diode: 0
+      diode: without
+    layer_params:
+      gate: GatPolyOverActiv
+      gate_net_of: GatPoly
+      diode_1: AntDiode
+      diode_1_net_of: Activ
   - id: Ant.e
     check: antenna_ratio
-    layers: [GatPolyOverActiv, Metal1, Metal2, Metal3, Metal4, TopMetal1, AntDiode]
+    layers: [Metal1, Metal2, Metal3, Metal4, TopMetal1]
     value: 20000.0
     params:
-      antenna_layers: 5
-      gate_net_layer: 5
-      diode_net_layer: 1
-      require_diode: 1
+      diode: with
+    layer_params:
+      gate: GatPolyOverActiv
+      gate_net_of: GatPoly
+      diode_1: AntDiode
+      diode_1_net_of: Activ
   - id: Ant.f
     check: antenna_ratio
-    layers: [GatPolyOverActiv, Via1, Via2, Via3, TopVia1, AntDiode]
+    layers: [Via1, Via2, Via3, TopVia1]
     value: 500.0
     params:
-      antenna_layers: 4
-      gate_net_layer: 5
-      diode_net_layer: 1
-      require_diode: 1
+      diode: with
+    layer_params:
+      gate: GatPolyOverActiv
+      gate_net_of: GatPoly
+      diode_1: AntDiode
+      diode_1_net_of: Activ
   - id: Ant.g
     check: min_area
     layers: [AntDantenna, AntDpantenna]

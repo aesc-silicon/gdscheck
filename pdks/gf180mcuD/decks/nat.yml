@@ -33,8 +33,10 @@ rules:
       outside: nwell
   - id: NAT.6
     check: max_nets_under
-    layers: [nat, nat6_comp, comp]
+    layers: [nat, nat6_comp]
     value: 1.0
+    layer_params:
+      net_of: comp
   - id: NAT.7
     check: min_space
     layers: [nat]
