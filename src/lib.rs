@@ -502,7 +502,6 @@ const DIST_CHECKS: &[&str] = &[
     "max_width",
     "exact_width",
     "min_space",
-    "min_array_space",
     "min_notch",
     "min_enclosure",
     "max_enclosure",

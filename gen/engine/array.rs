@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Patterns for [`min_array_space`](gdscheck::checks::min_array_space): what is inside a
-//! via array, asked on the shapes an array comes in.
+//! Patterns for the array gate of `min_space` ([`space::array`](gdscheck::checks::space::array)):
+//! what is inside a via array, asked on the shapes an array comes in.
 //!
 //! The rule is about the vias packed into a block, which etch and fill differently from
 //! a lone pair, so the block wants a larger space than the ordinary via rule.  The
@@ -21,7 +21,7 @@
 use crate::helpers::{layer, library, rect, write_gz};
 use gdscheck::pdk::PdkConfig;
 
-const DIR: &str = "tests/data/engine/generated/min_array_space";
+const DIR: &str = "tests/data/engine/generated/array";
 /// Via side, and the legal array space it is drawn at.
 const VIA: f64 = 0.26;
 const SPACE: f64 = 0.36;

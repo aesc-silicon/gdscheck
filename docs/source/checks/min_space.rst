@@ -107,12 +107,47 @@ Parameters
    Optional. ``euclidian`` (the default) or ``square``, KLayout's L-infinity metric for a
    rule worded "must not fall within a d × d square at the corner".
 
+``rows`` / ``cols``
+   Optional, "more than N", either one defaulting to ``3``. The rule is then about the
+   vias packed into an array larger than ``rows`` × ``cols``, which etch and fill
+   differently from a lone pair and want a larger space than the ordinary via rule
+   (IHP ``V1.b1``, ``Cnt.b1``; GF180 ``V1.2b``). Detecting an array mirrors the
+   reference decks' morphological test, a close followed by an erosion by half a block,
+   read directly on the vias: a *run* is a maximal chain of horizontally tight vias, it
+   qualifies once longer than ``cols``, and qualifying runs whose x-extents overlap and
+   whose vertical gap is tight stack; a stack deeper than ``rows`` is an array. A via
+   ring round a pad has long runs but never stacks more than two deep, a single row or
+   column never stacks, so neither is an array. Vias are read as rectangles from the
+   tiled cache, deduplicated by extent, and an array spans tiles freely. With the gate
+   the other gates do not apply.
+
+   ``axes``
+      ``1`` (default): the space must reach ``value`` in at least one axis, so only an
+      array tight in both directions violates, and it is reported once at its centroid.
+      ``2``: the space must hold in both axes, so any tight pair inside an array
+      violates, reported as an edge across the first tight gap found under a part of
+      the stack at least ``rows`` deep.
+   ``pitch``
+      With ``axes: 2``, the gap in µm up to which two vias still belong to one array;
+      defaults to ``value``. GF180 closes the layer by 0.2 µm, which bridges 0.4.
+   ``count``
+      The smallest array, in vias, the rule applies to ("interacting with 16 or more
+      vias"). Default 0.
+   ``min_extent``
+      The smallest side of the array's bounding box in µm for it to count: GF180 words
+      "4x4 or larger" as a box three vias and three spaces across in every direction.
+   ``projection``
+      How far two vias must overlap across a gap, in µm, to be neighbours at all
+      (KLayout ``projecting >= x``); staggered rows overlapping by less are not.
+
 
 Violation markers
 -----------------
 
 One edge marker per violating pair, drawn across the gap (from the closest point on one
-region to the closest point on the other).
+region to the closest point on the other). With ``rows``/``cols``, one marker per array:
+a point at its centroid under ``axes: 1``, an edge across the first tight gap under
+``axes: 2``.
 
 
 KLayout equivalent
@@ -124,7 +159,10 @@ a ``space`` restricted to edges matching a 45° angle filter, ``width``/``length
 ``space(value, Projection)`` combined with a ``width`` filter on each side, and ``net``
 needs a ``Netter``-based extraction driving a ``separation`` between per-net region
 sets — the shipped IHP deck omits its potential-dependent well rules rather than
-approximate them.
+approximate them. The array gate mirrors the decks' array-density idiom: a close of the
+via layer by about half the spacing, eroded back by half an array block, which only
+survives where vias are dense in both directions, as opposed to a plain ``space(value)``
+that a via ring or a single row would also trip.
 
 
 Examples
@@ -158,3 +196,11 @@ Examples
       value: 1.80
       params:
         net: different
+
+    - id: V1.b1
+      check: min_space
+      layers: [Via1]
+      value: 0.29
+      params:
+        rows: 3
+        cols: 3

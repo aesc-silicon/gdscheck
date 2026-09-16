@@ -7,7 +7,6 @@ pub mod density;
 pub mod edge_distance;
 pub mod enclosure;
 pub mod helper;
-pub mod min_array_space;
 pub mod min_via_array;
 pub mod net;
 pub mod params;
@@ -119,7 +118,6 @@ pub fn run_rule(
         "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),
         "max_space" => space::max::run(rule, layout, dbu_to_um, merged),
         "min_via_array" => min_via_array::run(rule, layout, dbu_to_um, merged),
-        "min_array_space" => min_array_space::run(rule, layout, dbu_to_um, merged),
         "min_width" => width::run(width::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_width" => width::run(width::Kind::Max, rule, layout, dbu_to_um, merged),
         "offgrid" => shape::offgrid::run(rule, layout, dbu_to_um, merged),

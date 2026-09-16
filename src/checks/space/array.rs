@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Via-array spacing: a large array must be spaced more generously than a lone via.
+//! Via-array spacing: `min_space` with `rows` and `cols`.  A large array must be spaced
+//! more generously than a lone via, and the gate is membership in one.
 //!
 //! Foundries write this rule two ways, and `axes` picks between them.
 //!
@@ -33,11 +34,14 @@
 //! closes the layer by 0.2 µm, which bridges 0.4).  Under `axes: 1` grouping and
 //! violation are the same question, so `pitch` does not apply.
 //!
-//! Params: `rows` and `cols` (array-size thresholds, "more than N"; default 3), `axes`
-//! (1 or 2; default 1), `pitch` (µm; default `value`), `count` (smallest array in vias;
-//! default 0).
-//! Operates on the whole (global) via layer, since an array can span merge tiles.
+//! Params: `rows` and `cols` (array-size thresholds, "more than N"; either one names
+//! the gate, the other defaults to 3), `axes` (1 or 2; default 1), `pitch` (µm; default
+//! `value`), `count` (smallest array in vias; default 0), `min_extent` (µm, the
+//! smallest side of the array's box), `projection` (µm, how far two vias must overlap
+//! across a gap to be neighbours).  Every gap, overlap and extent is read in DBU.
+//! Vias are read as rectangles from the tiled cache, and an array spans tiles freely.
 
+use crate::geom::on_grid;
 use crate::layout::FlatLayout;
 use crate::merge::{MergedCache, UnionFind};
 use crate::pdk::RuleDefinition;
@@ -45,14 +49,21 @@ use crate::violation::Violation;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
-/// A via region in µm: centroid and bounding box.
+/// A via as its bounding box in DBU.
 struct Via {
-    cx: f64,
-    cy: f64,
-    x0: f64,
-    y0: f64,
-    x1: f64,
-    y1: f64,
+    x0: i64,
+    y0: i64,
+    x1: i64,
+    y1: i64,
+}
+
+impl Via {
+    fn cx(&self) -> i64 {
+        (self.x0 + self.x1).div_euclid(2)
+    }
+    fn cy(&self) -> i64 {
+        (self.y0 + self.y1).div_euclid(2)
+    }
 }
 
 pub fn run(
@@ -62,7 +73,9 @@ pub fn run(
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
     let layer = &rule.layers[0];
-    let value = rule.value;
+    let value_um = rule.value;
+    let dbu = |um: f64| on_grid(um / dbu_to_um, f64::round);
+    let value = dbu(value_um);
     let rows_thr = rule.num("rows").unwrap_or(3.0) as usize;
     let cols_thr = rule.num("cols").unwrap_or(3.0) as usize;
     let axes = rule.num("axes").unwrap_or(1.0) as usize;
@@ -71,23 +84,22 @@ pub fn run(
     // ("interacting with 16 or more vias") and what keeps a ragged cluster that happens
     // to span four rows from counting as a 4×4 array.
     let min_count = rule.num("count").unwrap_or(0.0) as usize;
-    let pitch = rule.num("pitch").unwrap_or(value);
+    let pitch = rule.num("pitch").map(dbu).unwrap_or(value);
     // Smallest side of the array's bounding box, in µm, for it to count.  GF180 words
     // "4x4 or larger" as a box at least three vias and three spaces across in every
     // direction, so a stack four rows deep at a tighter pitch is not yet an array.
-    let min_extent = rule.num("min_extent").unwrap_or(0.0);
+    let min_extent = rule.num("min_extent").map(dbu).unwrap_or(0);
     // How far two vias must overlap, across the gap, for the gap to be a space between
     // them at all: KLayout's `projecting >= x`.  Staggered rows overlapping by less are
-    // not neighbours in the array sense.
-    let projection = rule.num("projection").unwrap_or(0.0);
+    // not neighbours in the array sense; with nothing asked, any overlap at all.
+    let projection = rule.num("projection").map(dbu).unwrap_or(0).max(1);
     // What counts as "next to" for the purpose of finding the array. With `axes: 1` that
     // is the same question as the violation, so the two thresholds coincide.
     let link = if axes >= 2 { pitch.max(value) } else { value };
-    let half = 0.5 * dbu_to_um;
 
     println!(
-        "[{}] Checking min_array_space >= {:.2} µm in {} of 2 axes, arrays over {}×{}, on layer {}",
-        rule.id, value, axes, rows_thr, cols_thr, layer.name
+        "[{}] Checking min_space >= {:.2} µm in {} of 2 axes, arrays over {}×{}, on layer {}",
+        rule.id, value_um, axes, rows_thr, cols_thr, layer.name
     );
 
     // One via per merged piece, read from the tiled cache so that a derived layer - a
@@ -124,12 +136,10 @@ pub fn run(
                 return None;
             }
             let via = Via {
-                cx: (x0 as f64 + x1 as f64) * 0.5 * dbu_to_um,
-                cy: (y0 as f64 + y1 as f64) * 0.5 * dbu_to_um,
-                x0: x0 as f64 * dbu_to_um,
-                y0: y0 as f64 * dbu_to_um,
-                x1: x1 as f64 * dbu_to_um,
-                y1: y1 as f64 * dbu_to_um,
+                x0: x0 as i64,
+                y0: y0 as i64,
+                x1: x1 as i64,
+                y1: y1 as i64,
             };
             Some(((x0, y0, x1, y1), via))
         })
@@ -152,18 +162,13 @@ pub fn run(
     // a cell of that size puts every neighbour in the 3×3 block around a via.
     let max_extent = vias
         .iter()
-        .fold(0.0_f64, |a, v| a.max(v.x1 - v.x0).max(v.y1 - v.y0));
-    let cell = (link + max_extent).max(dbu_to_um);
+        .fold(0i64, |a, v| a.max(v.x1 - v.x0).max(v.y1 - v.y0));
+    let cell = (link + max_extent).max(1);
+    let cell_of = |v: &Via| (v.cx().div_euclid(cell), v.cy().div_euclid(cell));
     let grid = Grid::build(
         (0..n)
             .into_par_iter()
-            .map(|i| {
-                let v = &vias[i];
-                (
-                    ((v.cx / cell).floor() as i64, (v.cy / cell).floor() as i64),
-                    i,
-                )
-            })
+            .map(|i| (cell_of(&vias[i]), i))
             .collect(),
     );
 
@@ -174,7 +179,7 @@ pub fn run(
         .into_par_iter()
         .flat_map_iter(|i| {
             let a = &vias[i];
-            let (gx, gy) = ((a.cx / cell).floor() as i64, (a.cy / cell).floor() as i64);
+            let (gx, gy) = cell_of(a);
             let mut local = Vec::new();
             for dx in -1..=1 {
                 for dy in -1..=1 {
@@ -187,9 +192,9 @@ pub fn run(
                         // vias that overlap are one via - two cells placing the same
                         // array a little apart - and there is no gap between them to
                         // measure, only a merge that never happened.
-                        if a.y1.min(b.y1) - a.y0.max(b.y0) > 0.0 {
+                        if a.y1.min(b.y1) - a.y0.max(b.y0) > 0 {
                             let xgap = (b.x0 - a.x1).max(a.x0 - b.x1);
-                            if xgap >= 0.0 && xgap + half < link {
+                            if xgap >= 0 && xgap < link {
                                 local.push((i, j));
                             }
                         }
@@ -222,17 +227,17 @@ pub fn run(
     }
     struct Run {
         members: Vec<usize>,
-        x0: f64,
-        y0: f64,
-        x1: f64,
-        y1: f64,
+        x0: i64,
+        y0: i64,
+        x1: i64,
+        y1: i64,
     }
     let runs: Vec<Run> = runs
         .into_par_iter()
         .filter(|m| m.len() > cols_thr)
         .map(|members| {
-            let (mut x0, mut y0) = (f64::MAX, f64::MAX);
-            let (mut x1, mut y1) = (f64::MIN, f64::MIN);
+            let (mut x0, mut y0) = (i64::MAX, i64::MAX);
+            let (mut x1, mut y1) = (i64::MIN, i64::MIN);
             for &i in &members {
                 x0 = x0.min(vias[i].x0);
                 y0 = y0.min(vias[i].y0);
@@ -258,8 +263,8 @@ pub fn run(
     // sixteen seconds a rule on nothing.
     let mut rgrid: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
     let cells = |r: &Run| {
-        let (gx0, gx1) = ((r.x0 / cell).floor() as i64, (r.x1 / cell).floor() as i64);
-        let (gy0, gy1) = ((r.y0 / cell).floor() as i64, (r.y1 / cell).floor() as i64);
+        let (gx0, gx1) = (r.x0.div_euclid(cell), r.x1.div_euclid(cell));
+        let (gy0, gy1) = (r.y0.div_euclid(cell), r.y1.div_euclid(cell));
         (gx0, gx1, gy0, gy1)
     };
     for (i, r) in runs.iter().enumerate() {
@@ -287,11 +292,11 @@ pub fn run(
                             continue;
                         }
                         let b = &runs[j];
-                        if a.x1.min(b.x1) - a.x0.max(b.x0) <= 0.0 {
+                        if a.x1.min(b.x1) - a.x0.max(b.x0) <= 0 {
                             continue; // no horizontal overlap: side-by-side arrays, not a stack
                         }
                         let ygap = (b.y0 - a.y1).max(a.y0 - b.y1);
-                        if ygap + half < link {
+                        if ygap < link {
                             local.push((i, j));
                         }
                     }
@@ -323,10 +328,10 @@ pub fn run(
     // dropping the whole blob when any part of it is thinner than four vias, which
     // also drops a tight pair in the block's own middle (`tail`); asking per pair keeps
     // that one and exempts the finger.
-    let covered = |stack: &[usize], sx0: f64, sx1: f64| -> bool {
+    let covered = |stack: &[usize], sx0: i64, sx1: i64| -> bool {
         stack
             .iter()
-            .filter(|&&r| runs[r].x0 <= sx0 + half && runs[r].x1 >= sx1 - half)
+            .filter(|&&r| runs[r].x0 <= sx0 && runs[r].x1 >= sx1)
             .count()
             > rows_thr
     };
@@ -334,7 +339,7 @@ pub fn run(
         let set: std::collections::HashSet<usize> = members.iter().copied().collect();
         members.iter().find_map(|&i| {
             let a = &vias[i];
-            let (gx, gy) = ((a.cx / cell).floor() as i64, (a.cy / cell).floor() as i64);
+            let (gx, gy) = cell_of(a);
             (-1..=1).find_map(|dx| {
                 (-1..=1).find_map(|dy| {
                     {
@@ -347,12 +352,12 @@ pub fn run(
                             let xgap = (b.x0 - a.x1).max(a.x0 - b.x1);
                             let ygap = (b.y0 - a.y1).max(a.y0 - b.y1);
                             // Overlapping vias are one via; see the row linking above.
-                            let row = a.y1.min(b.y1) - a.y0.max(b.y0) + half > projection.max(half)
-                                && xgap >= 0.0
-                                && xgap + half < value;
-                            let col = a.x1.min(b.x1) - a.x0.max(b.x0) + half > projection.max(half)
-                                && ygap >= 0.0
-                                && ygap + half < value;
+                            let row = a.y1.min(b.y1) - a.y0.max(b.y0) >= projection
+                                && xgap >= 0
+                                && xgap < value;
+                            let col = a.x1.min(b.x1) - a.x0.max(b.x0) >= projection
+                                && ygap >= 0
+                                && ygap < value;
                             let (sx0, sx1) = if row {
                                 (a.x0.min(b.x0), a.x1.max(b.x1))
                             } else {
@@ -386,70 +391,62 @@ pub fn run(
         if axes >= 2 && pair.is_none() {
             continue;
         }
-        if min_extent > 0.0 {
-            let (mut bx0, mut by0, mut bx1, mut by1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
-            for &i in &members {
-                bx0 = bx0.min(vias[i].x0);
-                by0 = by0.min(vias[i].y0);
-                bx1 = bx1.max(vias[i].x1);
-                by1 = by1.max(vias[i].y1);
-            }
-            if (bx1 - bx0).min(by1 - by0) + half < min_extent {
-                continue;
-            }
-        }
-        let min_cols = stack
-            .iter()
-            .map(|&r| runs[r].members.len())
-            .min()
-            .unwrap_or(0);
-        let (mut sx, mut sy, mut cnt) = (0.0, 0.0, 0.0);
-        for &r in stack {
-            for &i in &runs[r].members {
-                sx += vias[i].cx;
-                sy += vias[i].cy;
-                cnt += 1.0;
-            }
-        }
-        let (cx, cy) = (sx / cnt, sy / cnt);
-        let (mut bx0, mut by0, mut bx1, mut by1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+        let (mut bx0, mut by0, mut bx1, mut by1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
         for &i in &members {
             bx0 = bx0.min(vias[i].x0);
             by0 = by0.min(vias[i].y0);
             bx1 = bx1.max(vias[i].x1);
             by1 = by1.max(vias[i].y1);
         }
+        if (bx1 - bx0).min(by1 - by0) < min_extent {
+            continue;
+        }
+        let min_cols = stack
+            .iter()
+            .map(|&r| runs[r].members.len())
+            .min()
+            .unwrap_or(0);
+        let (mut sx, mut sy, mut cnt) = (0i64, 0i64, 0i64);
+        for &r in stack {
+            for &i in &runs[r].members {
+                sx += vias[i].cx();
+                sy += vias[i].cy();
+                cnt += 1;
+            }
+        }
+        let um = |v: i64| v as f64 * dbu_to_um;
+        let (cx, cy) = (um(sx) / cnt as f64, um(sy) / cnt as f64);
         let what = format!(
             "{}×{} {} array ({:.2}×{:.2} µm)",
             stack.len(),
             min_cols,
             layer.name,
-            bx1 - bx0,
-            by1 - by0
+            um(bx1 - bx0),
+            um(by1 - by0)
         );
         if let Some((i, j, row)) = pair {
             // The segment across the gap, between the two facing walls.
             let (a, b) = (&vias[i], &vias[j]);
             let (x1, y1, x2, y2, gap) = if row {
-                let y = (a.y0.max(b.y0) + a.y1.min(b.y1)) * 0.5;
+                let y = um(a.y0.max(b.y0) + a.y1.min(b.y1)) * 0.5;
                 if a.x1 <= b.x0 {
-                    (a.x1, y, b.x0, y, b.x0 - a.x1)
+                    (um(a.x1), y, um(b.x0), y, um(b.x0 - a.x1))
                 } else {
-                    (b.x1, y, a.x0, y, a.x0 - b.x1)
+                    (um(b.x1), y, um(a.x0), y, um(a.x0 - b.x1))
                 }
             } else {
-                let x = (a.x0.max(b.x0) + a.x1.min(b.x1)) * 0.5;
+                let x = um(a.x0.max(b.x0) + a.x1.min(b.x1)) * 0.5;
                 if a.y1 <= b.y0 {
-                    (x, a.y1, x, b.y0, b.y0 - a.y1)
+                    (x, um(a.y1), x, um(b.y0), um(b.y0 - a.y1))
                 } else {
-                    (x, b.y1, x, a.y0, a.y0 - b.y1)
+                    (x, um(b.y1), x, um(a.y0), um(a.y0 - b.y1))
                 }
             };
             out.push(Violation::edge(
                 rule.id.as_str(),
                 "Via array spacing violation",
                 format!(
-                    "{what}: space {gap:.4} µm < {value:.2} µm at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                    "{what}: space {gap:.4} µm < {value_um:.2} µm at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
                 ),
                 x1,
                 y1,
@@ -460,7 +457,7 @@ pub fn run(
             out.push(Violation::point(
                 rule.id.as_str(),
                 "Via array spacing violation",
-                format!("{what} below {value:.2} µm at ({cx:.4}, {cy:.4}) µm"),
+                format!("{what} below {value_um:.2} µm at ({cx:.4}, {cy:.4}) µm"),
                 cx,
                 cy,
             ));

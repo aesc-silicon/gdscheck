@@ -8,7 +8,7 @@
 # is enough and only an array tight both ways violates.
 rules:
   - id: ARR.both
-    check: min_array_space
+    check: min_space
     layers: [Via]
     value: 0.36
     params:
@@ -20,7 +20,7 @@ rules:
       projection: 0.26
       min_extent: 1.86
   - id: ARR.one
-    check: min_array_space
+    check: min_space
     layers: [Via]
     value: 0.36
     params:
