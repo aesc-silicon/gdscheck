@@ -23,9 +23,14 @@ For each candidate pair, a bounding-box pre-filter skips pairs that can't be wit
 ``value`` before doing real geometry work. Surviving pairs are tested for overlap first
 — an overlap (or one region sitting inside another's hole) is not a spacing violation
 and is skipped. Otherwise the true closest edge-to-edge distance between the two
-regions is computed (segment-to-segment, not just vertex-to-vertex, so it's exact for
-any polygon shape, not only rectangles). Two shapes meeting at an isolated point are a
-gap of zero and a violation; two shapes drawn edge to edge along a run abut and are not.
+regions is computed segment to segment, exactly: the coordinates are integers on the
+grid, so an axis-aligned gap is a difference of two of them and a diagonal one is
+compared squared as a ratio of two integers, against ``value`` rounded up to whole DBU
+once. Whether a pair overlaps, touches or abuts is likewise a matter of signs, never of a
+tolerance. Two shapes meeting at an isolated point are a gap of zero and a violation; two
+shapes drawn edge to edge along a run abut and are not. Only the ``square`` metric and
+the ``overlapping`` reading of ``pairs`` still measure in floating point, with half a DBU
+of slack.
 
 Each violation is owned by the tile whose core contains the gap's midpoint, so a pair
 visible from several overlapping halo tiles is reported exactly once.
