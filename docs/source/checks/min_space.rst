@@ -28,9 +28,8 @@ grid, so an axis-aligned gap is a difference of two of them and a diagonal one i
 compared squared as a ratio of two integers, against ``value`` rounded up to whole DBU
 once. Whether a pair overlaps, touches or abuts is likewise a matter of signs, never of a
 tolerance. Two shapes meeting at an isolated point are a gap of zero and a violation; two
-shapes drawn edge to edge along a run abut and are not. Only the ``square`` metric and
-the ``overlapping`` reading of ``pairs`` still measure in floating point, with half a DBU
-of slack.
+shapes drawn edge to edge along a run abut and are not. Only the ``square`` metric still
+measures in floating point, with half a DBU of slack.
 
 Each violation is owned by the tile whose core contains the gap's midpoint, so a pair
 visible from several overlapping halo tiles is reported exactly once.

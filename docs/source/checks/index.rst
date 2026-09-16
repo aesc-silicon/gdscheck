@@ -38,6 +38,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_enclosure
    min_length
    min_notch
+   min_overlap
    min_region_density
    min_space
    min_width
