@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The residual family: Diode forbidden as it is, Outer's edges forbidden, the part of
+# Inner that Outer or Diode leaves uncovered and the whole polygon, Inner over Outer,
+# Inner apart from and touching Via or Diode, anything beyond an Outer frame, and
+# Diode unless labelled `keep`.
+rules:
+  - id: R.bare
+    check: forbidden
+    layers: [Diode]
+    value: 0.0
+  - id: R.edges
+    check: forbidden
+    layers: [Outer.edges]
+    value: 0.0
+  - id: R.uncovered
+    check: forbidden
+    layers: [Inner, Outer, Diode]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: R.polygon
+    check: forbidden
+    layers: [Inner, Outer, Diode]
+    value: 0.0
+    params:
+      op: uncovered
+      scope: polygon
+  - id: R.overlap
+    check: forbidden
+    layers: [Inner, Outer]
+    value: 0.0
+    params:
+      op: overlap
+  - id: R.apart
+    check: forbidden
+    layers: [Inner, Via, Diode]
+    value: 0.0
+    params:
+      op: apart
+  - id: R.touching
+    check: forbidden
+    layers: [Inner, Via, Diode]
+    value: 0.0
+    params:
+      op: touching
+  - id: R.beyond
+    check: forbidden
+    layers: [Outer]
+    value: 0.0
+    params:
+      op: beyond
+    ignore:
+      - Diode
+  - id: R.label
+    check: forbidden
+    layers: [Diode]
+    value: 0.0
+    text: keep
+    layer_params:
+      label: Text
