@@ -2407,7 +2407,7 @@ mod wall_filter_tests {
 // ===========================================================================
 
 /// A boundary segment in DBU.
-type Seg = ((i64, i64), (i64, i64));
+pub type Seg = ((i64, i64), (i64, i64));
 
 /// A region's boundary as integer segments - outer ring and holes alike, since both are
 /// material boundary - with its box, for exact tests against another.
@@ -2481,6 +2481,16 @@ impl<'a> Outline<'a> {
             segs,
             bbox: (x0 as i64, y0 as i64, x1 as i64, y1 as i64),
         }
+    }
+
+    /// The region this is the outline of.
+    pub fn poly(&self) -> &'a MergedPoly {
+        self.poly
+    }
+
+    /// The boundary segments, outer ring then holes.
+    pub fn segs(&self) -> &[Seg] {
+        &self.segs
     }
 
     fn vertices(&self) -> impl Iterator<Item = (i64, i64)> + '_ {
@@ -2613,7 +2623,7 @@ fn parallel_i(d: (i128, i128), e: (i128, i128)) -> bool {
 impl Outline<'_> {
     /// Where a segment's ends fall along `(s0, s1)`, as the shared stretch in units of
     /// the segment's squared length: positive when they overlap in projection.
-    fn shared_run((s0, s1): Seg, (t0, t1): Seg) -> i128 {
+    pub(crate) fn shared_run((s0, s1): Seg, (t0, t1): Seg) -> i128 {
         let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
         let len2 = d.0 * d.0 + d.1 * d.1;
         let along = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
@@ -2713,6 +2723,326 @@ pub fn parallel_run_applies(a: &Outline, b: &Outline, limit: i64, wide: i64, min
         }
     }
     false
+}
+
+// ===========================================================================
+// Exact enclosure of one region by another, in DBU.
+//
+// A margin is the distance from a wall of the enclosed shape to the enclosing wall
+// facing it across its outside: under the projection metric the perpendicular offset
+// of a parallel wall over the stretch they share, under the euclidian one the closest
+// approach of any wall on the outside.  Both are exact on integer coordinates the way a
+// gap is - compared squared, as a ratio of two integers - and whether a vertex is
+// inside, on or off a boundary is a matter of signs.
+// ===========================================================================
+
+/// A margin read on one facing pair: squared as `num / den`, the stretch of the inner
+/// wall it was read on, and a probe point just beyond the outer wall, both in DBU.
+pub struct MarginPair {
+    pub num: i128,
+    pub den: i128,
+    pub edge: (f64, f64, f64, f64),
+    pub probe: (f64, f64),
+}
+
+impl MarginPair {
+    /// The margin in DBU, for a message.
+    pub fn dbu(&self) -> f64 {
+        (self.num as f64 / self.den as f64).sqrt()
+    }
+}
+
+/// Whether every vertex of `inner` lies inside `outer` or on its boundary - a shape
+/// touching the enclosing wall is enclosed by nothing there, and that is what a rule at
+/// zero is about.
+pub fn all_inside(inner: &Outline, outer: &Outline) -> bool {
+    inner.vertices().all(|p| outer.contains_or_on(p))
+}
+
+/// Whether two segments meet at all: properly crossing, or touching at a point.  Two
+/// collinear segments that overlap have an end of one on the other.
+fn segs_meet_i((p0, p1): Seg, (q0, q1): Seg) -> bool {
+    segs_cross_i((p0, p1), (q0, q1))
+        || on_segment(p0, (q0, q1))
+        || on_segment(p1, (q0, q1))
+        || on_segment(q0, (p0, p1))
+        || on_segment(q1, (p0, p1))
+}
+
+/// Whether two regions share any area or boundary.  A vertex test alone misses the
+/// ordinary case: two bars crossing in a plus share a large area and have no vertex of
+/// either inside the other, which is what a gate over its COMP looks like.
+pub fn regions_interact(a: &Outline, b: &Outline) -> bool {
+    if !a.possibly_within(b, 1) {
+        return false;
+    }
+    a.vertices().any(|p| b.contains_or_on(p))
+        || b.vertices().any(|p| a.contains_or_on(p))
+        || a.segs
+            .iter()
+            .any(|&s| b.segs.iter().any(|&t| segs_meet_i(s, t)))
+}
+
+/// The facing pairs of `inner` against `outer`, each with its margin, and whether any
+/// pair was coincident - an inner wall lying on the outer contour, which is either a
+/// margin of nothing or the cut a boolean left, and `skip_coincident` says which.  A
+/// `cutoff` keeps only the pairs under it, which is all a minimum reads; a maximum
+/// passes `None` and sees them all.  Under the projection metric only parallel walls
+/// pair, over the stretch they share; under the euclidian one a wall at any angle
+/// pairs at its closest approach, as long as it lies on the inner wall's outside - the
+/// far wall across a concave shape is not an enclosure of anything.
+pub fn margin_pairs(
+    inner: &Outline,
+    outer: &Outline,
+    cutoff: Option<i64>,
+    skip_coincident: bool,
+    euclidian: bool,
+) -> (Vec<MarginPair>, bool) {
+    let cut2 = cutoff.map(|c| (c as i128) * (c as i128));
+    let under = |num: i128, den: i128| cut2.is_none_or(|c2| num < c2 * den);
+    let mut pairs = Vec::new();
+    let mut saw_coincident = false;
+    for &(a0, a1) in &inner.segs {
+        let d = ((a1.0 - a0.0) as i128, (a1.1 - a0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        let len = (len2 as f64).sqrt();
+        let (ux, uy) = (d.0 as f64 / len, d.1 as f64 / len);
+        // The right-hand normal of a CCW contour points outward, toward the enclosing
+        // wall; a hole runs the other way and its outward is into the hole, which is
+        // where its enclosing wall is.
+        let (nx, ny) = (uy, -ux);
+        for &(b0, b1) in &outer.segs {
+            let e = ((b1.0 - b0.0) as i128, (b1.1 - b0.1) as i128);
+            if !parallel_i(d, e) {
+                if !euclidian {
+                    continue;
+                }
+                let c = seg_seg_closest_sq(a0, a1, b0, b1);
+                if !under(c.num, c.den) {
+                    continue;
+                }
+                if c.num == 0 {
+                    saw_coincident = true;
+                    if skip_coincident {
+                        continue;
+                    }
+                    pairs.push(MarginPair {
+                        num: 0,
+                        den: 1,
+                        edge: (c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1),
+                        probe: (c.on_a.0 + nx * 2.0, c.on_a.1 + ny * 2.0),
+                    });
+                    continue;
+                }
+                // Outward: the closest approach runs from the inner wall toward the
+                // outer one on the outside, or it is the far wall.
+                let (vx, vy) = c.towards;
+                if vx * d.1 - vy * d.0 <= 0 {
+                    continue;
+                }
+                let dist = (c.num as f64 / c.den as f64).sqrt();
+                let (wx, wy) = ((c.on_b.0 - c.on_a.0) / dist, (c.on_b.1 - c.on_a.1) / dist);
+                pairs.push(MarginPair {
+                    num: c.num,
+                    den: c.den,
+                    edge: (c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1),
+                    probe: (c.on_a.0 + wx * (dist + 2.0), c.on_a.1 + wy * (dist + 2.0)),
+                });
+                continue;
+            }
+            let run = Outline::shared_run((a0, a1), (b0, b1));
+            if run <= 0 {
+                continue; // no stretch in common: not facing
+            }
+            // The outer wall's two ends, as outward distance times the inner length;
+            // the same on exactly parallel walls, and the nearer one otherwise.
+            let (ca, cb) = (-cross_i(a0, a1, b0), -cross_i(a0, a1, b1));
+            if ca.max(cb) < 0 {
+                continue; // on the interior side: the far wall, not this one
+            }
+            let c = ca.min(cb).max(0);
+            let (num, den) = (c * c, len2);
+            if c == 0 {
+                saw_coincident = true;
+                if skip_coincident {
+                    continue;
+                }
+            }
+            if !under(num, den) {
+                continue;
+            }
+            let along = |p: (i64, i64)| (p.0 - a0.0) as i128 * d.0 + (p.1 - a0.1) as i128 * d.1;
+            let (t0, t1) = (along(b0), along(b1));
+            let (s0, s1) = (t0.min(t1).max(0), t0.max(t1).min(len2));
+            let at = |s: i128| {
+                let f = s as f64 / len;
+                (a0.0 as f64 + ux * f, a0.1 as f64 + uy * f)
+            };
+            let (p0, p1) = (at(s0), at(s1));
+            let dist = c as f64 / len;
+            let mid = ((p0.0 + p1.0) * 0.5, (p0.1 + p1.1) * 0.5);
+            pairs.push(MarginPair {
+                num,
+                den,
+                edge: (p0.0, p0.1, p1.0, p1.1),
+                probe: (mid.0 + nx * (dist + 2.0), mid.1 + ny * (dist + 2.0)),
+            });
+        }
+    }
+    (pairs, saw_coincident)
+}
+
+/// The endcap margin of `inner` within `outer`: the largest of the four box margins,
+/// in DBU.  A wire's endcap is read off the boxes on purpose - an edge-to-contour
+/// distance is corner-limited and would understate a long endcap run.
+pub fn endcap_margin(inner: &Outline, outer: &Outline) -> i64 {
+    let (ix0, iy0, ix1, iy1) = inner.bbox;
+    let (ox0, oy0, ox1, oy1) = outer.bbox;
+    (ix0 - ox0).max(ox1 - ix1).max(iy0 - oy0).max(oy1 - iy1)
+}
+
+/// The margin of each side of `inner` within `outers`, in `inner.segs()` order, in DBU:
+/// the nearest outward wall over the stretch that projects onto the side, or 0 for a
+/// side nothing faces.  A wall parallel to the side is at one distance along it, an
+/// integer times the side's own length; one at another angle - a chamfer facing a via
+/// on a power ring corner - is nearest at one end of the stretch, found by
+/// interpolation, which is the one reading here that is not exact.
+pub fn side_margins(inner: &Outline, outers: &[&Outline]) -> Vec<f64> {
+    inner
+        .segs
+        .iter()
+        .map(|&(a0, a1)| {
+            let d = ((a1.0 - a0.0) as f64, (a1.1 - a0.1) as f64);
+            let len = d.0.hypot(d.1);
+            let (ux, uy) = (d.0 / len, d.1 / len);
+            let (nx, ny) = (uy, -ux);
+            let mut best = f64::INFINITY;
+            for o in outers {
+                for &(b0, b1) in &o.segs {
+                    let along =
+                        |p: (i64, i64)| ((p.0 - a0.0) as f64) * ux + ((p.1 - a0.1) as f64) * uy;
+                    let out =
+                        |p: (i64, i64)| ((p.0 - a0.0) as f64) * nx + ((p.1 - a0.1) as f64) * ny;
+                    let (t0, t1) = (along(b0), along(b1));
+                    let (n0, n1) = (out(b0), out(b1));
+                    let (lo, hi) = (t0.min(t1).max(0.0), t0.max(t1).min(len));
+                    if hi - lo <= 0.0 {
+                        continue; // no projected overlap
+                    }
+                    let at = |t: f64| {
+                        if (t1 - t0).abs() < 1e-9 {
+                            n0.min(n1)
+                        } else {
+                            n0 + (n1 - n0) * (t - t0) / (t1 - t0)
+                        }
+                    };
+                    let (m0, m1) = (at(lo), at(hi));
+                    if m0.max(m1) < 0.0 {
+                        continue; // wholly behind the side: the far wall
+                    }
+                    best = best.min(m0.min(m1).max(0.0));
+                }
+            }
+            if best.is_finite() { best } else { 0.0 }
+        })
+        .collect()
+}
+
+/// The line-end segments of `a`: the caps across the tip of any track narrower than
+/// `max_width` that runs for at least `min_length`, in DBU.  A track is two of the
+/// region's own walls facing each other across its inside closer than `max_width`, and
+/// the cap is the segment joining them both; a segment that is itself a wall of some
+/// narrow pair is not a cap, so a small square is not a line end - it has no line.
+pub fn line_end_segs(a: &Outline, max_width: i64, min_length: i64) -> Vec<Seg> {
+    let (w2, l2) = (
+        (max_width as i128) * (max_width as i128),
+        (min_length as i128) * (min_length as i128),
+    );
+    let n = a.segs.len();
+    let len2 = |(p, q): Seg| {
+        let d = ((q.0 - p.0) as i128, (q.1 - p.1) as i128);
+        d.0 * d.0 + d.1 * d.1
+    };
+    let mut walls: Vec<(usize, usize)> = Vec::new();
+    for i in 0..n {
+        let (a0, a1) = a.segs[i];
+        let d = ((a1.0 - a0.0) as i128, (a1.1 - a0.1) as i128);
+        let li2 = d.0 * d.0 + d.1 * d.1;
+        if li2 < l2 {
+            continue;
+        }
+        for j in (i + 1)..n {
+            let (b0, b1) = a.segs[j];
+            let e = ((b1.0 - b0.0) as i128, (b1.1 - b0.1) as i128);
+            if len2((b0, b1)) < l2 || d.0 * e.0 + d.1 * e.1 >= 0 || !parallel_i(d, e) {
+                continue; // too short, or not a facing wall
+            }
+            // Across the inside of the shape, strictly narrower than `max_width`: a
+            // track exactly the width is not a narrow line.
+            let c = cross_i(a0, a1, b0);
+            if c <= 0 || c * c >= w2 * li2 {
+                continue;
+            }
+            let run = Outline::shared_run((a0, a1), (b0, b1));
+            if run <= 0 || run * run < l2 * li2 {
+                continue; // the narrow run is not long enough to be a line
+            }
+            walls.push((i, j));
+        }
+    }
+    if walls.is_empty() {
+        return Vec::new();
+    }
+    let touches = |e: usize, w: usize| {
+        let ((p0, p1), (q0, q1)) = (a.segs[e], a.segs[w]);
+        p0 == q0 || p0 == q1 || p1 == q0 || p1 == q1
+    };
+    let is_wall: HashSet<usize> = walls.iter().flat_map(|&(i, j)| [i, j]).collect();
+    (0..n)
+        .filter(|&e| {
+            len2(a.segs[e]) < w2
+                && !is_wall.contains(&e)
+                && walls.iter().any(|&(i, j)| touches(e, i) && touches(e, j))
+        })
+        .map(|e| a.segs[e])
+        .collect()
+}
+
+/// The margin of an inner segment behind the caps facing it, squared as `num / den`,
+/// or `None` if no cap faces it: a cap is parallel, shares a stretch, and lies on the
+/// outside.
+pub fn margin_to_caps((a0, a1): Seg, caps: &[Seg]) -> Option<(i128, i128)> {
+    let d = ((a1.0 - a0.0) as i128, (a1.1 - a0.1) as i128);
+    let len2 = d.0 * d.0 + d.1 * d.1;
+    let mut best: Option<i128> = None;
+    for &(c0, c1) in caps {
+        let e = ((c1.0 - c0.0) as i128, (c1.1 - c0.1) as i128);
+        if !parallel_i(d, e) || Outline::shared_run((a0, a1), (c0, c1)) <= 0 {
+            continue;
+        }
+        let c = -cross_i(a0, a1, c0);
+        if c < 0 {
+            continue;
+        }
+        if best.is_none_or(|b| c < b) {
+            best = Some(c);
+        }
+    }
+    best.map(|c| (c * c, len2))
+}
+
+/// Indices of the segments bordering segment `i` of `a`, by shared endpoint - the same
+/// test for a ring and for a shape with holes, whose segments are several rings end to
+/// end.
+pub fn bordering(a: &Outline, i: usize) -> Vec<usize> {
+    let (p0, p1) = a.segs[i];
+    (0..a.segs.len())
+        .filter(|&j| j != i)
+        .filter(|&j| {
+            let (q0, q1) = a.segs[j];
+            p0 == q0 || p0 == q1 || p1 == q0 || p1 == q1
+        })
+        .collect()
 }
 
 #[cfg(test)]
