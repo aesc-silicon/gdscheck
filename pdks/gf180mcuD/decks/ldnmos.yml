@@ -21,9 +21,11 @@ rules:
     layers: [mvsd]
     value: 1.0
   - id: MDN.2b
-    check: min_space_different_net
+    check: min_space
     layers: [mvsd]
     value: 2.0
+    params:
+      net: different
   - id: MDN.3a
     check: min_enclosure
     layers: [poly_mdn, mvsd]
@@ -99,9 +101,11 @@ rules:
     layers: [mvsd_on_nwell]
     value: 0.0
   - id: MDN.8b
-    check: min_space_different_net
+    check: min_space
     layers: [mvsd, nwell]
     value: 2.0
+    params:
+      net: different
   - id: MDN.9
     check: min_space
     layers: [mvsd_mdn, ncomp_not_mvsd]

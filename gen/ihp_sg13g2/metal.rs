@@ -111,7 +111,7 @@ fn m_d(pdk: &PdkConfig, index: i32, dir: &str) {
 /// more than 1 µm.  Fail: two 0.5 µm-wide, 2 µm-long lines 0.22 µm apart (the 0.22 µm
 /// gap clears the plain M{n}.b 0.21 µm space, which is ignored) — once vertical
 /// (parallel run measured along y) and once horizontal (run along x, offset away in x),
-/// so both axes of `parallel_run` are exercised → two violations.  Clean file: each
+/// so both axes of `length` are exercised → two violations.  Clean file: each
 /// pair sits exactly on one threshold so the `>`/`<` boundaries stay green.
 fn m_e(pdk: &PdkConfig, index: i32, dir: &str) {
     let m = layer(pdk, &format!("Metal{}", index));

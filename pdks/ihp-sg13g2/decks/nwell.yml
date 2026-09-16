@@ -12,9 +12,11 @@ rules:
     layers: [NWell]
     value: 0.62
   - id: NW.b1
-    check: min_space_different_net
+    check: min_space
     layers: [NWellMergedNoSRAM]
     value: 1.80
+    params:
+      net: different
   - id: NW.c
     check: min_enclosure
     layers: [NWell, PsdActivInNWellNoTGONoSRAM]

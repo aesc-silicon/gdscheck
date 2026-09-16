@@ -119,9 +119,6 @@ pub fn run_rule(
         "min_notch" => min_notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
         "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),
-        "min_space_different_net" | "min_space_same_net" | "min_space_bent" | "min_space_prl" => {
-            space::run_min_named(&rule.check, rule, layout, dbu_to_um, merged, conn)
-        }
         "max_space" => max_space::run(rule, layout, dbu_to_um, merged),
         "min_via_array" => min_via_array::run(rule, layout, dbu_to_um, merged),
         "min_array_space" => min_array_space::run(rule, layout, dbu_to_um, merged),

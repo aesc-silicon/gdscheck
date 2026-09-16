@@ -129,9 +129,11 @@ rules:
     layers: [mdp10_no_channel]
     value: 0.0
   - id: MDP.10a
-    check: min_space_different_net
+    check: min_space
     layers: [mvpsd]
     value: 2.0
+    params:
+      net: different
   - id: MDP.10b
     check: min_space
     layers: [mvpsd]
