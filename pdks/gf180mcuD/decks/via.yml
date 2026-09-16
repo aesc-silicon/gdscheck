@@ -21,7 +21,7 @@ rules:
     layers: [via1]
     value: 0.26
   - id: V1.2b
-    check: min_array_space
+    check: min_space
     layers: [via1]
     value: 0.36
     params:
@@ -83,7 +83,7 @@ rules:
     layers: [via2]
     value: 0.26
   - id: V2.2b
-    check: min_array_space
+    check: min_space
     layers: [via2]
     value: 0.36
     params:
@@ -145,7 +145,7 @@ rules:
     layers: [via3]
     value: 0.26
   - id: V3.2b
-    check: min_array_space
+    check: min_space
     layers: [via3]
     value: 0.36
     params:
@@ -207,7 +207,7 @@ rules:
     layers: [via4]
     value: 0.26
   - id: V4.2b
-    check: min_array_space
+    check: min_space
     layers: [via4]
     value: 0.36
     params:

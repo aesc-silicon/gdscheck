@@ -19,6 +19,9 @@
 //! must cover the COMP it blocks by 0.22 µm has to reach that far past the COMP's edge,
 //! not merely touch it.  Not a separate engine, only the other direction through one.
 //!
+//! A rule with `rows` and `cols` is about the vias packed into an array, which want a
+//! larger space than a lone pair; [`array`] finds the arrays and reads their gaps.
+//!
 //! A gap between two walls of *one* region is a notch, read by [`notch`] with the width
 //! scan turned the other way round; it takes `angle: bent` and `length` the same way.
 //! And the other bound, that nothing of a layer lies *farther* than so much from
@@ -28,6 +31,7 @@
 //! [`edge_distance`](super::edge_distance).  Which one runs is the deck's choice of layer,
 //! not a different rule; the gates read regions and have no meaning there.
 
+pub mod array;
 pub mod max;
 pub mod notch;
 
@@ -99,6 +103,10 @@ pub fn run_min(
     merged: &mut MergedCache,
     conn: Option<&Connectivity>,
 ) -> Vec<Violation> {
+    // `rows` or `cols` gates the rule on membership in a via array, a different scan.
+    if rule.params.contains_key("rows") || rule.params.contains_key("cols") {
+        return array::run(rule, layout, dbu_to_um, merged);
+    }
     let Some(gates) = Gates::from_rule(rule, "min_space") else {
         return vec![];
     };

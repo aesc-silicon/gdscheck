@@ -17,7 +17,7 @@ rules:
     layers: [contact]
     value: 0.25
   - id: CO.2b
-    check: min_array_space
+    check: min_space
     layers: [contact]
     value: 0.28
     params:

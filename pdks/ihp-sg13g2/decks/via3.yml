@@ -12,7 +12,7 @@ rules:
     layers: [Via3]
     value: 0.22
   - id: V3.b1
-    check: min_array_space
+    check: min_space
     layers: [Via3]
     value: 0.29
     params:

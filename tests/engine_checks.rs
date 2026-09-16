@@ -141,18 +141,18 @@ fn skip_coincident_drops_the_zero_and_nothing_else(
 #[case("l_0350", 1, 0)]
 #[case("u_0360", 0, 0)]
 #[case("u_0350", 1, 0)]
-fn min_array_space_knows_what_is_inside_the_array(
+fn array_space_knows_what_is_inside_the_array(
     #[case] pattern: &str,
     #[case] both: usize,
     #[case] one: usize,
 ) {
     assert_eq!(
-        count("min_array_space", pattern, "ARR.both"),
+        count("array", pattern, "ARR.both"),
         both,
         "{pattern}: space in both axes"
     );
     assert_eq!(
-        count("min_array_space", pattern, "ARR.one"),
+        count("array", pattern, "ARR.one"),
         one,
         "{pattern}: space in one axis"
     );

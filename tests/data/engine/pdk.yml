@@ -12,8 +12,8 @@ version: "1.0"
 decks:
   - name: min_enclosure
     path: decks/min_enclosure.yml
-  - name: min_array_space
-    path: decks/min_array_space.yml
+  - name: array
+    path: decks/array.yml
   - name: max_space
     path: decks/max_space.yml
   - name: density

@@ -16,10 +16,10 @@
 //! construction and guard nothing.
 
 mod area;
+mod array;
 mod density;
 mod gate_length;
 mod max_space;
-mod min_array_space;
 mod min_enclosure;
 mod net;
 mod notch;
@@ -32,10 +32,10 @@ use gdscheck::pdk::PdkConfig;
 
 pub fn generate(pdk: &PdkConfig) {
     area::generate(pdk);
+    array::generate(pdk);
     density::generate(pdk);
     gate_length::generate(pdk);
     max_space::generate(pdk);
-    min_array_space::generate(pdk);
     min_enclosure::generate(pdk);
     net::generate(pdk);
     notch::generate(pdk);
