@@ -411,3 +411,49 @@ fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
         "{pattern}: {rule}"
     );
 }
+
+/// The enclosure family beyond the plain minimum: the other bound, and each `sides`
+/// word met exactly and missed by five nanometres.
+///
+/// - `max_*`: a square with every margin 0.5, then its left margin 0.505.
+/// - `any_*`: a shape flush on three sides with its right margin 0.5 and 0.495;
+///   `max_any_*`: a square with every margin 0.505, and one with its left at 0.5.
+/// - `adj_*`: a shape 0.05 from the left wall (under the 0.1 trigger) with its bottom
+///   margin 1.0 and 0.495, and one exactly 0.1 from the wall with 0.495 below.
+/// - `cap_*`: a 0.3 µm track with a via 0.3 and 0.295 from its tip, and a 0.34 track,
+///   which is not narrow.
+/// - `ext_*`: a cover crossing a bar, reaching 0.5, 0.495 and 0.505 past its long walls.
+#[rstest]
+#[case("max_exact", "ENC.max", 0)]
+#[case("max_exact", "ENC.proj", 0)]
+#[case("max_over", "ENC.max", 1)]
+#[case("any_exact", "ENC.any", 0)]
+#[case("any_exact", "ENC.max_any", 0)]
+#[case("any_under", "ENC.any", 1)]
+#[case("any_under", "ENC.max_any", 0)]
+#[case("max_any_over", "ENC.max_any", 1)]
+#[case("max_any_over", "ENC.max", 1)]
+#[case("max_any_one", "ENC.max_any", 0)]
+#[case("max_any_one", "ENC.max", 1)]
+#[case("adj_ok", "ENC.adj", 0)]
+#[case("adj_under", "ENC.adj", 1)]
+#[case("adj_trigger", "ENC.adj", 0)]
+#[case("cap_exact", "ENC.cap", 0)]
+#[case("cap_under", "ENC.cap", 1)]
+#[case("cap_wide", "ENC.cap", 0)]
+#[case("ext_exact", "ENC.ext", 0)]
+#[case("ext_exact", "ENC.max_ext", 0)]
+#[case("ext_under", "ENC.ext", 1)]
+#[case("ext_over", "ENC.ext", 0)]
+#[case("ext_over", "ENC.max_ext", 1)]
+fn enclosure_bounds_and_sides_meet_the_bound_exactly(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("min_enclosure", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}

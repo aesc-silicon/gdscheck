@@ -28,3 +28,49 @@ rules:
     params:
       skip_coincident: 1
       metric: euclidian
+  # The other bound, and each `sides` word once: the endcap under both bounds, the
+  # bordering sides of a short one, the cap of a narrow track, and the extension - the
+  # margin on the walls a cover crosses - under both bounds.
+  - id: ENC.max
+    check: max_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+  - id: ENC.any
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      sides: any
+  - id: ENC.max_any
+    check: max_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      sides: any
+  - id: ENC.adj
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      sides: adjacent
+      trigger: 0.1
+  - id: ENC.cap
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.3
+    params:
+      sides: line_end
+      max_width: 0.34
+      min_length: 0.5
+  - id: ENC.ext
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      interacting_only: 1
+  - id: ENC.max_ext
+    check: max_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      interacting_only: 1
