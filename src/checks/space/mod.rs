@@ -26,10 +26,9 @@
 pub mod max;
 pub mod notch;
 
-use super::helper::LazyPoly;
 use super::params::{NotAWord, bent_only, mode};
 use crate::connectivity::{Connectivity, LayerKey};
-use crate::geom::Marker;
+use crate::geom::{Limit, Marker, Outline, has_diagonal_within, on_grid, parallel_run_applies};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -134,31 +133,31 @@ pub fn run_min_gated(
             Some((which, conn, net_keys(rule, conn, which)))
         }
     };
-    // The gates apply at the violating gap.  The engine reports a pair under
-    // `value - half`, so the same bound picks the facing pair that is the violation: a
+    // The gates apply at the violating gap.  The engine reports a pair under the value
+    // on the grid, and the same bound picks the facing pair that is the violation: a
     // wide rail running alongside a wire at the clean gap must not lend its width, nor
     // a bend elsewhere on the net its angle, to a narrow tooth that dips below it.
-    let max_gap = rule.value - 0.5 * dbu_to_um;
+    let limit = Limit::at_least(rule.value, dbu_to_um).dbu();
+    let run = gates.run.map(|(w, l)| {
+        (
+            on_grid(w / dbu_to_um, f64::round),
+            on_grid(l / dbu_to_um, f64::round),
+        )
+    });
     super::helper::run_gated(
         rule,
         layout,
         dbu_to_um,
         merged,
-        move |a: &LazyPoly, b: &LazyPoly, ma: Marker, mb: Marker| {
-            if gates.bent || gates.run.is_some() {
-                let (Some(a), Some(b)) = (a.poly(), b.poly()) else {
-                    return false;
-                };
-                if gates.bent
-                    && !(a.has_diagonal_near(b, max_gap) || b.has_diagonal_near(a, max_gap))
-                {
-                    return false;
-                }
-                if let Some((width, length)) = gates.run
-                    && !a.prl_applies(b, max_gap, width, length)
-                {
-                    return false;
-                }
+        move |a: &Outline, b: &Outline, ma: Marker, mb: Marker| {
+            if gates.bent && !(has_diagonal_within(a, b, limit) || has_diagonal_within(b, a, limit))
+            {
+                return false;
+            }
+            if let Some((wide, min_run)) = run
+                && !parallel_run_applies(a, b, limit, wide, min_run)
+            {
+                return false;
             }
             if let Some((which, conn, (key_a, key_b))) = nets {
                 let na = conn.net_at(key_a, ma.0, ma.1);

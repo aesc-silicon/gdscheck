@@ -34,7 +34,8 @@ rather than nothing.
    Every polygon of the target must have *some* part within ``value`` of the reference;
    a polygon that has none is flagged as a whole. The same grown reference, tested per
    region: a wide active block passes once its tap is in reach of any of it, where
-   ``part`` would flag the far side of the block.
+   ``part`` would flag the far side of the block. A polygon exactly ``value`` away is in
+   reach, as KLayout's ``interacting`` counts a touch; one a DBU further is not.
 
 ``scope: edge``
    Every edge of ``layers[0]``, an edge layer, must have ``layers[1]`` within ``value``
