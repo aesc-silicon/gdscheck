@@ -2395,3 +2395,295 @@ mod wall_filter_tests {
         assert!(walls(&stripe, Limit::AtLeast(301), &f).is_empty());
     }
 }
+
+// ===========================================================================
+// Exact spacing between two regions, in DBU.
+//
+// The closest approach of two regions is the closest approach of two of their boundary
+// segments, and on integer coordinates that is exact: an axis-aligned gap is a
+// difference, a corner-to-corner gap a square root, compared squared as a ratio of two
+// integers.  Whether two regions overlap, touch at a point or abut along a run is a
+// matter of signs of cross products, and never of a tolerance.
+// ===========================================================================
+
+/// A boundary segment in DBU.
+type Seg = ((i64, i64), (i64, i64));
+
+/// A region's boundary as integer segments - outer ring and holes alike, since both are
+/// material boundary - with its box, for exact tests against another.
+pub struct Outline<'a> {
+    poly: &'a MergedPoly,
+    segs: Vec<Seg>,
+    /// `(x0, y0, x1, y1)`.
+    pub bbox: (i64, i64, i64, i64),
+}
+
+fn cross_i(o: (i64, i64), a: (i64, i64), b: (i64, i64)) -> i128 {
+    (a.0 - o.0) as i128 * (b.1 - o.1) as i128 - (a.1 - o.1) as i128 * (b.0 - o.0) as i128
+}
+
+/// Whether `p` lies on the segment, ends included.
+fn on_segment(p: (i64, i64), (a, b): Seg) -> bool {
+    cross_i(a, b, p) == 0
+        && p.0 >= a.0.min(b.0)
+        && p.0 <= a.0.max(b.0)
+        && p.1 >= a.1.min(b.1)
+        && p.1 <= a.1.max(b.1)
+}
+
+/// Whether `p` lies inside `ring` by the crossing count of a ray to the right: an edge
+/// counts when its ends straddle the ray's height and the crossing lies right of `p`.
+/// The crossing's x is `xi + (py - yi)(xj - xi)/(yj - yi)`, and `px < x` is a sign test
+/// on integers once multiplied out.  A point on the ring is on no side in particular
+/// here; [`Outline`] asks about the boundary separately.
+fn in_ring(p: (i64, i64), ring: &[IntPoint]) -> bool {
+    let n = ring.len();
+    if n < 3 {
+        return false;
+    }
+    let (px, py) = p;
+    let mut inside = false;
+    let mut j = n - 1;
+    for i in 0..n {
+        let (xi, yi) = (ring[i].x as i64, ring[i].y as i64);
+        let (xj, yj) = (ring[j].x as i64, ring[j].y as i64);
+        if (yi > py) != (yj > py) {
+            let num = (py - yi) as i128 * (xj - xi) as i128;
+            let den = (yj - yi) as i128;
+            let lhs = (px - xi) as i128 * den;
+            if (den > 0 && lhs < num) || (den < 0 && lhs > num) {
+                inside = !inside;
+            }
+        }
+        j = i;
+    }
+    inside
+}
+
+impl<'a> Outline<'a> {
+    pub fn new(poly: &'a MergedPoly) -> Self {
+        let mut segs = Vec::new();
+        for ring in std::iter::once(&poly.outer).chain(poly.holes.iter()) {
+            let n = ring.len();
+            if n < 3 {
+                continue;
+            }
+            for i in 0..n {
+                let (a, b) = (ring[i], ring[(i + 1) % n]);
+                if a != b {
+                    segs.push(((a.x as i64, a.y as i64), (b.x as i64, b.y as i64)));
+                }
+            }
+        }
+        let (x0, y0, x1, y1) = crate::merge::poly_bbox(poly);
+        Outline {
+            poly,
+            segs,
+            bbox: (x0 as i64, y0 as i64, x1 as i64, y1 as i64),
+        }
+    }
+
+    fn vertices(&self) -> impl Iterator<Item = (i64, i64)> + '_ {
+        std::iter::once(&self.poly.outer)
+            .chain(self.poly.holes.iter())
+            .flatten()
+            .map(|p| (p.x as i64, p.y as i64))
+    }
+
+    fn on_boundary(&self, p: (i64, i64)) -> bool {
+        self.segs.iter().any(|&s| on_segment(p, s))
+    }
+
+    /// Inside the outer ring and in no hole, off the boundary.
+    fn strictly_contains(&self, p: (i64, i64)) -> bool {
+        in_ring(p, &self.poly.outer)
+            && !self.poly.holes.iter().any(|h| in_ring(p, h))
+            && !self.on_boundary(p)
+    }
+
+    /// Inside, or on the boundary.
+    fn contains_or_on(&self, p: (i64, i64)) -> bool {
+        self.on_boundary(p)
+            || (in_ring(p, &self.poly.outer) && !self.poly.holes.iter().any(|h| in_ring(p, h)))
+    }
+
+    /// Whether the boxes could be within `limit` DBU of each other.
+    pub fn possibly_within(&self, other: &Outline, limit: i64) -> bool {
+        let (ax0, ay0, ax1, ay1) = self.bbox;
+        let (bx0, by0, bx1, by1) = other.bbox;
+        (ax0 - bx1).max(bx0 - ax1) < limit && (ay0 - by1).max(by0 - ay1) < limit
+    }
+}
+
+/// Whether two segments properly cross - each strictly straddles the other's line.
+/// Touching at an end is not a crossing.
+fn segs_cross_i((p0, p1): Seg, (q0, q1): Seg) -> bool {
+    let (d1, d2) = (cross_i(q0, q1, p0), cross_i(q0, q1, p1));
+    let (d3, d4) = (cross_i(p0, p1, q0), cross_i(p0, p1, q1));
+    ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))
+}
+
+/// Whether two regions share area.  A point on the boundary is shared *boundary*, not
+/// shared area: two shapes meeting at one corner do not overlap, and are exactly the
+/// pair a spacing rule is about.  Three ways to share area, since a vertex test alone
+/// misses the ordinary one: a vertex of one strictly inside the other; one wholly
+/// inside the other with boundaries that may coincide, every vertex inside or on and
+/// none need be strictly inside - two identical regions being the limiting case; and
+/// two boundaries properly crossing, which is what a poly stripe over a COMP does with
+/// no vertex of either inside the other.
+pub fn regions_overlap(a: &Outline, b: &Outline) -> bool {
+    if a.vertices().any(|p| b.strictly_contains(p)) || b.vertices().any(|p| a.strictly_contains(p))
+    {
+        return true;
+    }
+    if a.vertices().all(|p| b.contains_or_on(p)) || b.vertices().all(|p| a.contains_or_on(p)) {
+        return true;
+    }
+    a.segs
+        .iter()
+        .any(|&s| b.segs.iter().any(|&t| segs_cross_i(s, t)))
+}
+
+/// Whether two regions share a *run* of boundary rather than meeting at isolated points.
+/// Shapes drawn edge to edge abut, and a separation of zero between them would be a
+/// fiction; shapes meeting at one corner have a gap that happens to be nothing wide.
+pub fn share_boundary_run(a: &Outline, b: &Outline) -> bool {
+    for &(a0, a1) in &a.segs {
+        let d = ((a1.0 - a0.0) as i128, (a1.1 - a0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        for &(b0, b1) in &b.segs {
+            let e = ((b1.0 - b0.0) as i128, (b1.1 - b0.1) as i128);
+            if d.0 * e.1 - d.1 * e.0 != 0 || cross_i(a0, a1, b0) != 0 {
+                continue; // not parallel, or parallel off the line
+            }
+            // Where the other's ends fall along this one, in units of len2.
+            let t0 = (b0.0 - a0.0) as i128 * d.0 + (b0.1 - a0.1) as i128 * d.1;
+            let t1 = (b1.0 - a0.0) as i128 * d.0 + (b1.1 - a0.1) as i128 * d.1;
+            if t0.max(t1).min(len2) > t0.min(t1).max(0) {
+                return true; // a shared stretch, not a shared point
+            }
+        }
+    }
+    false
+}
+
+/// A closest approach: the squared distance as `num / den`, and the point on each region.
+pub type ClosestPair = (i128, i128, (f64, f64), (f64, f64));
+
+/// The closest approach of two regions among the segment pairs that can be under
+/// `limit` DBU: the squared distance as `num / den`, and the point on each, in DBU.
+/// `None` when every pair is at least `limit` apart.  A pair whose boxes are `limit` or
+/// more apart in either axis is at least that far apart and is not looked at; a contact
+/// ends the search, since nothing is closer.
+pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestPair> {
+    let mut best: Option<ClosestPair> = None;
+    let ratio = |n: i128, d: i128| n as f64 / d as f64;
+    let boxes_apart = |(p0, p1): Seg, (q0, q1): Seg| {
+        (p0.0.min(p1.0) - q0.0.max(q1.0)).max(q0.0.min(q1.0) - p0.0.max(p1.0)) >= limit
+            || (p0.1.min(p1.1) - q0.1.max(q1.1)).max(q0.1.min(q1.1) - p0.1.max(p1.1)) >= limit
+    };
+    'outer: for &(a0, a1) in &a.segs {
+        for &(b0, b1) in &b.segs {
+            if boxes_apart((a0, a1), (b0, b1)) {
+                continue;
+            }
+            let c = seg_seg_closest_sq(a0, a1, b0, b1);
+            if best
+                .as_ref()
+                .is_none_or(|&(n, d, _, _)| ratio(c.num, c.den) < ratio(n, d))
+            {
+                best = Some((c.num, c.den, c.on_a, c.on_b));
+                if c.num == 0 {
+                    break 'outer;
+                }
+            }
+        }
+    }
+    best
+}
+
+#[cfg(test)]
+mod space_tests {
+    use super::*;
+
+    fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
+        MergedPoly {
+            outer: vec![
+                IntPoint::new(x0, y0),
+                IntPoint::new(x1, y0),
+                IntPoint::new(x1, y1),
+                IntPoint::new(x0, y1),
+            ],
+            holes: vec![],
+        }
+    }
+
+    /// An axis-aligned gap is the difference of two coordinates, and a diagonal one is
+    /// the sum of two squares: both are integers, and the limit reads them exactly.
+    #[test]
+    fn gaps_are_exact() {
+        let (a, b) = (rect(0, 0, 100, 100), rect(130, 0, 200, 100));
+        let (oa, ob) = (Outline::new(&a), Outline::new(&b));
+        let (n, d, p, q) = closest_approach(&oa, &ob, 1000).expect("in reach");
+        assert_eq!((n, d), (900, 1));
+        assert_eq!((p, q), ((100.0, 0.0), (130.0, 0.0)));
+        assert!(Limit::AtLeast(31).broken_by_sq(n, d));
+        assert!(!Limit::AtLeast(30).broken_by_sq(n, d));
+        let c = rect(103, 104, 200, 200);
+        let oc = Outline::new(&c);
+        let (n, d, _, _) = closest_approach(&oa, &oc, 1000).expect("in reach");
+        assert_eq!((n, d), (25, 1), "3² + 4²");
+        assert!(Limit::AtLeast(6).broken_by_sq(n, d));
+        assert!(!Limit::AtLeast(5).broken_by_sq(n, d));
+    }
+
+    /// A pair whose boxes are the limit apart is not looked at.
+    #[test]
+    fn out_of_reach_is_not_measured() {
+        let (a, b) = (rect(0, 0, 100, 100), rect(130, 0, 200, 100));
+        assert!(closest_approach(&Outline::new(&a), &Outline::new(&b), 30).is_none());
+    }
+
+    /// Meeting at a corner is a contact, a gap of nothing; drawn edge to edge is an
+    /// abutment, no gap at all.  Both approach to zero, and the run tells them apart.
+    #[test]
+    fn a_corner_touch_and_an_abutment_differ_by_the_run() {
+        let a = rect(0, 0, 100, 100);
+        let corner = rect(100, 100, 200, 200);
+        let abut = rect(100, 20, 200, 120);
+        let (oa, oc, ob) = (Outline::new(&a), Outline::new(&corner), Outline::new(&abut));
+        assert_eq!(closest_approach(&oa, &oc, 10).map(|c| c.0), Some(0));
+        assert!(!share_boundary_run(&oa, &oc));
+        assert_eq!(closest_approach(&oa, &ob, 10).map(|c| c.0), Some(0));
+        assert!(share_boundary_run(&oa, &ob));
+        assert!(!regions_overlap(&oa, &oc));
+        assert!(!regions_overlap(&oa, &ob));
+    }
+
+    /// Shared area is a vertex strictly inside, a nesting with coincident walls, or a
+    /// proper crossing with no vertex of either inside the other.
+    #[test]
+    fn overlap_is_shared_area() {
+        let a = rect(0, 0, 100, 100);
+        let oa = Outline::new(&a);
+        assert!(regions_overlap(&oa, &Outline::new(&rect(50, 50, 150, 150))));
+        assert!(regions_overlap(&oa, &Outline::new(&rect(0, 0, 40, 100))));
+        assert!(
+            regions_overlap(&oa, &Outline::new(&rect(40, -50, 60, 150))),
+            "a plus"
+        );
+        assert!(!regions_overlap(
+            &oa,
+            &Outline::new(&rect(100, 0, 200, 100))
+        ));
+        let ring = MergedPoly {
+            outer: rect(0, 0, 100, 100).outer,
+            holes: vec![rect(30, 30, 70, 70).outer],
+        };
+        let island = rect(40, 40, 60, 60);
+        assert!(
+            !regions_overlap(&Outline::new(&ring), &Outline::new(&island)),
+            "an island in a hole shares no area with the ring"
+        );
+    }
+}

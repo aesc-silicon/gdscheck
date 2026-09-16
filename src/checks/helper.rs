@@ -42,10 +42,28 @@ pub struct SpaceMode {
     inward: bool,
 }
 
+/// A region's float outline, built the first time a gate asks for it: the spacing
+/// itself is measured exactly on the integer boundary, and only a gate - a wall's
+/// angle, a line's depth, a parallel run - reads the µm contour.
+pub struct LazyPoly<'a> {
+    m: &'a MergedPoly,
+    dbu_to_um: f64,
+    cell: std::cell::OnceCell<Option<Poly>>,
+}
+
+impl LazyPoly<'_> {
+    /// The µm outline, `None` for a degenerate region.
+    pub fn poly(&self) -> Option<&Poly> {
+        self.cell
+            .get_or_init(|| poly_from_merged(self.m, self.dbu_to_um))
+            .as_ref()
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
-fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
-    a_polys: &[MergedPoly],
-    b_polys: &[MergedPoly],
+fn check_tile<'a, G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool>(
+    a_polys: &'a [MergedPoly],
+    b_polys: &'a [MergedPoly],
     same_layer: bool,
     core: Core,
     value: f64,
@@ -57,60 +75,79 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
     gate: &G,
 ) -> Vec<Violation> {
     let half = dbu_to_um * 0.5;
-    // Each polygon keeps its source region's DBU marker: `poly_from_merged` can drop a
-    // polygon, so zipping here is what keeps `Poly` and `MergedPoly` aligned for the gate.
+    // The bound on the grid: a minimum rounds up, and every gap is then an integer
+    // under it or not.  The float readings below - the square metric, the facing scan
+    // of an overlapping pair - keep half a DBU of slack instead.
+    let limit = Limit::at_least(value, dbu_to_um);
+    // Each region keeps its DBU marker: a point *on* the shape, not its centroid - a
+    // net-aware gate resolves the net by looking the marker up, and a ring's centroid
+    // sits in its hole, where in GF180's DN.2b fixture an unrelated island sits.
     //
-    // The marker must be a point *on* the shape, not its centroid: a net-aware gate
-    // resolves the net by looking the marker up, and a ring's centroid sits in its hole -
-    // where, in GF180's DN.2b fixture, an unrelated island sits. Both sides then read as
-    // one net and the rule goes quiet on a real violation.
-    let conv =
-        |m: &MergedPoly| poly_from_merged(m, dbu_to_um).map(|p| (p, representative_point(m)));
-    // Whether a merged piece is real material or a shaving the merge left behind.  A 45°
-    // wall is drawn with a one-nanometre chamfer at each corner, and rounding that corner
-    // detaches the chamfer as a triangle of half a square nanometre touching the body at
-    // a vertex.  The width checks want it - KLayout keeps the same feature and reports
-    // the notch - but a *gap* of nothing to a shaving is not a spacing violation, and
-    // reading it as one is five false positives each on LRES.2 and PRES.2.  Nothing drawn
-    // is this small: a hundred square DBU is a ten-nanometre square.
-    let material = |m: &MergedPoly| crate::merge::merged_area_dbu(m) >= SHAVING_DBU2;
-    let prep = |ms: &[MergedPoly]| -> (Vec<(Poly, Marker)>, Vec<bool>) {
+    // Whether a merged piece is real material or a shaving the merge left behind.  A
+    // 45° wall is drawn with a one-nanometre chamfer at each corner, and rounding that
+    // corner detaches the chamfer as a triangle of half a square nanometre touching the
+    // body at a vertex.  The width checks want it - KLayout keeps the same feature and
+    // reports the notch - but a *gap* of nothing to a shaving is not a spacing
+    // violation, and reading it as one is five false positives each on LRES.2 and
+    // PRES.2.  Nothing drawn is this small: a hundred square DBU is a ten-nanometre
+    // square.
+    struct Side<'a> {
+        outline: Outline<'a>,
+        lazy: LazyPoly<'a>,
+        marker: Marker,
+        material: bool,
+    }
+    let prep = |ms: &'a [MergedPoly]| -> Vec<Side<'a>> {
         ms.iter()
-            .filter_map(|m| conv(m).map(|p| (p, material(m))))
-            .unzip()
+            .filter(|m| m.outer.len() >= 3)
+            .map(|m| Side {
+                outline: Outline::new(m),
+                lazy: LazyPoly {
+                    m,
+                    dbu_to_um,
+                    cell: std::cell::OnceCell::new(),
+                },
+                marker: representative_point(m),
+                material: crate::merge::merged_area_dbu(m) >= SHAVING_DBU2,
+            })
+            .collect()
     };
-    let (pa, mat_a) = prep(a_polys);
-    let (pb, mat_b) = if same_layer {
-        (Vec::new(), Vec::new())
+    let sa = prep(a_polys);
+    let sb = if same_layer {
+        Vec::new()
     } else {
         prep(b_polys)
     };
-    let bs: &[(Poly, Marker)] = if same_layer { &pa } else { &pb };
-    let mat_bs: &[bool] = if same_layer { &mat_a } else { &mat_b };
+    let bs: &[Side] = if same_layer { &sa } else { &sb };
 
     let mut out = Vec::new();
-    for (i, (a, ma)) in pa.iter().enumerate() {
-        for (j, (b, mb)) in bs.iter().enumerate() {
+    for (i, a) in sa.iter().enumerate() {
+        for (j, b) in bs.iter().enumerate() {
             if same_layer && j <= i {
                 continue;
             }
-            if !a.bbox.possibly_within(&b.bbox, value) {
+            if !a.outline.possibly_within(&b.outline, limit.dbu()) {
                 continue;
             }
-            let overlaps = overlapping(a, b);
+            let overlaps = regions_overlap(&a.outline, &b.outline);
             if overlaps != mode.overlapping {
                 continue; // this rule is about the other kind of pair
             }
-            let (min_dist, (ax, ay), (bx, by)) = if mode.overlapping {
+            let shaving = !a.material || !b.material;
+            // The gap and the two points that measure it, in µm.
+            let found: Option<Gap> = if mode.overlapping {
                 // The pair shares area, so its closest approach is zero and meaningless.
                 // Take the narrowest facing gap that is genuinely empty instead.
+                let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
+                    continue;
+                };
                 let mut best: Option<Gap> = None;
-                for (gap, p, q) in facing_gaps(a, b, value, half, mode.inward) {
+                for (gap, p, q) in facing_gaps(pa, pb, value, half, mode.inward) {
                     let (px, py) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
                     let wrong = if mode.inward {
                         // An overlap has to be material of both, or the "facing" pair
                         // reaches across a notch in one of them.
-                        !(a.contains_point(px, py) && b.contains_point(px, py))
+                        !(pa.contains_point(px, py) && pb.contains_point(px, py))
                     } else {
                         let (mx, my) = (px / dbu_to_um, py / dbu_to_um);
                         a_polys
@@ -125,61 +162,83 @@ fn check_tile<G: Fn(&Poly, &Poly, Marker, Marker) -> bool>(
                         best = Some((gap, p, q));
                     }
                 }
-                match best {
-                    Some(v) => v,
-                    None => continue,
+                best.filter(|(d, _, _)| *d < value - half)
+            } else if mode.square {
+                let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
+                    continue;
+                };
+                let m = closest(pa, pb, half, true);
+                if m.0 < half && (shaving || shares_boundary_run(pa, pb, half)) {
+                    continue;
                 }
+                (m.0 < value - half).then_some(m)
             } else {
-                let m = closest(a, b, half, mode.square);
                 // A contact between two layers is a separation of *zero*, and reported:
                 // two shapes meeting at a corner have a gap that happens to be nothing
-                // wide, which is the worst spacing there is. KLayout reads it that way and
-                // this engine used to drop it, silently, wherever it occurred.
+                // wide, which is the worst spacing there is.  KLayout reads it that way
+                // and this engine used to drop it, silently, wherever it occurred.
                 //
                 // Within one layer it is a gap of zero too, and KLayout reports it: two
                 // wells meeting corner to corner merge into one self-touching shape, and
-                // `space` marks the touch point. This engine excluded the same-layer case
-                // for a while, on the grounds that such a contact is a pinch and belongs
-                // to the width checks; that reading cost 82 logical violations across
-                // eighteen gf180mcu decks - the whole of what `nwell` and `lvpwell` were
-                // missing on their well-spacing rules - and the pinch is reported anyway,
-                // by whichever width rule covers the layer.
+                // `space` marks the touch point.  This engine excluded the same-layer
+                // case for a while, on the grounds that such a contact is a pinch and
+                // belongs to the width checks; that reading cost 82 logical violations
+                // across eighteen gf180mcu decks - the whole of what `nwell` and
+                // `lvpwell` were missing on their well-spacing rules - and the pinch is
+                // reported anyway, by whichever width rule covers the layer.
                 //
                 // A contact along a *run* is not a gap: two shapes drawn edge to edge
-                // abut, with no space between them anywhere. IHP's butted substrate ties
-                // are exactly that by construction. Only a contact at isolated points is
-                // a separation of zero, whichever layers it is between.
-                let shaving = !mat_a[i] || !mat_bs[j];
-                if m.0 < half && (shaving || shares_boundary_run(a, b, half)) {
-                    continue;
+                // abut, with no space between them anywhere.  IHP's butted substrate
+                // ties are exactly that by construction.  Only a contact at isolated
+                // points is a separation of zero, whichever layers it is between.
+                match closest_approach(&a.outline, &b.outline, limit.dbu()) {
+                    None => None,
+                    Some((0, _, p, q)) => {
+                        if shaving || share_boundary_run(&a.outline, &b.outline) {
+                            None
+                        } else {
+                            Some((0.0, p, q))
+                        }
+                    }
+                    Some((num, den, p, q)) => limit.broken_by_sq(num, den).then(|| {
+                        let d = (num as f64 / den as f64).sqrt() * dbu_to_um;
+                        (d, p, q)
+                    }),
                 }
-                m
+                .map(|(d, (px, py), (qx, qy))| {
+                    (
+                        d,
+                        (px * dbu_to_um, py * dbu_to_um),
+                        (qx * dbu_to_um, qy * dbu_to_um),
+                    )
+                })
             };
-            if min_dist < value - half {
-                if !gate(a, b, *ma, *mb) {
-                    continue;
-                }
-                // Own the violation by the gap midpoint; mark the gap itself.
-                let mx = (ax + bx) * 0.5;
-                let my = (ay + by) * 0.5;
-                if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
-                    continue;
-                }
-                let (title, what) = if mode.inward {
-                    ("Minimum overlap violation", "overlap")
-                } else {
-                    ("Minimum space violation", "space")
-                };
-                out.push(Violation::edge(
-                    rule_id,
-                    title,
-                    format!(
-                        "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
-                        min_dist, value, name_a, name_b, ax, ay, bx, by
-                    ),
-                    ax, ay, bx, by,
-                ));
+            let Some((min_dist, (ax, ay), (bx, by))) = found else {
+                continue;
+            };
+            if !gate(&a.lazy, &b.lazy, a.marker, b.marker) {
+                continue;
             }
+            // Own the violation by the gap midpoint; mark the gap itself.
+            let mx = (ax + bx) * 0.5;
+            let my = (ay + by) * 0.5;
+            if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
+                continue;
+            }
+            let (title, what) = if mode.inward {
+                ("Minimum overlap violation", "overlap")
+            } else {
+                ("Minimum space violation", "space")
+            };
+            out.push(Violation::edge(
+                rule_id,
+                title,
+                format!(
+                    "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                    min_dist, value, name_a, name_b, ax, ay, bx, by
+                ),
+                ax, ay, bx, by,
+            ));
         }
     }
     out
@@ -207,7 +266,7 @@ pub fn run_overlap(
     })
 }
 
-pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
+pub fn run_gated<G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
@@ -218,7 +277,7 @@ pub fn run_gated<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
 }
 
 /// `forced` overrides what the `pairs` param would say, for a check that *is* a mode.
-fn run_gated_with<G: Fn(&Poly, &Poly, Marker, Marker) -> bool + Sync>(
+fn run_gated_with<G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,

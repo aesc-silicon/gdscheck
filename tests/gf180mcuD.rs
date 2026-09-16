@@ -217,7 +217,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
-    &[("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 74), ("O.PL.3a", 14), ("O.PL.4", 9), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 6), ("O.SB.4", 2), ("O.SB.5b_LV", 6), ("O.SB.9", 1)]
+    &[("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 16), ("O.DF.9", 4), ("O.PL.2", 74), ("O.PL.3a", 14), ("O.PL.4", 9), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 6), ("O.SB.4", 3), ("O.SB.5b_LV", 6), ("O.SB.9", 1)]
 )]
 #[case::mcell(
     "mcell", "mcell.gds.gz", "7_17_Mcell",

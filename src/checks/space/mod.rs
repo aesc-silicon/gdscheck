@@ -26,9 +26,10 @@
 pub mod max;
 pub mod notch;
 
+use super::helper::LazyPoly;
 use super::params::{NotAWord, bent_only, mode};
 use crate::connectivity::{Connectivity, LayerKey};
-use crate::geom::{Marker, Poly};
+use crate::geom::Marker;
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -143,14 +144,21 @@ pub fn run_min_gated(
         layout,
         dbu_to_um,
         merged,
-        move |a: &Poly, b: &Poly, ma: Marker, mb: Marker| {
-            if gates.bent && !(a.has_diagonal_near(b, max_gap) || b.has_diagonal_near(a, max_gap)) {
-                return false;
-            }
-            if let Some((width, length)) = gates.run
-                && !a.prl_applies(b, max_gap, width, length)
-            {
-                return false;
+        move |a: &LazyPoly, b: &LazyPoly, ma: Marker, mb: Marker| {
+            if gates.bent || gates.run.is_some() {
+                let (Some(a), Some(b)) = (a.poly(), b.poly()) else {
+                    return false;
+                };
+                if gates.bent
+                    && !(a.has_diagonal_near(b, max_gap) || b.has_diagonal_near(a, max_gap))
+                {
+                    return false;
+                }
+                if let Some((width, length)) = gates.run
+                    && !a.prl_applies(b, max_gap, width, length)
+                {
+                    return false;
+                }
             }
             if let Some((which, conn, (key_a, key_b))) = nets {
                 let na = conn.net_at(key_a, ma.0, ma.1);
