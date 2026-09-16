@@ -145,7 +145,9 @@ takes `-d, --deck` (the deck to dump).
 
 `run` exits with `0` when the layout is clean, `2` when violations were found,
 and `1` on any error (unreadable input, unknown PDK, deck or suite, failed
-report write), so scripts can branch on the status without parsing output.
+report write), so scripts can branch on the status without parsing output. A
+violation the PDK waives is reported but does not fail the run: a layout whose
+only findings are waived exits with `0`.
 
 ## PDK, deck and suite format
 

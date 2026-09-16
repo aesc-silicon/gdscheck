@@ -150,7 +150,9 @@ Command-line reference
      - Print every violation's message, not just per-rule counts.
 
 Exit status: ``0`` when the layout is clean, ``2`` when violations were found, ``1`` on
-any error (unreadable input, unknown PDK, deck or suite, failed report write).
+any error (unreadable input, unknown PDK, deck or suite, failed report write). A
+violation the PDK waives is reported but does not fail the run: a layout whose only
+findings are waived exits with ``0``.
 
 ``list-decks`` / ``list-suites``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
