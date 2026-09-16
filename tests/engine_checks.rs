@@ -457,3 +457,55 @@ fn enclosure_bounds_and_sides_meet_the_bound_exactly(
         "{pattern}: {rule}"
     );
 }
+
+/// The shape family from a deck: each bound of an extent and of an edge length met
+/// exactly and missed by five nanometres, and the corner, angle, hole and vertex rules.
+///
+/// - `dim_*` and `len_*`: bars whose short and long sides sit on and past the bounds;
+///   `exact_*`: a via bar exactly 0.3 by 1.0 and off in one dimension.
+/// - `edge_*`: a square with a corner cut 0.5 and 0.495 wide; `edge45_*`: a chamfer
+///   0.5006 and 0.4992 long.
+/// - `corner_square` turns four right angles, `corner_octagon` none; `sharp_triangle`
+///   has two corners sharper than a right angle; `hole_ring` has a hole and
+///   `hole_filled` not; `vert_over` has nine vertices; `via45` two 45° walls.
+#[rstest]
+#[case("dim_exact", "E.min_dim", 0)]
+#[case("dim_under", "E.min_dim", 1)]
+#[case("dim_max_exact", "E.max_dim", 0)]
+#[case("dim_max_over", "E.max_dim", 1)]
+#[case("len_exact", "E.min_len", 0)]
+#[case("len_under", "E.min_len", 1)]
+#[case("len_max_exact", "E.max_len", 0)]
+#[case("len_max_over", "E.max_len", 1)]
+#[case("exact_ok", "E.exact_dim", 0)]
+#[case("exact_ok", "E.exact_len", 0)]
+#[case("exact_off_dim", "E.exact_dim", 1)]
+#[case("exact_off_dim", "E.exact_len", 0)]
+#[case("exact_off_len", "E.exact_len", 1)]
+#[case("exact_off_len", "E.exact_dim", 0)]
+#[case("edge_exact", "L.min", 0)]
+#[case("edge_under", "L.min", 1)]
+#[case("edge_layer_under", "L.edge", 1)]
+#[case("edge45_over", "L.min", 0)]
+#[case("edge45_under", "L.min", 1)]
+#[case("edge45_under", "A.ortho", 1)]
+#[case("corner_square", "C.right", 4)]
+#[case("corner_square", "H.none", 0)]
+#[case("corner_octagon", "C.right", 0)]
+#[case("corner_octagon", "V.max", 0)]
+#[case("vert_over", "V.max", 1)]
+#[case("sharp_triangle", "C.sharp", 2)]
+#[case("sharp_triangle", "A.ortho", 1)]
+#[case("sharp_rect", "C.sharp", 0)]
+#[case("sharp_rect", "A.ortho", 0)]
+#[case("hole_ring", "H.none", 1)]
+#[case("hole_filled", "H.none", 0)]
+#[case("via45", "A.bent45", 2)]
+#[case("via_rect", "A.bent45", 0)]
+fn shape_rules_meet_the_bound_exactly_and_read_the_shape(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("shape", pattern, rule), expected, "{pattern}: {rule}");
+}

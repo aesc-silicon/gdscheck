@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The shape family: each bound of an extent and of an edge length once, the corners,
+# angles, holes and vertex count.  Outer carries the dims, the right-angle corner rule,
+# the hole and vertex rules; Inner the lengths, the edge lengths, the sharp-corner and
+# angle rules; Via the exact dims and the 45° angle rule.
+rules:
+  - id: E.min_dim
+    check: min_dim
+    layers: [Outer]
+    value: 0.5
+  - id: E.max_dim
+    check: max_dim
+    layers: [Outer]
+    value: 2.0
+  - id: E.min_len
+    check: min_length
+    layers: [Inner]
+    value: 5.0
+  - id: E.max_len
+    check: max_length
+    layers: [Inner]
+    value: 20.0
+  - id: E.exact_dim
+    check: exact_dim
+    layers: [Via]
+    value: 0.3
+  - id: E.exact_len
+    check: exact_length
+    layers: [Via]
+    value: 1.0
+  - id: L.min
+    check: min_edge_length
+    layers: [Inner]
+    value: 0.5
+  - id: L.edge
+    check: min_edge_length
+    layers: [Outer.edges]
+    value: 0.5
+  - id: C.right
+    check: no_corner
+    layers: [Outer]
+    value: 90.0
+  - id: C.sharp
+    check: no_corner
+    layers: [Inner]
+    value: 0.0
+    params:
+      min: 90.005
+      max: 180.0
+  - id: A.ortho
+    check: no_angle
+    layers: [Inner]
+    value: 0.0
+  - id: A.bent45
+    check: no_angle
+    layers: [Via]
+    value: 0.0
+    params:
+      angle: 45.0
+  - id: H.none
+    check: no_hole
+    layers: [Outer]
+    value: 0.0
+  - id: V.max
+    check: max_vertices
+    layers: [Outer]
+    value: 8

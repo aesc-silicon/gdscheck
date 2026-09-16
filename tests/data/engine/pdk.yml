@@ -26,6 +26,8 @@ decks:
     path: decks/space.yml
   - name: notch
     path: decks/notch.yml
+  - name: shape
+    path: decks/shape.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
