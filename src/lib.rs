@@ -148,8 +148,7 @@ impl PhaseTrace {
 /// Checks that need electrical connectivity (net extraction).  When connectivity is
 /// disabled (`connectivity == false`) these are skipped rather than run on no nets.
 /// Populated as net-aware checks land (e.g. the antenna ratio rules).
-pub const NET_AWARE_CHECKS: &[&str] =
-    &["antenna_ratio", "gate_connected_min_area", "max_nets_under"];
+pub const NET_AWARE_CHECKS: &[&str] = &["antenna_ratio", "max_nets_under"];
 
 /// Whether a rule reads the nets: a net-aware check, or any rule gated on `net`.
 pub fn net_aware(rule: &pdk::RuleDefinition) -> bool {
@@ -538,7 +537,6 @@ fn dist_check(rule: &pdk::RuleDefinition) -> bool {
 const SHAPE_CHECKS: &[&str] = &[
     "no_ring",
     "ring_covers_boundary",
-    "min_enclosed_area",
     "no_corner",
     "no_hole",
     "min_area",

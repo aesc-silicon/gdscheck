@@ -27,7 +27,7 @@ level.
 
 A gate's net optionally carries a **protection diode** — a diffusion diode tied to the
 same net, above a fixed 0.16 µm² floor (the antenna-protection-diode sizing threshold,
-matching :doc:`gate_connected_min_area`'s ``Ant.g``). ``require_diode`` selects which
+matching ``Ant.g``, a :doc:`min_area` with ``net: connected``). ``require_diode`` selects which
 population a rule instance checks:
 
 - ``require_diode: 0`` — nets *without* a diode, checked against the strict limit.

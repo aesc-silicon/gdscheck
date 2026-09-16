@@ -21,6 +21,8 @@ rules:
     layers: [mcell_feol_mk]
     value: 0.35
   - id: MC.4
-    check: min_enclosed_area
+    check: min_area
     layers: [mcell_feol_mk]
     value: 0.35
+    params:
+      scope: hole

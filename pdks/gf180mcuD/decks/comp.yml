@@ -150,9 +150,11 @@ rules:
     value: 0.2025
 
   - id: DF.10
-    check: min_enclosed_area
+    check: min_area
     layers: [comp]
     value: 0.26
+    params:
+      scope: hole
 
   - id: DF.11
     check: min_width

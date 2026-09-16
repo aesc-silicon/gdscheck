@@ -43,10 +43,6 @@ pub fn run_rule(
 ) -> Vec<Violation> {
     let mut out = match rule.check.as_str() {
         "antenna_ratio" => antenna_ratio::run(rule, layout, dbu_to_um, merged, conn),
-        "gate_connected_min_area"
-        | "min_enclosed_area"
-        | "max_contained_area"
-        | "max_total_area" => area::run_named(&rule.check, rule, layout, dbu_to_um, merged, conn),
         "forbidden_unless_labeled" => {
             forbidden_unless_labeled::run(rule, layout, dbu_to_um, merged)
         }

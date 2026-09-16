@@ -73,9 +73,11 @@ rules:
     layers: [pSD]
     value: 0.25
   - id: pSD.l
-    check: min_enclosed_area
+    check: min_area
     layers: [pSD]
     value: 0.25
+    params:
+      scope: hole
   - id: pSD.m
     check: min_space
     layers: [GPRsilExtended, pSD]

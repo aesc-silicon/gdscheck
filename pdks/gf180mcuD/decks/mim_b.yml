@@ -72,6 +72,8 @@ rules:
     value: 0.0
     description: "MIMTM.10: no Via3 may touch the MIM bottom plate"
   - id: MIMTM.11
-    check: max_contained_area
+    check: max_area
     layers: [mimtm11_plate, fusetop]
     value: 10000.0
+    params:
+      scope: contained
