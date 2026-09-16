@@ -498,28 +498,32 @@ fn propagate_virtual_halos(
 /// neighbouring tiles itself (see `merge::max_space_gaps`).  Listed, its 20 µm was the
 /// halo of Activ on an ORFS layout, and the merge died in it.
 const DIST_CHECKS: &[&str] = &[
+    // Width.
     "min_width",
     "max_width",
     "exact_width",
-    "min_space",
-    "min_notch",
-    "min_enclosure",
-    "max_enclosure",
-    "min_overlap",
-    "wide_uncovered",
-    // A polygon's own extent: the copy in its tile has to be whole up to the value, or a
-    // long shape cut at the tile line is read as several short ones.  MDN.13a's 50 µm
-    // `max_length` never fired once its body was built from clipped pieces.
-    "min_length",
-    "max_length",
-    "min_dim",
-    "max_dim",
-    "exact_dim",
-    "exact_length",
     "min_gate_length",
     "max_gate_length",
     "exact_gate_length",
+    // Space.
+    "min_space",
+    "min_notch",
+    "min_overlap",
+    // Enclosure.
+    "min_enclosure",
+    "max_enclosure",
+    // Shape.  A polygon's own extent: the copy in its tile has to be whole up to the
+    // value, or a long shape cut at the tile line is read as several short ones.
+    // MDN.13a's 50 µm `max_length` never fired once its body was built from clipped
+    // pieces.
+    "min_dim",
+    "max_dim",
+    "exact_dim",
+    "min_length",
+    "max_length",
+    "exact_length",
     "min_edge_length",
+    "wide_uncovered",
 ];
 
 /// Whether a rule measures a distance and so wants its value as the halo of the layers it
@@ -533,10 +537,12 @@ fn dist_check(rule: &pdk::RuleDefinition) -> bool {
 /// The checks that read a polygon's own shape - its holes, its corners, its area - and
 /// so need the tile's copy whole a little past the core.
 const SHAPE_CHECKS: &[&str] = &[
-    "no_ring",
-    "ring_covers_boundary",
+    // Shape.
     "no_corner",
     "no_hole",
+    "no_ring",
+    "ring_covers_boundary",
+    // Area.
     "min_area",
     "max_area",
     "exact_area",
