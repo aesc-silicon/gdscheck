@@ -15,6 +15,7 @@
 //! drawing, never from a run: a pattern whose answer came out of the engine would pass by
 //! construction and guard nothing.
 
+mod area;
 mod density;
 mod gate_length;
 mod max_space;
@@ -28,6 +29,7 @@ mod width;
 use gdscheck::pdk::PdkConfig;
 
 pub fn generate(pdk: &PdkConfig) {
+    area::generate(pdk);
     density::generate(pdk);
     gate_length::generate(pdk);
     max_space::generate(pdk);

@@ -509,3 +509,43 @@ fn shape_rules_meet_the_bound_exactly_and_read_the_shape(
 ) {
     assert_eq!(count("shape", pattern, rule), expected, "{pattern}: {rule}");
 }
+
+/// The area family from a deck: each bound met exactly and missed on each scope, the
+/// half-DBU² grid, and the connected-net gate.
+///
+/// - `region_*`: rectangles of exactly 0.5 and 4 µm² and five nanometres off;
+///   `tri_half` is a right triangle with legs of odd nanometres, half a square DBU
+///   under 0.5 µm² where `tri_exact` is on it.
+/// - `exact_*`: a via 0.3 square and 0.3 by 0.305.
+/// - `hole_*`: rings with holes exactly on the bounds and five nanometres off;
+///   `contained_*`: two squares in a container summing to exactly 2 µm² and over;
+///   `chip_*`: two rectangles summing to exactly 10 µm² and over.
+/// - `net_*`: a 0.3 µm² region of Inner tied to Outer through a Via, the same left
+///   loose, and a 1 µm² one tied.
+#[rstest]
+#[case("region_exact", "A.min", 0)]
+#[case("region_under", "A.min", 1)]
+#[case("region_max_exact", "A.max", 0)]
+#[case("region_max_over", "A.max", 1)]
+#[case("tri_exact", "A.min", 0)]
+#[case("tri_half", "A.min", 1)]
+#[case("exact_ok", "A.exact", 0)]
+#[case("exact_off", "A.exact", 1)]
+#[case("hole_exact", "A.hole", 0)]
+#[case("hole_under", "A.hole", 1)]
+#[case("hole_max_exact", "A.hole_max", 0)]
+#[case("hole_max_over", "A.hole_max", 1)]
+#[case("contained_exact", "A.cont", 0)]
+#[case("contained_over", "A.cont", 1)]
+#[case("chip_exact", "A.chip", 0)]
+#[case("chip_over", "A.chip", 1)]
+#[case("net_small_tied", "A.net", 1)]
+#[case("net_small_loose", "A.net", 0)]
+#[case("net_big_tied", "A.net", 0)]
+fn area_rules_meet_the_bound_exactly_on_every_scope(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("area", pattern, rule), expected, "{pattern}: {rule}");
+}
