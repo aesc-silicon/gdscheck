@@ -66,10 +66,10 @@ grows memory unexpectedly:
   layer's halo for every rule sharing it, not just the one that needs it.
 * A check that globally merges a layer rather than using the tiled cache (documented on
   its own reference page when that's the case, e.g. :doc:`checks/ring_covers_boundary`)
-  is only safe for genuinely sparse layers (vias, contacts, isolated markers) — if such a check is
-  pointed at a dense, chip-wide layer on a large design, expect it to scale poorly; that's
-  a check-implementation limitation worth reporting, not something to work around by
-  itself.
+  is only safe for genuinely sparse layers (vias, contacts, isolated markers) — if such a
+  check is pointed at a dense, chip-wide layer on a large design, expect it to scale
+  poorly; that's a check-implementation limitation worth reporting, not something to
+  work around by itself.
 
 ``--threads N`` caps the ``rayon`` pool (default: all logical cores) — useful to leave
 headroom on a shared machine, or to get single-threaded, deterministic timing for

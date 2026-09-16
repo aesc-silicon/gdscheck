@@ -36,7 +36,6 @@ use crate::merge::{Core, MergedCache, MergedPoly, VirtualOp, merge_boundaries};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicI16, Ordering};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Op {
@@ -77,13 +76,29 @@ pub fn whole_layout(rule: &RuleDefinition) -> bool {
     rule.check == "forbidden" && rule.word("op") == Some("beyond")
 }
 
-/// Keys for the derived layers a rule registers, counted up from the bottom of the
-/// range.  A deck's own derived layers live from 30000 up and the labelled chain's from
-/// -15536, so a run would need seventeen thousand residual rules to meet either.
-static NEXT_KEY: AtomicI16 = AtomicI16::new(i16::MIN);
+/// The derived layers one rule registers, keyed from the bottom of the range: a deck's
+/// own derived layers live from 30000 up and the labelled chain's from -15536, and a
+/// rule takes a handful.  Rules run one after another and each evicts its keys at the
+/// end, so the next rule starts over at the bottom.
+struct Scratch {
+    next: i16,
+    keys: Vec<(i16, i16)>,
+}
 
-fn scratch_key() -> (i16, i16) {
-    (NEXT_KEY.fetch_add(1, Ordering::Relaxed), 0)
+impl Scratch {
+    fn new() -> Self {
+        Scratch {
+            next: i16::MIN,
+            keys: Vec::new(),
+        }
+    }
+
+    fn key(&mut self) -> (i16, i16) {
+        let k = (self.next, 0);
+        self.next += 1;
+        self.keys.push(k);
+        k
+    }
 }
 
 /// A text layer and the label pattern on it.
@@ -115,26 +130,25 @@ fn exempt(
     merged: &mut MergedCache,
     base: (i16, i16),
     exemption: &Option<Exemption>,
-    scratch: &mut Vec<(i16, i16)>,
+    scratch: &mut Scratch,
 ) -> (i16, i16) {
     let Some((text_layer, pattern)) = exemption else {
         return base;
     };
-    let tagged = scratch_key();
+    let tagged = scratch.key();
     merged.register_virtual(
         tagged,
         VirtualOp::WithText,
         vec![base, *text_layer],
         Some(pattern.clone()),
     );
-    let kept = scratch_key();
+    let kept = scratch.key();
     merged.register_virtual(
         kept,
         VirtualOp::NotInteracting(None, None),
         vec![base, tagged],
         None,
     );
-    scratch.extend([tagged, kept]);
     kept
 }
 
@@ -223,7 +237,7 @@ pub fn run(
             .collect::<Vec<_>>()
             .join(sep)
     };
-    let mut scratch: Vec<(i16, i16)> = Vec::new();
+    let mut scratch = Scratch::new();
     let mut out = Vec::new();
 
     if op == Op::Bare {
@@ -260,13 +274,12 @@ pub fn run(
         let target = key(0);
         let rest: Vec<(i16, i16)> = (1..rule.layers.len()).map(key).collect();
         // The selections read one partner: the others joined, when there are several.
-        let mut partner = |scratch: &mut Vec<(i16, i16)>| -> (i16, i16) {
+        let mut partner = |scratch: &mut Scratch| -> (i16, i16) {
             if rest.len() == 1 {
                 return rest[0];
             }
-            let u = scratch_key();
+            let u = scratch.key();
             merged.register_virtual(u, VirtualOp::Union, rest.clone(), None);
-            scratch.push(u);
             u
         };
         let (vop, sources, label, descr) = match op {
@@ -311,14 +324,13 @@ pub fn run(
             Op::Bare | Op::Beyond => unreachable!(),
         };
         println!("[{}] Checking forbidden: {descr}", rule.id);
-        let k = scratch_key();
+        let k = scratch.key();
         merged.register_virtual(k, vop, sources, None);
-        scratch.push(k);
         let k = exempt(merged, k, &exemption, &mut scratch);
         out = report(rule, layout, dbu_to_um, merged, k, label, &descr);
     }
     // The derived layers were this rule's; the cache has no second reader for them.
-    for k in scratch {
+    for k in scratch.keys {
         merged.evict(k.0, k.1);
     }
     out
