@@ -4,8 +4,8 @@
 
 # The residual family: Diode forbidden as it is, Outer's edges forbidden, the part of
 # Inner that Outer or Diode leaves uncovered and the whole polygon, Inner over Outer,
-# Inner apart from and touching Via or Diode, anything beyond an Outer frame, and
-# Diode unless labelled `keep`.
+# Inner apart from and touching Via or Diode, Inner without a 2x2 array of Via, anything
+# beyond an Outer frame, and Diode unless labelled `keep`.
 rules:
   - id: R.bare
     check: forbidden
@@ -46,6 +46,14 @@ rules:
     value: 0.0
     params:
       op: touching
+  - id: R.array
+    check: forbidden
+    layers: [Inner, Via]
+    value: 1.0
+    params:
+      op: apart
+      rows: 2
+      cols: 2
   - id: R.beyond
     check: forbidden
     layers: [Outer]

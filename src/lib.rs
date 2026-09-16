@@ -506,7 +506,6 @@ const DIST_CHECKS: &[&str] = &[
     "min_enclosure",
     "max_enclosure",
     "min_overlap",
-    "min_via_array",
     "wide_uncovered",
     // A polygon's own extent: the copy in its tile has to be whole up to the value, or a
     // long shape cut at the tile line is read as several short ones.  MDN.13a's 50 µm
