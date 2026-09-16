@@ -8,6 +8,7 @@ pub mod coverage;
 pub mod density;
 pub mod edge_distance;
 pub mod edge_length;
+pub mod enclosure;
 pub mod extent;
 pub mod forbidden;
 pub mod forbidden_overlap;
@@ -16,14 +17,10 @@ pub mod gate_connected_min_area;
 pub mod helper;
 pub mod inside_boundary;
 pub mod max_contained_area;
-pub mod max_enclosure;
 pub mod max_nets_under;
 pub mod max_total_area;
 pub mod min_array_space;
 pub mod min_enclosed_area;
-pub mod min_enclosure;
-pub mod min_endcap_enclosure;
-pub mod min_extension;
 pub mod min_overlap;
 pub mod min_via_array;
 pub mod must_interact;
@@ -108,10 +105,22 @@ pub fn run_rule(
         "min_region_density" => density::region::run(rule, layout, dbu_to_um, merged),
         "wide_uncovered" => wide_uncovered::run(rule, layout, dbu_to_um, merged),
         "no_ring" => no_ring::run(rule, layout, dbu_to_um),
-        "min_enclosure" => min_enclosure::run(rule, layout, dbu_to_um, merged),
-        "max_enclosure" => max_enclosure::run(rule, layout, dbu_to_um, merged),
-        "min_endcap_enclosure" => min_endcap_enclosure::run(rule, layout, dbu_to_um, merged),
-        "min_extension" => min_extension::run(rule, layout, dbu_to_um, merged),
+        "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
+        "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
+        "min_endcap_enclosure" => enclosure::run_sides(
+            enclosure::Kind::Min,
+            enclosure::Sides::Any,
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+        ),
+        "min_extension" => {
+            enclosure::extension::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged)
+        }
+        "max_extension" => {
+            enclosure::extension::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged)
+        }
         "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
         "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),
