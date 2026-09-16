@@ -22,11 +22,11 @@ use std::collections::HashSet;
 // Region-to-region spacing engine.
 //
 // Spacing is measured between **merged** regions on the cached tiles; a pair within
-// `value` is reported only if a caller-supplied `gate(a, b)` holds.  `min_space`
-// passes `|_, _| true`; conditional rules (e.g. `min_space_prl` / TM2.bR) supply a
-// width / parallel-run predicate.  Each violation is kept only if its gap midpoint
-// lies in the tile core, so a pair seen from several overlapping tiles is reported
-// once.
+// `value` is reported only if a caller-supplied `gate(a, b)` holds.  A plain
+// `min_space` passes `|_, _| true`; its gates (`angle`, `net`, `width`, `length` - see
+// [`super::space`]) supply a predicate.  Each violation is kept only if its gap
+// midpoint lies in the tile core, so a pair seen from several overlapping tiles is
+// reported once.
 // ===========================================================================
 
 /// Which pairs a spacing rule is about, in which direction, and in which metric.
