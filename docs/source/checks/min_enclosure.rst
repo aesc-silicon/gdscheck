@@ -22,6 +22,14 @@ among those pairs is the shape's measured enclosure. A shape not contained by an
 enclosing region is itself a violation ("not enclosed at all") unless ``interacting_only``
 says otherwise.
 
+The measurement is exact on the grid: the coordinates are integers, so a margin between
+parallel walls is a ratio of two integers and one read at a chamfer under the
+``euclidian`` metric is compared squared as one, against ``value`` rounded up to whole
+DBU once. Whether a vertex is inside, on or off the enclosing contour is a matter of
+signs, never of a tolerance. The one reading that is not exact is the per-side margin
+``sides: adjacent`` takes off a wall at another angle than the side, found by
+interpolation.
+
 An inner edge that lies exactly on the enclosing contour — a *coincident* segment, offset
 ~0 — is geometrically ambiguous: it's either a genuinely flush 0-margin violation, or an
 artifact of the enclosed layer having been clipped to the enclosing one by an
