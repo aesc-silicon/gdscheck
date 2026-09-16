@@ -12,6 +12,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
 
    antenna_ratio
    coverage
+   exact_area
    exact_dim
    exact_edge_length
    exact_gate_length
@@ -20,7 +21,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    forbidden
    forbidden_overlap
    forbidden_unless_labeled
-   gate_connected_min_area
    inside_boundary
    max_area
    max_density
@@ -32,7 +32,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    max_length
    max_vertices
    max_space
-   max_total_area
    max_width
    max_windowed_density
    min_area
@@ -40,7 +39,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_density
    min_dim
    min_edge_length
-   min_enclosed_area
    min_enclosure
    min_length
    min_notch

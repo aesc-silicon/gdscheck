@@ -148,7 +148,7 @@ The connectivity graph
 -------------------------
 
 ``connectivity:`` declares how net extraction bridges layers, for the net-aware checks
-(:doc:`checks/antenna_ratio`, :doc:`checks/gate_connected_min_area`) — see
+(:doc:`checks/antenna_ratio`, :doc:`checks/min_area` with ``net: connected``) — see
 :doc:`architecture` for how extraction works. Each entry is a *connector* layer (a via or
 contact) and the conductor layers it joins where it overlaps them:
 

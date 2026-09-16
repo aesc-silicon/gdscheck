@@ -34,9 +34,11 @@ rules:
     layers: [MIM]
     value: 5625.00
   - id: MIM.gR
-    check: max_total_area
+    check: max_area
     layers: [MIM]
     value: 174800.00
+    params:
+      scope: chip
   - id: MIM.h
     check: must_interact
     layers: [MIM, TopVia1, Vmim]

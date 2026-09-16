@@ -57,12 +57,15 @@ rules:
       diode_net_layer: 1
       require_diode: 1
   - id: Ant.g
-    check: gate_connected_min_area
-    layers: [GatPolyOverActiv, AntDantenna, AntDpantenna]
+    check: min_area
+    layers: [AntDantenna, AntDpantenna]
     value: 0.16
     params:
-      gate_net_layer: 5
-      marker_net_layer: 1
+      net: connected
+    layer_params:
+      connected: GatPolyOverActiv
+      connected_net_of: GatPoly
+      net_of: Activ
   - id: Ant.h
     check: forbidden_unless_labeled
     layers: [Activ, GatPoly, pSD, nSD.block, Recog.diode, Recog.esd, NWell, PWell.block, nBuLay, TEXT]

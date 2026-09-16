@@ -98,9 +98,11 @@ rules:
     layers: [pplus]
     value: 0.35
   - id: PP.8b
-    check: min_enclosed_area
+    check: min_area
     layers: [pplus]
     value: 0.35
+    params:
+      scope: hole
   - id: PP.9
     check: min_enclosure
     layers: [pplus, poly_sab_no_res]

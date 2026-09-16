@@ -26,9 +26,11 @@ rules:
     layers: [Activ]
     value: 0.122
   - id: Act.e
-    check: min_enclosed_area
+    check: min_area
     layers: [Activ]
     value: 0.15
+    params:
+      scope: hole
 
   - id: AFil.a
     check: max_width
