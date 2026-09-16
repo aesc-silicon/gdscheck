@@ -510,6 +510,7 @@ const DIST_CHECKS: &[&str] = &[
     "max_enclosure",
     "min_endcap_enclosure",
     "min_extension",
+    "max_extension",
     "min_overlap",
     "min_via_array",
     "wide_uncovered",
