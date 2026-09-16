@@ -15,7 +15,7 @@
 //! - `overlap`: the intersection of all layers (Cnt.j, "Cont on GatPoly over Activ").
 //! - `apart`: regions of `layers[0]` touching none of the other layers (MIM.h, every
 //!   MIM cap needs its via).  With `rows` and `cols`, regions holding no array of the
-//!   partner that large (MT30.8, a 2×2 of vias on thick top metal), see [`array`].
+//!   partner that large (MT30.8, a 2×2 of vias on thick top metal), see [`mod@array`].
 //! - `touching`: regions of `layers[0]` touching any of the other layers.
 //! - `beyond`: every drawn shape past the outer edge of `layers[0]`, over the whole
 //!   layout, less the rule's `ignore` list (Seal.l, nothing past the edge seal).

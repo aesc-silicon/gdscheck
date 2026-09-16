@@ -20,7 +20,7 @@
 //! not merely touch it.  Not a separate engine, only the other direction through one.
 //!
 //! A rule with `rows` and `cols` is about the vias packed into an array, which want a
-//! larger space than a lone pair; [`array`] finds the arrays and reads their gaps.
+//! larger space than a lone pair; [`mod@array`] finds the arrays and reads their gaps.
 //!
 //! A gap between two walls of *one* region is a notch, read by [`notch`] with the width
 //! scan turned the other way round; it takes `angle: bent` and `length` the same way.
