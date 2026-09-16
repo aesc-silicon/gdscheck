@@ -333,7 +333,7 @@ pub fn run_gate(
         eprintln!("[{}] {name} needs a region and a reference layer", rule.id);
         return vec![];
     };
-    let on = match super::mode(rule, name, "walls") {
+    let on = match crate::checks::params::mode(rule, name, "walls") {
         Ok(None) | Ok(Some("shared")) => true,
         Ok(Some("unshared")) => false,
         Ok(Some(other)) => {
@@ -343,12 +343,12 @@ pub fn run_gate(
             );
             return vec![];
         }
-        Err(super::NotAWord) => return vec![],
+        Err(crate::checks::params::NotAWord) => return vec![],
     };
-    let Some(bent_only) = super::bent_only(rule, name) else {
+    let Some(bent_only) = crate::checks::params::bent_only(rule, name) else {
         return vec![];
     };
-    let min_run = super::min_run(rule, dbu_to_um);
+    let min_run = crate::checks::params::min_run(rule, dbu_to_um);
     let outside = match (rule.num("outside"), rule.num("outside_dt")) {
         (Some(l), Some(d)) => Some((l as i16, d as i16)),
         _ => None,

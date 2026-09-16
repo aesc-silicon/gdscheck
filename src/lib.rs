@@ -156,6 +156,12 @@ pub const NET_AWARE_CHECKS: &[&str] = &[
     "min_space_same_net",
 ];
 
+/// Whether a rule reads the nets: a net-aware check, or a spacing rule gated on `net`.
+pub fn net_aware(rule: &pdk::RuleDefinition) -> bool {
+    NET_AWARE_CHECKS.contains(&rule.check.as_str())
+        || (rule.check == "min_space" && rule.params.contains_key("net"))
+}
+
 /// Parse a lazy virtual layer's `op` string to a [`merge::VirtualOp`], converting its
 /// distances (µm) to DBU where the op takes them.  An unsupported op or a missing radius
 /// is an error: the layer would otherwise silently register as empty and every rule
@@ -1028,11 +1034,7 @@ fn run_drc_impl(
         }
         // Net extraction (if it will run) reads the connect-graph layers, which the
         // rules themselves may not name — pull them in so they are flattened too.
-        if connectivity
-            && rules
-                .iter()
-                .any(|r| NET_AWARE_CHECKS.contains(&r.check.as_str()))
-        {
+        if connectivity && rules.iter().any(net_aware) {
             for spec in &pdk.connectivity {
                 n.insert(spec.connector);
                 n.extend(spec.layers.iter().copied());
@@ -1243,12 +1245,7 @@ fn run_drc_impl(
 
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
-    let net = if connectivity
-        && rules
-            .iter()
-            .any(|r| NET_AWARE_CHECKS.contains(&r.check.as_str()))
-        && !pdk.connectivity.is_empty()
-    {
+    let net = if connectivity && rules.iter().any(net_aware) && !pdk.connectivity.is_empty() {
         use std::io::Write;
         print!("Connecting nets ... ");
         std::io::stdout().flush().ok();
@@ -1341,7 +1338,7 @@ fn run_drc_impl(
             }
         }
         merged.set_rule_halos(Some((table, closure)));
-        if NET_AWARE_CHECKS.contains(&rule.check.as_str()) && net.is_none() {
+        if net_aware(rule) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
                 rule.id, rule.check

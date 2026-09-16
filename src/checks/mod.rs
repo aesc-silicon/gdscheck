@@ -28,11 +28,6 @@ pub mod min_endcap_enclosure;
 pub mod min_extension;
 pub mod min_notch;
 pub mod min_overlap;
-pub mod min_space;
-pub mod min_space_bent;
-pub mod min_space_different_net;
-pub mod min_space_prl;
-pub mod min_space_same_net;
 pub mod min_via_array;
 pub mod must_interact;
 pub mod no_angle;
@@ -40,7 +35,9 @@ pub mod no_corner;
 pub mod no_ring;
 pub mod nonempty;
 pub mod offgrid;
+pub mod params;
 pub mod ring_covers_boundary;
+pub mod space;
 pub mod wide_uncovered;
 pub mod width;
 
@@ -121,16 +118,13 @@ pub fn run_rule(
         "min_extension" => min_extension::run(rule, layout, dbu_to_um, merged),
         "min_notch" => min_notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
-        "min_space" => min_space::run(rule, layout, dbu_to_um, merged),
-        "min_space_different_net" => {
-            min_space_different_net::run(rule, layout, dbu_to_um, merged, conn)
+        "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),
+        "min_space_different_net" | "min_space_same_net" | "min_space_bent" | "min_space_prl" => {
+            space::run_min_named(&rule.check, rule, layout, dbu_to_um, merged, conn)
         }
-        "min_space_same_net" => min_space_same_net::run(rule, layout, dbu_to_um, merged, conn),
         "max_space" => max_space::run(rule, layout, dbu_to_um, merged),
         "min_via_array" => min_via_array::run(rule, layout, dbu_to_um, merged),
-        "min_space_bent" => min_space_bent::run(rule, layout, dbu_to_um, merged),
         "min_array_space" => min_array_space::run(rule, layout, dbu_to_um, merged),
-        "min_space_prl" => min_space_prl::run(rule, layout, dbu_to_um, merged),
         "min_width" => width::run(width::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_width" => width::run(width::Kind::Max, rule, layout, dbu_to_um, merged),
         "min_windowed_density" => density::run(
