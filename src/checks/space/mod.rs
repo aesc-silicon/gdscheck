@@ -16,11 +16,14 @@
 //!
 //! A gap between two walls of *one* region is a notch, read by [`notch`] with the width
 //! scan turned the other way round; it takes `angle: bent` and `length` the same way.
+//! And the other bound, that nothing of a layer lies *farther* than so much from
+//! another, is [`max`]: a reach rule, read per part, per polygon or per edge.
 //!
 //! Declared on two *edge* layers, a plain rule measures between segments instead - see
 //! [`edge_distance`](super::edge_distance).  Which one runs is the deck's choice of layer,
 //! not a different rule; the gates read regions and have no meaning there.
 
+pub mod max;
 pub mod notch;
 
 use super::params::{NotAWord, bent_only, mode};

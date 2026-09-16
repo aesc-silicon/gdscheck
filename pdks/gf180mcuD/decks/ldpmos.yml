@@ -55,9 +55,11 @@ rules:
     layers: [pcomp_mdn, dnwell_mdp]
     value: 2.5
   - id: MDP.4b
-    check: max_distance
+    check: max_space
     layers: [mdp4b_edges, mdp4b_pcomp]
     value: 15.0
+    params:
+      scope: edge
   - id: MDP.5
     check: nonempty
     layers: [mdp5_viol]

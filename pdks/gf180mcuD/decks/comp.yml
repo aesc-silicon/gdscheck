@@ -168,19 +168,30 @@ rules:
     check: max_space
     layers: [pactive_3p3v, ntap]
     value: 20.0
+    params:
+      scope: polygon
+    layer_params:
+      within: nwell
   - id: DF.13_MV
     check: max_space
     layers: [pactive_56v, ntap]
     value: 15.0
-
+    params:
+      scope: polygon
+    layer_params:
+      within: nwell
   - id: DF.14_LV
     check: max_space
     layers: [nactive_3p3v, ptap]
     value: 20.0
+    params:
+      scope: polygon
   - id: DF.14_MV
     check: max_space
     layers: [nactive_56v, ptap]
     value: 15.0
+    params:
+      scope: polygon
 
   - id: DF.16_LV
     check: min_space

@@ -189,7 +189,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::comp(
     "comp", "comp.gds.gz", "7_5_DF",
-    &[("DF.10", 2), ("DF.11", 76), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45), ("DF.14_LV", 43), ("DF.14_MV", 43), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 6), ("DF.17_MV", 6), ("DF.18", 6), ("DF.19_LV", 6), ("DF.19_MV", 6), ("DF.1a_LV", 105), ("DF.1a_MV", 170), ("DF.1c", 10), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2), ("DF.3a_LV", 29), ("DF.3a_MV", 28), ("DF.3b", 16), ("DF.3c_LV", 7), ("DF.3c_MV", 11), ("DF.4a_LV", 12), ("DF.4a_MV", 6), ("DF.4b_LV", 6), ("DF.4b_MV", 6), ("DF.4c_LV", 8), ("DF.4c_MV", 6), ("DF.4d_LV", 6), ("DF.4d_MV", 6), ("DF.4e_LV", 6), ("DF.4e_MV", 6), ("DF.5_LV", 6), ("DF.5_MV", 6), ("DF.6_LV", 3), ("DF.6_MV", 3), ("DF.7_LV", 6), ("DF.7_MV", 6), ("DF.8_LV", 6), ("DF.8_MV", 6), ("DF.9", 215)]
+    &[("DF.10", 2), ("DF.11", 76), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45), ("DF.14_LV", 41), ("DF.14_MV", 41), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 6), ("DF.17_MV", 6), ("DF.18", 6), ("DF.19_LV", 6), ("DF.19_MV", 6), ("DF.1a_LV", 105), ("DF.1a_MV", 170), ("DF.1c", 10), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2), ("DF.3a_LV", 29), ("DF.3a_MV", 28), ("DF.3b", 16), ("DF.3c_LV", 7), ("DF.3c_MV", 11), ("DF.4a_LV", 12), ("DF.4a_MV", 6), ("DF.4b_LV", 6), ("DF.4b_MV", 6), ("DF.4c_LV", 8), ("DF.4c_MV", 6), ("DF.4d_LV", 6), ("DF.4d_MV", 6), ("DF.4e_LV", 6), ("DF.4e_MV", 6), ("DF.5_LV", 6), ("DF.5_MV", 6), ("DF.6_LV", 3), ("DF.6_MV", 3), ("DF.7_LV", 6), ("DF.7_MV", 6), ("DF.8_LV", 6), ("DF.8_MV", 6), ("DF.9", 215)]
 )]
 #[case::sab(
     "sab", "sab.gds.gz", "7_10_SB",
