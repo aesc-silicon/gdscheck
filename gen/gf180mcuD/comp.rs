@@ -217,10 +217,12 @@ pub fn generate(pdk: &PdkConfig) {
     };
     pair("DF.4b", &df4b, (1.5, 1.5), (0.615, 0.655));
 
-    // DF.4c: how far an N-well holds a P source/drain.
+    // DF.4c: how far an N-well holds a P source/drain.  The tie that answers DF.13 for
+    // it sits in the same well - a tie in a well of its own, however near, is no tie for
+    // this one - so its well abuts this one and the two merge.
     let df4c = |enc: f64, mv: bool| {
         let mut v = vec![rect(c.nwell, o, o, o + 6.0, o + 6.0)];
-        v.extend(ntie(&c, o + 7.0, o));
+        v.extend(ntie(&c, o + 6.0, o));
         v.extend(implanted(&c, false, o + enc, o + 2.0, o + 4.0, o + 4.0));
         scene(v, mv, None)
     };
@@ -234,10 +236,15 @@ pub fn generate(pdk: &PdkConfig) {
     };
     pair("DF.4d", &df4d, (1.5, 1.5), (0.115, 0.155));
 
-    // DF.4e: how far a deep well holds a P source/drain.
+    // DF.4e: how far a deep well holds a P source/drain.  The tie that answers DF.13 is
+    // in a drawn well with the source/drain, inside the deep well: the tap's reach runs
+    // in the drawn well alone, and a tie in a well of its own is no tie for this one.
     let df4e = |enc: f64, mv: bool| {
-        let mut v = vec![rect(c.dnwell, o, o, o + 8.0, o + 8.0)];
-        v.extend(ntie(&c, o + 9.0, o + 1.0));
+        let mut v = vec![
+            rect(c.dnwell, o, o, o + 8.0, o + 8.0),
+            rect(c.nwell, o + 0.3, o + 0.3, o + 7.0, o + 7.0),
+        ];
+        v.extend(implanted(&c, true, o + 5.5, o + 5.5, o + 6.5, o + 6.5));
         v.extend(implanted(&c, false, o + enc, o + 3.0, o + 5.0, o + 5.0));
         scene(v, mv, None)
     };
@@ -270,11 +277,15 @@ pub fn generate(pdk: &PdkConfig) {
     };
     pair("DF.6", &df6, (0.8, 0.8), (0.235, 0.395));
 
-    // DF.7: a P source/drain in the deep well, to the P-well beside it.
+    // DF.7: a P source/drain in the deep well, to the P-well beside it.  A drawn well
+    // over the source/drain and its tie, since the tap's reach for DF.13 runs in the
+    // drawn well alone; it reaches under the P-well's edge so the well holds the
+    // source/drain by DF.4c's margin at the narrow end of the sweep.
     let df7 = |gap: f64, mv: bool| {
         let mut v = vec![
             rect(c.dnwell, o, o, o + 12.0, o + 8.0),
             rect(c.lvpwell, o + 1.0, o + 1.0, o + 5.0, o + 7.0),
+            rect(c.nwell, o + 4.9, o + 1.0, o + 11.8, o + 7.0),
         ];
         v.extend(implanted(
             &c,

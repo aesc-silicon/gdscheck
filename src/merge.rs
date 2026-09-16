@@ -418,23 +418,23 @@ pub fn shrink_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
 /// A reference rectangle grown by the value, in DBU: `(x0, y0, x1, y1)`.
 type GrownRect = (f64, f64, f64, f64);
 
-pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
+fn core_box(tx: i32, ty: i32, tile_dbu: i32) -> (i64, i64, i64, i64) {
     let t = tile_dbu as i64;
-    let core_of = |tx: i32, ty: i32| {
-        (
-            tx as i64 * t,
-            ty as i64 * t,
-            (tx as i64 + 1) * t,
-            (ty as i64 + 1) * t,
-        )
-    };
-    // The reference as grown rectangles, filed under the tile whose core the piece
-    // lies in; every rectangle lies within `value` of that core.
-    let grown: HashMap<(i32, i32), Vec<GrownRect>> = b
-        .par_iter()
+    (
+        tx as i64 * t,
+        ty as i64 * t,
+        (tx as i64 + 1) * t,
+        (ty as i64 + 1) * t,
+    )
+}
+
+/// The reference as grown rectangles, filed under the tile whose core the piece lies
+/// in; every rectangle lies within `value` of that core.
+fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32), Vec<GrownRect>> {
+    b.par_iter()
         .filter_map(|(&(tx, ty), polys)| {
-            let (x0, y0, x1, y1) = core_of(tx, ty);
-            let rects: Vec<(f64, f64, f64, f64)> = clip_to_box(polys.clone(), x0, y0, x1, y1)
+            let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
+            let rects: Vec<GrownRect> = clip_to_box(polys.clone(), x0, y0, x1, y1)
                 .iter()
                 .flat_map(rectangles_of)
                 .map(|(rx0, ry0, rx1, ry1)| {
@@ -448,35 +448,51 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
                 .collect();
             (!rects.is_empty()).then_some(((tx, ty), rects))
         })
-        .collect();
+        .collect()
+}
+
+/// The grown rectangles that can meet a piece with box `(bx0, by0, bx1, by1)`: one
+/// meets the piece only if it meets the box, and it lies within `value` of its own
+/// tile's core, so only the tiles the box grown by `value` touches can hold one.
+fn grown_in_reach<'a>(
+    grown: &'a HashMap<(i32, i32), Vec<GrownRect>>,
+    (bx0, by0, bx1, by1): (f64, f64, f64, f64),
+    value: f64,
+    tile_dbu: i32,
+) -> impl Iterator<Item = &'a GrownRect> + 'a {
+    let t = tile_dbu as f64;
+    let (qx0, qy0, qx1, qy1) = (bx0 - value, by0 - value, bx1 + value, by1 + value);
+    let tiles_x = (qx0 / t).floor() as i32..=(qx1 / t).floor() as i32;
+    let tiles_y = (qy0 / t).floor() as i32..=(qy1 / t).floor() as i32;
+    tiles_y
+        .flat_map(move |qy| tiles_x.clone().map(move |qx| (qx, qy)))
+        .filter_map(move |k| grown.get(&k))
+        .flatten()
+        .filter(move |&&(gx0, gy0, gx1, gy1)| gx1 > bx0 && gx0 < bx1 && gy1 > by0 && gy0 < by1)
+}
+
+fn f64_bbox(p: &MergedPoly) -> (f64, f64, f64, f64) {
+    let (bx0, by0, bx1, by1) = poly_bbox(p);
+    (bx0 as f64, by0 as f64, bx1 as f64, by1 as f64)
+}
+
+pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
+    let grown = grown_reference(b, value, tile_dbu);
 
     // The gaps as core pieces, then stitched: a gap across a tile line is one gap and
     // one marker, not one per tile it has a piece in.
     let gaps: TileMap = a
         .par_iter()
         .filter_map(|(&(tx, ty), polys)| {
-            let (x0, y0, x1, y1) = core_of(tx, ty);
+            let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
             let mut out = Vec::new();
             for p in clip_to_box(polys.clone(), x0, y0, x1, y1) {
-                let (bx0, by0, bx1, by1) = poly_bbox(&p);
-                let (bx0, by0, bx1, by1) = (bx0 as f64, by0 as f64, bx1 as f64, by1 as f64);
-                // A grown rectangle meets the piece only if it meets the piece's box, and
-                // it lies within `value` of its own tile's core, so only the tiles the
-                // box grown by `value` touches can hold one.
-                let (qx0, qy0, qx1, qy1) = (bx0 - value, by0 - value, bx1 + value, by1 + value);
-                let tiles_x = (qx0 / t as f64).floor() as i32..=(qx1 / t as f64).floor() as i32;
-                let tiles_y = (qy0 / t as f64).floor() as i32..=(qy1 / t as f64).floor() as i32;
-                let cover: Vec<Vec<Vec<[f64; 2]>>> = tiles_y
-                    .flat_map(|qy| tiles_x.clone().map(move |qx| (qx, qy)))
-                    .filter_map(|k| grown.get(&k))
-                    .flatten()
-                    .filter(|&&(gx0, gy0, gx1, gy1)| {
-                        gx1 > bx0 && gx0 < bx1 && gy1 > by0 && gy0 < by1
-                    })
-                    .map(|&(gx0, gy0, gx1, gy1)| {
-                        vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]]
-                    })
-                    .collect();
+                let cover: Vec<Vec<Vec<[f64; 2]>>> =
+                    grown_in_reach(&grown, f64_bbox(&p), value, tile_dbu)
+                        .map(|&(gx0, gy0, gx1, gy1)| {
+                            vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]]
+                        })
+                        .collect();
                 let mut remaining = merged_to_shape(&p).simplify_shape(FillRule::NonZero);
                 for batch in cover.chunks(256) {
                     if remaining.is_empty() {
@@ -497,6 +513,152 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
     stitch_regions(&gaps, tile_dbu)
         .into_iter()
         .map(|r| r.marker)
+        .collect()
+}
+
+/// The reference confined to `within`: each tile's core pieces of `b`, grown in steps
+/// of `step` DBU and cut back to `within` after each until they have grown by `value`,
+/// filed under the tile.  The reach goes round a slot in the layer and never across a
+/// gap between two of its regions - the well-tap rules grow the tap inside the well, in
+/// steps under the well's own spacing.  `within` is read over the core and `value`
+/// around it, unioned from the cores of the tiles that box touches, which is the layer
+/// whole as far as a path of that length from the core can go; no halo, and every tap
+/// grows once.  Only the tiles in `near` grow: the ones within `value` of a target,
+/// since a tap nowhere near one decides nothing.
+fn confined_reference(
+    b: &TileMap,
+    within: &TileMap,
+    value: f64,
+    step: f64,
+    tile_dbu: i32,
+    near: &HashSet<(i32, i32)>,
+) -> HashMap<(i32, i32), Vec<MergedPoly>> {
+    let n = (value / step).ceil().max(1.0);
+    let by = value / n;
+    b.par_iter()
+        .filter(|(k, _)| near.contains(k))
+        .filter_map(|(&(tx, ty), polys)| {
+            let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
+            let v = value.ceil() as i64;
+            let wall = assemble_over(within, tile_dbu, (x0 - v, y0 - v, x1 + v, y1 + v));
+            let mut reach = compose_tile(
+                VirtualOp::Intersection,
+                &[&clip_to_box(polys.clone(), x0, y0, x1, y1), &wall],
+            );
+            for _ in 0..n as usize {
+                if reach.is_empty() {
+                    break;
+                }
+                reach = compose_tile(VirtualOp::Intersection, &[&grow_by(&reach, by, 0.0), &wall]);
+            }
+            (!reach.is_empty()).then_some(((tx, ty), reach))
+        })
+        .collect()
+}
+
+/// Where a whole region of `a` lies more than `value` DBU from `b`: the marker of every
+/// region no part of which is within reach.  The polygon-level reading of a proximity
+/// rule - KLayout's `a.not_interacting(b.sized(value))` - where [`max_space_gaps`] is
+/// the part-level one: a region passes as a whole once any part of it is in reach.
+///
+/// The reference is grown the same way, and `a` is stitched into regions; every core
+/// piece of a region is tested against the grown rectangles in reach of its box, and
+/// a rectangle that takes any area of the piece reaches the region.  A copy is exact
+/// within its core and no further, so the piece is cut to the core first.  With a
+/// `within` layer the reach is [`confined_reference`] instead, and a diffusion on the
+/// far leg of a U-shaped well is out of reach across the slot however near it lies.
+pub fn max_space_unreached(
+    a: &TileMap,
+    b: &TileMap,
+    value: f64,
+    tile_dbu: i32,
+    within: Option<(&TileMap, f64)>,
+) -> Vec<(f64, f64)> {
+    let labeled = stitch_labeled(a, tile_dbu);
+    let reached: Vec<std::sync::atomic::AtomicBool> = (0..labeled.regions.len())
+        .map(|_| std::sync::atomic::AtomicBool::new(false))
+        .collect();
+    let t = tile_dbu as f64;
+    let (grown, confined) = match within {
+        None => (Some(grown_reference(b, value, tile_dbu)), None),
+        Some((w, step)) => {
+            let r = (value / t).ceil() as i32;
+            let near: HashSet<(i32, i32)> = labeled
+                .by_tile
+                .keys()
+                .flat_map(|&(tx, ty)| {
+                    (-r..=r).flat_map(move |dx| (-r..=r).map(move |dy| (tx + dx, ty + dy)))
+                })
+                .collect();
+            (
+                None,
+                Some(confined_reference(b, w, value, step, tile_dbu, &near)),
+            )
+        }
+    };
+    labeled.by_tile.par_iter().for_each(|(&(tx, ty), pieces)| {
+        use std::sync::atomic::Ordering::Relaxed;
+        let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
+        for (poly, rid) in pieces {
+            if reached[*rid].load(Relaxed) {
+                continue;
+            }
+            for p in clip_to_box(vec![poly.clone()], x0, y0, x1, y1) {
+                let bb = f64_bbox(&p);
+                let hit = match (&grown, &confined) {
+                    (Some(grown), _) => {
+                        grown_in_reach(grown, bb, value, tile_dbu).any(|&(gx0, gy0, gx1, gy1)| {
+                            clip_to_box(
+                                vec![p.clone()],
+                                gx0 as i64,
+                                gy0 as i64,
+                                gx1 as i64,
+                                gy1 as i64,
+                            )
+                            .iter()
+                            .any(|q| merged_area_dbu(q) > 0.5)
+                        })
+                    }
+                    (None, Some(confined)) => {
+                        // A tile's reach lies within `value` of its core, so only the
+                        // tiles the piece's box grown by `value` touches can hold one.
+                        let (bx0, by0, bx1, by1) = bb;
+                        let tiles_x =
+                            ((bx0 - value) / t).floor() as i32..=((bx1 + value) / t).floor() as i32;
+                        let tiles_y =
+                            ((by0 - value) / t).floor() as i32..=((by1 + value) / t).floor() as i32;
+                        tiles_y
+                            .flat_map(|qy| tiles_x.clone().map(move |qx| (qx, qy)))
+                            .filter_map(|k| confined.get(&k))
+                            .flatten()
+                            .filter(|r| {
+                                let (rx0, ry0, rx1, ry1) = f64_bbox(r);
+                                rx1 > bx0 && rx0 < bx1 && ry1 > by0 && ry0 < by1
+                            })
+                            .any(|r| {
+                                compose_tile(
+                                    VirtualOp::Intersection,
+                                    &[std::slice::from_ref(&p), std::slice::from_ref(r)],
+                                )
+                                .iter()
+                                .any(|q| merged_area_dbu(q) > 0.5)
+                            })
+                    }
+                    (None, None) => unreachable!("one reading or the other"),
+                };
+                if hit {
+                    reached[*rid].store(true, Relaxed);
+                    break;
+                }
+            }
+        }
+    });
+    labeled
+        .regions
+        .iter()
+        .zip(&reached)
+        .filter(|(_, r)| !r.load(std::sync::atomic::Ordering::Relaxed))
+        .map(|(region, _)| region.marker)
         .collect()
 }
 
@@ -4918,6 +5080,32 @@ impl MergedCache {
         self.ensure(layout, a.0, a.1);
         self.ensure(layout, b.0, b.1);
         max_space_gaps(&self.layers[&a], &self.layers[&b], value, self.tile_dbu)
+    }
+
+    /// Regions of `a` no part of which lies within `value` of `b` (see
+    /// [`max_space_unreached`]): the marker of each.  `within` confines the reach to a
+    /// layer, grown in steps of the given DBU.
+    pub fn max_space_unreached(
+        &mut self,
+        layout: &FlatLayout,
+        a: (i16, i16),
+        b: (i16, i16),
+        value: f64,
+        within: Option<((i16, i16), f64)>,
+    ) -> Vec<(f64, f64)> {
+        self.ensure(layout, a.0, a.1);
+        self.ensure(layout, b.0, b.1);
+        if let Some((w, _)) = within {
+            self.ensure(layout, w.0, w.1);
+        }
+        let within = within.map(|(w, step)| (&self.layers[&w], step));
+        max_space_unreached(
+            &self.layers[&a],
+            &self.layers[&b],
+            value,
+            self.tile_dbu,
+            within,
+        )
     }
 
     pub fn tile_dbu(&self) -> i32 {

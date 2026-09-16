@@ -495,15 +495,14 @@ fn propagate_virtual_halos(
 /// luck to ride on, which is how the omission showed: three foundry violations at
 /// 1.395 µm gone, under a 1 µm halo.
 ///
-/// `max_space` is not here: it reads both layers as core pieces and finds the
-/// reference within its value of a core in the neighbouring tiles itself (see
-/// `merge::max_space_gaps`).  Listed, its 20 µm was the halo of Activ on an ORFS
-/// layout, and the merge died in it.
+/// `max_space` is not here, save for its `scope: edge` (see [`dist_check`]): it reads
+/// both layers as core pieces and finds the reference within its value of a core in the
+/// neighbouring tiles itself (see `merge::max_space_gaps`).  Listed, its 20 µm was the
+/// halo of Activ on an ORFS layout, and the merge died in it.
 const DIST_CHECKS: &[&str] = &[
     "min_width",
     "max_width",
     "exact_width",
-    "max_distance",
     "min_space",
     "min_array_space",
     "min_notch",
@@ -526,6 +525,14 @@ const DIST_CHECKS: &[&str] = &[
     "exact_gate_length",
     "min_edge_length",
 ];
+
+/// Whether a rule measures a distance and so wants its value as the halo of the layers it
+/// reaches: the checks above, and a `max_space` read per edge, whose edges are not
+/// clipped to a tile and whose partner it gathers by the value around each.
+fn dist_check(rule: &pdk::RuleDefinition) -> bool {
+    DIST_CHECKS.contains(&rule.check.as_str())
+        || (rule.check == "max_space" && rule.word("scope") == Some("edge"))
+}
 
 /// The checks that read a polygon's own shape - its holes, its corners, its area - and
 /// so need the tile's copy whole a little past the core.
@@ -579,7 +586,7 @@ fn halo_table(
     // core, and seeding it anyway made a layer copied out that never was, promoting a
     // neighbour's slack into a second Rsil.c marker.
     for rule in rules.iter() {
-        let dist = DIST_CHECKS.contains(&rule.check.as_str());
+        let dist = dist_check(rule);
         if !dist && !SHAPE_CHECKS.contains(&rule.check.as_str()) {
             continue;
         }
@@ -787,14 +794,14 @@ fn clippable_layers(
     for (spec, _) in tiled_virtuals {
         sources_of.insert(spec.key, &spec.sources);
     }
-    let reads_polygons = |check: &str| {
-        DIST_CHECKS.contains(&check)
-            || SHAPE_CHECKS.contains(&check)
-            || matches!(check, "no_angle" | "offgrid")
+    let reads_polygons = |r: &pdk::RuleDefinition| {
+        dist_check(r)
+            || SHAPE_CHECKS.contains(&r.check.as_str())
+            || matches!(r.check.as_str(), "no_angle" | "offgrid")
     };
     let mut stack: Vec<(i16, i16)> = rules
         .iter()
-        .filter(|r| reads_polygons(&r.check))
+        .filter(|r| reads_polygons(r))
         .flat_map(|r| {
             r.layers
                 .iter()

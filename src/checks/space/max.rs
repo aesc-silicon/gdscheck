@@ -2,33 +2,125 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Maximum distance: every edge of one layer must have the other layer somewhere within
-//! `value`, and an edge that has none is the violation.
+//! `max_space`: everything of one layer within reach of another.  A latch-up rule says
+//! it of every part of the diffusion - "every source/drain within 20 µm of a well
+//! tie" - and a well-tap rule of every polygon - "a diffusion is fine once any part of
+//! it has a tap within 15 µm" - and a guard-ring rule of every edge.  `scope` says
+//! which: `part` (the default), `polygon` or `edge`.
 //!
-//! This is the "reach" half of the distance rules, and it reads backwards from the rest
-//! of the engine.  A spacing rule fails on the *closest* pair and is satisfied by there
-//! being nothing nearby; this one fails on the *absence* of a neighbour, so an empty
-//! partner layer makes every edge a violation rather than none.  GF180 states three of
-//! them - "Maximum distance of the nearest edge of the DNWELL from the PCOMP guard ring
-//! is 15 µm" - each guarding against a well tap too far away to hold the well's
-//! potential.
+//! This is the "reach" half of the distance rules, and it reads backwards from the
+//! rest of the engine.  A spacing rule fails on the *closest* pair and is satisfied by
+//! there being nothing nearby; this one fails on the *absence* of a neighbour, so an
+//! empty partner layer makes everything a violation rather than nothing.
 //!
-//! KLayout has no such primitive and builds it the other way round: measure where the
-//! separation *is* within the limit, turn that into polygons, and keep the edges that do
-//! not touch it.  Stating it directly costs one pass and reports the offending edge
-//! rather than a complemented region.
-//!
-//! Reach is what makes the tiling interesting.  A rule with a 15 µm bound needs the
-//! partner from 15 µm around *the whole edge*, and an edge is not clipped to a tile, so a
-//! halo cannot bound it.  The partner is therefore gathered by explicit tile lookup over
-//! the edge's own bounding box grown by the limit - the tiles are a hash map, so this
-//! costs a handful of probes and never materialises more of the layer than the edge can
-//! actually see.
+//! `part` and `polygon` run on the tiled merge as core pieces against the reference
+//! grown by the value (see [`MergedCache::max_space_gaps`] and
+//! [`MergedCache::max_space_unreached`]), so a dense reference - the contacts on ties -
+//! is never globally unioned and neither layer pays the value as a halo.  A `within`
+//! layer confines the `polygon` reach to it, the way the well-tap rules grow the tap
+//! inside the well.  `edge`
+//! gathers the partner by tile lookup over each edge's own box grown by the limit,
+//! since an edge is not clipped to a tile and a halo cannot bound it.
 
+use super::super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
 use crate::merge::{Edge, MergedCache, MergedPoly};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
+
+/// What of `layers[0]` has to be in reach.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Scope {
+    /// Every part: what lies beyond reach is the violation, wherever on a shape it is.
+    Part,
+    /// Every polygon: one no part of which is in reach.
+    Polygon,
+    /// Every edge of an edge layer.
+    Edge,
+}
+
+pub fn run(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    if rule.layers.len() < 2 {
+        eprintln!(
+            "[{}] max_space needs two layers (target, reference)",
+            rule.id
+        );
+        return vec![];
+    }
+    let scope = match mode(rule, "max_space", "scope") {
+        Ok(None) | Ok(Some("part")) => Scope::Part,
+        Ok(Some("polygon")) => Scope::Polygon,
+        Ok(Some("edge")) => Scope::Edge,
+        Ok(Some(other)) => {
+            eprintln!(
+                "[{}] max_space: scope can only be `part`, `polygon` or `edge`, not `{other}`",
+                rule.id
+            );
+            return vec![];
+        }
+        Err(NotAWord) => return vec![],
+    };
+    if scope == Scope::Edge {
+        return run_edges(rule, layout, dbu_to_um, merged);
+    }
+    let target = &rule.layers[0];
+    let reference = &rule.layers[1];
+    let what = match scope {
+        Scope::Part => "every part of",
+        _ => "every polygon of",
+    };
+    println!(
+        "[{}] Checking max_space <= {:.2} µm from {what} {} to {}",
+        rule.id, rule.value, target.name, reference.name
+    );
+    let (a, b) = (
+        (target.gds_layer as i16, target.gds_datatype as i16),
+        (reference.gds_layer as i16, reference.gds_datatype as i16),
+    );
+    let value_dbu = rule.value / dbu_to_um;
+    // `within` (a layer param) confines the reach to a layer, grown in half-micron
+    // steps - under any well's own spacing, so the reach never crosses to another well.
+    let within = rule.num("within").map(|l| {
+        let dt = rule.num("within_dt").unwrap_or(0.0);
+        ((l as i16, dt as i16), 0.5 / dbu_to_um)
+    });
+    if within.is_some() && scope == Scope::Part {
+        eprintln!(
+            "[{}] max_space: `within` confines the reach per polygon - use `scope: polygon`",
+            rule.id
+        );
+        return vec![];
+    }
+    let markers = match scope {
+        Scope::Part => merged.max_space_gaps(layout, a, b, value_dbu),
+        _ => merged.max_space_unreached(layout, a, b, value_dbu, within),
+    };
+    markers
+        .into_iter()
+        .map(|(cx, cy)| {
+            let (x, y) = (cx * dbu_to_um, cy * dbu_to_um);
+            let of = match scope {
+                Scope::Part => "",
+                _ => " as a whole",
+            };
+            Violation::point(
+                &rule.id,
+                "Maximum space violation",
+                format!(
+                    "{}{of} more than {:.2} µm from {} at ({:.4}, {:.4}) µm",
+                    target.name, rule.value, reference.name, x, y
+                ),
+                x,
+                y,
+            )
+        })
+        .collect()
+}
 
 /// Squared distance from point `p` to segment `a → b`.
 fn point_seg_d2(px: f64, py: f64, ax: f64, ay: f64, bx: f64, by: f64) -> f64 {
@@ -93,21 +185,21 @@ fn seg_poly_dist(e: (f64, f64, f64, f64), m: &MergedPoly, best_so_far: f64) -> f
     best
 }
 
-pub fn run(
+/// `scope: edge`: every edge of `layers[0]`, an edge layer, has `layers[1]` within
+/// `value`, and an edge that has none is the violation.
+fn run_edges(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
     merged: &mut MergedCache,
 ) -> Vec<Violation> {
-    let (Some(a), Some(b)) = (rule.layers.first(), rule.layers.get(1)) else {
-        eprintln!("[{}] max_distance needs two layers", rule.id);
-        return vec![];
-    };
+    let (a, b) = (&rule.layers[0], &rule.layers[1]);
     let akey = (a.gds_layer as i16, a.gds_datatype as i16);
     let bkey = (b.gds_layer as i16, b.gds_datatype as i16);
     if !merged.is_edge_layer(akey) {
         eprintln!(
-            "[{}] max_distance measures from an edge layer; '{}' is a polygon layer",
+            "[{}] max_space with `scope: edge` measures from an edge layer; '{}' is a \
+             polygon layer",
             rule.id, a.name
         );
         return vec![];
