@@ -4,7 +4,7 @@
 
 //! Forbidden corners: vertices where the boundary turns by a given angle.
 //!
-//! The companion to [`no_angle`](super::no_angle), and not a substitute for it — the two
+//! The companion to [`no_angle`](super::angle), and not a substitute for it — the two
 //! ask different questions. `no_angle` looks at one edge and asks whether its *direction*
 //! is allowed; this looks at a vertex and asks whether the *turn between two edges* is.
 //! A right-angle bend is built from a 0° edge and a 90° edge, both perfectly legal
@@ -16,9 +16,15 @@
 //!
 //! `value` is the forbidden turn in degrees, matched on its absolute size so that a
 //! convex and a concave bend of the same sharpness both count (the reference unions
-//! `corners(90)` with `corners(-90)`). `layers[1]`, if given, confines the rule to
-//! corners lying inside that layer. `layer_params.outside_layer`, if given, exempts
-//! corners inside that one.
+//! `corners(90)` with `corners(-90)`), within `tolerance`.  With `min` and `max` the
+//! rule forbids a range of turns instead - "no corner sharper than a right angle" is
+//! `min: 90.005` and `max: 180` - and `value` is not read.  `layers[1]`, if given,
+//! confines the rule to corners lying inside that layer. `layer_params.outside_layer`,
+//! if given, exempts corners inside that one.
+//!
+//! A right angle is exact: the dot product of two integer edges is zero or it is not.
+//! Any other turn is a float angle against a float bound, and a tolerance is what keeps
+//! that honest.
 //!
 //! Corners are taken from the *merged* layer, so a bend that only exists because two
 //! drawn shapes were butted together counts, and one that two shapes merge away does not.
@@ -71,6 +77,11 @@ pub fn run(
     };
     let target = rule.value.abs();
     let tol = rule.num("tolerance").unwrap_or(1.0);
+    // A range of turns instead of one: both ends, inclusive.
+    let range = match (rule.num("min"), rule.num("max")) {
+        (None, None) => None,
+        (lo, hi) => Some((lo.unwrap_or(0.0), hi.unwrap_or(180.0))),
+    };
 
     let (gl, gd) = key(layer);
     merged.ensure(layout, gl, gd);
@@ -89,10 +100,13 @@ pub fn run(
         .inspect(|k| merged.ensure(layout, k.0, k.1));
 
     println!(
-        "[{}] Checking no_corner: {} corners at {:.1}°{}",
+        "[{}] Checking no_corner: {} corners {}{}",
         rule.id,
         layer.name,
-        target,
+        match range {
+            Some((lo, hi)) => format!("from {lo:.1}° to {hi:.1}°"),
+            None => format!("at {target:.1}°"),
+        },
         match rule.layers.get(1) {
             Some(l) => format!(" inside {}", l.name),
             None => String::new(),
@@ -134,7 +148,11 @@ pub fn run(
                         .atan2(ix * ox + iy * oy)
                         .to_degrees()
                         .abs();
-                    if (turn - target).abs() > tol {
+                    let forbidden = match range {
+                        Some((lo, hi)) => turn >= lo && turn <= hi,
+                        None => (turn - target).abs() <= tol,
+                    };
+                    if !forbidden {
                         continue;
                     }
                     let (cx, cy) = (c.x as f64, c.y as f64);

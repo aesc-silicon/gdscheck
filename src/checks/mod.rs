@@ -21,16 +21,10 @@ pub mod min_array_space;
 pub mod min_enclosed_area;
 pub mod min_via_array;
 pub mod must_interact;
-pub mod no_angle;
-pub mod no_corner;
-pub mod no_ring;
 pub mod nonempty;
-pub mod offgrid;
 pub mod params;
-pub mod ring_covers_boundary;
 pub mod shape;
 pub mod space;
-pub mod wide_uncovered;
 pub mod width;
 
 use crate::layout::FlatLayout;
@@ -121,7 +115,7 @@ pub fn run_rule(
             merged,
         ),
         "inside_boundary" => inside_boundary::run(rule, layout, dbu_to_um),
-        "ring_covers_boundary" => ring_covers_boundary::run(rule, layout, dbu_to_um),
+        "ring_covers_boundary" => shape::ring_covers_boundary::run(rule, layout, dbu_to_um),
         "min_density" => density::run(
             density::Kind::Min,
             density::Scope::Chip,
@@ -146,14 +140,14 @@ pub fn run_rule(
         "max_contained_area" => max_contained_area::run(rule, layout, dbu_to_um, merged),
         "max_nets_under" => max_nets_under::run(rule, layout, dbu_to_um, merged, conn),
         "max_total_area" => max_total_area::run(rule, layout, dbu_to_um, merged),
-        "no_angle" => no_angle::run(rule, layout, dbu_to_um, merged),
-        "no_corner" => no_corner::run(rule, layout, dbu_to_um, merged),
+        "no_angle" => shape::angle::run(rule, layout, dbu_to_um, merged),
+        "no_corner" => shape::corner::run(rule, layout, dbu_to_um, merged),
         "min_gate_length" => width::run_gate(width::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_gate_length" => width::run_gate(width::Kind::Max, rule, layout, dbu_to_um, merged),
         "exact_gate_length" => width::run_gate(width::Kind::Exact, rule, layout, dbu_to_um, merged),
         "min_region_density" => density::region::run(rule, layout, dbu_to_um, merged),
-        "wide_uncovered" => wide_uncovered::run(rule, layout, dbu_to_um, merged),
-        "no_ring" => no_ring::run(rule, layout, dbu_to_um),
+        "wide_uncovered" => shape::wide_uncovered::run(rule, layout, dbu_to_um, merged),
+        "no_ring" => shape::ring::run(rule, layout, dbu_to_um),
         "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
         "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
@@ -180,7 +174,7 @@ pub fn run_rule(
             dbu_to_um,
             merged,
         ),
-        "offgrid" => offgrid::run(rule, layout, dbu_to_um, merged),
+        "offgrid" => shape::offgrid::run(rule, layout, dbu_to_um, merged),
         other => {
             eprintln!("[{}] Unknown check function: '{}'", rule.id, other);
             vec![]

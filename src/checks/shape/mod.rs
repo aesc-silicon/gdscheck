@@ -9,8 +9,14 @@
 //! The bounded readings - an extent, an edge length - come in three kinds, at least, at
 //! most and exactly, on one driver each, the way the width family does.
 
+pub mod angle;
+pub mod corner;
 pub mod edge_length;
 pub mod extent;
+pub mod offgrid;
+pub mod ring;
+pub mod ring_covers_boundary;
+pub mod wide_uncovered;
 
 /// Which bound a rule puts on what it reads.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
