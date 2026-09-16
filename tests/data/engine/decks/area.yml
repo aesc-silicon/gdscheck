@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The area family: each bound once on a region, and each scope once.  Outer carries the
+# region, hole, chip and container rules; Inner the contained layer and the connected
+# rule; Via the exact rule.
+rules:
+  - id: A.min
+    check: min_area
+    layers: [Outer]
+    value: 0.5
+  - id: A.max
+    check: max_area
+    layers: [Outer]
+    value: 4.0
+  - id: A.exact
+    check: exact_area
+    layers: [Via]
+    value: 0.09
+  - id: A.hole
+    check: min_area
+    layers: [Outer]
+    value: 0.5
+    params:
+      scope: hole
+  - id: A.hole_max
+    check: max_area
+    layers: [Outer]
+    value: 4.0
+    params:
+      scope: hole
+  - id: A.cont
+    check: max_area
+    layers: [Outer, Inner]
+    value: 2.0
+    params:
+      scope: contained
+  - id: A.chip
+    check: max_area
+    layers: [Outer]
+    value: 10.0
+    params:
+      scope: chip
+  - id: A.net
+    check: min_area
+    layers: [Inner]
+    value: 0.5
+    params:
+      net: connected
+    layer_params:
+      connected: Outer
