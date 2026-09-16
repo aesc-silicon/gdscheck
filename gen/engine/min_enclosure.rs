@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Patterns for [`min_enclosure`](gdscheck::checks::min_enclosure): a margin measured on
-//! three shape families, swept either side of the limit, under both metrics.
+//! Patterns for the enclosure family ([`enclosure`](gdscheck::checks::enclosure)): a
+//! margin measured on three shape families, swept either side of the limit, under both
+//! metrics; then the other bound and each `sides` word, met exactly and missed by five
+//! nanometres.
 //!
 //! The families are chosen for where the metrics part company.  Orthogonal walls are the
 //! case they must agree on.  A 45° chamfer in the enclosing corner is the case where
@@ -141,6 +143,98 @@ pub fn generate(pdk: &PdkConfig) {
                     ],
                 ),
                 rect(inner, 1.0, 1.0, 9.0, 8.3),
+            ],
+        );
+    }
+
+    // The maximum: a square with every margin exactly 0.5, and one with its left margin
+    // 0.505.  ENC.max: 0 and 1; ENC.proj: 0 and 0.
+    for (name, left) in [("max_exact", 0.5), ("max_over", 0.505)] {
+        write(
+            name.into(),
+            vec![
+                rect(outer, 0.0, 0.0, 10.0, 10.0),
+                rect(inner, left, 0.5, 9.5, 9.5),
+            ],
+        );
+    }
+
+    // The endcap: a shape flush on three sides with its right margin 0.5 and 0.495 -
+    // the best side, which is all a minimum on `any` asks about.  ENC.any: 0 and 1.  A
+    // maximum on `any` asks that some side be within the value, and a flush side always
+    // is: ENC.max_any: 0 and 0.
+    for (name, right) in [("any_exact", 9.5), ("any_under", 9.505)] {
+        write(
+            name.into(),
+            vec![
+                rect(outer, 0.0, 0.0, 10.0, 10.0),
+                rect(inner, 0.0, 0.0, right, 10.0),
+            ],
+        );
+    }
+
+    // A maximum on `any` fails only when every side is over: a square with every margin
+    // 0.505, and one with three at 0.505 and its left at 0.5.  ENC.max_any: 1 and 0;
+    // ENC.max: 1 and 1.
+    for (name, left) in [("max_any_over", 0.505), ("max_any_one", 0.5)] {
+        write(
+            name.into(),
+            vec![
+                rect(outer, 0.0, 0.0, 10.0, 10.0),
+                rect(inner, left, 0.505, 9.495, 9.495),
+            ],
+        );
+    }
+
+    // Bordering sides: a shape 0.05 from the left wall, under ENC.adj's 0.1 trigger,
+    // whose bottom margin is 1.0 and 0.495; and one exactly 0.1 from the wall, not
+    // short, whose bottom margin is 0.495 and asks nothing.  ENC.adj: 0, 1, 0.
+    for (name, left, bottom) in [
+        ("adj_ok", 0.05, 1.0),
+        ("adj_under", 0.05, 0.495),
+        ("adj_trigger", 0.1, 0.495),
+    ] {
+        write(
+            name.into(),
+            vec![
+                rect(outer, 0.0, 0.0, 10.0, 10.0),
+                rect(inner, left, bottom, 5.0, 9.0),
+            ],
+        );
+    }
+
+    // A line end: a 0.3 µm track 5 long with a 0.2 via inside near its tip, the tip's
+    // cap 0.3 and 0.295 from the via; and a track exactly ENC.cap's 0.34 wide, which is
+    // not a narrow line.  ENC.cap: 0, 1, 0.
+    for (name, w, via_right) in [
+        ("cap_exact", 0.3, 4.7),
+        ("cap_under", 0.3, 4.705),
+        ("cap_wide", 0.34, 4.705),
+    ] {
+        let y0 = (w - 0.2) * 0.5;
+        write(
+            name.into(),
+            vec![
+                rect(outer, 0.0, 0.0, 5.0, w),
+                rect(inner, via_right - 0.2, y0, via_right, y0 + 0.2),
+            ],
+        );
+    }
+
+    // An extension: a cover 2 wide crossing a 10 µm target bar 2 tall, reaching 0.5
+    // past the bar's long walls, then 0.495 and 0.505 past the lower one.  The bar's
+    // ends lie outside the cover and are not measured.  ENC.ext: 0, 1, 0;
+    // ENC.max_ext: 0, 0, 1.
+    for (name, y0) in [
+        ("ext_exact", 3.5),
+        ("ext_under", 3.505),
+        ("ext_over", 3.495),
+    ] {
+        write(
+            name.into(),
+            vec![
+                rect(inner, 0.0, 4.0, 10.0, 6.0),
+                rect(outer, 2.0, y0, 4.0, 6.5),
             ],
         );
     }
