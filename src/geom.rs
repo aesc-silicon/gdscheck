@@ -1978,24 +1978,6 @@ pub fn point_to_segment_dist(px: f64, py: f64, ax: f64, ay: f64, bx: f64, by: f6
     point_to_segment_closest(px, py, ax, ay, bx, by).0
 }
 
-/// Vertex inside the outer region or on its boundary (within `tol`) — the boundary
-/// case lets value-0 rules pass when the inner shape touches the outer edge.
-/// Hole-aware: a vertex inside the outer region's hole is *not* inside (its edges,
-/// which include the hole contours, still grant the on-boundary tolerance).
-pub fn vertex_inside_or_on(px: f64, py: f64, outer: &Poly, tol: f64) -> bool {
-    outer.contains_point(px, py)
-        || outer
-            .edges
-            .iter()
-            .any(|&(ax, ay, bx, by)| point_to_segment_dist(px, py, ax, ay, bx, by) <= tol)
-}
-
-pub fn all_vertices_inside(inner: &Poly, outer: &Poly, tol: f64) -> bool {
-    inner
-        .vertices()
-        .all(|&(x, y)| vertex_inside_or_on(x, y, outer, tol))
-}
-
 /// Whether two segments meet — properly crossing, or touching at a point.
 pub fn segs_meet(p0: Marker, p1: Marker, q0: Marker, q1: Marker) -> bool {
     let cross =

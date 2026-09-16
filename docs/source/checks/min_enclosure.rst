@@ -116,7 +116,10 @@ Parameters
    ``enclosed`` only checking shapes that actually interact with the enclosing layer (a
    via nowhere near a MIM cap isn't "a MIM via" to begin with). A shape that *partially*
    overlaps an enclosing region is still measured, using only the facing pairs on its
-   contained side.
+   contained side — which is what an *extension* rule is: a cover that must reach past
+   the target it crosses by so much, measured on the target's walls under the cover
+   and not on the ends that run out past it (IHP ``Gat.c``, the poly endcap over
+   Activ; ``Sal.c``, the salicide block over the active it crosses).
 
 ``skip_coincident``
    Off by default. Ignore inner/outer edge pairs that are coincident (flush, ~0 offset)
@@ -198,3 +201,14 @@ Example
       value: 0.05
       params:
         sides: any
+
+.. code-block:: yaml
+
+    # Sal.c: SalBlock must extend 0.20 µm past the Activ or GatPoly it crosses; the
+    # target's own ends, outside the block, are not measured.
+    - id: Sal.c
+      check: min_enclosure
+      layers: [SalBlock, ActivOrGatPoly]
+      value: 0.20
+      params:
+        interacting_only: 1

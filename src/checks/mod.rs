@@ -107,12 +107,6 @@ pub fn run_rule(
         "no_ring" => no_ring::run(rule, layout, dbu_to_um),
         "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
-        "min_extension" => {
-            enclosure::extension::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged)
-        }
-        "max_extension" => {
-            enclosure::extension::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged)
-        }
         "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
         "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),

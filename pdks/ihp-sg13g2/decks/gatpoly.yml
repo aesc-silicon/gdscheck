@@ -36,9 +36,11 @@ rules:
     layers: [GatPolyOverActivTGO]
     value: 0.25
   - id: Gat.c
-    check: min_extension
+    check: min_enclosure
     layers: [GatPolyNoSRAM, Activ]
     value: 0.18
+    params:
+      interacting_only: 1
   - id: Gat.d
     check: min_space
     layers: [GatPoly, Activ]
@@ -117,6 +119,8 @@ rules:
     layers: [GatPoly.nofill]
     value: 160000.0
   - id: GFil.j
-    check: min_extension
+    check: min_enclosure
     layers: [GatPoly.filler, Activ.filler]
     value: 0.18
+    params:
+      interacting_only: 1
