@@ -3027,6 +3027,92 @@ pub fn bordering(a: &Outline, i: usize) -> Vec<usize> {
         .collect()
 }
 
+// ===========================================================================
+// Exact facing pairs of two regions that share area, in DBU.
+// ===========================================================================
+
+/// The facing pairs of two regions, each as its gap squared `num / den` and the point
+/// on each region, in DBU: two walls whose outward normals oppose, with the other on
+/// this one's outside - empty ground between them, a gap - or, `inward`, on its inside,
+/// material of both between them, an overlap.  Parallel walls pair over the stretch
+/// they share at their perpendicular offset; walls at an angle pair at their closest
+/// approach, as long as each lies on the other's chosen side, which is what keeps an
+/// ordinary convex corner of empty space from reading as a gap.  A touch is no pair: it
+/// has no side to be on.  Only pairs under `limit` come back.
+pub fn facing_pairs_i(a: &Outline, b: &Outline, limit: i64, inward: bool) -> Vec<ClosestPair> {
+    let lim2 = (limit as i128) * (limit as i128);
+    let sign: i128 = if inward { -1 } else { 1 };
+    let mut out = Vec::new();
+    for &(s0, s1) in &a.segs {
+        let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        for &(t0, t1) in &b.segs {
+            let e = ((t1.0 - t0.0) as i128, (t1.1 - t0.1) as i128);
+            if d.0 * e.0 + d.1 * e.1 >= 0 {
+                continue; // the same way round: back to back, not facing
+            }
+            if parallel_i(d, e) {
+                // The other wall's ends as outward distance times this wall's length -
+                // inward, the other way up - and the nearer one on drifted walls.
+                let (ca, cb) = (-sign * cross_i(s0, s1, t0), -sign * cross_i(s0, s1, t1));
+                let c = ca.min(cb);
+                if c <= 0 {
+                    continue; // touching, or behind
+                }
+                if Outline::shared_run((s0, s1), (t0, t1)) <= 0 {
+                    // No stretch in common: two walls end to end, offset - the flanks
+                    // of a notch and of the arrow tip pointing into it.  KLayout reads
+                    // the distance between their nearest ends under the euclidian
+                    // metric, and so does the width scan across a corner.
+                    let c = seg_seg_closest_sq(s0, s1, t0, t1);
+                    if c.num > 0 && c.num < lim2 * c.den {
+                        out.push((c.num, c.den, c.on_a, c.on_b));
+                    }
+                    continue;
+                }
+                if c * c >= lim2 * len2 {
+                    continue; // far enough apart
+                }
+                let len = (len2 as f64).sqrt();
+                let (ux, uy) = (d.0 as f64 / len, d.1 as f64 / len);
+                let (nx, ny) = (sign as f64 * uy, -(sign as f64) * ux);
+                let along = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
+                let (u0, u1) = (along(t0), along(t1));
+                let mid = (u0.min(u1).max(0) + u0.max(u1).min(len2)) as f64 / (2.0 * len);
+                let (px, py) = (s0.0 as f64 + ux * mid, s0.1 as f64 + uy * mid);
+                let gap = c as f64 / len;
+                out.push((c * c, len2, (px, py), (px + nx * gap, py + ny * gap)));
+                continue;
+            }
+            // Not parallel, so there is no constant gap to project: each wall has to
+            // reach the other's chosen side - a corner resting on a wall only touches
+            // its line and never reaches past it, and drops out here - and the pair is
+            // read at its closest approach, as long as that approach is between the
+            // parts of the walls on those sides and not behind one of them.
+            let beyond = |p: (i64, i64), (q0, q1): Seg| sign * -cross_i(q0, q1, p) > 0;
+            if !(beyond(s0, (t0, t1)) || beyond(s1, (t0, t1)))
+                || !(beyond(t0, (s0, s1)) || beyond(t1, (s0, s1)))
+            {
+                continue;
+            }
+            let c = seg_seg_closest_sq(s0, s1, t0, t1);
+            if c.num == 0 || c.num >= lim2 * c.den {
+                continue;
+            }
+            let side = |(px, py): (f64, f64), (q0, q1): Seg| {
+                let (ex, ey) = ((q1.0 - q0.0) as f64, (q1.1 - q0.1) as f64);
+                let f = (px - q0.0 as f64) * ey - (py - q0.1 as f64) * ex;
+                sign as f64 * f / ex.hypot(ey)
+            };
+            if side(c.on_a, (t0, t1)) < -0.5 || side(c.on_b, (s0, s1)) < -0.5 {
+                continue; // the approach is behind a wall, not across the gap
+            }
+            out.push((c.num, c.den, c.on_a, c.on_b));
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod space_tests {
     use super::*;
@@ -3083,6 +3169,34 @@ mod space_tests {
         assert!(share_boundary_run(&oa, &ob));
         assert!(!regions_overlap(&oa, &oc));
         assert!(!regions_overlap(&oa, &ob));
+    }
+
+    /// Two squares overlapping by 40 penetrate each other by 40, read inward; two squares
+    /// 30 apart face each other across 30, read outward; a touch is no pair either way.
+    #[test]
+    fn facing_pairs_read_a_gap_or_an_overlap() {
+        let (a, b) = (rect(0, 0, 100, 100), rect(60, 0, 160, 100));
+        let (oa, ob) = (Outline::new(&a), Outline::new(&b));
+        // The shallowest pair is the 40 across the overlap; the top and bottom walls
+        // face too, 100 apart, the whole height of the squares.
+        let shallowest = |ps: &[ClosestPair]| {
+            ps.iter()
+                .map(|p| p.0 as f64 / p.1 as f64)
+                .min_by(|a, b| a.total_cmp(b))
+        };
+        let inward = facing_pairs_i(&oa, &ob, 1000, true);
+        assert_eq!(shallowest(&inward), Some(1600.0), "40²");
+        assert!(facing_pairs_i(&oa, &ob, 1000, false).is_empty());
+        let c = rect(130, 0, 200, 100);
+        let oc = Outline::new(&c);
+        let outward = facing_pairs_i(&oa, &oc, 1000, false);
+        assert_eq!(shallowest(&outward), Some(900.0), "30²");
+        assert!(
+            facing_pairs_i(&oa, &oc, 30, false).is_empty(),
+            "30 is not under 30"
+        );
+        let touch = rect(100, 0, 200, 100);
+        assert!(facing_pairs_i(&oa, &Outline::new(&touch), 1000, false).is_empty());
     }
 
     /// A line exactly the width is not wider, five nanometres more is; a run exactly the

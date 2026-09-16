@@ -21,7 +21,6 @@ pub mod max_nets_under;
 pub mod max_total_area;
 pub mod min_array_space;
 pub mod min_enclosed_area;
-pub mod min_overlap;
 pub mod min_via_array;
 pub mod must_interact;
 pub mod no_angle;
@@ -108,7 +107,7 @@ pub fn run_rule(
         "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
         "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
-        "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
+        "min_overlap" => space::run_min_overlap(rule, layout, dbu_to_um, merged),
         "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),
         "max_space" => space::max::run(rule, layout, dbu_to_um, merged),
         "min_via_array" => min_via_array::run(rule, layout, dbu_to_um, merged),

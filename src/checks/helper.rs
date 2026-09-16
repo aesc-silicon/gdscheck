@@ -33,7 +33,7 @@ use std::collections::HashSet;
 #[derive(Clone, Copy)]
 pub struct SpaceMode {
     /// Scan pairs that share area for their narrowest empty gap, rather than pairs that
-    /// share none for their closest approach.  See [`facing_gaps`].
+    /// share none for their closest approach.  See [`facing_pairs_i`].
     overlapping: bool,
     /// Measure L-infinity rather than euclidian.  See [`seg_seg_closest_square`].
     square: bool,
@@ -42,9 +42,9 @@ pub struct SpaceMode {
     inward: bool,
 }
 
-/// A region's float outline, built the first time a reading asks for it: the spacing
-/// and the gates are measured exactly on the integer boundary, and only the square
-/// metric and the facing scan of an overlapping pair read the µm contour.
+/// A region's float outline, built the first time a reading asks for it: the spacing,
+/// the gates and the facing scan are measured exactly on the integer boundary, and only
+/// the square metric reads the µm contour.
 struct LazyPoly<'a> {
     m: &'a MergedPoly,
     dbu_to_um: f64,
@@ -76,8 +76,8 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
 ) -> Vec<Violation> {
     let half = dbu_to_um * 0.5;
     // The bound on the grid: a minimum rounds up, and every gap is then an integer
-    // under it or not.  The float readings below - the square metric, the facing scan
-    // of an overlapping pair - keep half a DBU of slack instead.
+    // under it or not.  The one float reading below, the square metric, keeps half a
+    // DBU of slack instead.
     let limit = Limit::at_least(value, dbu_to_um);
     // Each region keeps its DBU marker: a point *on* the shape, not its centroid - a
     // net-aware gate resolves the net by looking the marker up, and a ring's centroid
@@ -137,19 +137,18 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
             // The gap and the two points that measure it, in µm.
             let found: Option<Gap> = if mode.overlapping {
                 // The pair shares area, so its closest approach is zero and meaningless.
-                // Take the narrowest facing gap that is genuinely empty instead.
-                let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
-                    continue;
-                };
-                let mut best: Option<Gap> = None;
-                for (gap, p, q) in facing_gaps(pa, pb, value, half, mode.inward) {
-                    let (px, py) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
+                // Take the narrowest facing gap that is genuinely empty instead - or,
+                // inward, the shallowest facing overlap that is genuinely material.
+                let mut best: Option<ClosestPair> = None;
+                for c in facing_pairs_i(&a.outline, &b.outline, limit.dbu(), mode.inward) {
+                    let (p, q) = (c.2, c.3);
+                    let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
                     let wrong = if mode.inward {
                         // An overlap has to be material of both, or the "facing" pair
                         // reaches across a notch in one of them.
-                        !(pa.contains_point(px, py) && pb.contains_point(px, py))
+                        !(crate::merge::point_in_merged(mx, my, a.outline.poly())
+                            && crate::merge::point_in_merged(mx, my, b.outline.poly()))
                     } else {
-                        let (mx, my) = (px / dbu_to_um, py / dbu_to_um);
                         a_polys
                             .iter()
                             .chain(b_polys)
@@ -158,11 +157,17 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
                     if wrong {
                         continue; // another arm of one of the shapes lies in the gap
                     }
-                    if best.is_none_or(|(d, _, _)| gap < d) {
-                        best = Some((gap, p, q));
+                    if best.is_none_or(|b| (c.0 as f64 / c.1 as f64) < (b.0 as f64 / b.1 as f64)) {
+                        best = Some(c);
                     }
                 }
-                best.filter(|(d, _, _)| *d < value - half)
+                best.map(|(num, den, p, q)| {
+                    (
+                        (num as f64 / den as f64).sqrt() * dbu_to_um,
+                        (p.0 * dbu_to_um, p.1 * dbu_to_um),
+                        (q.0 * dbu_to_um, q.1 * dbu_to_um),
+                    )
+                })
             } else if mode.square {
                 let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
                     continue;
@@ -249,7 +254,7 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
 /// rules add width / parallel-run / same-net conditions without duplicating the merge,
 /// tiling and edge-distance work.
 /// Depth of mutual penetration where two layers overlap - KLayout's `overlap` check.
-/// The facing-edge scan of [`run_gated`] run inward: see [`facing_gaps`].
+/// The facing-edge scan of [`run_gated`] run inward: see [`facing_pairs_i`].
 pub fn run_overlap(
     rule: &RuleDefinition,
     layout: &FlatLayout,

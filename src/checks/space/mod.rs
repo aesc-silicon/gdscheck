@@ -14,6 +14,11 @@
 //! long net bent somewhere else, or a wide rail that dips to a narrow tooth, does not
 //! lend the condition to a gap it is not at.
 //!
+//! The same facing scan run inward reads how deeply two regions that share area
+//! penetrate each other - `min_overlap`, KLayout's `overlap`: a salicide block that
+//! must cover the COMP it blocks by 0.22 µm has to reach that far past the COMP's edge,
+//! not merely touch it.  Not a separate engine, only the other direction through one.
+//!
 //! A gap between two walls of *one* region is a notch, read by [`notch`] with the width
 //! scan turned the other way round; it takes `angle: bent` and `length` the same way.
 //! And the other bound, that nothing of a layer lies *farther* than so much from
@@ -201,4 +206,15 @@ fn net_keys(rule: &RuleDefinition, conn: &Connectivity, which: Net) -> (LayerKey
         }
     }
     keys
+}
+
+/// `min_overlap`: no two regions of the two layers overlapping by less than the value,
+/// read where they face each other across material of both.
+pub fn run_min_overlap(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+) -> Vec<Violation> {
+    super::helper::run_overlap(rule, layout, dbu_to_um, merged)
 }
