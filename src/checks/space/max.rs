@@ -96,9 +96,13 @@ pub fn run(
         );
         return vec![];
     }
+    // A polygon exactly the value away is in reach - KLayout's `interacting` counts a
+    // touch - and the grown reference touches it with no area to share, so the reach is
+    // grown a DBU further: what is then shared is the DBU strip, and a polygon a DBU
+    // beyond the value touches that and shares nothing.
     let markers = match scope {
         Scope::Part => merged.max_space_gaps(layout, a, b, value_dbu),
-        _ => merged.max_space_unreached(layout, a, b, value_dbu, within),
+        _ => merged.max_space_unreached(layout, a, b, value_dbu + 1.0, within),
     };
     markers
         .into_iter()

@@ -2602,6 +2602,119 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
     best
 }
 
+/// Whether `a` and `b` run parallel as far as the grid can say - the drift test of
+/// [`oblique_widths`], since a boolean cuts a 45° wall and rounds its new end.
+fn parallel_i(d: (i128, i128), e: (i128, i128)) -> bool {
+    let cross = d.0 * e.1 - d.1 * e.0;
+    let (l2, m2) = (d.0 * d.0 + d.1 * d.1, e.0 * e.0 + e.1 * e.1);
+    4 * cross * cross <= 9 * l2.max(m2)
+}
+
+impl Outline<'_> {
+    /// Where a segment's ends fall along `(s0, s1)`, as the shared stretch in units of
+    /// the segment's squared length: positive when they overlap in projection.
+    fn shared_run((s0, s1): Seg, (t0, t1): Seg) -> i128 {
+        let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        let along = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
+        let (u0, u1) = (along(t0), along(t1));
+        u0.max(u1).min(len2) - u0.min(u1).max(0)
+    }
+
+    /// The material behind segment `i`: the squared distance, as `num / den`, to the
+    /// nearest anti-parallel segment of the same region overlapping it in projection
+    /// on its material side - the local line width there, `None` where nothing faces
+    /// it.  Material is on the left of every segment, holes included.
+    fn depth_behind(&self, i: usize) -> Option<(i128, i128)> {
+        let (s0, s1) = self.segs[i];
+        let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        let mut best: Option<i128> = None;
+        for (j, &(t0, t1)) in self.segs.iter().enumerate() {
+            if j == i {
+                continue;
+            }
+            let e = ((t1.0 - t0.0) as i128, (t1.1 - t0.1) as i128);
+            if d.0 * e.0 + d.1 * e.1 >= 0 || !parallel_i(d, e) {
+                continue;
+            }
+            let c = cross_i(s0, s1, t0);
+            if c <= 0 || Self::shared_run((s0, s1), (t0, t1)) <= 0 {
+                continue; // on the empty side, or not alongside
+            }
+            if best.is_none_or(|b| c < b) {
+                best = Some(c);
+            }
+        }
+        best.map(|c| (c * c, len2))
+    }
+}
+
+/// Whether a 45° wall of `a` lies within `limit` DBU of `b`: the bend has to be at the
+/// gap, not somewhere else on a long net.
+pub fn has_diagonal_within(a: &Outline, b: &Outline, limit: i64) -> bool {
+    let lim = Limit::AtLeast(limit);
+    a.segs
+        .iter()
+        .filter(|&&(p, q)| p.0 != q.0 && p.1 != q.1)
+        .any(|&(p, q)| {
+            b.segs.iter().any(|&(r, s)| {
+                let c = seg_seg_closest_sq(p, q, r, s);
+                lim.broken_by_sq(c.num, c.den)
+            })
+        })
+}
+
+/// Whether some pair of facing walls, one of each region, runs alongside across a gap
+/// under `limit` for more than `min_run` DBU with a line deeper than `wide` behind at
+/// least one of them - the wide-line spacing rule, read at the gap that is the
+/// violation.  Everything is read off the walls themselves: an L-shaped narrow trace
+/// has a wide box but a narrow line, and a stepped pad's box overlaps a neighbour for
+/// tens of microns while the metal runs alongside for a fraction of that.  A `wide` of
+/// zero asks nothing of the depth.
+pub fn parallel_run_applies(a: &Outline, b: &Outline, limit: i64, wide: i64, min_run: i64) -> bool {
+    let (lim2, wide2, run2) = (
+        (limit as i128) * (limit as i128),
+        (wide as i128) * (wide as i128),
+        (min_run as i128) * (min_run as i128),
+    );
+    let mut depth_a: Vec<Option<Option<(i128, i128)>>> = vec![None; a.segs.len()];
+    let mut depth_b: Vec<Option<Option<(i128, i128)>>> = vec![None; b.segs.len()];
+    let deeper = |d: Option<(i128, i128)>| match d {
+        None => true, // nothing behind the wall at all: as deep as it gets
+        Some((num, den)) => num > wide2 * den,
+    };
+    for (i, &(s0, s1)) in a.segs.iter().enumerate() {
+        let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        for (j, &(t0, t1)) in b.segs.iter().enumerate() {
+            let e = ((t1.0 - t0.0) as i128, (t1.1 - t0.1) as i128);
+            if d.0 * e.0 + d.1 * e.1 >= 0 || !parallel_i(d, e) {
+                continue; // not facing, or not alongside
+            }
+            // The other wall on this one's empty side, under the limit: `c` is the
+            // separation times the length.
+            let c = -cross_i(s0, s1, t0);
+            if c <= 0 || c * c >= lim2 * len2 {
+                continue;
+            }
+            let run = Outline::shared_run((s0, s1), (t0, t1));
+            if run <= 0 || run * run <= run2 * len2 {
+                continue;
+            }
+            if wide == 0 {
+                return true;
+            }
+            let da = *depth_a[i].get_or_insert_with(|| a.depth_behind(i));
+            let db = *depth_b[j].get_or_insert_with(|| b.depth_behind(j));
+            if deeper(da) || deeper(db) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod space_tests {
     use super::*;
@@ -2658,6 +2771,68 @@ mod space_tests {
         assert!(share_boundary_run(&oa, &ob));
         assert!(!regions_overlap(&oa, &oc));
         assert!(!regions_overlap(&oa, &ob));
+    }
+
+    /// A line exactly the width is not wider, five nanometres more is; a run exactly the
+    /// length is not longer.  Read off the walls, not the boxes.
+    #[test]
+    fn the_wide_line_gate_reads_depth_and_run_exactly() {
+        let (a, b) = (rect(0, 0, 1000, 300), rect(0, 850, 1000, 1150));
+        let (oa, ob) = (Outline::new(&a), Outline::new(&b));
+        assert!(
+            !parallel_run_applies(&oa, &ob, 600, 300, 0),
+            "0.3 deep is not over 0.3"
+        );
+        assert!(parallel_run_applies(&oa, &ob, 600, 299, 0));
+        assert!(
+            !parallel_run_applies(&oa, &ob, 600, 0, 1000),
+            "a 1 µm run is not over 1 µm"
+        );
+        assert!(parallel_run_applies(&oa, &ob, 600, 0, 999));
+        assert!(
+            !parallel_run_applies(&oa, &ob, 550, 0, 0),
+            "the gap is 550, not under it"
+        );
+        let l = MergedPoly {
+            outer: [
+                (0, 0),
+                (1000, 0),
+                (1000, 1000),
+                (800, 1000),
+                (800, 200),
+                (0, 200),
+            ]
+            .iter()
+            .map(|&(x, y)| IntPoint::new(x, y))
+            .collect(),
+            holes: vec![],
+        };
+        let ol = Outline::new(&l);
+        // A 0.3 by 0.1 bar over the L's arm, 0.2 above it and 0.5 short of its upright.
+        let c = rect(0, 400, 300, 500);
+        let oc = Outline::new(&c);
+        assert!(
+            !parallel_run_applies(&ol, &oc, 300, 250, 0),
+            "an L's box is 1 µm deep, the arm facing the gap 0.2, the line across it 0.1"
+        );
+        assert!(parallel_run_applies(&ol, &oc, 300, 150, 0));
+    }
+
+    /// A bend counts only at the gap.
+    #[test]
+    fn a_diagonal_counts_within_the_limit_alone() {
+        let a = MergedPoly {
+            outer: [(0, 0), (1000, 0), (1000, 500), (500, 1000), (0, 1000)]
+                .iter()
+                .map(|&(x, y)| IntPoint::new(x, y))
+                .collect(),
+            holes: vec![],
+        };
+        let oa = Outline::new(&a);
+        let near = rect(1200, 0, 1500, 1000);
+        let far = rect(-800, 0, -500, 1000);
+        assert!(has_diagonal_within(&oa, &Outline::new(&near), 600));
+        assert!(!has_diagonal_within(&oa, &Outline::new(&far), 600));
     }
 
     /// Shared area is a vertex strictly inside, a nesting with coincident walls, or a

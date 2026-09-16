@@ -42,10 +42,10 @@ pub struct SpaceMode {
     inward: bool,
 }
 
-/// A region's float outline, built the first time a gate asks for it: the spacing
-/// itself is measured exactly on the integer boundary, and only a gate - a wall's
-/// angle, a line's depth, a parallel run - reads the µm contour.
-pub struct LazyPoly<'a> {
+/// A region's float outline, built the first time a reading asks for it: the spacing
+/// and the gates are measured exactly on the integer boundary, and only the square
+/// metric and the facing scan of an overlapping pair read the µm contour.
+struct LazyPoly<'a> {
     m: &'a MergedPoly,
     dbu_to_um: f64,
     cell: std::cell::OnceCell<Option<Poly>>,
@@ -53,7 +53,7 @@ pub struct LazyPoly<'a> {
 
 impl LazyPoly<'_> {
     /// The µm outline, `None` for a degenerate region.
-    pub fn poly(&self) -> Option<&Poly> {
+    fn poly(&self) -> Option<&Poly> {
         self.cell
             .get_or_init(|| poly_from_merged(self.m, self.dbu_to_um))
             .as_ref()
@@ -61,7 +61,7 @@ impl LazyPoly<'_> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn check_tile<'a, G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool>(
+fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
     a_polys: &'a [MergedPoly],
     b_polys: &'a [MergedPoly],
     same_layer: bool,
@@ -216,7 +216,7 @@ fn check_tile<'a, G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool>(
             let Some((min_dist, (ax, ay), (bx, by))) = found else {
                 continue;
             };
-            if !gate(&a.lazy, &b.lazy, a.marker, b.marker) {
+            if !gate(&a.outline, &b.outline, a.marker, b.marker) {
                 continue;
             }
             // Own the violation by the gap midpoint; mark the gap itself.
@@ -266,7 +266,7 @@ pub fn run_overlap(
     })
 }
 
-pub fn run_gated<G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool + Sync>(
+pub fn run_gated<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
@@ -277,7 +277,7 @@ pub fn run_gated<G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool + Sync>(
 }
 
 /// `forced` overrides what the `pairs` param would say, for a check that *is* a mode.
-fn run_gated_with<G: Fn(&LazyPoly, &LazyPoly, Marker, Marker) -> bool + Sync>(
+fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
