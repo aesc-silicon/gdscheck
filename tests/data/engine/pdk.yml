@@ -30,6 +30,8 @@ decks:
     path: decks/shape.yml
   - name: area
     path: decks/area.yml
+  - name: net
+    path: decks/net.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
@@ -48,6 +50,9 @@ layers:
   - name: Via
     gds_layer: 3
     gds_datatype: 0
+  - name: Diode
+    gds_layer: 4
+    gds_datatype: 0
 
 # The edges of Outer, for a reach rule read per edge.
 edge_layers:
@@ -55,9 +60,12 @@ edge_layers:
     op: edges
     layers: [Outer]
 
-# Via joins Outer to Inner, for the spacing rules gated on nets.
+# Via joins Inner, then Outer, then Diode, for the rules gated on nets and for the
+# antenna rule's levels: through Inner's step alone, Outer is not yet on the net.
 connectivity:
+  - connector: Via
+    layers: [Inner]
   - connector: Via
     layers: [Outer]
   - connector: Via
-    layers: [Inner]
+    layers: [Diode]

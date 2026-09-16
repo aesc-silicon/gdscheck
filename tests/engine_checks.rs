@@ -549,3 +549,35 @@ fn area_rules_meet_the_bound_exactly_on_every_scope(
 ) {
     assert_eq!(count("area", pattern, rule), expected, "{pattern}: {rule}");
 }
+
+/// The net family from a deck: the antenna ratio met exactly and missed, by area and by
+/// sidewall, by population, and read at a level below the conductor; the nets under a
+/// marker.
+///
+/// - `ratio_*`: a 1 µm² gate under a plate of exactly 10 and 9.995 µm².
+/// - `diode_small`, `diode_big`, `bare_big`: the 10 µm² plate with a diode, a 100 µm²
+///   plate with one, and the 100 µm² plate alone.
+/// - `side_*`: a 4 by 6 plate, a sidewall of exactly 10 at 0.5 thick, and 4 by 5.995.
+/// - `nets_*`: two Inner squares under one Outer marker, tied to it and not.
+#[rstest]
+#[case("ratio_exact", "N.ant", 1)]
+#[case("ratio_exact", "N.level", 0)]
+#[case("ratio_exact", "N.bare", 1)]
+#[case("ratio_under", "N.ant", 0)]
+#[case("ratio_under", "N.bare", 0)]
+#[case("diode_small", "N.bare", 0)]
+#[case("diode_small", "N.protected", 0)]
+#[case("diode_big", "N.protected", 1)]
+#[case("diode_big", "N.bare", 0)]
+#[case("bare_big", "N.bare", 1)]
+#[case("side_exact", "N.side", 1)]
+#[case("side_under", "N.side", 0)]
+#[case("nets_one", "N.nets", 0)]
+#[case("nets_two", "N.nets", 1)]
+fn net_rules_meet_the_bound_exactly_and_read_their_levels(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("net", pattern, rule), expected, "{pattern}: {rule}");
+}

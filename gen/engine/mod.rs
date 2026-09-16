@@ -21,6 +21,7 @@ mod gate_length;
 mod max_space;
 mod min_array_space;
 mod min_enclosure;
+mod net;
 mod notch;
 mod shape;
 mod space;
@@ -35,6 +36,7 @@ pub fn generate(pdk: &PdkConfig) {
     max_space::generate(pdk);
     min_array_space::generate(pdk);
     min_enclosure::generate(pdk);
+    net::generate(pdk);
     notch::generate(pdk);
     shape::generate(pdk);
     space::generate(pdk);

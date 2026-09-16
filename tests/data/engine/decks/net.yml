@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The net family: the antenna ratio of an Inner gate under an Outer conductor - plain,
+# by population, by sidewall, and read at a level below the conductor - and the nets
+# under an Outer marker.
+rules:
+  - id: N.ant
+    check: antenna_ratio
+    layers: [Outer]
+    value: 10.0
+    layer_params:
+      gate: Inner
+  - id: N.bare
+    check: antenna_ratio
+    layers: [Outer]
+    value: 10.0
+    params:
+      diode: without
+    layer_params:
+      gate: Inner
+      diode_1: Diode
+  - id: N.protected
+    check: antenna_ratio
+    layers: [Outer]
+    value: 100.0
+    params:
+      diode: with
+    layer_params:
+      gate: Inner
+      diode_1: Diode
+  - id: N.side
+    check: antenna_ratio
+    layers: [Outer]
+    value: 10.0
+    params:
+      metric: sidewall
+      thickness: 0.5
+    layer_params:
+      gate: Inner
+  - id: N.level
+    check: antenna_ratio
+    layers: [Outer]
+    value: 10.0
+    layer_params:
+      gate: Inner
+      level: Inner
+  - id: N.nets
+    check: max_nets_under
+    layers: [Outer, Inner]
+    value: 1.0

@@ -163,9 +163,10 @@ KLayout script, where the two disagree:
   layer, but outside any drawn NWell. That ``close`` still stands in for wells
   physically merged by diffusion, below the NW.b minimum. Note this makes NW.b1 a net-aware rule, so the
   ``core`` suite now runs net extraction; ``--no-connectivity`` skips it (and NW.b1).
-  Both well steps are appended after the metal stack, so the prefix indices the antenna
-  levels resolve through ``connect_prefix`` keep their meaning — anything added to the
-  connect graph later belongs at the end for the same reason.
+  Both well steps are appended after the metal stack: an antenna level names the layer
+  whose first connect step it reads through, and a step added at the end changes no
+  level, where one inserted into the stack would — anything added to the connect graph
+  later belongs at the end for the same reason.
 * **NBL.b / NBL.c** are the buried-layer twins of the pair above, and upstream omits them
   for the same reason. gdscheck implements NBL.b as a plain 1.50 µm
   :doc:`../checks/min_space` and NBL.c as the same check at 3.20 µm with
