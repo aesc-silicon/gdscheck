@@ -89,7 +89,7 @@ pub fn run(
         // An unresolved region counts as a net of its own: the check would rather report
         // geometry it cannot follow than go quiet on it.
         let net = conn
-            .net_at(net_key, x * dbu_to_um, y * dbu_to_um)
+            .net_at(net_key, x, y)
             .map_or(-(rid as i64) - 1, |n| n as i64);
         nets.entry(*mrid).or_default().insert(net);
     }
