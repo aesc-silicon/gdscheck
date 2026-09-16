@@ -185,6 +185,16 @@ impl Limit {
     }
 }
 
+/// What a pair of facing walls has between them: the material of a width, or the empty
+/// ground of a notch.  One scan reads both - a notch is the width scan with every wall
+/// facing the other way, a slot in a shape or a thin hole through it - and only the
+/// facing test and the marker differ.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Between {
+    Material,
+    Empty,
+}
+
 /// `x` on the grid: the integer it already is, allowing for the noise a µm-to-DBU
 /// division leaves (0.15 / 0.001 is 149.99999999999997), else `round` applied.
 pub fn on_grid(x: f64, round: fn(f64) -> f64) -> i64 {
@@ -507,7 +517,66 @@ pub fn width_pairs(
     mixed: bool,
     min_run: i64,
 ) -> Vec<(f64, f64, f64, f64, f64)> {
+    facing_pairs(
+        poly,
+        core,
+        limit,
+        walls,
+        oblique_only,
+        mixed,
+        min_run,
+        Between::Material,
+    )
+}
+
+/// Every notch of `poly` narrower than `limit` - the empty gap between two walls of one
+/// region facing away from each other, a slot or a thin hole - as one span across the
+/// gap, `(x1, y1, x2, y2, gap)` in DBU.  The width scan read the other way round: the
+/// same sweeps, the same oblique and mixed passes, with material on the far side of
+/// each wall.  What a notch has no use for is left out: a box has none, and the corner
+/// and acute-tip readings are about material narrowing to nothing.
+pub fn notch_pairs(
+    poly: &MergedPoly,
+    core: Core,
+    limit: Limit,
+    oblique_only: bool,
+    mixed: bool,
+    min_run: i64,
+) -> Vec<(f64, f64, f64, f64, f64)> {
+    facing_pairs(
+        poly,
+        core,
+        limit,
+        None,
+        oblique_only,
+        mixed,
+        min_run,
+        Between::Empty,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn facing_pairs(
+    poly: &MergedPoly,
+    core: Core,
+    limit: Limit,
+    walls: Option<&WallFilter>,
+    oblique_only: bool,
+    mixed: bool,
+    min_run: i64,
+    between: Between,
+) -> Vec<(f64, f64, f64, f64, f64)> {
     let mut out = Vec::new();
+    let empty = between == Between::Empty;
+    // A wall pair faces across material when the near wall has it on its far side and
+    // the far wall on its near side; across a notch, the other way round.
+    let facing = |near_has_far: bool, far_has_far: bool| {
+        if empty {
+            !near_has_far && far_has_far
+        } else {
+            near_has_far && !far_has_far
+        }
+    };
     // An axis-aligned rectangle - every via, most contacts - has one width and one
     // height, and the sweep below would find exactly the two pairs the box gives
     // directly.  Same pairs, same order, same ownership test, without the sweep.  A
@@ -515,7 +584,7 @@ pub fn width_pairs(
     if walls.is_none()
         && let Some((x0, y0, x1, y1)) = axis_rect(poly)
     {
-        if oblique_only {
+        if oblique_only || empty {
             return out;
         }
         let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
@@ -556,7 +625,7 @@ pub fn width_pairs(
             active.sort_unstable_by_key(|e| (e.x, e.left_wall));
             for pair in active.windows(2) {
                 let (l, r) = (pair[0], pair[1]);
-                if l.left_wall && !r.left_wall {
+                if facing(l.left_wall, r.left_wall) {
                     let width = r.x as i64 - l.x as i64;
                     let run = l.yhi.min(r.yhi) as i64 - l.ylo.max(r.ylo) as i64;
                     if width > 0 && (walls.is_some() || run > min_run) && limit.broken_by(width) {
@@ -571,7 +640,12 @@ pub fn width_pairs(
                                 continue;
                             }
                             let cy = (s0 as f64 + s1 as f64) * 0.5;
-                            if core.owns(cx, cy) {
+                            if !core.owns(cx, cy) {
+                                continue;
+                            }
+                            if empty {
+                                push_edge(l.x as f64, cy, r.x as f64, cy, width as f64);
+                            } else {
                                 push_edge(
                                     l.x as f64,
                                     s0 as f64,
@@ -607,7 +681,7 @@ pub fn width_pairs(
             active.sort_unstable_by_key(|e| (e.y, e.bottom_wall));
             for pair in active.windows(2) {
                 let (b, t) = (pair[0], pair[1]);
-                if b.bottom_wall && !t.bottom_wall {
+                if facing(b.bottom_wall, t.bottom_wall) {
                     let height = t.y as i64 - b.y as i64;
                     let run = b.xhi.min(t.xhi) as i64 - b.xlo.max(t.xlo) as i64;
                     if height > 0 && (walls.is_some() || run > min_run) && limit.broken_by(height) {
@@ -622,7 +696,12 @@ pub fn width_pairs(
                                 continue;
                             }
                             let cx = (s0 as f64 + s1 as f64) * 0.5;
-                            if core.owns(cx, cy) {
+                            if !core.owns(cx, cy) {
+                                continue;
+                            }
+                            if empty {
+                                push_edge(cx, b.y as f64, cx, t.y as f64, height as f64);
+                            } else {
                                 push_edge(
                                     s0 as f64,
                                     b.y as f64,
@@ -646,13 +725,34 @@ pub fn width_pairs(
     } // end !oblique_only
 
     if mixed && min_run == 0 {
-        mixed_widths(&oedges, &vedges, &hedges, core, &mut push_edge, limit);
+        mixed_widths(
+            &oedges,
+            &vedges,
+            &hedges,
+            core,
+            &mut push_edge,
+            limit,
+            between,
+        );
     }
-    if !oblique_only && walls.is_none() && min_run == 0 && matches!(limit, Limit::AtLeast(_)) {
+    if !oblique_only
+        && !empty
+        && walls.is_none()
+        && min_run == 0
+        && matches!(limit, Limit::AtLeast(_))
+    {
         corner_widths(&vedges, &hedges, core, &mut push_edge, limit);
         acute_corners(poly, core, &mut push_edge);
     }
-    oblique_widths(&oedges, core, &mut push_edge, limit, min_run, walls);
+    oblique_widths(
+        &oedges,
+        core,
+        &mut push_edge,
+        limit,
+        min_run,
+        walls,
+        between,
+    );
     out
 }
 
@@ -968,6 +1068,7 @@ fn seg_seg_closest_sq(a0: (i64, i64), a1: (i64, i64), b0: (i64, i64), b1: (i64, 
 /// and for an axis-aligned edge it is the side its wall flag names.  Adjacent edges share
 /// a vertex and so measure zero, which drops them along with coincident-edge noise the
 /// other passes filter the same way.
+#[allow(clippy::too_many_arguments)]
 fn mixed_widths(
     oedges: &[OEdge],
     vedges: &[VEdge],
@@ -975,7 +1076,9 @@ fn mixed_widths(
     core: Core,
     push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
     limit: Limit,
+    between: Between,
 ) {
+    let empty = between == Between::Empty;
     for o in oedges {
         let (a, b) = ((o.ax as i64, o.ay as i64), (o.bx as i64, o.by as i64));
         let (dx, dy) = ((b.0 - a.0) as i128, (b.1 - a.1) as i128);
@@ -1002,9 +1105,16 @@ fn mixed_widths(
             if c.num == 0 || !limit.broken_by_sq(c.num, c.den) {
                 continue;
             }
-            // Each edge's interior must face the other, or the gap is outside the shape.
+            // Each edge's interior must face the other, or the gap is outside the shape -
+            // and for a notch each must face away, or the gap is inside it.
             let (vx, vy) = c.towards;
-            if vx * nox + vy * noy <= 0 || -vx * nax - vy * nay <= 0 {
+            let (toward_o, toward_a) = (vx * nox + vy * noy, -vx * nax - vy * nay);
+            let facing = if empty {
+                toward_o < 0 && toward_a < 0
+            } else {
+                toward_o > 0 && toward_a > 0
+            };
+            if !facing {
                 continue;
             }
             let (mx, my) = ((c.on_a.0 + c.on_b.0) * 0.5, (c.on_a.1 + c.on_b.1) * 0.5);
@@ -1036,6 +1146,7 @@ fn mixed_widths(
 /// The perpendicular distance is `c / |d|` for an integer `c`, so it is compared squared;
 /// the run they share is measured along `d` in units of `|d|²`, and compared squared the
 /// same way.
+#[allow(clippy::too_many_arguments)]
 fn oblique_widths(
     oedges: &[OEdge],
     core: Core,
@@ -1043,7 +1154,12 @@ fn oblique_widths(
     limit: Limit,
     min_run: i64,
     walls: Option<&WallFilter>,
+    between: Between,
 ) {
+    let empty = between == Between::Empty;
+    // Across a notch the other edge lies on the exterior side, where the signed
+    // distances come out negative; read them the other way up.
+    let sign: i128 = if empty { -1 } else { 1 };
     let min_run2 = (min_run as i128) * (min_run as i128);
     let n = oedges.len();
     for i in 0..n {
@@ -1068,7 +1184,7 @@ fn oblique_widths(
             // differ only by the drift, and the rule reads the worse one.
             let (wx, wy) = ((ej.ax - ei.ax) as i128, (ej.ay - ei.ay) as i128);
             let (vx, vy) = ((ej.bx - ei.ax) as i128, (ej.by - ei.ay) as i128);
-            let (ca, cb) = (dix * wy - diy * wx, dix * vy - diy * vx);
+            let (ca, cb) = (sign * (dix * wy - diy * wx), sign * (dix * vy - diy * vx));
             let c = match limit {
                 Limit::AtMost(_) => ca.max(cb),
                 Limit::AtLeast(_) | Limit::Exactly(_) => ca.min(cb),
@@ -1087,7 +1203,7 @@ fn oblique_widths(
                 // the distance between their nearest ends, as `corner_widths` does for
                 // axis-aligned walls, when the filter is not choosing walls and no run is
                 // required.
-                if walls.is_none() && min_run == 0 && matches!(limit, Limit::AtLeast(_)) {
+                if walls.is_none() && !empty && min_run == 0 && matches!(limit, Limit::AtLeast(_)) {
                     let ends_i = [
                         (ei.ax as i128, ei.ay as i128),
                         (ei.bx as i128, ei.by as i128),
@@ -1155,9 +1271,15 @@ fn oblique_widths(
                     continue;
                 }
                 let mid = (s0 + s1) * 0.5;
-                let mx = ei.ax as f64 + mid * ux + nx * dist * 0.5;
-                let my = ei.ay as f64 + mid * uy + ny * dist * 0.5;
+                let side = sign as f64;
+                let mx = ei.ax as f64 + mid * ux + side * nx * dist * 0.5;
+                let my = ei.ay as f64 + mid * uy + side * ny * dist * 0.5;
                 if !core.owns(mx, my) {
+                    continue;
+                }
+                if empty {
+                    let (px, py) = (ei.ax as f64 + mid * ux, ei.ay as f64 + mid * uy);
+                    push_edge(px, py, px - nx * dist, py - ny * dist, dist);
                     continue;
                 }
                 push_edge(

@@ -26,7 +26,6 @@ pub mod min_enclosed_area;
 pub mod min_enclosure;
 pub mod min_endcap_enclosure;
 pub mod min_extension;
-pub mod min_notch;
 pub mod min_overlap;
 pub mod min_via_array;
 pub mod must_interact;
@@ -116,7 +115,7 @@ pub fn run_rule(
         "max_enclosure" => max_enclosure::run(rule, layout, dbu_to_um, merged),
         "min_endcap_enclosure" => min_endcap_enclosure::run(rule, layout, dbu_to_um, merged),
         "min_extension" => min_extension::run(rule, layout, dbu_to_um, merged),
-        "min_notch" => min_notch::run(rule, layout, dbu_to_um, merged),
+        "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => min_overlap::run(rule, layout, dbu_to_um, merged),
         "min_space" => space::run_min(rule, layout, dbu_to_um, merged, conn),
         "max_space" => max_space::run(rule, layout, dbu_to_um, merged),
