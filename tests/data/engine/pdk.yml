@@ -32,6 +32,8 @@ decks:
     path: decks/area.yml
   - name: net
     path: decks/net.yml
+  - name: residual
+    path: decks/residual.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
@@ -52,6 +54,9 @@ layers:
     gds_datatype: 0
   - name: Diode
     gds_layer: 4
+    gds_datatype: 0
+  - name: Text
+    gds_layer: 5
     gds_datatype: 0
 
 # The edges of Outer, for a reach rule read per edge.

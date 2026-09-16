@@ -23,6 +23,7 @@ mod min_array_space;
 mod min_enclosure;
 mod net;
 mod notch;
+mod residual;
 mod shape;
 mod space;
 mod width;
@@ -38,6 +39,7 @@ pub fn generate(pdk: &PdkConfig) {
     min_enclosure::generate(pdk);
     net::generate(pdk);
     notch::generate(pdk);
+    residual::generate(pdk);
     shape::generate(pdk);
     space::generate(pdk);
     width::generate(pdk);

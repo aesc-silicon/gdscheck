@@ -581,3 +581,58 @@ fn net_rules_meet_the_bound_exactly_and_read_their_levels(
 ) {
     assert_eq!(count("net", pattern, rule), expected, "{pattern}: {rule}");
 }
+
+/// The residual family: no bound to meet, so the exact case is the coincident edge.
+///
+/// - `bare` has three Diode squares, one across a tile line, and an Outer square with
+///   four edges.
+/// - `covered_exact` / `covered_short` end the cover on the target's edge and 0.005 µm
+///   short of it.
+/// - `union_exact` / `union_gap` cover the target with two layers meeting on a line
+///   and with a 0.005 µm gap between them.
+/// - `diag_exact` / `diag_out` put a 45° diamond's tips on the cover's sides, and one
+///   tip 0.005 µm past.
+/// - `parts` leaves three bare parts on one polygon; `span` leaves one across a tile
+///   line.
+/// - `overlap_touch` / `overlap_slim` share an edge and overlap by 0.005 µm.
+/// - `partners` has a partner inside, one sharing an edge, and one 0.005 µm off.
+/// - `beyond_edge` / `beyond_out` put a corner on the frame's outer edge and 0.005 µm
+///   past it, with an ignored layer past the frame.
+/// - `labelled` carries the exemption label on one of two squares.
+#[rstest]
+#[case("bare", "R.bare", 3)]
+#[case("bare", "R.edges", 4)]
+#[case("covered_exact", "R.uncovered", 0)]
+#[case("covered_exact", "R.polygon", 0)]
+#[case("covered_short", "R.uncovered", 1)]
+#[case("covered_short", "R.polygon", 1)]
+#[case("union_exact", "R.uncovered", 0)]
+#[case("union_exact", "R.polygon", 0)]
+#[case("union_gap", "R.uncovered", 1)]
+#[case("union_gap", "R.polygon", 1)]
+#[case("diag_exact", "R.uncovered", 0)]
+#[case("diag_exact", "R.polygon", 0)]
+#[case("diag_out", "R.uncovered", 1)]
+#[case("diag_out", "R.polygon", 1)]
+#[case("parts", "R.uncovered", 3)]
+#[case("parts", "R.polygon", 1)]
+#[case("span", "R.uncovered", 1)]
+#[case("overlap_touch", "R.overlap", 0)]
+#[case("overlap_slim", "R.overlap", 1)]
+#[case("partners", "R.apart", 1)]
+#[case("partners", "R.touching", 2)]
+#[case("beyond_edge", "R.beyond", 0)]
+#[case("beyond_out", "R.beyond", 1)]
+#[case("labelled", "R.bare", 2)]
+#[case("labelled", "R.label", 1)]
+fn residual_rules_read_the_coincident_edge_and_their_ops(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("residual", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}
