@@ -11,14 +11,10 @@ pub mod enclosure;
 pub mod forbidden;
 pub mod forbidden_overlap;
 pub mod forbidden_unless_labeled;
-pub mod gate_connected_min_area;
 pub mod helper;
 pub mod inside_boundary;
-pub mod max_contained_area;
 pub mod max_nets_under;
-pub mod max_total_area;
 pub mod min_array_space;
-pub mod min_enclosed_area;
 pub mod min_via_array;
 pub mod must_interact;
 pub mod nonempty;
@@ -47,9 +43,10 @@ pub fn run_rule(
 ) -> Vec<Violation> {
     let mut out = match rule.check.as_str() {
         "antenna_ratio" => antenna_ratio::run(rule, layout, dbu_to_um, merged, conn),
-        "gate_connected_min_area" => {
-            gate_connected_min_area::run(rule, layout, dbu_to_um, merged, conn)
-        }
+        "gate_connected_min_area"
+        | "min_enclosed_area"
+        | "max_contained_area"
+        | "max_total_area" => area::run_named(&rule.check, rule, layout, dbu_to_um, merged, conn),
         "forbidden_unless_labeled" => {
             forbidden_unless_labeled::run(rule, layout, dbu_to_um, merged)
         }
@@ -132,14 +129,12 @@ pub fn run_rule(
             dbu_to_um,
             merged,
         ),
-        "min_area" => area::run_min(rule, layout, dbu_to_um, merged),
+        "min_area" => area::run(area::Kind::Min, rule, layout, dbu_to_um, merged, conn),
+        "exact_area" => area::run(area::Kind::Exact, rule, layout, dbu_to_um, merged, conn),
         "must_interact" => must_interact::run(rule, layout, dbu_to_um),
         "nonempty" => nonempty::run(rule, layout, dbu_to_um, merged),
-        "min_enclosed_area" => min_enclosed_area::run(rule, layout, dbu_to_um, merged),
-        "max_area" => area::run_max(rule, layout, dbu_to_um, merged),
-        "max_contained_area" => max_contained_area::run(rule, layout, dbu_to_um, merged),
+        "max_area" => area::run(area::Kind::Max, rule, layout, dbu_to_um, merged, conn),
         "max_nets_under" => max_nets_under::run(rule, layout, dbu_to_um, merged, conn),
-        "max_total_area" => max_total_area::run(rule, layout, dbu_to_um, merged),
         "no_angle" => shape::angle::run(rule, layout, dbu_to_um, merged),
         "no_corner" => shape::corner::run(rule, layout, dbu_to_um, merged),
         "no_hole" => shape::holes::run(rule, layout, dbu_to_um, merged),
