@@ -39,7 +39,7 @@ label.
 Every step is a lazy, tile-bounded :doc:`virtual layer <../virtual-ops>` — the plain
 union/difference/intersection steps are local per tile; the ``interacting`` /
 ``not_interacting`` / ``with_text`` steps use the same whole-region stitching that
-:doc:`min_region_density <min_region_density>`-style area checks rely on, so a dense,
+:doc:`min_density` at ``scope: region`` relies on, so a dense,
 chip-wide layer like ``Activ`` or ``GatPoly`` is never unioned globally. This matters in
 practice: an earlier implementation that globally merged the (anchor-clipped) dense
 layers worked on small blocks but ran out of memory on a full SoC top cell, where

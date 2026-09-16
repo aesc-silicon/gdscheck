@@ -31,7 +31,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    max_vertices
    max_space
    max_width
-   max_windowed_density
    min_area
    min_array_space
    min_density
@@ -41,10 +40,8 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_length
    min_notch
    min_overlap
-   min_region_density
    min_space
    min_width
-   min_windowed_density
    no_angle
    no_corner
    no_hole

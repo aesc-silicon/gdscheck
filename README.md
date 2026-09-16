@@ -204,10 +204,11 @@ rules:
     value: 0.21
 
   - id: M2.c               # windowed density floor over 200 µm tiles
-    check: min_windowed_density
+    check: min_density
     layers: [Metal2, Metal2.filler]
     value: 20.0
     params:
+      scope: window
       window: 200.0
 ```
 
@@ -265,10 +266,8 @@ density checks). Run `gdscheck list-suites --process ihp-sg13g2` to see them.
 | `min_area` | Polygon area ≥ `value` µm². |
 | `max_area` | Polygon area ≤ `value` µm². |
 | `min_enclosure` | `layers[0]` enclosed by `layers[1]` with clearance ≥ `value` µm. |
-| `min_density` | Layer density over the chip/boundary area ≥ `value` %. |
-| `max_density` | Layer density over the chip/boundary area ≤ `value` %. |
-| `min_windowed_density` | Density ≥ `value` % in every `window`×`window` µm tile. |
-| `max_windowed_density` | Density ≤ `value` % in every `window`×`window` µm tile. |
+| `min_density` | Layer density ≥ `value` % over the chip, in every `window`×`window` µm tile, or per large region (`scope`). |
+| `max_density` | Layer density ≤ `value` % over the chip, per window, or per region (`scope`). |
 | `offgrid` | All vertices must lie on the `value` µm manufacturing grid. |
 | `forbidden` | The layer(s) must be empty; with `op` the uncovered part, overlap, apart or touching regions, or anything beyond a boundary. |
 | `ring_covers_boundary` | A ring layer must provide gap-free coverage of the boundary edges. |
@@ -279,7 +278,7 @@ density checks). Run `gdscheck list-suites --process ihp-sg13g2` to see them.
 - `min_density` / `max_density` accept `boundary_layer` (and optional
   `boundary_datatype`); the denominator area is the bounding box of that
   layer (typically `EdgeSeal`, GDS layer 39) instead of the whole layout.
-- `*_windowed_density` require a `window` parameter (tile size in µm).
+- `scope: window` requires a `window` parameter (tile size in µm).
 
 ## Output
 

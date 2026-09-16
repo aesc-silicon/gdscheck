@@ -5,7 +5,7 @@
 //! The density family driven the way a deck drives it: a rule, a layout, a cache, and
 //! the violations that come out.  Every expected percentage is read off the drawing.
 
-use super::{Kind, Scope, run};
+use super::{Kind, run};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::{Layer, Param, RuleDefinition};
@@ -61,6 +61,13 @@ fn rule(layers: &[(i16, i16)], value: f64, params: &[(&str, f64)]) -> RuleDefini
     }
 }
 
+/// The rule read per window: `scope: window`.
+fn windowed(mut r: RuleDefinition) -> RuleDefinition {
+    r.params
+        .insert("scope".into(), Param::Word("window".into()));
+    r
+}
+
 fn boundary(l: (i16, i16)) -> [(&'static str, f64); 2] {
     [("boundary", l.0 as f64), ("boundary_dt", l.1 as f64)]
 }
@@ -87,14 +94,7 @@ fn chip_density_is_the_layers_coverage_over_the_box() {
     ]);
     let mut m = cache();
     let go = |layers: &[(i16, i16)], kind: Kind, value: f64, m: &mut MergedCache| {
-        run(
-            kind,
-            Scope::Chip,
-            &rule(layers, value, &boundary(FRAME)),
-            &lay,
-            DBU,
-            m,
-        )
+        run(kind, &rule(layers, value, &boundary(FRAME)), &lay, DBU, m)
     };
     let v = go(&[A], Kind::Min, 50.0, &mut m);
     assert_eq!(v.len(), 1);
@@ -121,21 +121,13 @@ fn the_denominator_is_a_box_not_material() {
     let mut m = cache();
     let v = run(
         Kind::Min,
-        Scope::Chip,
         &rule(&[A], 100.0, &boundary(FRAME)),
         &lay,
         DBU,
         &mut m,
     );
     assert_eq!(density_of(&v[0]), 25.0);
-    let v = run(
-        Kind::Min,
-        Scope::Chip,
-        &rule(&[A], 100.0, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &mut m);
     assert_eq!(
         density_of(&v[0]),
         25.0,
@@ -143,14 +135,7 @@ fn the_denominator_is_a_box_not_material() {
     );
     // A narrower design without the ring: A alone is the die, so it covers all of it.
     let lay = layout(vec![brect(A, 0, 0, 100_000, 25_000)]);
-    let v = run(
-        Kind::Min,
-        Scope::Chip,
-        &rule(&[A], 100.0, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &mut m);
     assert!(v.is_empty());
 }
 
@@ -167,7 +152,7 @@ fn windowed_density_reads_every_window() {
     let go = |kind: Kind, value: f64, m: &mut MergedCache| {
         let mut p = vec![("window", 50.0)];
         p.extend(boundary(FRAME));
-        run(kind, Scope::Window, &rule(&[A], value, &p), &lay, DBU, m)
+        run(kind, &windowed(rule(&[A], value, &p)), &lay, DBU, m)
     };
     let v = go(Kind::Min, 60.0, &mut m);
     assert_eq!(v.len(), 3, "{v:?}");
@@ -199,8 +184,7 @@ fn a_partial_window_is_measured_against_what_is_there() {
     p.extend(boundary(FRAME));
     let v = run(
         Kind::Min,
-        Scope::Window,
-        &rule(&[A], 50.0, &p),
+        &windowed(rule(&[A], 50.0, &p)),
         &lay,
         DBU,
         &mut m,
@@ -210,8 +194,7 @@ fn a_partial_window_is_measured_against_what_is_there() {
     assert!(v.iter().all(|v| density_of(v) == 40.0), "{v:?}");
     let v = run(
         Kind::Min,
-        Scope::Window,
-        &rule(&[A], 50.0, &[("window", 50.0)]),
+        &windowed(rule(&[A], 50.0, &[("window", 50.0)])),
         &lay,
         DBU,
         &mut m,
@@ -231,8 +214,7 @@ fn a_malformed_or_unbounded_rule() {
     assert!(
         run(
             Kind::Min,
-            Scope::Window,
-            &rule(&[A], 50.0, &[]),
+            &windowed(rule(&[A], 50.0, &[])),
             &lay,
             DBU,
             &mut m
@@ -242,7 +224,6 @@ fn a_malformed_or_unbounded_rule() {
     // A boundary layer with no shapes: the die is the shapes' box, which is A itself.
     let v = run(
         Kind::Max,
-        Scope::Chip,
         &rule(&[A], 99.9, &boundary(FRAME)),
         &lay,
         DBU,

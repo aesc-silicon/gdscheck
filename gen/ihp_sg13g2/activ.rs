@@ -261,7 +261,7 @@ fn afil_g1(pdk: &PdkConfig) {
 fn afil_g2(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // min_windowed_density: shapes split per 800 µm window rather than full-width.
+    // min_density per window: shapes split per 800 µm window rather than full-width.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([
         rect(act, 0.0, 0.0, 800.0, 200.0),
@@ -287,7 +287,7 @@ fn afil_g2(pdk: &PdkConfig) {
 fn afil_g3(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // max_windowed_density: shapes split per 800 µm window rather than full-width.
+    // max_density per window: shapes split per 800 µm window rather than full-width.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
     elems.extend([
         rect(act, 0.0, 0.0, 800.0, 520.0),

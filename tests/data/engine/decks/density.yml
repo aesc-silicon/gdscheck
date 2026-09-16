@@ -18,24 +18,27 @@ rules:
     layer_params:
       boundary: Inner
   - id: D.wmin
-    check: min_windowed_density
+    check: min_density
     layers: [Outer]
     value: 50.0
     params:
+      scope: window
       window: 50.0
     layer_params:
       boundary: Inner
   - id: D.wmax
-    check: max_windowed_density
+    check: max_density
     layers: [Outer]
     value: 60.0
     params:
+      scope: window
       window: 50.0
     layer_params:
       boundary: Inner
   - id: D.region
-    check: min_region_density
+    check: min_density
     layers: [Outer, Via]
     value: 6.0
     params:
+      scope: region
       min_size: 35.0
