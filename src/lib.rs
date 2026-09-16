@@ -151,10 +151,9 @@ impl PhaseTrace {
 pub const NET_AWARE_CHECKS: &[&str] =
     &["antenna_ratio", "gate_connected_min_area", "max_nets_under"];
 
-/// Whether a rule reads the nets: a net-aware check, or a spacing rule gated on `net`.
+/// Whether a rule reads the nets: a net-aware check, or any rule gated on `net`.
 pub fn net_aware(rule: &pdk::RuleDefinition) -> bool {
-    NET_AWARE_CHECKS.contains(&rule.check.as_str())
-        || (rule.check == "min_space" && rule.params.contains_key("net"))
+    NET_AWARE_CHECKS.contains(&rule.check.as_str()) || rule.params.contains_key("net")
 }
 
 /// Parse a lazy virtual layer's `op` string to a [`merge::VirtualOp`], converting its
@@ -544,6 +543,7 @@ const SHAPE_CHECKS: &[&str] = &[
     "no_hole",
     "min_area",
     "max_area",
+    "exact_area",
 ];
 
 /// A halo per layer (DBU), and for each the rule or derivation chain that set it.
