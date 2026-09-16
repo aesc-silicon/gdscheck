@@ -3,21 +3,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 pub mod area;
-pub mod coverage;
 pub mod density;
 pub mod edge_distance;
 pub mod enclosure;
-pub mod forbidden;
-pub mod forbidden_overlap;
-pub mod forbidden_unless_labeled;
 pub mod helper;
-pub mod inside_boundary;
 pub mod min_array_space;
 pub mod min_via_array;
-pub mod must_interact;
 pub mod net;
-pub mod nonempty;
 pub mod params;
+pub mod residual;
 pub mod shape;
 pub mod space;
 pub mod width;
@@ -42,13 +36,9 @@ pub fn run_rule(
 ) -> Vec<Violation> {
     let mut out = match rule.check.as_str() {
         "antenna_ratio" => net::antenna::run(rule, layout, dbu_to_um, merged, conn),
-        "forbidden_unless_labeled" => {
-            forbidden_unless_labeled::run(rule, layout, dbu_to_um, merged)
-        }
+        "forbidden_unless_labeled" => residual::labeled::run(rule, layout, dbu_to_um, merged),
         "exact_width" => width::run(width::Kind::Exact, rule, layout, dbu_to_um, merged),
-        "forbidden" => forbidden::run(rule, layout, dbu_to_um),
-        "forbidden_overlap" => forbidden_overlap::run(rule, layout, dbu_to_um, merged),
-        "coverage" => coverage::run(rule, layout, dbu_to_um, merged),
+        "forbidden" => residual::run(rule, layout, dbu_to_um, merged),
         "min_edge_length" => {
             shape::edge_length::run(shape::Kind::Min, rule, layout, dbu_to_um, merged)
         }
@@ -106,7 +96,6 @@ pub fn run_rule(
             dbu_to_um,
             merged,
         ),
-        "inside_boundary" => inside_boundary::run(rule, layout, dbu_to_um),
         "ring_covers_boundary" => shape::ring_covers_boundary::run(rule, layout, dbu_to_um),
         "min_density" => density::run(
             density::Kind::Min,
@@ -126,8 +115,6 @@ pub fn run_rule(
         ),
         "min_area" => area::run(area::Kind::Min, rule, layout, dbu_to_um, merged, conn),
         "exact_area" => area::run(area::Kind::Exact, rule, layout, dbu_to_um, merged, conn),
-        "must_interact" => must_interact::run(rule, layout, dbu_to_um),
-        "nonempty" => nonempty::run(rule, layout, dbu_to_um, merged),
         "max_area" => area::run(area::Kind::Max, rule, layout, dbu_to_um, merged, conn),
         "max_nets_under" => net::nets_under::run(rule, layout, dbu_to_um, merged, conn),
         "no_angle" => shape::angle::run(rule, layout, dbu_to_um, merged),

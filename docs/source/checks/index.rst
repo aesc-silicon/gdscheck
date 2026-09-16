@@ -11,7 +11,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    :maxdepth: 1
 
    antenna_ratio
-   coverage
    exact_area
    exact_dim
    exact_edge_length
@@ -19,9 +18,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    exact_length
    exact_width
    forbidden
-   forbidden_overlap
    forbidden_unless_labeled
-   inside_boundary
    max_area
    max_density
    max_dim
@@ -48,12 +45,10 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_space
    min_width
    min_windowed_density
-   must_interact
    no_angle
    no_corner
    no_hole
    no_ring
-   nonempty
    offgrid
    ring_covers_boundary
    wide_uncovered

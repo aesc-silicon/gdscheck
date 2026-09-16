@@ -37,11 +37,11 @@ rules:
     layers: [pp3_pplus_in_nwell, pp3cii_ncomp]
     value: 0.16
   - id: PP.3d
-    check: nonempty
+    check: forbidden
     layers: [pp3d_viol]
     value: 0.0
   - id: PP.3e
-    check: nonempty
+    check: forbidden
     layers: [pp3e_viol]
     value: 0.0
   - id: PP.4a
@@ -59,7 +59,7 @@ rules:
     params:
       interacting_only: 1
   - id: PP.5a
-    check: nonempty
+    check: forbidden
     layers: [pp_5a_crossing]
     value: 0.0
   - id: PP.5b
@@ -110,7 +110,7 @@ rules:
     params:
       interacting_only: 1
   - id: PP.9
-    check: nonempty
+    check: forbidden
     layers: [pp_9_crossing]
     value: 0.0
   - id: PP.10
@@ -120,10 +120,10 @@ rules:
     params:
       interacting_only: 1
   - id: PP.11
-    check: nonempty
+    check: forbidden
     layers: [pp11_viol]
     value: 0.0
   - id: PP.12
-    check: nonempty
+    check: forbidden
     layers: [pp12_viol]
     value: 0.0

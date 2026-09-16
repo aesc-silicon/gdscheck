@@ -5,11 +5,11 @@
 # BJT geometry.  All 3 rules in this section.
 rules:
   - id: BJT.1
-    check: nonempty
+    check: forbidden
     layers: [bjt1_viol]
     value: 0.0
   - id: BJT.2
-    check: nonempty
+    check: forbidden
     layers: [bjt2_viol]
     value: 0.0
   - id: BJT.3

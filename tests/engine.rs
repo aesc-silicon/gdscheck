@@ -272,7 +272,7 @@ fn virtual_layers_ops() {
 
 // ---------------------------------------------------------------------------
 // Virtual-layer boolean ops: lazy (tiled, src/merge.rs) and eager
-// (src/pdk.rs::compute_virtual_layers), plus the lazy + inside_boundary guard.
+// (src/pdk.rs::compute_virtual_layers), plus the lazy + whole-layout guard.
 // ---------------------------------------------------------------------------
 
 /// An axis-aligned rectangle as a `GdsBoundary`, in DBU.
@@ -393,12 +393,12 @@ fn inside_ring_op_fills_ring_and_keeps_only_enclosed() {
     );
 }
 
-/// #2 — a lazy virtual layer under a whole-layout check (inside_boundary) is rejected
-/// up front (before any GDS is read).
+/// #2 — a lazy virtual layer under a whole-layout check (`forbidden` past a boundary) is
+/// rejected up front (before any GDS is read).
 #[test]
-fn lazy_layer_in_inside_boundary_is_rejected() {
+fn lazy_layer_in_whole_layout_check_is_rejected() {
     let err = run_drc("unused.gds", SYNTH, &["badlazy"], None, "TOP", true)
-        .expect_err("lazy layer under inside_boundary must error");
+        .expect_err("lazy layer under a whole-layout check must error");
     assert!(
         err.contains("lazy virtual layer"),
         "unexpected error: {err}"

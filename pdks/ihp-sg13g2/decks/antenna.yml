@@ -80,6 +80,6 @@ rules:
     value: 0.0
     text: isolbox
   - id: Ant.i
-    check: nonempty
+    check: forbidden
     layers: [AntIError]
     value: 0.0

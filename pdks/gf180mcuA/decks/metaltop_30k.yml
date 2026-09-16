@@ -44,7 +44,7 @@ rules:
     params:
       interacting_only: 1
   - id: MT30.5
-    check: nonempty
+    check: forbidden
     layers: [top_via_not_in_top_metal]
     value: 0.0
   - id: MT30.6
@@ -55,7 +55,7 @@ rules:
       max_width: 2.5
       sides: line_end
   - id: MT30.8
-    check: nonempty
+    check: forbidden
     layers: [mt308_few]
     value: 0.0
   - id: MT30.8

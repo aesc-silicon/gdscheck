@@ -27,7 +27,7 @@ rules:
     layers: [sab_out_otp, contact]
     value: 0.15
   - id: SB.4
-    check: nonempty
+    check: forbidden
     layers: [sab_on_contact]
     value: 0.0
   - id: SB.5a
@@ -52,7 +52,7 @@ rules:
       interacting_only: 1
       skip_coincident: 1
   - id: SB.8
-    check: nonempty
+    check: forbidden
     layers: [contact_on_sab]
     value: 0.0
   - id: SB.9
@@ -101,6 +101,6 @@ rules:
     layers: [sb15b_poly, sb15b_np]
     value: 0.32
   - id: SB.16
-    check: nonempty
+    check: forbidden
     layers: [sb16_viol]
     value: 0.0

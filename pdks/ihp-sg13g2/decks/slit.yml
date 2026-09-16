@@ -89,31 +89,31 @@ rules:
     layers: [TopMetal2NoExempt, TopMetal2.slit]
     value: 30.00
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [Metal1SlitOnPad]
     value: 0.0
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [Metal2SlitOnPad]
     value: 0.0
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [Metal3SlitOnPad]
     value: 0.0
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [Metal4SlitOnPad]
     value: 0.0
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [Metal5SlitOnPad]
     value: 0.0
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [TopMetal1SlitOnPad]
     value: 0.0
   - id: Slt.e
-    check: nonempty
+    check: forbidden
     layers: [TopMetal2SlitOnPad]
     value: 0.0
 

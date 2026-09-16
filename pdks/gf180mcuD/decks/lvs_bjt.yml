@@ -5,6 +5,6 @@
 # BJT LVS marker.  All 1 rules in this section.
 rules:
   - id: LVS_BJT.1
-    check: nonempty
+    check: forbidden
     layers: [lvsbjt1_viol]
     value: 0.0

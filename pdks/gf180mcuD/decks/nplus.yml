@@ -37,11 +37,11 @@ rules:
     layers: [np3_nplus_out_dn, np3cii_pcomp]
     value: 0.08
   - id: NP.3d
-    check: nonempty
+    check: forbidden
     layers: [np3d_viol]
     value: 0.0
   - id: NP.3e
-    check: nonempty
+    check: forbidden
     layers: [np3e_viol]
     value: 0.0
   - id: NP.4a
@@ -59,7 +59,7 @@ rules:
     params:
       interacting_only: 1
   - id: NP.5a
-    check: nonempty
+    check: forbidden
     layers: [np_5a_crossing]
     value: 0.0
   - id: NP.5b
@@ -110,7 +110,7 @@ rules:
     params:
       interacting_only: 1
   - id: NP.9
-    check: nonempty
+    check: forbidden
     layers: [np_9_crossing]
     value: 0.0
   - id: NP.10
@@ -120,10 +120,10 @@ rules:
     params:
       interacting_only: 1
   - id: NP.11
-    check: nonempty
+    check: forbidden
     layers: [np11_viol]
     value: 0.0
   - id: NP.12
-    check: nonempty
+    check: forbidden
     layers: [np12_viol]
     value: 0.0

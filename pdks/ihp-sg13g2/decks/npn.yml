@@ -4,7 +4,7 @@
 
 rules:
   - id: npnG2.b
-    check: nonempty
+    check: forbidden
     layers: [NpnTieNoTrans]
     value: 0.0
   - id: npnG2.c

@@ -91,7 +91,7 @@ Each rule needs ``id``, ``check`` (one of the names in :doc:`checks/index`), ``l
 and ``value`` (µm for widths/spaces, µm² for areas, % for densities — see the specific
 check's reference page). ``params`` and ``text`` are optional, check-specific (see
 *Rule parameters* below). ``ignore`` names layers whose shapes a check should skip
-(e.g. excluding the seal ring from an ``inside_boundary`` check).
+(e.g. excluding the passivation ring from a ``forbidden`` past the seal ring).
 
 A rule id may repeat across multiple entries in the same deck (e.g. IHP's ``TM2.b`` is
 both a ``min_space`` and a ``min_notch`` rule) — both fire under the same reported id,

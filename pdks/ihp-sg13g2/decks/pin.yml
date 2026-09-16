@@ -4,38 +4,56 @@
 
 rules:
   - id: Pin.a
-    check: coverage
+    check: forbidden
     layers: [Activ.pin, Activ]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.b
-    check: coverage
+    check: forbidden
     layers: [GatPoly.pin, GatPoly]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.e
-    check: coverage
+    check: forbidden
     layers: [Metal1.pin, Metal1]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.f
-    check: coverage
+    check: forbidden
     layers: [Metal2.pin, Metal2]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.f
-    check: coverage
+    check: forbidden
     layers: [Metal3.pin, Metal3]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.f
-    check: coverage
+    check: forbidden
     layers: [Metal4.pin, Metal4]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.f
-    check: coverage
+    check: forbidden
     layers: [Metal5.pin, Metal5]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.g
-    check: coverage
+    check: forbidden
     layers: [TopMetal1.pin, TopMetal1]
     value: 0.0
+    params:
+      op: uncovered
   - id: Pin.h
-    check: coverage
+    check: forbidden
     layers: [TopMetal2.pin, TopMetal2]
     value: 0.0
+    params:
+      op: uncovered

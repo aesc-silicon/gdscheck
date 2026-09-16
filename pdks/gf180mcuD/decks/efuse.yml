@@ -5,7 +5,7 @@
 # eFuse.  All 27 rules in this section.
 rules:
   - id: EF.01
-    check: nonempty
+    check: forbidden
     layers: [ef01_viol]
     value: 0.0
   - id: EF.02
@@ -17,51 +17,51 @@ rules:
     layers: [plfuse]
     value: 0.18
   - id: EF.03
-    check: nonempty
+    check: forbidden
     layers: [ef03_viol]
     value: 0.0
   - id: EF.04a
-    check: nonempty
+    check: forbidden
     layers: [ef04a_viol]
     value: 0.0
   - id: EF.04a
-    check: nonempty
+    check: forbidden
     layers: [ef04a_long_off]
     value: 0.0
   - id: EF.04b
-    check: nonempty
+    check: forbidden
     layers: [plfuse_not_rect]
     value: 0.0
   - id: EF.04c
-    check: nonempty
+    check: forbidden
     layers: [cathode_not_rect]
     value: 0.0
   - id: EF.04d
-    check: nonempty
+    check: forbidden
     layers: [anode_not_rect]
     value: 0.0
   - id: EF.05
-    check: nonempty
+    check: forbidden
     layers: [ef05_viol_a]
     value: 0.0
   - id: EF.05
-    check: nonempty
+    check: forbidden
     layers: [ef05_viol_b]
     value: 0.0
   - id: EF.06
-    check: nonempty
+    check: forbidden
     layers: [ef_06_viol]
     value: 0.0
   - id: EF.07
-    check: nonempty
+    check: forbidden
     layers: [ef_07_viol]
     value: 0.0
   - id: EF.08
-    check: nonempty
+    check: forbidden
     layers: [ef_08_viol]
     value: 0.0
   - id: EF.09
-    check: nonempty
+    check: forbidden
     layers: [ef_09_viol]
     value: 0.0
   - id: EF.10
@@ -85,7 +85,7 @@ rules:
     layers: [plfuse_efuse, cont_cathode]
     value: 0.155
   - id: EF.12
-    check: nonempty
+    check: forbidden
     layers: [cont_on_plfuse]
     value: 0.0
   - id: EF.13
@@ -93,19 +93,19 @@ rules:
     layers: [plfuse_efuse, cont_anode]
     value: 0.14
   - id: EF.14
-    check: nonempty
+    check: forbidden
     layers: [ef14_viol]
     value: 0.0
   - id: EF.15
-    check: nonempty
+    check: forbidden
     layers: [plfuse_at_contact]
     value: 0.0
   - id: EF.16a
-    check: nonempty
+    check: forbidden
     layers: [ef16a_viol]
     value: 0.0
   - id: EF.16b
-    check: nonempty
+    check: forbidden
     layers: [ef16b_viol]
     value: 0.0
   - id: EF.17
@@ -117,11 +117,11 @@ rules:
     layers: [efuse_mk]
     value: 0.26
   - id: EF.18
-    check: nonempty
+    check: forbidden
     layers: [ef18_viol]
     value: 0.0
   - id: EF.19
-    check: nonempty
+    check: forbidden
     layers: [ef19_viol]
     value: 0.0
   - id: EF.20
@@ -129,14 +129,14 @@ rules:
     layers: [plfuse, ef20_neighbours]
     value: 2.73
   - id: EF.21
-    check: nonempty
+    check: forbidden
     layers: [ef21_viol]
     value: 0.0
   - id: EF.22a
-    check: nonempty
+    check: forbidden
     layers: [ef_22a_viol]
     value: 0.0
   - id: EF.22b
-    check: nonempty
+    check: forbidden
     layers: [ef_22b_viol]
     value: 0.0

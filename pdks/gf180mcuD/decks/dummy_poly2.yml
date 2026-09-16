@@ -5,7 +5,7 @@
 # Poly2 dummy fill.  All 16 rules in this section.
 rules:
   - id: DPF.1
-    check: nonempty
+    check: forbidden
     layers: [dpf1_viol]
     value: 0.0
   - id: DPF.2b

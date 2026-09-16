@@ -46,9 +46,11 @@ rules:
     layers: [ContBarOnActiv, GatPoly]
     value: 0.11
   - id: CntB.g
-    check: coverage
+    check: forbidden
     layers: [ContBar, Activ, GatPoly]
     value: 0.0
+    params:
+      op: uncovered
   - id: CntB.g1
     check: min_space
     layers: [pSD, ContBarOnNsdActiv]
@@ -58,14 +60,18 @@ rules:
     layers: [pSD, ContBarOnPsdActiv]
     value: 0.09
   - id: CntB.h
-    check: coverage
+    check: forbidden
     layers: [ContBar, Metal1]
     value: 0.0
+    params:
+      op: uncovered
   - id: CntB.h1
     check: min_enclosure
     layers: [Metal1, ContBar]
     value: 0.05
   - id: CntB.j
-    check: forbidden_overlap
+    check: forbidden
     layers: [ContBarOnGatPoly, Activ]
     value: 0.0
+    params:
+      op: overlap

@@ -26,7 +26,7 @@ rules:
     layers: [channel_edges_56v]
     value: 0.3
   - id: DF.2b
-    check: nonempty
+    check: forbidden
     layers: [comp_over_100um]
     value: 0.0
 
@@ -47,7 +47,7 @@ rules:
     layers: [comp_56v_no_otp]
     value: 0.36
   - id: DF.3b
-    check: nonempty
+    check: forbidden
     layers: [df3b_viol]
     value: 0.0
   - id: DF.3c_LV
@@ -59,7 +59,7 @@ rules:
     layers: [comp_3p3v_bjt]
     value: 0.32
   - id: DF.3c_MV
-    check: nonempty
+    check: forbidden
     layers: [df3c_viol]
     value: 0.0
 
@@ -162,7 +162,7 @@ rules:
     value: 0.3
 
   - id: DF.12
-    check: nonempty
+    check: forbidden
     layers: [comp_no_implant]
     value: 0.0
 

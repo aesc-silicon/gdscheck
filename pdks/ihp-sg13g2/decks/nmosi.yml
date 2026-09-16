@@ -20,6 +20,6 @@ rules:
     layers: [nSDBlockIso]
     value: 0.62
   - id: nmosi.g
-    check: nonempty
+    check: forbidden
     layers: [NmosiGBad]
     value: 0.0

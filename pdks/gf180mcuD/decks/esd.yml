@@ -21,7 +21,7 @@ rules:
     layers: [esd, ncomp]
     value: 0.6
   - id: ESD.3b
-    check: nonempty
+    check: forbidden
     layers: [esd_on_pcomp]
     value: 0.0
   - id: ESD.4a
@@ -47,7 +47,7 @@ rules:
     layers: [esd.edges, esd6_poly]
     value: 0.45
   - id: ESD.7
-    check: nonempty
+    check: forbidden
     layers: [esd_on_pcomp]
     value: 0.0
   - id: ESD.8
@@ -55,11 +55,11 @@ rules:
     layers: [esd, nplus_or_pplus]
     value: 0.3
   - id: ESD.9
-    check: nonempty
+    check: forbidden
     layers: [esd_no_dualgate]
     value: 0.0
   - id: ESD.10
-    check: nonempty
+    check: forbidden
     layers: [esd10_viol]
     value: 0.0
   - id: ESD.pl

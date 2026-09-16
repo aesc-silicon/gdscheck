@@ -39,7 +39,7 @@ rules:
     params:
       walls: unshared
   - id: MDN.4a
-    check: nonempty
+    check: forbidden
     layers: [mdn4a_viol]
     value: 0.0
   - id: MDN.4b
@@ -51,7 +51,7 @@ rules:
     layers: [pcomp_mdn5ai, mvsd]
     value: 1.0
   - id: MDN.5ai
-    check: nonempty
+    check: forbidden
     layers: [mdn5ai_touch]
     value: 0.0
   - id: MDN.5aii
@@ -59,7 +59,7 @@ rules:
     layers: [pcomp_mdn5aii, mvsd]
     value: 0.92
   - id: MDN.5aii
-    check: nonempty
+    check: forbidden
     layers: [mdn5aii_touch]
     value: 0.0
   - id: MDN.5b
@@ -67,11 +67,11 @@ rules:
     layers: [ldnmos_source, pcomp_mdn]
     value: 0.4
   - id: MDN.5b
-    check: nonempty
+    check: forbidden
     layers: [mdn5b_touch]
     value: 0.0
   - id: MDN.6
-    check: nonempty
+    check: forbidden
     layers: [mdn6_viol]
     value: 0.0
   - id: MDN.6a
@@ -81,15 +81,15 @@ rules:
     params:
       interacting_only: 1
   - id: MDN.7
-    check: nonempty
+    check: forbidden
     layers: [mdn7_viol]
     value: 0.0
   - id: MDN.7a
-    check: nonempty
+    check: forbidden
     layers: [mdn7a_viol]
     value: 0.0
   - id: MDN.7a
-    check: nonempty
+    check: forbidden
     layers: [mdn7a_viol_b]
     value: 0.0
   - id: MDN.8a
@@ -97,7 +97,7 @@ rules:
     layers: [mvsd, nwell]
     value: 1.0
   - id: MDN.8a
-    check: nonempty
+    check: forbidden
     layers: [mvsd_on_nwell]
     value: 0.0
   - id: MDN.8b
@@ -119,7 +119,7 @@ rules:
     layers: [poly_mdn10.edges, mdn10b_edges]
     value: 0.4
   - id: MDN.10c
-    check: nonempty
+    check: forbidden
     layers: [mdn10c_viol]
     value: 0.0
   - id: MDN.10ei
@@ -127,7 +127,7 @@ rules:
     layers: [poly_mdn10, pcomp_not_ncomp]
     value: 0.4
   - id: MDN.10ei
-    check: nonempty
+    check: forbidden
     layers: [mdn10ei_touch]
     value: 0.0
   - id: MDN.10eii
@@ -135,11 +135,11 @@ rules:
     layers: [poly_mdn10, pcomp_at_ncomp]
     value: 0.32
   - id: MDN.10f
-    check: nonempty
+    check: forbidden
     layers: [mdn10f_interconnect]
     value: 0.0
   - id: MDN.10f
-    check: nonempty
+    check: forbidden
     layers: [mdn10f_reaching_out]
     value: 0.0
   - id: MDN.11
@@ -147,15 +147,15 @@ rules:
     layers: [mdn11_uniform]
     value: 0.4
   - id: MDN.11
-    check: nonempty
+    check: forbidden
     layers: [mdn11_wide]
     value: 0.0
   - id: MDN.11
-    check: nonempty
+    check: forbidden
     layers: [mdn11_no_channel]
     value: 0.0
   - id: MDN.12
-    check: nonempty
+    check: forbidden
     layers: [mdn12_viol]
     value: 0.0
   - id: MDN.13a
@@ -163,15 +163,15 @@ rules:
     layers: [ldnmos_body]
     value: 50.0
   - id: MDN.13b
-    check: nonempty
+    check: forbidden
     layers: [mdn13b_viol]
     value: 0.0
   - id: MDN.13c
-    check: nonempty
+    check: forbidden
     layers: [mdn13c_viol]
     value: 0.0
   - id: MDN.13d
-    check: nonempty
+    check: forbidden
     layers: [mdn13d_viol]
     value: 0.0
   - id: MDN.14
@@ -179,7 +179,7 @@ rules:
     layers: [mvsd, dnwell]
     value: 6.0
   - id: MDN.14
-    check: nonempty
+    check: forbidden
     layers: [mvsd_on_dnwell]
     value: 0.0
   - id: MDN.15a
@@ -187,14 +187,14 @@ rules:
     layers: [ncomp_drain]
     value: 0.22
   - id: MDN.15b
-    check: nonempty
+    check: forbidden
     layers: [mdn15b_viol]
     value: 0.0
   - id: MDN.17
-    check: nonempty
+    check: forbidden
     layers: [mdn17_viol_a]
     value: 0.0
   - id: MDN.17
-    check: nonempty
+    check: forbidden
     layers: [mdn17_viol_b]
     value: 0.0

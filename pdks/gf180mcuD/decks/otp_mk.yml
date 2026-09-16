@@ -45,7 +45,7 @@ rules:
     params:
       interacting_only: 1
   - id: O.PL.ORT
-    check: nonempty
+    check: forbidden
     layers: [oplort_viol]
     value: 0.0
   - id: O.SB.2
@@ -65,7 +65,7 @@ rules:
     layers: [sab_otp, contact]
     value: 0.03
   - id: O.SB.4
-    check: nonempty
+    check: forbidden
     layers: [sab_otp_on_contact]
     value: 0.0
   - id: O.SB.5b_LV

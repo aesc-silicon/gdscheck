@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Forbidden-region check with a text-labelled exemption — a *candidate* device that lands
-//! in a *forbidden* region is an error, unless it belongs to an isolation structure tagged
-//! by a text label.  Every layer role is supplied positionally and the exemption label is
-//! the rule's `text`, so another PDK can reuse it.  IHP antenna Ant.h ("dantenna in NWell
+//! Forbidden-region check with a text-labelled exemption, on a derivation this check
+//! still carries itself: once Ant.h's chain is a derived layer of the PDK, the rule is
+//! a plain `forbidden` with a `text` exemption (see the parent module) and this goes.
+//!
+//! A *candidate* device that lands in a *forbidden* region is an error, unless it belongs
+//! to an isolation structure tagged by a text label.  Every layer role is supplied
+//! positionally and the exemption label is the rule's `text`, so another PDK can reuse it.  IHP antenna Ant.h ("dantenna in NWell
 //! not allowed", exempting text-tagged `isolbox` structures) is its first user; it mirrors
 //! `antenna.drc`:
 //!

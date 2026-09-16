@@ -12,7 +12,7 @@ rules:
     layers: [RES, Cont]
     value: 0.12
   - id: Rsil.c
-    check: nonempty
+    check: forbidden
     layers: [RsilResProtrusionNoCont]
     value: 0.0
   - id: Rsil.d
@@ -45,7 +45,7 @@ rules:
     layers: [RppdCont, SalBlockRppd]
     value: 0.20
   - id: Rppd.c
-    check: nonempty
+    check: forbidden
     layers: [RppdContTooFar]
     value: 0.0
   - id: Rppd.d
@@ -64,7 +64,7 @@ rules:
     layers: [RhighA]
     value: 0.50
   - id: Rhi.b
-    check: nonempty
+    check: forbidden
     layers: [NsdMismatchAtRhigh]
     value: 0.0
   - id: Rhi.c
@@ -78,7 +78,7 @@ rules:
     layers: [RhighCont, SalBlockRhigh]
     value: 0.20
   - id: Rhi.d
-    check: nonempty
+    check: forbidden
     layers: [RhighContTooFar]
     value: 0.0
   - id: Rhi.e
