@@ -23,6 +23,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    max_density
    max_dim
    max_enclosure
+   max_extension
    max_gate_length
    min_gate_length
    max_length
@@ -36,7 +37,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_dim
    min_enclosed_area
    min_enclosure
-   min_endcap_enclosure
    min_extension
    min_length
    min_notch

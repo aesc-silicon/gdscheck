@@ -39,7 +39,14 @@ Two layers, positional — same roles as :doc:`min_enclosure`:
 Parameters
 ----------
 
-None beyond ``layers`` and ``value`` (µm, the maximum allowed margin).
+``sides``
+   Optional. ``all`` (the default): no side may exceed ``value``. ``any``: the *best*
+   side may not exceed it — the endcap's maximum, read from the bounding-box margins the
+   way :doc:`min_enclosure`'s ``sides: any`` reads them. ``adjacent`` and ``line_end``
+   are about a margin falling short and have no maximum.
+
+``metric``
+   Optional. ``projection`` (the default) or ``euclidian``, as in :doc:`min_enclosure`.
 
 
 Violation markers

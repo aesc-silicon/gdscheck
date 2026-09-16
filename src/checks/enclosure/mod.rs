@@ -89,9 +89,8 @@ pub fn run(
     run_sides(kind, sides, rule, layout, dbu_to_um, merged)
 }
 
-/// The enclosure under `sides`, whether they came from the params or from a check
-/// name that stands for them.
-pub fn run_sides(
+/// The enclosure under `sides`.
+fn run_sides(
     kind: Kind,
     sides: Sides,
     rule: &RuleDefinition,
