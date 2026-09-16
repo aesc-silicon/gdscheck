@@ -20,7 +20,7 @@ rules:
     layers: [lres_poly, comp]
     value: 0.6
   - id: LRES.3
-    check: nonempty
+    check: forbidden
     layers: [comp_on_lres]
     value: 0.0
   - id: LRES.4
@@ -34,7 +34,7 @@ rules:
     params:
       interacting_only: 1
   - id: LRES.5
-    check: nonempty
+    check: forbidden
     layers: [lres_5_crossing]
     value: 0.0
   - id: LRES.6
@@ -48,11 +48,11 @@ rules:
     layers: [cont_lres, sab]
     value: 0.22
   - id: LRES.7
-    check: nonempty
+    check: forbidden
     layers: [cont_lres_on_sab]
     value: 0.0
   - id: LRES.9a
-    check: nonempty
+    check: forbidden
     layers: [lres9a_viol]
     value: 0.0
   - id: LRES.9b

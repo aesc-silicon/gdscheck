@@ -389,7 +389,7 @@ type Reach = (i32, i32);
 /// virtual's own halo (the result keeps only what the sources covered).  A `close`
 /// dilates then erodes by its radius, so its source needs 2·r more to be exact in the
 /// core; a `grow` only dilates, so 1·r.  The radius part is charged even when no distance
-/// rule reads the virtual - a grow feeding a `nonempty` chain still needs its source
+/// rule reads the virtual - a grow feeding a `forbidden` chain still needs its source
 /// within reach to be right per tile.
 /// How many polygon copies the merge cache may hold between rules: `GDSCHECK_CACHE_POLYS`,
 /// or a quarter of physical memory at the half kilobyte a copy costs on average.
@@ -791,7 +791,7 @@ fn clippable_layers(
     // checks.  `covering` used to be here for the same reason and is not any more: it
     // asks per core whether the filter's piece lies within the candidate's, which is
     // exact on pieces, and on a whole copy of a boolean over a chip-sized operand it
-    // was wrong.  What is left for pieces is a chain that ends in `nonempty`, a coverage
+    // was wrong.  What is left for pieces is a chain that ends in a `forbidden`, a coverage
     // residual, an area or a density - and the slotting chains, the ones that cost
     // the most, are exactly that.
     let mut sources_of: std::collections::HashMap<(i16, i16), &[(i16, i16)]> =
@@ -955,13 +955,14 @@ fn run_drc_impl(
     };
 
     // Lazy (tiled) virtual layers: built per tile in the merge cache rather than
-    // materialised in the layout.  A whole-layout check (inside_boundary) therefore
-    // cannot see them, so reject that combination up front rather than report wrong.
+    // materialised in the layout.  A whole-layout check (`forbidden` past a boundary)
+    // therefore cannot see them, so reject that combination up front rather than
+    // report wrong.
     let tiled_virtuals = pdk.tiled_virtual_layers();
     let lazy_keys: std::collections::HashSet<(i16, i16)> =
         tiled_virtuals.iter().map(|v| v.key).collect();
     for rule in &rules {
-        if ALL_LAYER_CHECKS.contains(&rule.check.as_str()) {
+        if checks::residual::whole_layout(rule) {
             for l in rule.layers.iter().chain(rule.ignore.iter()) {
                 if lazy_keys.contains(&(l.gds_layer as i16, l.gds_datatype as i16)) {
                     return Err(format!(
@@ -1012,75 +1013,72 @@ fn run_drc_impl(
     // Flatten the cell hierarchy into a FlatLayout indexed by layer/datatype so
     // GdsStructRef/GdsArrayRef instances are visible to every check.  Restrict the
     // flatten to the layers the deck actually touches — a large hierarchy is far
-    // too big to instantiate in full.  `inside_boundary` inspects *every* layer,
-    // so any deck using it must flatten everything.
-    const ALL_LAYER_CHECKS: &[&str] = &["inside_boundary"];
-    let needed: Option<std::collections::HashSet<(i16, i16)>> = if rules
-        .iter()
-        .any(|r| ALL_LAYER_CHECKS.contains(&r.check.as_str()))
-    {
-        None
-    } else {
-        let mut n: std::collections::HashSet<(i16, i16)> = std::collections::HashSet::new();
-        for rule in &rules {
-            for l in rule.layers.iter().chain(rule.ignore.iter()) {
-                n.insert((l.gds_layer as i16, l.gds_datatype as i16));
-            }
-            // A `layer_params` entry arrives as `<key>` and `<key>_dt`.
-            for (k, l) in &rule.params {
-                if let (pdk::Param::Num(l), Some(pdk::Param::Num(dt))) =
-                    (l, rule.params.get(&format!("{k}_dt")))
-                {
-                    n.insert((*l as i16, *dt as i16));
+    // too big to instantiate in full.  A `forbidden` past a boundary inspects *every*
+    // layer, so any deck using it must flatten everything.
+    let needed: Option<std::collections::HashSet<(i16, i16)>> =
+        if rules.iter().any(checks::residual::whole_layout) {
+            None
+        } else {
+            let mut n: std::collections::HashSet<(i16, i16)> = std::collections::HashSet::new();
+            for rule in &rules {
+                for l in rule.layers.iter().chain(rule.ignore.iter()) {
+                    n.insert((l.gds_layer as i16, l.gds_datatype as i16));
                 }
-            }
-        }
-        // Net extraction (if it will run) reads the connect-graph layers, which the
-        // rules themselves may not name — pull them in so they are flattened too.
-        if connectivity && rules.iter().any(net_aware) {
-            for spec in &pdk.connectivity {
-                n.insert(spec.connector);
-                n.extend(spec.layers.iter().copied());
-            }
-        }
-        // A referenced virtual layer is built from its source layers, which must
-        // therefore be flattened too — transitively, since a virtual layer may feed
-        // another (e.g. ContOnActiv → ContSquare → ContNoSealring → Cont/EdgeSeal).
-        // Iterate to a fixpoint so every layer in the chain is pulled in.
-        loop {
-            let mut added = false;
-            for el in &pdk.edge_layers {
-                let Some(elayer) = pdk.layer(&el.name) else {
-                    continue;
-                };
-                if !n.contains(&(elayer.gds_layer as i16, elayer.gds_datatype as i16)) {
-                    continue;
-                }
-                for src in &el.layers {
-                    if let Some(s) = pdk.layer(src) {
-                        added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
+                // A `layer_params` entry arrives as `<key>` and `<key>_dt`.
+                for (k, l) in &rule.params {
+                    if let (pdk::Param::Num(l), Some(pdk::Param::Num(dt))) =
+                        (l, rule.params.get(&format!("{k}_dt")))
+                    {
+                        n.insert((*l as i16, *dt as i16));
                     }
                 }
             }
-            for vl in &pdk.virtual_layers {
-                let Some(vlayer) = pdk.layer(&vl.name) else {
-                    continue;
-                };
-                if !n.contains(&(vlayer.gds_layer as i16, vlayer.gds_datatype as i16)) {
-                    continue;
+            // Net extraction (if it will run) reads the connect-graph layers, which the
+            // rules themselves may not name — pull them in so they are flattened too.
+            if connectivity && rules.iter().any(net_aware) {
+                for spec in &pdk.connectivity {
+                    n.insert(spec.connector);
+                    n.extend(spec.layers.iter().copied());
                 }
-                for src in &vl.layers {
-                    if let Some(s) = pdk.layer(src) {
-                        added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
+            }
+            // A referenced virtual layer is built from its source layers, which must
+            // therefore be flattened too — transitively, since a virtual layer may feed
+            // another (e.g. ContOnActiv → ContSquare → ContNoSealring → Cont/EdgeSeal).
+            // Iterate to a fixpoint so every layer in the chain is pulled in.
+            loop {
+                let mut added = false;
+                for el in &pdk.edge_layers {
+                    let Some(elayer) = pdk.layer(&el.name) else {
+                        continue;
+                    };
+                    if !n.contains(&(elayer.gds_layer as i16, elayer.gds_datatype as i16)) {
+                        continue;
+                    }
+                    for src in &el.layers {
+                        if let Some(s) = pdk.layer(src) {
+                            added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
+                        }
                     }
                 }
+                for vl in &pdk.virtual_layers {
+                    let Some(vlayer) = pdk.layer(&vl.name) else {
+                        continue;
+                    };
+                    if !n.contains(&(vlayer.gds_layer as i16, vlayer.gds_datatype as i16)) {
+                        continue;
+                    }
+                    for src in &vl.layers {
+                        if let Some(s) = pdk.layer(src) {
+                            added |= n.insert((s.gds_layer as i16, s.gds_datatype as i16));
+                        }
+                    }
+                }
+                if !added {
+                    break;
+                }
             }
-            if !added {
-                break;
-            }
-        }
-        Some(n)
-    };
+            Some(n)
+        };
 
     let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref(), &pdk.waivers);
     phase.end("flatten");

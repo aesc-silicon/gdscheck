@@ -33,7 +33,7 @@ rules:
     params:
       interacting_only: 1
   - id: CO.3
-    check: nonempty
+    check: forbidden
     layers: [co_3_crossing]
     value: 0.0
   - id: CO.4
@@ -43,7 +43,7 @@ rules:
     params:
       interacting_only: 1
   - id: CO.4
-    check: nonempty
+    check: forbidden
     layers: [co_4_crossing]
     value: 0.0
   - id: CO.5a
@@ -86,14 +86,14 @@ rules:
     layers: [contact_on_poly, comp]
     value: 0.17
   - id: CO.9
-    check: nonempty
+    check: forbidden
     layers: [co9_viol]
     value: 0.0
   - id: CO.10
-    check: nonempty
+    check: forbidden
     layers: [co10_viol]
     value: 0.0
   - id: CO.11
-    check: nonempty
+    check: forbidden
     layers: [co11_viol]
     value: 0.0

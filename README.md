@@ -270,8 +270,7 @@ density checks). Run `gdscheck list-suites --process ihp-sg13g2` to see them.
 | `min_windowed_density` | Density ≥ `value` % in every `window`×`window` µm tile. |
 | `max_windowed_density` | Density ≤ `value` % in every `window`×`window` µm tile. |
 | `offgrid` | All vertices must lie on the `value` µm manufacturing grid. |
-| `forbidden` | The layer(s) must be empty; any shape is a violation. |
-| `inside_boundary` | Every shape must lie inside the boundary shape (e.g. EdgeSeal). |
+| `forbidden` | The layer(s) must be empty; with `op` the uncovered part, overlap, apart or touching regions, or anything beyond a boundary. |
 | `ring_covers_boundary` | A ring layer must provide gap-free coverage of the boundary edges. |
 | `no_ring` | The layer must not form a closed ring. |
 

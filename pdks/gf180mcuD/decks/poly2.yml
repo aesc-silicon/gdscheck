@@ -114,16 +114,16 @@ rules:
       angle: bent
 
   - id: PL.9
-    check: nonempty
+    check: forbidden
     layers: [pl9_viol]
     value: 0.0
 
   - id: PL.11
-    check: nonempty
+    check: forbidden
     layers: [pl11_viol]
     value: 0.0
 
   - id: PL.12
-    check: nonempty
+    check: forbidden
     layers: [pl12_viol]
     value: 0.0

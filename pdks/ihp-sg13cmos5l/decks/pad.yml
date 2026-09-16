@@ -12,7 +12,7 @@ rules:
     layers: [PassivDfpad, SealActiv]
     value: 7.50
   - id: Pad.i
-    check: nonempty
+    check: forbidden
     layers: [DfpadNoTopMetal1]
     value: 0.0
 
@@ -33,7 +33,7 @@ rules:
     layers: [SBumpPad, EdgeSeal]
     value: 50.0
   - id: Padb.f
-    check: nonempty
+    check: forbidden
     layers: [SBumpPadBadShape]
     value: 0.0
 
@@ -50,10 +50,10 @@ rules:
     layers: [TopMetal1, CuPillarPad]
     value: 7.5
   - id: Padc.d
-    check: nonempty
+    check: forbidden
     layers: [PadcDBad]
     value: 0.0
   - id: Padc.f
-    check: nonempty
+    check: forbidden
     layers: [CuPillarPadBadShape]
     value: 0.0

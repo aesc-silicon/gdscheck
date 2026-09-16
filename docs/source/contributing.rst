@@ -57,8 +57,8 @@ Signature depends on what the check needs:
 
 **Prefer the tiled merge cache over a global merge** unless every layer the check reads is
 genuinely sparse (isolated vias, contacts, device markers — see
-:doc:`checks/must_interact` for a deliberate, documented example of when a global merge is
-safe). A check that globally unions a dense, chip-wide layer works on a small test
+:doc:`checks/ring_covers_boundary` for a deliberate, documented example of when a global
+merge is safe). A check that globally unions a dense, chip-wide layer works on a small test
 pattern and then runs out of memory the first time someone points it at a real SoC —
 exactly the failure class :doc:`checks/forbidden_unless_labeled` was rewritten to avoid
 (see :doc:`architecture`, *Region stitching* and *Lazy virtual layers*, for the primitives

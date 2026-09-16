@@ -25,7 +25,7 @@ rules:
     params:
       net: different
   - id: DN.3
-    check: nonempty
+    check: forbidden
     layers: [dn3_viol]
     value: 0.0
     description: "DN.3: each DNWELL must be directly surrounded by a PCOMP guard ring"

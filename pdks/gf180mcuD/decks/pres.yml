@@ -18,7 +18,7 @@ rules:
     layers: [pres_poly, comp]
     value: 0.6
   - id: PRES.3
-    check: nonempty
+    check: forbidden
     layers: [comp_on_pres]
     value: 0.0
   - id: PRES.4
@@ -32,7 +32,7 @@ rules:
     params:
       interacting_only: 1
   - id: PRES.5
-    check: nonempty
+    check: forbidden
     layers: [pres_5_crossing]
     value: 0.0
   - id: PRES.6
@@ -46,11 +46,11 @@ rules:
     layers: [cont_pres, sab]
     value: 0.22
   - id: PRES.7
-    check: nonempty
+    check: forbidden
     layers: [cont_pres_on_sab]
     value: 0.0
   - id: PRES.9a
-    check: nonempty
+    check: forbidden
     layers: [pres9a_viol]
     value: 0.0
   - id: PRES.9b

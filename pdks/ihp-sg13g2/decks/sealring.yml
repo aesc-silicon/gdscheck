@@ -193,9 +193,11 @@ rules:
     layers: [RingPassiv, SealTopMetal2]
     value: 1.00
   - id: Seal.l
-    check: inside_boundary
+    check: forbidden
     layers: [EdgeSeal]
     value: 0.0
+    params:
+      op: beyond
     ignore:
       - Passiv
       - Pad

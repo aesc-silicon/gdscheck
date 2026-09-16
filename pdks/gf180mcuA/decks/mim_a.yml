@@ -16,7 +16,7 @@ rules:
     params:
       interacting_only: 1
   - id: MIM.2
-    check: nonempty
+    check: forbidden
     layers: [mimtm_2_crossing]
     value: 0.0
   - id: MIM.3
@@ -30,7 +30,7 @@ rules:
     params:
       interacting_only: 1
   - id: MIM.4
-    check: nonempty
+    check: forbidden
     layers: [mimtm_4_crossing]
     value: 0.0
   - id: MIM.5
@@ -46,7 +46,7 @@ rules:
     layers: [fusetop]
     value: 0.6
   - id: MIM.7
-    check: nonempty
+    check: forbidden
     layers: [fusetop_outside_cap_mk]
     value: 0.0
     description: "MIM.7: Min FuseTop enclosure by CAP_MK: 0 um"
@@ -67,7 +67,7 @@ rules:
     layers: [top_via_and_fusetop]
     value: 0.5
   - id: MIM.10
-    check: nonempty
+    check: forbidden
     layers: [topmin1_via_on_mim_bottom]
     value: 0.0
     description: "MIM.10: no Via3 may touch the MIM bottom plate"

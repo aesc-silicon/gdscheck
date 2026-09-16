@@ -31,7 +31,7 @@ rules:
     params:
       interacting_only: 1
   - id: HRES.4
-    check: nonempty
+    check: forbidden
     layers: [hres_4_crossing]
     value: 0.0
   - id: HRES.5
@@ -43,7 +43,7 @@ rules:
     layers: [hres_resistor, comp]
     value: 0.3
   - id: HRES.6
-    check: nonempty
+    check: forbidden
     layers: [comp_on_hres]
     value: 0.0
   - id: HRES.7
@@ -53,7 +53,7 @@ rules:
     params:
       interacting_only: 1
   - id: HRES.7
-    check: nonempty
+    check: forbidden
     layers: [hres_7_crossing]
     value: 0.0
   - id: HRES.8
@@ -61,7 +61,7 @@ rules:
     layers: [hres_contact, sab]
     value: 0.22
   - id: HRES.8
-    check: nonempty
+    check: forbidden
     layers: [hres_cont_on_sab]
     value: 0.0
   - id: HRES.9
@@ -81,7 +81,7 @@ rules:
     params:
       sides: any
   - id: HRES.12a
-    check: nonempty
+    check: forbidden
     layers: [hres12a_viol]
     value: 0.0
   - id: HRES.12b

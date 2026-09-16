@@ -39,7 +39,7 @@ rules:
     layers: [poly_ymtp_lv_out_pf]
     value: 0.13
   - id: Y.PL.1_MV
-    check: nonempty
+    check: forbidden
     layers: [poly_ymtp_mv_out_pf]
     value: 0.0
   - id: Y.PL.2_LV

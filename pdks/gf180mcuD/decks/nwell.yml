@@ -53,7 +53,7 @@ rules:
     layers: [nwell, dnwell]
     value: 3.1
   - id: NW.4
-    check: nonempty
+    check: forbidden
     layers: [nwell_on_lvpwell]
     value: 0.0
   - id: NW.5_LV
@@ -64,7 +64,7 @@ rules:
       interacting_only: 1
       metric: euclidian
   - id: NW.5_LV
-    check: nonempty
+    check: forbidden
     layers: [nw5_lv_crossing]
     value: 0.0
   - id: NW.5_MV
@@ -75,10 +75,10 @@ rules:
       interacting_only: 1
       metric: euclidian
   - id: NW.5_MV
-    check: nonempty
+    check: forbidden
     layers: [nw5_mv_crossing]
     value: 0.0
   - id: NW.6
-    check: nonempty
+    check: forbidden
     layers: [nwell_res_in_dnwell]
     value: 0.0

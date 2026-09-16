@@ -20,6 +20,8 @@ rules:
     layers: [nSD.block, pSD]
     value: 0.31
   - id: nSDB.e
-    check: forbidden_overlap
+    check: forbidden
     layers: [nSD.block, Cont]
     value: 0.0
+    params:
+      op: overlap

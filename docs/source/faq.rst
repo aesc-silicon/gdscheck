@@ -65,8 +65,8 @@ grows memory unexpectedly:
   …) references a *dense* layer with an unusually large ``value`` — that inflates the
   layer's halo for every rule sharing it, not just the one that needs it.
 * A check that globally merges a layer rather than using the tiled cache (documented on
-  its own reference page when that's the case, e.g. :doc:`checks/must_interact`) is only
-  safe for genuinely sparse layers (vias, contacts, isolated markers) — if such a check is
+  its own reference page when that's the case, e.g. :doc:`checks/ring_covers_boundary`)
+  is only safe for genuinely sparse layers (vias, contacts, isolated markers) — if such a check is
   pointed at a dense, chip-wide layer on a large design, expect it to scale poorly; that's
   a check-implementation limitation worth reporting, not something to work around by
   itself.

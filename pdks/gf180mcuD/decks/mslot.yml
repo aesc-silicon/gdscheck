@@ -5,12 +5,12 @@
 # Metal slotting.
 rules:
   - id: MSLOT1.0
-    check: nonempty
+    check: forbidden
     layers: [metal1_slot_not_rect]
     value: 0.0
     description: "MSLOT1.0: Slot is not a rectangle"
   - id: MSLOT1.1
-    check: nonempty
+    check: forbidden
     layers: [metal1_needs_slot]
     value: 0.0
     description: "MSLOT1.1: Maximum metal width without slotting: 30 um"
@@ -47,12 +47,12 @@ rules:
     layers: [metal1_slot_rect, dont_slot]
     value: 5.0
   - id: MSLOT2.0
-    check: nonempty
+    check: forbidden
     layers: [metal2_slot_not_rect]
     value: 0.0
     description: "MSLOT2.0: Slot is not a rectangle"
   - id: MSLOT2.1
-    check: nonempty
+    check: forbidden
     layers: [metal2_needs_slot]
     value: 0.0
     description: "MSLOT2.1: Maximum metal width without slotting: 30 um"
@@ -89,12 +89,12 @@ rules:
     layers: [metal2_slot_rect, dont_slot]
     value: 5.0
   - id: MSLOT3.0
-    check: nonempty
+    check: forbidden
     layers: [metal3_slot_not_rect]
     value: 0.0
     description: "MSLOT3.0: Slot is not a rectangle"
   - id: MSLOT3.1
-    check: nonempty
+    check: forbidden
     layers: [metal3_needs_slot]
     value: 0.0
     description: "MSLOT3.1: Maximum metal width without slotting: 30 um"
@@ -131,12 +131,12 @@ rules:
     layers: [metal3_slot_rect, dont_slot]
     value: 5.0
   - id: MSLOT4.0
-    check: nonempty
+    check: forbidden
     layers: [metal4_slot_not_rect]
     value: 0.0
     description: "MSLOT4.0: Slot is not a rectangle"
   - id: MSLOT4.1
-    check: nonempty
+    check: forbidden
     layers: [metal4_needs_slot]
     value: 0.0
     description: "MSLOT4.1: Maximum metal width without slotting: 30 um"
@@ -173,12 +173,12 @@ rules:
     layers: [metal4_slot_rect, dont_slot]
     value: 5.0
   - id: MSLOT5.0
-    check: nonempty
+    check: forbidden
     layers: [metal5_slot_not_rect]
     value: 0.0
     description: "MSLOT5.0: Slot is not a rectangle"
   - id: MSLOT5.1
-    check: nonempty
+    check: forbidden
     layers: [metal5_needs_slot]
     value: 0.0
     description: "MSLOT5.1: Maximum metal width without slotting: 30 um"

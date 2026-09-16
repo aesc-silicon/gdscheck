@@ -78,7 +78,7 @@ pub struct Layer {
 #[serde(rename_all = "lowercase")]
 pub enum VirtualMode {
     /// Materialised globally into the layout up front (default).  Required for
-    /// layers consumed by whole-layout checks such as `inside_boundary`.
+    /// layers consumed by whole-layout checks such as `forbidden` past a boundary.
     #[default]
     Global,
     /// Built lazily per tile inside the merge cache from its source layers' tiles.
@@ -185,8 +185,8 @@ struct RuleRaw {
     /// A number or a word, as the deck writes it: `rows: 3`, `sides: adjacent`.
     #[serde(default)]
     pub params: HashMap<String, Param>,
-    /// Layer names whose shapes this rule should skip (e.g. inside_boundary not
-    /// checking the edge-seal passivation ring).
+    /// Layer names whose shapes this rule should skip (e.g. a `forbidden` past the
+    /// edge seal not checking its passivation ring).
     #[serde(default)]
     pub ignore: Vec<String>,
     /// Optional text/label pattern a check may need (e.g. the exemption label for

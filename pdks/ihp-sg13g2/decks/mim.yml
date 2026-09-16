@@ -40,6 +40,8 @@ rules:
     params:
       scope: chip
   - id: MIM.h
-    check: must_interact
+    check: forbidden
     layers: [MIM, TopVia1, Vmim]
     value: 0.0
+    params:
+      op: apart

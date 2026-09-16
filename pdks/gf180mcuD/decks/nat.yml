@@ -46,11 +46,11 @@ rules:
     layers: [nat]
     value: 0.74
   - id: NAT.8
-    check: nonempty
+    check: forbidden
     layers: [nat8_viol]
     value: 0.0
   - id: NAT.9
-    check: nonempty
+    check: forbidden
     layers: [nat9_interconnect]
     value: 0.0
   - id: NAT.9
@@ -58,14 +58,14 @@ rules:
     layers: [nat, poly_off_nat]
     value: 0.3
   - id: NAT.10
-    check: nonempty
+    check: forbidden
     layers: [nat10_viol]
     value: 0.0
   - id: NAT.11
-    check: nonempty
+    check: forbidden
     layers: [nat11_viol]
     value: 0.0
   - id: NAT.12
-    check: nonempty
+    check: forbidden
     layers: [nat12_viol]
     value: 0.0

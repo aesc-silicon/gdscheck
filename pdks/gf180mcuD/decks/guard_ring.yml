@@ -7,11 +7,11 @@
 # Not ported: GR.5, GR.9, GR.10.
 rules:
   - id: GR.1
-    check: nonempty
+    check: forbidden
     layers: [gr1_mk_viol]
     value: 0.0
   - id: GR.1
-    check: nonempty
+    check: forbidden
     layers: [gr1_comp_viol]
     value: 0.0
   - id: GR.2
@@ -47,7 +47,7 @@ rules:
     layers: [metal5, guard_ring_mk]
     value: 10.0
   - id: GR.3
-    check: nonempty
+    check: forbidden
     layers: [gr3_viol]
     value: 0.0
   - id: GR.4
@@ -95,6 +95,6 @@ rules:
     layers: [via4_in_guard_ring]
     value: 0.7
   - id: GR.11
-    check: nonempty
+    check: forbidden
     layers: [guard_ring_no_pad]
     value: 0.0

@@ -19,7 +19,7 @@ rules:
     params:
       walls: unshared
   - id: MDP.2
-    check: nonempty
+    check: forbidden
     layers: [mdp2_viol]
     value: 0.0
   - id: MDP.3ai
@@ -27,7 +27,7 @@ rules:
     layers: [ncomp_mdp3ai, mvpsd]
     value: 1.0
   - id: MDP.3ai
-    check: nonempty
+    check: forbidden
     layers: [mdp3ai_touch]
     value: 0.0
   - id: MDP.3aii
@@ -35,7 +35,7 @@ rules:
     layers: [ncomp_mdp3aii, mvpsd]
     value: 0.92
   - id: MDP.3aii
-    check: nonempty
+    check: forbidden
     layers: [mdp3aii_touch]
     value: 0.0
   - id: MDP.3b
@@ -43,11 +43,11 @@ rules:
     layers: [ncomp_mdp3b, pcomp_mdp3b]
     value: 0.4
   - id: MDP.3d
-    check: nonempty
+    check: forbidden
     layers: [mdp3d_viol]
     value: 0.0
   - id: MDP.4
-    check: nonempty
+    check: forbidden
     layers: [mdp4_viol]
     value: 0.0
   - id: MDP.4a
@@ -61,7 +61,7 @@ rules:
     params:
       scope: edge
   - id: MDP.5
-    check: nonempty
+    check: forbidden
     layers: [mdp5_viol]
     value: 0.0
   - id: MDP.5a
@@ -71,11 +71,11 @@ rules:
     params:
       interacting_only: 1
   - id: MDP.6
-    check: nonempty
+    check: forbidden
     layers: [mdp6_viol]
     value: 0.0
   - id: MDP.6a
-    check: nonempty
+    check: forbidden
     layers: [mdp6a_viol]
     value: 0.0
   - id: MDP.7
@@ -95,11 +95,11 @@ rules:
     layers: [mdp9b_edges, comp.edges]
     value: 0.4
   - id: MDP.9b
-    check: nonempty
+    check: forbidden
     layers: [mdp9b_touch]
     value: 0.0
   - id: MDP.9d
-    check: nonempty
+    check: forbidden
     layers: [mdp9d_viol]
     value: 0.0
   - id: MDP.9ei
@@ -107,7 +107,7 @@ rules:
     layers: [ldpmos_gate_mdp, ncomp_not_butted]
     value: 0.4
   - id: MDP.9ei
-    check: nonempty
+    check: forbidden
     layers: [mdp9ei_touch]
     value: 0.0
   - id: MDP.9eii
@@ -115,19 +115,19 @@ rules:
     layers: [ldpmos_gate_mdp, ncomp_butted]
     value: 0.32
   - id: MDP.9eii
-    check: nonempty
+    check: forbidden
     layers: [mdp9eii_touch]
     value: 0.0
   - id: MDP.9f
-    check: nonempty
+    check: forbidden
     layers: [mdp9f_interconnect]
     value: 0.0
   - id: MDP.10
-    check: nonempty
+    check: forbidden
     layers: [mdp10_wide]
     value: 0.0
   - id: MDP.10
-    check: nonempty
+    check: forbidden
     layers: [mdp10_no_channel]
     value: 0.0
   - id: MDP.10a
@@ -149,7 +149,7 @@ rules:
     layers: [mdp11_edges, pcomp.edges]
     value: 0.8
   - id: MDP.11
-    check: nonempty
+    check: forbidden
     layers: [mdp11_flush]
     value: 0.0
   - id: MDP.12
@@ -159,7 +159,7 @@ rules:
     params:
       interacting_only: 1
   - id: MDP.12
-    check: nonempty
+    check: forbidden
     layers: [mdp_12_crossing]
     value: 0.0
   - id: MDP.13a
@@ -167,11 +167,11 @@ rules:
     layers: [ldpmos_body]
     value: 50.0
   - id: MDP.13b
-    check: nonempty
+    check: forbidden
     layers: [mdp13b_viol]
     value: 0.0
   - id: MDP.13c
-    check: nonempty
+    check: forbidden
     layers: [mdp13c_viol]
     value: 0.0
   - id: MDP.15
@@ -183,14 +183,14 @@ rules:
     layers: [comp_drain_mdp]
     value: 0.22
   - id: MDP.16b
-    check: nonempty
+    check: forbidden
     layers: [mdp16b_viol]
     value: 0.0
   - id: MDP.17a
-    check: nonempty
+    check: forbidden
     layers: [mdp17a_viol]
     value: 0.0
   - id: MDP.17c
-    check: nonempty
+    check: forbidden
     layers: [mdp17c_viol]
     value: 0.0

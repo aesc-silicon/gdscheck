@@ -47,7 +47,7 @@ rules:
     params:
       interacting_only: 1
   - id: LPW.5
-    check: nonempty
+    check: forbidden
     layers: [lpw5_viol]
     value: 0.0
   - id: LPW.11
@@ -55,6 +55,6 @@ rules:
     layers: [lvpwell_out_dn, dnwell]
     value: 1.5
   - id: LPW.12
-    check: nonempty
+    check: forbidden
     layers: [lpw12_viol]
     value: 0.0

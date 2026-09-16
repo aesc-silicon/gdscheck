@@ -13,6 +13,10 @@ Its first (and so far only) user is IHP SG13G2's ``Ant.h``: an isolated n-type d
 diode (a Schottky/antenna-protection structure) is forbidden inside an NWell unless it
 sits inside an ``isolbox``-labelled isolation cluster.
 
+The derivation below is the part this check still carries itself. Once it is a derived
+layer of the PDK, ``Ant.h`` is a plain :doc:`forbidden` rule with a ``text`` exemption,
+and this check retires.
+
 
 Semantics
 ---------

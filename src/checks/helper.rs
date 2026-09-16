@@ -9,14 +9,10 @@
 
 use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{
-    Core, MergedCache, MergedPoly, VirtualOp, compose_tile, merged_centroid_dbu,
-    representative_point,
-};
+use crate::merge::{Core, MergedCache, MergedPoly, representative_point};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
-use std::collections::HashSet;
 
 // ===========================================================================
 // Region-to-region spacing engine.
@@ -376,101 +372,6 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
                 &gate,
             )
             .into_iter()
-        })
-        .collect()
-}
-
-// ===========================================================================
-// Per-tile boolean "residual" engine.
-//
-// Applies one boolean op to the rule's layers on each cached tile and reports every
-// resulting region whose centroid lies in the tile core.  Containment-style rules use
-// this with a single primitive:
-//   * `Difference`   → `target − (other covers)` — the part of `layers[0]` not covered
-//     by the union of the rest ("must be inside", e.g. Cnt.g / Cnt.h).
-//   * `Intersection` → the overlap of all layers ("X over Y not allowed", e.g. Cnt.j).
-// The two thin checks (`coverage`, `forbidden_overlap`) differ only in the op they pass.
-// ===========================================================================
-
-/// Drive a boolean-residual check: `op` over `rule.layers` per tile, one point
-/// violation per residual region (owned by the tile whose core holds its centroid).
-/// `descr` is the human-readable body of each violation message.
-pub fn run_boolean_residual(
-    rule: &RuleDefinition,
-    layout: &FlatLayout,
-    dbu_to_um: f64,
-    merged: &mut MergedCache,
-    op: VirtualOp,
-    label: &str,
-    descr: &str,
-) -> Vec<Violation> {
-    let keys_l: Vec<(i16, i16)> = rule
-        .layers
-        .iter()
-        .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
-        .collect();
-
-    println!("[{}] Checking {}: {}", rule.id, rule.check, descr);
-
-    for &(l, d) in &keys_l {
-        merged.ensure(layout, l, d);
-    }
-    let maps: Vec<&crate::merge::TileMap> =
-        keys_l.iter().map(|&(l, d)| merged.tiles(l, d)).collect();
-
-    // Tiles that can yield output: bounded by the base for Difference, by the shared
-    // keys for Intersection.
-    let tile_keys: Vec<(i32, i32)> = match op {
-        VirtualOp::Difference => maps[0].keys().copied().collect(),
-        VirtualOp::Intersection => {
-            let mut acc: HashSet<(i32, i32)> = maps[0].keys().copied().collect();
-            for m in &maps[1..] {
-                acc.retain(|k| m.contains_key(k));
-            }
-            acc.into_iter().collect()
-        }
-        _ => maps
-            .iter()
-            .flat_map(|m| m.keys().copied())
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect(),
-    };
-
-    let tile = merged.tile_dbu() as i64;
-    let rid = rule.id.as_str();
-
-    tile_keys
-        .par_iter()
-        .flat_map_iter(|&(tx, ty)| {
-            let core = Core {
-                x0: tx as i64 * tile,
-                y0: ty as i64 * tile,
-                x1: (tx as i64 + 1) * tile,
-                y1: (ty as i64 + 1) * tile,
-            };
-            let sources: Vec<&[MergedPoly]> = maps
-                .iter()
-                .map(|m| m.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]))
-                .collect();
-            compose_tile(op, &sources)
-                .into_iter()
-                .filter_map(move |m| {
-                    let (cx, cy) = merged_centroid_dbu(&m);
-                    if !core.owns_region(cx, cy) {
-                        return None;
-                    }
-                    let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
-                    Some(Violation::point(
-                        rid,
-                        label,
-                        format!("{descr} at ({ux:.4}, {uy:.4}) µm"),
-                        ux,
-                        uy,
-                    ))
-                })
-                .collect::<Vec<_>>()
-                .into_iter()
         })
         .collect()
 }

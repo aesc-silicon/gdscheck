@@ -33,11 +33,11 @@ rules:
     layers: [pSD, NActivInNWell]
     value: 0.03
   - id: pSD.e
-    check: nonempty
+    check: forbidden
     layers: [TieTooNarrow]
     value: 0.0
   - id: pSD.f
-    check: nonempty
+    check: forbidden
     layers: [PsdFBad]
     value: 0.0
   - id: pSD.g
