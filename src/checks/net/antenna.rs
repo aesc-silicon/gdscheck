@@ -2,24 +2,28 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Antenna area-ratio checks (§7.1, Ant.b/e and Ant.d/f) — the first net-aware checks.
+//! `antenna_ratio`: the conductor area on a gate's net divided by the gate's area, summed
+//! level by level up the stack.
 //!
-//! Mirrors IHP's `antenna.drc`: the conductor area connected to a gate, divided by the
-//! gate area, is accumulated layer by layer up the stack (Fig 7.1).  At each metal (or via)
-//! level the net is the connectivity through *all layers up to that level*, so the gate-area
-//! denominator grows as higher layers merge gates.  A net carrying a protection diode
-//! (≥ 0.16 µm² of diffusion) takes the relaxed limit (Ant.e/f); otherwise the strict one
-//! (Ant.b/d).
+//! Mirrors IHP's `antenna.drc` (Fig 7.1): at each metal or via level the net is the
+//! connectivity through every connect step up to that level, so the gate-area
+//! denominator grows as higher layers merge gates, and the level's own conductor area on
+//! the net is the numerator.  A net carrying a protection diode takes the relaxed limit
+//! (`diode: with`), a net without one the strict limit (`diode: without`).  GF180
+//! measures a metal by its sidewall (`metric: sidewall`, perimeter times `thickness`)
+//! and credits a diode by adding `diode_factor` times its area to the denominator.
 //!
-//! Each metal/via level's net comes from [`Connectivity::partition`] over the matching
-//! prefix of the ordered connect steps; the diode flag uses the final (full) net.
-//!
-//! `layers` = [gate, antenna conductors…, diode]; `antenna_layers` counts the conductors;
-//! `gate_net_layer` / `diode_net_layer` are the base layers a region's net is resolved
-//! through (a gate sits on `GatPoly`, a diode on `Activ`).  `require_diode` selects nets
-//! with (1) or without (0) a diode.  Because the cumulative ratio is monotonic up the
-//! stack, flagging the final cumulative is equivalent to KLayout flagging at any level.
+//! `layers` are the conductors, one per level being accumulated.  The gate and the
+//! diodes are layer params - `gate`, `diode_1`, `diode_2`, `diode_3` - each with a
+//! `_net_of` naming the conductor its net is looked up on, since a gate sits on poly and
+//! a diode on diffusion and neither marker is in the connect graph; `antenna_net_of`
+//! does the same for a derived conductor such as poly over field.  `level` names the
+//! layer through whose first connect step the net is read, `level_before` the one it
+//! stops short of; without either, each conductor is read at its own step.  The
+//! cumulative ratio is monotonic up the stack, so flagging the final sum is what
+//! KLayout flagging at any level comes to.
 
+use super::super::params::{NotAWord, mode};
 use crate::connectivity::{Connectivity, LayerKey};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
@@ -40,13 +44,40 @@ fn key(l: &Layer) -> LayerKey {
     (l.gds_layer as i16, l.gds_datatype as i16)
 }
 
+/// The level the net is read at: through the first connect step of a layer, or short of
+/// it.  `None` reads each conductor at its own step.
+fn level(rule: &RuleDefinition, conn: &Connectivity) -> Result<Option<usize>, ()> {
+    let named = |k: &str, before: bool| -> Result<Option<usize>, ()> {
+        let Some(l) = net_key(rule, k) else {
+            return Ok(None);
+        };
+        let Some(prefix) = conn.connect_prefix(l) else {
+            eprintln!(
+                "[{}] antenna_ratio: the `{k}` layer is in no connect step",
+                rule.id
+            );
+            return Err(());
+        };
+        Ok(Some(if before { prefix - 1 } else { prefix }))
+    };
+    match (named("level", false)?, named("level_before", true)?) {
+        (Some(_), Some(_)) => {
+            eprintln!(
+                "[{}] antenna_ratio: `level` and `level_before` name one level each - give one",
+                rule.id
+            );
+            Err(())
+        }
+        (Some(p), None) | (None, Some(p)) => Ok(Some(p)),
+        (None, None) => Ok(None),
+    }
+}
+
 /// Diode area (µm²) per net at `part`, summed over every diode layer.  Each layer's net
 /// is resolved through its own base layer, since a derived diode (n+ outside the well,
 /// p+ inside it) is not itself in the connect graph.
-#[allow(clippy::too_many_arguments)]
 fn diode_area_per_net(
-    diodes: &[Layer],
-    diode_nets: &[Option<LayerKey>],
+    diodes: &[(LayerKey, LayerKey)],
     conn: &Connectivity,
     part: &crate::connectivity::Partition,
     layout: &FlatLayout,
@@ -54,9 +85,7 @@ fn diode_area_per_net(
     d2: f64,
 ) -> HashMap<usize, f64> {
     let mut out: HashMap<usize, f64> = HashMap::new();
-    for (i, diode) in diodes.iter().enumerate() {
-        let dkey = key(diode);
-        let dnet = diode_nets.get(i).copied().flatten().unwrap_or(dkey);
+    for &(dkey, dnet) in diodes {
         for r in merged.regions(layout, dkey.0, dkey.1).to_vec() {
             if let Some(net) = part.net_at(conn, dnet, r.marker.0, r.marker.1) {
                 *out.entry(net).or_default() += r.area_dbu * d2;
@@ -77,59 +106,86 @@ pub fn run(
         eprintln!("[{}] antenna_ratio needs connectivity", rule.id);
         return vec![];
     };
-    if rule.layers.len() < 2 {
+    // The gate and the conductor its net is looked up on, and the diodes and theirs.
+    let Some(gate) = net_key(rule, "gate") else {
+        eprintln!("[{}] antenna_ratio needs the layer param `gate`", rule.id);
+        return vec![];
+    };
+    let gate_net = net_key(rule, "gate_net_of").unwrap_or(gate);
+    let diodes: Vec<(LayerKey, LayerKey)> = ["diode_1", "diode_2", "diode_3"]
+        .iter()
+        .filter_map(|k| {
+            net_key(rule, k).map(|d| (d, net_key(rule, &format!("{k}_net_of")).unwrap_or(d)))
+        })
+        .collect();
+    let conductors = rule.layers.clone();
+    if conductors.is_empty() {
         eprintln!(
-            "[{}] antenna_ratio needs a gate layer and at least one antenna layer",
+            "[{}] antenna_ratio needs at least one conductor layer",
             rule.id
         );
         return vec![];
     }
-
-    let n_ant = rule
-        .num("antenna_layers")
-        .map(|v| v as usize)
-        .unwrap_or(rule.layers.len() - 1);
-    let gate = &rule.layers[0];
-    let antenna = &rule.layers[1..1 + n_ant];
-    let diodes = &rule.layers[(1 + n_ant).min(rule.layers.len())..];
-
-    let gate_net = net_key(rule, "gate_net_layer").unwrap_or(key(gate));
-    let require_diode = rule.num("require_diode").map(|v| v != 0.0);
-    // Each diode layer resolves its net through its own base layer: GF180's n-diode is
-    // `ncomp_con` outside the well and its p-diode is `pcomp_con` inside one, so a single
-    // shared base layer would put both on the wrong net.  Index 0 keeps the unsuffixed
-    // name, so IHP's single-diode rules are unchanged.
-    let diode_nets: Vec<Option<LayerKey>> = (0..diodes.len())
-        .map(|i| {
-            if i == 0 {
-                net_key(rule, "diode_net_layer")
-            } else {
-                net_key(rule, &format!("diode_net_layer_{i}"))
-            }
-        })
-        .collect();
-
+    let require_diode = match mode(rule, "antenna_ratio", "diode") {
+        Ok(None) => None,
+        Ok(Some("with")) => Some(true),
+        Ok(Some("without")) => Some(false),
+        Ok(Some(other)) => {
+            eprintln!(
+                "[{}] antenna_ratio: diode can only be `with` or `without`, not `{other}`",
+                rule.id
+            );
+            return vec![];
+        }
+        Err(NotAWord) => return vec![],
+    };
     // GF180 measures a metal antenna by its sidewall area - perimeter times the metal's
     // thickness - rather than by its plan area, and credits a protection diode by adding
     // `diode_factor` times the diode area to the *denominator* instead of switching to a
     // relaxed limit.  Both are off unless the rule asks for them, so IHP's rules keep
     // their own model.
-    let by_perimeter = rule.num("metric").is_some_and(|v| v != 0.0);
+    let by_perimeter = match mode(rule, "antenna_ratio", "metric") {
+        Ok(None) => false,
+        Ok(Some("sidewall")) => true,
+        Ok(Some("area")) => false,
+        Ok(Some(other)) => {
+            eprintln!(
+                "[{}] antenna_ratio: metric can only be `area` or `sidewall`, not `{other}`",
+                rule.id
+            );
+            return vec![];
+        }
+        Err(NotAWord) => return vec![],
+    };
     let thickness = rule.num("thickness").unwrap_or(1.0);
     let diode_factor = rule.num("diode_factor");
+    let Ok(fixed_level) = level(rule, conn) else {
+        return vec![];
+    };
+    // The base layer an antenna region's net is resolved through (poly-on-field sits on
+    // GatPoly); defaults to the antenna layer itself (a metal/via/contact is its own net).
+    let antenna_net = net_key(rule, "antenna_net_of");
 
     let d2 = dbu_to_um * dbu_to_um;
     let limit = rule.value;
+    let rule = &RuleDefinition {
+        id: rule.id.clone(),
+        check: rule.check.clone(),
+        layers: conductors,
+        value: rule.value,
+        params: rule.params.clone(),
+        ignore: rule.ignore.clone(),
+        text: rule.text.clone(),
+    };
 
     println!(
-        "[{}] Checking antenna_ratio: cumulative {} area / {} gate area ≥ {limit}{}",
+        "[{}] Checking antenna_ratio: cumulative {} area / gate area ≥ {limit}{}",
         rule.id,
-        antenna
+        rule.layers
             .iter()
             .map(|l| l.name.as_str())
             .collect::<Vec<_>>()
             .join("+"),
-        gate.name,
         match require_diode {
             Some(true) => " (nets with a protection diode)",
             Some(false) => " (nets without a protection diode)",
@@ -141,7 +197,7 @@ pub fn run(
     // sits on.  The node is partition-independent, so the per-level net is then O(1)
     // (`part.net_of(node)`) with no repeated point lookup.
     let gates: Vec<(f64, (f64, f64), usize)> = merged
-        .regions(layout, gate.gds_layer as i16, gate.gds_datatype as i16)
+        .regions(layout, gate.0, gate.1)
         .iter()
         .filter_map(|r| {
             conn.node_at(gate_net, r.marker.0, r.marker.1)
@@ -152,16 +208,9 @@ pub fn run(
         return vec![];
     }
 
-    // A fixed connectivity level (Ant.a/c, the "initial" pre-metal net) or, by default,
-    // each antenna layer's own connect level (the cumulative metal/via stack).
-    let fixed_level = rule.num("level").map(|v| v as usize);
-    // The base layer an antenna region's net is resolved through (poly-on-field sits on
-    // GatPoly); defaults to the antenna layer itself (a metal/via/contact is its own net).
-    let antenna_net = net_key(rule, "antenna_net_layer");
-
     // Cumulative ratio per gate, summed level by level with each level's own partition.
     let mut cum = vec![0.0f64; gates.len()];
-    for l in antenna {
+    for l in &rule.layers {
         let lkey = key(l);
         let Some(prefix) = fixed_level.or_else(|| conn.connect_prefix(lkey)) else {
             continue;
@@ -206,8 +255,8 @@ pub fn run(
         // The diode credit, when the rule uses one, is evaluated on the *same* net as the
         // antenna it offsets — a diode only protects a gate it is already connected to at
         // this level of the stack.
-        let level_diode = diode_factor
-            .map(|_| diode_area_per_net(diodes, &diode_nets, conn, &part, layout, merged, d2));
+        let level_diode =
+            diode_factor.map(|_| diode_area_per_net(&diodes, conn, &part, layout, merged, d2));
 
         for (i, (_, _, node)) in gates.iter().enumerate() {
             let net = part.net_of(*node);
@@ -225,7 +274,7 @@ pub fn run(
     // Diode presence on the full net (relaxes the limit).  The full partition is cached.
     let full = conn.partition(usize::MAX);
     let diode_area: HashMap<usize, f64> = if require_diode.is_some() {
-        diode_area_per_net(diodes, &diode_nets, conn, &full, layout, merged, d2)
+        diode_area_per_net(&diodes, conn, &full, layout, merged, d2)
     } else {
         HashMap::new()
     };

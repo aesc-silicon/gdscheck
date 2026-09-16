@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-pub mod antenna_ratio;
 pub mod area;
 pub mod coverage;
 pub mod density;
@@ -13,10 +12,10 @@ pub mod forbidden_overlap;
 pub mod forbidden_unless_labeled;
 pub mod helper;
 pub mod inside_boundary;
-pub mod max_nets_under;
 pub mod min_array_space;
 pub mod min_via_array;
 pub mod must_interact;
+pub mod net;
 pub mod nonempty;
 pub mod params;
 pub mod shape;
@@ -42,7 +41,7 @@ pub fn run_rule(
     conn: Option<&crate::connectivity::Connectivity>,
 ) -> Vec<Violation> {
     let mut out = match rule.check.as_str() {
-        "antenna_ratio" => antenna_ratio::run(rule, layout, dbu_to_um, merged, conn),
+        "antenna_ratio" => net::antenna::run(rule, layout, dbu_to_um, merged, conn),
         "forbidden_unless_labeled" => {
             forbidden_unless_labeled::run(rule, layout, dbu_to_um, merged)
         }
@@ -130,7 +129,7 @@ pub fn run_rule(
         "must_interact" => must_interact::run(rule, layout, dbu_to_um),
         "nonempty" => nonempty::run(rule, layout, dbu_to_um, merged),
         "max_area" => area::run(area::Kind::Max, rule, layout, dbu_to_um, merged, conn),
-        "max_nets_under" => max_nets_under::run(rule, layout, dbu_to_um, merged, conn),
+        "max_nets_under" => net::nets_under::run(rule, layout, dbu_to_um, merged, conn),
         "no_angle" => shape::angle::run(rule, layout, dbu_to_um, merged),
         "no_corner" => shape::corner::run(rule, layout, dbu_to_um, merged),
         "no_hole" => shape::holes::run(rule, layout, dbu_to_um, merged),

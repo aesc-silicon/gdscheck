@@ -30,6 +30,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    max_gate_length
    min_gate_length
    max_length
+   max_nets_under
    max_vertices
    max_space
    max_width

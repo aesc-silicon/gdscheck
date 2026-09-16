@@ -8,10 +8,10 @@
 //! latter under each marker region are resolved to nets, and a marker covering more than
 //! `value` of them is reported.
 //!
-//! `layers[2]`, if given, is where the net is looked up.  It is wanted whenever the
-//! geometry worth counting is a derived layer - NAT.6 counts the active *under the
-//! marker*, which is an intersection, and an intersection is in no connect graph.  The
-//! shapes come from the derived layer and the net from the drawn one.
+//! The `net_of` layer param, if given, is where the net is looked up.  It is wanted
+//! whenever the geometry worth counting is a derived layer - NAT.6 counts the active
+//! *under the marker*, which is an intersection, and an intersection is in no connect
+//! graph.  The shapes come from the derived layer and the net from the drawn one.
 //!
 //! GF180's NAT.6 is the rule this exists for - "two or more COMPs at different potential
 //! are not allowed under the same NAT layer" - and it is worth saying that upstream does
@@ -48,10 +48,17 @@ pub fn run(
     };
     let (mk, md) = (mark.gds_layer as i16, mark.gds_datatype as i16);
     let (ck, cd) = (cond.gds_layer as i16, cond.gds_datatype as i16);
+    // The conductor the nets are looked up on, when what is counted is a derived layer:
+    // the `net_of` layer param, or the old third layer until the deck has moved.
     let net_key = rule
-        .layers
-        .get(2)
-        .map_or((ck, cd), |l| (l.gds_layer as i16, l.gds_datatype as i16));
+        .num("net_of")
+        .map(|l| (l as i16, rule.num("net_of_dt").unwrap_or(0.0) as i16))
+        .or_else(|| {
+            rule.layers
+                .get(2)
+                .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
+        })
+        .unwrap_or((ck, cd));
     println!(
         "[{}] Checking max_nets_under <= {} of {} beneath each {} region",
         rule.id, rule.value as i64, cond.name, mark.name
