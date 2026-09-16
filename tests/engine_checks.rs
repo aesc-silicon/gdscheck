@@ -299,3 +299,115 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
         "{pattern}: {rule}"
     );
 }
+
+/// The spacing check from a deck: the bound met exactly and missed by five nanometres
+/// on each way two shapes face, and each gate met and not met.
+///
+/// - `axis_*` are two squares side by side 0.5 and 0.495 apart; `corner_*` corner to
+///   corner by 0.3/0.4 and 0.297/0.396, 0.5 and 0.495 as the crow flies; `diag_*` two
+///   45° bars 0.5006 and 0.4992 across, the nearest gaps the grid has either side of
+///   0.5, and both bent under S.bent's 0.8.
+/// - `bent_pair` is the 45° pair 0.601 across; `bent_elsewhere` two axis-aligned bars
+///   0.6 apart with the only 45° wall 15 µm from the gap.
+/// - `run_*` are 0.2 µm bars running alongside for 2 and 2.005 µm; `wide_*` bars
+///   running for 1 µm with a line 0.3 and 0.305 deep; `both_*` bars of Via wide and
+///   long, wide and short, narrow and long.
+/// - `net_bridged` is two squares 0.25 apart joined through Via and Inner, `net_apart`
+///   the same two alone.
+#[rstest]
+#[case("axis_exact", "S.min", 0)]
+#[case("axis_under", "S.min", 1)]
+#[case("corner_exact", "S.min", 0)]
+#[case("corner_under", "S.min", 1)]
+#[case("diag_exact", "S.min", 0)]
+#[case("diag_exact", "S.bent", 1)]
+#[case("diag_under", "S.min", 1)]
+#[case("diag_under", "S.bent", 1)]
+#[case("bent_pair", "S.bent", 1)]
+#[case("bent_pair", "S.min", 0)]
+#[case("bent_elsewhere", "S.bent", 0)]
+#[case("bent_elsewhere", "S.min", 0)]
+#[case("run_exact", "S.len", 0)]
+#[case("run_over", "S.len", 1)]
+#[case("run_over", "S.wide", 0)]
+#[case("wide_exact", "S.wide", 0)]
+#[case("wide_over", "S.wide", 1)]
+#[case("wide_over", "S.len", 0)]
+#[case("both_wide_long", "S.both", 1)]
+#[case("both_wide_short", "S.both", 0)]
+#[case("both_narrow_long", "S.both", 0)]
+#[case("net_bridged", "S.same", 1)]
+#[case("net_bridged", "S.diff", 0)]
+#[case("net_bridged", "S.min", 1)]
+#[case("net_apart", "S.same", 0)]
+#[case("net_apart", "S.diff", 1)]
+#[case("net_apart", "S.min", 1)]
+fn space_rules_meet_the_bound_exactly_and_read_their_gates(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("space", pattern, rule), expected, "{pattern}: {rule}");
+}
+
+/// The notch check from a deck: a slot exactly the value wide and five nanometres
+/// narrower, axis-aligned and at 45°, a thin hole, and the gates.
+///
+/// - `slot_*` are slots 0.5 and 0.495 wide in a block; `hole_thin` the 0.495 slot
+///   closed into a hole; `diag_*` the block turned 45° with slots 0.5006 and 0.4992
+///   across, both bent under N.bent's 0.8.
+/// - `bent_slot` is a 45° slot 0.601 across running 2.83 µm, `bent_short` the same
+///   0.71 µm deep, short of N.bent's 1 µm.
+/// - `len_*` are 0.4 µm slots in Inner 2 and 2.005 µm deep.
+#[rstest]
+#[case("slot_exact", "N.min", 0)]
+#[case("slot_under", "N.min", 1)]
+#[case("hole_thin", "N.min", 1)]
+#[case("diag_exact", "N.min", 0)]
+#[case("diag_exact", "N.bent", 1)]
+#[case("diag_under", "N.min", 1)]
+#[case("diag_under", "N.bent", 1)]
+#[case("bent_slot", "N.bent", 1)]
+#[case("bent_slot", "N.min", 0)]
+#[case("bent_short", "N.bent", 0)]
+#[case("len_exact", "N.len", 0)]
+#[case("len_over", "N.len", 1)]
+fn notch_rules_meet_the_bound_exactly_and_read_their_gates(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("notch", pattern, rule), expected, "{pattern}: {rule}");
+}
+
+/// The three scopes of a reach rule at the bound, and the reach confined to a layer.
+///
+/// - `part_*`: a target whose far wall is 20 and 20.005 from the reference.
+/// - `poly_*`: a target whose near wall is 20 and 20.005 away, and a block whose near
+///   part is in reach and far part not.
+/// - `within_*`: a U of Via with the reference on one leg and the target on the other
+///   leg across the slot, or on the same leg.
+/// - `edge_*`: a 0.2 µm bar with the reference 20 and 20.005 from its right wall.
+#[rstest]
+#[case("part_exact", "SPC.max", 0)]
+#[case("part_over", "SPC.max", 1)]
+#[case("poly_exact", "M.poly", 0)]
+#[case("poly_over", "M.poly", 1)]
+#[case("poly_block", "M.poly", 0)]
+#[case("poly_block", "SPC.max", 1)]
+#[case("within_slot", "M.within", 1)]
+#[case("within_slot", "M.poly", 0)]
+#[case("within_leg", "M.within", 0)]
+#[case("edge_exact", "M.edge", 1)]
+#[case("edge_over", "M.edge", 4)]
+fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("max_space", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}

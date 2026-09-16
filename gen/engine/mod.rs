@@ -20,6 +20,8 @@ mod gate_length;
 mod max_space;
 mod min_array_space;
 mod min_enclosure;
+mod notch;
+mod space;
 mod width;
 
 use gdscheck::pdk::PdkConfig;
@@ -30,5 +32,7 @@ pub fn generate(pdk: &PdkConfig) {
     max_space::generate(pdk);
     min_array_space::generate(pdk);
     min_enclosure::generate(pdk);
+    notch::generate(pdk);
+    space::generate(pdk);
     width::generate(pdk);
 }
