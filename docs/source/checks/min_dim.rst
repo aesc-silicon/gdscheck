@@ -13,6 +13,9 @@ counterpart of :doc:`min_width` — see that page for when to use which.
 Semantics
 ---------
 
+The extent is a difference of two grid coordinates and is compared exactly against
+``value`` on the grid.
+
 For each merged region on the rule's layer, take its axis-aligned bounding box
 ``(x0, y0)-(x1, y1)`` and compute ``width = min(x1 - x0, y1 - y0)``. A region whose width
 is below ``value`` is a violation.
