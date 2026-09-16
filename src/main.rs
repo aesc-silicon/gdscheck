@@ -328,8 +328,10 @@ fn run(args: RunArgs) {
         }
     }
 
-    // Exit codes: 0 clean, 1 error (bad input, PDK, report), 2 violations found.
-    if !violations.is_empty() {
+    // Exit codes: 0 clean, 1 error (bad input, PDK, report), 2 violations found.  A
+    // waived violation is reported but does not fail the run: a layout whose only
+    // findings the PDK waives is delivered as clean.
+    if violations.iter().any(|v| v.waived.is_none()) {
         std::process::exit(2);
     }
 }

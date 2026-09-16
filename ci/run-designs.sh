@@ -30,8 +30,8 @@ command -v "$gdscheck" >/dev/null || { echo "gdscheck not found" >&2; exit 1; }
 [[ -x $ref/designs.py ]] || { echo "reference designs not found at $ref" >&2; exit 1; }
 mkdir -p "$reports"
 
-# gdscheck exit codes: 0 clean, 1 error, 2 violations. timeout(1) returns 124 on
-# expiry; a Rust panic exits 101.
+# gdscheck exit codes: 0 clean (waived findings included), 1 error, 2 violations.
+# timeout(1) returns 124 on expiry; a Rust panic exits 101.
 outcome() {
     case $1 in
         0)   echo PASS ;;
