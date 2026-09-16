@@ -2,10 +2,31 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Every part of Outer within 20 µm of Inner, the shape of a latch-up rule and a value
-# the size of a tile.
+# Outer within 20 µm of Inner, a value the size of a tile: every part of it, the shape
+# of a latch-up rule; every polygon, the shape of a well-tap rule, once with the reach
+# confined to Via; and every edge.
 rules:
   - id: SPC.max
     check: max_space
     layers: [Outer, Inner]
     value: 20.0
+  - id: M.poly
+    check: max_space
+    layers: [Outer, Inner]
+    value: 20.0
+    params:
+      scope: polygon
+  - id: M.within
+    check: max_space
+    layers: [Outer, Inner]
+    value: 20.0
+    params:
+      scope: polygon
+    layer_params:
+      within: Via
+  - id: M.edge
+    check: max_space
+    layers: [Outer.edges, Inner]
+    value: 20.0
+    params:
+      scope: edge

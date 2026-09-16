@@ -22,6 +22,10 @@ decks:
     path: decks/width.yml
   - name: gate_length
     path: decks/gate_length.yml
+  - name: space
+    path: decks/space.yml
+  - name: notch
+    path: decks/notch.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
@@ -40,3 +44,16 @@ layers:
   - name: Via
     gds_layer: 3
     gds_datatype: 0
+
+# The edges of Outer, for a reach rule read per edge.
+edge_layers:
+  - name: Outer.edges
+    op: edges
+    layers: [Outer]
+
+# Via joins Outer to Inner, for the spacing rules gated on nets.
+connectivity:
+  - connector: Via
+    layers: [Outer]
+  - connector: Via
+    layers: [Inner]

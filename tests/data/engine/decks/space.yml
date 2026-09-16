@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The spacing check on plain layers: the plain bound, and each gate once.  Outer carries
+# the plain rule, the bent rule and the two net rules; Inner the width and the length
+# gate on their own; Via the two together.
+rules:
+  - id: S.min
+    check: min_space
+    layers: [Outer]
+    value: 0.5
+  - id: S.bent
+    check: min_space
+    layers: [Outer]
+    value: 0.8
+    params:
+      angle: bent
+  - id: S.same
+    check: min_space
+    layers: [Outer]
+    value: 0.3
+    params:
+      net: same
+  - id: S.diff
+    check: min_space
+    layers: [Outer]
+    value: 0.5
+    params:
+      net: different
+  - id: S.len
+    check: min_space
+    layers: [Inner]
+    value: 0.6
+    params:
+      length: 2.0
+  - id: S.wide
+    check: min_space
+    layers: [Inner]
+    value: 0.6
+    params:
+      width: 0.3
+  - id: S.both
+    check: min_space
+    layers: [Via]
+    value: 0.6
+    params:
+      width: 0.3
+      length: 2.0

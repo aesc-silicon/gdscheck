@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The notch check: the plain bound and the bent rule on Outer, the length gate on Inner.
+rules:
+  - id: N.min
+    check: min_notch
+    layers: [Outer]
+    value: 0.5
+  - id: N.bent
+    check: min_notch
+    layers: [Outer]
+    value: 0.8
+    params:
+      angle: bent
+      length: 1.0
+  - id: N.len
+    check: min_notch
+    layers: [Inner]
+    value: 0.5
+    params:
+      length: 2.0
