@@ -596,6 +596,9 @@ fn net_rules_meet_the_bound_exactly_and_read_their_levels(
 ///   line.
 /// - `overlap_touch` / `overlap_slim` share an edge and overlap by 0.005 µm.
 /// - `partners` has a partner inside, one sharing an edge, and one 0.005 µm off.
+/// - `array_grid` / `array_line` / `array_bent` put four vias on a plate as a 2x2, in
+///   a row and in an L; `array_reach` / `array_split` set the grid's rows exactly the
+///   reach apart and 0.005 µm further.
 /// - `beyond_edge` / `beyond_out` put a corner on the frame's outer edge and 0.005 µm
 ///   past it, with an ignored layer past the frame.
 /// - `labelled` carries the exemption label on one of two squares.
@@ -621,6 +624,11 @@ fn net_rules_meet_the_bound_exactly_and_read_their_levels(
 #[case("overlap_slim", "R.overlap", 1)]
 #[case("partners", "R.apart", 1)]
 #[case("partners", "R.touching", 2)]
+#[case("array_grid", "R.array", 0)]
+#[case("array_line", "R.array", 1)]
+#[case("array_bent", "R.array", 1)]
+#[case("array_reach", "R.array", 0)]
+#[case("array_split", "R.array", 1)]
 #[case("beyond_edge", "R.beyond", 0)]
 #[case("beyond_out", "R.beyond", 1)]
 #[case("labelled", "R.bare", 2)]

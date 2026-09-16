@@ -59,6 +59,10 @@ rules:
     layers: [mt308_few]
     value: 0.0
   - id: MT30.8
-    check: min_via_array
+    check: forbidden
     layers: [mt308_x, mt308_via]
     value: 2.0
+    params:
+      op: apart
+      rows: 2
+      cols: 2

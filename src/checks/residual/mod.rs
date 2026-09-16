@@ -14,7 +14,8 @@
 //!   polygon that is not entirely inside instead of its bare part.
 //! - `overlap`: the intersection of all layers (Cnt.j, "Cont on GatPoly over Activ").
 //! - `apart`: regions of `layers[0]` touching none of the other layers (MIM.h, every
-//!   MIM cap needs its via).
+//!   MIM cap needs its via).  With `rows` and `cols`, regions holding no array of the
+//!   partner that large (MT30.8, a 2×2 of vias on thick top metal), see [`array`].
 //! - `touching`: regions of `layers[0]` touching any of the other layers.
 //! - `beyond`: every drawn shape past the outer edge of `layers[0]`, over the whole
 //!   layout, less the rule's `ignore` list (Seal.l, nothing past the edge seal).
@@ -28,6 +29,7 @@
 //! reported once and no layer is unioned globally - the same path a deck's own derived
 //! layers take.  `beyond` reads the raw layout, since it looks at every layer there is.
 
+pub mod array;
 pub mod labeled;
 
 use super::params::{NotAWord, mode};
@@ -219,6 +221,21 @@ pub fn run(
     }
     if op == Op::Beyond {
         return beyond(rule, layout, dbu_to_um);
+    }
+    let array = (rule.num("rows"), rule.num("cols"));
+    if array != (None, None) {
+        if op != Op::Apart {
+            eprintln!(
+                "[{}] forbidden: `rows` and `cols` read with `op: apart` only",
+                rule.id
+            );
+            return vec![];
+        }
+        let (rows, cols) = (
+            array.0.unwrap_or(2.0) as usize,
+            array.1.unwrap_or(2.0) as usize,
+        );
+        return array::run(rule, layout, dbu_to_um, merged, rows, cols);
     }
     let Ok(exemption) = exemption(rule) else {
         return vec![];

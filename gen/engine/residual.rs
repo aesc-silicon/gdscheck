@@ -4,8 +4,8 @@
 
 //! Patterns for the residual family ([`residual`](gdscheck::checks::residual)): the
 //! layers themselves, a forbidden edge layer, the uncovered part of a target and the
-//! whole polygon, an overlap, partners apart and touching, shapes beyond a boundary,
-//! and a label that exempts.
+//! whole polygon, an overlap, partners apart and touching, a plate without its via
+//! array, shapes beyond a boundary, and a label that exempts.
 //!
 //! A residual has no numeric bound; its exact case is the coincident edge.  A cover
 //! ending on the target's edge leaves nothing, one ending 0.005 µm short leaves a
@@ -143,6 +143,36 @@ pub fn generate(pdk: &PdkConfig) {
             rect(inner, 38.0, 30.0, 40.0, 32.0),
             rect(via, 40.005, 30.5, 41.0, 31.5),
         ],
+    );
+
+    // An Inner plate with four Vias on it, 0.5 µm squares on a 1 µm pitch: a 2x2 grid
+    // is an array, R.array 0; the same four in a line or bent into an L are not, 1 and
+    // 1.  A grid whose upper row sits exactly 1 µm above the lower is one location, 0;
+    // 0.005 further it is two, 1.
+    let plate = |vias: &[(f64, f64)]| {
+        let mut v = vec![rect(inner, 30.0, 30.0, 36.0, 36.0)];
+        v.extend(vias.iter().map(|&(x, y)| rect(via, x, y, x + 0.5, y + 0.5)));
+        v
+    };
+    write(
+        "array_grid",
+        plate(&[(31.0, 31.0), (32.0, 31.0), (31.0, 32.0), (32.0, 32.0)]),
+    );
+    write(
+        "array_line",
+        plate(&[(31.0, 31.0), (32.0, 31.0), (33.0, 31.0), (34.0, 31.0)]),
+    );
+    write(
+        "array_bent",
+        plate(&[(31.0, 31.0), (32.0, 31.0), (33.0, 31.0), (31.0, 32.0)]),
+    );
+    write(
+        "array_reach",
+        plate(&[(31.0, 31.0), (32.0, 31.0), (31.0, 32.0), (32.0, 32.0)]),
+    );
+    write(
+        "array_split",
+        plate(&[(31.0, 31.0), (32.0, 31.0), (31.0, 32.005), (32.0, 32.005)]),
     );
 
     // An Outer frame drawn as four bars, 10 to 50 µm.  An Inner square well inside and

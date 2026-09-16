@@ -33,7 +33,14 @@ Semantics
    The geometric intersection of all listed layers: "A on B is not allowed".
 ``apart``
    The regions of ``layers[0]`` that touch none of the remaining layers: "every MIM cap
-   needs its via". A shared edge counts as touching.
+   needs its via". A shared edge counts as touching. With ``rows`` and ``cols`` a region
+   is apart unless it holds an array of the one partner layer at least that large, at
+   one location: the rows and columns are only an array if every crossing holds a
+   partner, so four vias in a line or bent into an L do not pass for a 2×2, and
+   ``value`` is how far apart two rows may be and still be one location (GF180
+   ``MT30.8``: a via is small against thick top metal, one of them is not a
+   connection). Vias are lined up into rows and columns by their markers, with a tenth
+   of ``value`` as the tolerance for the drift within a row.
 ``touching``
    The regions of ``layers[0]`` that touch any of the remaining layers, a shared edge
    included: "marker X must not touch Y".
@@ -76,10 +83,13 @@ Parameters
    layers themselves.
 ``scope``
    ``part`` (default) or ``polygon``; with ``op: uncovered`` only.
+``rows`` / ``cols``
+   With ``op: apart`` only: the array of the partner a region must hold, either one
+   defaulting to ``2``; ``value`` is then the reach between two rows of it in µm.
 ``text`` with ``layer_params: label``
    The exemption label and the text layer it is drawn on.
 
-``value`` is unused (set it to ``0.0`` by convention).
+``value`` is unused otherwise (set it to ``0.0`` by convention).
 
 
 Violation markers
@@ -128,6 +138,14 @@ Examples
       value: 0.0
       params:
         op: apart
+    - id: MT30.8
+      check: forbidden
+      layers: [mt308_x, mt308_via]
+      value: 2.0
+      params:
+        op: apart
+        rows: 2
+        cols: 2
     - id: Seal.l
       check: forbidden
       layers: [EdgeSeal]
