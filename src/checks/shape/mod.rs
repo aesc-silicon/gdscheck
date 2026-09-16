@@ -13,9 +13,11 @@ pub mod angle;
 pub mod corner;
 pub mod edge_length;
 pub mod extent;
+pub mod holes;
 pub mod offgrid;
 pub mod ring;
 pub mod ring_covers_boundary;
+pub mod vertices;
 pub mod wide_uncovered;
 
 /// Which bound a rule puts on what it reads.

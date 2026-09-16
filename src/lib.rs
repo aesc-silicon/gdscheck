@@ -541,6 +541,7 @@ const SHAPE_CHECKS: &[&str] = &[
     "ring_covers_boundary",
     "min_enclosed_area",
     "no_corner",
+    "no_hole",
     "min_area",
     "max_area",
 ];

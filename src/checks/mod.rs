@@ -142,6 +142,8 @@ pub fn run_rule(
         "max_total_area" => max_total_area::run(rule, layout, dbu_to_um, merged),
         "no_angle" => shape::angle::run(rule, layout, dbu_to_um, merged),
         "no_corner" => shape::corner::run(rule, layout, dbu_to_um, merged),
+        "no_hole" => shape::holes::run(rule, layout, dbu_to_um, merged),
+        "max_vertices" => shape::vertices::run(rule, layout, dbu_to_um),
         "min_gate_length" => width::run_gate(width::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_gate_length" => width::run_gate(width::Kind::Max, rule, layout, dbu_to_um, merged),
         "exact_gate_length" => width::run_gate(width::Kind::Exact, rule, layout, dbu_to_um, merged),
