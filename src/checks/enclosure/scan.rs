@@ -88,7 +88,7 @@ fn outer_over(
 /// inside the layer, the wall does not exist in the true merge and the pair is dropped.
 fn point_in_layer_at_own_tile(
     map: &TileMap,
-    boxes: &HashMap<(i32, i32), Vec<(i64, i64, i64, i64)>>,
+    boxes: &Boxes,
     tile_dbu: i64,
     (px, py): (f64, f64),
 ) -> bool {
@@ -110,8 +110,10 @@ fn point_in_layer_at_own_tile(
     })
 }
 
-/// The bounding box of every polygon of every tile, for the probes.
-fn boxes_of(map: &TileMap) -> HashMap<(i32, i32), Vec<(i64, i64, i64, i64)>> {
+/// The bounding box of every polygon of every tile.
+type Boxes = HashMap<(i32, i32), Vec<(i64, i64, i64, i64)>>;
+
+fn boxes_of(map: &TileMap) -> Boxes {
     map.par_iter()
         .map(|(k, polys)| {
             (
