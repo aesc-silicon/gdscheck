@@ -1297,6 +1297,19 @@ fn run_drc_impl(
     // for the slotting opening, 109 million copies, stayed resident through the guard
     // ring deck that needed it at one, and the run died there.
     let n_rules = rules.len();
+    // Every reach some rule wants of each layer, for building ahead.
+    let mut needs_of: std::collections::HashMap<(i16, i16), Vec<i32>> =
+        std::collections::HashMap::new();
+    for (table, _) in &rule_halos {
+        for (key, want) in table {
+            needs_of.entry(*key).or_default().push(*want);
+        }
+    }
+    for v in needs_of.values_mut() {
+        v.sort_unstable();
+        v.dedup();
+    }
+    merged.set_needs(needs_of);
     let mut future_need: std::collections::HashMap<(i16, i16), Vec<i32>> =
         last_use.keys().map(|k| (*k, vec![-1; n_rules])).collect();
     let mut running: std::collections::HashMap<(i16, i16), i32> = std::collections::HashMap::new();
@@ -1406,19 +1419,9 @@ fn run_drc_impl(
 
     for (i, rule) in rules.iter().enumerate() {
         // What this rule needs of every layer in its closure, so a layer is merged at
-        // that rather than at the maximum some other rule on it set.
-        // Build a little ahead: a layer this rule wants at h that a later rule wants
-        // at up to 1.5h is built for the later rule now, since the smaller copy could
-        // not serve it and would be merged again.  comp at 200 um followed by a rule at
-        // 215 um was two 1.6 s merges of 9 million copies for a 14% difference.
-        let (mut table, closure) = rule_halos[i].clone();
-        for (key, want) in table.iter_mut() {
-            let fut = future_need[key][i];
-            if fut > *want && fut <= *want + *want / 2 {
-                *want = fut;
-            }
-        }
-        merged.set_rule_halos(Some((table, closure)));
+        // that rather than at the maximum some other rule on it set.  The cache builds
+        // ahead from `needs_of`, see `MergedCache::build_ahead`.
+        merged.set_rule_halos(Some(rule_halos[i].clone()));
         if net_aware(rule) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
@@ -1458,14 +1461,25 @@ fn run_drc_impl(
             // little fatter than the next rule's reach serves it rather than being
             // merged again at 14% fewer copies.
             let cached = merged.cached_halo(*key);
-            if future < 0 || cached.is_some_and(|h| h > future * 4) {
+            if future < 0 {
                 if cached.is_some() && std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
-                        "evict {}/{} cached={:?} future={future}",
-                        key.0, key.1, cached
+                        "evict {} cached={:?} future={future}",
+                        merged.name_of(*key),
+                        cached
                     );
                 }
                 merged.evict(key.0, key.1);
+            } else if cached.is_some_and(|h| h > future * 4) {
+                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                    eprintln!(
+                        "evict {} fatter than {}: cached={:?} future={future}",
+                        merged.name_of(*key),
+                        future * 4,
+                        cached
+                    );
+                }
+                merged.evict_fatter_than(key.0, key.1, future * 4);
             }
         }
         // A budget on what stays resident.  Eviction by need alone keeps every layer
@@ -1478,6 +1492,13 @@ fn run_drc_impl(
             resident.sort_by_key(|(key, _)| {
                 std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
             });
+            // The variants set aside go first, then whole layers.
+            for (key, _) in &resident {
+                if merged.resident_polys() <= budget {
+                    break;
+                }
+                merged.drop_variants(key.0, key.1);
+            }
             for (key, polys) in resident {
                 if merged.resident_polys() <= budget {
                     break;
