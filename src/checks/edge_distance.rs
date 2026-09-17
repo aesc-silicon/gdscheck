@@ -31,6 +31,7 @@ use crate::layout::FlatLayout;
 use crate::merge::{Core, Edge, MergedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
+use rayon::prelude::*;
 
 /// Whether a rule's two layers are edge layers, so the segment form of the check applies.
 ///
@@ -163,14 +164,23 @@ fn run(
     let tile = merged.tile_dbu() as i64;
     // Half a DBU: coordinates are integers, so anything under this is a rounding artefact.
     let tol = 0.5;
-    let mut out = Vec::new();
 
     // A minimum pairs within one tile: it only looks as far as its own limit, and an edge
-    // is filed under the tile its midpoint falls in.
-    for (&(tx, ty), a_edges) in merged.edges(ka) {
-        let Some(b_edges) = merged.edges(kb).get(&(tx, ty)) else {
-            continue;
-        };
+    // is filed under the tile its midpoint falls in.  The tiles are independent, so they
+    // are read in parallel; the run's output is sorted afterwards, so their order is
+    // not the report's.
+    let a_tiles = merged.edges(ka);
+    let b_tiles = merged.edges(kb);
+    let keys: Vec<(i32, i32)> = a_tiles
+        .keys()
+        .copied()
+        .filter(|k| b_tiles.contains_key(k))
+        .collect();
+    keys.par_iter()
+        .flat_map_iter(|&(tx, ty)| {
+        let a_edges = &a_tiles[&(tx, ty)];
+        let b_edges = &b_tiles[&(tx, ty)];
+        let mut out = Vec::new();
         let core = Core {
             x0: tx as i64 * tile,
             y0: ty as i64 * tile,
@@ -271,8 +281,9 @@ fn run(
                 q.1 * dbu_to_um,
             ));
         }
-    }
-    out
+        out.into_iter()
+        })
+        .collect()
 }
 
 #[cfg(test)]

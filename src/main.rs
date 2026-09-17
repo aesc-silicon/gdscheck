@@ -4,7 +4,7 @@
 
 use clap::{ArgGroup, Parser, Subcommand};
 use gdscheck::pdk::{self, Origin, PdkConfig};
-use gdscheck::{load_gds, report, run_drc_with};
+use gdscheck::{RunOptions, load_gds, report, run_drc_with_options};
 use rayon::ThreadPoolBuilder;
 use std::path::PathBuf;
 
@@ -86,6 +86,11 @@ struct RunArgs {
     /// Number of threads to use (default: all available cores)
     #[arg(long, default_value_t = 0)]
     threads: usize,
+
+    /// Tile size of the merge cache in µm: layers are merged, stitched and measured per
+    /// tile of this size.  Smaller bounds memory tighter, larger copies less into halos.
+    #[arg(long, env = "GDSCHECK_TILE_UM", default_value_t = gdscheck::merge::TILE_UM, value_name = "UM")]
+    tile: f64,
 
     /// Disable electrical net extraction.  Net-aware checks (e.g. antenna ratios) are
     /// then skipped; geometry-only checks are unaffected.
@@ -291,13 +296,15 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
 
     let decks: Vec<&str> = args.deck.iter().map(String::as_str).collect();
     let start = std::time::Instant::now();
-    let violations = match run_drc_with(
+    let options = RunOptions { tile_um: args.tile };
+    let violations = match run_drc_with_options(
         &lib,
         &resolved.spec,
         &decks,
         args.suite.as_deref(),
         &args.topcell,
         !args.no_connectivity,
+        &options,
     ) {
         Ok(v) => v,
         Err(e) => {

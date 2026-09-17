@@ -139,23 +139,36 @@ impl Connectivity {
         // tiling holds for each region it yields, which is where a halo shows up - and
         // `n_nodes`, which sets what every prefix partition costs.
         let trace = std::env::var("GDSCHECK_CONN_TRACE").is_ok();
+        // Merge every layer first, one after another, since the cache is written; then
+        // stitch them all at once, since the tiles are only read.  A layer's stitch is a
+        // walk of its tiles on one core, and fifteen layers walked one after another
+        // were the phase's length.
+        let mut merge_secs: HashMap<LayerKey, f64> = HashMap::new();
         for &key in &keys {
             let t0 = std::time::Instant::now();
             cache.ensure(layout, key.0, key.1);
-            let t_merge = t0.elapsed().as_secs_f64();
-            let tiles = cache.tiles(key.0, key.1);
-            let (n_tiles, n_polys) = (tiles.len(), tiles.values().map(|v| v.len()).sum::<usize>());
-            let t1 = std::time::Instant::now();
+            merge_secs.insert(key, t0.elapsed().as_secs_f64());
+        }
+        let stitched: Vec<(LayerKey, LabeledRegions, f64)> = keys
+            .par_iter()
+            .map(|&key| {
+                let tiles = cache.tiles(key.0, key.1);
+                let t1 = std::time::Instant::now();
+                let labeled = if conductors.contains(&key) {
+                    stitch_labeled(tiles, tile_dbu)
+                } else {
+                    LabeledRegions {
+                        regions: stitch_regions(tiles, tile_dbu),
+                        by_tile: HashMap::new(),
+                    }
+                };
+                (key, labeled, t1.elapsed().as_secs_f64())
+            })
+            .collect();
+        for (key, labeled, t_stitch) in stitched {
             let indexed = conductors.contains(&key);
-            let labeled = if indexed {
-                stitch_labeled(tiles, tile_dbu)
-            } else {
-                LabeledRegions {
-                    regions: stitch_regions(tiles, tile_dbu),
-                    by_tile: HashMap::new(),
-                }
-            };
             if trace {
+                let tiles = cache.tiles(key.0, key.1);
                 eprintln!(
                     "conn {}/{} halo={} indexed={} tiles={} polys={} regions={} \
                      merge={:.1}s stitch={:.1}s",
@@ -163,11 +176,11 @@ impl Connectivity {
                     key.1,
                     cache.halo_dbu(key.0, key.1),
                     indexed,
-                    n_tiles,
-                    n_polys,
+                    tiles.len(),
+                    tiles.values().map(|v| v.len()).sum::<usize>(),
                     labeled.regions.len(),
-                    t_merge,
-                    t1.elapsed().as_secs_f64()
+                    merge_secs[&key],
+                    t_stitch
                 );
             }
             if indexed {
