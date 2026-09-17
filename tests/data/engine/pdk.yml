@@ -60,10 +60,8 @@ layers:
     gds_datatype: 0
 
 # The edges of Outer, for a reach rule read per edge.
-edge_layers:
-  - name: Outer.edges
-    op: edges
-    layers: [Outer]
+virtual_layers:
+  Outer.edges: Outer edges
 
 # Via joins Inner, then Outer, then Diode, for the rules gated on nets and for the
 # antenna rule's levels: through Inner's step alone, Outer is not yet on the net.

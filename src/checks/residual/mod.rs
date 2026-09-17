@@ -30,7 +30,6 @@
 //! layers take.  `beyond` reads the raw layout, since it looks at every layer there is.
 
 pub mod array;
-pub mod labeled;
 
 use super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;

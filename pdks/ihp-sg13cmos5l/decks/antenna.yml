@@ -75,10 +75,9 @@ rules:
       connected_net_of: GatPoly
       net_of: Activ
   - id: Ant.h
-    check: forbidden_unless_labeled
-    layers: [Activ, GatPoly, pSD, nSD.block, Recog.diode, Recog.esd, NWell, PWell.block, nBuLay, TEXT]
+    check: forbidden
+    layers: [AntHError]
     value: 0.0
-    text: isolbox
   - id: Ant.i
     check: forbidden
     layers: [AntIError]

@@ -185,850 +185,239 @@ connectivity:
     layers: [nBuLay, nBuLayMerged, NWell]
 
 virtual_layers:
-  - name: Pad
-    op: union
-    layers:
-      - Passiv
-      - Passiv.sbump
-      - Passiv.pillar
-      - dfpad
-  - name: SBumpPad
-    op: intersection
-    layers:
-      - Passiv.sbump
-      - dfpad
-  - name: CuPillarPad
-    op: intersection
-    layers:
-      - Passiv.pillar
-      - dfpad
-  - name: SBumpPadBadShape
-    op: not_circle_or_octagon
-    mode: lazy
-    layers: [SBumpPad]
-  - name: CuPillarPadBadShape
-    op: not_circle
-    mode: lazy
-    layers: [CuPillarPad]
-  - name: CuPillarPadGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 29.995
-    layers: [CuPillarPad]
-  - name: PadcDBad
-    op: intersection
-    mode: lazy
-    layers: [CuPillarPadGrown, SealActiv]
+  Pad: Passiv or Passiv.sbump or Passiv.pillar or dfpad
+  SBumpPad: Passiv.sbump and dfpad
+  CuPillarPad: Passiv.pillar and dfpad
+  SBumpPadBadShape: SBumpPad not_circle_or_octagon
+  CuPillarPadBadShape: CuPillarPad not_circle
+  CuPillarPadGrown: CuPillarPad within 29.995
+  PadcDBad: CuPillarPadGrown and SealActiv
 
-  - name: ContNoSealring
-    op: difference
-    mode: lazy
-    layers:
-      - Cont
-      - EdgeSeal
+  ContNoSealring: Cont not EdgeSeal
 
-  - name: Via1NoSealring
-    op: difference
-    mode: lazy
-    layers: [Via1, EdgeSeal]
-  - name: Via2NoSealring
-    op: difference
-    mode: lazy
-    layers: [Via2, EdgeSeal]
-  - name: Via3NoSealring
-    op: difference
-    mode: lazy
-    layers: [Via3, EdgeSeal]
-  - name: Via4NoSealring
-    op: difference
-    mode: lazy
-    layers: [Via4, EdgeSeal]
-  - name: TopVia1NoSealring
-    op: difference
-    mode: lazy
-    layers: [TopVia1, EdgeSeal]
-  - name: TopVia2NoSealring
-    op: difference
-    mode: lazy
-    layers: [TopVia2, EdgeSeal]
+  Via1NoSealring: Via1 not EdgeSeal
+  Via2NoSealring: Via2 not EdgeSeal
+  Via3NoSealring: Via3 not EdgeSeal
+  Via4NoSealring: Via4 not EdgeSeal
+  TopVia1NoSealring: TopVia1 not EdgeSeal
+  TopVia2NoSealring: TopVia2 not EdgeSeal
 
-  - name: PassivInSeal
-    op: inside_ring
-    layers: [Passiv, EdgeSeal]
+  PassivInSeal: Passiv inside_ring EdgeSeal
 
-  - name: TopMetal2NotIND
-    op: difference
-    mode: lazy
-    layers: [TopMetal2, IND]
+  TopMetal2NotIND: TopMetal2 not IND
 
-  - name: ActivOrGatPoly
-    op: union
-    mode: lazy
-    layers: [Activ, GatPoly]
+  ActivOrGatPoly: Activ or GatPoly
 
-  - name: ContSquare
-    op: square
-    mode: lazy
-    layers: [ContNoSealring]
-  - name: ContBar
-    op: not_square
-    mode: lazy
-    layers: [ContNoSealring]
+  ContSquare: ContNoSealring square
+  ContBar: ContNoSealring not_square
 
-  - name: ContOnGatPoly
-    op: intersection
-    mode: lazy
-    layers: [ContSquare, GatPoly]
-  - name: ContOnActiv
-    op: intersection
-    mode: lazy
-    layers: [ContSquare, Activ]
-  - name: ContOnActivNoSRAM
-    op: not_overlapping
-    mode: lazy
-    layers: [ContOnActiv, SRAM]
-  - name: ContOnNsdActiv
-    op: intersection
-    mode: lazy
-    layers: [ContSquare, Activ, nSD]
-  - name: ContOnPsdActiv
-    op: intersection
-    mode: lazy
-    layers: [ContSquare, Activ, pSD]
+  ContOnGatPoly: ContSquare and GatPoly
+  ContOnActiv: ContSquare and Activ
+  ContOnActivNoSRAM: ContOnActiv not_overlapping SRAM
+  ContOnNsdActiv: ContSquare and Activ and nSD
+  ContOnPsdActiv: ContSquare and Activ and pSD
 
-  - name: ContBarOnGatPoly
-    op: intersection
-    mode: lazy
-    layers: [ContBar, GatPoly]
-  - name: ContBarOnActiv
-    op: intersection
-    mode: lazy
-    layers: [ContBar, Activ]
-  - name: ContBarOnNsdActiv
-    op: intersection
-    mode: lazy
-    layers: [ContBar, Activ, nSD]
-  - name: ContBarOnPsdActiv
-    op: intersection
-    mode: lazy
-    layers: [ContBar, Activ, pSD]
+  ContBarOnGatPoly: ContBar and GatPoly
+  ContBarOnActiv: ContBar and Activ
+  ContBarOnNsdActiv: ContBar and Activ and nSD
+  ContBarOnPsdActiv: ContBar and Activ and pSD
 
-  - name: PsdActivInNWell
-    op: intersection
-    mode: lazy
-    layers: [Activ, pSD, NWell]
-  - name: PsdActivInNWellTGO
-    op: intersection
-    mode: lazy
-    layers: [PsdActivInNWell, ThickGateOx]
-  - name: PsdActivInNWellNoTGO
-    op: difference
-    mode: lazy
-    layers: [PsdActivInNWell, ThickGateOx]
-  - name: NsdActiv
-    op: intersection
-    mode: lazy
-    layers: [Activ, nSD]
-  - name: NsdActivTGO
-    op: intersection
-    mode: lazy
-    layers: [NsdActiv, ThickGateOx]
-  - name: NsdActivNoTGO
-    op: difference
-    mode: lazy
-    layers: [NsdActiv, ThickGateOx]
-  - name: ActivDefaultN
-    op: difference
-    mode: lazy
-    layers: [Activ, nSD.block, pSD]
-  - name: NActFull
-    op: union
-    mode: lazy
-    layers: [NsdActiv, ActivDefaultN]
-  - name: NActFullNoTGO
-    op: difference
-    mode: lazy
-    layers: [NActFull, ThickGateOx]
-  - name: NActFullTGO
-    op: intersection
-    mode: lazy
-    layers: [NActFull, ThickGateOx]
-  - name: NActiv
-    op: difference
-    mode: lazy
-    layers: [Activ, pSD]
-  - name: NActivInNWell
-    op: intersection
-    mode: lazy
-    layers: [NActiv, NWell]
-  - name: NActivInNWellNoTGO
-    op: difference
-    mode: lazy
-    layers: [NActivInNWell, ThickGateOx]
-  - name: NActivInNWellTGO
-    op: intersection
-    mode: lazy
-    layers: [NActivInNWell, ThickGateOx]
-  - name: NActivInPWell
-    op: difference
-    mode: lazy
-    layers: [NActiv, NWell]
-  - name: PsdActivInNWellTGOAna
-    op: not_overlapping
-    mode: lazy
-    layers: [PsdActivInNWellTGO, DigiBnd]
-  - name: PsdActivInNWellTGODig
-    op: overlapping
-    mode: lazy
-    layers: [PsdActivInNWellTGO, DigiBnd]
-  - name: NActFullTGOAna
-    op: not_overlapping
-    mode: lazy
-    layers: [NActFullTGO, DigiBnd]
-  - name: NActFullTGODig
-    op: overlapping
-    mode: lazy
-    layers: [NActFullTGO, DigiBnd]
-  - name: NActivInNWellTGOAna
-    op: not_overlapping
-    mode: lazy
-    layers: [NActivInNWellTGO, DigiBnd]
-  - name: NActivInNWellTGODig
-    op: overlapping
-    mode: lazy
-    layers: [NActivInNWellTGO, DigiBnd]
-  - name: ActivInNWell
-    op: intersection
-    mode: lazy
-    layers: [Activ, NWell]
-  - name: pSDNoSRAM
-    op: difference
-    mode: lazy
-    layers: [pSD, SRAM]
-  - name: Gate
-    op: intersection
-    mode: lazy
-    layers: [Activ, GatPoly]
-  - name: NTapNoGate
-    op: difference
-    mode: lazy
-    layers: [NActivInNWell, Gate]
-  - name: PTapNoGate
-    op: difference
-    mode: lazy
-    layers: [PsdActivInPWell, Gate]
-  - name: NTapNoGateOutSRAM
-    op: not_overlapping
-    mode: lazy
-    layers: [NTapNoGate, SRAM]
-  - name: PTapNoGateOutSRAM
-    op: not_overlapping
-    mode: lazy
-    layers: [PTapNoGate, SRAM]
-  - name: ActivNoSRAM
-    op: difference
-    mode: lazy
-    layers: [Activ, SRAM]
-  - name: ActivOutsidePsd
-    op: difference
-    mode: lazy
-    layers: [ActivNoSRAM, pSD]
-  - name: ActivStraddlePsd
-    op: overlapping
-    mode: lazy
-    layers: [ActivNoSRAM, ActivOutsidePsd]
-  - name: TieCandidate
-    op: overlapping
-    mode: lazy
-    layers: [ActivStraddlePsd, pSD]
-  - name: TieOverlap
-    op: intersection
-    mode: lazy
-    layers: [TieCandidate, pSD]
-  - name: TieOverlapOpened
-    op: open
-    mode: lazy
-    radius: 0.149
-    layers: [TieOverlap]
-  - name: TieTooNarrow
-    op: not_overlapping
-    mode: lazy
-    layers: [TieOverlap, TieOverlapOpened]
-  - name: ContOnNWellTie
-    op: intersection
-    mode: lazy
-    layers: [Cont, NActivInNWell]
+  PsdActivInNWell: Activ and pSD and NWell
+  PsdActivInNWellTGO: PsdActivInNWell and ThickGateOx
+  PsdActivInNWellNoTGO: PsdActivInNWell not ThickGateOx
+  NsdActiv: Activ and nSD
+  NsdActivTGO: NsdActiv and ThickGateOx
+  NsdActivNoTGO: NsdActiv not ThickGateOx
+  ActivDefaultN: Activ not nSD.block not pSD
+  NActFull: NsdActiv or ActivDefaultN
+  NActFullNoTGO: NActFull not ThickGateOx
+  NActFullTGO: NActFull and ThickGateOx
+  NActiv: Activ not pSD
+  NActivInNWell: NActiv and NWell
+  NActivInNWellNoTGO: NActivInNWell not ThickGateOx
+  NActivInNWellTGO: NActivInNWell and ThickGateOx
+  NActivInPWell: NActiv not NWell
+  PsdActivInNWellTGOAna: PsdActivInNWellTGO not_overlapping DigiBnd
+  PsdActivInNWellTGODig: PsdActivInNWellTGO overlapping DigiBnd
+  NActFullTGOAna: NActFullTGO not_overlapping DigiBnd
+  NActFullTGODig: NActFullTGO overlapping DigiBnd
+  NActivInNWellTGOAna: NActivInNWellTGO not_overlapping DigiBnd
+  NActivInNWellTGODig: NActivInNWellTGO overlapping DigiBnd
+  ActivInNWell: Activ and NWell
+  pSDNoSRAM: pSD not SRAM
+  Gate: Activ and GatPoly
+  NTapNoGate: NActivInNWell not Gate
+  PTapNoGate: PsdActivInPWell not Gate
+  NTapNoGateOutSRAM: NTapNoGate not_overlapping SRAM
+  PTapNoGateOutSRAM: PTapNoGate not_overlapping SRAM
+  ActivNoSRAM: Activ not SRAM
+  ActivOutsidePsd: ActivNoSRAM not pSD
+  ActivStraddlePsd: ActivNoSRAM overlapping ActivOutsidePsd
+  TieCandidate: ActivStraddlePsd overlapping pSD
+  TieOverlap: TieCandidate and pSD
+  TieOverlapOpened: TieOverlap open 0.149
+  TieTooNarrow: TieOverlap not_overlapping TieOverlapOpened
+  ContOnNWellTie: Cont and NActivInNWell
 
-  - name: PsdActiv
-    op: intersection
-    mode: lazy
-    layers: [Activ, pSD]
-  - name: NsdActivInPWell
-    op: difference
-    mode: lazy
-    layers: [NsdActiv, NWell]
-  - name: NsdActivInPWellTGO
-    op: intersection
-    mode: lazy
-    layers: [NsdActivInPWell, ThickGateOx]
-  - name: NsdActivInPWellNoTGO
-    op: difference
-    mode: lazy
-    layers: [NsdActivInPWell, ThickGateOx]
-  - name: PsdActivInPWell
-    op: difference
-    mode: lazy
-    layers: [PsdActiv, NWell]
-  - name: ContOnSubstrateTie
-    op: intersection
-    mode: lazy
-    layers: [Cont, PsdActivInPWell]
-  - name: PsdActivInPWellTGO
-    op: intersection
-    mode: lazy
-    layers: [PsdActivInPWell, ThickGateOx]
-  - name: PsdActivInPWellNoTGO
-    op: difference
-    mode: lazy
-    layers: [PsdActivInPWell, ThickGateOx]
+  PsdActiv: Activ and pSD
+  NsdActivInPWell: NsdActiv not NWell
+  NsdActivInPWellTGO: NsdActivInPWell and ThickGateOx
+  NsdActivInPWellNoTGO: NsdActivInPWell not ThickGateOx
+  PsdActivInPWell: PsdActiv not NWell
+  ContOnSubstrateTie: Cont and PsdActivInPWell
+  PsdActivInPWellTGO: PsdActivInPWell and ThickGateOx
+  PsdActivInPWellNoTGO: PsdActivInPWell not ThickGateOx
 
-  - name: NActivX1
-    op: intersection
-    mode: lazy
-    layers: [NActiv, NWellOrPWellBlk]
-  - name: PsdActivX1
-    op: intersection
-    mode: lazy
-    layers: [PsdActiv, NWellOrPWellBlk]
-  - name: PsdActivX1Touch
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.0
-    layers: [PsdActivX1]
-  - name: AbuttedNTap
-    op: overlapping
-    mode: lazy
-    layers: [NActivX1, PsdActivX1Touch]
-  - name: PsdActivX1Grown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.29
-    layers: [PsdActivX1]
-  - name: NTapDeep
-    op: difference
-    mode: lazy
-    layers: [AbuttedNTap, PsdActivX1Grown]
-  - name: PsdFBad
-    op: not_overlapping
-    mode: lazy
-    layers: [AbuttedNTap, NTapDeep]
-  - name: ActivTouchPsd
-    op: overlapping
-    mode: lazy
-    layers: [Activ, pSD]
-  - name: PsdC1Target
-    op: difference
-    mode: lazy
-    layers: [ActivTouchPsd, NWell, PWell.block, EdgeSeal]
+  NActivX1: NActiv and NWellOrPWellBlk
+  PsdActivX1: PsdActiv and NWellOrPWellBlk
+  PsdActivX1Touch: PsdActivX1 within 0
+  AbuttedNTap: NActivX1 overlapping PsdActivX1Touch
+  PsdActivX1Grown: PsdActivX1 within 0.29
+  NTapDeep: AbuttedNTap not PsdActivX1Grown
+  PsdFBad: AbuttedNTap not_overlapping NTapDeep
+  ActivTouchPsd: Activ overlapping pSD
+  PsdC1Target: ActivTouchPsd not NWell not PWell.block not EdgeSeal
 
-  - name: GatPolyRes
-    op: union
-    mode: lazy
-    layers: [GatPoly, PolyRes]
-  - name: SalBlockClean
-    op: difference
-    mode: lazy
-    layers: [SalBlock, Recog.esd, nSD.block]
-  - name: pSDnSD
-    op: intersection
-    mode: lazy
-    layers: [pSD, nSD]
-  - name: RhighA
-    op: intersection
-    mode: lazy
-    layers: [GatPolyRes, pSDnSD, SalBlockClean]
-  - name: SalBlockRhigh
-    op: intersection
-    mode: lazy
-    layers: [SalBlock, RhighA]
-  - name: RsilBase
-    op: intersection
-    mode: lazy
-    layers: [GatPolyRes, RES, EXTBlock]
-  - name: RsilAll
-    op: not_overlapping
-    mode: lazy
-    layers: [RsilBase, SalBlock]
-  - name: RsilNotNWell
-    op: not_overlapping
-    mode: lazy
-    layers: [RsilAll, NWell]
-  - name: Rsil
-    op: not_overlapping
-    mode: lazy
-    layers: [RsilNotNWell, nBuLay]
-  - name: GPRsilExtended
-    op: overlapping
-    mode: lazy
-    layers: [GatPolyRes, Rsil]
-  - name: RsilResProtrusion
-    op: difference
-    mode: lazy
-    layers: [RES, GPRsilExtended]
-  - name: RsilResProtrusionNoCont
-    op: not_overlapping
-    mode: lazy
-    layers: [RsilResProtrusion, Cont]
-  - name: Rppd0
-    op: intersection
-    mode: lazy
-    layers: [GatPolyRes, pSD, SalBlockClean]
-  - name: ActivOrNsd
-    op: union
-    mode: lazy
-    layers: [Activ, nSD]
-  - name: RppdAll
-    op: not_overlapping
-    mode: lazy
-    layers: [Rppd0, ActivOrNsd]
-  - name: GPRppdExtended
-    op: overlapping
-    mode: lazy
-    layers: [GatPolyRes, RppdAll]
-  - name: SalBlockRppd
-    op: intersection
-    mode: lazy
-    layers: [SalBlock, RppdAll]
-  - name: RppdCont
-    op: intersection
-    mode: lazy
-    layers: [Cont, GPRppdExtended]
-  - name: SalBlockRppdGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.20
-    layers: [SalBlockRppd]
-  - name: RppdContTooFar
-    op: not_overlapping
-    mode: lazy
-    layers: [RppdCont, SalBlockRppdGrown]
-  - name: GPRhighExtended
-    op: overlapping
-    mode: lazy
-    layers: [GatPolyRes, RhighA]
-  - name: RhighCont
-    op: intersection
-    mode: lazy
-    layers: [Cont, GPRhighExtended]
-  - name: SalBlockRhighGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.20
-    layers: [SalBlockRhigh]
-  - name: RhighContTooFar
-    op: not_overlapping
-    mode: lazy
-    layers: [RhighCont, SalBlockRhighGrown]
-  - name: NsdMismatch
-    op: difference
-    mode: lazy
-    layers: [nSD, pSD]
-  - name: RhighRecogBase
-    op: intersection
-    mode: lazy
-    layers: [EXTBlock, pSDnSD]
-  - name: RhighRecog
-    op: overlapping
-    mode: lazy
-    layers: [RhighRecogBase, GatPoly]
-  - name: RhighRecogGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.0
-    layers: [RhighRecog]
-  - name: NsdMismatchAtRhigh
-    op: overlapping
-    mode: lazy
-    layers: [NsdMismatch, RhighRecogGrown]
+  GatPolyRes: GatPoly or PolyRes
+  SalBlockClean: SalBlock not Recog.esd not nSD.block
+  pSDnSD: pSD and nSD
+  RhighA: GatPolyRes and pSDnSD and SalBlockClean
+  SalBlockRhigh: SalBlock and RhighA
+  RsilBase: GatPolyRes and RES and EXTBlock
+  RsilAll: RsilBase not_overlapping SalBlock
+  RsilNotNWell: RsilAll not_overlapping NWell
+  Rsil: RsilNotNWell not_overlapping nBuLay
+  GPRsilExtended: GatPolyRes overlapping Rsil
+  RsilResProtrusion: RES not GPRsilExtended
+  RsilResProtrusionNoCont: RsilResProtrusion not_overlapping Cont
+  Rppd0: GatPolyRes and pSD and SalBlockClean
+  ActivOrNsd: Activ or nSD
+  RppdAll: Rppd0 not_overlapping ActivOrNsd
+  GPRppdExtended: GatPolyRes overlapping RppdAll
+  SalBlockRppd: SalBlock and RppdAll
+  RppdCont: Cont and GPRppdExtended
+  SalBlockRppdGrown: SalBlockRppd within 0.2
+  RppdContTooFar: RppdCont not_overlapping SalBlockRppdGrown
+  GPRhighExtended: GatPolyRes overlapping RhighA
+  RhighCont: Cont and GPRhighExtended
+  SalBlockRhighGrown: SalBlockRhigh within 0.2
+  RhighContTooFar: RhighCont not_overlapping SalBlockRhighGrown
+  NsdMismatch: nSD not pSD
+  RhighRecogBase: EXTBlock and pSDnSD
+  RhighRecog: RhighRecogBase overlapping GatPoly
+  RhighRecogGrown: RhighRecog within 0
+  NsdMismatchAtRhigh: NsdMismatch overlapping RhighRecogGrown
 
-  - name: PsdRingHole
-    op: holes
-    mode: lazy
-    layers: [pSD]
-  - name: NpnTieHole
-    op: with_text
-    mode: lazy
-    layers: [PsdRingHole, TEXT]
-    text: "npn*"
-  - name: NpnTieNoTrans
-    op: not_overlapping
-    mode: lazy
-    layers: [NpnTieHole, TRANS]
-  - name: TransInTie
-    op: overlapping
-    mode: lazy
-    layers: [TRANS, NpnTieHole]
-  - name: NpnTieHoleGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.5
-    layers: [NpnTieHole]
-  - name: NpnTieRingActiv
-    op: overlapping
-    mode: lazy
-    layers: [PsdActiv, NpnTieHoleGrown]
-  - name: GatPolyNoSRAM
-    op: difference
-    mode: lazy
-    layers: [GatPoly, SRAM]
-  - name: TransG2
-    op: with_text
-    mode: lazy
-    layers: [TRANS, TEXT]
-    text: "npn13G2"
-  - name: TransG2L
-    op: with_text
-    mode: lazy
-    layers: [TRANS, TEXT]
-    text: "npn13G2L"
-  - name: TransG2V
-    op: with_text
-    mode: lazy
-    layers: [TRANS, TEXT]
-    text: "npn13G2V"
-  - name: EmitG2
-    op: overlapping
-    mode: lazy
-    layers: [EmWind, TransG2]
-  - name: EmitG2L
-    op: overlapping
-    mode: lazy
-    layers: [EmWind, TransG2L]
-  - name: EmitG2V
-    op: overlapping
-    mode: lazy
-    layers: [EmWind, TransG2V]
+  PsdRingHole: pSD holes
+  NpnTieHole: PsdRingHole with_text "npn*" TEXT
+  NpnTieNoTrans: NpnTieHole not_overlapping TRANS
+  TransInTie: TRANS overlapping NpnTieHole
+  NpnTieHoleGrown: NpnTieHole within 0.5
+  NpnTieRingActiv: PsdActiv overlapping NpnTieHoleGrown
+  GatPolyNoSRAM: GatPoly not SRAM
+  TransG2: TRANS with_text "npn13G2" TEXT
+  TransG2L: TRANS with_text "npn13G2L" TEXT
+  TransG2V: TRANS with_text "npn13G2V" TEXT
+  EmitG2: EmWind overlapping TransG2
+  EmitG2L: EmWind overlapping TransG2L
+  EmitG2V: EmWind overlapping TransG2V
 
-  - name: SchottkyBlock
-    op: intersection
-    mode: lazy
-    layers: [SalBlock, nSD.block, PWell.block, nBuLay]
-  - name: SchottkyContBar
-    op: overlapping
-    mode: lazy
-    layers: [ContBar, SchottkyBlock]
+  SchottkyBlock: SalBlock and nSD.block and PWell.block and nBuLay
+  SchottkyContBar: ContBar overlapping SchottkyBlock
 
-  - name: NWellOrPWellBlk
-    op: union
-    mode: lazy
-    layers: [NWell, PWell.block]
-  - name: ActivInNBuLay
-    op: intersection
-    mode: lazy
-    layers: [Activ, nBuLay]
-  - name: IsoPWellAct
-    op: difference
-    mode: lazy
-    layers: [ActivInNBuLay, NWellOrPWellBlk]
-  - name: NWellNBuLay
-    op: intersection
-    mode: lazy
-    layers: [NWell, nBuLay]
-  - name: nSDBlockIso
-    op: overlapping
-    mode: lazy
-    layers: [nSD.block, IsoPWellAct]
-  - name: NWellRing
-    op: with_holes
-    mode: lazy
-    layers: [NWell]
-  - name: SalBlockIso
-    op: overlapping
-    mode: lazy
-    layers: [SalBlock, IsoPWellAct]
-  - name: NSDBlockIsoGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.145
-    layers: [nSDBlockIso]
-  - name: NSDBlockUncov
-    op: difference
-    mode: lazy
-    layers: [NSDBlockIsoGrown, SalBlockIso]
-  - name: NmosiGBad
-    op: intersection
-    mode: lazy
-    layers: [NSDBlockUncov, Activ]
+  NWellOrPWellBlk: NWell or PWell.block
+  ActivInNBuLay: Activ and nBuLay
+  IsoPWellAct: ActivInNBuLay not NWellOrPWellBlk
+  NWellNBuLay: NWell and nBuLay
+  nSDBlockIso: nSD.block overlapping IsoPWellAct
+  NWellRing: NWell with_holes
+  SalBlockIso: SalBlock overlapping IsoPWellAct
+  NSDBlockIsoGrown: nSDBlockIso within 0.145
+  NSDBlockUncov: NSDBlockIsoGrown not SalBlockIso
+  NmosiGBad: NSDBlockUncov and Activ
 
-  - name: ActivFillerInPWellBlock
-    op: intersection
-    mode: lazy
-    layers: [Activ.filler, PWell.block]
-  - name: nSDBlockAndSalBlock
-    op: intersection
-    mode: lazy
-    layers: [nSD.block, SalBlock]
+  ActivFillerInPWellBlock: Activ.filler and PWell.block
+  nSDBlockAndSalBlock: nSD.block and SalBlock
 
-  - name: GatPolyOverActiv
-    op: intersection
-    mode: lazy
-    layers: [GatPoly, Activ]
-  - name: ThickGateOxOverActiv
-    op: intersection
-    mode: lazy
-    layers: [ThickGateOx, Activ]
-  - name: ActivOutsideTGO
-    op: difference
-    mode: lazy
-    layers: [Activ, ThickGateOx]
-  - name: GatPolyOverActivOutsideTGO
-    op: difference
-    mode: lazy
-    layers: [GatPolyOverActiv, ThickGateOx]
-  - name: GatPolyOverActivTGO
-    op: intersection
-    mode: lazy
-    layers: [GatPolyOverActiv, ThickGateOx]
+  GatPolyOverActiv: GatPoly and Activ
+  ThickGateOxOverActiv: ThickGateOx and Activ
+  ActivOutsideTGO: Activ not ThickGateOx
+  GatPolyOverActivOutsideTGO: GatPolyOverActiv not ThickGateOx
+  GatPolyOverActivTGO: GatPolyOverActiv and ThickGateOx
 
-  - name: NWellMerged
-    op: close
-    mode: lazy
-    radius: 0.31
-    layers: [NWell]
-  - name: NWellNoSRAM
-    op: difference
-    mode: lazy
-    layers: [NWell, SRAM]
-  - name: NWellMergedNoSRAM
-    op: close
-    mode: lazy
-    radius: 0.31
-    layers: [NWellNoSRAM]
-  - name: PsdActivInNWellNoTGONoSRAM
-    op: not_overlapping
-    mode: lazy
-    layers: [PsdActivInNWellNoTGO, SRAM]
-  - name: nBuLayMerged
-    op: close
-    mode: lazy
-    radius: 0.75
-    layers: [nBuLay]
+  NWellMerged: NWell close 0.31
+  NWellNoSRAM: NWell not SRAM
+  NWellMergedNoSRAM: NWellNoSRAM close 0.31
+  PsdActivInNWellNoTGONoSRAM: PsdActivInNWellNoTGO not_overlapping SRAM
+  nBuLayMerged: nBuLay close 0.75
 
-  - name: SealActiv
-    op: intersection
-    mode: lazy
-    layers: [Activ, EdgeSeal]
-  - name: SealpSD
-    op: intersection
-    mode: lazy
-    layers: [pSD, EdgeSeal]
-  - name: SealMetal1
-    op: intersection
-    mode: lazy
-    layers: [Metal1, EdgeSeal]
-  - name: SealMetal2
-    op: intersection
-    mode: lazy
-    layers: [Metal2, EdgeSeal]
-  - name: SealMetal3
-    op: intersection
-    mode: lazy
-    layers: [Metal3, EdgeSeal]
-  - name: SealMetal4
-    op: intersection
-    mode: lazy
-    layers: [Metal4, EdgeSeal]
-  - name: SealMetal5
-    op: intersection
-    mode: lazy
-    layers: [Metal5, EdgeSeal]
-  - name: SealTopMetal1
-    op: intersection
-    mode: lazy
-    layers: [TopMetal1, EdgeSeal]
-  - name: SealTopMetal2
-    op: intersection
-    mode: lazy
-    layers: [TopMetal2, EdgeSeal]
-  - name: SealCont
-    op: intersection
-    mode: lazy
-    layers: [Cont, EdgeSeal]
-  - name: SealVia1
-    op: intersection
-    mode: lazy
-    layers: [Via1, EdgeSeal]
-  - name: SealVia2
-    op: intersection
-    mode: lazy
-    layers: [Via2, EdgeSeal]
-  - name: SealVia3
-    op: intersection
-    mode: lazy
-    layers: [Via3, EdgeSeal]
-  - name: SealVia4
-    op: intersection
-    mode: lazy
-    layers: [Via4, EdgeSeal]
-  - name: SealTopVia1
-    op: intersection
-    mode: lazy
-    layers: [TopVia1, EdgeSeal]
-  - name: SealTopVia2
-    op: intersection
-    mode: lazy
-    layers: [TopVia2, EdgeSeal]
+  SealActiv: Activ and EdgeSeal
+  SealpSD: pSD and EdgeSeal
+  SealMetal1: Metal1 and EdgeSeal
+  SealMetal2: Metal2 and EdgeSeal
+  SealMetal3: Metal3 and EdgeSeal
+  SealMetal4: Metal4 and EdgeSeal
+  SealMetal5: Metal5 and EdgeSeal
+  SealTopMetal1: TopMetal1 and EdgeSeal
+  SealTopMetal2: TopMetal2 and EdgeSeal
+  SealCont: Cont and EdgeSeal
+  SealVia1: Via1 and EdgeSeal
+  SealVia2: Via2 and EdgeSeal
+  SealVia3: Via3 and EdgeSeal
+  SealVia4: Via4 and EdgeSeal
+  SealTopVia1: TopVia1 and EdgeSeal
+  SealTopVia2: TopVia2 and EdgeSeal
 
-  - name: RingPassiv
-    op: not_overlapping
-    mode: lazy
-    layers: [Passiv, EdgeSeal]
+  RingPassiv: Passiv not_overlapping EdgeSeal
 
-  - name: PassivDfpad
-    op: intersection
-    mode: lazy
-    layers: [Passiv, dfpad]
-  - name: DfpadNoTopMetal2
-    op: difference
-    mode: lazy
-    layers: [dfpad, TopMetal2]
+  PassivDfpad: Passiv and dfpad
+  DfpadNoTopMetal2: dfpad not TopMetal2
 
-  - name: GatPolyOverNsdActiv
-    op: intersection
-    mode: lazy
-    layers: [GatPoly, Activ, nSD]
-  - name: GatPolyOverNsdActivTGO
-    op: intersection
-    mode: lazy
-    layers: [GatPolyOverNsdActiv, ThickGateOx]
-  - name: GatPolyOverNsdActivNoTGO
-    op: difference
-    mode: lazy
-    layers: [GatPolyOverNsdActiv, ThickGateOx]
-  - name: GatPolyOverPsdActiv
-    op: intersection
-    mode: lazy
-    layers: [GatPoly, Activ, pSD]
-  - name: GatPolyOverPsdActivTGO
-    op: intersection
-    mode: lazy
-    layers: [GatPolyOverPsdActiv, ThickGateOx]
-  - name: GatPolyOverPsdActivNoTGO
-    op: difference
-    mode: lazy
-    layers: [GatPolyOverPsdActiv, ThickGateOx]
+  GatPolyOverNsdActiv: GatPoly and Activ and nSD
+  GatPolyOverNsdActivTGO: GatPolyOverNsdActiv and ThickGateOx
+  GatPolyOverNsdActivNoTGO: GatPolyOverNsdActiv not ThickGateOx
+  GatPolyOverPsdActiv: GatPoly and Activ and pSD
+  GatPolyOverPsdActivTGO: GatPolyOverPsdActiv and ThickGateOx
+  GatPolyOverPsdActivNoTGO: GatPolyOverPsdActiv not ThickGateOx
 
-  - name: Metal1NoExempt
-    op: difference
-    mode: lazy
-    layers: [Metal1, Passiv, MIM, IND]
-  - name: Metal2NoExempt
-    op: difference
-    mode: lazy
-    layers: [Metal2, Passiv, MIM, IND]
-  - name: Metal3NoExempt
-    op: difference
-    mode: lazy
-    layers: [Metal3, Passiv, MIM, IND]
-  - name: Metal4NoExempt
-    op: difference
-    mode: lazy
-    layers: [Metal4, Passiv, MIM, IND]
-  - name: Metal5NoExempt
-    op: difference
-    mode: lazy
-    layers: [Metal5, Passiv, MIM, IND]
-  - name: TopMetal1NoExempt
-    op: difference
-    mode: lazy
-    layers: [TopMetal1, Passiv, MIM, IND]
-  - name: TopMetal2NoExempt
-    op: difference
-    mode: lazy
-    layers: [TopMetal2, Passiv, MIM, IND]
-  - name: PadDfpad
-    op: overlapping
-    mode: lazy
-    layers: [dfpad, Passiv]
-  - name: Metal1SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [Metal1.slit, PadDfpad]
-  - name: Metal2SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [Metal2.slit, PadDfpad]
-  - name: Metal3SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [Metal3.slit, PadDfpad]
-  - name: Metal4SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [Metal4.slit, PadDfpad]
-  - name: Metal5SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [Metal5.slit, PadDfpad]
-  - name: TopMetal1SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [TopMetal1.slit, PadDfpad]
-  - name: TopMetal2SlitOnPad
-    op: intersection
-    mode: lazy
-    layers: [TopMetal2.slit, PadDfpad]
+  Metal1NoExempt: Metal1 not Passiv not MIM not IND
+  Metal2NoExempt: Metal2 not Passiv not MIM not IND
+  Metal3NoExempt: Metal3 not Passiv not MIM not IND
+  Metal4NoExempt: Metal4 not Passiv not MIM not IND
+  Metal5NoExempt: Metal5 not Passiv not MIM not IND
+  TopMetal1NoExempt: TopMetal1 not Passiv not MIM not IND
+  TopMetal2NoExempt: TopMetal2 not Passiv not MIM not IND
+  PadDfpad: dfpad overlapping Passiv
+  Metal1SlitOnPad: Metal1.slit and PadDfpad
+  Metal2SlitOnPad: Metal2.slit and PadDfpad
+  Metal3SlitOnPad: Metal3.slit and PadDfpad
+  Metal4SlitOnPad: Metal4.slit and PadDfpad
+  Metal5SlitOnPad: Metal5.slit and PadDfpad
+  TopMetal1SlitOnPad: TopMetal1.slit and PadDfpad
+  TopMetal2SlitOnPad: TopMetal2.slit and PadDfpad
 
-  - name: ActivNotGat
-    op: difference
-    mode: lazy
-    layers: [Activ, GatPoly]
-  - name: PActivCon
-    op: intersection
-    mode: lazy
-    layers: [ActivNotGat, pSD]
-  - name: AntDpDiode
-    op: intersection
-    mode: lazy
-    layers: [PActivCon, Recog.diode]
-  - name: AntIError
-    op: difference
-    mode: lazy
-    layers: [AntDpDiode, Recog.esd, NWell, PWell.block]
+  ActivNotGat: Activ not GatPoly
+  PActivCon: ActivNotGat and pSD
+  AntDpDiode: PActivCon and Recog.diode
+  AntIError: AntDpDiode not Recog.esd not NWell not PWell.block
 
-  - name: NActivCon
-    op: difference
-    mode: lazy
-    layers: [Activ, GatPoly, pSD, nSD.block]
-  - name: AntDiode
-    op: union
-    mode: lazy
-    layers: [NActivCon, PActivCon]
-  - name: AntPolyField
-    op: difference
-    mode: lazy
-    layers: [GatPoly, Activ]
+  NActivCon: Activ not GatPoly not pSD not nSD.block
+  AntDiode: NActivCon or PActivCon
+  AntPolyField: GatPoly not Activ
 
-  - name: AntDnDiode
-    op: intersection
-    mode: lazy
-    layers: [NActivCon, Recog.diode]
-  - name: AntDantenna
-    op: difference
-    mode: lazy
-    layers: [AntDnDiode, NWell]
-  - name: AntDpantenna
-    op: intersection
-    mode: lazy
-    layers: [PActivCon, Recog.diode, NWell]
+  AntDnDiode: NActivCon and Recog.diode
+  AntDantenna: AntDnDiode not NWell
+  AntDpantenna: PActivCon and Recog.diode and NWell
+
+  # Ant.h: a dantenna in an NWell, unless it belongs to an isolation structure tagged
+  # `isolbox` - the chain of antenna.drc.
+  AntHCand: AntDnDiode not Recog.esd
+  AntHNactNwell: NActivCon and (NWell or PWell.block)
+  AntHSchottky: nBuLay and Recog.diode and NWell and nSD.block
+  AntHIsolbox1: (nBuLay interacting Recog.diode interacting AntHNactNwell)
+    or (Recog.diode interacting nBuLay interacting AntHNactNwell)
+  AntHIsolbox: AntHIsolbox1 not_interacting AntHSchottky with_text "isolbox" TEXT
+  AntHError: AntHCand not_interacting AntHIsolbox and NWell
 
 layers:
   - name: Activ

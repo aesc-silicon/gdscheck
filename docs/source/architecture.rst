@@ -102,20 +102,23 @@ tile-local, halo-bounded geometry.
 Lazy virtual layers
 ---------------------
 
-A PDK's ``virtual_layers:`` (declared in ``pdk.yml``, see :doc:`virtual-ops`) come in two
-evaluation modes:
+A PDK's ``virtual_layers:`` (declared in ``pdk.yml`` as sentences, see
+:doc:`virtual-ops`) are built one of two ways, and which one is decided by the checks
+that read a layer, not declared:
 
-* **Eager** (the default) — computed once, up front, as ordinary boundaries inserted
-  into the flattened layout (``pdk.rs`` → ``compute_virtual_layers``). Fine for small or
-  sparse derived layers.
-* **Lazy** (``mode: lazy``) — registered with the ``MergedCache`` as a ``TiledVirtual``:
-  a synthetic ``(layer, datatype)`` key built per tile, on first ``ensure``, by applying a
-  boolean/selection/morphological op to its source layers' tiles (each recursively
-  ``ensure``\ d in turn). A lazy virtual layer costs nothing until something actually
-  asks for it, and its
-  memory profile is the same tile+halo bound as any drawn layer — the mode a dense,
-  multi-step derivation (like the antenna forbidden-region chain in
-  :doc:`checks/forbidden_unless_labeled`) must use to stay bounded on a full chip.
+* **Lazy** (every layer, unless a rule needs otherwise) — registered with the
+  ``MergedCache`` as a ``TiledVirtual``: a synthetic ``(layer, datatype)`` key built per
+  tile, on first ``ensure``, by applying a boolean/selection/morphological op to its
+  source layers' tiles (each recursively ``ensure``\ d in turn). A lazy virtual layer
+  costs nothing until something actually asks for it, and its memory profile is the
+  same tile+halo bound as any drawn layer — what a dense, multi-step derivation (like
+  the ``AntHError`` chain behind IHP's antenna rule Ant.h) needs to stay bounded on a
+  full chip.
+* **Eager** — computed once, up front, as ordinary boundaries inserted into the
+  flattened layout (``pdk.rs`` → ``compute_virtual_layers``): the layers a whole-layout
+  check (``checks::reads_layout``) reads, and the ones made by ``inside_ring``.
+  ``pdk.rs`` → ``eager_layers`` names them from the rules about to run, and refuses a
+  rule whose layer cannot be built that way before the layout is read.
 
 A lazy virtual layer that feeds another must have its own halo raised to cover the
 downstream layer's needs, transitively — ``lib.rs`` propagates this before the merge cache
