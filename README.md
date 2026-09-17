@@ -103,8 +103,11 @@ Pass exactly one of `--suite <name>` (a curated rule selection) or `--deck
 exclusive.
 
 The PDK files are embedded in the binary, so `--process ihp-sg13g2` works
-with no external files. `--process` also accepts a path to a `pdk.yml` for a
-custom or out-of-tree PDK.
+with no external files. `--process` also accepts a path to a `pdk.yml`, or the
+name of a PDK on the PDK path: directories given with `--pdk-path <dir>` or in
+`GDSCHECK_PDK_PATH`, each holding `<process>/pdk.yml`, searched before the
+embedded PDKs. That is where a commercial PDK or a company variant lives; it
+can `extends: ihp-sg13g2` and reuse the embedded decks by path.
 
 Example, using the bundled IHP SG13G2 PDK and sample design:
 
@@ -123,6 +126,7 @@ through the violations.
 Discover what a PDK offers without running a check:
 
 ```bash
+gdscheck list-processes
 gdscheck list-decks  --process ihp-sg13g2
 gdscheck list-suites --process ihp-sg13g2
 gdscheck show-deck   --process ihp-sg13g2 --deck metal1
@@ -133,15 +137,17 @@ gdscheck show-deck   --process ihp-sg13g2 --deck metal1
 | Option | Meaning |
 | --- | --- |
 | `-i, --input` | Input GDS file (plain or `.gz`). |
-| `-p, --process` | PDK process name (e.g. `ihp-sg13g2`, embedded) or a path to a `pdk.yml`. |
+| `-p, --process` | PDK process name (embedded, or on the PDK path) or a path to a `pdk.yml`. |
+| `--pdk-path` | A directory of PDKs (`<dir>/<process>/pdk.yml`) searched before the embedded ones; repeatable, before the subcommand. `GDSCHECK_PDK_PATH` lists more. |
 | `-d, --deck` | Per-layer deck(s) to run, comma-separated and/or repeated (e.g. `metal2` or `metal1,via1`). Mutually exclusive with `--suite`. |
 | `-s, --suite` | A curated rule selection to run (e.g. `main` or `precheck`). Mutually exclusive with `--deck`. See [Suites](#suites). |
 | `-t, --topcell` | Name of the top cell to flatten and check. |
 | `-r, --report` | Optional output `.lyrdb` report path. |
 | `--threads` | Worker threads (`0` = all logical cores, the default). |
 
-`list-decks` and `list-suites` take only `-p, --process`; `show-deck` also
-takes `-d, --deck` (the deck to dump).
+`list-processes` takes no option beyond `--pdk-path`; `list-decks` and
+`list-suites` take only `-p, --process`; `show-deck` also takes `-d, --deck`
+(the deck to dump).
 
 `run` exits with `0` when the layout is clean, `2` when violations were found,
 and `1` on any error (unreadable input, unknown PDK, deck or suite, failed

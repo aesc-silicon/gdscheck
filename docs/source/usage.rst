@@ -60,6 +60,7 @@ Other subcommands inspect a PDK without running a check:
 
 .. code-block:: bash
 
+   gdscheck list-processes
    gdscheck list-decks  --process ihp-sg13g2
    gdscheck list-suites --process ihp-sg13g2
    gdscheck show-deck   --process ihp-sg13g2 --deck metal1
@@ -83,10 +84,33 @@ See :doc:`pdk-authoring` for the full deck/suite YAML format.
 Selecting the process
 ----------------------
 
-``--process`` accepts either an embedded PDK name (``ihp-sg13g2``, ``ihp-sg13cmos5l`` —
-built into the binary, no external files needed) or a filesystem path to a ``pdk.yml``
-for an out-of-tree or custom PDK. See :doc:`pdks/index` for the bundled PDKs and
+``--process`` accepts an embedded PDK name (``ihp-sg13g2``, ``ihp-sg13cmos5l`` — built
+into the binary, no external files needed), a filesystem path to a ``pdk.yml``, or the
+name of a PDK on the *PDK path*. See :doc:`pdks/index` for the bundled PDKs and
 :doc:`pdk-authoring` for writing your own.
+
+The PDK path is where PDKs that cannot live in the binary go — a commercial process
+under NDA, a company's own variant of a bundled one. It is a list of directories, each
+holding processes the way the source tree's ``pdks/`` does: ``<dir>/<process>/pdk.yml``
+with the decks beside it. Name directories with ``--pdk-path <dir>`` (before the
+subcommand, repeatable) or in the ``GDSCHECK_PDK_PATH`` environment variable, separated
+like ``PATH``; the option's directories are searched first, then the variable's, then
+the embedded PDKs. A process on the path shadows a bundled one of the same name, and
+``list-processes`` prints every process with where it comes from, marking the shadowed
+ones.
+
+.. code-block:: bash
+
+   export GDSCHECK_PDK_PATH=/opt/pdks/gdscheck
+   gdscheck list-processes
+   gdscheck run --process acme-28 --suite main --topcell TOP --input chip.gds.gz
+
+An external PDK can build on a bundled one: ``extends: ihp-sg13g2`` inherits the base's
+layers, and a deck path such as ``../ihp-sg13g2/decks/activ.yml`` that does not exist
+beside the external ``pdk.yml`` is read from the embedded copy, so the external tree
+carries only what it adds or changes. The ``pdk.yml`` format is not frozen while
+``gdscheck`` is pre-1.0: an external PDK may need touching up after an update, and a
+load error names the file and field.
 
 
 Writing reports

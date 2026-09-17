@@ -43,18 +43,35 @@ fn embedded_file(rel: &str) -> Option<&'static str> {
 /// PDK was loaded by embedded process name or from a filesystem `pdk.yml`.
 #[derive(Debug)]
 enum PdkSource {
-    /// Filesystem: `rel` is resolved against this directory (the `pdk.yml`'s dir).
-    Fs(PathBuf),
+    /// Filesystem: `rel` is resolved against `dir` (the `pdk.yml`'s directory).  What
+    /// the tree lacks is read from the embedded PDKs as if `dir` sat among them, so an
+    /// out-of-tree PDK reaches a bundled base and its decks by the same `../<name>/…`
+    /// paths a bundled derivative uses.
+    Fs { dir: PathBuf, name: String },
     /// Embedded: files live at `pdks/<process>/<rel>`.
     Embedded(String),
 }
 
 impl PdkSource {
+    fn fs(dir: PathBuf) -> Self {
+        let name = dir
+            .canonicalize()
+            .ok()
+            .and_then(|d| d.file_name().map(|n| n.to_string_lossy().into_owned()))
+            .unwrap_or_default();
+        PdkSource::Fs { dir, name }
+    }
+
     fn read(&self, rel: &str) -> Result<String, String> {
         match self {
-            PdkSource::Fs(dir) => {
+            PdkSource::Fs { dir, name } => {
                 let p = dir.join(rel);
-                std::fs::read_to_string(&p).map_err(|e| format!("{}: {e}", p.display()))
+                match std::fs::read_to_string(&p) {
+                    Ok(s) => Ok(s),
+                    Err(e) => embedded_file(&format!("{name}/{rel}"))
+                        .map(str::to_owned)
+                        .ok_or_else(|| format!("{}: {e}", p.display())),
+                }
             }
             PdkSource::Embedded(process) => {
                 let key = format!("{process}/{rel}");
@@ -64,6 +81,115 @@ impl PdkSource {
             }
         }
     }
+}
+
+/// Where a process was found.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Origin {
+    /// Built into the binary.
+    Embedded,
+    /// A `pdk.yml` on the filesystem: given as a path, or found under a search directory.
+    External(PathBuf),
+}
+
+/// A process spec resolved to what [`PdkConfig::for_process`] loads: the embedded name,
+/// or the path of the `pdk.yml` found for it.
+#[derive(Debug, Clone)]
+pub struct Resolved {
+    pub spec: String,
+    pub origin: Origin,
+}
+
+/// The environment variable holding extra PDK directories, separated like `PATH`.
+pub const PDK_PATH_VAR: &str = "GDSCHECK_PDK_PATH";
+
+/// The directories a process name is looked up in, in order: `extra` (a command line's
+/// `--pdk-path`), then [`PDK_PATH_VAR`].  Each holds one directory per process, with its
+/// `pdk.yml` inside, the way `pdks/` does.
+pub fn search_dirs(extra: &[PathBuf]) -> Vec<PathBuf> {
+    let env = std::env::var_os(PDK_PATH_VAR).unwrap_or_default();
+    dirs_from(extra, &env)
+}
+
+fn dirs_from(extra: &[PathBuf], env: &std::ffi::OsStr) -> Vec<PathBuf> {
+    let mut out: Vec<PathBuf> = extra.to_vec();
+    out.extend(std::env::split_paths(env).filter(|p| !p.as_os_str().is_empty()));
+    let mut seen = HashSet::new();
+    out.retain(|d| seen.insert(d.clone()));
+    out
+}
+
+/// Resolve a process spec: a path to a readable `pdk.yml`, a name found as
+/// `<dir>/<name>/pdk.yml` under the search directories, or an embedded name, in that
+/// order - so a PDK on the search path shadows a bundled one of the same name.
+pub fn resolve_process(spec: &str, extra: &[PathBuf]) -> Result<Resolved, String> {
+    if Path::new(spec).is_file() {
+        return Ok(Resolved {
+            spec: spec.to_string(),
+            origin: Origin::External(PathBuf::from(spec)),
+        });
+    }
+    let dirs = search_dirs(extra);
+    if !spec.contains('/') && !spec.contains(std::path::MAIN_SEPARATOR) {
+        for dir in &dirs {
+            let p = dir.join(spec).join("pdk.yml");
+            if p.is_file() {
+                return Ok(Resolved {
+                    spec: p.to_string_lossy().into_owned(),
+                    origin: Origin::External(p),
+                });
+            }
+        }
+        if embedded_file(&format!("{spec}/pdk.yml")).is_some() {
+            return Ok(Resolved {
+                spec: spec.to_string(),
+                origin: Origin::Embedded,
+            });
+        }
+    }
+    let searched = if dirs.is_empty() {
+        String::new()
+    } else {
+        format!(
+            ", not found under {}",
+            dirs.iter()
+                .map(|d| d.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    };
+    Err(format!(
+        "'{spec}' is not an embedded process ({}){searched}, and not a readable pdk.yml",
+        PdkConfig::embedded_processes().join(", ")
+    ))
+}
+
+/// Every process there is: the ones under the search directories, in the order they are
+/// searched, then the embedded ones.  A name listed twice is shadowed by its first entry.
+pub fn list_processes(extra: &[PathBuf]) -> Vec<(String, Origin)> {
+    let mut out: Vec<(String, Origin)> = Vec::new();
+    for dir in search_dirs(extra) {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        let mut found: Vec<(String, PathBuf)> = entries
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.join("pdk.yml").is_file())
+            .filter_map(|p| {
+                p.file_name()
+                    .map(|n| (n.to_string_lossy().into_owned(), p.join("pdk.yml")))
+            })
+            .collect();
+        found.sort();
+        out.extend(found.into_iter().map(|(n, p)| (n, Origin::External(p))));
+    }
+    out.extend(
+        PdkConfig::embedded_processes()
+            .into_iter()
+            .map(|n| (n.to_string(), Origin::Embedded)),
+    );
+    out
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -305,8 +431,8 @@ struct SuiteIncludeRaw {
 struct PdkRaw {
     pub name: String,
     pub version: String,
-    /// Optional base `pdk.yml` (path relative to this file) whose `layers` and
-    /// `virtual_layers` are inherited — this PDK's own entries are appended after
+    /// Optional base `pdk.yml` (path relative to this file, or a bare process name for
+    /// the base beside it) whose `layers` and `virtual_layers` are inherited — this PDK's own entries are appended after
     /// them.  Everything else (`decks`, `suites`, `connectivity`) always comes from
     /// this file, so a derived process (e.g. SG13CMOS5L extending SG13G2) states its
     /// own deck list and connect graph explicitly while reusing the big layer and
@@ -445,36 +571,41 @@ impl PdkConfig {
         v
     }
 
-    /// Load a PDK by process name (embedded, e.g. `"ihp-sg13g2"`) or by path to a
-    /// `pdk.yml` (for custom/out-of-tree PDKs).
+    /// Load a PDK by process spec, as [`resolve_process`] reads it with no extra search
+    /// directories: a path to a `pdk.yml`, a name under [`PDK_PATH_VAR`], or an embedded
+    /// name such as `"ihp-sg13g2"`.
     pub fn for_process(spec: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        if let Some(content) = embedded_file(&format!("{spec}/pdk.yml")) {
-            return Self::from_yaml(content, PdkSource::Embedded(spec.to_string()));
+        let resolved = resolve_process(spec, &[])?;
+        match resolved.origin {
+            Origin::Embedded => {
+                let content = embedded_file(&format!("{spec}/pdk.yml")).expect("resolved");
+                Self::from_yaml(content, PdkSource::Embedded(spec.to_string()))
+            }
+            Origin::External(_) => Self::load(&resolved.spec),
         }
-        let content = std::fs::read_to_string(spec).map_err(|e| {
-            format!("'{spec}' is not a known process and not a readable pdk.yml: {e}")
-        })?;
-        let dir = Path::new(spec)
-            .parent()
-            .unwrap_or(Path::new("."))
-            .to_path_buf();
-        Self::from_yaml(&content, PdkSource::Fs(dir))
     }
 
     /// Load a PDK from a filesystem `pdk.yml` path.
     pub fn load(path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let content = std::fs::read_to_string(path)?;
+        let content = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
         let dir = Path::new(path)
             .parent()
             .unwrap_or(Path::new("."))
             .to_path_buf();
-        Self::from_yaml(&content, PdkSource::Fs(dir))
+        Self::from_yaml(&content, PdkSource::fs(dir))
     }
 
     fn from_yaml(content: &str, source: PdkSource) -> Result<Self, Box<dyn std::error::Error>> {
         let mut raw: PdkRaw = serde_yml::from_str(content)?;
 
         if let Some(base_rel) = raw.extends.take() {
+            // A bare name is the base beside this PDK, bundled or not:
+            // `extends: ihp-sg13g2` reads as `../ihp-sg13g2/pdk.yml`.
+            let base_rel = if base_rel.contains('/') || base_rel.ends_with(".yml") {
+                base_rel
+            } else {
+                format!("../{base_rel}/pdk.yml")
+            };
             let base_content = source.read(&base_rel)?;
             let base: PdkRaw = serde_yml::from_str(&base_content)?;
             if base.extends.is_some() {
@@ -1081,6 +1212,29 @@ impl PdkConfig {
             .collect::<Result<Vec<_>, String>>()?;
 
         Ok(rules)
+    }
+}
+
+#[cfg(test)]
+mod path_tests {
+    use super::dirs_from;
+    use std::path::PathBuf;
+
+    /// The command line's directories come first, then the variable's, each once.
+    #[test]
+    fn search_dirs_read_the_option_then_the_variable() {
+        let extra = [PathBuf::from("/a"), PathBuf::from("/b")];
+        let env = std::env::join_paths(["/b", "", "/c"]).unwrap();
+        let dirs = dirs_from(&extra, &env);
+        assert_eq!(
+            dirs,
+            [
+                PathBuf::from("/a"),
+                PathBuf::from("/b"),
+                PathBuf::from("/c")
+            ]
+        );
+        assert!(dirs_from(&[], std::ffi::OsStr::new("")).is_empty());
     }
 }
 

@@ -3,13 +3,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use clap::{ArgGroup, Parser, Subcommand};
-use gdscheck::{load_gds, pdk::PdkConfig, report, run_drc_with};
+use gdscheck::pdk::{self, Origin, PdkConfig};
+use gdscheck::{load_gds, report, run_drc_with};
 use rayon::ThreadPoolBuilder;
+use std::path::PathBuf;
 
 /// gdscheck — Open Source DRC engine
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
+    /// Directory holding PDKs as `<dir>/<process>/pdk.yml`, searched before the
+    /// embedded ones; repeatable.  `GDSCHECK_PDK_PATH` lists more, separated like PATH.
+    #[arg(long, global = true, value_name = "DIR")]
+    pdk_path: Vec<PathBuf>,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -18,6 +25,8 @@ struct Cli {
 enum Command {
     /// Run DRC on a layout.
     Run(RunArgs),
+    /// List every process: on the PDK path, then embedded.
+    ListProcesses,
     /// List the per-layer decks available in a PDK.
     ListDecks(PdkArgs),
     /// List the curated suites available in a PDK.
@@ -89,11 +98,14 @@ struct RunArgs {
 }
 
 fn main() {
-    match Cli::parse().command {
-        Command::Run(args) => run(args),
-        Command::ListDecks(args) => list(&args.process, ListKind::Decks),
-        Command::ListSuites(args) => list(&args.process, ListKind::Suites),
-        Command::ShowDeck(args) => show_deck(&args.process, &args.deck),
+    let cli = Cli::parse();
+    let dirs = cli.pdk_path;
+    match cli.command {
+        Command::Run(args) => run(args, &dirs),
+        Command::ListProcesses => list_processes(&dirs),
+        Command::ListDecks(args) => list(&args.process, &dirs, ListKind::Decks),
+        Command::ListSuites(args) => list(&args.process, &dirs, ListKind::Suites),
+        Command::ShowDeck(args) => show_deck(&args.process, &dirs, &args.deck),
     }
 }
 
@@ -102,9 +114,18 @@ enum ListKind {
     Suites,
 }
 
-fn load_pdk(process: &str) -> PdkConfig {
-    match PdkConfig::for_process(process) {
-        Ok(p) => p,
+/// The process resolved against `dirs`, and the loaded PDK.  The spec it resolves to is
+/// what the run loads by, so a name found on the PDK path is read from there.
+fn load_pdk(process: &str, dirs: &[PathBuf]) -> (pdk::Resolved, PdkConfig) {
+    let resolved = match pdk::resolve_process(process, dirs) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("Error loading PDK config: {e}");
+            std::process::exit(1);
+        }
+    };
+    match PdkConfig::for_process(&resolved.spec) {
+        Ok(p) => (resolved, p),
         Err(e) => {
             eprintln!("Error loading PDK config: {e}");
             std::process::exit(1);
@@ -112,8 +133,23 @@ fn load_pdk(process: &str) -> PdkConfig {
     }
 }
 
-fn list(process: &str, kind: ListKind) {
-    let pdk = load_pdk(process);
+fn list_processes(dirs: &[PathBuf]) {
+    let mut seen = std::collections::HashSet::new();
+    for (name, origin) in pdk::list_processes(dirs) {
+        let shadowed = if seen.insert(name.clone()) {
+            ""
+        } else {
+            ", shadowed"
+        };
+        match origin {
+            Origin::Embedded => println!("{name}  (embedded{shadowed})"),
+            Origin::External(p) => println!("{name}  ({}{shadowed})", p.display()),
+        }
+    }
+}
+
+fn list(process: &str, dirs: &[PathBuf], kind: ListKind) {
+    let (_, pdk) = load_pdk(process, dirs);
     let entries = match kind {
         ListKind::Decks => &pdk.decks,
         ListKind::Suites => &pdk.suites,
@@ -128,8 +164,8 @@ fn list(process: &str, kind: ListKind) {
     }
 }
 
-fn show_deck(process: &str, deck: &str) {
-    let pdk = load_pdk(process);
+fn show_deck(process: &str, dirs: &[PathBuf], deck: &str) {
+    let (_, pdk) = load_pdk(process, dirs);
     let rules = match pdk.load_deck(deck) {
         Ok(r) => r,
         Err(e) => {
@@ -214,14 +250,17 @@ fn show_deck(process: &str, deck: &str) {
     }
 }
 
-fn run(args: RunArgs) {
+fn run(args: RunArgs, dirs: &[PathBuf]) {
     ThreadPoolBuilder::new()
         .num_threads(args.threads) // 0 = rayon default (all logical cores)
         .build_global()
         .expect("Failed to build thread pool");
 
-    let pdk = load_pdk(&args.process);
-    println!("PDK: {} ({})", pdk.name, pdk.version);
+    let (resolved, pdk) = load_pdk(&args.process, dirs);
+    match &resolved.origin {
+        Origin::Embedded => println!("PDK: {} ({})", pdk.name, pdk.version),
+        Origin::External(p) => println!("PDK: {} ({}) from {}", pdk.name, pdk.version, p.display()),
+    }
     if let Some(suite) = &args.suite {
         println!("Suite: {suite}");
     } else {
@@ -254,7 +293,7 @@ fn run(args: RunArgs) {
     let start = std::time::Instant::now();
     let violations = match run_drc_with(
         &lib,
-        &args.process,
+        &resolved.spec,
         &decks,
         args.suite.as_deref(),
         &args.topcell,
