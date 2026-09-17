@@ -186,8 +186,9 @@ Deriving a process with extends
      - name: main
        path: suites/main.yml
 
-``extends`` (a path relative to this file) inherits the base PDK's ``layers`` and
-``virtual_layers`` — this file's own entries are appended after them, and a
+``extends`` (a path relative to this file, or a bare process name for the base beside
+it — ``extends: ihp-sg13g2`` reads as ``../ihp-sg13g2/pdk.yml``) inherits the base PDK's
+``layers`` and ``virtual_layers`` — this file's own entries are appended after them, and a
 ``virtual_layers`` entry with the same ``name`` as one in the base *replaces* it (the
 child's definition wins). Everything else — ``decks``, ``suites``, ``connectivity`` — is
 never inherited; a derived process states its own deck list and connect graph explicitly,
@@ -197,6 +198,15 @@ even if it reuses most of the base's rules. One level only: the base file may no
 This is the pattern for a process variant that shares most of a foundry's device and
 recognition layers but has its own rule set (a different metal stack, different design
 rules, or — as with SG13CMOS5L — a restricted set of forbidden layers).
+
+The same pattern works outside the source tree. A PDK kept on the PDK path (see
+:doc:`usage`, *Selecting the process*) can extend a bundled base by name, and any file
+it references but does not carry — the base's ``pdk.yml``, a deck such as
+``../ihp-sg13g2/decks/activ.yml`` — is read from the copy embedded in the binary. An
+external directory therefore holds only the ``pdk.yml`` and the decks it adds or
+replaces. The fallback is for files the tree lacks, so a PDK that shadows a bundled
+name cannot at the same time extend the one it shadows: ``../ihp-sg13g2/pdk.yml`` from
+a directory called ``ihp-sg13g2`` is the file itself.
 
 
 Rule parameters
