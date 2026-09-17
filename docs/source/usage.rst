@@ -56,6 +56,13 @@ extension). Pass exactly one of ``--suite <name>`` (a curated rule selection) or
 ``--deck <name[,name...]>`` (one or more per-layer decks) — the two are mutually
 exclusive.
 
+``--threads`` caps the worker threads (default: every core). ``--tile <µm>``, or
+``GDSCHECK_TILE_UM``, sets the tile the merge cache works in (default 20): every layer is
+merged, stitched and measured per tile of that size with a halo round it. A smaller tile
+bounds memory tighter and cuts the geometry into more pieces, a larger one holds more of
+a dense layer whole and copies less of it into halos. The result must not depend on it;
+a run that differs between two tile sizes is a bug worth reporting.
+
 Other subcommands inspect a PDK without running a check:
 
 .. code-block:: bash

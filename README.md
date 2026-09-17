@@ -144,6 +144,7 @@ gdscheck show-deck   --process ihp-sg13g2 --deck metal1
 | `-t, --topcell` | Name of the top cell to flatten and check. |
 | `-r, --report` | Optional output `.lyrdb` report path. |
 | `--threads` | Worker threads (`0` = all logical cores, the default). |
+| `--tile` | Tile size of the merge cache in µm (default 20, or `GDSCHECK_TILE_UM`); the result must not depend on it. |
 
 `list-processes` takes no option beyond `--pdk-path`; `list-decks` and
 `list-suites` take only `-p, --process`; `show-deck` also takes `-d, --deck`

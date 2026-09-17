@@ -577,6 +577,7 @@ fn halo_table(
     edge_specs: &[pdk::TiledEdgeSpec],
     is_empty_base: &dyn Fn(&pdk::Layer) -> bool,
     halo_dbu: i32,
+    tile_dbu: i32,
     dbu_to_um: f64,
 ) -> HaloTable {
     let mut halo: std::collections::HashMap<(i16, i16), Reach> = std::collections::HashMap::new();
@@ -651,7 +652,7 @@ fn halo_table(
             clippable,
             &mut halo,
             &mut why,
-            (merge::TILE_UM / dbu_to_um).round() as i32,
+            tile_dbu,
         );
         for spec in edge_specs {
             if in_scope.is_some_and(|n| !n.contains(&spec.key)) {
@@ -906,7 +907,33 @@ pub fn run_drc(
         suite,
         topcell,
         connectivity,
+        &RunOptions::default(),
     )
+}
+
+/// What a run may be tuned by, beyond what it checks.
+#[derive(Debug, Clone)]
+pub struct RunOptions {
+    /// The tile the merge cache works in, in µm.  Every layer is merged, stitched and
+    /// measured per tile of this size with a halo round it; a smaller tile bounds memory
+    /// tighter and cuts the geometry into more pieces, a larger one holds more of a
+    /// dense layer whole and copies less of it into halos.  [`merge::TILE_UM`] is the
+    /// default, and what the engine patterns are drawn against.
+    pub tile_um: f64,
+}
+
+impl Default for RunOptions {
+    /// [`merge::TILE_UM`], or `GDSCHECK_TILE_UM` when set: the tile a run reads by
+    /// default, and the way to run the whole test suite at another tile - a result that
+    /// depends on where the tile lines fall is a defect, and every fixture asks that at
+    /// once under `GDSCHECK_TILE_UM=7 cargo test`.
+    fn default() -> Self {
+        let tile_um = std::env::var("GDSCHECK_TILE_UM")
+            .ok()
+            .and_then(|v| v.trim().parse::<f64>().ok())
+            .unwrap_or(merge::TILE_UM);
+        RunOptions { tile_um }
+    }
 }
 
 /// Where a run's library comes from: read here, or handed over already read.
@@ -926,6 +953,27 @@ pub fn run_drc_with(
     topcell: &str,
     connectivity: bool,
 ) -> Result<Vec<Violation>, String> {
+    run_drc_with_options(
+        lib,
+        process,
+        decks,
+        suite,
+        topcell,
+        connectivity,
+        &RunOptions::default(),
+    )
+}
+
+/// [`run_drc_with`] under the given [`RunOptions`].
+pub fn run_drc_with_options(
+    lib: &GdsLibrary,
+    process: &str,
+    decks: &[&str],
+    suite: Option<&str>,
+    topcell: &str,
+    connectivity: bool,
+    options: &RunOptions,
+) -> Result<Vec<Violation>, String> {
     run_drc_impl(
         LibSource::Loaded(lib),
         process,
@@ -933,6 +981,7 @@ pub fn run_drc_with(
         suite,
         topcell,
         connectivity,
+        options,
     )
 }
 
@@ -943,7 +992,14 @@ fn run_drc_impl(
     suite: Option<&str>,
     topcell: &str,
     connectivity: bool,
+    options: &RunOptions,
 ) -> Result<Vec<Violation>, String> {
+    if options.tile_um.is_nan() || options.tile_um <= 0.0 {
+        return Err(format!(
+            "tile size must be positive, not {} µm",
+            options.tile_um
+        ));
+    }
     let mut phase = PhaseTrace::new();
     let pdk = pdk::PdkConfig::for_process(process).map_err(|e| e.to_string())?;
     let rules = if let Some(suite) = suite {
@@ -1090,8 +1146,11 @@ fn run_drc_impl(
     phase.end("global virtuals");
 
     // One tiled-merge cache shared by all geometric checks.
-    let tile_dbu = (merge::TILE_UM / dbu_to_um).round() as i32;
+    let tile_dbu = ((options.tile_um / dbu_to_um).round() as i32).max(1);
     let halo_dbu = (merge::MIN_HALO_UM / dbu_to_um).ceil() as i32;
+    if options.tile_um != merge::TILE_UM {
+        println!("Tile: {} µm", options.tile_um);
+    }
 
     // Halo is computed per layer: each layer only needs to see neighbour geometry
     // out to the largest distance rule that references *it*.  A deck-wide halo
@@ -1152,6 +1211,7 @@ fn run_drc_impl(
         &edge_specs,
         &is_empty_base,
         halo_dbu,
+        tile_dbu,
         dbu_to_um,
     );
     // And per rule, over its own closure, which is what its merges are built at.
@@ -1167,6 +1227,7 @@ fn run_drc_impl(
                 &edge_specs,
                 &is_empty_base,
                 halo_dbu,
+                tile_dbu,
                 dbu_to_um,
             )
             .0;

@@ -45,7 +45,7 @@ path = "gen/main.rs"
 required-features = ["dev-tools"]
 
 [dependencies]
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "env"] }
 gds21 = "3.0.0-pre.2"
 serde = { version = "1", features = ["derive"] }
 serde_yml = "0.0.12"
