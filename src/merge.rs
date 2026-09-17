@@ -4681,6 +4681,9 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
 /// region on every layer — which lets inter-layer checks (e.g. spacing between a
 /// layer and its filler) line up tile-for-tile.  The first check that needs a
 /// layer pays for its merge; the rest reuse it.
+/// One build of a layer set aside: the halo it was built for, its tiles, its copies.
+type Variant = (i32, TileMap, usize);
+
 /// What one rule needs of the layers it reaches: the halo per layer the rule raised,
 /// and the closure of layers it reaches at all.  See `MergedCache::rule_halos`.
 pub type RuleHalos = (HashMap<(i16, i16), i32>, HashSet<(i16, i16)>);
@@ -4721,12 +4724,19 @@ pub struct MergedCache {
     /// Polygon copies per cached layer, kept at insert so the trace's resident count
     /// is a sum over layers and not a walk over fifty million tiles per rule.
     layer_polys: HashMap<(i16, i16), usize>,
-    /// A fat copy set aside when a rule wanted the layer much thinner: the halo it
-    /// was built for, its tiles, and its copies.  Handed back to the next rule that
-    /// wants that reach, so comp at the guard ring's 200 um is merged once and not
-    /// again for every deck that has a guard-ring rule between its own.  Dropped like
-    /// the live copy when no later rule needs its reach.
-    shelf: HashMap<(i16, i16), (i32, TileMap, usize)>,
+    /// The other builds of a layer, set aside when a rule wanted it at another reach:
+    /// each the halo it was built for, its tiles, and its copies.  A rule reads the
+    /// thinnest that reaches far enough, so a layer wanted thin between two fat rules
+    /// is not merged thin and fat and thin again - comp at the guard ring's 200 um was
+    /// built fat for every deck that has a guard-ring rule between its own, and the
+    /// implant intersections on it seven seconds a time.  Counted against the budget,
+    /// and dropped variant by variant when a later rule needs less.
+    variants: HashMap<(i16, i16), Vec<Variant>>,
+    /// Every reach some rule of the run wants of each layer, sorted, for building
+    /// ahead: a layer built for one rule is built at the largest reach any rule wants
+    /// of it up to four times as far - the ratio past which a copy is too fat to read -
+    /// since a thinner copy could not serve those rules and would be built again.
+    needs: HashMap<(i16, i16), Vec<i32>>,
     /// Derived layers read, somewhere downstream, by the enclosure engine or by
     /// `covering`, which take one tile's copy for the whole region.  Built and copied
     /// the old way; see `clippable_layers`.
@@ -4786,7 +4796,8 @@ impl MergedCache {
             clippable: HashSet::new(),
             names: HashMap::new(),
             layer_polys: HashMap::new(),
-            shelf: HashMap::new(),
+            variants: HashMap::new(),
+            needs: HashMap::new(),
             whole_chain: HashSet::new(),
         }
     }
@@ -5221,6 +5232,25 @@ impl MergedCache {
     }
 
     /// Set (or clear) the per-layer halos of the rule about to run.  See `rule_halos`.
+    /// The reaches every rule of the run wants of each layer; see `needs`.
+    pub fn set_needs(&mut self, needs: HashMap<(i16, i16), Vec<i32>>) {
+        self.needs = needs;
+    }
+
+    /// `want` raised to the largest reach some rule wants of `key` within four times
+    /// it, so one build serves them all.
+    fn build_ahead(&self, key: (i16, i16), want: i32) -> i32 {
+        self.needs
+            .get(&key)
+            .and_then(|ns| {
+                ns.iter()
+                    .filter(|&&n| n > want && n <= want.saturating_mul(4))
+                    .max()
+                    .copied()
+            })
+            .unwrap_or(want)
+    }
+
     pub fn set_rule_halos(&mut self, halos: Option<RuleHalos>) {
         self.rule_halos = halos;
     }
@@ -5275,39 +5305,44 @@ impl MergedCache {
             if have >= want && !far_too_fat {
                 return;
             }
-            // Cached too thin for this consumer, or too fat to read.  Drop it and
-            // everything derived from it by stitching, which inherits the tiles' reach.
+            // Cached too thin for this consumer, or too fat to read.  Set it aside for
+            // the next rule that wants its reach, and drop what was stitched from it,
+            // which inherits the tiles' reach.
             let tiles = self.layers.remove(&key).expect("checked above");
             let polys = self.layer_polys.remove(&key).unwrap_or(0);
             self.regions.remove(&key);
             self.layer_halo.remove(&key);
-            if far_too_fat
-                && self.is_drawn(key)
-                && self.shelf.get(&key).is_none_or(|(h, _, _)| *h < have)
-            {
-                // Too fat to read now, and expensive to make again: set it aside.  The
-                // shelf keeps the fattest, since a thinner one is cheap to make again.
-                self.shelf.insert(key, (have, tiles, polys));
-            }
+            self.variants
+                .entry(key)
+                .or_default()
+                .push((have, tiles, polys));
         }
-        if let Some((have, _, _)) = self.shelf.get(&key)
-            && *have >= want
-            && want > *have / 4
-        {
-            {
-                let (have, tiles, polys) = self.shelf.remove(&key).expect("just seen");
-                self.layers.insert(key, tiles);
-                self.layer_polys.insert(key, polys);
-                self.layer_halo.insert(key, have);
-                if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
-                    eprintln!(
-                        "unshelve {} halo={have}dbu copies={polys}",
-                        self.name_of(key)
-                    );
-                }
-                return;
+        // The thinnest variant that reaches far enough and is not far too fat to read.
+        let pick = self.variants.get(&key).and_then(|vs| {
+            vs.iter()
+                .enumerate()
+                .filter(|(_, (h, _, n))| *h >= want && !(want < *h / 4 && *n > 200_000))
+                .min_by_key(|(_, (h, _, _))| *h)
+                .map(|(i, _)| i)
+        });
+        if let Some(i) = pick {
+            let vs = self.variants.get_mut(&key).expect("just seen");
+            let (have, tiles, polys) = vs.swap_remove(i);
+            if vs.is_empty() {
+                self.variants.remove(&key);
             }
+            self.layers.insert(key, tiles);
+            self.layer_polys.insert(key, polys);
+            self.layer_halo.insert(key, have);
+            if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+                eprintln!(
+                    "reuse {} halo={have}dbu for {want}dbu copies={polys}",
+                    self.name_of(key)
+                );
+            }
+            return;
         }
+        let want = self.build_ahead(key, want);
         if let Some(def) = self.virtual_defs.get(&key).cloned() {
             if matches!(def.op, VirtualOp::WithText) {
                 // candidate = source[0]; source[1] is a TEXT layer, read from the
@@ -5550,8 +5585,9 @@ impl MergedCache {
         if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
             let copies: usize = tiles.values().map(|v| v.len()).sum();
             eprintln!(
-                "merge {layer}/{datatype} raw={} halo={}dbu tile={}dbu tiles={} copies={} \
+                "merge {} ({layer}/{datatype}) raw={} halo={}dbu tile={}dbu tiles={} copies={} \
                  blowup={:.0}x {:.1}s",
+                self.name_of(key),
                 raw.len(),
                 halo,
                 tile,
@@ -5590,8 +5626,10 @@ impl MergedCache {
         if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
             let copies: usize = tiles.values().map(|v| v.len()).sum();
             eprintln!(
-                "virtual {} op={:?} src_copies={} tiles={} copies={}{} {:.1}s resident={}",
+                "virtual {} ({}/{}) op={:?} src_copies={} tiles={} copies={}{} {:.1}s resident={}",
                 self.name_of(key),
+                key.0,
+                key.1,
                 op,
                 src_copies,
                 tiles.len(),
@@ -5616,20 +5654,57 @@ impl MergedCache {
         format!("{}L/{}derived/{}polys", self.layers.len(), derived, polys)
     }
 
-    /// Polygon copies resident across every cached layer and the shelf.
+    /// Polygon copies resident across every cached layer, variants included.
     pub fn resident_polys(&self) -> usize {
         self.layer_polys.values().sum::<usize>()
-            + self.shelf.values().map(|(_, _, n)| n).sum::<usize>()
+            + self
+                .variants
+                .values()
+                .flat_map(|vs| vs.iter().map(|(_, _, n)| n))
+                .sum::<usize>()
     }
 
-    /// Every cached layer with its polygon copies, shelf included.
+    /// Every cached layer with its polygon copies, all variants together.
     pub fn resident_layers(&self) -> Vec<((i16, i16), usize)> {
-        let mut v: Vec<((i16, i16), usize)> =
-            self.layer_polys.iter().map(|(k, n)| (*k, *n)).collect();
-        for (k, (_, _, n)) in &self.shelf {
-            v.push((*k, *n));
+        let mut by_key: HashMap<(i16, i16), usize> = self.layer_polys.clone();
+        for (k, vs) in &self.variants {
+            *by_key.entry(*k).or_default() += vs.iter().map(|(_, _, n)| n).sum::<usize>();
         }
-        v
+        by_key.into_iter().collect()
+    }
+
+    /// Drop the layer's variants that are not the one being read.  The first thing to
+    /// go over budget: what a later rule wants comes back for the cost of one build,
+    /// and the copy in use stays.
+    pub fn drop_variants(&mut self, layer: i16, datatype: i16) -> usize {
+        self.variants
+            .remove(&(layer, datatype))
+            .map(|vs| vs.iter().map(|(_, _, n)| n).sum())
+            .unwrap_or(0)
+    }
+
+    /// Drop every build of the layer whose halo exceeds `limit`, the copy in use
+    /// included, and keep the thinner ones: nothing later needs the reach, and a copy
+    /// far fatter than the next rule's is slow to read.
+    pub fn evict_fatter_than(&mut self, layer: i16, datatype: i16, limit: i32) {
+        let key = (layer, datatype);
+        if self.layer_halo.get(&key).is_some_and(|h| *h > limit) {
+            self.layers.remove(&key);
+            self.layer_polys.remove(&key);
+            self.layer_halo.remove(&key);
+            self.regions.remove(&key);
+        }
+        if let Some(vs) = self.variants.get_mut(&key) {
+            vs.retain(|(h, _, _)| *h <= limit);
+            if vs.is_empty() {
+                self.variants.remove(&key);
+            }
+        }
+        if self.edge_halo.get(&key).is_some_and(|h| *h > limit) {
+            self.edge_layers.remove(&key);
+            self.edge_spans.remove(&key);
+            self.edge_halo.remove(&key);
+        }
     }
 
     /// The halo a cached layer was built for, or `None` if it is not cached.
@@ -5638,7 +5713,11 @@ impl MergedCache {
             .get(&key)
             .or_else(|| self.edge_halo.get(&key))
             .copied()
-            .max(self.shelf.get(&key).map(|(h, _, _)| *h))
+            .max(
+                self.variants
+                    .get(&key)
+                    .and_then(|vs| vs.iter().map(|(h, _, _)| *h).max()),
+            )
     }
 
     /// Drop a layer's cached tiles and stitched regions.  Used by the deck
@@ -5649,7 +5728,7 @@ impl MergedCache {
         self.layers.remove(&key);
         self.layer_polys.remove(&key);
         self.layer_halo.remove(&key);
-        self.shelf.remove(&key);
+        self.variants.remove(&key);
         self.regions.remove(&key);
         self.edge_layers.remove(&key);
         self.edge_spans.remove(&key);
