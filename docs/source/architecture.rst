@@ -112,8 +112,8 @@ that read a layer, not declared:
   source layers' tiles (each recursively ``ensure``\ d in turn). A lazy virtual layer
   costs nothing until something actually asks for it, and its memory profile is the
   same tile+halo bound as any drawn layer — what a dense, multi-step derivation (like
-  the antenna forbidden-region chain in :doc:`checks/forbidden_unless_labeled`) needs to
-  stay bounded on a full chip.
+  the ``AntHError`` chain behind IHP's antenna rule Ant.h) needs to stay bounded on a
+  full chip.
 * **Eager** — computed once, up front, as ordinary boundaries inserted into the
   flattened layout (``pdk.rs`` → ``compute_virtual_layers``): the layers a whole-layout
   check (``checks::reads_layout``) reads, and the ones made by ``inside_ring``.

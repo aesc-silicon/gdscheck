@@ -57,10 +57,7 @@ pub fn boundaries_on<'a>(layout: &'a FlatLayout, layer: &Layer) -> &'a [GdsBound
 /// virtual layers of its own in the cache as it goes, under keys another such rule
 /// could register differently.
 pub fn runs_alone(rule: &RuleDefinition) -> bool {
-    matches!(
-        rule.check.as_str(),
-        "forbidden" | "forbidden_unless_labeled"
-    )
+    rule.check == "forbidden"
 }
 
 pub fn run_rule(
@@ -164,7 +161,6 @@ pub fn run_rule(
         "max_nets_under" => net::nets_under::run(rule, layout, dbu_to_um, merged, conn),
         // Residual: what a rule forbids outright.
         "forbidden" => residual::run(rule, layout, dbu_to_um, merged),
-        "forbidden_unless_labeled" => residual::labeled::run(rule, layout, dbu_to_um, merged),
         other => {
             eprintln!("[{}] Unknown check function: '{}'", rule.id, other);
             vec![]
