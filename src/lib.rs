@@ -1454,6 +1454,7 @@ fn run_drc_impl(
             );
         }
 
+        let t_plan = std::time::Instant::now();
         for key in &rule_halos[i].1 {
             let future = future_need[key][i];
             // Dropped when nothing later needs it, or when it is far fatter than
@@ -1511,6 +1512,12 @@ fn run_drc_impl(
                     );
                 }
                 merged.evict(key.0, key.1);
+            }
+        }
+        if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            let plan = t_plan.elapsed().as_secs_f64();
+            if plan >= 0.05 {
+                eprintln!("plan {} {plan:.2}s", rule.id);
             }
         }
     }
