@@ -954,7 +954,7 @@ fn is_square(m: &MergedPoly) -> bool {
 }
 
 /// Bounding box of a region's outer contour, DBU.
-fn outer_bbox(outer: &[IntPoint]) -> (i64, i64, i64, i64) {
+pub fn outer_bbox(outer: &[IntPoint]) -> (i64, i64, i64, i64) {
     let (mut xmin, mut ymin) = (i32::MAX, i32::MAX);
     let (mut xmax, mut ymax) = (i32::MIN, i32::MIN);
     for p in outer {
