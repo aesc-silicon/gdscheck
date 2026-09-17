@@ -19,6 +19,9 @@ pub struct FlatLayout {
     layers: HashMap<(i16, i16), Vec<GdsBoundary>>,
     texts: HashMap<(i16, i16), Vec<Text>>,
     waived: Vec<WaivedInstance>,
+    /// The box of every shape, in DBU, once something asked; cleared by an insert.
+    /// Thirty density rules each walked ten million contacts to find the chip.
+    bbox: std::sync::OnceLock<Option<(i64, i64, i64, i64)>>,
 }
 
 /// A placed instance of a cell a PDK waiver names: its cell and the bounding box of
@@ -52,6 +55,24 @@ impl FlatLayout {
             .entry((layer, datatype))
             .or_default()
             .push(boundary);
+        self.bbox = std::sync::OnceLock::new();
+    }
+
+    /// The box of every shape in the layout, `(x0, y0, x1, y1)` in DBU, or `None` when
+    /// it holds none.
+    pub fn bbox(&self) -> Option<(i64, i64, i64, i64)> {
+        *self.bbox.get_or_init(|| {
+            let mut b = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+            for s in self.all_boundaries() {
+                for p in &s.xy {
+                    b.0 = b.0.min(p.x as i64);
+                    b.1 = b.1.min(p.y as i64);
+                    b.2 = b.2.max(p.x as i64);
+                    b.3 = b.3.max(p.y as i64);
+                }
+            }
+            (b.0 != i64::MAX).then_some(b)
+        })
     }
 
     pub fn insert_text(&mut self, layer: i16, texttype: i16, text: Text) {

@@ -4741,6 +4741,13 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
 /// One build of a layer set aside: the halo it was built for, its tiles, its copies.
 type Variant = (i32, TileMap, usize);
 
+/// Free `v` on a thread of its own.  Ten million polygon copies are a second of
+/// deallocation, which held every core idle between two rules; freed aside, the next
+/// rule starts at once and the memory is back before it could want it.
+fn drop_later<T: Send + 'static>(v: T) {
+    std::thread::spawn(move || drop(v));
+}
+
 /// What one rule needs of the layers it reaches: the halo per layer the rule raised,
 /// and the closure of layers it reaches at all.  See `MergedCache::rule_halos`.
 pub type RuleHalos = (HashMap<(i16, i16), i32>, HashSet<(i16, i16)>);
@@ -5734,10 +5741,10 @@ impl MergedCache {
     /// go over budget: what a later rule wants comes back for the cost of one build,
     /// and the copy in use stays.
     pub fn drop_variants(&mut self, layer: i16, datatype: i16) -> usize {
-        self.variants
-            .remove(&(layer, datatype))
-            .map(|vs| vs.iter().map(|(_, _, n)| n).sum())
-            .unwrap_or(0)
+        let vs = self.variants.remove(&(layer, datatype));
+        let n = vs.iter().flatten().map(|(_, _, n)| n).sum();
+        drop_later(vs);
+        n
     }
 
     /// Drop every build of the layer whose halo exceeds `limit`, the copy in use
@@ -5746,20 +5753,24 @@ impl MergedCache {
     pub fn evict_fatter_than(&mut self, layer: i16, datatype: i16, limit: i32) {
         let key = (layer, datatype);
         if self.layer_halo.get(&key).is_some_and(|h| *h > limit) {
-            self.layers.remove(&key);
+            drop_later(self.layers.remove(&key));
             self.layer_polys.remove(&key);
             self.layer_halo.remove(&key);
-            self.regions.remove(&key);
+            drop_later(self.regions.remove(&key));
         }
         if let Some(vs) = self.variants.get_mut(&key) {
-            vs.retain(|(h, _, _)| *h <= limit);
+            let (keep, gone): (Vec<Variant>, Vec<Variant>) = std::mem::take(vs)
+                .into_iter()
+                .partition(|(h, _, _)| *h <= limit);
+            drop_later(gone);
+            *vs = keep;
             if vs.is_empty() {
                 self.variants.remove(&key);
             }
         }
         if self.edge_halo.get(&key).is_some_and(|h| *h > limit) {
-            self.edge_layers.remove(&key);
-            self.edge_spans.remove(&key);
+            drop_later(self.edge_layers.remove(&key));
+            drop_later(self.edge_spans.remove(&key));
             self.edge_halo.remove(&key);
         }
     }
@@ -5782,13 +5793,13 @@ impl MergedCache {
     /// bounding peak memory when a deck touches many layers.
     pub fn evict(&mut self, layer: i16, datatype: i16) {
         let key = (layer, datatype);
-        self.layers.remove(&key);
+        drop_later(self.layers.remove(&key));
         self.layer_polys.remove(&key);
         self.layer_halo.remove(&key);
-        self.variants.remove(&key);
-        self.regions.remove(&key);
-        self.edge_layers.remove(&key);
-        self.edge_spans.remove(&key);
+        drop_later(self.variants.remove(&key));
+        drop_later(self.regions.remove(&key));
+        drop_later(self.edge_layers.remove(&key));
+        drop_later(self.edge_spans.remove(&key));
         self.edge_halo.remove(&key);
     }
 
