@@ -478,6 +478,44 @@ fn f64_bbox(p: &MergedPoly) -> (f64, f64, f64, f64) {
 
 pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
     let grown = grown_reference(b, value, tile_dbu);
+    // The grown rectangles of a tile unioned once: a tap array grown by the value is
+    // one blob, and a tile of `a` in reach of it took the difference against every
+    // rectangle of it, hundreds of them, batch by batch.
+    //
+    // Unioned as a tree: a tie's contacts grown by the value are thousands of squares
+    // each overlapping a thousand others, and one union over them all meets every
+    // crossing.  Sorted along the array and unioned by the handful, a row of them is
+    // one rectangle before it meets the next row.
+    let blobs: HashMap<(i32, i32), Vec<MergedPoly>> = grown
+        .par_iter()
+        .map(|(&k, rects)| {
+            let mut rects = rects.clone();
+            rects.sort_by(|a, b| {
+                (a.1, a.0)
+                    .partial_cmp(&(b.1, b.0))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
+            let mut level: Vec<Vec<Vec<[f64; 2]>>> = rects
+                .iter()
+                .map(|&(gx0, gy0, gx1, gy1)| {
+                    vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]]
+                })
+                .collect();
+            while level.len() > 1 {
+                let next: Vec<Vec<Vec<[f64; 2]>>> = level
+                    .chunks(32)
+                    .flat_map(|c| c.to_vec().simplify_shape(FillRule::NonZero))
+                    .collect();
+                if next.len() >= level.len() {
+                    // Nothing merged at this width: finish in one.
+                    level = next.simplify_shape(FillRule::NonZero);
+                    break;
+                }
+                level = next;
+            }
+            (k, shapes_to_merged(level))
+        })
+        .collect();
 
     // The gaps as core pieces, then stitched: a gap across a tile line is one gap and
     // one marker, not one per tile it has a piece in.
@@ -485,28 +523,47 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
         .par_iter()
         .filter_map(|(&(tx, ty), polys)| {
             let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
-            let mut out = Vec::new();
-            for p in clip_to_box(polys.clone(), x0, y0, x1, y1) {
-                let cover: Vec<Vec<Vec<[f64; 2]>>> =
-                    grown_in_reach(&grown, f64_bbox(&p), value, tile_dbu)
-                        .map(|&(gx0, gy0, gx1, gy1)| {
-                            vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]]
-                        })
-                        .collect();
-                let mut remaining = merged_to_shape(&p).simplify_shape(FillRule::NonZero);
-                for batch in cover.chunks(256) {
-                    if remaining.is_empty() {
-                        break;
-                    }
-                    let cov = batch.to_vec().simplify_shape(FillRule::NonZero);
-                    remaining = remaining.overlay(&cov, OverlayRule::Difference, FillRule::NonZero);
-                }
-                out.extend(
-                    shapes_to_merged(remaining)
-                        .into_iter()
-                        .filter(|g| merged_area_dbu(g) > 0.5),
-                );
+            let pieces = clip_to_box(polys.clone(), x0, y0, x1, y1);
+            if pieces.is_empty() {
+                return None;
             }
+            // The cover is gathered once for the core and taken from every piece at
+            // once: the pieces of a merged layer share no area, so their union less
+            // the cover is each piece less the cover, and a tap array grown by the
+            // value is one blob unioned once and not once per piece it reaches.
+            let t = tile_dbu as f64;
+            let (bx0, by0, bx1, by1) = (x0 as f64, y0 as f64, x1 as f64, y1 as f64);
+            let (qx0, qy0, qx1, qy1) = (bx0 - value, by0 - value, bx1 + value, by1 + value);
+            let mut cover: Vec<MergedPoly> = Vec::new();
+            for qy in (qy0 / t).floor() as i32..=(qy1 / t).floor() as i32 {
+                for qx in (qx0 / t).floor() as i32..=(qx1 / t).floor() as i32 {
+                    let Some(bs) = blobs.get(&(qx, qy)) else {
+                        continue;
+                    };
+                    cover.extend(
+                        bs.iter()
+                            .filter(|m| {
+                                let (gx0, gy0, gx1, gy1) = f64_bbox(m);
+                                gx1 > bx0 && gx0 < bx1 && gy1 > by0 && gy0 < by1
+                            })
+                            .cloned(),
+                    );
+                }
+            }
+            // Taken blob by blob: the blobs of neighbouring tiles overlap each other
+            // by the value, and unioning them first cost ten times the differences.
+            let mut remaining = tile_shapes(&pieces).simplify_shape(FillRule::NonZero);
+            for blob in &cover {
+                if remaining.is_empty() {
+                    break;
+                }
+                let cov = merged_to_shape(blob);
+                remaining = remaining.overlay(&cov, OverlayRule::Difference, FillRule::NonZero);
+            }
+            let out: Vec<MergedPoly> = shapes_to_merged(remaining)
+                .into_iter()
+                .filter(|g| merged_area_dbu(g) > 0.5)
+                .collect();
             (!out.is_empty()).then_some(((tx, ty), out))
         })
         .collect();
