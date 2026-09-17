@@ -72,8 +72,9 @@ genuinely sparse (isolated vias, contacts, device markers — see
 :doc:`checks/ring_covers_boundary` for a deliberate, documented example of when a global
 merge is safe). A check that globally unions a dense, chip-wide layer works on a small test
 pattern and then runs out of memory the first time someone points it at a real SoC —
-exactly the failure class :doc:`checks/forbidden_unless_labeled` was rewritten to avoid
-(see :doc:`architecture`, *Region stitching* and *Lazy virtual layers*, for the primitives
+exactly the failure class the antenna rule Ant.h's derivation was once rewritten to avoid,
+before it became a chain of sentence layers in ``pdk.yml`` (see :doc:`architecture`,
+*Region stitching* and *Lazy virtual layers*, for the primitives
 available: ``MergedCache::regions``/``stitch_labeled`` for whole-region area/marker/
 predicate aggregation, ``register_virtual`` for a derivation chain expressed as tiled
 virtual layers).

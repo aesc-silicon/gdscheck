@@ -295,8 +295,8 @@ struct RuleRaw {
     /// edge seal not checking its passivation ring).
     #[serde(default)]
     pub ignore: Vec<String>,
-    /// Optional text/label pattern a check may need (e.g. the exemption label for
-    /// `forbidden_unless_labeled`).
+    /// Optional text/label pattern a check may need (the label that exempts a region
+    /// from a `forbidden`).
     #[serde(default)]
     pub text: Option<String>,
     /// Params whose value is a *layer*, given by name.  A check that takes a layer as a

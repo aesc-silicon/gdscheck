@@ -219,8 +219,9 @@ length. It is its own block because a layer name and a mode word look alike, and
 this block is resolved against the PDK's layers; each entry arrives in the check as
 ``<name>`` and ``<name>_dt``.
 
-``text:`` is a separate, sibling field for the handful of checks that need a text/label
-pattern — :doc:`checks/forbidden_unless_labeled` is the only current user.
+``text:`` is a separate, sibling field for a check that needs a text/label pattern: the
+label that exempts a region from a :doc:`checks/forbidden`, together with a ``label``
+layer param naming the text layer.
 
 
 Validating a new PDK

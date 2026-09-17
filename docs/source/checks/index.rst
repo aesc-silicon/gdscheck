@@ -19,7 +19,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    exact_length
    exact_width
    forbidden
-   forbidden_unless_labeled
    max_area
    max_count
    max_density
