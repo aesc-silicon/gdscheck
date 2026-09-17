@@ -2398,6 +2398,67 @@ pub struct Outline<'a> {
     segs: Vec<Seg>,
     /// `(x0, y0, x1, y1)`.
     pub bbox: (i64, i64, i64, i64),
+    /// The segments filed by cell, built on the first query that pays for it.
+    grid: std::cell::OnceCell<SegGrid>,
+}
+
+/// An outline's segments filed under the cells of a grid over its box, so a query
+/// near one spot of a plate with thousands of walls reads the few walls there.  A
+/// segment lies in every cell its own box touches, so a long wall is filed along its
+/// run and a query may meet it from several cells; the callers take a minimum, which
+/// a repeat does not move.
+struct SegGrid {
+    x0: i64,
+    y0: i64,
+    cell: i64,
+    nx: usize,
+    ny: usize,
+    cells: Vec<Vec<u32>>,
+}
+
+/// Fewer walls than this are read straight, the grid costing more than it saves.
+const GRID_FROM: usize = 48;
+
+impl SegGrid {
+    fn build(segs: &[Seg], (x0, y0, x1, y1): (i64, i64, i64, i64)) -> Self {
+        let n = ((segs.len() as f64).sqrt().ceil() as usize).clamp(1, 64);
+        let cell = ((x1 - x0).max(y1 - y0) / n as i64).max(1);
+        let nx = ((x1 - x0) / cell + 1) as usize;
+        let ny = ((y1 - y0) / cell + 1) as usize;
+        let mut cells = vec![Vec::new(); nx * ny];
+        for (i, &(a, b)) in segs.iter().enumerate() {
+            let (cx0, cx1) = ((a.0.min(b.0) - x0) / cell, (a.0.max(b.0) - x0) / cell);
+            let (cy0, cy1) = ((a.1.min(b.1) - y0) / cell, (a.1.max(b.1) - y0) / cell);
+            for cy in cy0..=cy1 {
+                for cx in cx0..=cx1 {
+                    cells[cy as usize * nx + cx as usize].push(i as u32);
+                }
+            }
+        }
+        SegGrid {
+            x0,
+            y0,
+            cell,
+            nx,
+            ny,
+            cells,
+        }
+    }
+
+    /// Every segment index filed in a cell the box touches, repeats included.
+    fn near(&self, (bx0, by0, bx1, by1): (i64, i64, i64, i64), mut f: impl FnMut(u32)) {
+        let cx0 = ((bx0 - self.x0) / self.cell).clamp(0, self.nx as i64 - 1);
+        let cx1 = ((bx1 - self.x0) / self.cell).clamp(0, self.nx as i64 - 1);
+        let cy0 = ((by0 - self.y0) / self.cell).clamp(0, self.ny as i64 - 1);
+        let cy1 = ((by1 - self.y0) / self.cell).clamp(0, self.ny as i64 - 1);
+        for cy in cy0..=cy1 {
+            for cx in cx0..=cx1 {
+                for &i in &self.cells[cy as usize * self.nx + cx as usize] {
+                    f(i);
+                }
+            }
+        }
+    }
 }
 
 fn cross_i(o: (i64, i64), a: (i64, i64), b: (i64, i64)) -> i128 {
@@ -2462,6 +2523,7 @@ impl<'a> Outline<'a> {
             poly,
             segs,
             bbox: (x0 as i64, y0 as i64, x1 as i64, y1 as i64),
+            grid: std::cell::OnceCell::new(),
         }
     }
 
@@ -2473,6 +2535,29 @@ impl<'a> Outline<'a> {
     /// The boundary segments, outer ring then holes.
     pub fn segs(&self) -> &[Seg] {
         &self.segs
+    }
+
+    /// Call `f` on every segment whose box may come within `reach` of `(bx0, by0,
+    /// bx1, by1)`: through the grid on an outline with many walls, straight through
+    /// the few of a small one.  A segment may be visited more than once.
+    pub fn for_segs_near(
+        &self,
+        (bx0, by0, bx1, by1): (i64, i64, i64, i64),
+        reach: i64,
+        mut f: impl FnMut(Seg),
+    ) {
+        if self.segs.len() < GRID_FROM {
+            for &s in &self.segs {
+                f(s);
+            }
+            return;
+        }
+        let grid = self
+            .grid
+            .get_or_init(|| SegGrid::build(&self.segs, self.bbox));
+        grid.near((bx0 - reach, by0 - reach, bx1 + reach, by1 + reach), |i| {
+            f(self.segs[i as usize])
+        });
     }
 
     fn vertices(&self) -> impl Iterator<Item = (i64, i64)> + '_ {
@@ -2524,6 +2609,17 @@ fn segs_cross_i((p0, p1): Seg, (q0, q1): Seg) -> bool {
 /// two boundaries properly crossing, which is what a poly stripe over a COMP does with
 /// no vertex of either inside the other.
 pub fn regions_overlap(a: &Outline, b: &Outline) -> bool {
+    // Boxes with daylight between them hold shapes with daylight between them; boxes
+    // that touch may hold shapes that touch, which is a pair this asks about.
+    if !a.possibly_within(b, 1) {
+        return false;
+    }
+    // The same shape on both layers - a plate against the wide plates selected out
+    // of its own layer - has no vertex strictly inside the other and every vertex on
+    // it, which the tests below find only after casting each against every wall.
+    if a.bbox == b.bbox && a.segs == b.segs {
+        return true;
+    }
     if a.vertices().any(|p| b.strictly_contains(p)) || b.vertices().any(|p| a.strictly_contains(p))
     {
         return true;
@@ -2574,10 +2670,17 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
         (p0.0.min(p1.0) - q0.0.max(q1.0)).max(q0.0.min(q1.0) - p0.0.max(p1.0)) >= limit
             || (p0.1.min(p1.1) - q0.1.max(q1.1)).max(q0.1.min(q1.1) - p0.1.max(p1.1)) >= limit
     };
-    'outer: for &(a0, a1) in &a.segs {
-        for &(b0, b1) in &b.segs {
-            if boxes_apart((a0, a1), (b0, b1)) {
-                continue;
+    for &(a0, a1) in &a.segs {
+        let sbox = (
+            a0.0.min(a1.0),
+            a0.1.min(a1.1),
+            a0.0.max(a1.0),
+            a0.1.max(a1.1),
+        );
+        let mut touched = false;
+        b.for_segs_near(sbox, limit, |(b0, b1)| {
+            if touched || boxes_apart((a0, a1), (b0, b1)) {
+                return;
             }
             let c = seg_seg_closest_sq(a0, a1, b0, b1);
             if best
@@ -2585,10 +2688,11 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
                 .is_none_or(|&(n, d, _, _)| ratio(c.num, c.den) < ratio(n, d))
             {
                 best = Some((c.num, c.den, c.on_a, c.on_b));
-                if c.num == 0 {
-                    break 'outer;
-                }
+                touched = c.num == 0;
             }
+        });
+        if touched {
+            break;
         }
     }
     best
