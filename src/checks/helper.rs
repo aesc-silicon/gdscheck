@@ -125,7 +125,10 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
             if !a.outline.possibly_within(&b.outline, limit.dbu()) {
                 continue;
             }
-            let overlaps = regions_overlap(&a.outline, &b.outline);
+            // Two regions of one layer share no area: the merge made them one if they
+            // did.  Asking anyway cast every vertex of each against the other's walls,
+            // and was most of a same-layer spacing rule.
+            let overlaps = !same_layer && regions_overlap(&a.outline, &b.outline);
             if overlaps != mode.overlapping {
                 continue; // this rule is about the other kind of pair
             }
