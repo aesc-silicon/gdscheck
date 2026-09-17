@@ -2738,6 +2738,13 @@ impl MarginPair {
 /// touching the enclosing wall is enclosed by nothing there, and that is what a rule at
 /// zero is about.
 pub fn all_inside(inner: &Outline, outer: &Outline) -> bool {
+    // A shape inside another has its box inside the other's; the boxes settle nearly
+    // every pair in a tile before a vertex is cast against a wall.
+    let (ix0, iy0, ix1, iy1) = inner.bbox;
+    let (ox0, oy0, ox1, oy1) = outer.bbox;
+    if ix0 < ox0 || iy0 < oy0 || ix1 > ox1 || iy1 > oy1 {
+        return false;
+    }
     inner.vertices().all(|p| outer.contains_or_on(p))
 }
 
@@ -2782,6 +2789,15 @@ pub fn margin_pairs(
 ) -> (Vec<MarginPair>, bool) {
     let cut2 = cutoff.map(|c| (c as i128) * (c as i128));
     let under = |num: i128, den: i128| cut2.is_none_or(|c2| num < c2 * den);
+    // Two segments whose boxes lie the cutoff apart are at least that far apart, and
+    // a minimum has nothing to read there: a contact's four walls against the two
+    // thousand of the metal plate round it were each measured against every one.
+    let boxes_apart = |(p0, p1): Seg, (q0, q1): Seg| {
+        cutoff.is_some_and(|c| {
+            (p0.0.min(p1.0) - q0.0.max(q1.0)).max(q0.0.min(q1.0) - p0.0.max(p1.0)) >= c
+                || (p0.1.min(p1.1) - q0.1.max(q1.1)).max(q0.1.min(q1.1) - p0.1.max(p1.1)) >= c
+        })
+    };
     let mut pairs = Vec::new();
     let mut saw_coincident = false;
     for &(a0, a1) in &inner.segs {
@@ -2794,6 +2810,9 @@ pub fn margin_pairs(
         // where its enclosing wall is.
         let (nx, ny) = (uy, -ux);
         for &(b0, b1) in &outer.segs {
+            if boxes_apart((a0, a1), (b0, b1)) {
+                continue;
+            }
             let e = ((b1.0 - b0.0) as i128, (b1.1 - b0.1) as i128);
             if !parallel_i(d, e) {
                 if !euclidian {

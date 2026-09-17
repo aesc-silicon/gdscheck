@@ -22,6 +22,7 @@ use crate::merge::{Core, MergedCache, MergedPoly, TileMap, merged_centroid_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
+use std::collections::HashMap;
 
 /// Which metric an enclosure rule measures its margin in.
 ///
@@ -85,16 +86,43 @@ fn outer_over(
 /// the outer union was truncated at that bucket's halo (a partial-union seam); probing
 /// just beyond the wall in the probe's own tile exposes it - if the probe is still
 /// inside the layer, the wall does not exist in the true merge and the pair is dropped.
-fn point_in_layer_at_own_tile(map: &TileMap, tile_dbu: i64, (px, py): (f64, f64)) -> bool {
+fn point_in_layer_at_own_tile(
+    map: &TileMap,
+    boxes: &HashMap<(i32, i32), Vec<(i64, i64, i64, i64)>>,
+    tile_dbu: i64,
+    (px, py): (f64, f64),
+) -> bool {
     let (tx, ty) = (
         (px / tile_dbu as f64).floor() as i32,
         (py / tile_dbu as f64).floor() as i32,
     );
-    map.get(&(tx, ty)).is_some_and(|polys| {
-        polys
-            .iter()
-            .any(|m| crate::merge::point_in_merged(px, py, m))
+    let (Some(polys), Some(bs)) = (map.get(&(tx, ty)), boxes.get(&(tx, ty))) else {
+        return false;
+    };
+    // A probe is cast only against the polygons whose box holds it: a contact's probe
+    // against every plate of metal in the tile was most of an enclosure rule.
+    polys.iter().zip(bs).any(|(m, &(x0, y0, x1, y1))| {
+        px >= x0 as f64
+            && px <= x1 as f64
+            && py >= y0 as f64
+            && py <= y1 as f64
+            && crate::merge::point_in_merged(px, py, m)
     })
+}
+
+/// The bounding box of every polygon of every tile, for the probes.
+fn boxes_of(map: &TileMap) -> HashMap<(i32, i32), Vec<(i64, i64, i64, i64)>> {
+    map.par_iter()
+        .map(|(k, polys)| {
+            (
+                *k,
+                polys
+                    .iter()
+                    .map(|m| crate::merge::outer_bbox(&m.outer))
+                    .collect(),
+            )
+        })
+        .collect()
 }
 
 /// Whether a point (DBU) lies inside a region or on its boundary.
@@ -264,6 +292,7 @@ pub fn run(
 
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
+    let a_boxes = boxes_of(map_a);
     let empty: Vec<MergedPoly> = Vec::new();
     let b_keys: Vec<(i32, i32)> = map_b.keys().copied().collect();
 
@@ -334,7 +363,7 @@ pub fn run(
                             if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
                                 continue;
                             }
-                            if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
+                            if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
                                 continue;
                             }
                             worst = Some(((p.num, p.den), p.edge));
@@ -486,7 +515,9 @@ pub fn run(
                                 if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
                                     continue;
                                 }
-                                if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
+                                if !max
+                                    && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe)
+                                {
                                     continue;
                                 }
                                 worst = Some(((p.num, p.den), p.edge));
