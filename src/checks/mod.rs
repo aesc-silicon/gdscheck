@@ -154,7 +154,6 @@ pub fn run_rule(
         "max_nets_under" => net::nets_under::run(rule, layout, dbu_to_um, merged, conn),
         // Residual: what a rule forbids outright.
         "forbidden" => residual::run(rule, layout, dbu_to_um, merged),
-        "forbidden_unless_labeled" => residual::labeled::run(rule, layout, dbu_to_um, merged),
         other => {
             eprintln!("[{}] Unknown check function: '{}'", rule.id, other);
             vec![]

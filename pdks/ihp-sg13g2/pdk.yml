@@ -409,6 +409,16 @@ virtual_layers:
   AntDantenna: AntDnDiode not NWell
   AntDpantenna: PActivCon and Recog.diode and NWell
 
+  # Ant.h: a dantenna in an NWell, unless it belongs to an isolation structure tagged
+  # `isolbox` - the chain of antenna.drc.
+  AntHCand: AntDnDiode not Recog.esd
+  AntHNactNwell: NActivCon and (NWell or PWell.block)
+  AntHSchottky: nBuLay and Recog.diode and NWell and nSD.block
+  AntHIsolbox1: (nBuLay interacting Recog.diode interacting AntHNactNwell)
+    or (Recog.diode interacting nBuLay interacting AntHNactNwell)
+  AntHIsolbox: AntHIsolbox1 not_interacting AntHSchottky with_text "isolbox" TEXT
+  AntHError: AntHCand not_interacting AntHIsolbox and NWell
+
 layers:
   - name: Activ
     gds_layer: 1
