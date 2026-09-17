@@ -127,7 +127,7 @@ fn bbox_of<'a>(shapes: impl Iterator<Item = &'a gds21::GdsBoundary>) -> Option<B
 
 /// The box of every shape in the design.
 pub fn chip_bbox(layout: &FlatLayout) -> Option<Box> {
-    bbox_of(layout.all_boundaries())
+    layout.bbox()
 }
 
 /// The box of the rule's `boundary` layer, if the rule names one and it has shapes.
