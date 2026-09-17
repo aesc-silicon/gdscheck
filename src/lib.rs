@@ -1117,11 +1117,26 @@ fn run_drc_impl(
     for spec in &edge_specs {
         sources_of.insert(spec.key, spec.sources.clone());
     }
+    // The layers a rule reads: the ones it lists, and the ones its layer params name -
+    // a gate, a diode, a reach's confinement, a density's boundary.  Those arrive as
+    // `<key>` and `<key>_dt` numeric params.  Left out, the planner took a diode layer
+    // for unused past its last listed rule, evicted it, and every antenna rule built
+    // the well and the implants over again: 15 s of antenna rules became 42 min on a
+    // 16 GB runner.
     let rule_keys = |rule: &pdk::RuleDefinition| -> Vec<(i16, i16)> {
-        rule.layers
+        let mut keys: Vec<(i16, i16)> = rule
+            .layers
             .iter()
             .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
-            .collect()
+            .collect();
+        for (k, l) in &rule.params {
+            if let (pdk::Param::Num(l), Some(pdk::Param::Num(dt))) =
+                (l, rule.params.get(&format!("{k}_dt")))
+            {
+                keys.push((*l as i16, *dt as i16));
+            }
+        }
+        keys
     };
     // The configured maximum per layer: over every rule, for the layers a rule reaches
     // without naming them and for the diagnostics.
