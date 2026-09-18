@@ -32,6 +32,13 @@ lto = true           # link-time optimization across crates
 codegen-units = 1    # single codegen unit for better LTO
 strip = true         # strip debug symbols from binary
 
+# The release build with its symbols and line tables, for a profiler:
+# `cargo build --profile profiling`, then `samply record target/profiling/gdscheck ...`.
+[profile.profiling]
+inherits = "release"
+strip = false
+debug = "line-tables-only"
+
 [[bin]]
 name = "gdscheck"
 path = "src/main.rs"
