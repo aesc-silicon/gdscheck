@@ -137,12 +137,27 @@ impl PhaseTrace {
         }
         let (w, c) = (self.wall.elapsed().as_secs_f64(), cpu_seconds() - self.cpu);
         eprintln!(
-            "phase {name} wall={w:.1}s cpu={c:.1}s cores={:.1}",
-            if w > 0.0 { c / w } else { 0.0 }
+            "phase {name} wall={w:.1}s cpu={c:.1}s cores={:.1} rss={:.1}GB",
+            if w > 0.0 { c / w } else { 0.0 },
+            rss_gb()
         );
         self.wall = std::time::Instant::now();
         self.cpu = cpu_seconds();
     }
+}
+
+/// The process's resident set, in GB, for the traces.
+fn rss_gb() -> f64 {
+    std::fs::read_to_string("/proc/self/statm")
+        .ok()
+        .and_then(|s| {
+            s.split_whitespace()
+                .nth(1)
+                .and_then(|v| v.parse::<f64>().ok())
+        })
+        .unwrap_or(0.0)
+        * 4096.0
+        / 1e9
 }
 
 /// Checks that need electrical connectivity (net extraction).  When connectivity is
@@ -577,6 +592,7 @@ fn halo_table(
     edge_specs: &[pdk::TiledEdgeSpec],
     is_empty_base: &dyn Fn(&pdk::Layer) -> bool,
     halo_dbu: i32,
+    tile_dbu: i32,
     dbu_to_um: f64,
 ) -> HaloTable {
     let mut halo: std::collections::HashMap<(i16, i16), Reach> = std::collections::HashMap::new();
@@ -651,7 +667,7 @@ fn halo_table(
             clippable,
             &mut halo,
             &mut why,
-            (merge::TILE_UM / dbu_to_um).round() as i32,
+            tile_dbu,
         );
         for spec in edge_specs {
             if in_scope.is_some_and(|n| !n.contains(&spec.key)) {
@@ -906,7 +922,33 @@ pub fn run_drc(
         suite,
         topcell,
         connectivity,
+        &RunOptions::default(),
     )
+}
+
+/// What a run may be tuned by, beyond what it checks.
+#[derive(Debug, Clone)]
+pub struct RunOptions {
+    /// The tile the merge cache works in, in µm.  Every layer is merged, stitched and
+    /// measured per tile of this size with a halo round it; a smaller tile bounds memory
+    /// tighter and cuts the geometry into more pieces, a larger one holds more of a
+    /// dense layer whole and copies less of it into halos.  [`merge::TILE_UM`] is the
+    /// default, and what the engine patterns are drawn against.
+    pub tile_um: f64,
+}
+
+impl Default for RunOptions {
+    /// [`merge::TILE_UM`], or `GDSCHECK_TILE_UM` when set: the tile a run reads by
+    /// default, and the way to run the whole test suite at another tile - a result that
+    /// depends on where the tile lines fall is a defect, and every fixture asks that at
+    /// once under `GDSCHECK_TILE_UM=7 cargo test`.
+    fn default() -> Self {
+        let tile_um = std::env::var("GDSCHECK_TILE_UM")
+            .ok()
+            .and_then(|v| v.trim().parse::<f64>().ok())
+            .unwrap_or(merge::TILE_UM);
+        RunOptions { tile_um }
+    }
 }
 
 /// Where a run's library comes from: read here, or handed over already read.
@@ -926,6 +968,27 @@ pub fn run_drc_with(
     topcell: &str,
     connectivity: bool,
 ) -> Result<Vec<Violation>, String> {
+    run_drc_with_options(
+        lib,
+        process,
+        decks,
+        suite,
+        topcell,
+        connectivity,
+        &RunOptions::default(),
+    )
+}
+
+/// [`run_drc_with`] under the given [`RunOptions`].
+pub fn run_drc_with_options(
+    lib: &GdsLibrary,
+    process: &str,
+    decks: &[&str],
+    suite: Option<&str>,
+    topcell: &str,
+    connectivity: bool,
+    options: &RunOptions,
+) -> Result<Vec<Violation>, String> {
     run_drc_impl(
         LibSource::Loaded(lib),
         process,
@@ -933,6 +996,7 @@ pub fn run_drc_with(
         suite,
         topcell,
         connectivity,
+        options,
     )
 }
 
@@ -943,7 +1007,14 @@ fn run_drc_impl(
     suite: Option<&str>,
     topcell: &str,
     connectivity: bool,
+    options: &RunOptions,
 ) -> Result<Vec<Violation>, String> {
+    if options.tile_um.is_nan() || options.tile_um <= 0.0 {
+        return Err(format!(
+            "tile size must be positive, not {} µm",
+            options.tile_um
+        ));
+    }
     let mut phase = PhaseTrace::new();
     let pdk = pdk::PdkConfig::for_process(process).map_err(|e| e.to_string())?;
     let rules = if let Some(suite) = suite {
@@ -1090,8 +1161,11 @@ fn run_drc_impl(
     phase.end("global virtuals");
 
     // One tiled-merge cache shared by all geometric checks.
-    let tile_dbu = (merge::TILE_UM / dbu_to_um).round() as i32;
+    let tile_dbu = ((options.tile_um / dbu_to_um).round() as i32).max(1);
     let halo_dbu = (merge::MIN_HALO_UM / dbu_to_um).ceil() as i32;
+    if options.tile_um != merge::TILE_UM {
+        println!("Tile: {} µm", options.tile_um);
+    }
 
     // Halo is computed per layer: each layer only needs to see neighbour geometry
     // out to the largest distance rule that references *it*.  A deck-wide halo
@@ -1152,6 +1226,7 @@ fn run_drc_impl(
         &edge_specs,
         &is_empty_base,
         halo_dbu,
+        tile_dbu,
         dbu_to_um,
     );
     // And per rule, over its own closure, which is what its merges are built at.
@@ -1167,6 +1242,7 @@ fn run_drc_impl(
                 &edge_specs,
                 &is_empty_base,
                 halo_dbu,
+                tile_dbu,
                 dbu_to_um,
             )
             .0;
@@ -1236,6 +1312,19 @@ fn run_drc_impl(
     // for the slotting opening, 109 million copies, stayed resident through the guard
     // ring deck that needed it at one, and the run died there.
     let n_rules = rules.len();
+    // Every reach some rule wants of each layer, for building ahead.
+    let mut needs_of: std::collections::HashMap<(i16, i16), Vec<i32>> =
+        std::collections::HashMap::new();
+    for (table, _) in &rule_halos {
+        for (key, want) in table {
+            needs_of.entry(*key).or_default().push(*want);
+        }
+    }
+    for v in needs_of.values_mut() {
+        v.sort_unstable();
+        v.dedup();
+    }
+    merged.set_needs(needs_of);
     let mut future_need: std::collections::HashMap<(i16, i16), Vec<i32>> =
         last_use.keys().map(|k| (*k, vec![-1; n_rules])).collect();
     let mut running: std::collections::HashMap<(i16, i16), i32> = std::collections::HashMap::new();
@@ -1262,6 +1351,7 @@ fn run_drc_impl(
         }
     }
     let budget = cache_budget_polys();
+    merged.set_budget(budget);
 
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
@@ -1345,19 +1435,10 @@ fn run_drc_impl(
 
     for (i, rule) in rules.iter().enumerate() {
         // What this rule needs of every layer in its closure, so a layer is merged at
-        // that rather than at the maximum some other rule on it set.
-        // Build a little ahead: a layer this rule wants at h that a later rule wants
-        // at up to 1.5h is built for the later rule now, since the smaller copy could
-        // not serve it and would be merged again.  comp at 200 um followed by a rule at
-        // 215 um was two 1.6 s merges of 9 million copies for a 14% difference.
-        let (mut table, closure) = rule_halos[i].clone();
-        for (key, want) in table.iter_mut() {
-            let fut = future_need[key][i];
-            if fut > *want && fut <= *want + *want / 2 {
-                *want = fut;
-            }
-        }
-        merged.set_rule_halos(Some((table, closure)));
+        // that rather than at the maximum some other rule on it set.  The cache builds
+        // ahead from `needs_of`, see `MergedCache::build_ahead`.
+        merged.set_rule_halos(Some(rule_halos[i].clone()));
+        merged.set_rule_named(rule_keys(rule).into_iter().collect());
         if net_aware(rule) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
@@ -1375,21 +1456,18 @@ fn run_drc_impl(
             net.as_ref(),
         ));
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
-            let rss = std::fs::read_to_string("/proc/self/statm")
-                .ok()
-                .and_then(|s| s.split_whitespace().nth(1).map(|v| v.to_string()))
-                .unwrap_or_default();
             eprintln!(
                 "rule {} {} {:.1}s cpu={:.1}s rss={:.1}GB cache={}",
                 rule.id,
                 rule.check,
                 t_rule.elapsed().as_secs_f64(),
                 cpu_seconds() - c_rule,
-                rss.parse::<f64>().unwrap_or(0.0) * 4096.0 / 1e9,
+                rss_gb(),
                 merged.resident_summary()
             );
         }
 
+        let t_plan = std::time::Instant::now();
         for key in &rule_halos[i].1 {
             let future = future_need[key][i];
             // Dropped when nothing later needs it, or when it is far fatter than
@@ -1397,14 +1475,25 @@ fn run_drc_impl(
             // little fatter than the next rule's reach serves it rather than being
             // merged again at 14% fewer copies.
             let cached = merged.cached_halo(*key);
-            if future < 0 || cached.is_some_and(|h| h > future * 4) {
+            if future < 0 {
                 if cached.is_some() && std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
-                        "evict {}/{} cached={:?} future={future}",
-                        key.0, key.1, cached
+                        "evict {} cached={:?} future={future}",
+                        merged.name_of(*key),
+                        cached
                     );
                 }
                 merged.evict(key.0, key.1);
+            } else if cached.is_some_and(|h| h > future * 4) {
+                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                    eprintln!(
+                        "evict {} fatter than {}: cached={:?} future={future}",
+                        merged.name_of(*key),
+                        future * 4,
+                        cached
+                    );
+                }
+                merged.evict_fatter_than(key.0, key.1, future * 4);
             }
         }
         // A budget on what stays resident.  Eviction by need alone keeps every layer
@@ -1417,6 +1506,13 @@ fn run_drc_impl(
             resident.sort_by_key(|(key, _)| {
                 std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
             });
+            // The variants set aside go first, then whole layers.
+            for (key, _) in &resident {
+                if merged.resident_polys() <= budget {
+                    break;
+                }
+                merged.drop_variants(key.0, key.1);
+            }
             for (key, polys) in resident {
                 if merged.resident_polys() <= budget {
                     break;
@@ -1429,6 +1525,18 @@ fn run_drc_impl(
                     );
                 }
                 merged.evict(key.0, key.1);
+            }
+        }
+        // What was let go is freed aside, unless it is a large part of the budget: then
+        // the memory has to be back before the next rule builds into it, or a run that
+        // fit on a machine of this size before is killed for what it already dropped.
+        if merged.pending_free_polys() > budget / 4 {
+            merged.settle_frees();
+        }
+        if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            let plan = t_plan.elapsed().as_secs_f64();
+            if plan >= 0.05 {
+                eprintln!("plan {} {plan:.2}s", rule.id);
             }
         }
     }

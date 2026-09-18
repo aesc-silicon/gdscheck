@@ -127,7 +127,7 @@ fn bbox_of<'a>(shapes: impl Iterator<Item = &'a gds21::GdsBoundary>) -> Option<B
 
 /// The box of every shape in the design.
 pub fn chip_bbox(layout: &FlatLayout) -> Option<Box> {
-    bbox_of(layout.all_boundaries())
+    layout.bbox()
 }
 
 /// The box of the rule's `boundary` layer, if the rule names one and it has shapes.
@@ -146,24 +146,31 @@ pub fn coverage_dbu2(maps: &[&TileMap], tile: i64, window: Box) -> f64 {
     let tx1 = (wx1 - 1).div_euclid(tile);
     let ty0 = wy0.div_euclid(tile);
     let ty1 = (wy1 - 1).div_euclid(tile);
-    let mut covered = 0.0;
-    for map in maps {
-        for ty in ty0..=ty1 {
-            for tx in tx0..=tx1 {
-                let Some(polys) = map.get(&(tx as i32, ty as i32)) else {
-                    continue;
-                };
-                let cx0 = (tx * tile).max(wx0) as f64;
-                let cy0 = (ty * tile).max(wy0) as f64;
-                let cx1 = ((tx + 1) * tile).min(wx1) as f64;
-                let cy1 = ((ty + 1) * tile).min(wy1) as f64;
-                for p in polys {
-                    covered += clipped_area_dbu(p, cx0, cy0, cx1, cy1);
+    // Summed per tile row in parallel: a whole-chip window over a 4 mm² design is ten
+    // thousand tiles of clipping, which walked on one core while the others waited.
+    // A window of the windowed reading is one of many run in parallel already and
+    // spans a few rows, so the split costs it nothing.
+    (ty0..=ty1)
+        .into_par_iter()
+        .map(|ty| {
+            let mut covered = 0.0;
+            for map in maps {
+                for tx in tx0..=tx1 {
+                    let Some(polys) = map.get(&(tx as i32, ty as i32)) else {
+                        continue;
+                    };
+                    let cx0 = (tx * tile).max(wx0) as f64;
+                    let cy0 = (ty * tile).max(wy0) as f64;
+                    let cx1 = ((tx + 1) * tile).min(wx1) as f64;
+                    let cy1 = ((ty + 1) * tile).min(wy1) as f64;
+                    for p in polys {
+                        covered += clipped_area_dbu(p, cx0, cy0, cx1, cy1);
+                    }
                 }
             }
-        }
-    }
-    covered
+            covered
+        })
+        .sum()
 }
 
 fn area(b: Box) -> f64 {

@@ -29,6 +29,7 @@ use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::{Layer, RuleDefinition};
 use crate::violation::Violation;
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 fn net_key(rule: &RuleDefinition, name: &str) -> Option<LayerKey> {
@@ -86,9 +87,22 @@ fn diode_area_per_net(
 ) -> HashMap<usize, f64> {
     let mut out: HashMap<usize, f64> = HashMap::new();
     for &(dkey, dnet) in diodes {
-        for r in merged.regions(layout, dkey.0, dkey.1).to_vec() {
-            if let Some(net) = part.net_at(conn, dnet, r.marker.0, r.marker.1) {
-                *out.entry(net).or_default() += r.area_dbu * d2;
+        let regions = merged.regions(layout, dkey.0, dkey.1).to_vec();
+        let per: Vec<HashMap<usize, f64>> = regions
+            .par_chunks(1 << 12)
+            .map(|chunk| {
+                let mut per: HashMap<usize, f64> = HashMap::new();
+                for r in chunk {
+                    if let Some(net) = part.net_at(conn, dnet, r.marker.0, r.marker.1) {
+                        *per.entry(net).or_default() += r.area_dbu * d2;
+                    }
+                }
+                per
+            })
+            .collect();
+        for m in per {
+            for (net, v) in m {
+                *out.entry(net).or_default() += v;
             }
         }
     }
@@ -198,7 +212,7 @@ pub fn run(
     // (`part.net_of(node)`) with no repeated point lookup.
     let gates: Vec<(f64, (f64, f64), usize)> = merged
         .regions(layout, gate.0, gate.1)
-        .iter()
+        .par_iter()
         .filter_map(|r| {
             conn.node_at(gate_net, r.marker.0, r.marker.1)
                 .map(|n| (r.area_dbu * d2, r.marker, n))
@@ -207,6 +221,21 @@ pub fn run(
     if gates.is_empty() {
         return vec![];
     }
+
+    // Summed per net over the layer's regions - ten million contacts on a full chip
+    // - in parallel, a map per chunk folded into one.
+    let sum_nets = |per: &mut HashMap<usize, f64>, net: usize, v: f64| {
+        *per.entry(net).or_default() += v;
+    };
+    let fold = |maps: Vec<HashMap<usize, f64>>| {
+        let mut out: HashMap<usize, f64> = HashMap::new();
+        for m in maps {
+            for (net, v) in m {
+                sum_nets(&mut out, net, v);
+            }
+        }
+        out
+    };
 
     // Cumulative ratio per gate, summed level by level with each level's own partition.
     let mut cum = vec![0.0f64; gates.len()];
@@ -218,10 +247,18 @@ pub fn run(
         let part = conn.partition(prefix);
 
         // Gate area per net at this level (O(1) per gate via the precomputed node).
-        let mut gate_area: HashMap<usize, f64> = HashMap::new();
-        for (area, _, node) in &gates {
-            *gate_area.entry(part.net_of(*node)).or_default() += area;
-        }
+        let gate_area: HashMap<usize, f64> = fold(
+            gates
+                .par_chunks(1 << 14)
+                .map(|chunk| {
+                    let mut per: HashMap<usize, f64> = HashMap::new();
+                    for (area, _, node) in chunk {
+                        sum_nets(&mut per, part.net_of(*node), *area);
+                    }
+                    per
+                })
+                .collect(),
+        );
 
         // The antenna quantity per net: plan area, or sidewall area (perimeter times
         // metal thickness) when the rule asks for it.  If the antenna layer is itself in
@@ -237,19 +274,40 @@ pub fn run(
         };
         let mut layer_area: HashMap<usize, f64> = HashMap::new();
         if antenna_net.is_none() && conn.in_graph(lkey) {
-            for (idx, r) in conn.regions_of(lkey).iter().enumerate() {
-                if let Some(node) = conn.region_node(lkey, idx) {
-                    *layer_area.entry(part.net_of(node)).or_default() += metric(r);
-                }
-            }
+            let regions = conn.regions_of(lkey);
+            layer_area = fold(
+                regions
+                    .par_chunks(1 << 16)
+                    .enumerate()
+                    .map(|(c, chunk)| {
+                        let mut per: HashMap<usize, f64> = HashMap::new();
+                        for (i, r) in chunk.iter().enumerate() {
+                            if let Some(node) = conn.region_node(lkey, (c << 16) + i) {
+                                sum_nets(&mut per, part.net_of(node), metric(r));
+                            }
+                        }
+                        per
+                    })
+                    .collect(),
+            );
         }
         if layer_area.is_empty() {
             let ant_net = antenna_net.unwrap_or(lkey);
-            for r in merged.regions(layout, lkey.0, lkey.1).to_vec() {
-                if let Some(net) = part.net_at(conn, ant_net, r.marker.0, r.marker.1) {
-                    *layer_area.entry(net).or_default() += metric(&r);
-                }
-            }
+            let regions = merged.regions(layout, lkey.0, lkey.1).to_vec();
+            layer_area = fold(
+                regions
+                    .par_chunks(1 << 12)
+                    .map(|chunk| {
+                        let mut per: HashMap<usize, f64> = HashMap::new();
+                        for r in chunk {
+                            if let Some(net) = part.net_at(conn, ant_net, r.marker.0, r.marker.1) {
+                                sum_nets(&mut per, net, metric(r));
+                            }
+                        }
+                        per
+                    })
+                    .collect(),
+            );
         }
 
         // The diode credit, when the rule uses one, is evaluated on the *same* net as the

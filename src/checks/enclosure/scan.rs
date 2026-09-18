@@ -22,6 +22,7 @@ use crate::merge::{Core, MergedCache, MergedPoly, TileMap, merged_centroid_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
+use std::collections::HashMap;
 
 /// Which metric an enclosure rule measures its margin in.
 ///
@@ -85,16 +86,37 @@ fn outer_over(
 /// the outer union was truncated at that bucket's halo (a partial-union seam); probing
 /// just beyond the wall in the probe's own tile exposes it - if the probe is still
 /// inside the layer, the wall does not exist in the true merge and the pair is dropped.
-fn point_in_layer_at_own_tile(map: &TileMap, tile_dbu: i64, (px, py): (f64, f64)) -> bool {
+fn point_in_layer_at_own_tile(
+    map: &TileMap,
+    boxes: &Boxes,
+    tile_dbu: i64,
+    (px, py): (f64, f64),
+) -> bool {
     let (tx, ty) = (
         (px / tile_dbu as f64).floor() as i32,
         (py / tile_dbu as f64).floor() as i32,
     );
-    map.get(&(tx, ty)).is_some_and(|polys| {
-        polys
-            .iter()
-            .any(|m| crate::merge::point_in_merged(px, py, m))
+    let (Some(polys), Some(bs)) = (map.get(&(tx, ty)), boxes.get(&(tx, ty))) else {
+        return false;
+    };
+    // A probe is cast only against the polygons whose box holds it: a contact's probe
+    // against every plate of metal in the tile was most of an enclosure rule.
+    polys.iter().zip(bs).any(|(m, &(x0, y0, x1, y1))| {
+        px >= x0 as f64
+            && px <= x1 as f64
+            && py >= y0 as f64
+            && py <= y1 as f64
+            && crate::merge::point_in_merged(px, py, m)
     })
+}
+
+/// The bounding box of every polygon of every tile.
+type Boxes = HashMap<(i32, i32), Vec<(i32, i32, i32, i32)>>;
+
+fn boxes_of(map: &TileMap) -> Boxes {
+    map.par_iter()
+        .map(|(k, polys)| (*k, polys.iter().map(crate::merge::poly_bbox).collect()))
+        .collect()
 }
 
 /// Whether a point (DBU) lies inside a region or on its boundary.
@@ -264,6 +286,7 @@ pub fn run(
 
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
+    let a_boxes = boxes_of(map_a);
     let empty: Vec<MergedPoly> = Vec::new();
     let b_keys: Vec<(i32, i32)> = map_b.keys().copied().collect();
 
@@ -279,6 +302,11 @@ pub fn run(
             let b_polys = &map_b[&(tx, ty)];
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
+            // The line-end caps of each enclosing shape of the tile, found once: a
+            // track's caps are the same for every via on it, and finding them walks
+            // every pair of the track's walls.
+            let a_caps: Vec<std::cell::OnceCell<Vec<Seg>>> =
+                a_conv.iter().map(|_| std::cell::OnceCell::new()).collect();
 
             let mut out = Vec::new();
             for bm in b_polys {
@@ -289,11 +317,13 @@ pub fn run(
                 let bp = Outline::new(bm);
                 let assembled: Vec<MergedPoly>;
                 let assembled_o: Vec<Outline>;
+                let mut cached_caps = true;
                 let a_here: &[Outline] =
                     match outer_over(map_a, tile, a_halo, &core, bm, limit.dbu()) {
                         Some(polys) => {
                             assembled = polys;
                             assembled_o = assembled.iter().map(Outline::new).collect();
+                            cached_caps = false;
                             &assembled_o
                         }
                         None => &a_conv,
@@ -334,7 +364,7 @@ pub fn run(
                             if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
                                 continue;
                             }
-                            if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
+                            if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
                                 continue;
                             }
                             worst = Some(((p.num, p.den), p.edge));
@@ -364,8 +394,17 @@ pub fn run(
                 if sides == Sides::LineEnd {
                     let caps: Vec<Seg> = a_here
                         .iter()
-                        .filter(|a| all_inside(&bp, a) || regions_interact(&bp, a))
-                        .flat_map(|a| line_end_segs(a, max_width, min_length))
+                        .enumerate()
+                        .filter(|(_, a)| all_inside(&bp, a) || regions_interact(&bp, a))
+                        .flat_map(|(i, a)| {
+                            if cached_caps {
+                                a_caps[i]
+                                    .get_or_init(|| line_end_segs(a, max_width, min_length))
+                                    .clone()
+                            } else {
+                                line_end_segs(a, max_width, min_length)
+                            }
+                        })
                         .collect();
                     for &seg in bp.segs() {
                         let Some((num, den)) = margin_to_caps(seg, &caps) else {
@@ -486,7 +525,9 @@ pub fn run(
                                 if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
                                     continue;
                                 }
-                                if !max && point_in_layer_at_own_tile(map_a, tile, p.probe) {
+                                if !max
+                                    && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe)
+                                {
                                     continue;
                                 }
                                 worst = Some(((p.num, p.den), p.edge));
