@@ -15,6 +15,11 @@
 #   SUITE              suite to run (default: main)
 #   TIMEOUT            per-design wall-clock limit, timeout(1) syntax (default: 15m)
 #   REPORTS            directory for .lyrdb reports of failed designs (default: ci/reports)
+#
+# Every run is traced (GDSCHECK_RULE_TRACE) under /usr/bin/time, and its performance
+# figures - wall, CPU, cores, peak memory, net extraction, the slowest rules - are
+# printed after the run and, under GitHub Actions, put in the job summary as a table,
+# so a slower rule shows up in the log of the night it got slower.
 set -euo pipefail
 
 process=${1:?usage: $0 <process>}
@@ -24,11 +29,20 @@ gdscheck=${GDSCHECK:-$here/../target/release/gdscheck}
 suite=${SUITE:-main}
 limit=${TIMEOUT:-15m}
 reports=${REPORTS:-$here/reports}
+traces=$(mktemp -d)
 
 [[ -x $gdscheck ]] || gdscheck=gdscheck
 command -v "$gdscheck" >/dev/null || { echo "gdscheck not found" >&2; exit 1; }
 [[ -x $ref/designs.py ]] || { echo "reference designs not found at $ref" >&2; exit 1; }
 mkdir -p "$reports"
+if [[ -n ${GITHUB_STEP_SUMMARY:-} ]]; then
+    {
+        echo "## $process"
+        echo
+        echo "| design | wall s | cpu s | cores | peak GB | nets s | rules s | between s |"
+        echo "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"
+    } >> "$GITHUB_STEP_SUMMARY"
+fi
 
 # gdscheck exit codes: 0 clean (waived findings included), 1 error, 2 violations.
 # timeout(1) returns 124 on expiry; a Rust panic exits 101.
@@ -49,11 +63,21 @@ while IFS=$'\t' read -r name _ path topcell; do
     report=$reports/$name.lyrdb
     echo "=== $name ($process, suite $suite, top cell $topcell) ==="
     status=0
-    timeout --kill-after=30s "$limit" \
+    trace=$traces/$name.trace
+    # The trace goes to stderr, with the run's own diagnostics, and stdout stays the
+    # log; the summary reads both, since the run prints its totals to stdout.
+    GDSCHECK_RULE_TRACE=1 timeout --kill-after=30s "$limit" \
+        /usr/bin/time -v -o "$trace.time" \
         "$gdscheck" run --process "$process" --suite "$suite" \
-        --topcell "$topcell" --input "$path" --report "$report" || status=$?
+        --topcell "$topcell" --input "$path" --report "$report" \
+        2>"$trace" | tee "$trace.out" || status=${PIPESTATUS[0]}
     result=$(outcome "$status")
     echo "=== $name: $result"
+    "$here/perf-summary.py" "$name" "$trace" "$trace.time" "$trace.out"
+    if [[ -n ${GITHUB_STEP_SUMMARY:-} ]]; then
+        "$here/perf-summary.py" "$name" "$trace" "$trace.time" "$trace.out" --markdown \
+            >> "$GITHUB_STEP_SUMMARY"
+    fi
     if [[ $status -eq 0 ]]; then
         rm -f "$report"
     else
