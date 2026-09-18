@@ -41,7 +41,7 @@ fn counts(deck: &str, gds: &str, topcell: &str) -> Vec<(String, usize)> {
 #[case::metaltop_30k(
     "metaltop_30k", "metaltop_30k.gds.gz", "7_16_METAL_30KA_6LM",
     &[
-        ("MT30.1a", 166), ("MT30.1b", 2), ("MT30.2", 9), ("MT30.3", 9), ("MT30.4", 9),
+        ("MT30.1a", 158), ("MT30.1b", 2), ("MT30.2", 9), ("MT30.3", 9), ("MT30.4", 9),
         ("MT30.5", 7), ("MT30.6", 5), ("MT30.8", 7),
     ]
 )]

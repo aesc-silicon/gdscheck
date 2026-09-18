@@ -611,8 +611,14 @@ fn facing_pairs(
     };
     // Rectilinear widths (skipped for oblique-only rules such as a 45° width check).
     if !oblique_only {
-        // Horizontal widths: scan y bands, pair vertical edges across x.
+        // The sweep reads the polygon band by band between the ends of its vertical
+        // edges, and a pair of walls facing across several bands - any edge elsewhere
+        // in the polygon ends a band - is one pair: its stretches are joined before
+        // it is reported, so a notch is one report whatever else the polygon's copy
+        // in this tile happens to hold.
         let y_events = sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect());
+        let mut runs: Vec<(PairKey, Vec<(i64, i64)>)> = Vec::new();
+        let mut run_at: HashMap<PairKey, usize> = HashMap::new();
         for w in y_events.windows(2) {
             let (yb, yb1) = (w[0], w[1]);
             if yb1 <= yb {
@@ -634,41 +640,40 @@ fn facing_pairs(
                             None => vec![(yb, yb1)],
                             Some(f) => intersect(&f.keep_v(l.x, yb, yb1), &f.keep_v(r.x, yb, yb1)),
                         };
-                        let cx = (l.x as f64 + r.x as f64) * 0.5;
-                        for (s0, s1) in stretches {
-                            if walls.is_some() && s1 - s0 <= min_run {
-                                continue;
-                            }
-                            let cy = (s0 as f64 + s1 as f64) * 0.5;
-                            if !core.owns(cx, cy) {
-                                continue;
-                            }
-                            if empty {
-                                push_edge(l.x as f64, cy, r.x as f64, cy, width as f64);
-                            } else {
-                                push_edge(
-                                    l.x as f64,
-                                    s0 as f64,
-                                    l.x as f64,
-                                    s1 as f64,
-                                    width as f64,
-                                );
-                                push_edge(
-                                    r.x as f64,
-                                    s0 as f64,
-                                    r.x as f64,
-                                    s1 as f64,
-                                    width as f64,
-                                );
-                            }
-                        }
+                        let key = (l.x, l.ylo, l.yhi, r.x, r.ylo, r.yhi);
+                        let i = *run_at.entry(key).or_insert_with(|| {
+                            runs.push((key, Vec::new()));
+                            runs.len() - 1
+                        });
+                        runs[i].1.extend(stretches);
                     }
+                }
+            }
+        }
+        for ((lx, _, _, rx, _, _), stretches) in runs {
+            let width = rx as i64 - lx as i64;
+            let cx = (lx as f64 + rx as f64) * 0.5;
+            for (s0, s1) in join_stretches(stretches) {
+                if walls.is_some() && s1 - s0 <= min_run {
+                    continue;
+                }
+                let cy = (s0 as f64 + s1 as f64) * 0.5;
+                if !core.owns(cx, cy) {
+                    continue;
+                }
+                if empty {
+                    push_edge(lx as f64, cy, rx as f64, cy, width as f64);
+                } else {
+                    push_edge(lx as f64, s0 as f64, lx as f64, s1 as f64, width as f64);
+                    push_edge(rx as f64, s0 as f64, rx as f64, s1 as f64, width as f64);
                 }
             }
         }
 
         // Vertical widths: scan x bands, pair horizontal edges across y.
         let x_events = sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect());
+        let mut runs: Vec<(PairKey, Vec<(i64, i64)>)> = Vec::new();
+        let mut run_at: HashMap<PairKey, usize> = HashMap::new();
         for w in x_events.windows(2) {
             let (xb, xb1) = (w[0], w[1]);
             if xb1 <= xb {
@@ -690,35 +695,32 @@ fn facing_pairs(
                             None => vec![(xb, xb1)],
                             Some(f) => intersect(&f.keep_h(b.y, xb, xb1), &f.keep_h(t.y, xb, xb1)),
                         };
-                        let cy = (b.y as f64 + t.y as f64) * 0.5;
-                        for (s0, s1) in stretches {
-                            if walls.is_some() && s1 - s0 <= min_run {
-                                continue;
-                            }
-                            let cx = (s0 as f64 + s1 as f64) * 0.5;
-                            if !core.owns(cx, cy) {
-                                continue;
-                            }
-                            if empty {
-                                push_edge(cx, b.y as f64, cx, t.y as f64, height as f64);
-                            } else {
-                                push_edge(
-                                    s0 as f64,
-                                    b.y as f64,
-                                    s1 as f64,
-                                    b.y as f64,
-                                    height as f64,
-                                );
-                                push_edge(
-                                    s0 as f64,
-                                    t.y as f64,
-                                    s1 as f64,
-                                    t.y as f64,
-                                    height as f64,
-                                );
-                            }
-                        }
+                        let key = (b.y, b.xlo, b.xhi, t.y, t.xlo, t.xhi);
+                        let i = *run_at.entry(key).or_insert_with(|| {
+                            runs.push((key, Vec::new()));
+                            runs.len() - 1
+                        });
+                        runs[i].1.extend(stretches);
                     }
+                }
+            }
+        }
+        for ((by, _, _, ty, _, _), stretches) in runs {
+            let height = ty as i64 - by as i64;
+            let cy = (by as f64 + ty as f64) * 0.5;
+            for (s0, s1) in join_stretches(stretches) {
+                if walls.is_some() && s1 - s0 <= min_run {
+                    continue;
+                }
+                let cx = (s0 as f64 + s1 as f64) * 0.5;
+                if !core.owns(cx, cy) {
+                    continue;
+                }
+                if empty {
+                    push_edge(cx, by as f64, cx, ty as f64, height as f64);
+                } else {
+                    push_edge(s0 as f64, by as f64, s1 as f64, by as f64, height as f64);
+                    push_edge(s0 as f64, ty as f64, s1 as f64, ty as f64, height as f64);
                 }
             }
         }
@@ -753,6 +755,22 @@ fn facing_pairs(
         walls,
         between,
     );
+    out
+}
+
+/// Two axis-aligned walls facing each other, by their coordinates.
+type PairKey = (i32, i32, i32, i32, i32, i32);
+
+/// Stretches along a line joined where they touch or overlap, in order.
+fn join_stretches(mut stretches: Vec<(i64, i64)>) -> Vec<(i64, i64)> {
+    stretches.sort_unstable();
+    let mut out: Vec<(i64, i64)> = Vec::new();
+    for (s0, s1) in stretches {
+        match out.last_mut() {
+            Some(last) if s0 <= last.1 => last.1 = last.1.max(s1),
+            _ => out.push((s0, s1)),
+        }
+    }
     out
 }
 
