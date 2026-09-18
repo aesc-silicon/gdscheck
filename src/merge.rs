@@ -3200,10 +3200,66 @@ fn polys_overlap(a: &MergedPoly, b: &MergedPoly) -> bool {
     if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
         return false;
     }
+    // Settled on the integers where it can be: a vertex of one strictly inside the
+    // other, or two edges properly crossing, is shared area; no vertex of either on or
+    // in the other and no edges meeting is none.  Only shapes that touch along their
+    // boundaries without either of those - abutting, nested with a shared wall, one in
+    // the other's hole - are asked the boolean, which used to answer every pair and
+    // was a twentieth of a run.
+    let strictly = |p: IntPoint, m: &MergedPoly| {
+        let on = poly_edges(m).any(|(q, q2)| on_edge(p, q, q2));
+        !on && point_in_merged(p.x as f64, p.y as f64, m)
+    };
+    if a.outer.iter().any(|&p| strictly(p, b)) || b.outer.iter().any(|&p| strictly(p, a)) {
+        return true;
+    }
+    let bedges: Vec<(IntPoint, IntPoint)> = poly_edges(b).collect();
+    let mut meet = false;
+    for (p, p2) in poly_edges(a) {
+        let (px0, px1) = (p.x.min(p2.x), p.x.max(p2.x));
+        let (py0, py1) = (p.y.min(p2.y), p.y.max(p2.y));
+        if px1 < bx0 || px0 > bx1 || py1 < by0 || py0 > by1 {
+            continue;
+        }
+        for &(q, q2) in &bedges {
+            if segs_cross_properly(p, p2, q, q2) {
+                return true;
+            }
+            meet |= segs_intersect(p, p2, q, q2);
+        }
+    }
+    if !meet {
+        // No contact at all between the boundaries, no vertex inside: one may still
+        // lie wholly inside the other with no vertex of the inner on the outer's
+        // boundary, which the strict test above would have caught - so disjoint.
+        return false;
+    }
     let av = vec![merged_to_shape(a)];
     let bv = vec![merged_to_shape(b)];
     !av.overlay(&bv, OverlayRule::Intersect, FillRule::NonZero)
         .is_empty()
+}
+
+/// Whether `p` lies on the closed segment `q`-`q2`.
+fn on_edge(p: IntPoint, q: IntPoint, q2: IntPoint) -> bool {
+    let cross = (q2.x as i64 - q.x as i64) * (p.y as i64 - q.y as i64)
+        - (q2.y as i64 - q.y as i64) * (p.x as i64 - q.x as i64);
+    cross == 0
+        && p.x >= q.x.min(q2.x)
+        && p.x <= q.x.max(q2.x)
+        && p.y >= q.y.min(q2.y)
+        && p.y <= q.y.max(q2.y)
+}
+
+/// Whether two segments cross at a point interior to both.
+fn segs_cross_properly(p: IntPoint, p2: IntPoint, q: IntPoint, q2: IntPoint) -> bool {
+    let cross = |o: IntPoint, a: IntPoint, b: IntPoint| -> i64 {
+        (a.x as i64 - o.x as i64) * (b.y as i64 - o.y as i64)
+            - (a.y as i64 - o.y as i64) * (b.x as i64 - o.x as i64)
+    };
+    let (d1, d2) = (cross(q, q2, p), cross(q, q2, p2));
+    let (d3, d4) = (cross(p, p2, q), cross(p, p2, q2));
+    ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))
 }
 
 /// Whether two integer segments `p→p2` and `q→q2` intersect, endpoints and collinear
