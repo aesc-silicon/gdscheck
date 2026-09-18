@@ -111,19 +111,11 @@ fn point_in_layer_at_own_tile(
 }
 
 /// The bounding box of every polygon of every tile.
-type Boxes = HashMap<(i32, i32), Vec<(i64, i64, i64, i64)>>;
+type Boxes = HashMap<(i32, i32), Vec<(i32, i32, i32, i32)>>;
 
 fn boxes_of(map: &TileMap) -> Boxes {
     map.par_iter()
-        .map(|(k, polys)| {
-            (
-                *k,
-                polys
-                    .iter()
-                    .map(|m| crate::merge::outer_bbox(&m.outer))
-                    .collect(),
-            )
-        })
+        .map(|(k, polys)| (*k, polys.iter().map(crate::merge::poly_bbox).collect()))
         .collect()
 }
 

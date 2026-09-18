@@ -143,28 +143,47 @@ impl Connectivity {
         // stitch them all at once, since the tiles are only read.  A layer's stitch is a
         // walk of its tiles on one core, and fifteen layers walked one after another
         // were the phase's length.
+        // A drawn layer is merged and stitched before the next is merged, the way one
+        // layer at a time did it: a stitch holds its pieces beside the tiles until it
+        // is done, and the contacts' stitch over the whole chip on top of every other
+        // layer already merged raised the run's high-water mark by a gigabyte the
+        // allocator never gave back.  The derived layers, small and cheap to merge, are
+        // merged in turn and stitched all at once.
         let mut merge_secs: HashMap<LayerKey, f64> = HashMap::new();
-        for &key in &keys {
+        let stitch_one = |cache: &MergedCache, &key: &LayerKey| {
+            let tiles = cache.tiles(key.0, key.1);
+            let t1 = std::time::Instant::now();
+            let labeled = if conductors.contains(&key) {
+                stitch_labeled(tiles, tile_dbu)
+            } else {
+                LabeledRegions {
+                    regions: stitch_regions(tiles, tile_dbu),
+                    by_tile: HashMap::new(),
+                }
+            };
+            (key, labeled, t1.elapsed().as_secs_f64())
+        };
+        let (drawn, derived): (Vec<LayerKey>, Vec<LayerKey>) =
+            keys.iter().partition(|k| cache.is_drawn(**k));
+        let mut stitched: Vec<(LayerKey, LabeledRegions, f64)> = Vec::new();
+        for &key in &drawn {
+            let t0 = std::time::Instant::now();
+            cache.ensure(layout, key.0, key.1);
+            merge_secs.insert(key, t0.elapsed().as_secs_f64());
+            stitched.push(stitch_one(cache, &key));
+        }
+        for &key in &derived {
             let t0 = std::time::Instant::now();
             cache.ensure(layout, key.0, key.1);
             merge_secs.insert(key, t0.elapsed().as_secs_f64());
         }
-        let stitched: Vec<(LayerKey, LabeledRegions, f64)> = keys
-            .par_iter()
-            .map(|&key| {
-                let tiles = cache.tiles(key.0, key.1);
-                let t1 = std::time::Instant::now();
-                let labeled = if conductors.contains(&key) {
-                    stitch_labeled(tiles, tile_dbu)
-                } else {
-                    LabeledRegions {
-                        regions: stitch_regions(tiles, tile_dbu),
-                        by_tile: HashMap::new(),
-                    }
-                };
-                (key, labeled, t1.elapsed().as_secs_f64())
-            })
-            .collect();
+        let cache_ref: &MergedCache = cache;
+        stitched.extend(
+            derived
+                .par_iter()
+                .map(|k| stitch_one(cache_ref, k))
+                .collect::<Vec<_>>(),
+        );
         for (key, labeled, t_stitch) in stitched {
             let indexed = conductors.contains(&key);
             if trace {
