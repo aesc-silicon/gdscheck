@@ -24,6 +24,20 @@ use crate::violation::Violation;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
+/// What one tile scans: the tile, the enclosed shapes with their regions, and whether
+/// each shape is whole (put together from its pieces) or one tile's piece of it.
+type Job = ((i32, i32), Vec<(MergedPoly, usize)>, bool);
+
+/// What one tile reports: the enclosed region, the wall the margin was read on, the
+/// margin, the tile, and the report itself.
+type Report = (
+    usize,
+    Option<Seg>,
+    Option<(i128, i128)>,
+    (i32, i32),
+    Violation,
+);
+
 /// Which metric an enclosure rule measures its margin in.
 ///
 /// KLayout's own default is euclidian, and most of GF180's enclosure rules ask for it
@@ -233,6 +247,7 @@ pub fn run(
     merged.ensure(layout, al, ad);
     merged.ensure(layout, bl, bd);
     let a_halo = merged.halo_of(al, ad) as i64;
+    let b_halo = merged.halo_of(bl, bd) as i64;
 
     println!(
         "[{}] Checking {} {} {:.2} µm of {} within {}",
@@ -287,19 +302,102 @@ pub fn run(
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
     let a_boxes = boxes_of(map_a);
+    let b_boxes = boxes_of(map_b);
+    // Whether an inner wall is the shape's own and not where a tile cut it: just past
+    // the wall, on its empty side, the enclosed layer goes on if it is a cut.  Read in
+    // the tile that holds the point, whose copy is exact there.  A cut wall lies in
+    // the enclosing layer's material and faces its far wall at whatever distance the
+    // tile line happened to fall, a margin that is no one's - a 45 µm shape under a
+    // maximum read a margin at every tile line it crossed.
+    let real_wall = |(p, q): Seg| {
+        let (dx, dy) = ((q.0 - p.0) as f64, (q.1 - p.1) as f64);
+        let len = (dx * dx + dy * dy).sqrt();
+        if len == 0.0 {
+            return false;
+        }
+        let (mx, my) = ((p.0 + q.0) as f64 * 0.5, (p.1 + q.1) as f64 * 0.5);
+        // Material lies on the left of every segment of an outline; the right is out.
+        let probe = (mx + dy / len * 1.5, my - dx / len * 1.5);
+        !point_in_layer_at_own_tile(map_b, &b_boxes, tile, probe)
+    };
     let empty: Vec<MergedPoly> = Vec::new();
-    let b_keys: Vec<(i32, i32)> = map_b.keys().copied().collect();
+    // The enclosed layer as stitched regions, so a shape spanning tiles - a seal
+    // ring's contact ring, a MIM plate - is one shape with one worst margin whatever
+    // the tile, and not a report per piece of it that moved with the tile size.
+    // Every piece with a core part is scanned in its own tile and the reports of a
+    // region are reduced to the worst afterwards.
+    let labeled = crate::merge::stitch_labeled(map_b, tile as i32);
+    // A reading of the shape as a whole - a maximum, the endcap, the bordering sides,
+    // and whether it is enclosed at all - needs every wall in one view: the region is
+    // put together from its pieces and read once, in the tile that holds its marker.
+    // A minimum reads wall by wall, and every piece in its own tile will do.
+    let whole = max || sides == Sides::Any || sides == Sides::Adjacent;
+    let jobs: Vec<Job> = if whole {
+        let mut pieces: Vec<Vec<&MergedPoly>> = vec![Vec::new(); labeled.regions.len()];
+        for polys in labeled.by_tile.values() {
+            for (poly, rid) in polys {
+                pieces[*rid].push(poly);
+            }
+        }
+        let mut by_owner: HashMap<(i32, i32), Vec<(MergedPoly, usize)>> = HashMap::new();
+        for (rid, ps) in pieces.into_iter().enumerate() {
+            let (mx, my) = labeled.regions[rid].marker;
+            let owner = (
+                (mx / tile as f64).floor() as i32,
+                (my / tile as f64).floor() as i32,
+            );
+            let shape = if ps.len() == 1 {
+                ps[0].clone()
+            } else {
+                let owned: Vec<MergedPoly> = ps.into_iter().cloned().collect();
+                let unioned = crate::merge::compose_tile(crate::merge::VirtualOp::Union, &[&owned]);
+                match unioned
+                    .into_iter()
+                    .find(|m| crate::merge::point_in_merged(mx, my, m))
+                {
+                    Some(m) => m,
+                    None => continue,
+                }
+            };
+            by_owner.entry(owner).or_default().push((shape, rid));
+        }
+        by_owner.into_iter().map(|(k, v)| (k, v, true)).collect()
+    } else {
+        labeled
+            .by_tile
+            .iter()
+            .map(|(k, v)| (*k, v.clone(), false))
+            .collect()
+    };
 
-    b_keys
+    let found: Vec<Report> = jobs
         .par_iter()
-        .flat_map_iter(|&(tx, ty)| {
+        .flat_map_iter(|&((tx, ty), ref b_polys, exact)| {
             let core = Core {
                 x0: tx as i64 * tile,
                 y0: ty as i64 * tile,
                 x1: (tx as i64 + 1) * tile,
                 y1: (ty as i64 + 1) * tile,
             };
-            let b_polys = &map_b[&(tx, ty)];
+            // A tile's copy of the enclosed layer is exact within its core and halo and
+            // no further: a wall past that may be where the copy ran out, not where the
+            // shape ends - a piece of active whose left part lay outside this tile's
+            // reach showed a wall a coincident poly edge measured as no margin at all.
+            // Every real wall lies in some tile's core, and is measured there.
+            let zone = (
+                core.x0 - b_halo,
+                core.y0 - b_halo,
+                core.x1 + b_halo,
+                core.y1 + b_halo,
+            );
+            let in_zone = |(x1, y1, x2, y2): (f64, f64, f64, f64)| {
+                if exact {
+                    return true;
+                }
+                let (mx, my) = ((x1 + x2) * 0.5, (y1 + y2) * 0.5);
+                mx >= zone.0 as f64 && mx <= zone.2 as f64 && my >= zone.1 as f64 && my <= zone.3 as f64
+            };
+            let real_wall = |seg: Seg| exact || real_wall(seg);
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
             // The line-end caps of each enclosing shape of the tile, found once: a
@@ -308,10 +406,13 @@ pub fn run(
             let a_caps: Vec<std::cell::OnceCell<Vec<Seg>>> =
                 a_conv.iter().map(|_| std::cell::OnceCell::new()).collect();
 
-            let mut out = Vec::new();
-            for bm in b_polys {
+            // What this tile found: the region, the wall and the margin the report is
+            // about (none for a report without one), the tile, and the report.
+            let mut out: Vec<Report> = Vec::new();
+            for (bm, region) in b_polys {
+                let region = *region;
                 let (cxd, cyd) = merged_centroid_dbu(bm);
-                if !core.owns_region(cxd, cyd) || bm.outer.len() < 3 {
+                if bm.outer.len() < 3 {
                     continue;
                 }
                 let bp = Outline::new(bm);
@@ -332,7 +433,11 @@ pub fn run(
                 let edge_um =
                     |(x1, y1, x2, y2): (f64, f64, f64, f64)| (um(x1), um(y1), um(x2), um(y2));
 
-                // Best-case enclosing shape (greatest margin) among those containing B.
+                // Per wall of the enclosed shape, its margin in the best case among the
+                // enclosing shapes containing it - a wall is clear if any of them clears
+                // it - each read as the worst of that shape's pairs on the wall.  A
+                // maximum reads the shape as a whole: its largest margin.
+                let mut walls: HashMap<Seg, Read> = HashMap::new();
                 let mut best: Option<Read> = None;
                 let mut any_contained = false;
                 let mut clipped = false;
@@ -348,41 +453,61 @@ pub fn run(
                         first.1.0 as f64,
                         first.1.1 as f64,
                     );
-                    let worst: Option<Read> = if sides == Sides::Any && !max {
+                    if sides == Sides::Any && !max {
                         let m = endcap_margin(&bp, a) as i128;
-                        Some(((m * m, 1), first_edge))
+                        let worst = ((m * m, 1), first_edge);
+                        if best.is_none_or(|(b, _)| worse(largest, b, worst.0)) {
+                            best = Some(worst);
+                        }
+                        continue;
+                    }
+                    let (pairs, coincident) =
+                        margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
+                    clipped |= coincident;
+                    // Wall reality check: a pair measured against outer geometry beyond
+                    // this bucket's reliable zone can see a fake wall where the union was
+                    // truncated; probing just past the wall in the probe's own tile
+                    // (complete there) exposes and drops it.
+                    let mut here: HashMap<Seg, Read> = HashMap::new();
+                    let mut worst: Option<Read> = None;
+                    for p in pairs {
+                        if !in_zone(p.edge) || !real_wall(p.wall) {
+                            continue;
+                        }
+                        if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
+                            continue;
+                        }
+                        let m = ((p.num, p.den), p.edge);
+                        if worst.is_none_or(|(w, _)| worse(largest, m.0, w)) {
+                            worst = Some(m);
+                        }
+                        let e = here.entry(p.wall).or_insert(m);
+                        if worse(largest, m.0, e.0) {
+                            *e = m;
+                        }
+                    }
+                    if max {
+                        // A maximum with no facing wall at all has nothing to read.
+                        if let Some(m) = worst
+                            && best.is_none_or(|(b, _)| worse(largest, b, m.0))
+                        {
+                            best = Some(m);
+                        }
+                        continue;
+                    }
+                    // The best case per wall: the first containing shape sets it, a
+                    // later one raises a wall it clears or reads with more room.
+                    if walls.is_empty() && best.is_none() {
+                        walls = here;
+                        best = Some(((i128::MAX / 4, 1), first_edge));
                     } else {
-                        let (pairs, coincident) =
-                            margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
-                        clipped |= coincident;
-                        // Wall reality check: a pair measured against outer geometry
-                        // beyond this bucket's reliable zone can see a fake wall where
-                        // the union was truncated; probing just past the wall in the
-                        // probe's own tile (complete there) exposes and drops it.
-                        let mut worst: Option<Read> = None;
-                        for p in pairs {
-                            if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
-                                continue;
+                        for (w, m) in walls.iter_mut() {
+                            match here.get(w) {
+                                Some(h) if worse(largest, m.0, h.0) => *m = *h,
+                                Some(_) => {}
+                                None => *m = ((i128::MAX / 4, 1), m.1),
                             }
-                            if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
-                                continue;
-                            }
-                            worst = Some(((p.num, p.den), p.edge));
                         }
-                        // A minimum with no pair under the value has every wall clear
-                        // of it; a maximum with no facing wall at all has nothing to
-                        // read.  Neither is a margin, and the candidate is as good as
-                        // it gets for a minimum and says nothing for a maximum.
-                        if worst.is_none() && !max {
-                            Some(((i128::MAX / 4, 1), first_edge))
-                        } else {
-                            worst
-                        }
-                    };
-                    if let Some((m, e)) = worst
-                        && best.is_none_or(|(b, _)| worse(largest, b, m))
-                    {
-                        best = Some((m, e));
                     }
                 }
                 if skip_clipped && clipped {
@@ -407,6 +532,12 @@ pub fn run(
                         })
                         .collect();
                     for &seg in bp.segs() {
+                        let ((sx1, sy1), (sx2, sy2)) = seg;
+                        if !in_zone((sx1 as f64, sy1 as f64, sx2 as f64, sy2 as f64))
+                            || !real_wall(seg)
+                        {
+                            continue;
+                        }
                         let Some((num, den)) = margin_to_caps(seg, &caps) else {
                             continue;
                         };
@@ -417,19 +548,24 @@ pub fn run(
                         let ((ax, ay), (bx, by)) = seg;
                         let (ax, ay, bx, by) =
                             (um(ax as f64), um(ay as f64), um(bx as f64), um(by as f64));
-                        out.push(Violation::edge(
-                            rid,
-                            title,
-                            format!(
-                                "{bname} at a {aname} line end: enclosed {margin:.4} µm \
-                                 {cmp} {value:.2} µm at ({ax:.4}, {ay:.4})-({bx:.4}, {by:.4}) µm"
+                        out.push((
+                            region,
+                            Some(seg),
+                            Some((num, den)),
+                            (tx, ty),
+                            Violation::edge(
+                                rid,
+                                title,
+                                format!(
+                                    "{bname} at a {aname} line end: enclosed {margin:.4} µm \
+                                     {cmp} {value:.2} µm at ({ax:.4}, {ay:.4})-({bx:.4}, {by:.4}) µm"
+                                ),
+                                ax,
+                                ay,
+                                bx,
+                                by,
                             ),
-                            ax,
-                            ay,
-                            bx,
-                            by,
                         ));
-                        break;
                     }
                     continue;
                 }
@@ -463,21 +599,27 @@ pub fn run(
                         let ((x1, y1), (x2, y2)) = bp.segs()[i];
                         let (x1, y1, x2, y2) =
                             (um(x1 as f64), um(y1 as f64), um(x2 as f64), um(y2 as f64));
-                        out.push(Violation::edge(
-                            rid,
-                            title,
-                            format!(
-                                "{bname} within {aname}: side enclosed {:.4} µm < {:.2} µm \
-                                 and a bordering side only {:.4} µm < {value:.2} µm at \
-                                 ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm",
-                                um(m[i]),
-                                um(trigger),
-                                um(worst)
+                        out.push((
+                            region,
+                            None,
+                            None,
+                            (tx, ty),
+                            Violation::edge(
+                                rid,
+                                title,
+                                format!(
+                                    "{bname} within {aname}: side enclosed {:.4} µm < {:.2} µm \
+                                     and a bordering side only {:.4} µm < {value:.2} µm at \
+                                     ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm",
+                                    um(m[i]),
+                                    um(trigger),
+                                    um(worst)
+                                ),
+                                x1,
+                                y1,
+                                x2,
+                                y2,
                             ),
-                            x1,
-                            y1,
-                            x2,
-                            y2,
                         ));
                         break; // one report per shape, not one per short side
                     }
@@ -512,33 +654,97 @@ pub fn run(
                         // while its inside lateral margins are still checked).  This is
                         // what an extension rule is - a cover reaching past the target
                         // it crosses by so much - and a maximum reads it the same way.
+                        // Per wall for a minimum, the shape as a whole for a maximum.
+                        let mut walls: HashMap<Seg, Read> = HashMap::new();
                         let mut worst: Option<Read> = None;
                         for (am, a) in touching {
                             let (pairs, _) =
                                 margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
                             for p in pairs {
+                                if !in_zone(p.edge) || !real_wall(p.wall) {
+                                    continue;
+                                }
                                 let (x1, y1, x2, y2) = p.edge;
                                 let mid = ((x1 + x2) * 0.5, (y1 + y2) * 0.5);
                                 if !inside_or_on(am, a, mid) {
                                     continue; // pair on the protruding part
-                                }
-                                if worst.is_some_and(|(w, _)| !worse(largest, (p.num, p.den), w)) {
-                                    continue;
                                 }
                                 if !max
                                     && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe)
                                 {
                                     continue;
                                 }
-                                worst = Some(((p.num, p.den), p.edge));
+                                let m = ((p.num, p.den), p.edge);
+                                if worst.is_none_or(|(w, _)| worse(largest, m.0, w)) {
+                                    worst = Some(m);
+                                }
+                                let e = walls.entry(p.wall).or_insert(m);
+                                if worse(largest, m.0, e.0) {
+                                    *e = m;
+                                }
                             }
                         }
-                        if let Some(((num, den), e)) = worst
-                            && limit.broken_by_sq(num, den)
-                        {
+                        let reports: Vec<(Option<Seg>, Read)> = if max {
+                            worst.into_iter().map(|m| (None, m)).collect()
+                        } else {
+                            walls.into_iter().map(|(w, m)| (Some(w), m)).collect()
+                        };
+                        for (wall, ((num, den), e)) in reports {
+                            if !limit.broken_by_sq(num, den) {
+                                continue;
+                            }
                             let d = um((num as f64 / den as f64).sqrt());
                             let (x1, y1, x2, y2) = edge_um(e);
-                            out.push(Violation::edge(
+                            out.push((
+                                region,
+                                wall,
+                                Some((num, den)),
+                                (tx, ty),
+                                Violation::edge(
+                                    rid,
+                                    title,
+                                    format!(
+                                        "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within \
+                                         {aname} at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                                    ),
+                                    x1,
+                                    y1,
+                                    x2,
+                                    y2,
+                                ),
+                            ));
+                        }
+                        continue;
+                    }
+                    let (cx, cy) = (um(cxd), um(cyd));
+                    out.push((
+                        region,
+                        None,
+                        None,
+                        (tx, ty),
+                        Violation::point(
+                            rid,
+                            title,
+                            format!(
+                                "shape on {bname} not enclosed by {aname} at ({cx:.4}, {cy:.4}) µm"
+                            ),
+                            cx,
+                            cy,
+                        ),
+                    ));
+                } else if max || sides == Sides::Any {
+                    if let Some(((num, den), e)) = best
+                        && num < i128::MAX / 4
+                        && limit.broken_by_sq(num, den)
+                    {
+                        let d = um((num as f64 / den as f64).sqrt());
+                        let (x1, y1, x2, y2) = edge_um(e);
+                        out.push((
+                            region,
+                            None,
+                            Some((num, den)),
+                            (tx, ty),
+                            Violation::edge(
                                 rid,
                                 title,
                                 format!(
@@ -549,41 +755,108 @@ pub fn run(
                                 y1,
                                 x2,
                                 y2,
-                            ));
-                        }
-                        continue;
+                            ),
+                        ));
                     }
-                    let (cx, cy) = (um(cxd), um(cyd));
-                    out.push(Violation::point(
-                        rid,
-                        title,
-                        format!(
-                            "shape on {bname} not enclosed by {aname} at ({cx:.4}, {cy:.4}) µm"
-                        ),
-                        cx,
-                        cy,
-                    ));
-                } else if let Some(((num, den), e)) = best
-                    && num < i128::MAX / 4
-                    && limit.broken_by_sq(num, den)
-                {
-                    let d = um((num as f64 / den as f64).sqrt());
-                    let (x1, y1, x2, y2) = edge_um(e);
-                    out.push(Violation::edge(
-                        rid,
-                        title,
-                        format!(
-                            "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within {aname} \
-                             at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
-                        ),
-                        x1,
-                        y1,
-                        x2,
-                        y2,
-                    ));
+                } else {
+                    for (wall, ((num, den), e)) in walls {
+                        if num >= i128::MAX / 4 || !limit.broken_by_sq(num, den) {
+                            continue;
+                        }
+                        let d = um((num as f64 / den as f64).sqrt());
+                        let (x1, y1, x2, y2) = edge_um(e);
+                        out.push((
+                            region,
+                            Some(wall),
+                            Some((num, den)),
+                            (tx, ty),
+                            Violation::edge(
+                                rid,
+                                title,
+                                format!(
+                                    "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within \
+                                     {aname} at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                                ),
+                                x1,
+                                y1,
+                                x2,
+                                y2,
+                            ),
+                        ));
+                    }
                 }
             }
             out.into_iter()
         })
-        .collect()
+        .collect();
+
+    // One report per run of violating walls of a region: walls that share a vertex
+    // are one run, which joins the two sides of a corner into one report and the two
+    // pieces of a wall cut at a tile line back into one wall, so a shape short on one
+    // side is one report whatever the tile, and a comb short at three fingers is
+    // three.  Each run reports its worst wall.  A report without a wall - a shape not
+    // enclosed at all, a maximum, an endcap, a bordering-side reading - is one per
+    // region, the worst or else the first in tile order, so the pick does not depend
+    // on the order the tiles were scanned in.
+    let mut by_region: HashMap<usize, Vec<Report>> = HashMap::new();
+    for r in found {
+        by_region.entry(r.0).or_default().push(r);
+    }
+    let mut regions: Vec<usize> = by_region.keys().copied().collect();
+    regions.sort_unstable();
+    let mut out = Vec::new();
+    for region in regions {
+        let reports = by_region.remove(&region).expect("keyed");
+        let (walled, whole): (Vec<Report>, Vec<Report>) =
+            reports.into_iter().partition(|r| r.1.is_some());
+        if let Some(pick) = whole.into_iter().reduce(|a, b| {
+            let better = match (b.2, a.2) {
+                (Some(x), Some(y)) => worse(largest, x, y),
+                (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (None, None) => b.3 < a.3,
+            };
+            if better { b } else { a }
+        }) {
+            out.push(pick.4);
+        }
+        if walled.is_empty() {
+            continue;
+        }
+        let mut uf = crate::merge::UnionFind::new(walled.len());
+        let mut at: HashMap<(i64, i64), usize> = HashMap::new();
+        for (i, r) in walled.iter().enumerate() {
+            let (p, q) = r.1.expect("walled");
+            for v in [p, q] {
+                match at.get(&v) {
+                    Some(&j) => uf.union(i, j),
+                    None => {
+                        at.insert(v, i);
+                    }
+                }
+            }
+        }
+        let mut pick: HashMap<usize, usize> = HashMap::new();
+        for i in 0..walled.len() {
+            let root = uf.find(i);
+            match pick.get(&root) {
+                Some(&j) => {
+                    let (mi, mj) = (walled[i].2.expect("margin"), walled[j].2.expect("margin"));
+                    if worse(largest, mi, mj) || (mi == mj && walled[i].3 < walled[j].3) {
+                        pick.insert(root, i);
+                    }
+                }
+                None => {
+                    pick.insert(root, i);
+                }
+            }
+        }
+        let mut chosen: Vec<usize> = pick.into_values().collect();
+        chosen.sort_unstable();
+        let mut walled: Vec<Option<Report>> = walled.into_iter().map(Some).collect();
+        for i in chosen {
+            out.push(walled[i].take().expect("once").4);
+        }
+    }
+    out
 }
