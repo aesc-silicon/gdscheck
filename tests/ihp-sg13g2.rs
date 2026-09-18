@@ -914,11 +914,12 @@ const DECK_RESISTOR: &str = "resistor";
 #[case::rhi_d("resistor/Rhi.d.gds.gz", "TOP", vec!["Rhi.d"; 2], vec!["Rhi.c"])]
 // nSD overhang at a realistic resistor (fires — stricter than shipped KLayout, see the
 // fixture doc) and at a poly-inside-stack body (fires in both tools, exact-location
-// validated); identical-implant body and isolated nSD blob stay clean.  Rhi.c ×2: the
-// resistor GatPoly sticks out of the implant stack with flush edges — KLayout marks the
-// same two shapes (4 per-edge markers at the identical coordinates); measured since
-// run_enclosure's partial-overlap branch landed.
-#[case::rhi_b("resistor/Rhi.b.gds.gz", "TOP", vec!["Rhi.b", "Rhi.b", "Rhi.c", "Rhi.c"], vec![])]
+// validated); identical-implant body and isolated nSD blob stay clean.  Rhi.c ×4: the
+// resistor GatPoly sticks out of the implant stack with flush edges on two opposite
+// sides of each of two shapes — KLayout marks the same 4 per-edge markers at the
+// identical coordinates; measured since run_enclosure's partial-overlap branch landed.
+#[case::rhi_b("resistor/Rhi.b.gds.gz", "TOP",
+    vec!["Rhi.b", "Rhi.b", "Rhi.c", "Rhi.c", "Rhi.c", "Rhi.c"], vec![])]
 fn test_resistor(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -959,11 +960,12 @@ fn test_nmosi(
 const DECK_NPN: &str = "npn";
 
 #[rstest]
-// The tie ring is under-enclosed by 0.05 the whole way round; npnG2.c reports the
-// worst wall once (KLayout reports the same violation as 8 edge pairs — same device,
-// same rule).
+// The tie ring is under-enclosed by 0.05 the whole way round; npnG2.c reports it
+// twice, once for the ring's outer boundary and once for its hole, each a closed run of
+// short walls (KLayout reports the same violation as 8 edge pairs — same device, same
+// rule).
 #[case::npn_g2("npn/npnG2.gds.gz", "TOP",
-    vec!["npnG2.b", "npnG2.c", "npnG2.d", "npnG2.e"], vec![])]
+    vec!["npnG2.b", "npnG2.c", "npnG2.c", "npnG2.d", "npnG2.e"], vec![])]
 // One marker per emitter case: min/max for G2 (=0.90), L (1.00..2.50), V (1.00..5.00).
 // KLayout's shipped emitter rules are dead code (µm/dbu bug in ext_with_length's
 // ">" branch) — limits here follow the PDF; see the deck comment.
@@ -1093,12 +1095,11 @@ const DECK_SEALRING: &str = "sealring";
 // Two seal frames: Cont ring at 0.80 from the frame edge (< 1.30) and at 1.50 (clean).
 // Seal.l is synthetic two-frame collateral.
 //
-// Three markers, all on the frame's right side: the side entire, and a sliver at each of
-// its corners. This case used to read four and be described as one marker per side, an
-// exact match with KLayout's count — but the fourth was a byte-identical copy of the
-// second, and the match was arithmetic rather than agreement. The other three sides are
-// genuinely missed.
-#[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 3], vec!["Seal.l"])]
+// One marker: the Cont ring's four outer walls are all 0.80 from the frame, and four
+// short walls that meet at their corners are one run of walls, reported once at its
+// worst.  KLayout reports one edge pair per side; the case used to read three, which
+// were the pieces the tiling cut the ring into, and moved with the tile size.
+#[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 1], vec!["Seal.l"])]
 fn test_sealring(
     #[case] gds: &str,
     #[case] topcell: &str,
