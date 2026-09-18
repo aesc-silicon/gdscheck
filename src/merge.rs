@@ -1138,24 +1138,27 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
             }
             shapes_to_merged(shapes.simplify_shape(FillRule::NonZero))
         }
+        // The sources are a tile's merged shapes, and the overlay takes them as they
+        // are under the same fill rule: simplifying each first was a sweep over ten
+        // million contacts for nothing, two fifths of building the contact layers.
         VirtualOp::Intersection => {
-            let mut acc = tile_shapes(sources[0]).simplify_shape(FillRule::NonZero);
+            let mut acc = tile_shapes(sources[0]);
             for s in &sources[1..] {
                 if acc.is_empty() {
                     return Vec::new();
                 }
-                let clip = tile_shapes(s).simplify_shape(FillRule::NonZero);
+                let clip = tile_shapes(s);
                 acc = acc.overlay(&clip, OverlayRule::Intersect, FillRule::NonZero);
             }
             shapes_to_merged(acc)
         }
         VirtualOp::Difference => {
-            let mut acc = tile_shapes(sources[0]).simplify_shape(FillRule::NonZero);
+            let mut acc = tile_shapes(sources[0]);
             for s in &sources[1..] {
                 if acc.is_empty() {
                     return Vec::new();
                 }
-                let clip = tile_shapes(s).simplify_shape(FillRule::NonZero);
+                let clip = tile_shapes(s);
                 if clip.is_empty() {
                     continue;
                 }

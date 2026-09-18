@@ -302,6 +302,11 @@ pub fn run(
             let b_polys = &map_b[&(tx, ty)];
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
+            // The line-end caps of each enclosing shape of the tile, found once: a
+            // track's caps are the same for every via on it, and finding them walks
+            // every pair of the track's walls.
+            let a_caps: Vec<std::cell::OnceCell<Vec<Seg>>> =
+                a_conv.iter().map(|_| std::cell::OnceCell::new()).collect();
 
             let mut out = Vec::new();
             for bm in b_polys {
@@ -312,11 +317,13 @@ pub fn run(
                 let bp = Outline::new(bm);
                 let assembled: Vec<MergedPoly>;
                 let assembled_o: Vec<Outline>;
+                let mut cached_caps = true;
                 let a_here: &[Outline] =
                     match outer_over(map_a, tile, a_halo, &core, bm, limit.dbu()) {
                         Some(polys) => {
                             assembled = polys;
                             assembled_o = assembled.iter().map(Outline::new).collect();
+                            cached_caps = false;
                             &assembled_o
                         }
                         None => &a_conv,
@@ -387,8 +394,17 @@ pub fn run(
                 if sides == Sides::LineEnd {
                     let caps: Vec<Seg> = a_here
                         .iter()
-                        .filter(|a| all_inside(&bp, a) || regions_interact(&bp, a))
-                        .flat_map(|a| line_end_segs(a, max_width, min_length))
+                        .enumerate()
+                        .filter(|(_, a)| all_inside(&bp, a) || regions_interact(&bp, a))
+                        .flat_map(|(i, a)| {
+                            if cached_caps {
+                                a_caps[i]
+                                    .get_or_init(|| line_end_segs(a, max_width, min_length))
+                                    .clone()
+                            } else {
+                                line_end_segs(a, max_width, min_length)
+                            }
+                        })
                         .collect();
                     for &seg in bp.segs() {
                         let Some((num, den)) = margin_to_caps(seg, &caps) else {
