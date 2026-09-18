@@ -137,12 +137,27 @@ impl PhaseTrace {
         }
         let (w, c) = (self.wall.elapsed().as_secs_f64(), cpu_seconds() - self.cpu);
         eprintln!(
-            "phase {name} wall={w:.1}s cpu={c:.1}s cores={:.1}",
-            if w > 0.0 { c / w } else { 0.0 }
+            "phase {name} wall={w:.1}s cpu={c:.1}s cores={:.1} rss={:.1}GB",
+            if w > 0.0 { c / w } else { 0.0 },
+            rss_gb()
         );
         self.wall = std::time::Instant::now();
         self.cpu = cpu_seconds();
     }
+}
+
+/// The process's resident set, in GB, for the traces.
+fn rss_gb() -> f64 {
+    std::fs::read_to_string("/proc/self/statm")
+        .ok()
+        .and_then(|s| {
+            s.split_whitespace()
+                .nth(1)
+                .and_then(|v| v.parse::<f64>().ok())
+        })
+        .unwrap_or(0.0)
+        * 4096.0
+        / 1e9
 }
 
 /// Checks that need electrical connectivity (net extraction).  When connectivity is
@@ -1336,6 +1351,7 @@ fn run_drc_impl(
         }
     }
     let budget = cache_budget_polys();
+    merged.set_budget(budget);
 
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
@@ -1422,6 +1438,7 @@ fn run_drc_impl(
         // that rather than at the maximum some other rule on it set.  The cache builds
         // ahead from `needs_of`, see `MergedCache::build_ahead`.
         merged.set_rule_halos(Some(rule_halos[i].clone()));
+        merged.set_rule_named(rule_keys(rule).into_iter().collect());
         if net_aware(rule) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
@@ -1439,17 +1456,13 @@ fn run_drc_impl(
             net.as_ref(),
         ));
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
-            let rss = std::fs::read_to_string("/proc/self/statm")
-                .ok()
-                .and_then(|s| s.split_whitespace().nth(1).map(|v| v.to_string()))
-                .unwrap_or_default();
             eprintln!(
                 "rule {} {} {:.1}s cpu={:.1}s rss={:.1}GB cache={}",
                 rule.id,
                 rule.check,
                 t_rule.elapsed().as_secs_f64(),
                 cpu_seconds() - c_rule,
-                rss.parse::<f64>().unwrap_or(0.0) * 4096.0 / 1e9,
+                rss_gb(),
                 merged.resident_summary()
             );
         }
@@ -1513,6 +1526,12 @@ fn run_drc_impl(
                 }
                 merged.evict(key.0, key.1);
             }
+        }
+        // What was let go is freed aside, unless it is a large part of the budget: then
+        // the memory has to be back before the next rule builds into it, or a run that
+        // fit on a machine of this size before is killed for what it already dropped.
+        if merged.pending_free_polys() > budget / 4 {
+            merged.settle_frees();
         }
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
             let plan = t_plan.elapsed().as_secs_f64();
