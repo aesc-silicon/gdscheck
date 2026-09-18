@@ -2834,11 +2834,19 @@ pub fn stitch_labeled(tiles: &TileMap, tile_dbu: i32) -> LabeledRegions {
     stitch_impl(tiles, tile_dbu, true)
 }
 
+/// [`stitch_labeled`] joining pieces across tile lines only: two shapes meeting at a
+/// corner stay two.  For a reader that asks which pieces are one polygon cut by the
+/// tiling and nothing more - a spacing rule, to which a corner contact is a gap of
+/// nothing wide and not one shape.
+pub fn stitch_cut(tiles: &TileMap, tile_dbu: i32) -> LabeledRegions {
+    stitch_from(tiles, tile_dbu, true, None, false).0
+}
+
 /// Shared stitcher behind [`stitch_regions`] and [`stitch_labeled`].  `record_polys`
 /// selects whether each core piece's polygon is cloned into `by_tile` (the point-lookup
 /// index) — skipped for plain region stitching so dense layers aren't copied.
 fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledRegions {
-    stitch_from(tiles, tile_dbu, record_polys, None).0
+    stitch_from(tiles, tile_dbu, record_polys, None, true).0
 }
 
 /// The stitcher proper: regions grown outward from `seeds`, or the whole layer.
@@ -2870,6 +2878,7 @@ fn stitch_from(
     tile_dbu: i32,
     record_polys: bool,
     seeds: Option<&[(i32, i32)]>,
+    touching: bool,
 ) -> (LabeledRegions, HashSet<(i32, i32)>) {
     let t = tile_dbu as i64;
     let mut pieces: Vec<Piece> = Vec::new();
@@ -2955,7 +2964,9 @@ fn stitch_from(
         link_adjacent_pieces(&mut uf, &tile_pieces, &sides, only);
         t_adj += t0.elapsed().as_secs_f64();
         let t0 = std::time::Instant::now();
-        link_touching_pieces(&mut uf, &tile_pieces, &piece_poly, only);
+        if touching {
+            link_touching_pieces(&mut uf, &tile_pieces, &piece_poly, only);
+        }
         t_touch += t0.elapsed().as_secs_f64();
         next.sort_unstable();
         next.dedup();
@@ -4405,7 +4416,7 @@ fn build_selection_tiles(
     seeds.sort_unstable();
     let trace = std::env::var("GDSCHECK_STITCH_TRACE").is_ok();
     let t0 = std::time::Instant::now();
-    let (labeled, visited) = stitch_from(cand, tile_dbu, true, Some(&seeds));
+    let (labeled, visited) = stitch_from(cand, tile_dbu, true, Some(&seeds), true);
     let t_stitch = t0.elapsed().as_secs_f64();
     let t0 = std::time::Instant::now();
     // `Inside` reduces with AND over a region's pieces, so it starts true and is cleared
