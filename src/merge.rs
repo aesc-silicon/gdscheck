@@ -359,25 +359,51 @@ fn erode_directional(polys: &[MergedPoly], radius: f64, along_x: bool) -> Vec<Me
     if polys.is_empty() || radius <= 0.0 {
         return polys.to_vec();
     }
-    let (mut x0, mut y0, mut x1, mut y1) = (i32::MAX, i32::MAX, i32::MIN, i32::MIN);
-    for m in polys {
-        let (a, b, c, d) = poly_bbox(m);
-        x0 = x0.min(a);
-        y0 = y0.min(b);
-        x1 = x1.max(c);
-        y1 = y1.max(d);
-    }
-    let pad = 2.0 * radius + 10.0;
-    let (fx0, fy0) = (x0 as f64 - pad, y0 as f64 - pad);
-    let (fx1, fy1) = (x1 as f64 + pad, y1 as f64 + pad);
-    let frame: Vec<Vec<Vec<[f64; 2]>>> =
-        vec![vec![vec![[fx0, fy0], [fx1, fy0], [fx1, fy1], [fx0, fy1]]]];
-
+    // A point survives the erosion where the segment of `2·radius` through it along
+    // the axis stays inside: inside, and crossing no edge - that is, off every band an
+    // edge sweeps along the axis.  The shape less its edges' bands, then; the same
+    // bands the complement's dilation swept, without the frame, the complement, and
+    // the two translates of it that a power mesh made the cost of the build.
+    let (dx, dy) = if along_x {
+        (radius, 0.0)
+    } else {
+        (0.0, radius)
+    };
+    // The pieces of a layer cut along tile lines abut, and a cut is not an edge of the
+    // shape: unioned first, so the bands are the region's own edges.
     let solid = tile_shapes(polys).simplify_shape(FillRule::NonZero);
-    let hole = frame.overlay(&solid, OverlayRule::Difference, FillRule::NonZero);
-    let grown = size_directional(&shapes_to_merged(hole), radius, along_x);
-    let grown_shapes = tile_shapes(&grown).simplify_shape(FillRule::NonZero);
-    shapes_to_merged(frame.overlay(&grown_shapes, OverlayRule::Difference, FillRule::NonZero))
+    let whole = shapes_to_merged(solid.clone());
+    let mut bands: Vec<Vec<Vec<[f64; 2]>>> = Vec::new();
+    for m in &whole {
+        for (a, b) in poly_edges(m) {
+            let (ax, ay) = (a.x as f64, a.y as f64);
+            let (bx, by) = (b.x as f64, b.y as f64);
+            let mut quad = vec![
+                [ax - dx, ay - dy],
+                [bx - dx, by - dy],
+                [bx + dx, by + dy],
+                [ax + dx, ay + dy],
+            ];
+            let area2: f64 = (0..4)
+                .map(|i| {
+                    let (p, q) = (quad[i], quad[(i + 1) % 4]);
+                    p[0] * q[1] - q[0] * p[1]
+                })
+                .sum();
+            if area2.abs() < 0.5 {
+                continue; // an edge along the sweep: nothing swept
+            }
+            if area2 < 0.0 {
+                quad.reverse();
+            }
+            bands.push(vec![quad]);
+        }
+    }
+    if bands.is_empty() {
+        return whole;
+    }
+    let swept = bands.simplify_shape(FillRule::NonZero);
+    shapes_to_merged(solid.overlay(&swept, OverlayRule::Difference, FillRule::NonZero))
 }
 
 /// Directional erode along x by `radius` DBU (KLayout `sized(-r, 0)`).
@@ -3135,17 +3161,23 @@ fn link_touching_pieces(
         .flat_map_iter(|ids| {
             let mut local = Vec::new();
             if ids.len() >= 2 {
-                let boxes: Vec<(i32, i32, i32, i32)> =
-                    ids.iter().map(|&i| poly_bbox(piece_poly[i])).collect();
-                for a in 0..ids.len() {
-                    for b in (a + 1)..ids.len() {
-                        let (ax0, ay0, ax1, ay1) = boxes[a];
-                        let (bx0, by0, bx1, by1) = boxes[b];
-                        if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
+                // Swept along x: a tile of fill is thousands of squares, and every pair
+                // of them was boxed against each other.  Sorted by their left edge, a
+                // box meets only the boxes starting before its right edge ends.
+                let mut boxes: Vec<((i32, i32, i32, i32), usize)> =
+                    ids.iter().map(|&i| (poly_bbox(piece_poly[i]), i)).collect();
+                boxes.sort_unstable_by_key(|(b, _)| b.0);
+                for a in 0..boxes.len() {
+                    let ((ax0, ay0, ax1, ay1), ia) = boxes[a];
+                    for &((bx0, by0, bx1, by1), ib) in &boxes[a + 1..] {
+                        if bx0 > ax1 {
+                            break;
+                        }
+                        if bx1 < ax0 || ay1 < by0 || by1 < ay0 {
                             continue;
                         }
-                        if polys_interact(piece_poly[ids[a]], piece_poly[ids[b]]) {
-                            local.push((ids[a], ids[b]));
+                        if polys_interact(piece_poly[ia], piece_poly[ib]) {
+                            local.push((ia, ib));
                         }
                     }
                 }
@@ -3218,11 +3250,24 @@ fn polys_interact(a: &MergedPoly, b: &MergedPoly) -> bool {
     if ax1 < bx0 || bx1 < ax0 || ay1 < by0 || by1 < ay0 {
         return false;
     }
-    if polys_overlap(a, b) {
+    // Two shapes that meet at all have an edge of one meeting an edge of the other,
+    // unless one lies wholly inside the other, which a vertex of it then does.  Both
+    // are integer tests; the boolean that used to answer the overlap first cost more
+    // than the rest of a stitch on a tile of fill.
+    let aedges: Vec<(IntPoint, IntPoint)> = poly_edges(a).collect();
+    let bedges: Vec<(IntPoint, IntPoint)> = poly_edges(b).collect();
+    if aedges.iter().any(|&(p, p2)| {
+        let (px0, px1) = (p.x.min(p2.x), p.x.max(p2.x));
+        let (py0, py1) = (p.y.min(p2.y), p.y.max(p2.y));
+        if px1 < bx0 || px0 > bx1 || py1 < by0 || py0 > by1 {
+            return false;
+        }
+        bedges.iter().any(|&(q, q2)| segs_intersect(p, p2, q, q2))
+    }) {
         return true;
     }
-    let bedges: Vec<(IntPoint, IntPoint)> = poly_edges(b).collect();
-    poly_edges(a).any(|(p, p2)| bedges.iter().any(|&(q, q2)| segs_intersect(p, p2, q, q2)))
+    let inside = |p: IntPoint, m: &MergedPoly| point_in_merged(p.x as f64, p.y as f64, m);
+    a.outer.first().is_some_and(|&p| inside(p, b)) || b.outer.first().is_some_and(|&p| inside(p, a))
 }
 
 /// Whether `a` lies entirely within the area covered by `others` — i.e. `a` minus their
@@ -3631,7 +3676,10 @@ pub enum Erosion {
 /// power mesh is one region spanning the chip with millions of vertices, and eroding
 /// it in one piece is the memory the per-tile path was avoiding.
 fn build_erosion_tiles(cand: &TileMap, tile_dbu: i32, r: i32, how: Erosion) -> TileMap {
+    let t_stitch = std::time::Instant::now();
     let labeled = stitch_labeled(cand, tile_dbu);
+    let t_stitch = t_stitch.elapsed().as_secs_f64();
+    let t_erode = std::time::Instant::now();
     let mut pieces: Vec<Vec<((i32, i32), MergedPoly)>> =
         (0..labeled.regions.len()).map(|_| Vec::new()).collect();
     for (tile, polys) in labeled.by_tile {
@@ -3672,12 +3720,11 @@ fn build_erosion_tiles(cand: &TileMap, tile_dbu: i32, r: i32, how: Erosion) -> T
             (c.1 as i64 + 1) * t,
         )
     };
-    let parts: Vec<((i32, i32), Vec<MergedPoly>)> = survivors
+    // A copy is exact within its own core, so each is cut to it before the block is
+    // unioned; a whole copy could carry what its tile computed past its zone.
+    let by_region: Vec<HashMap<(i32, i32), Vec<MergedPoly>>> = survivors
         .into_par_iter()
-        .flat_map_iter(|ps| {
-            // A copy is exact within its own core, so each is cut to it before the
-            // block is unioned; a whole copy could carry what its tile computed past
-            // its zone.
+        .map(|ps| {
             let mut by_core: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
             for (core, poly) in ps {
                 let (x0, y0, x1, y1) = core_box(core);
@@ -3686,30 +3733,38 @@ fn build_erosion_tiles(cand: &TileMap, tile_dbu: i32, r: i32, how: Erosion) -> T
                     .or_default()
                     .extend(clip_to_box(vec![poly], x0, y0, x1, y1));
             }
-            let cores: Vec<(i32, i32)> = by_core.keys().copied().collect();
-            cores
-                .into_iter()
-                .filter_map(|c| {
-                    let mut block: Vec<MergedPoly> = Vec::new();
-                    for dx in -k..=k {
-                        for dy in -k..=k {
-                            if let Some(v) = by_core.get(&(c.0 + dx, c.1 + dy)) {
-                                block.extend(v.iter().cloned());
-                            }
-                        }
+            by_core
+        })
+        .collect();
+    // The cores of every region together, since a power mesh is one region over the
+    // whole chip and its ten thousand cores were eroded one after another on the one
+    // thread that held the region.
+    let jobs: Vec<(usize, (i32, i32))> = by_region
+        .iter()
+        .enumerate()
+        .flat_map(|(i, m)| m.keys().map(move |&c| (i, c)))
+        .collect();
+    let parts: Vec<((i32, i32), Vec<MergedPoly>)> = jobs
+        .into_par_iter()
+        .filter_map(|(i, c)| {
+            let by_core = &by_region[i];
+            let mut block: Vec<MergedPoly> = Vec::new();
+            for dx in -k..=k {
+                for dy in -k..=k {
+                    if let Some(v) = by_core.get(&(c.0 + dx, c.1 + dy)) {
+                        block.extend(v.iter().cloned());
                     }
-                    let eroded = match how {
-                        Erosion::Open => opening(&block, r as f64),
-                        Erosion::Shrink => shrink(&block, r as f64),
-                        Erosion::ShrinkX => shrink_x(&block, r as f64),
-                        Erosion::ShrinkY => shrink_y(&block, r as f64),
-                    };
-                    let (x0, y0, x1, y1) = core_box(c);
-                    let inside = clip_to_box(eroded, x0, y0, x1, y1);
-                    (!inside.is_empty()).then_some((c, inside))
-                })
-                .collect::<Vec<_>>()
-                .into_iter()
+                }
+            }
+            let eroded = match how {
+                Erosion::Open => opening(&block, r as f64),
+                Erosion::Shrink => shrink(&block, r as f64),
+                Erosion::ShrinkX => shrink_x(&block, r as f64),
+                Erosion::ShrinkY => shrink_y(&block, r as f64),
+            };
+            let (x0, y0, x1, y1) = core_box(c);
+            let inside = clip_to_box(eroded, x0, y0, x1, y1);
+            (!inside.is_empty()).then_some((c, inside))
         })
         .collect();
     let mut out: TileMap = HashMap::new();
@@ -3720,8 +3775,9 @@ fn build_erosion_tiles(cand: &TileMap, tile_dbu: i32, r: i32, how: Erosion) -> T
         let copies: usize = out.values().map(|v| v.len()).sum();
         eprintln!(
             "erosion {how:?} r={r}dbu on regions: {n_regions} regions, {n_survivors} wide enough, \
-             {copies} pieces over {} cores",
-            out.len()
+             {copies} pieces over {} cores, stitch {t_stitch:.1}s erode {:.1}s",
+            out.len(),
+            t_erode.elapsed().as_secs_f64()
         );
     }
     out
