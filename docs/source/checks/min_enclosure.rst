@@ -137,10 +137,18 @@ Violation markers
 
 - Fully unenclosed shape (no ``interacting_only``): one point marker at the shape's
   centroid.
-- Contained (or, under ``interacting_only``, partially overlapping) shape whose measured
-  margin is below ``value``: one edge marker along the facing outer wall responsible for
-  the worst margin. Under ``sides: any`` the marker sits on the shape's first contour
+- Contained (or, under ``interacting_only``, partially overlapping) shape with walls
+  short of ``value``: one edge marker per *run* of short walls, at the run's worst
+  margin. Walls that meet at a corner are one run, so a shape short on one side or on
+  two adjacent sides is one marker, a shape short on two opposite sides two, and a comb
+  short at three fingers three; a ring short all the way round is one run for its
+  outer boundary and one for its hole. KLayout reports an edge pair per wall.
+- Under ``sides: any`` and for :doc:`max_enclosure`, which read the shape as a whole,
+  one marker per shape; under ``sides: any`` it sits on the shape's first contour
   edge, since the bounding-box reduction names no single wall.
+
+A shape is read as one whole whatever the tiling: a shape spanning several tiles is put
+together from its pieces, and the count does not move with the tile size.
 
 
 KLayout equivalent

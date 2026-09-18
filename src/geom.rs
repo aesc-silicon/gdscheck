@@ -2829,6 +2829,8 @@ pub struct MarginPair {
     pub den: i128,
     pub edge: (f64, f64, f64, f64),
     pub probe: (f64, f64),
+    /// The inner wall the margin was read on.
+    pub wall: Seg,
 }
 
 impl MarginPair {
@@ -2936,6 +2938,7 @@ pub fn margin_pairs(
                         den: 1,
                         edge: (c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1),
                         probe: (c.on_a.0 + nx * 2.0, c.on_a.1 + ny * 2.0),
+                        wall: (a0, a1),
                     });
                     continue;
                 }
@@ -2952,6 +2955,7 @@ pub fn margin_pairs(
                     den: c.den,
                     edge: (c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1),
                     probe: (c.on_a.0 + wx * (dist + 2.0), c.on_a.1 + wy * (dist + 2.0)),
+                    wall: (a0, a1),
                 });
                 continue;
             }
@@ -2991,6 +2995,7 @@ pub fn margin_pairs(
                 den,
                 edge: (p0.0, p0.1, p1.0, p1.1),
                 probe: (mid.0 + nx * (dist + 2.0), mid.1 + ny * (dist + 2.0)),
+                wall: (a0, a1),
             });
         }
     }
