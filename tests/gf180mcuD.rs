@@ -137,7 +137,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ldpmos(
     "ldpmos", "ldpmos.gds.gz", "10_12_2_MDP",
-    &[("MDP.1", 16), ("MDP.10", 16), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.11", 36), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.13b", 21), ("MDP.13c", 3), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17a", 4), ("MDP.17c", 1), ("MDP.1a", 2), ("MDP.2", 25), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 42), ("MDP.9b", 13), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1)]
+    &[("MDP.1", 16), ("MDP.10", 16), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.11", 36), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.13b", 21), ("MDP.13c", 3), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17a", 4), ("MDP.17c", 1), ("MDP.1a", 2), ("MDP.2", 25), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9b", 13), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1)]
 )]
 #[case::nat(
     "nat", "nat.gds.gz", "10_5_NAT",
@@ -145,7 +145,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ldnmos(
     "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
-    &[("MDN.1", 49), ("MDN.10a", 66), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 109), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 10), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
+    &[("MDN.1", 49), ("MDN.10a", 64), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 109), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 10), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
 )]
 #[case::lvpwell(
     "lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL",
@@ -153,7 +153,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::efuse(
     "efuse", "efuse.gds.gz", "10_11_EFUSE",
-    &[("EF.01", 38), ("EF.02", 180), ("EF.03", 159), ("EF.04a", 41), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.06", 367), ("EF.07", 37), ("EF.08", 173), ("EF.09", 30), ("EF.10", 38), ("EF.11", 5), ("EF.12", 21), ("EF.13", 5), ("EF.14", 6), ("EF.15", 12), ("EF.16a", 74), ("EF.16b", 52), ("EF.17", 6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 55), ("EF.21", 122), ("EF.22a", 62), ("EF.22b", 33)]
+    &[("EF.01", 38), ("EF.02", 180), ("EF.03", 159), ("EF.04a", 41), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.06", 367), ("EF.07", 37), ("EF.08", 173), ("EF.09", 30), ("EF.10", 33), ("EF.11", 5), ("EF.12", 21), ("EF.13", 5), ("EF.14", 6), ("EF.15", 12), ("EF.16a", 74), ("EF.16b", 52), ("EF.17", 6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 55), ("EF.21", 122), ("EF.22a", 62), ("EF.22b", 33)]
 )]
 #[case::hres(
     "hres", "hres.gds.gz", "10_3_HRES",
@@ -173,11 +173,11 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nwell(
     "nwell", "nwell.gds.gz", "7_4_NWELL",
-    &[("NW.1a_LV", 85), ("NW.1a_MV", 130), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 9), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 26), ("NW.3", 14), ("NW.4", 15), ("NW.5_LV", 16), ("NW.5_MV", 23), ("NW.6", 13)]
+    &[("NW.1a_LV", 77), ("NW.1a_MV", 114), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 9), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 26), ("NW.3", 14), ("NW.4", 15), ("NW.5_LV", 16), ("NW.5_MV", 23), ("NW.6", 13)]
 )]
 #[case::poly2(
     "poly2", "poly2.gds.gz", "7_7_Poly2",
-    &[("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 28), ("PL.1_MV", 27), ("PL.1a_LV", 10), ("PL.1a_MV", 10), ("PL.2_LV", 99), ("PL.2_MV", 395), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6), ("PL.6", 718), ("PL.7_LV", 40), ("PL.7_MV", 88), ("PL.9", 11)]
+    &[("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 28), ("PL.1_MV", 27), ("PL.1a_LV", 10), ("PL.1a_MV", 10), ("PL.2_LV", 99), ("PL.2_MV", 387), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6), ("PL.6", 718), ("PL.7_LV", 40), ("PL.7_MV", 88), ("PL.9", 11)]
 )]
 #[case::dnwell(
     "dnwell", "dnwell.gds.gz", "7_2_DNWELL",
@@ -197,7 +197,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ymtp_mk(
     "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
-    &[("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 16), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 100), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 168), ("Y.PL.4_MV", 7), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6)]
+    &[("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 16), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 100), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 7), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6)]
 )]
 #[case::contact(
     "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
@@ -221,7 +221,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::mcell(
     "mcell", "mcell.gds.gz", "7_17_Mcell",
-    &[("MC.1", 38), ("MC.2", 24), ("MC.3", 13), ("MC.4", 6)]
+    &[("MC.1", 38), ("MC.2", 16), ("MC.3", 13), ("MC.4", 6)]
 )]
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
@@ -229,7 +229,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::metaltop(
     "metaltop", "metaltop.gds.gz", "metaltop",
-    &[("MT.1", 394), ("MT.2a", 16), ("MT.2b", 11), ("MT.4", 85)]
+    &[("MT.1", 386), ("MT.2a", 16), ("MT.2b", 11), ("MT.4", 85)]
 )]
 #[case::pplus(
     "pplus", "pplus.gds.gz", "7_11_Pplus",
@@ -237,19 +237,19 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::metal1(
     "metal", "metal1.gds.gz", "metal1",
-    &[("M1.1", 341), ("M1.2a", 16), ("M1.2b", 11), ("M1.3", 85)]
+    &[("M1.1", 333), ("M1.2a", 16), ("M1.2b", 11), ("M1.3", 85)]
 )]
 #[case::metal2(
     "metal", "metal2.gds.gz", "metal2",
-    &[("M2.1", 346), ("M2.2a", 16), ("M2.2b", 11), ("M2.3", 85)]
+    &[("M2.1", 338), ("M2.2a", 16), ("M2.2b", 11), ("M2.3", 85)]
 )]
 #[case::metal3(
     "metal", "metal3.gds.gz", "metal3",
-    &[("M3.1", 346), ("M3.2a", 16), ("M3.2b", 11), ("M3.3", 85)]
+    &[("M3.1", 338), ("M3.2a", 16), ("M3.2b", 11), ("M3.3", 85)]
 )]
 #[case::metal4(
     "metal", "metal4.gds.gz", "metal4",
-    &[("M4.1", 346), ("M4.2a", 16), ("M4.2b", 11), ("M4.3", 85)]
+    &[("M4.1", 338), ("M4.2a", 16), ("M4.2b", 11), ("M4.3", 85)]
 )]
 #[case::esd(
     "esd", "esd.gds.gz", "7_11_ESD",

@@ -130,10 +130,17 @@ fn boundaries_to_shapes<'a>(it: impl Iterator<Item = &'a GdsBoundary>) -> Vec<Ve
 
 /// Convert i_overlay float shapes back to integer-DBU `MergedPoly`s.
 fn shapes_to_merged(shapes: Vec<Vec<Vec<[f64; 2]>>>) -> Vec<MergedPoly> {
+    // A vertex on the straight between its neighbours is no corner: a union of the
+    // pieces a tile cut leaves one at the seam, and a scan that reads walls read the
+    // wall as two - a notch reported twice, once per half of its wall, in a tile
+    // where the seam fell across it and once elsewhere.  Rounded to the grid first,
+    // since a point off the grid may sit a hair off the straight and land on it.
     let to_int = |c: Vec<[f64; 2]>| -> Vec<IntPoint> {
-        c.into_iter()
+        let pts: Vec<IntPoint> = c
+            .into_iter()
             .map(|p| IntPoint::new(p[0].round() as i32, p[1].round() as i32))
-            .collect()
+            .collect();
+        drop_collinear(pts)
     };
     shapes
         .into_iter()
@@ -146,6 +153,31 @@ fn shapes_to_merged(shapes: Vec<Vec<Vec<[f64; 2]>>>) -> Vec<MergedPoly> {
             Some(MergedPoly { outer, holes })
         })
         .collect()
+}
+
+/// The ring without the vertices that lie on the straight between their neighbours,
+/// and without repeats.  A ring left with fewer than three is returned as it is.
+fn drop_collinear(pts: Vec<IntPoint>) -> Vec<IntPoint> {
+    let n = pts.len();
+    if n < 4 {
+        return pts;
+    }
+    let mut out: Vec<IntPoint> = Vec::with_capacity(n);
+    for i in 0..n {
+        let (p, q, r) = (pts[(i + n - 1) % n], pts[i], pts[(i + 1) % n]);
+        if q == r {
+            continue;
+        }
+        let cross = (q.x as i64 - p.x as i64) * (r.y as i64 - q.y as i64)
+            - (q.y as i64 - p.y as i64) * (r.x as i64 - q.x as i64);
+        let dot = (q.x as i64 - p.x as i64) * (r.x as i64 - q.x as i64)
+            + (q.y as i64 - p.y as i64) * (r.y as i64 - q.y as i64);
+        if cross == 0 && dot > 0 {
+            continue; // straight on
+        }
+        out.push(q);
+    }
+    if out.len() < 3 { pts } else { out }
 }
 
 fn merge_iter<'a>(it: impl Iterator<Item = &'a GdsBoundary>) -> Vec<MergedPoly> {
@@ -5430,11 +5462,18 @@ impl MergedCache {
             for p in &tiles[&k] {
                 let (x0, y0, x1, y1) = poly_bbox(p);
                 let verts = if std::env::var("GDSCHECK_DUMP_VERTS").is_ok() {
-                    p.outer
-                        .iter()
-                        .map(|v| format!("({},{})", v.x, v.y))
-                        .collect::<Vec<_>>()
-                        .join(" ")
+                    let ring = |r: &[IntPoint]| {
+                        r.iter()
+                            .map(|v| format!("({},{})", v.x, v.y))
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    };
+                    let mut s = ring(&p.outer);
+                    for h in &p.holes {
+                        s.push_str(" | hole ");
+                        s.push_str(&ring(h));
+                    }
+                    s
                 } else {
                     String::new()
                 };
