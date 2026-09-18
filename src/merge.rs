@@ -4797,11 +4797,32 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
 /// One build of a layer set aside: the halo it was built for, its tiles, its copies.
 type Variant = (i32, TileMap, usize);
 
-/// Free `v` on a thread of its own.  Ten million polygon copies are a second of
-/// deallocation, which held every core idle between two rules; freed aside, the next
-/// rule starts at once and the memory is back before it could want it.
-fn drop_later<T: Send + 'static>(v: T) {
-    std::thread::spawn(move || drop(v));
+/// What is being freed on threads of their own: ten million polygon copies are a
+/// second of deallocation, which held every core idle between two rules.  Freed aside,
+/// the next rule starts at once.  Not on a machine short of memory, though: the free
+/// has to land before the next build takes its place, or a run that fit before is
+/// killed for what it had already let go.  [`MergedCache::settle_frees`] waits when the
+/// planner says so.
+#[derive(Default)]
+struct Frees {
+    threads: Vec<std::thread::JoinHandle<()>>,
+    /// Polygon copies on their way out, for the planner's reading of what is resident.
+    polys: usize,
+}
+
+impl Frees {
+    fn later<T: Send + 'static>(&mut self, v: T, polys: usize) {
+        self.threads.retain(|t| !t.is_finished());
+        self.polys += polys;
+        self.threads.push(std::thread::spawn(move || drop(v)));
+    }
+
+    fn settle(&mut self) {
+        for t in self.threads.drain(..) {
+            let _ = t.join();
+        }
+        self.polys = 0;
+    }
 }
 
 /// What one rule needs of the layers it reaches: the halo per layer the rule raised,
@@ -4852,6 +4873,13 @@ pub struct MergedCache {
     /// implant intersections on it seven seconds a time.  Counted against the budget,
     /// and dropped variant by variant when a later rule needs less.
     variants: HashMap<(i16, i16), Vec<Variant>>,
+    /// The layers being freed on threads of their own; see [`Frees`].
+    frees: Frees,
+    /// Polygon copies the run may hold between rules; what a variant is kept and a
+    /// build made ahead against.  `usize::MAX` until the planner sets it.
+    budget: usize,
+    /// The layers the running rule names; see `release_spent_sources`.
+    rule_named: HashSet<(i16, i16)>,
     /// Every reach some rule of the run wants of each layer, sorted, for building
     /// ahead: a layer built for one rule is built at the largest reach any rule wants
     /// of it up to four times as far - the ratio past which a copy is too fat to read -
@@ -4918,6 +4946,9 @@ impl MergedCache {
             layer_polys: HashMap::new(),
             variants: HashMap::new(),
             needs: HashMap::new(),
+            frees: Frees::default(),
+            budget: usize::MAX,
+            rule_named: HashSet::new(),
             whole_chain: HashSet::new(),
         }
     }
@@ -5357,6 +5388,11 @@ impl MergedCache {
         self.needs = needs;
     }
 
+    /// The polygon copies the run may hold between rules; see `budget`.
+    pub fn set_budget(&mut self, budget: usize) {
+        self.budget = budget;
+    }
+
     /// `want` raised to the largest reach some rule wants of `key` within four times
     /// it, so one build serves them all.
     fn build_ahead(&self, key: (i16, i16), want: i32) -> i32 {
@@ -5432,10 +5468,19 @@ impl MergedCache {
             let polys = self.layer_polys.remove(&key).unwrap_or(0);
             self.regions.remove(&key);
             self.layer_halo.remove(&key);
-            self.variants
-                .entry(key)
-                .or_default()
-                .push((have, tiles, polys));
+            // Kept for a later rule while there is room for it; on a machine that is
+            // short, the copy in use is all the layer gets, as before there were
+            // variants at all.
+            if self.resident_polys() + polys <= self.budget {
+                self.variants
+                    .entry(key)
+                    .or_default()
+                    .push((have, tiles, polys));
+            } else {
+                // Freed here and now: the rebuild that follows takes the same room,
+                // and a free still on its way is what a machine at its limit lacks.
+                drop(tiles);
+            }
         }
         // The thinnest variant that reaches far enough and is not far too fat to read.
         let pick = self.variants.get(&key).and_then(|vs| {
@@ -5462,7 +5507,12 @@ impl MergedCache {
             }
             return;
         }
-        let want = self.build_ahead(key, want);
+        // Building ahead holds more copies for later; only while the budget has room.
+        let want = if self.resident_polys() * 2 <= self.budget {
+            self.build_ahead(key, want)
+        } else {
+            want
+        };
         if let Some(def) = self.virtual_defs.get(&key).cloned() {
             if matches!(def.op, VirtualOp::WithText) {
                 // candidate = source[0]; source[1] is a TEXT layer, read from the
@@ -5764,6 +5814,60 @@ impl MergedCache {
             .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, tiles);
         self.layer_halo.insert(key, want);
+        self.release_spent_sources(key);
+    }
+
+    /// The layers the running rule names, as against the ones it only reaches through
+    /// a derivation; see [`MergedCache::release_spent_sources`].
+    pub fn set_rule_named(&mut self, named: HashSet<(i16, i16)>) {
+        self.rule_named = named;
+    }
+
+    /// Over budget in the middle of a rule, a source of the derived layer just built
+    /// that the rule neither names nor still needs for another of its derived layers
+    /// is let go now rather than after the rule.  A contact rule's chain - the drawn
+    /// contacts, the squares among them, those on active, those off the seal ring -
+    /// held six copies of ten million contacts at once, of which the rule read one.
+    fn release_spent_sources(&mut self, built: (i16, i16)) {
+        if self.resident_polys() <= self.budget {
+            return;
+        }
+        let Some(def) = self.virtual_defs.get(&built).cloned() else {
+            return;
+        };
+        let Some((_, closure)) = &self.rule_halos else {
+            return;
+        };
+        for src in def.sources {
+            if self.rule_named.contains(&src) || !self.layers.contains_key(&src) {
+                continue;
+            }
+            let still_needed = closure.iter().any(|k| {
+                *k != built
+                    && !self.layers.contains_key(k)
+                    && self
+                        .virtual_defs
+                        .get(k)
+                        .is_some_and(|d| d.sources.contains(&src))
+            });
+            if still_needed {
+                continue;
+            }
+            if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+                eprintln!(
+                    "release {} spent for {} ({} copies, resident {})",
+                    self.name_of(src),
+                    self.name_of(built),
+                    self.layer_polys.get(&src).copied().unwrap_or(0),
+                    self.resident_polys()
+                );
+            }
+            self.layer_polys.remove(&src);
+            self.layers.remove(&src);
+            self.layer_halo.remove(&src);
+            self.regions.remove(&src);
+            self.variants.remove(&src);
+        }
     }
 
     /// What the cache holds right now, for the traces: layers, polygon copies, and how
@@ -5799,8 +5903,18 @@ impl MergedCache {
     pub fn drop_variants(&mut self, layer: i16, datatype: i16) -> usize {
         let vs = self.variants.remove(&(layer, datatype));
         let n = vs.iter().flatten().map(|(_, _, n)| n).sum();
-        drop_later(vs);
+        self.frees.later(vs, n);
         n
+    }
+
+    /// Polygon copies evicted but not yet freed.
+    pub fn pending_free_polys(&self) -> usize {
+        self.frees.polys
+    }
+
+    /// Wait for every eviction to have freed its memory.
+    pub fn settle_frees(&mut self) {
+        self.frees.settle();
     }
 
     /// Drop every build of the layer whose halo exceeds `limit`, the copy in use
@@ -5809,24 +5923,25 @@ impl MergedCache {
     pub fn evict_fatter_than(&mut self, layer: i16, datatype: i16, limit: i32) {
         let key = (layer, datatype);
         if self.layer_halo.get(&key).is_some_and(|h| *h > limit) {
-            drop_later(self.layers.remove(&key));
-            self.layer_polys.remove(&key);
+            let n = self.layer_polys.remove(&key).unwrap_or(0);
+            self.frees.later(self.layers.remove(&key), n);
             self.layer_halo.remove(&key);
-            drop_later(self.regions.remove(&key));
+            self.frees.later(self.regions.remove(&key), 0);
         }
         if let Some(vs) = self.variants.get_mut(&key) {
             let (keep, gone): (Vec<Variant>, Vec<Variant>) = std::mem::take(vs)
                 .into_iter()
                 .partition(|(h, _, _)| *h <= limit);
-            drop_later(gone);
+            let n = gone.iter().map(|(_, _, n)| n).sum();
+            self.frees.later(gone, n);
             *vs = keep;
             if vs.is_empty() {
                 self.variants.remove(&key);
             }
         }
         if self.edge_halo.get(&key).is_some_and(|h| *h > limit) {
-            drop_later(self.edge_layers.remove(&key));
-            drop_later(self.edge_spans.remove(&key));
+            self.frees.later(self.edge_layers.remove(&key), 0);
+            self.frees.later(self.edge_spans.remove(&key), 0);
             self.edge_halo.remove(&key);
         }
     }
@@ -5849,13 +5964,15 @@ impl MergedCache {
     /// bounding peak memory when a deck touches many layers.
     pub fn evict(&mut self, layer: i16, datatype: i16) {
         let key = (layer, datatype);
-        drop_later(self.layers.remove(&key));
-        self.layer_polys.remove(&key);
+        let n = self.layer_polys.remove(&key).unwrap_or(0);
+        self.frees.later(self.layers.remove(&key), n);
         self.layer_halo.remove(&key);
-        drop_later(self.variants.remove(&key));
-        drop_later(self.regions.remove(&key));
-        drop_later(self.edge_layers.remove(&key));
-        drop_later(self.edge_spans.remove(&key));
+        let vs = self.variants.remove(&key);
+        let vn = vs.iter().flatten().map(|(_, _, n)| n).sum();
+        self.frees.later(vs, vn);
+        self.frees.later(self.regions.remove(&key), 0);
+        self.frees.later(self.edge_layers.remove(&key), 0);
+        self.frees.later(self.edge_spans.remove(&key), 0);
         self.edge_halo.remove(&key);
     }
 
