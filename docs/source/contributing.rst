@@ -28,6 +28,15 @@ CI additionally runs the ``main`` suite over the real layouts in
 that the synthetic fixtures cannot. Run it locally with ``just designs <process>``
 against a sibling checkout of that repository.
 
+Every design's run in that workflow prints its performance figures after the result
+(wall and CPU time, cores, peak memory, the slowest rules; ``ci/perf-summary.py``), and
+the same land in the job summary as a table. For a number rather than a trend, compare
+two commits on this machine: ``ci/bench.sh <a> <b> [process...]`` builds both, runs every
+design under each in turns (``RUNS`` times, ``THREADS`` threads, ``DESIGN=process:top:path``
+for one more), and prints the best run per rule side by side, per check family and for
+the rules that moved. Runner times are noisy; CPU seconds, cores and peak memory are
+what to read there.
+
 
 Adding a rule to a deck
 --------------------------
