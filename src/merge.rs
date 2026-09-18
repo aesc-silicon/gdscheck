@@ -5240,6 +5240,15 @@ impl MergedCache {
         self.edge_layers.insert(key, out);
     }
 
+    /// The edges of an edge layer filed under every tile they cross, for a reader that
+    /// wants what runs through a tile whether or not its middle is there.  Must be
+    /// `ensure_edges`d first.
+    pub fn edge_spans(&self, key: (i16, i16)) -> &EdgeTileMap {
+        self.edge_spans
+            .get(&key)
+            .expect("MergedCache::edge_spans called before ensure_edges")
+    }
+
     /// Per-tile edges of an edge layer.  Must be `ensure_edges`d first.
     pub fn edges(&self, key: (i16, i16)) -> &EdgeTileMap {
         self.edge_layers

@@ -137,7 +137,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ldpmos(
     "ldpmos", "ldpmos.gds.gz", "10_12_2_MDP",
-    &[("MDP.1", 16), ("MDP.10", 16), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.11", 36), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.13b", 21), ("MDP.13c", 3), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17a", 4), ("MDP.17c", 1), ("MDP.1a", 2), ("MDP.2", 25), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 42), ("MDP.9b", 12), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1)]
+    &[("MDP.1", 16), ("MDP.10", 16), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.11", 36), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.13b", 21), ("MDP.13c", 3), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17a", 4), ("MDP.17c", 1), ("MDP.1a", 2), ("MDP.2", 25), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 42), ("MDP.9b", 13), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1)]
 )]
 #[case::nat(
     "nat", "nat.gds.gz", "10_5_NAT",
@@ -225,7 +225,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
-    &[("NP.1", 395), ("NP.10", 5), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 8), ("NP.5b", 66), ("NP.5ci", 7), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 6), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 6)]
+    &[("NP.1", 395), ("NP.10", 5), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 8), ("NP.5b", 66), ("NP.5ci", 8), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 6), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 6)]
 )]
 #[case::metaltop(
     "metaltop", "metaltop.gds.gz", "metaltop",
