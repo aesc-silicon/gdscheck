@@ -2628,9 +2628,17 @@ fn coverage_x(m: &MergedPoly, ys: f64, xlo: f64, xhi: f64) -> Vec<(f64, f64)> {
     out
 }
 
-fn intervals_overlap(a: &[(f64, f64)], b: &[(f64, f64)]) -> bool {
-    a.iter()
-        .any(|&(a0, a1)| b.iter().any(|&(b0, b1)| a0 < b1 && b0 < a1))
+/// Whether two sets of intervals share a stretch - or, with `touching`, a point.
+fn intervals_overlap(a: &[(f64, f64)], b: &[(f64, f64)], touching: bool) -> bool {
+    a.iter().any(|&(a0, a1)| {
+        b.iter().any(|&(b0, b1)| {
+            if touching {
+                a0 <= b1 && b0 <= a1
+            } else {
+                a0 < b1 && b0 < a1
+            }
+        })
+    })
 }
 
 /// Minimal union-find with path compression (shared by the region stitching here,
@@ -2749,10 +2757,63 @@ fn link_adjacent_pieces(
     tile_pieces: &HashMap<(i32, i32), Vec<usize>>,
     sides: &[&Sides],
     only: Option<&[(i32, i32)]>,
+    touching: bool,
+    tile_dbu: i32,
 ) {
+    let t = tile_dbu as f64;
+    // Two pieces meeting at one point on a tile line, or at a tile's corner, are one
+    // region when a corner contact counts - as it does within a tile - and two when
+    // it does not; a tile line must not decide it either way.  Two squares corner to
+    // corner across a line were one 0.32 µm² region at 20 µm and two of 0.16 at 7.
+    let mut links: Vec<(usize, usize)> = Vec::new();
+    let corner = |tile: (i32, i32), dx: i32, dy: i32, links: &mut Vec<(usize, usize)>| {
+        let (Some(ids), Some(neigh)) = (
+            tile_pieces.get(&tile),
+            tile_pieces.get(&(tile.0 + dx, tile.1 + dy)),
+        ) else {
+            return;
+        };
+        // The corner shared: this tile's right or left side at its top or bottom.
+        let cx = if dx > 0 {
+            tile.0 as f64 + 1.0
+        } else {
+            tile.0 as f64
+        } * t;
+        let cy = if dy > 0 {
+            tile.1 as f64 + 1.0
+        } else {
+            tile.1 as f64
+        } * t;
+        // A piece reaches the corner when its coverage of the side toward it runs to
+        // the corner's height, or of the side above or below it to the corner's x.
+        let reaches = |s: &Sides, mine: bool| {
+            let vert = if (dx > 0) == mine { &s.right } else { &s.left };
+            let horz = if (dy > 0) == mine { &s.top } else { &s.bottom };
+            vert.iter().any(|&(lo, hi)| lo <= cy && cy <= hi)
+                || horz.iter().any(|&(lo, hi)| lo <= cx && cx <= hi)
+        };
+        let at: Vec<usize> = ids
+            .iter()
+            .copied()
+            .filter(|&a| reaches(sides[a], true))
+            .collect();
+        if at.is_empty() {
+            return;
+        }
+        let facing: Vec<usize> = neigh
+            .iter()
+            .copied()
+            .filter(|&b| reaches(sides[b], false))
+            .collect();
+        for &a in &at {
+            for &b in &facing {
+                links.push((a, b));
+            }
+        }
+    };
     // With `only`, just the borders those tiles have - in both directions, since the
     // neighbour may have been filed in an earlier wave.  A pair linked twice is no harm.
-    let mut across = |tile: (i32, i32), dx: i32, dy: i32| {
+    let across = |tile: (i32, i32), dx: i32, dy: i32, links: &mut Vec<(usize, usize)>| {
         let (Some(ids), Some(neigh)) = (
             tile_pieces.get(&tile),
             tile_pieces.get(&(tile.0 + dx, tile.1 + dy)),
@@ -2784,8 +2845,8 @@ fn link_adjacent_pieces(
             .collect();
         for &a in &at_border {
             for &b in &facing {
-                if intervals_overlap(mine(sides[a]), theirs(sides[b])) {
-                    uf.union(a, b);
+                if intervals_overlap(mine(sides[a]), theirs(sides[b]), touching) {
+                    links.push((a, b));
                 }
             }
         }
@@ -2794,16 +2855,28 @@ fn link_adjacent_pieces(
         Some(tiles) => {
             for &tile in tiles {
                 for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
-                    across(tile, dx, dy);
+                    across(tile, dx, dy, &mut links);
+                }
+                if touching {
+                    for (dx, dy) in [(1, 1), (1, -1), (-1, 1), (-1, -1)] {
+                        corner(tile, dx, dy, &mut links);
+                    }
                 }
             }
         }
         None => {
             for &tile in tile_pieces.keys() {
-                across(tile, 1, 0);
-                across(tile, 0, 1);
+                across(tile, 1, 0, &mut links);
+                across(tile, 0, 1, &mut links);
+                if touching {
+                    corner(tile, 1, 1, &mut links);
+                    corner(tile, 1, -1, &mut links);
+                }
             }
         }
+    }
+    for (a, b) in links {
+        uf.union(a, b);
     }
 }
 
@@ -2961,7 +3034,7 @@ fn stitch_from(
         let t0 = std::time::Instant::now();
         let sides: Vec<&Sides> = pieces.iter().map(|p| &p.sides).collect();
         let only = seeds.map(|_| new_tiles.as_slice());
-        link_adjacent_pieces(&mut uf, &tile_pieces, &sides, only);
+        link_adjacent_pieces(&mut uf, &tile_pieces, &sides, only, touching, tile_dbu);
         t_adj += t0.elapsed().as_secs_f64();
         let t0 = std::time::Instant::now();
         if touching {
@@ -4669,7 +4742,7 @@ pub fn analyze_regions(
     }
     let mut uf = UnionFind::new(pieces.len());
     let sides: Vec<&Sides> = pieces.iter().map(|(p, _)| &p.sides).collect();
-    link_adjacent_pieces(&mut uf, &tile_pieces, &sides, None);
+    link_adjacent_pieces(&mut uf, &tile_pieces, &sides, None, true, tile_dbu);
     drop(sides);
     let roots: Vec<usize> = (0..pieces.len()).map(|id| uf.find(id)).collect();
 
