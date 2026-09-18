@@ -28,7 +28,7 @@
 //! its material is on however many booleans later it is read.
 
 use crate::layout::FlatLayout;
-use crate::merge::{Core, Edge, MergedCache};
+use crate::merge::{Edge, MergedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -165,28 +165,35 @@ fn run(
     // Half a DBU: coordinates are integers, so anything under this is a rounding artefact.
     let tol = 0.5;
 
-    // A minimum pairs within one tile: it only looks as far as its own limit, and an edge
-    // is filed under the tile its midpoint falls in.  The tiles are independent, so they
-    // are read in parallel; the run's output is sorted afterwards, so their order is
-    // not the report's.
+    // An edge of `a` is read in the tile its middle falls in, against every edge of
+    // `b` that runs through that tile or within the limit of it - filed under every
+    // tile it crosses, so a wall whose middle is a tile away is still there.  The
+    // tiles are independent, so they are read in parallel.  Reports are keyed by the
+    // edge they were read on; an edge an operation cut at a tile line comes back as
+    // pieces that share an endpoint on one line, which are joined into one report
+    // afterwards, so the count does not move with the tile.
     let a_tiles = merged.edges(ka);
-    let b_tiles = merged.edges(kb);
-    let keys: Vec<(i32, i32)> = a_tiles
-        .keys()
-        .copied()
-        .filter(|k| b_tiles.contains_key(k))
-        .collect();
-    keys.par_iter()
+    let b_spans = merged.edge_spans(kb);
+    let reach = ((limit.ceil() as i64) / tile + 1) as i32;
+    let keys: Vec<(i32, i32)> = a_tiles.keys().copied().collect();
+    let found: Vec<Found> = keys
+        .par_iter()
         .flat_map_iter(|&(tx, ty)| {
         let a_edges = &a_tiles[&(tx, ty)];
-        let b_edges = &b_tiles[&(tx, ty)];
+        let mut b_edges: Vec<Edge> = Vec::new();
+        let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
+            std::collections::HashSet::new();
+        for dy in -reach..=reach {
+            for dx in -reach..=reach {
+                for e in b_spans.get(&(tx + dx, ty + dy)).into_iter().flatten() {
+                    if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+                        b_edges.push(*e);
+                    }
+                }
+            }
+        }
+        let b_edges = &b_edges;
         let mut out = Vec::new();
-        let core = Core {
-            x0: tx as i64 * tile,
-            y0: ty as i64 * tile,
-            x1: (tx as i64 + 1) * tile,
-            y1: (ty as i64 + 1) * tile,
-        };
         for ea in a_edges {
             let Some(sa) = Seg::of(ea) else { continue };
             // The narrowest offending margin along this segment, and where it sits.
@@ -250,18 +257,13 @@ fn run(
             let Some((margin, p, q)) = worst else {
                 continue;
             };
-            // The pair is owned by the tile holding the middle of what it measures, so an
-            // edge seen from two tiles is reported once.
-            let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
-            if !core.owns(mx, my) {
-                continue;
-            }
+            // The edge is filed under one tile, so it is read and reported once.
             let (what, title) = match rel {
                 Rel::Enclosure => ("enclosure", "Minimum enclosure violation"),
                 Rel::Space => ("space", "Minimum space violation"),
             };
             let cmp = "<";
-            out.push(Violation::edge(
+            out.push(((ea.a.x as i64, ea.a.y as i64), (ea.b.x as i64, ea.b.y as i64), margin, Violation::edge(
                 &rule.id,
                 title,
                 format!(
@@ -279,11 +281,71 @@ fn run(
                 p.1 * dbu_to_um,
                 q.0 * dbu_to_um,
                 q.1 * dbu_to_um,
-            ));
+            )));
         }
         out.into_iter()
         })
+        .collect();
+    join_runs(found)
+}
+
+/// A report as read: the edge's two ends, the margin, and the report.
+type Found = ((i64, i64), (i64, i64), f64, Violation);
+/// A line through integer points, as its reduced direction and offset.
+type Line = (i64, i64, i64);
+
+/// One report per run of collinear edges that share endpoints - the pieces an
+/// operation cut one edge into at the tile lines - at the run's smallest margin.
+fn join_runs(found: Vec<Found>) -> Vec<Violation> {
+    let line = |p: (i64, i64), q: (i64, i64)| {
+        let (mut dx, mut dy) = (q.0 - p.0, q.1 - p.1);
+        let g = gcd(dx.abs(), dy.abs()).max(1);
+        dx /= g;
+        dy /= g;
+        if dx < 0 || (dx == 0 && dy < 0) {
+            dx = -dx;
+            dy = -dy;
+        }
+        (dx, dy, dx * p.1 - dy * p.0)
+    };
+    let mut uf = crate::merge::UnionFind::new(found.len());
+    let mut at: std::collections::HashMap<(Line, (i64, i64)), usize> =
+        std::collections::HashMap::new();
+    for (i, (p, q, _, _)) in found.iter().enumerate() {
+        let l = line(*p, *q);
+        for v in [*p, *q] {
+            match at.get(&(l, v)) {
+                Some(&j) => uf.union(i, j),
+                None => {
+                    at.insert((l, v), i);
+                }
+            }
+        }
+    }
+    let mut pick: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+    for i in 0..found.len() {
+        let root = uf.find(i);
+        let better = match pick.get(&root) {
+            Some(&j) => {
+                found[i].2 < found[j].2 || (found[i].2 == found[j].2 && found[i].0 < found[j].0)
+            }
+            None => true,
+        };
+        if better {
+            pick.insert(root, i);
+        }
+    }
+    let mut chosen: Vec<usize> = pick.into_values().collect();
+    chosen.sort_unstable();
+    let mut found: Vec<Option<Violation>> = found.into_iter().map(|f| Some(f.3)).collect();
+    chosen
+        .into_iter()
+        .map(|i| found[i].take().expect("once"))
         .collect()
+}
+
+fn gcd(a: i64, b: i64) -> i64 {
+    if b == 0 { a } else { gcd(b, a % b) }
 }
 
 #[cfg(test)]
