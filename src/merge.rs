@@ -1427,6 +1427,58 @@ type Line = (i64, i64, i64);
 /// points it was cut between.
 type LinePiece = (i64, i64, IntPoint, IntPoint);
 
+/// Put a slanted edge back together at the tile lines that cut it.
+///
+/// A cut lands on the grid: a tile line through a diagonal meets it between grid points,
+/// and the clip rounds the meeting to the nearest one, so the two pieces run on two lines
+/// a hair apart and [`rejoin_collinear`] reads them as two walls.  A piece ending on a
+/// tile line, where the piece that starts there carries on within half a grid step of the
+/// straight between their far ends, is one edge with it - and once joined, its ends are
+/// the original vertices, exact again.  Half a step is what rounding moves a point by;
+/// a real bend on a tile line that slight is straightened, which moves nothing a
+/// measurement can tell apart from the rounding already there.
+fn rejoin_cut(mut edges: Vec<Edge>, tile_dbu: i32) -> Vec<Edge> {
+    let t = tile_dbu.max(1) as i64;
+    let on_line = |p: IntPoint| (p.x as i64).rem_euclid(t) == 0 || (p.y as i64).rem_euclid(t) == 0;
+    let mut starts: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
+    for (i, e) in edges.iter().enumerate() {
+        if on_line(e.a) {
+            starts.entry((e.a.x, e.a.y)).or_default().push(i);
+        }
+    }
+    if starts.is_empty() {
+        return edges;
+    }
+    let mut alive = vec![true; edges.len()];
+    let straight = |a: IntPoint, j: IntPoint, b: IntPoint| {
+        let (dx, dy) = ((b.x - a.x) as i128, (b.y - a.y) as i128);
+        let (jx, jy) = ((j.x - a.x) as i128, (j.y - a.y) as i128);
+        let cross = dx * jy - dy * jx;
+        let dot = dx * jx + dy * jy;
+        dot > 0 && dot < dx * dx + dy * dy && 4 * cross * cross <= dx * dx + dy * dy
+    };
+    for i in 0..edges.len() {
+        if !alive[i] {
+            continue;
+        }
+        while on_line(edges[i].b) {
+            let key = (edges[i].b.x, edges[i].b.y);
+            let Some(j) = starts.get(&key).and_then(|v| {
+                v.iter()
+                    .copied()
+                    .find(|&j| j != i && alive[j] && straight(edges[i].a, edges[i].b, edges[j].b))
+            }) else {
+                break;
+            };
+            alive[j] = false;
+            edges[i].b = edges[j].b;
+        }
+    }
+    let mut keep = alive.into_iter();
+    edges.retain(|_| keep.next().unwrap_or(false));
+    edges
+}
+
 /// Put an edge back together from the pieces the tiles cut it into.
 ///
 /// Every piece of one edge shares its supporting line *and its direction* - the direction
@@ -5450,7 +5502,10 @@ impl MergedCache {
         }
         if def.op == EdgeOp::Edges {
             let all: Vec<Edge> = out.into_values().flatten().collect();
-            out = bucket_edges(rejoin_collinear(all), self.tile_dbu);
+            out = bucket_edges(
+                rejoin_collinear(rejoin_cut(all, self.tile_dbu)),
+                self.tile_dbu,
+            );
         }
         self.edge_spans
             .insert(key, spanning_index(&out, self.tile_dbu));
