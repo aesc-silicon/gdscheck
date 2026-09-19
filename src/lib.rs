@@ -460,7 +460,10 @@ fn propagate_virtual_halos(
             merge::VirtualOp::SeparationBelow(r)
             | merge::VirtualOp::EnclosureBelow(r)
             | merge::VirtualOp::EnclosureAbove(r) => (*r, *r),
-            merge::VirtualOp::Grow(r, _) => (*r, *r),
+            // With its slack: a grow of nothing but the slack reaches a grid step past
+            // its source, and a source cut at the tile line one step short of a shape
+            // it was meant to overlap left the shape unselected in the tile beyond.
+            merge::VirtualOp::Grow(r, slack) => (*r + *slack, *r + *slack),
             // A directional size reads geometry up to `r` away along its axis only -
             // an erode dilates the complement by that much, a dilate the shape.  An
             // isotropic erode reads the same distance in every direction.
