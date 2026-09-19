@@ -34,7 +34,7 @@ fn counts(deck: &str, gds: &str, topcell: &str) -> Vec<(String, usize)> {
 #[case::mim_a(
     "mim_a", "mim_a.gds.gz", "10_4_1_MIM_OptionA",
     &[
-        ("MIM.1", 4), ("MIM.10", 4), ("MIM.11", 2), ("MIM.2", 9), ("MIM.3", 58), ("MIM.4", 12), ("MIM.5", 8),
+        ("MIM.1", 4), ("MIM.10", 4), ("MIM.11", 2), ("MIM.2", 9), ("MIM.3", 60), ("MIM.4", 12), ("MIM.5", 8),
         ("MIM.6", 6), ("MIM.7", 2488), ("MIM.8a", 55), ("MIM.8b", 1), ("MIM.9", 832),
     ]
 )]

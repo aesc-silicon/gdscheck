@@ -9,11 +9,11 @@
 
 use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, MergedPoly, TileMap, representative_point};
+use crate::merge::{Core, MergedCache, MergedPoly, TileMap, poly_bbox, representative_point};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 // ===========================================================================
 // Region-to-region spacing engine.
@@ -124,11 +124,16 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
     // about disjoint pairs is not about a piece of a shape against a piece of the
     // region it overlaps: the arm of that U against the part of its other arm on a
     // layer derived from it is the same notch, whatever tile cut the U in two.
-    let ra: Vec<Option<usize>> = sa.iter().map(|s| kin.region_a(s.outline.poly())).collect();
+    let ra: Vec<Option<usize>> = sa
+        .iter()
+        .map(|s| kin.region_a(s.outline.poly(), &core))
+        .collect();
     let rb: Vec<Option<usize>> = if same_layer {
         Vec::new()
     } else {
-        sb.iter().map(|s| kin.region_b(s.outline.poly())).collect()
+        sb.iter()
+            .map(|s| kin.region_b(s.outline.poly(), &core))
+            .collect()
     };
 
     let mut out = Vec::new();
@@ -388,7 +393,6 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
         if same_layer { None } else { Some(map_b) },
         tile as i32,
     );
-
     keys.par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
@@ -410,32 +414,150 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
 
 /// The regions of the two layers of a spacing rule, and which of them share area:
 /// what a tile's copy of a shape belongs to, beyond what the tile can see of it.
-pub struct Kin {
-    a: crate::merge::LabeledRegions,
-    b: Option<crate::merge::LabeledRegions>,
+pub struct Kin<'a> {
+    a: Labeled<'a>,
+    b: Option<Labeled<'a>>,
     tile: i32,
     /// Pairs of regions, one of each layer, that overlap somewhere.
     overlapping: HashSet<(usize, usize)>,
 }
 
-impl Kin {
-    fn of(map_a: &TileMap, map_b: Option<&TileMap>, tile: i32) -> Kin {
-        let a = crate::merge::stitch_cut(map_a, tile);
-        let b = map_b.map(|m| crate::merge::stitch_cut(m, tile));
+/// A layer's stitched regions, as the region of each core piece by its index in the
+/// tile's list, and per tile the pieces filed by their boxes: the piece a point lies
+/// in is found among the few whose box holds it, not by asking every piece of the
+/// tile - which, for every copy in the tile, was the square of a contact layer's tile.
+/// The polygons stay in the map they came from; a second copy of half a million
+/// contacts, freed again after every rule, was most of a spacing rule's time.
+struct Labeled<'a> {
+    map: &'a TileMap,
+    regions: crate::merge::IndexedRegions,
+    grids: HashMap<(i32, i32), CellGrid>,
+}
+
+/// A tile's core pieces filed by the cells of a fixed grid over the tile, as one run
+/// of indices per cell: two vectors for the tile, whatever it holds, since a thousand
+/// small vectors per tile were the better part of a rule in freeing them.
+struct CellGrid {
+    x0: i32,
+    y0: i32,
+    cell: i32,
+    /// Where each cell's run starts in `items`, row-major, one past the last.
+    start: Vec<u32>,
+    items: Vec<u32>,
+}
+
+impl CellGrid {
+    const SIDE: i32 = 32;
+
+    fn new(x0: i32, y0: i32, tile: i32, boxes: &[(i32, i32, i32, i32)]) -> CellGrid {
+        let cell = (tile / Self::SIDE).max(1);
+        let n = (Self::SIDE * Self::SIDE) as usize;
+        let at = |x: i32, y: i32| {
+            let cx = ((x - x0) / cell).clamp(0, Self::SIDE - 1);
+            let cy = ((y - y0) / cell).clamp(0, Self::SIDE - 1);
+            (cy * Self::SIDE + cx) as usize
+        };
+        let cells = |&(bx0, by0, bx1, by1): &(i32, i32, i32, i32)| {
+            let (c0, c1) = (at(bx0, by0), at(bx1, by1));
+            let (cx0, cy0) = (c0 % Self::SIDE as usize, c0 / Self::SIDE as usize);
+            let (cx1, cy1) = (c1 % Self::SIDE as usize, c1 / Self::SIDE as usize);
+            (cy0..=cy1).flat_map(move |cy| (cx0..=cx1).map(move |cx| cy * Self::SIDE as usize + cx))
+        };
+        let mut start = vec![0u32; n + 1];
+        for b in boxes {
+            for c in cells(b) {
+                start[c + 1] += 1;
+            }
+        }
+        for c in 0..n {
+            start[c + 1] += start[c];
+        }
+        let mut fill = start.clone();
+        let mut items = vec![0u32; start[n] as usize];
+        for (i, b) in boxes.iter().enumerate() {
+            for c in cells(b) {
+                items[fill[c] as usize] = i as u32;
+                fill[c] += 1;
+            }
+        }
+        CellGrid {
+            x0,
+            y0,
+            cell,
+            start,
+            items,
+        }
+    }
+
+    /// The pieces filed in the cell holding `(x, y)`.
+    fn at(&self, x: i32, y: i32) -> &[u32] {
+        let cx = ((x - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
+        let cy = ((y - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
+        let c = (cy * Self::SIDE + cx) as usize;
+        &self.items[self.start[c] as usize..self.start[c + 1] as usize]
+    }
+}
+
+impl<'a> Labeled<'a> {
+    fn of(map: &'a TileMap, tile: i32) -> Labeled<'a> {
+        let regions = crate::merge::stitch_cut_indexed(map, tile);
+        let grids = regions
+            .by_tile
+            .par_iter()
+            .map(|(k, pieces)| {
+                // Boxes held to the tile: a point looked up here lies in it, and a
+                // ring round the chip would otherwise be filed in every cell of the chip.
+                let (x0, y0) = (k.0.saturating_mul(tile), k.1.saturating_mul(tile));
+                let (x1, y1) = (x0.saturating_add(tile), y0.saturating_add(tile));
+                let polys = &map[k];
+                let boxes: Vec<_> = pieces
+                    .iter()
+                    .map(|&(i, _)| {
+                        let b = poly_bbox(&polys[i]);
+                        (b.0.max(x0), b.1.max(y0), b.2.min(x1), b.3.min(y1))
+                    })
+                    .collect();
+                (*k, CellGrid::new(x0, y0, tile, &boxes))
+            })
+            .collect();
+        Labeled {
+            map,
+            regions,
+            grids,
+        }
+    }
+
+    /// The core pieces of one tile: each polygon with its region.
+    fn pieces(&self, k: &(i32, i32)) -> impl Iterator<Item = (&MergedPoly, usize)> {
+        let polys = &self.map[k];
+        self.regions
+            .by_tile
+            .get(k)
+            .into_iter()
+            .flatten()
+            .map(move |&(i, r)| (&polys[i], r))
+    }
+}
+
+impl<'a> Kin<'a> {
+    fn of(map_a: &'a TileMap, map_b: Option<&'a TileMap>, tile: i32) -> Kin<'a> {
+        let a = Labeled::of(map_a, tile);
+        let b = map_b.map(|m| Labeled::of(m, tile));
         // Which regions share area: every core piece of `a` against every core piece
         // of `b` in the same tile, by the boxes first.
         let overlapping: HashSet<(usize, usize)> = match &b {
             None => HashSet::new(),
             Some(b) => a
+                .regions
                 .by_tile
                 .par_iter()
-                .flat_map_iter(|(k, pa)| {
+                .flat_map_iter(|(k, _)| {
                     let mut found = Vec::new();
-                    if let Some(pb) = b.by_tile.get(k) {
+                    if b.regions.by_tile.contains_key(k) {
                         let oa: Vec<(Outline, usize)> =
-                            pa.iter().map(|(m, r)| (Outline::new(m), *r)).collect();
+                            a.pieces(k).map(|(m, r)| (Outline::new(m), r)).collect();
                         let ob: Vec<(Outline, usize)> =
-                            pb.iter().map(|(m, r)| (Outline::new(m), *r)).collect();
+                            b.pieces(k).map(|(m, r)| (Outline::new(m), r)).collect();
                         for (x, ra) in &oa {
                             for (y, rb) in &ob {
                                 if x.possibly_within(y, 1) && regions_overlap(x, y) {
@@ -458,26 +580,43 @@ impl Kin {
 
     /// The region a copy of `a` is a piece of, if any core piece of it can be found:
     /// the copy itself where it has a core part, else the piece holding a point of it.
-    fn region_a(&self, m: &MergedPoly) -> Option<usize> {
-        region_in(&self.a, m, self.tile)
+    /// A copy strictly inside the core of the tile reading it is a whole shape the
+    /// tile sees entire, along with whatever it overlaps: it has no kin the tile
+    /// cannot see, and is not looked up - which, on a contact layer, is nearly every
+    /// copy.
+    fn region_a(&self, m: &MergedPoly, core: &Core) -> Option<usize> {
+        region_in(&self.a, m, self.tile, core)
     }
 
-    fn region_b(&self, m: &MergedPoly) -> Option<usize> {
-        self.b.as_ref().and_then(|b| region_in(b, m, self.tile))
+    fn region_b(&self, m: &MergedPoly, core: &Core) -> Option<usize> {
+        self.b
+            .as_ref()
+            .and_then(|b| region_in(b, m, self.tile, core))
     }
 }
 
-fn region_in(l: &crate::merge::LabeledRegions, m: &MergedPoly, tile: i32) -> Option<usize> {
+fn region_in(l: &Labeled, m: &MergedPoly, tile: i32, core: &Core) -> Option<usize> {
+    let b = poly_bbox(m);
+    if b.0 as i64 > core.x0
+        && b.1 as i64 > core.y0
+        && (b.2 as i64) < core.x1
+        && (b.3 as i64) < core.y1
+    {
+        return None;
+    }
     let (px, py) = crate::merge::inside_point(m);
     let key = (
         (px / tile as f64).floor() as i32,
         (py / tile as f64).floor() as i32,
     );
-    l.by_tile
-        .get(&key)?
+    let pieces = l.regions.by_tile.get(&key)?;
+    let polys = &l.map[&key];
+    l.grids[&key]
+        .at(px.round() as i32, py.round() as i32)
         .iter()
-        .find(|(p, _)| crate::merge::point_in_merged(px, py, p))
-        .map(|(_, r)| *r)
+        .map(|&h| pieces[h as usize])
+        .find(|&(i, _)| crate::merge::point_in_merged(px, py, &polys[i]))
+        .map(|(_, r)| r)
 }
 
 // ===========================================================================

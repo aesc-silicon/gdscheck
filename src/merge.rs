@@ -3005,14 +3005,86 @@ pub fn stitch_labeled(tiles: &TileMap, tile_dbu: i32) -> LabeledRegions {
 /// tiling and nothing more - a spacing rule, to which a corner contact is a gap of
 /// nothing wide and not one shape.
 pub fn stitch_cut(tiles: &TileMap, tile_dbu: i32) -> LabeledRegions {
-    stitch_from(tiles, tile_dbu, true, None, false).0
+    stitch_from(tiles, tile_dbu, Record::Polys, None, false).0
+}
+
+/// [`stitch_cut`] without the copies: per tile, each core piece as the index of the
+/// polygon it was cut from in that tile's list, with its region.  For a reader that
+/// keeps the map it stitched and wants to know what belongs together, and not a
+/// second copy of half a million contacts to free again.
+///
+/// Only the copies reaching a tile line are stitched: a copy whose box lies strictly
+/// inside its core is a whole shape, one region of its own, and a contact layer is
+/// nearly all such copies.  Its region is not filed; the reader knows what it is.
+pub fn stitch_cut_indexed(tiles: &TileMap, tile_dbu: i32) -> IndexedRegions {
+    let (l, _, indices) = stitch_inner(tiles, tile_dbu, Record::Indices, None, false, true);
+    IndexedRegions {
+        regions: l.regions,
+        by_tile: indices,
+    }
+}
+
+/// [`stitch_labeled`] without the copies, on the copies reaching a tile line - see
+/// [`stitch_cut_indexed`], with corner contacts joined.
+pub fn stitch_labeled_indexed(tiles: &TileMap, tile_dbu: i32) -> IndexedRegions {
+    let (l, _, indices) = stitch_inner(tiles, tile_dbu, Record::Indices, None, true, true);
+    IndexedRegions {
+        regions: l.regions,
+        by_tile: indices,
+    }
+}
+
+/// The regions of a layer with, per tile, `(index into the tile's polygons, region)`
+/// for each core piece that reaches a tile line.
+pub struct IndexedRegions {
+    pub regions: Vec<Region>,
+    pub by_tile: HashMap<(i32, i32), Vec<(usize, usize)>>,
+}
+
+impl IndexedRegions {
+    /// Every core piece of one tile with its region: the filed ones, and the copies
+    /// lying strictly inside the core - whole shapes, one region each - numbered on
+    /// from `next`, which is moved past them.
+    pub fn pieces_of(
+        &self,
+        k: (i32, i32),
+        polys: &[MergedPoly],
+        tile_dbu: i32,
+        next: &mut usize,
+    ) -> Vec<(usize, usize)> {
+        let mut out: Vec<(usize, usize)> = self.by_tile.get(&k).cloned().unwrap_or_default();
+        let (x0, y0) = (k.0.saturating_mul(tile_dbu), k.1.saturating_mul(tile_dbu));
+        let (x1, y1) = (x0.saturating_add(tile_dbu), y0.saturating_add(tile_dbu));
+        for (i, p) in polys.iter().enumerate() {
+            let b = poly_bbox(p);
+            if b.0 > x0 && b.1 > y0 && b.2 < x1 && b.3 < y1 {
+                out.push((i, *next));
+                *next += 1;
+            }
+        }
+        out
+    }
+}
+
+/// What a stitch files per core piece besides its region: the polygon itself, its
+/// index in its tile's list, or nothing.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Record {
+    None,
+    Polys,
+    Indices,
 }
 
 /// Shared stitcher behind [`stitch_regions`] and [`stitch_labeled`].  `record_polys`
 /// selects whether each core piece's polygon is cloned into `by_tile` (the point-lookup
 /// index) — skipped for plain region stitching so dense layers aren't copied.
 fn stitch_impl(tiles: &TileMap, tile_dbu: i32, record_polys: bool) -> LabeledRegions {
-    stitch_from(tiles, tile_dbu, record_polys, None, true).0
+    let record = if record_polys {
+        Record::Polys
+    } else {
+        Record::None
+    };
+    stitch_from(tiles, tile_dbu, record, None, true).0
 }
 
 /// The stitcher proper: regions grown outward from `seeds`, or the whole layer.
@@ -3042,13 +3114,28 @@ type TilePieces = ((i32, i32), Vec<(usize, Piece)>);
 fn stitch_from(
     tiles: &TileMap,
     tile_dbu: i32,
-    record_polys: bool,
+    record: Record,
     seeds: Option<&[(i32, i32)]>,
     touching: bool,
 ) -> (LabeledRegions, HashSet<(i32, i32)>) {
+    let (l, visited, _) = stitch_inner(tiles, tile_dbu, record, seeds, touching, false);
+    (l, visited)
+}
+
+/// Per tile, `(index into the tile's polygons, region)` of each core piece.
+type TileIndices = HashMap<(i32, i32), Vec<(usize, usize)>>;
+
+fn stitch_inner(
+    tiles: &TileMap,
+    tile_dbu: i32,
+    record: Record,
+    seeds: Option<&[(i32, i32)]>,
+    touching: bool,
+    at_lines_only: bool,
+) -> (LabeledRegions, HashSet<(i32, i32)>, TileIndices) {
     let t = tile_dbu as i64;
     let mut pieces: Vec<Piece> = Vec::new();
-    let mut piece_loc: Vec<((i32, i32), MergedPoly)> = Vec::new();
+    let mut piece_loc: Vec<((i32, i32), usize)> = Vec::new();
     let mut tile_pieces: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
     // Every piece's source polygon, for the within-tile touch test below.
     let mut piece_poly: Vec<&MergedPoly> = Vec::new();
@@ -3082,6 +3169,13 @@ fn stitch_from(
                 let ps = polys
                     .iter()
                     .enumerate()
+                    .filter(|(_, poly)| {
+                        if !at_lines_only {
+                            return true;
+                        }
+                        let (x0, y0, x1, y1) = poly_bbox(poly);
+                        x0 as f64 <= cx0 || y0 as f64 <= cy0 || x1 as f64 >= cx1 || y1 as f64 >= cy1
+                    })
                     .filter_map(|(i, poly)| Piece::of(poly, cx0, cy0, cx1, cy1).map(|p| (i, p)))
                     .collect();
                 ((tx, ty), ps)
@@ -3115,8 +3209,8 @@ fn stitch_from(
                 }
                 pieces.push(piece);
                 piece_poly.push(&polys[i]);
-                if record_polys {
-                    piece_loc.push((tile, polys[i].clone()));
+                if record != Record::None {
+                    piece_loc.push((tile, i));
                 }
                 ids.push(id);
             }
@@ -3208,19 +3302,16 @@ fn stitch_from(
 
     // Pieces were filed tile by tile, so each tile's run is contiguous.
     let mut by_tile: HashMap<(i32, i32), Vec<(MergedPoly, usize)>> = HashMap::new();
-    let mut current: Option<(i32, i32)> = None;
-    let mut bucket: Vec<(MergedPoly, usize)> = Vec::new();
-    for (id, (tile, poly)) in piece_loc.into_iter().enumerate() {
-        if current != Some(tile) {
-            if let Some(prev) = current {
-                by_tile.entry(prev).or_default().append(&mut bucket);
-            }
-            current = Some(tile);
+    let mut indices: HashMap<(i32, i32), Vec<(usize, usize)>> = HashMap::new();
+    for (id, (tile, i)) in piece_loc.into_iter().enumerate() {
+        match record {
+            Record::Polys => by_tile
+                .entry(tile)
+                .or_default()
+                .push((tiles[&tile][i].clone(), piece_region[id])),
+            Record::Indices => indices.entry(tile).or_default().push((i, piece_region[id])),
+            Record::None => {}
         }
-        bucket.push((poly, piece_region[id]));
-    }
-    if let Some(prev) = current {
-        by_tile.entry(prev).or_default().append(&mut bucket);
     }
 
     if trace && pieces.len() > 100_000 {
@@ -3233,7 +3324,7 @@ fn stitch_from(
             t_all.elapsed().as_secs_f64()
         );
     }
-    (LabeledRegions { regions, by_tile }, visited)
+    (LabeledRegions { regions, by_tile }, visited, indices)
 }
 
 /// Per connected region of a base layer: true filled area (DBU²), the enclosed `feature`
@@ -4635,7 +4726,7 @@ fn build_selection_tiles(
     seeds.sort_unstable();
     let trace = std::env::var("GDSCHECK_STITCH_TRACE").is_ok();
     let t0 = std::time::Instant::now();
-    let (labeled, visited) = stitch_from(cand, tile_dbu, true, Some(&seeds), true);
+    let (labeled, visited) = stitch_from(cand, tile_dbu, Record::Polys, Some(&seeds), true);
     let t_stitch = t0.elapsed().as_secs_f64();
     let t0 = std::time::Instant::now();
     // `Inside` reduces with AND over a region's pieces, so it starts true and is cleared
