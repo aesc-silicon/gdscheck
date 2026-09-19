@@ -2325,7 +2325,48 @@ fn edge_tiles(e: &Edge, t: i64) -> Vec<(i32, i32)> {
         }
         out.push((cx as i32, cy as i32));
     }
+    // The walk steps across a line into the tile beyond it and no other, and a segment
+    // that runs *along* a line, or ends on one, touches the tile on the far side too:
+    // a marking's edge on the tile line at 14 µm was filed in the tile whose core starts
+    // there, and the marking, ending on the line from below, never met its own edge.
+    // A tile owns its closed box, so every tile the segment touches is where it reaches.
+    let mut n = 0;
+    while n < out.len() {
+        let (cx, cy) = out[n];
+        n += 1;
+        for (ox, oy) in [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ] {
+            let k = (cx + ox, cy + oy);
+            if !out.contains(&k) && seg_meets_box(e, k, t) {
+                out.push(k);
+            }
+        }
+    }
     out
+}
+
+/// Whether the segment touches the closed box of tile `(cx, cy)`: the bboxes overlap
+/// and the box's corners do not all lie strictly on one side of the segment's line.
+fn seg_meets_box(e: &Edge, (cx, cy): (i32, i32), t: i64) -> bool {
+    let (ax, ay, bx, by) = (e.a.x as i64, e.a.y as i64, e.b.x as i64, e.b.y as i64);
+    let (x0, y0) = (cx as i64 * t, cy as i64 * t);
+    let (x1, y1) = (x0 + t, y0 + t);
+    if ax.max(bx) < x0 || ax.min(bx) > x1 || ay.max(by) < y0 || ay.min(by) > y1 {
+        return false;
+    }
+    let side = |x: i64, y: i64| {
+        (bx - ax) as i128 * (y - ay) as i128 - (by - ay) as i128 * (x - ax) as i128
+    };
+    let s = [side(x0, y0), side(x1, y0), side(x0, y1), side(x1, y1)];
+    !(s.iter().all(|&v| v > 0) || s.iter().all(|&v| v < 0))
 }
 
 /// The same edges filed under every tile they cross, for use as a filter.
@@ -6243,12 +6284,35 @@ mod tests {
     /// A diagonal steps one tile at a time and never lists the whole bounding box.
     #[test]
     fn a_diagonal_walks_the_grid_rather_than_its_bbox() {
-        let t = edge_tiles(&edge(50, 50, 350, 350), 100);
+        let t = edge_tiles(&edge(50, 50, 350, 340), 100);
         assert!(t.len() <= 7, "walked {} tiles, not a 4x4 box", t.len());
         for c in [(0, 0), (3, 3)] {
             assert!(t.contains(&c), "missing {c:?}");
         }
         assert!(!t.contains(&(3, 0)), "the far corner is not on the line");
+    }
+
+    /// A tile owns its closed box, so a segment on a tile line is in the tiles on both
+    /// sides, one ending on a line reaches the tile beyond, and one through a grid
+    /// point touches all four tiles around it.
+    #[test]
+    fn a_segment_on_a_tile_line_is_filed_on_both_sides() {
+        let sorted = |mut v: Vec<(i32, i32)>| {
+            v.sort();
+            v
+        };
+        assert_eq!(
+            sorted(edge_tiles(&edge(200, 110, 200, 190), 100)),
+            vec![(1, 1), (2, 1)]
+        );
+        assert_eq!(
+            sorted(edge_tiles(&edge(120, 150, 200, 150), 100)),
+            vec![(1, 1), (2, 1)]
+        );
+        assert_eq!(
+            sorted(edge_tiles(&edge(50, 50, 150, 150), 100)),
+            vec![(0, 0), (0, 1), (1, 0), (1, 1)]
+        );
     }
 
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
