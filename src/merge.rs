@@ -4434,6 +4434,50 @@ fn build_covering_tiles(
     out
 }
 
+/// The polygons filed in the eight tiles around `tile` that touch its closed box, each
+/// cut to the closed core of the tile it was filed in, with the item it came from.
+///
+/// A tile owns its closed box, and a filter that stops on the tile line is filed on the
+/// far side alone: the candidate that ends on the same line from this side meets it
+/// there and nowhere else, and the test in this tile had no copy to meet.  A neighbour's
+/// copy is exact in its core and no further - past it a difference may be missing its
+/// subtrahend - so only the core part is read, and the shared line is in it.
+fn at_the_fence<P>(
+    map: &HashMap<(i32, i32), Vec<P>>,
+    (tx, ty): (i32, i32),
+    t: i64,
+    poly: impl Fn(&P) -> &MergedPoly,
+) -> Vec<(MergedPoly, &P)> {
+    let (cx0, cy0) = (tx as i64 * t, ty as i64 * t);
+    let (cx1, cy1) = (cx0 + t, cy0 + t);
+    let mut out = Vec::new();
+    for (ox, oy) in [
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+        (-1, 0),
+        (1, 0),
+        (-1, 1),
+        (0, 1),
+        (1, 1),
+    ] {
+        let Some(v) = map.get(&(tx + ox, ty + oy)) else {
+            continue;
+        };
+        let (nx0, ny0) = (cx0 + ox as i64 * t, cy0 + oy as i64 * t);
+        for item in v {
+            let (x0, y0, x1, y1) = poly_bbox(poly(item));
+            if (x1 as i64) < cx0 || cx1 < x0 as i64 || (y1 as i64) < cy0 || cy1 < y0 as i64 {
+                continue;
+            }
+            for piece in clip_to_box(vec![poly(item).clone()], nx0, ny0, nx0 + t, ny0 + t) {
+                out.push((piece, item));
+            }
+        }
+    }
+    out
+}
+
 fn build_counted_selection_tiles(
     cand: &TileMap,
     filt: &TileMap,
@@ -4453,16 +4497,25 @@ fn build_counted_selection_tiles(
         .par_iter()
         .flat_map_iter(|(tile, polys)| {
             let mut pairs: Vec<(usize, usize)> = Vec::new();
-            let Some(fpolys) = fl.by_tile.get(tile) else {
+            let mut fpolys: Vec<(&MergedPoly, usize)> = fl
+                .by_tile
+                .get(tile)
+                .into_iter()
+                .flatten()
+                .map(|(p, frid)| (p, *frid))
+                .collect();
+            let fence = at_the_fence(&fl.by_tile, *tile, t, |(p, _)| p);
+            fpolys.extend(fence.iter().map(|(p, (_, frid))| (p, *frid)));
+            if fpolys.is_empty() {
                 return pairs.into_iter();
-            };
+            }
             let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
             let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
             for (poly, rid) in polys {
                 for piece in clip_to_box(vec![poly.clone()], cx0, cy0, cx1, cy1) {
                     let (x0, y0, x1, y1) = poly_bbox(&piece);
-                    for (fp, frid) in fpolys {
-                        if pairs.contains(&(*rid, *frid)) {
+                    for &(fp, frid) in &fpolys {
+                        if pairs.contains(&(*rid, frid)) {
                             continue;
                         }
                         let (fx0, fy0, fx1, fy1) = poly_bbox(fp);
@@ -4470,7 +4523,7 @@ fn build_counted_selection_tiles(
                             continue;
                         }
                         if piece_meets(kind, &piece, fp) {
-                            pairs.push((*rid, *frid));
+                            pairs.push((*rid, frid));
                         }
                     }
                 }
@@ -4545,8 +4598,15 @@ fn build_selection_tiles(
     let t = tile_dbu as i64;
     labeled.by_tile.par_iter().for_each(|(tile, polys)| {
         use std::sync::atomic::Ordering::Relaxed;
-        let fpolys = filt.get(tile).unwrap_or(&empty_f);
-        let fboxes: Vec<(i32, i32, i32, i32)> = fpolys.iter().map(poly_bbox).collect();
+        let own = filt.get(tile).unwrap_or(&empty_f);
+        let mut fpolys: Vec<&MergedPoly> = own.iter().collect();
+        let fence = if kind == SelectionKind::Inside {
+            Vec::new()
+        } else {
+            at_the_fence(filt, *tile, t, |p| p)
+        };
+        fpolys.extend(fence.iter().map(|(p, _)| p));
+        let fboxes: Vec<(i32, i32, i32, i32)> = fpolys.iter().map(|p| poly_bbox(p)).collect();
         let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
         let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
         for (poly, rid) in polys {
@@ -4568,7 +4628,7 @@ fn build_selection_tiles(
             };
             for piece in &pieces {
                 if kind == SelectionKind::Inside {
-                    if flags[*rid].load(Relaxed) && !poly_within(piece, fpolys) {
+                    if flags[*rid].load(Relaxed) && !poly_within(piece, own) {
                         flags[*rid].store(false, Relaxed);
                     }
                 } else if !flags[*rid].load(Relaxed) {
