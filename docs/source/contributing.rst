@@ -16,11 +16,14 @@ developer tasks:
 
    just build          # cargo build --release
    just test           # cargo test --release
+   just test-tile      # the same at a 7 µm tile, as CI also runs it
    just clippy         # cargo clippy --release -- -D warnings
    just gen-testdata   # regenerate the IHP SG13G2 test fixtures
    just check          # clippy + test + cargo fmt --check — the pre-commit gate
 
-Run ``just check`` before opening a change — it's the same gate CI runs.
+Run ``just check`` before opening a change — it's the same gate CI runs. CI runs the
+suite a second time with ``GDSCHECK_TILE_UM=7``: no result may depend on the tile size,
+and a fixture whose shapes a 7 µm line happens to cross is where one did.
 
 CI additionally runs the ``main`` suite over the real layouts in
 `aesc-silicon/reference-designs <https://github.com/aesc-silicon/reference-designs>`_

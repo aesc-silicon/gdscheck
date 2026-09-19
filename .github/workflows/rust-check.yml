@@ -41,3 +41,23 @@ jobs:
 
       - name: Test suite
         run: cargo test --all-features
+
+  # The same suite with the merge cache tiled at 7 µm instead of 20: every
+  # expectation holds at any tile size, and a tile line through a fixture's
+  # shapes is where a result depended on it.
+  tile:
+    name: tests at a 7 µm tile
+    runs-on: ubuntu-latest
+    env:
+      GDSCHECK_TILE_UM: 7
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Test suite
+        run: cargo test --all-features
