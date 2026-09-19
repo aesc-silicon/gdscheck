@@ -12,6 +12,11 @@ default:
 test:
     cargo test --release
 
+# The suite at a 7 µm tile: a result that holds at 20 and not at 7 depends on where
+# the tile lines fall, which no result may.
+test-tile:
+    GDSCHECK_TILE_UM=7 cargo test --release
+
 # Lint with clippy, warnings as errors.
 clippy:
     cargo clippy --release -- -D warnings
