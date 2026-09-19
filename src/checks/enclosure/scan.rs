@@ -22,11 +22,20 @@ use crate::merge::{Core, MergedCache, MergedPoly, TileMap, merged_centroid_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 /// What one tile scans: the tile, the enclosed shapes with their regions, and whether
 /// each shape is whole (put together from its pieces) or one tile's piece of it.
-type Job = ((i32, i32), Vec<(MergedPoly, usize)>, bool);
+type Job<'a> = ((i32, i32), Shapes<'a>, bool);
+
+/// Enclosed shapes with their regions, each borrowed from the layer or put together
+/// from its pieces.
+type Shapes<'a> = Vec<(Cow<'a, MergedPoly>, usize)>;
+
+/// One tile's core pieces of the enclosed layer: each as its index in the tile's list,
+/// with its region.
+type TilePieces = ((i32, i32), Vec<(usize, usize)>);
 
 /// What one tile reports: the enclosed region, the wall the margin was read on, the
 /// margin, the tile, and the report itself.
@@ -326,20 +335,40 @@ pub fn run(
     // the tile, and not a report per piece of it that moved with the tile size.
     // Every piece with a core part is scanned in its own tile and the reports of a
     // region are reduced to the worst afterwards.
-    let labeled = crate::merge::stitch_labeled(map_b, tile as i32);
+    // The stitch names the pieces at the tile lines; a copy lying strictly inside its
+    // core is a whole shape and a region of its own, numbered on from the stitch's.
+    let labeled = crate::merge::stitch_labeled_indexed(map_b, tile as i32);
+    let mut keys: Vec<(i32, i32)> = map_b.keys().copied().collect();
+    keys.sort_unstable();
+    let mut next = labeled.regions.len();
+    let per_tile: Vec<TilePieces> = keys
+        .into_iter()
+        .map(|k| {
+            let pieces = labeled.pieces_of(k, &map_b[&k], tile as i32, &mut next);
+            (k, pieces)
+        })
+        .collect();
     // A reading of the shape as a whole - a maximum, the endcap, the bordering sides,
     // and whether it is enclosed at all - needs every wall in one view: the region is
     // put together from its pieces and read once, in the tile that holds its marker.
     // A minimum reads wall by wall, and every piece in its own tile will do.
     let whole = max || sides == Sides::Any || sides == Sides::Adjacent;
     let jobs: Vec<Job> = if whole {
+        let mut by_owner: HashMap<(i32, i32), Shapes> = HashMap::new();
         let mut pieces: Vec<Vec<&MergedPoly>> = vec![Vec::new(); labeled.regions.len()];
-        for polys in labeled.by_tile.values() {
-            for (poly, rid) in polys {
-                pieces[*rid].push(poly);
+        for (k, ps) in &per_tile {
+            for &(i, rid) in ps {
+                let poly = &map_b[k][i];
+                if rid < labeled.regions.len() {
+                    pieces[rid].push(poly);
+                } else {
+                    by_owner
+                        .entry(*k)
+                        .or_default()
+                        .push((Cow::Borrowed(poly), rid));
+                }
             }
         }
-        let mut by_owner: HashMap<(i32, i32), Vec<(MergedPoly, usize)>> = HashMap::new();
         for (rid, ps) in pieces.into_iter().enumerate() {
             let (mx, my) = labeled.regions[rid].marker;
             let owner = (
@@ -347,7 +376,7 @@ pub fn run(
                 (my / tile as f64).floor() as i32,
             );
             let shape = if ps.len() == 1 {
-                ps[0].clone()
+                Cow::Borrowed(ps[0])
             } else {
                 let owned: Vec<MergedPoly> = ps.into_iter().cloned().collect();
                 let unioned = crate::merge::compose_tile(crate::merge::VirtualOp::Union, &[&owned]);
@@ -355,7 +384,7 @@ pub fn run(
                     .into_iter()
                     .find(|m| crate::merge::point_in_merged(mx, my, m))
                 {
-                    Some(m) => m,
+                    Some(m) => Cow::Owned(m),
                     None => continue,
                 }
             };
@@ -363,10 +392,16 @@ pub fn run(
         }
         by_owner.into_iter().map(|(k, v)| (k, v, true)).collect()
     } else {
-        labeled
-            .by_tile
+        per_tile
             .iter()
-            .map(|(k, v)| (*k, v.clone(), false))
+            .map(|(k, ps)| {
+                let polys = &map_b[k];
+                let v = ps
+                    .iter()
+                    .map(|&(i, rid)| (Cow::Borrowed(&polys[i]), rid))
+                    .collect();
+                (*k, v, false)
+            })
             .collect()
     };
 
@@ -410,6 +445,7 @@ pub fn run(
             // about (none for a report without one), the tile, and the report.
             let mut out: Vec<Report> = Vec::new();
             for (bm, region) in b_polys {
+                let bm: &MergedPoly = bm;
                 let region = *region;
                 let (cxd, cyd) = merged_centroid_dbu(bm);
                 if bm.outer.len() < 3 {
