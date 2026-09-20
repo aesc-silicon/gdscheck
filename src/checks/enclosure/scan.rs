@@ -80,6 +80,7 @@ fn outer_over(
     core: &Core,
     bm: &MergedPoly,
     value_dbu: i64,
+    within: bool,
 ) -> Option<Vec<MergedPoly>> {
     let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
     for p in &bm.outer {
@@ -89,16 +90,74 @@ fn outer_over(
         y1 = y1.max(p.y as i64);
     }
     let g = value_dbu + 1;
-    let (x0, y0, x1, y1) = (x0 - g, y0 - g, x1 + g, y1 + g);
-    if x0 >= core.x0 - halo && y0 >= core.y0 - halo && x1 <= core.x1 + halo && y1 <= core.y1 + halo
+    let bx = (x0 - g, y0 - g, x1 + g, y1 + g);
+    if bx.0 >= core.x0 - halo
+        && bx.1 >= core.y0 - halo
+        && bx.2 <= core.x1 + halo
+        && bx.3 <= core.y1 + halo
     {
         return None;
     }
-    Some(crate::merge::assemble_over(
-        map_a,
-        tile as i32,
-        (x0, y0, x1, y1),
-    ))
+    // A piece cut to its tile's zone measures nothing past its box, and the layer
+    // within the box is all it needs; a whole shape is read out to the cores' edges,
+    // so a maximum sees no wall the box cut.
+    Some(if within {
+        crate::merge::assemble_within(map_a, tile as i32, bx)
+    } else {
+        crate::merge::assemble_over(map_a, tile as i32, bx)
+    })
+}
+
+/// The squared length of the stretch a report is on, in µm².
+fn edge_len2(v: &Violation) -> f64 {
+    match v.geometry {
+        crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+            (x2 - x1).powi(2) + (y2 - y1).powi(2)
+        }
+        _ => 0.0,
+    }
+}
+
+/// Whether two margins, each the square of a ratio, are one margin.
+fn same((an, ad): (i128, i128), (bn, bd): (i128, i128)) -> bool {
+    an * bd == bn * ad
+}
+
+/// Whether the stretch `a` is longer than `b`.
+fn longer(a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)) -> bool {
+    let len2 = |(x1, y1, x2, y2): (f64, f64, f64, f64)| (x2 - x1).powi(2) + (y2 - y1).powi(2);
+    len2(a) > len2(b)
+}
+
+/// The walls of one enclosed shape with the margin read on each: a shape has a few,
+/// and a map per contact was an allocation per contact.
+struct Walls(Vec<(Seg, Read)>);
+
+impl Walls {
+    fn new() -> Walls {
+        Walls(Vec::new())
+    }
+
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    fn get(&self, w: &Seg) -> Option<&Read> {
+        self.0.iter().find(|(s, _)| s == w).map(|(_, r)| r)
+    }
+
+    /// The read on `w`, set to `m` when the wall is new.  The caller keeps the worse
+    /// of the two on the wall; at the same margin the longer stretch stays, so a
+    /// corner on the outer contour does not stand for a wall lying along it.
+    fn entry(&mut self, w: Seg, m: Read) -> &mut Read {
+        match self.0.iter().position(|(s, _)| *s == w) {
+            Some(i) => &mut self.0[i].1,
+            None => {
+                self.0.push((w, m));
+                &mut self.0.last_mut().expect("pushed").1
+            }
+        }
+    }
 }
 
 /// Whether a point (DBU) lies inside the layer's merged geometry, tested against the
@@ -119,26 +178,39 @@ fn point_in_layer_at_own_tile(
         (px / tile_dbu as f64).floor() as i32,
         (py / tile_dbu as f64).floor() as i32,
     );
-    let (Some(polys), Some(bs)) = (map.get(&(tx, ty)), boxes.get(&(tx, ty))) else {
+    let (Some(polys), Some((bs, grid))) = (map.get(&(tx, ty)), boxes.get(&(tx, ty))) else {
         return false;
     };
-    // A probe is cast only against the polygons whose box holds it: a contact's probe
-    // against every plate of metal in the tile was most of an enclosure rule.
-    polys.iter().zip(bs).any(|(m, &(x0, y0, x1, y1))| {
-        px >= x0 as f64
-            && px <= x1 as f64
-            && py >= y0 as f64
-            && py <= y1 as f64
-            && crate::merge::point_in_merged(px, py, m)
-    })
+    // A probe is cast only against the polygons whose box holds it, found in the
+    // tile's grid: a contact's probe against every plate of metal in the tile was
+    // most of an enclosure rule, and against every box of a dense active layer still
+    // half of one.
+    grid.at(px.round() as i32, py.round() as i32)
+        .iter()
+        .any(|&i| {
+            let (x0, y0, x1, y1) = bs[i as usize];
+            px >= x0 as f64
+                && px <= x1 as f64
+                && py >= y0 as f64
+                && py <= y1 as f64
+                && crate::merge::point_in_merged(px, py, &polys[i as usize])
+        })
 }
 
-/// The bounding box of every polygon of every tile.
-type Boxes = HashMap<(i32, i32), Vec<(i32, i32, i32, i32)>>;
+/// The bounding box of every polygon of every tile, and the tile's grid over them.
+type Boxes = HashMap<(i32, i32), (Vec<(i32, i32, i32, i32)>, crate::merge::CellGrid)>;
 
-fn boxes_of(map: &TileMap) -> Boxes {
+fn boxes_of(map: &TileMap, tile_dbu: i64) -> Boxes {
     map.par_iter()
-        .map(|(k, polys)| (*k, polys.iter().map(crate::merge::poly_bbox).collect()))
+        .map(|(k, polys)| {
+            let boxes: Vec<_> = polys.iter().map(crate::merge::poly_bbox).collect();
+            let (x0, y0) = (
+                (k.0 as i64 * tile_dbu) as i32,
+                (k.1 as i64 * tile_dbu) as i32,
+            );
+            let grid = crate::merge::CellGrid::new(x0, y0, tile_dbu as i32, &boxes);
+            (*k, (boxes, grid))
+        })
         .collect()
 }
 
@@ -310,8 +382,8 @@ pub fn run(
 
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
-    let a_boxes = boxes_of(map_a);
-    let b_boxes = boxes_of(map_b);
+    let a_boxes = boxes_of(map_a, tile);
+    let b_boxes = boxes_of(map_b, tile);
     // Whether an inner wall is the shape's own and not where a tile cut it: just past
     // the wall, on its empty side, the enclosed layer goes on if it is a cut.  Read in
     // the tile that holds the point, whose copy is exact there.  A cut wall lies in
@@ -340,10 +412,22 @@ pub fn run(
     let labeled = crate::merge::stitch_labeled_indexed(map_b, tile as i32);
     let mut keys: Vec<(i32, i32)> = map_b.keys().copied().collect();
     keys.sort_unstable();
-    let mut next = labeled.regions.len();
-    let per_tile: Vec<TilePieces> = keys
-        .into_iter()
+    // Each tile numbers its whole shapes from its own base, past every earlier tile's
+    // copies, so the tiles are done side by side and no two ids meet.
+    let mut base = labeled.regions.len();
+    let bases: Vec<usize> = keys
+        .iter()
         .map(|k| {
+            let b = base;
+            base += map_b[k].len();
+            b
+        })
+        .collect();
+    let per_tile: Vec<TilePieces> = keys
+        .par_iter()
+        .zip(bases.par_iter())
+        .map(|(&k, &b)| {
+            let mut next = b;
             let pieces = labeled.pieces_of(k, &map_b[&k], tile as i32, &mut next);
             (k, pieces)
         })
@@ -393,7 +477,7 @@ pub fn run(
         by_owner.into_iter().map(|(k, v)| (k, v, true)).collect()
     } else {
         per_tile
-            .iter()
+            .par_iter()
             .map(|(k, ps)| {
                 let polys = &map_b[k];
                 let v = ps
@@ -447,7 +531,40 @@ pub fn run(
             for (bm, region) in b_polys {
                 let bm: &MergedPoly = bm;
                 let region = *region;
-                let (cxd, cyd) = merged_centroid_dbu(bm);
+                // Every real wall lies in some tile's core and is read there, so a
+                // tile reads the part of the shape in its core and no more: a piece
+                // cut to the core has the same walls there, its cut walls are dropped
+                // as any tile cut's are, and the enclosing layer it needs is the layer
+                // over the core - not over the whole of a shape that runs on for forty
+                // tiles, which every tile it ran through was assembling for its own
+                // sliver.  Cut at the core and not the zone, so the two tiles' pieces
+                // of one wall meet at a vertex and are one wall again in the reduction.
+                let (bx0, by0, bx1, by1) = crate::merge::poly_bbox(bm);
+                let in_core_whole = bx0 as i64 >= core.x0
+                    && by0 as i64 >= core.y0
+                    && bx1 as i64 <= core.x1
+                    && by1 as i64 <= core.y1;
+                // A copy lying within its core has no cut wall: a cut lies on the
+                // zone's edge.  Nearly every contact is one, and its walls are read
+                // without a probe apiece.
+                let cuttable = !exact && !in_core_whole;
+                let parts: Vec<Cow<MergedPoly>> = if exact || in_core_whole {
+                    vec![Cow::Borrowed(bm)]
+                } else {
+                    crate::merge::clip_to_box(vec![bm.clone()], core.x0, core.y0, core.x1, core.y1)
+                        .into_iter()
+                        .map(Cow::Owned)
+                        .collect()
+                };
+            // Where a report on the shape as a whole is placed: the region's marker,
+            // the same from whichever tile's piece it comes, or the centroid of a shape
+            // whole within its core.
+            let (cxd, cyd) = match labeled.regions.get(region) {
+                Some(r) => r.marker,
+                None => merged_centroid_dbu(bm),
+            };
+            for bm in &parts {
+                let bm: &MergedPoly = bm;
                 if bm.outer.len() < 3 {
                     continue;
                 }
@@ -455,16 +572,23 @@ pub fn run(
                 let assembled: Vec<MergedPoly>;
                 let assembled_o: Vec<Outline>;
                 let mut cached_caps = true;
-                let a_here: &[Outline] =
-                    match outer_over(map_a, tile, a_halo, &core, bm, limit.dbu()) {
-                        Some(polys) => {
-                            assembled = polys;
-                            assembled_o = assembled.iter().map(Outline::new).collect();
-                            cached_caps = false;
-                            &assembled_o
-                        }
-                        None => &a_conv,
-                    };
+                let a_here: &[Outline] = match outer_over(
+                    map_a,
+                    tile,
+                    a_halo,
+                    &core,
+                    bm,
+                    limit.dbu(),
+                    !exact,
+                ) {
+                    Some(polys) => {
+                        assembled = polys;
+                        assembled_o = assembled.iter().map(Outline::new).collect();
+                        cached_caps = false;
+                        &assembled_o
+                    }
+                    None => &a_conv,
+                };
                 // The stretch of the inner wall a pair was read on, in µm.
                 let edge_um =
                     |(x1, y1, x2, y2): (f64, f64, f64, f64)| (um(x1), um(y1), um(x2), um(y2));
@@ -473,7 +597,7 @@ pub fn run(
                 // enclosing shapes containing it - a wall is clear if any of them clears
                 // it - each read as the worst of that shape's pairs on the wall.  A
                 // maximum reads the shape as a whole: its largest margin.
-                let mut walls: HashMap<Seg, Read> = HashMap::new();
+                let mut walls: Walls = Walls::new();
                 let mut best: Option<Read> = None;
                 let mut any_contained = false;
                 let mut clipped = false;
@@ -504,10 +628,10 @@ pub fn run(
                     // this bucket's reliable zone can see a fake wall where the union was
                     // truncated; probing just past the wall in the probe's own tile
                     // (complete there) exposes and drops it.
-                    let mut here: HashMap<Seg, Read> = HashMap::new();
+                    let mut here: Walls = Walls::new();
                     let mut worst: Option<Read> = None;
                     for p in pairs {
-                        if !in_zone(p.edge) || !real_wall(p.wall) {
+                        if cuttable && (!in_zone(p.edge) || !real_wall(p.wall)) {
                             continue;
                         }
                         if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
@@ -517,8 +641,8 @@ pub fn run(
                         if worst.is_none_or(|(w, _)| worse(largest, m.0, w)) {
                             worst = Some(m);
                         }
-                        let e = here.entry(p.wall).or_insert(m);
-                        if worse(largest, m.0, e.0) {
+                        let e = here.entry(p.wall, m);
+                        if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
                             *e = m;
                         }
                     }
@@ -537,7 +661,7 @@ pub fn run(
                         walls = here;
                         best = Some(((i128::MAX / 4, 1), first_edge));
                     } else {
-                        for (w, m) in walls.iter_mut() {
+                        for (w, m) in walls.0.iter_mut() {
                             match here.get(w) {
                                 Some(h) if worse(largest, m.0, h.0) => *m = *h,
                                 Some(_) => {}
@@ -569,8 +693,9 @@ pub fn run(
                         .collect();
                     for &seg in bp.segs() {
                         let ((sx1, sy1), (sx2, sy2)) = seg;
-                        if !in_zone((sx1 as f64, sy1 as f64, sx2 as f64, sy2 as f64))
-                            || !real_wall(seg)
+                        if cuttable
+                            && (!in_zone((sx1 as f64, sy1 as f64, sx2 as f64, sy2 as f64))
+                                || !real_wall(seg))
                         {
                             continue;
                         }
@@ -691,13 +816,13 @@ pub fn run(
                         // what an extension rule is - a cover reaching past the target
                         // it crosses by so much - and a maximum reads it the same way.
                         // Per wall for a minimum, the shape as a whole for a maximum.
-                        let mut walls: HashMap<Seg, Read> = HashMap::new();
+                        let mut walls: Walls = Walls::new();
                         let mut worst: Option<Read> = None;
                         for (am, a) in touching {
                             let (pairs, _) =
                                 margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
                             for p in pairs {
-                                if !in_zone(p.edge) || !real_wall(p.wall) {
+                                if cuttable && (!in_zone(p.edge) || !real_wall(p.wall)) {
                                     continue;
                                 }
                                 let (x1, y1, x2, y2) = p.edge;
@@ -714,8 +839,8 @@ pub fn run(
                                 if worst.is_none_or(|(w, _)| worse(largest, m.0, w)) {
                                     worst = Some(m);
                                 }
-                                let e = walls.entry(p.wall).or_insert(m);
-                                if worse(largest, m.0, e.0) {
+                                let e = walls.entry(p.wall, m);
+                                if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
                                     *e = m;
                                 }
                             }
@@ -723,7 +848,7 @@ pub fn run(
                         let reports: Vec<(Option<Seg>, Read)> = if max {
                             worst.into_iter().map(|m| (None, m)).collect()
                         } else {
-                            walls.into_iter().map(|(w, m)| (Some(w), m)).collect()
+                            walls.0.into_iter().map(|(w, m)| (Some(w), m)).collect()
                         };
                         for (wall, ((num, den), e)) in reports {
                             if !limit.broken_by_sq(num, den) {
@@ -795,7 +920,7 @@ pub fn run(
                         ));
                     }
                 } else {
-                    for (wall, ((num, den), e)) in walls {
+                    for (wall, ((num, den), e)) in walls.0 {
                         if num >= i128::MAX / 4 || !limit.broken_by_sq(num, den) {
                             continue;
                         }
@@ -822,6 +947,7 @@ pub fn run(
                     }
                 }
             }
+            }
             out.into_iter()
         })
         .collect();
@@ -845,6 +971,32 @@ pub fn run(
         let reports = by_region.remove(&region).expect("keyed");
         let (walled, whole): (Vec<Report>, Vec<Report>) =
             reports.into_iter().partition(|r| r.1.is_some());
+        // A shape not enclosed at all is reported as that and nothing else, as it was
+        // when it was read whole: the piece of it inside the enclosing shape has its
+        // walls' margins, and the piece outside says they are not the point.
+        let unenclosed = whole.iter().any(|r| r.2.is_none());
+        let mut walled = if unenclosed { Vec::new() } else { walled };
+        // A corner on the outer contour is read as a margin of nothing on both walls
+        // meeting there; where one of them lies along the contour, that wall is the
+        // violation and the point on the other is not one of its own.  Dropped, so
+        // it does not tie the walls either side of it into one run - which it did in
+        // the tiles where the wall it sat on was whole and not in the ones where it
+        // was cut.
+        let along: Vec<(i64, i64)> = walled
+            .iter()
+            .filter(|r| edge_len2(&r.4) > 0.0 && r.2.is_some_and(|m| m.0 == 0))
+            .flat_map(|r| {
+                let (p, q) = r.1.expect("walled");
+                [p, q]
+            })
+            .collect();
+        walled.retain(|r| {
+            if edge_len2(&r.4) > 0.0 {
+                return true;
+            }
+            let (p, q) = r.1.expect("walled");
+            !(along.contains(&p) || along.contains(&q))
+        });
         if let Some(pick) = whole.into_iter().reduce(|a, b| {
             let better = match (b.2, a.2) {
                 (Some(x), Some(y)) => worse(largest, x, y),
@@ -878,7 +1030,13 @@ pub fn run(
             match pick.get(&root) {
                 Some(&j) => {
                     let (mi, mj) = (walled[i].2.expect("margin"), walled[j].2.expect("margin"));
-                    if worse(largest, mi, mj) || (mi == mj && walled[i].3 < walled[j].3) {
+                    // At one margin the longer stretch, then the earlier tile: a
+                    // corner touching the outer contour is the wall along it, not
+                    // the wall ending there.
+                    let (li, lj) = (edge_len2(&walled[i].4), edge_len2(&walled[j].4));
+                    if worse(largest, mi, mj)
+                        || (same(mi, mj) && (li > lj || (li == lj && walled[i].3 < walled[j].3)))
+                    {
                         pick.insert(root, i);
                     }
                 }
@@ -887,12 +1045,81 @@ pub fn run(
                 }
             }
         }
-        let mut chosen: Vec<usize> = pick.into_values().collect();
+        let mut chosen: Vec<(usize, usize)> = pick.into_iter().map(|(r, i)| (i, r)).collect();
         chosen.sort_unstable();
+        // A wall the tiles cut is read as its pieces, one per tile; the run has them
+        // all, and the report is the wall: the pick's stretch extended over the
+        // stretches of the run's other walls on its line at its margin.
+        let roots: Vec<usize> = (0..walled.len()).map(|i| uf.find(i)).collect();
         let mut walled: Vec<Option<Report>> = walled.into_iter().map(Some).collect();
-        for i in chosen {
-            out.push(walled[i].take().expect("once").4);
+        for (i, root) in chosen {
+            let m = walled[i].as_ref().expect("once").2.expect("margin");
+            let wall = walled[i].as_ref().expect("once").1.expect("walled");
+            let mut v = walled[i].take().expect("once").4;
+            let mates: Vec<&Report> = walled
+                .iter()
+                .enumerate()
+                .filter(|(j, r)| roots[*j] == root && r.is_some())
+                .map(|(_, r)| r.as_ref().expect("some"))
+                .filter(|r| same(r.2.expect("margin"), m) && collinear(r.1.expect("walled"), wall))
+                .collect();
+            if !mates.is_empty() {
+                extend_over(&mut v, &mates);
+            }
+            out.push(v);
         }
     }
     out
+}
+
+/// Whether two walls lie on one line.
+fn collinear((a0, a1): Seg, (b0, b1): Seg) -> bool {
+    let cross = |p: (i64, i64), q: (i64, i64), r: (i64, i64)| {
+        (q.0 - p.0) as i128 * (r.1 - p.1) as i128 - (q.1 - p.1) as i128 * (r.0 - p.0) as i128
+    };
+    cross(a0, a1, b0) == 0 && cross(a0, a1, b1) == 0
+}
+
+/// The report's stretch extended to the ends of the mates' stretches on its line, in
+/// the geometry and in the message, which names the stretch the same way.
+fn extend_over(v: &mut Violation, mates: &[&Report]) {
+    let crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } = v.geometry else {
+        return;
+    };
+    let (dx, dy) = (x2 - x1, y2 - y1);
+    let len2 = dx * dx + dy * dy;
+    if len2 == 0.0 {
+        return;
+    }
+    let along = |x: f64, y: f64| ((x - x1) * dx + (y - y1) * dy) / len2;
+    let (mut lo, mut hi) = (0.0f64, 1.0f64);
+    for r in mates {
+        if let crate::violation::ViolationGeometry::Edge {
+            x1: a,
+            y1: b,
+            x2: c,
+            y2: d,
+        } = r.4.geometry
+        {
+            for (x, y) in [(a, b), (c, d)] {
+                let t = along(x, y);
+                lo = lo.min(t);
+                hi = hi.max(t);
+            }
+        }
+    }
+    if lo == 0.0 && hi == 1.0 {
+        return;
+    }
+    let (nx1, ny1) = (x1 + dx * lo, y1 + dy * lo);
+    let (nx2, ny2) = (x1 + dx * hi, y1 + dy * hi);
+    let was = format!("({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4})");
+    let now = format!("({nx1:.4}, {ny1:.4})-({nx2:.4}, {ny2:.4})");
+    v.message = v.message.replace(&was, &now);
+    v.geometry = crate::violation::ViolationGeometry::Edge {
+        x1: nx1,
+        y1: ny1,
+        x2: nx2,
+        y2: ny2,
+    };
 }

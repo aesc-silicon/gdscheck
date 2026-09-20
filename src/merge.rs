@@ -3437,6 +3437,71 @@ pub fn poly_bbox(m: &MergedPoly) -> (i32, i32, i32, i32) {
     (x0, y0, x1, y1)
 }
 
+/// Polygons of one tile filed by the cells of a fixed grid over it, as one run of
+/// indices per cell: two vectors for the tile, whatever it holds, since a thousand small
+/// vectors per tile were the better part of a rule in freeing them.  A box reaching
+/// past the tile is filed in the cells it covers of the tile.
+pub(crate) struct CellGrid {
+    x0: i32,
+    y0: i32,
+    cell: i32,
+    /// Where each cell's run starts in `items`, row-major, one past the last.
+    start: Vec<u32>,
+    items: Vec<u32>,
+}
+
+impl CellGrid {
+    const SIDE: i32 = 32;
+
+    pub(crate) fn new(x0: i32, y0: i32, tile: i32, boxes: &[(i32, i32, i32, i32)]) -> CellGrid {
+        let cell = (tile / Self::SIDE).max(1);
+        let n = (Self::SIDE * Self::SIDE) as usize;
+        let at = |x: i32, y: i32| {
+            let cx = ((x - x0) / cell).clamp(0, Self::SIDE - 1);
+            let cy = ((y - y0) / cell).clamp(0, Self::SIDE - 1);
+            (cy * Self::SIDE + cx) as usize
+        };
+        let cells = |&(bx0, by0, bx1, by1): &(i32, i32, i32, i32)| {
+            let (c0, c1) = (at(bx0, by0), at(bx1, by1));
+            let (cx0, cy0) = (c0 % Self::SIDE as usize, c0 / Self::SIDE as usize);
+            let (cx1, cy1) = (c1 % Self::SIDE as usize, c1 / Self::SIDE as usize);
+            (cy0..=cy1).flat_map(move |cy| (cx0..=cx1).map(move |cx| cy * Self::SIDE as usize + cx))
+        };
+        let mut start = vec![0u32; n + 1];
+        for b in boxes {
+            for c in cells(b) {
+                start[c + 1] += 1;
+            }
+        }
+        for c in 0..n {
+            start[c + 1] += start[c];
+        }
+        let mut fill = start.clone();
+        let mut items = vec![0u32; start[n] as usize];
+        for (i, b) in boxes.iter().enumerate() {
+            for c in cells(b) {
+                items[fill[c] as usize] = i as u32;
+                fill[c] += 1;
+            }
+        }
+        CellGrid {
+            x0,
+            y0,
+            cell,
+            start,
+            items,
+        }
+    }
+
+    /// The pieces filed in the cell holding `(x, y)`.
+    pub(crate) fn at(&self, x: i32, y: i32) -> &[u32] {
+        let cx = ((x - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
+        let cy = ((y - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
+        let c = (cy * Self::SIDE + cx) as usize;
+        &self.items[self.start[c] as usize..self.start[c + 1] as usize]
+    }
+}
+
 /// Union pieces *within* one tile whose polygons touch.  The tile boolean leaves two
 /// shapes meeting at a single vertex as two polygons — a corner touch is not an overlap,
 /// so there is nothing for a union to dissolve — but KLayout treats them as one region,
@@ -3714,7 +3779,7 @@ pub fn core_clipped_bbox(
 
 /// The part of `polys` inside the box: what lies within stays as it is, what lies
 /// outside goes, and what straddles the border is cut.  Holes survive the cut.
-fn clip_to_box(polys: Vec<MergedPoly>, x0: i64, y0: i64, x1: i64, y1: i64) -> Vec<MergedPoly> {
+pub fn clip_to_box(polys: Vec<MergedPoly>, x0: i64, y0: i64, x1: i64, y1: i64) -> Vec<MergedPoly> {
     let (mut inside, mut straddle): (Vec<MergedPoly>, Vec<MergedPoly>) = (Vec::new(), Vec::new());
     for p in polys {
         let (bx0, by0, bx1, by1) = poly_bbox(&p);
@@ -4250,10 +4315,35 @@ fn assemble_zone_copies(pieces: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMa
 /// wherever the box reaches, the seams vanishing in the union.  For a reader that needs
 /// a layer past the zone one tile's copy is exact in - an enclosing layer round a shape
 /// longer than the tile's halo.
+///
+/// The cores are read whole, and the layer comes back exact wherever the box reaches
+/// and whole to the cores' edges beyond it.  [`assemble_within`] reads the box alone.
 pub fn assemble_over(
     tiles: &TileMap,
     tile_dbu: i32,
     (x0, y0, x1, y1): (i64, i64, i64, i64),
+) -> Vec<MergedPoly> {
+    assemble(tiles, tile_dbu, (x0, y0, x1, y1), false)
+}
+
+/// The layer over a box and no further: the cores' pieces cut to the box before the
+/// union.  For a reader whose every measurement stays inside the box, and who is not
+/// owed the far side of what a dense layer holds in four whole cores - assembled for
+/// every shape at a tile line, that was most of an enclosure rule.  The box's edge
+/// cuts walls where the layer runs past it.
+pub fn assemble_within(
+    tiles: &TileMap,
+    tile_dbu: i32,
+    (x0, y0, x1, y1): (i64, i64, i64, i64),
+) -> Vec<MergedPoly> {
+    assemble(tiles, tile_dbu, (x0, y0, x1, y1), true)
+}
+
+fn assemble(
+    tiles: &TileMap,
+    tile_dbu: i32,
+    (x0, y0, x1, y1): (i64, i64, i64, i64),
+    within: bool,
 ) -> Vec<MergedPoly> {
     let t = tile_dbu as i64;
     let mut block: Vec<MergedPoly> = Vec::new();
@@ -4261,7 +4351,29 @@ pub fn assemble_over(
         for tx in x0.div_euclid(t)..=(x1.max(x0 + 1) - 1).div_euclid(t) {
             if let Some(ps) = tiles.get(&(tx as i32, ty as i32)) {
                 let (cx0, cy0) = (tx * t, ty * t);
-                block.extend(clip_to_box(ps.clone(), cx0, cy0, cx0 + t, cy0 + t));
+                let (cx1, cy1) = (cx0 + t, cy0 + t);
+                if within {
+                    let near: Vec<MergedPoly> = ps
+                        .iter()
+                        .filter(|p| {
+                            let (bx0, by0, bx1, by1) = poly_bbox(p);
+                            !((bx1 as i64) < x0
+                                || x1 < bx0 as i64
+                                || (by1 as i64) < y0
+                                || y1 < by0 as i64)
+                        })
+                        .cloned()
+                        .collect();
+                    block.extend(clip_to_box(
+                        near,
+                        cx0.max(x0),
+                        cy0.max(y0),
+                        cx1.min(x1),
+                        cy1.min(y1),
+                    ));
+                } else {
+                    block.extend(clip_to_box(ps.clone(), cx0, cy0, cx1, cy1));
+                }
             }
         }
     }
