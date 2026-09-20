@@ -25,17 +25,21 @@ rules:
     check: min_area
     layers: [Activ]
     value: 0.122
+    params:
+      touching: separate
   - id: Act.e
     check: min_area
-    layers: [Activ]
+    layers: [ActivHoleEmpty]
     value: 0.15
     params:
-      scope: hole
+      touching: separate
 
   - id: AFil.a
     check: max_width
     layers: [Activ.filler]
     value: 5.0
+    params:
+      span: narrowest
   - id: AFil.a1
     check: min_width
     layers: [Activ.filler]
@@ -48,25 +52,43 @@ rules:
     check: min_space
     layers: [Activ.filler, Cont]
     value: 1.10
+    params:
+      abutting: report
   - id: AFil.c
     check: min_space
     layers: [Activ.filler, GatPoly]
     value: 1.10
+    params:
+      abutting: report
   - id: AFil.c1
     check: min_space
     layers: [Activ.filler, Activ]
     value: 0.42
+    params:
+      abutting: report
   - id: AFil.d
     check: min_space
     layers: [Activ.filler, NWell]
     value: 1.00
   - id: AFil.d
+    check: min_enclosure
+    layers: [NWell, ActivFillerInNWell]
+    value: 1.00
+  - id: AFil.d
     check: min_space
     layers: [Activ.filler, nBuLay]
+    value: 1.00
+  - id: AFil.d
+    check: min_enclosure
+    layers: [nBuLay, ActivFillerInNBuLay]
     value: 1.00
   - id: AFil.e
     check: min_space
     layers: [Activ.filler, TRANS]
+    value: 1.00
+  - id: AFil.e
+    check: min_enclosure
+    layers: [TRANS, ActivFillerInTRANS]
     value: 1.00
   - id: AFil.g
     check: min_density
@@ -101,6 +123,10 @@ rules:
   - id: AFil.i
     check: min_space
     layers: [Activ.filler, PWell.block]
+    value: 1.50
+  - id: AFil.i
+    check: min_enclosure
+    layers: [PWell.block, ActivFillerWithinPWellBlock]
     value: 1.50
   - id: AFil.j
     check: min_enclosure

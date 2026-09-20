@@ -27,6 +27,31 @@ counts an array cell once).
 Test status on the engine as of this report: 16 of the 106 new cases fail, all on the
 findings below; the other 90 pass.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 2 (`touching: separate`, a new area param: two shapes meeting at one
+point are two regions, set on every IHP area rule as its deck reads them), 4 (`span:
+narrowest`, a new `max_width` param: a shape is too wide where a value x value square
+fits inside, KLayout's opening; on AFil.a, GFil.a and Pad.a1, whose upstream is that -
+the metal-filler and LBE maxima upstream are bounding boxes and keep the old reading),
+9 (several density layers are read as their union), 10 (the windows slide a merge tile
+at a time from the die's corner with one laid against each far edge, off a summed-area
+table; overlapping violating windows are one violation).  Fixed, deck: 3 (Act.e is the
+area of `ActivHoleEmpty`, the hole less the Activ in it), 5 (AFil.c and AFil.c1 report
+an abutment), 6 and 8 (enclosure entries on the fillers lying inside a NWell, an
+nBuLay, a TRANS and a PWell block).
+
+Settled on KLayout's reading, cases flipped: 1 (Act.c on the Activ past a gate's end,
+both tools), the overlap halves of 5, 6 and 8 (a filler or Cont crossing the other
+layer's edge shares area with it and is no pair - neither tool reports it), and the
+AFil.e filler well inside a TRANS (enclosed by more than the value).  Open for the PDK
+owner: 7 (nBuLay as drawn or as section 4.2 derives it; the case carries the drawn
+reading).  11 is KLayout's miss, nothing to do.
+
+The AFil.a and GFil.a fixtures of the old suite expected the wall-pair reading and
+now carry a 5.005 x 5.005 filler for the narrowest one; the old metal and Activ
+density fixtures were laid out per 800 µm grid cell and are uniform stripes now.
+
 ## Findings
 
 ### 1. Act.c reports the Activ past a gate's end (false positive, KLayout too)

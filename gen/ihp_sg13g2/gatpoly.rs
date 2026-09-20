@@ -43,9 +43,12 @@ pub fn generate(pdk: &PdkConfig) {
 }
 
 /// GFil.a — max. GatPoly:filler width 5.00 µm.
+/// GFil.a — max. GatPoly:filler width 5.00, read as the narrowest dimension: a 5.005 ×
+/// 5.0 and a 5.0 × 5.005 filler are 5.0 wide and clean, a 5.005 × 5.005 one is not.
 fn gfil_a(pdk: &PdkConfig) {
     let l = layer(pdk, "GatPoly.filler");
-    let elems = max_width_pattern(l, 5.0, 5.0, 20.0, OFFSET, SPACE_DELTA);
+    let mut elems = max_width_pattern(l, 5.0, 5.0, 20.0, OFFSET, SPACE_DELTA);
+    elems.push(rect(l, OFFSET + 60.0, 0.0, OFFSET + 65.005, 5.005));
     write_gz(&format!("{DIR}/GFil.a.gds.gz"), library("TOP", elems));
 }
 

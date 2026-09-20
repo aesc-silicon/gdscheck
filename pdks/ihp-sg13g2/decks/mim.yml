@@ -29,10 +29,14 @@ rules:
     check: min_area
     layers: [MIM]
     value: 1.30
+    params:
+      touching: separate
   - id: MIM.g
     check: max_area
     layers: [MIM]
     value: 5625.00
+    params:
+      touching: separate
   - id: MIM.gR
     check: max_area
     layers: [MIM]

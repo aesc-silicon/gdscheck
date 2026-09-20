@@ -7,6 +7,8 @@ rules:
     check: max_width
     layers: [PassivDfpad]
     value: 150.00
+    params:
+      span: narrowest
   - id: Pad.d
     check: min_space
     layers: [PassivDfpad, SealActiv]
