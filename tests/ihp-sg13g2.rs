@@ -25,6 +25,12 @@ const PDK_IHP: &str = "ihp-sg13g2";
 
 const DECK_ACTIV: &str = "activ";
 
+/// The density rules, which every small layout trips, plus whatever else a hardening
+/// layout draws on purpose (a sliver under Act.a, a ring under Act.e, ...).
+fn dens(extra: &[&'static str]) -> Vec<&'static str> {
+    [&["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"][..], extra].concat()
+}
+
 #[rstest]
 #[case("activ/Act.a.gds.gz", "TOP", vec!["Act.a", "Act.a", "Act.a", "Act.a"], vec!["Act.d", "AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/Act.b.space.gds.gz", "TOP", vec!["Act.b", "Act.b"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
@@ -54,6 +60,251 @@ const DECK_ACTIV: &str = "activ";
 #[case("activ/AFil.g3.fail.gds.gz", "TOP", vec!["AFil.g3"; 4], vec!["Act.b", "AFil.g1"])]
 #[case::afil_g2_boundary_ok("activ/AFil.g2.boundary_ok.gds.gz", "TOP", vec![], vec![])]
 #[case::afil_g2_boundary_ring("activ/AFil.g2.boundary_ring.gds.gz", "TOP", vec![], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/activ.md.  A min_width
+// violation counts two markers per narrow bar (one per long edge), as the Act.a case above;
+// max_width likewise one per wall (four on a square).
+// Three 0.145 bars (x, y, 300 µm long across every tile line) → two markers each.
+#[case::act_a_h1("activ/Act.a.h1.gds.gz", "TOP", vec!["Act.a"; 6], dens(&[]))]
+// 45°: a 0.148 diamond (4) and a 0.148 45° strip (2) fire; 0.156 and the chamfers are clean.
+#[case::act_a_h2("activ/Act.a.h2.gds.gz", "TOP", vec!["Act.a"; 6], dens(&["Act.d"]))]
+// Unions 0.145 wide (overlapping boxes, abutting slices, one ring side, an island) fire;
+// unions 0.15 wide and a bar drawn as a 3 × 10 grid are clean.
+#[case::act_a_h3("activ/Act.a.h3.gds.gz", "TOP", vec!["Act.a"; 8], dens(&[]))]
+// Ten 0.145 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
+#[case::act_a_h4("activ/Act.a.h4.gds.gz", "TOP", vec!["Act.a"; 20], dens(&[]))]
+// Fifty 0.145 bars, flat and as a GdsArrayRef.
+#[case::act_a_h5("activ/Act.a.h5.gds.gz", "TOP", vec!["Act.a"; 100], dens(&[]))]
+#[case::act_a_h6("activ/Act.a.h6.gds.gz", "TOP", vec!["Act.a"; 100], dens(&[]))]
+// A 0.005 sliver and a 0.145 bar at (1000, 1000).
+#[case::act_a_h7("activ/Act.a.h7.gds.gz", "TOP", vec!["Act.a"; 4], dens(&["Act.d"]))]
+// A comb with three 0.145 teeth; a U with 0.15 arms is clean.
+#[case::act_a_h8("activ/Act.a.h8.gds.gz", "TOP", vec!["Act.a"; 6], dens(&[]))]
+// Gap 0.205, a 0.145/0.145 diagonal (0.205) and a corner-on 0.205 fire; 0.21 and the
+// 0.15/0.15 diagonal (0.212) are clean.
+#[case::act_b_h1("activ/Act.b.h1.gds.gz", "TOP", vec!["Act.b"; 3], dens(&[]))]
+// 45°: diamond tip to wall, two 45° strips, chamfer to corner, tip to tip at 0.205.
+#[case::act_b_h2("activ/Act.b.h2.gds.gz", "TOP", vec!["Act.b"; 4], dens(&[]))]
+// "Space or notch": straight and 45° notches (2 + 2), a comb with three 0.205 slots, a slot
+// in a plate, a keyhole ring with a 0.205 hole, two facing Ls, an island 0.205 from a ring.
+#[case::act_b_h3("activ/Act.b.h3.gds.gz", "TOP", vec!["Act.b"; 11], dens(&[]))]
+// Overlapping, abutting and gridded boxes each 0.205 from a third box: one each.
+#[case::act_b_h4("activ/Act.b.h4.gds.gz", "TOP", vec!["Act.b"; 3], dens(&[]))]
+// Ten 0.205 gaps on, across and straddling x = 20/21/40/42, incl. a corner on x = 20.
+#[case::act_b_h5("activ/Act.b.h5.gds.gz", "TOP", vec!["Act.b"; 10], dens(&[]))]
+// Fifty 0.205 pairs, flat and as a GdsArrayRef.
+#[case::act_b_h6("activ/Act.b.h6.gds.gz", "TOP", vec!["Act.b"; 50], dens(&[]))]
+#[case::act_b_h7("activ/Act.b.h7.gds.gz", "TOP", vec!["Act.b"; 50], dens(&[]))]
+// A 0.005 sliver 0.205 from a box, two 300 µm bars 0.205 apart, a pair at (1000, 1000).
+#[case::act_b_h8("activ/Act.b.h8.gds.gz", "TOP", vec!["Act.b"; 3], dens(&["Act.a", "Act.d"]))]
+// Activ 0.205 from Activ:filler is AFil.c1's and from Activ.mask nobody's; P+ to N+ Activ
+// and two Activ under one GatPoly are Act.b.
+#[case::act_b_h9("activ/Act.b.h9.gds.gz", "TOP", vec!["Act.b"; 2], dens(&["AFil.c1"]))]
+// S/D extensions of 0.225: right, left, top (horizontal gate) and both sides (2).
+#[case::act_c_h1("activ/Act.c.h1.gds.gz", "TOP", vec!["Act.c"; 5], dens(&[]))]
+// Transistors turned by 45° with a 0.2298 and a 0.099 S/D fire; 0.2333 is clean; a chamfer
+// passing 0.17 from a straight gate's corner with the walls 0.64 apart is clean (projection).
+#[case::act_c_h2("activ/Act.c.h2.gds.gz", "TOP", vec!["Act.c"; 2], dens(&[]))]
+// A gate from two overlapping poly boxes reads the union (0.225 fires once); a hole 0.16
+// from the gate is a 0.16 S/D.  GatPoly beside or abutting the Activ, an Activ S/D from
+// two abutting boxes, a gate across a sliver are nothing; the Activ past a gate *end*
+// inside the Activ is no drain/source either (Gat.c's business) - report, finding 1.
+#[case::act_c_h3("activ/Act.c.h3.gds.gz", "TOP", vec!["Act.c"; 2], dens(&["Act.a", "Act.d"]))]
+// Nine 0.225 S/Ds on, across and straddling x = 20/21/40/42, two of them 10 µm wide.
+#[case::act_c_h4("activ/Act.c.h4.gds.gz", "TOP", vec!["Act.c"; 9], dens(&[]))]
+// Fifty transistors with a 0.225 S/D, flat and as a GdsArrayRef.
+#[case::act_c_h5("activ/Act.c.h5.gds.gz", "TOP", vec!["Act.c"; 50], dens(&[]))]
+#[case::act_c_h6("activ/Act.c.h6.gds.gz", "TOP", vec!["Act.c"; 50], dens(&[]))]
+// A 300 µm transistor, a 300 µm gate across a small Activ, one at (1000, 1000).
+#[case::act_c_h7("activ/Act.c.h7.gds.gz", "TOP", vec!["Act.c"; 3], dens(&[]))]
+// Two fingers with a 0.225 outer S/D; one gate across two Activs, the upper 0.615 wide.
+#[case::act_c_h8("activ/Act.c.h8.gds.gz", "TOP", vec!["Act.c"; 2], dens(&[]))]
+// 0.1205 and 0.121 boxes, a 0.121 L and a 0.120 diamond fire; 0.122 and 0.125 are clean.
+#[case::act_d_h1("activ/Act.d.h1.gds.gz", "TOP", vec!["Act.d"; 4], dens(&[]))]
+// The area is the union's: overlapping boxes (0.12), a 6 × 8 grid (0.12), abutting boxes
+// (0.12), a ring's material (0.12), an island (0.09) fire once each; two 0.09 boxes
+// touching at one corner are two regions (2) - report, finding 2.
+#[case::act_d_h2("activ/Act.d.h2.gds.gz", "TOP", vec!["Act.d"; 7], dens(&["Act.a", "Act.b", "Act.e"]))]
+// Nine 0.12 shapes on, across and straddling x = 20/21/40/42; 0.122 and 0.123 are clean.
+#[case::act_d_h3("activ/Act.d.h3.gds.gz", "TOP", vec!["Act.d"; 9], dens(&[]))]
+// Fifty 0.12 boxes, flat and as a GdsArrayRef.
+#[case::act_d_h4("activ/Act.d.h4.gds.gz", "TOP", vec!["Act.d"; 50], dens(&[]))]
+#[case::act_d_h5("activ/Act.d.h5.gds.gz", "TOP", vec!["Act.d"; 50], dens(&[]))]
+// A 0.01 sliver and a 0.12 box at (1000, 1000); a 0.005 × 30 sliver (0.15) is clean.
+#[case::act_d_h6("activ/Act.d.h6.gds.gz", "TOP", vec!["Act.d"; 2], dens(&["Act.a"]))]
+// Four 0.05 chamfers take a 0.1225 box to 0.1175; a 0.16 box with 0.1 chamfers keeps 0.14.
+#[case::act_d_h7("activ/Act.d.h7.gds.gz", "TOP", vec!["Act.d"; 1], dens(&[]))]
+// Holes of 0.1485, 0.149 (0.25 × 0.595), a 0.146 diamond and a 0.14 chamfered square fire;
+// 0.15, 0.157 and 0.16 are clean.
+#[case::act_e_h1("activ/Act.e.h1.gds.gz", "TOP", vec!["Act.e"; 4], dens(&[]))]
+// Two Cs abutting close a 0.12 hole; a box on two walls leaves an L of 0.1491; a ring in a
+// ring's hole (0.078); a ring of 88 boxes; a keyhole drawn either way round: one each.  A
+// 0.34 island in a 0.5 hole leaves 0.1344 of enclosed area (1) - report, finding 3.  Two
+// Cs 0.005 apart leave no hole.
+#[case::act_e_h2("activ/Act.e.h2.gds.gz", "TOP", vec!["Act.e"; 7], dens(&["Act.b", "Act.d"]))]
+// Seven 0.12 holes on, across and straddling x = 20/21/40/42, one in a 100 µm ring; a 0.15
+// hole straddling 20, a 5.4 µm hole across it and an open U are clean.
+#[case::act_e_h3("activ/Act.e.h3.gds.gz", "TOP", vec!["Act.e"; 8], dens(&[]))]
+// Fifty 0.12 holes, flat and as a GdsArrayRef.
+#[case::act_e_h4("activ/Act.e.h4.gds.gz", "TOP", vec!["Act.e"; 50], dens(&[]))]
+#[case::act_e_h5("activ/Act.e.h5.gds.gz", "TOP", vec!["Act.e"; 50], dens(&[]))]
+// A 0.005 × 0.5 hole and a 0.12 hole at (1000, 1000); a 300 µm ring's hole is clean.
+#[case::act_e_h6("activ/Act.e.h6.gds.gz", "TOP", vec!["Act.e"; 2], dens(&["Act.b"]))]
+// A 5.005 square fires (four walls).  A 5.005 × 5.0 filler is 5.0 wide, a 3 × 20 bar 3, an L
+// with 3-wide arms 3: clean - the width is the smaller span (report, finding 4).
+#[case::afil_a_h1("activ/AFil.a.h1.gds.gz", "TOP", vec!["AFil.a"; 4], dens(&[]))]
+// A 5.02 diamond (4), a 5.02 45° strip (2), a 5.005 × 6 union (2) and a 5.005 square from
+// four boxes (4) fire; 4.95, a 5.0 × 6 union and a 6 × 6 filler with a hole (2.75 wide) are
+// clean.
+#[case::afil_a_h2("activ/AFil.a.h2.gds.gz", "TOP", vec!["AFil.a"; 12], dens(&[]))]
+// Seven 5.005 squares on, across and straddling x = 20/21/40/42 (4 each) and a 5.005-tall
+// 30 µm bar (2); a 5.0 square straddling 20 and a 5.0-tall bar are clean.
+#[case::afil_a_h3("activ/AFil.a.h3.gds.gz", "TOP", vec!["AFil.a"; 30], dens(&[]))]
+// Fifty 5.005 squares, flat and as a GdsArrayRef.
+#[case::afil_a_h4("activ/AFil.a.h4.gds.gz", "TOP", vec!["AFil.a"; 200], dens(&[]))]
+#[case::afil_a_h5("activ/AFil.a.h5.gds.gz", "TOP", vec!["AFil.a"; 200], dens(&[]))]
+// A 300 × 5.005 bar (2) and a 5.005 square at (1000, 1000) (4).
+#[case::afil_a_h6("activ/AFil.a.h6.gds.gz", "TOP", vec!["AFil.a"; 6], dens(&[]))]
+// Three 0.995 bars (x, y, 300 µm long) → two markers each.  The 300 µm bars also draw
+// AFil.a on their length (finding 4), set aside here and in the cases below.
+#[case::afil_a1_h1("activ/AFil.a1.h1.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&["AFil.a"]))]
+// 45°: a 0.99 diamond (4) and a 0.99 strip (2) fire; 1.004 and a chamfered box are clean.
+#[case::afil_a1_h2("activ/AFil.a1.h2.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&[]))]
+// Unions 0.995 wide (overlap, slices, one ring side, an island) fire; 1.0 unions and a grid
+// are clean.
+#[case::afil_a1_h3("activ/AFil.a1.h3.gds.gz", "TOP", vec!["AFil.a1"; 8], dens(&["AFil.a"]))]
+// Ten 0.995 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
+#[case::afil_a1_h4("activ/AFil.a1.h4.gds.gz", "TOP", vec!["AFil.a1"; 20], dens(&["AFil.a"]))]
+// Fifty 0.995 bars, flat and as a GdsArrayRef.
+#[case::afil_a1_h5("activ/AFil.a1.h5.gds.gz", "TOP", vec!["AFil.a1"; 100], dens(&[]))]
+#[case::afil_a1_h6("activ/AFil.a1.h6.gds.gz", "TOP", vec!["AFil.a1"; 100], dens(&[]))]
+// A 0.005 sliver and a 0.995 bar at (1000, 1000).
+#[case::afil_a1_h7("activ/AFil.a1.h7.gds.gz", "TOP", vec!["AFil.a1"; 4], dens(&[]))]
+// A comb with three 0.995 teeth; a U with 1.0 arms is clean.
+#[case::afil_a1_h8("activ/AFil.a1.h8.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&["AFil.a"]))]
+// Gap 0.415, a 0.295/0.295 diagonal (0.417) and a corner-on 0.415 fire; 0.42/0.424 clean.
+#[case::afil_b_h1("activ/AFil.b.h1.gds.gz", "TOP", vec!["AFil.b"; 3], dens(&[]))]
+// 45°: diamond tip to wall, two 45° strips, chamfer to corner, tip to tip at 0.415.
+#[case::afil_b_h2("activ/AFil.b.h2.gds.gz", "TOP", vec!["AFil.b"; 4], dens(&["AFil.a"]))]
+// "Space" without "or notch": 0.415 notches into a filler are not AFil.b's; two facing Ls
+// and an island in a ring at 0.415 are (report, note A).
+#[case::afil_b_h3("activ/AFil.b.h3.gds.gz", "TOP", vec!["AFil.b"; 2], dens(&[]))]
+// Overlapping, abutting and gridded boxes each 0.415 from a third filler: one each.
+#[case::afil_b_h4("activ/AFil.b.h4.gds.gz", "TOP", vec!["AFil.b"; 3], dens(&[]))]
+// Ten 0.415 gaps on, across and straddling x = 20/21/40/42, incl. a corner on x = 20.
+#[case::afil_b_h5("activ/AFil.b.h5.gds.gz", "TOP", vec!["AFil.b"; 10], dens(&["AFil.a"]))]
+// Fifty 0.415 pairs, flat and as a GdsArrayRef.
+#[case::afil_b_h6("activ/AFil.b.h6.gds.gz", "TOP", vec!["AFil.b"; 50], dens(&[]))]
+#[case::afil_b_h7("activ/AFil.b.h7.gds.gz", "TOP", vec!["AFil.b"; 50], dens(&[]))]
+// A 0.005 sliver 0.415 from a filler, two 300 µm bars 0.415 apart, a pair at (1000, 1000).
+#[case::afil_b_h8("activ/AFil.b.h8.gds.gz", "TOP", vec!["AFil.b"; 3], dens(&["AFil.a", "AFil.a1"]))]
+// A filler 0.415 from an Activ is AFil.c1's, from an Activ.mask nobody's.
+#[case::afil_b_h9("activ/AFil.b.h9.gds.gz", "TOP", vec![], dens(&["AFil.c1"]))]
+// A Cont and a GatPoly 1.095 away, a Cont and a GatPoly at a 0.775/0.775 diagonal (1.096)
+// fire; 1.10 and 0.78/0.78 (1.103) are clean.
+#[case::afil_c_h1("activ/AFil.c.h1.gds.gz", "TOP", vec!["AFil.c"; 4], dens(&[]))]
+// 45°: a GatPoly chamfer 1.096 from a filler's corner and a GatPoly diamond tip at 1.095
+// fire; a chamfer at 1.103 is clean.
+#[case::afil_c_h2("activ/AFil.c.h2.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&[]))]
+// A Cont bar at 1.095 and a Cont on an Activ at 1.095 fire; a GatPoly:filler at 1.095 is
+// not GatPoly; a Cont overlapping the filler's edge is at no distance (fires) - report,
+// finding 5.
+#[case::afil_c_h3("activ/AFil.c.h3.gds.gz", "TOP", vec!["AFil.c"; 3], dens(&[]))]
+// Eight 1.095 gaps on, across and straddling x = 20/21/40/42, one to a 10 µm GatPoly.
+#[case::afil_c_h4("activ/AFil.c.h4.gds.gz", "TOP", vec!["AFil.c"; 8], dens(&["AFil.a"]))]
+// Fifty filler/Cont pairs at 1.095, flat and as a GdsArrayRef.
+#[case::afil_c_h5("activ/AFil.c.h5.gds.gz", "TOP", vec!["AFil.c"; 50], dens(&[]))]
+#[case::afil_c_h6("activ/AFil.c.h6.gds.gz", "TOP", vec!["AFil.c"; 50], dens(&[]))]
+// A 300 µm GatPoly 1.095 from a 300 µm filler, a pair at (1000, 1000).
+#[case::afil_c_h7("activ/AFil.c.h7.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&["AFil.a"]))]
+// Gap 0.415, a 0.295/0.295 diagonal (0.417) and a corner-on 0.415 fire; 0.42/0.424 clean.
+#[case::afil_c1_h1("activ/AFil.c1.h1.gds.gz", "TOP", vec!["AFil.c1"; 3], dens(&[]))]
+// 45°: an Activ diamond tip, an Activ strip against a filler strip, a filler chamfer
+// against an Activ corner, all at 0.415-0.417.
+#[case::afil_c1_h2("activ/AFil.c1.h2.gds.gz", "TOP", vec!["AFil.c1"; 3], dens(&["AFil.a"]))]
+// Activ.mask is not Activ, a filler is AFil.b's; an Activ abutting a filler and one
+// overlapping it are at no distance (fire) - report, finding 5.
+#[case::afil_c1_h3("activ/AFil.c1.h3.gds.gz", "TOP", vec!["AFil.c1"; 2], dens(&["AFil.b"]))]
+// Eight 0.415 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
+#[case::afil_c1_h4("activ/AFil.c1.h4.gds.gz", "TOP", vec!["AFil.c1"; 8], dens(&["AFil.a"]))]
+// Fifty filler/Activ pairs at 0.415, flat and as a GdsArrayRef.
+#[case::afil_c1_h5("activ/AFil.c1.h5.gds.gz", "TOP", vec!["AFil.c1"; 50], dens(&[]))]
+#[case::afil_c1_h6("activ/AFil.c1.h6.gds.gz", "TOP", vec!["AFil.c1"; 50], dens(&[]))]
+// A 0.005 Activ sliver 0.415 from a filler, 300 µm bars 0.415 apart, a pair at (1000, 1000).
+#[case::afil_c1_h7("activ/AFil.c1.h7.gds.gz", "TOP", vec!["AFil.c1"; 3], dens(&["AFil.a", "Act.a", "Act.d"]))]
+// NWell and nBuLay at 0.995 and at a 0.705/0.705 diagonal (0.997) fire; 1.0/1.004 clean.
+#[case::afil_d_h1("activ/AFil.d.h1.gds.gz", "TOP", vec!["AFil.d"; 4], dens(&[]))]
+// Figure 5.6 measures "d" inside the well too: a filler 0.5 inside a NWell and one 0.5
+// inside an nBuLay fire, 1.0 inside is clean; fillers crossing a NWell's and an nBuLay's
+// edge are at no distance (fire) - report, finding 6.
+#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 4], dens(&[]))]
+// Section 4.2's nBuLay: a filler 1.5 from a 3.0 µm NWell is 0.5 from its derived nBuLay
+// (fires), 1.5 from a 2.995 well and 2.0 from a 3.0 well are clean; a drawn nBuLay under
+// nBuLay:block is none (0.5 away: clean), a half-blocked one fires for the filler 0.5 from
+// its open half only - report, finding 7.
+#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
+// 45°: a NWell diamond tip at 0.995 and a NWell chamfer 0.997 from a corner fire; 1.004 clean.
+#[case::afil_d_h4("activ/AFil.d.h4.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
+// Eight 0.995 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
+#[case::afil_d_h5("activ/AFil.d.h5.gds.gz", "TOP", vec!["AFil.d"; 8], dens(&["AFil.a"]))]
+// Fifty filler/NWell pairs at 0.995, flat and as a GdsArrayRef.
+#[case::afil_d_h6("activ/AFil.d.h6.gds.gz", "TOP", vec!["AFil.d"; 50], dens(&[]))]
+#[case::afil_d_h7("activ/AFil.d.h7.gds.gz", "TOP", vec!["AFil.d"; 50], dens(&[]))]
+// A 300 µm NWell 0.995 from a 300 µm filler, a pair at (1000, 1000).
+#[case::afil_d_h8("activ/AFil.d.h8.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&["AFil.a"]))]
+// TRANS at 0.995, at a 0.705/0.705 diagonal (0.997) and corner-on fire; 1.0/1.004 clean.
+#[case::afil_e_h1("activ/AFil.e.h1.gds.gz", "TOP", vec!["AFil.e"; 3], dens(&[]))]
+// A filler inside a TRANS and one crossing its edge are at no distance (fire) - report,
+// finding 6; a TRANS diamond tip at 0.995 fires.
+#[case::afil_e_h2("activ/AFil.e.h2.gds.gz", "TOP", vec!["AFil.e"; 3], dens(&[]))]
+// Eight 0.995 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
+#[case::afil_e_h3("activ/AFil.e.h3.gds.gz", "TOP", vec!["AFil.e"; 8], dens(&["AFil.a"]))]
+// Fifty filler/TRANS pairs at 0.995, flat and as a GdsArrayRef.
+#[case::afil_e_h4("activ/AFil.e.h4.gds.gz", "TOP", vec!["AFil.e"; 50], dens(&[]))]
+#[case::afil_e_h5("activ/AFil.e.h5.gds.gz", "TOP", vec!["AFil.e"; 50], dens(&[]))]
+// A 300 µm TRANS 0.995 from a 300 µm filler, a pair at (1000, 1000).
+#[case::afil_e_h6("activ/AFil.e.h6.gds.gz", "TOP", vec!["AFil.e"; 2], dens(&["AFil.a"]))]
+// PWell:block at 1.495, at a 1.06/1.06 diagonal (1.499) and corner-on fire; 1.5/1.506 clean.
+#[case::afil_i_h1("activ/AFil.i.h1.gds.gz", "TOP", vec!["AFil.i"; 3], dens(&[]))]
+// "Space to edges": a filler inside a block 1.495 from its edge fires (1.5 is clean), a
+// filler crossing the edge is at no distance (fires) - report, finding 8.
+#[case::afil_i_h2("activ/AFil.i.h2.gds.gz", "TOP", vec!["AFil.i"; 2], dens(&[]))]
+// 45°: a block chamfer 1.499 from a filler's corner and a block diamond tip at 1.495 fire.
+#[case::afil_i_h3("activ/AFil.i.h3.gds.gz", "TOP", vec!["AFil.i"; 2], dens(&[]))]
+// Eight 1.495 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
+#[case::afil_i_h4("activ/AFil.i.h4.gds.gz", "TOP", vec!["AFil.i"; 8], dens(&["AFil.a"]))]
+// Fifty filler/block pairs at 1.495, flat and as a GdsArrayRef.
+#[case::afil_i_h5("activ/AFil.i.h5.gds.gz", "TOP", vec!["AFil.i"; 50], dens(&[]))]
+#[case::afil_i_h6("activ/AFil.i.h6.gds.gz", "TOP", vec!["AFil.i"; 50], dens(&[]))]
+// A 300 µm block 1.495 from a 300 µm filler, a pair at (1000, 1000).
+#[case::afil_i_h7("activ/AFil.i.h7.gds.gz", "TOP", vec!["AFil.i"; 2], dens(&["AFil.a"]))]
+// nSD:block at 0.245, SalBlock at 0.245, both at 0.245 (one edge, one marker) and an
+// nSD:block ending on the filler's edge fire; 0.25 on both is clean.
+#[case::afil_j_h1("activ/AFil.j.h1.gds.gz", "TOP", vec!["AFil.j"; 4], dens(&[]))]
+// An nSD:block from two boxes whose union encloses by 0.245 fires; by 0.25 is clean, as are
+// a filler outside any block, one crossing or touching the block's edge with 0.25 all
+// round, and one half under the block (those three are AFil.i's).
+#[case::afil_j_h2("activ/AFil.j.h2.gds.gz", "TOP", vec!["AFil.j"; 1], dens(&["AFil.i"]))]
+// Parallel chamfers: nSD:block 0.244 from the filler's chamfer fires, SalBlock at 0.251 is
+// clean; a chamfer 0.20 from a square corner with the walls at 0.30 is clean (projection).
+#[case::afil_j_h3("activ/AFil.j.h3.gds.gz", "TOP", vec!["AFil.j"; 1], dens(&[]))]
+// Eight 0.245 margins on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
+#[case::afil_j_h4("activ/AFil.j.h4.gds.gz", "TOP", vec!["AFil.j"; 8], dens(&["AFil.a"]))]
+// Fifty fillers with a 0.245 margin, flat and as a GdsArrayRef.
+#[case::afil_j_h5("activ/AFil.j.h5.gds.gz", "TOP", vec!["AFil.j"; 50], dens(&[]))]
+#[case::afil_j_h6("activ/AFil.j.h6.gds.gz", "TOP", vec!["AFil.j"; 50], dens(&[]))]
+// A 300 µm filler with a 0.245 SalBlock margin, a cell at (1000, 1000).
+#[case::afil_j_h7("activ/AFil.j.h7.gds.gz", "TOP", vec!["AFil.j"; 2], dens(&["AFil.a"]))]
+// The same 30 % of stripes on Activ, Activ:filler and Activ.mask is 30 % of Activ, under
+// AFil.g's 35 %; summing the layers reads 90 % and fires g1/g3 instead - report, finding 9.
+#[case::afil_g_h1("activ/AFil.g.h1.gds.gz", "TOP", vec!["AFil.g"], vec!["AFil.a"])]
+// "Any 800 × 800 area": a 700 µm hole at (150, 150) in a full plate leaves 23.4 % in the
+// window at (100, 100) (AFil.g2; the count is the tool's cut of a sliding window) while
+// the windows on the 800 grid are fine; 51 % globally.  The 200 µm strips left over on the
+// 800 grid are no 800 × 800 area and draw no AFil.g3 - report, finding 10.
+#[case::afil_g2_h2("activ/AFil.g2.h2.gds.gz", "TOP", vec!["AFil.g2"], vec![])]
+// A 650 µm hole in a 970-tall plate: 54.75 % globally, every window between 32.8 and 39 %.
+#[case::afil_g2_h3("activ/AFil.g2.h3.gds.gz", "TOP", vec![], vec![])]
 fn test_activ(
     #[case] gds: &str,
     #[case] topcell: &str,
