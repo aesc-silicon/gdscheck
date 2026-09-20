@@ -1425,6 +1425,243 @@ fn test_metal5(
     assert_eq!(drc(PDK_IHP, DECK_M5, gds, topcell, &ignore), expected);
 }
 
+// --- Metal(n=2-5): the hardening layouts ---
+//
+// Section 5.17 (Mn.a-Mn.k) and section 5.18 (MnFil.*) are one rule set on four layers, and
+// so is every layout: `metal<n>/M<n>.<rule>.h<k>.gds.gz` carries the same geometry for
+// n = 2..5 (Via(n-1) and Metal(n-1) below).  The rule ids are given as suffixes and the
+// layer index is a second axis of the table, so a layer that answers differently fails on
+// its own.  Expected values are the manual's (ci/hardening/reports/ihp-sg13g2/metaln.md);
+// `mn_dens` sets the density rules aside, which every small layout trips.
+
+/// The density rules, which every small layout trips, plus whatever else a layout draws
+/// on purpose (a sliver under Mn.a and Mn.d, a short 45° strip under Mn.d, ...).
+fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
+    [&[".j", ".k", "Fil.h", "Fil.k"][..], extra].concat()
+}
+
+#[rstest]
+// Mn.a: 0.20 legal, 0.195 fires in x and y; a 300 µm bar once (two markers per bar).
+#[case::mn_a_h1(".a.h1", vec![".a"; 6], mn_dens(&[]))]
+// 45°: a 0.198 diamond (4 walls) and a 0.198 strip (2) fire; the 0.205 ones, a chamfered box
+// and an L with a chamfered inner corner are clean.  The narrow strips are also Mn.g's.
+#[case::mn_a_h2(".a.h2", vec![".a"; 6], mn_dens(&[".d", ".g"]))]
+// Unions: a 0.195 union of two boxes, three slices plus a 0.045, a ring's 0.195 side and a
+// 0.195 island in a ring fire; the 0.20 union, four slices and a gridded bar are clean.
+#[case::mn_a_h3(".a.h3", vec![".a"; 8], mn_dens(&[]))]
+// Tile lines: ten 0.195 bars and an L on, across and beside x = 20/21/40/42.
+#[case::mn_a_h4(".a.h4", vec![".a"; 20], mn_dens(&[]))]
+// Fifty 0.195 bars, flat and as an array reference.
+#[case::mn_a_h5(".a.h5", vec![".a"; 100], mn_dens(&[]))]
+#[case::mn_a_h6(".a.h6", vec![".a"; 100], mn_dens(&[]))]
+// A 0.005 sliver and a bar at (1000, 1000).
+#[case::mn_a_h7(".a.h7", vec![".a"; 4], mn_dens(&[".d"]))]
+// A comb with three 0.195 teeth; a U with 0.20 arms is clean.
+#[case::mn_a_h8(".a.h8", vec![".a"; 6], mn_dens(&[]))]
+// Section 6.10: metal rules are not checked within EdgeSeal.  The 0.195 bar and the 0.205
+// pair under the seal are exempt; the same outside fire (finding 3).
+#[case::mn_a_h9(".a.h9", vec![".a", ".a", ".b"], mn_dens(&[]))]
+// Mn.b: 0.205 fires in x, y, corner to corner (0.2051) and corner-on; 0.21, 0.212 and a
+// 0.2/0.2 diagonal (0.283 euclidian) are clean.
+#[case::mn_b_h1(".b.h1", vec![".b"; 4], mn_dens(&[]))]
+// 45°: a diamond tip at 0.205, two strips at 0.205, a chamfer 0.205 from a corner and two
+// tips 0.205 apart fire Mn.b; those and the 0.21/0.212 variants fire Mn.i (a 45° edge).
+#[case::mn_b_h2(".b.h2", [vec![".b"; 4], vec![".i"; 6]].concat(), mn_dens(&[]))]
+// Notches: a U (2), a straight-vs-45° foot (2), a comb (3), a slot (1), a keyhole hole (1),
+// two facing Ls (1, also Mn.e: 1.0-wide arms, run 1.8) and an island in a ring (1).
+#[case::mn_b_h3(".b.h3", [vec![".b"; 11], vec![".e"]].concat(), mn_dens(&[]))]
+// Unions: a two-box union and a gridded box each face a neighbour at 0.205.
+#[case::mn_b_h4(".b.h4", vec![".b"; 2], mn_dens(&[]))]
+// Tile lines: 0.205 gaps on, straddling and across x = 20/21/40/42, a corner pair on 20 (8);
+// the 10 µm bars are 1.0 wide, so their gap is Mn.e's too.
+#[case::mn_b_h5(".b.h5", [vec![".b"; 8], vec![".e"]].concat(), mn_dens(&[]))]
+// Fifty 0.205 pairs, flat and as an array (a 1.0 run: Mn.e stays quiet).
+#[case::mn_b_h6(".b.h6", vec![".b"; 50], mn_dens(&[]))]
+#[case::mn_b_h7(".b.h7", vec![".b"; 50], mn_dens(&[]))]
+// A 0.005 sliver 0.205 from a box, 300 µm bars 0.205 apart, a pair at (1000, 1000); the
+// wide box and the wide bars draw Mn.e as well.
+#[case::mn_b_h8(".b.h8", vec![".b", ".b", ".b", ".e", ".e"], mn_dens(&[".a", ".d"]))]
+// No net condition: a pair strapped through Via(n-1)/Metal(n-1) fires like the bare one.
+#[case::mn_b_h9(".b.h9", vec![".b", ".b", ".e", ".e"], mn_dens(&[]))]
+// Mn.c: a via on the line's edge, one 0.005 out and one in a pad's corner fire; 0.005 all
+// round is clean.
+#[case::mn_c_h1(".c.h1", vec![".c"; 3], mn_dens(&[".c1"]))]
+// A bare via, a via half out of a line's end and a via beside a line: none is enclosed.
+#[case::mn_c_h2(".c.h2", vec![".c"; 3], mn_dens(&[".c1"]))]
+// A chamfer through the via's corner (touch, 0.000) and one cutting it fire; the chamfer
+// passing 0.0035 from the corner with 0.005 walls is the settled projection reading (finding 4).
+#[case::mn_c_h3(".c.h3", vec![".c"; 2], mn_dens(&[".c1"]))]
+// Unions: two boxes enclosing the via by 0.005 together are clean, by 0.000 fire once; ten
+// abutting slices are clean.
+#[case::mn_c_h4(".c.h4", vec![".c"; 1], mn_dens(&[]))]
+// Tile lines: vias on the line's edge straddling x = 20/21/40/42 and one with its edge on
+// 20; the via ending 0.005 short of x = 20 sits 0.005 from its line's end with 0.005
+// sides, which is Mn.c1's (finding 1).
+#[case::mn_c_h5(".c.h5", [vec![".c"; 5], vec![".c1"]].concat(), mn_dens(&[]))]
+// Fifty vias on a line's edge, flat and as an array.
+#[case::mn_c_h6(".c.h6", vec![".c"; 50], mn_dens(&[]))]
+#[case::mn_c_h7(".c.h7", vec![".c"; 50], mn_dens(&[]))]
+// A via on a line's edge at (1000, 1000) and on a 300 µm line.
+#[case::mn_c_h8(".c.h8", vec![".c"; 2], mn_dens(&[]))]
+// A via on the line's edge under an EdgeSeal is exempt; outside and across the seal's
+// edge it fires.
+#[case::mn_c_h9(".c.h9", vec![".c"; 2], mn_dens(&[]))]
+// Mn.c1: line-end vias with a 0.045 endcap (right, top, left, the outer of two) and one with
+// 0.000 (also Mn.c) fire; 0.05 and a via mid-line are clean (finding 1).
+#[case::mn_c1_h1(".c1.h1", [vec![".c1"; 5], vec![".c"]].concat(), mn_dens(&[]))]
+// Corners (note 1): outer margins (0.045, 0.005) and (0.005, 0.005) fire; (0.05, 0.005),
+// (0.05, 0.05) and (0.005, 0.05) are clean.
+#[case::mn_c1_h2(".c1.h2", vec![".c1"; 2], mn_dens(&[]))]
+// Pads: one 0.05 side and three 0.005, two adjacent 0.05 sides, 0.045 all round and 0.005
+// all round fire; two opposite 0.05 sides, three and four are clean.  All under Mn.d.
+#[case::mn_c1_h3(".c1.h3", vec![".c1"; 4], mn_dens(&[".d"]))]
+// A 0.045 endcap on a 0.5-wide line's end (0.155 sides: an opposite pair over 0.05), a
+// 0.05 endcap, a T and a cross are clean.
+#[case::mn_c1_h4(".c1.h4", vec![], mn_dens(&[]))]
+// Tile lines: 0.045 endcaps ending on x = 20/21/40, vias straddling 20 and 42; 0.05 on 20 clean.
+#[case::mn_c1_h5(".c1.h5", vec![".c1"; 5], mn_dens(&[]))]
+// Fifty 0.045 endcaps, flat and as an array.
+#[case::mn_c1_h6(".c1.h6", vec![".c1"; 50], mn_dens(&[]))]
+#[case::mn_c1_h7(".c1.h7", vec![".c1"; 50], mn_dens(&[]))]
+// A 0.045 endcap at (1000, 1000) and at the far end of a 300 µm line.
+#[case::mn_c1_h8(".c1.h8", vec![".c1"; 2], mn_dens(&[]))]
+// Mn.d: 0.142 fires as a box (x, y), an L and a 0.1405 diamond; 0.144 and 0.1458 are clean.
+#[case::mn_d_h1(".d.h1", vec![".d"; 4], mn_dens(&[]))]
+// Unions: a cross whose union is 0.12, two corner-touching 0.09 boxes (two regions), an
+// island in a ring and a 0.14 bar fire; abutting boxes, a grid, a ring and 0.144 are clean.
+#[case::mn_d_h2(".d.h2", vec![".d"; 5], mn_dens(&[".a", ".b"]))]
+// Tile lines: 0.14 bars on, across and beside x = 20/21/40/42 and across y = 20; 0.144 across 20 clean.
+#[case::mn_d_h3(".d.h3", vec![".d"; 8], mn_dens(&[]))]
+// Fifty 0.14 bars, flat and as an array.
+#[case::mn_d_h4(".d.h4", vec![".d"; 50], mn_dens(&[]))]
+#[case::mn_d_h5(".d.h5", vec![".d"; 50], mn_dens(&[]))]
+// A 0.01 sliver and a 0.14 bar at (1000, 1000) fire; a 0.144 sliver and a 300 µm line are clean.
+#[case::mn_d_h6(".d.h6", vec![".d"; 2], mn_dens(&[".a"]))]
+// A 0.14 bar under an EdgeSeal is exempt (section 6.10); one outside fires (finding 3).
+#[case::mn_d_h7(".d.h7", vec![".d"; 1], mn_dens(&[]))]
+// Mn.e: 0.235 fires (x and y), 0.24 is clean; 0.395 is wide, 0.39 is not; a 1.005 run fires,
+// 1.0 does not.
+#[case::mn_e_h1(".e.h1", vec![".e"; 4], mn_dens(&[]))]
+// Wide/narrow, narrow/wide and wide/wide fire, narrow/narrow does not; a wide line between
+// two narrow ones fires twice.
+#[case::mn_e_h2(".e.h2", vec![".e"; 5], mn_dens(&[]))]
+// A 1.005 bump, a 1.005 stagger and a line whose 0.5-wide part sits on its far side (the
+// facing wall straight, run 2) fire; a 0.8 bump and a 1.0 stagger are clean (finding 2).
+#[case::mn_e_h3(".e.h3", vec![".e"; 3], mn_dens(&[]))]
+// An L pad, a pad stepping wider on its far side, a plate beside a line and a plate's end
+// fire; a near-side 0.6 step and a 0.5 line's end are clean (finding 2).
+#[case::mn_e_h4(".e.h4", vec![".e"; 4], mn_dens(&[]))]
+// 45°: two 0.509 strips and a 0.509/0.2404 pair at 0.2333 fire Mn.e and Mn.i; two 0.2404
+// strips at 0.2333 fire Mn.i only; 0.2404 apart is clean.
+#[case::mn_e_h5(".e.h5", vec![".e", ".e", ".i", ".i", ".i"], mn_dens(&[]))]
+// Unions: a 0.395 union and a run of two abutting pieces fire; a 0.39 union and a neighbour
+// split into two 0.8 lines are clean.
+#[case::mn_e_h6(".e.h6", vec![".e"; 2], mn_dens(&[]))]
+// A wide U with a 0.235 notch: "space", not "space or notch" (note A).
+#[case::mn_e_h7(".e.h7", vec![], mn_dens(&[]))]
+// Tile lines: runs split by x = 20/21/40, gaps straddling 20/42, a wall on 20, a 10 µm run
+// and a plate cornered on (20, 20) fire; a 1.0 run centred on 20 is clean.
+#[case::mn_e_h8(".e.h8", vec![".e"; 8], mn_dens(&[]))]
+// Fifty wide/narrow pairs, flat and as an array.
+#[case::mn_e_h9(".e.h9", vec![".e"; 50], mn_dens(&[]))]
+#[case::mn_e_h10(".e.h10", vec![".e"; 50], mn_dens(&[]))]
+// A 300 µm pair and a pair at (1000, 1000).
+#[case::mn_e_h11(".e.h11", vec![".e"; 2], mn_dens(&[]))]
+// Two wide lines 0.205 apart: Mn.b and Mn.e.
+#[case::mn_e_h12(".e.h12", vec![".b", ".e"], mn_dens(&[]))]
+// Mn.f: 0.595 fires, 0.60 is clean; 10.005 is wide, 10.0 is not; a 10.005 run fires, 10.0 not.
+#[case::mn_f_h1(".f.h1", vec![".f"; 3], mn_dens(&[]))]
+// A narrow line beside a plate, an L plate's arm and a 10.005 pad on a line fire; two 10 × 12
+// plates and a 10.005 × 9 pad are clean.
+#[case::mn_f_h2(".f.h2", vec![".f"; 3], mn_dens(&[]))]
+// Tile lines: runs across y = 20, gaps straddling x = 20/42, walls on 20/40, a 10.005 run
+// split by y = 20 fire; a 10.0 run split by y = 20 is clean.
+#[case::mn_f_h3(".f.h3", vec![".f"; 6], mn_dens(&[]))]
+// Fifty plate pairs, flat and as an array.
+#[case::mn_f_h4(".f.h4", vec![".f"; 50], mn_dens(&[]))]
+#[case::mn_f_h5(".f.h5", vec![".f"; 50], mn_dens(&[]))]
+// 300 µm plates and a pair at (1000, 1000).
+#[case::mn_f_h6(".f.h6", vec![".f"; 2], mn_dens(&[]))]
+// 45°: 12-wide strips 0.594 apart fire, 0.601 apart are clean.
+#[case::mn_f_h7(".f.h7", vec![".f"; 1], mn_dens(&[]))]
+// Mn.g: a 0.2333 strip with 1.41 walls and one with 0.502 walls fire (two markers each);
+// 0.2404 and 0.495 walls are clean.  The short strips are under Mn.d.
+#[case::mn_g_h1(".g.h1", vec![".g"; 4], mn_dens(&[".d"]))]
+// A 0.2 line's 45° jog with 0.509 walls and a pad's arm with 0.707/0.502 walls fire; a
+// 0.495 jog, a 0.24 line's jog and an arm with 0.601/0.396 walls (settled: each wall its
+// own length) are clean.
+#[case::mn_g_h2(".g.h2", vec![".g"; 4], mn_dens(&[]))]
+// An L with chamfered bend: 0.707/0.544 walls fire; 0.566/0.403 and 0.424/0.262 are clean;
+// a 0.2333 diamond's walls are short.
+#[case::mn_g_h3(".g.h3", vec![".g"; 2], mn_dens(&[".d"]))]
+// A 300 µm strip (once), strips across x = 20/21/40/42 and y = 20 with 0.502 walls the tile
+// line splits (seven strips, two markers each); 0.495 walls across 20 are clean.
+#[case::mn_g_h4(".g.h4", vec![".g"; 14], mn_dens(&[".d"]))]
+// Fifty 0.2333 strips, flat and as an array.
+#[case::mn_g_h5(".g.h5", vec![".g"; 100], mn_dens(&[]))]
+#[case::mn_g_h6(".g.h6", vec![".g"; 100], mn_dens(&[]))]
+// A strip at (1000, 1000); a 0.198 strip under Mn.a as well.
+#[case::mn_g_h7(".g.h7", vec![".g", ".g", ".g", ".g", ".a", ".a"], mn_dens(&[]))]
+// Mn.i: 0.304 strips 0.2333 apart fire, 0.2404 apart are clean.
+#[case::mn_i_h1(".i.h1", vec![".i"; 1], mn_dens(&[]))]
+// A corner 0.2333 from a 45° wall, a tip 0.235 above a wall and a chamfer 0.2333 from a
+// corner fire (Mn.b clean); 0.2404/0.24 and a straight corner pair are clean.
+#[case::mn_i_h2(".i.h2", vec![".i"; 3], mn_dens(&[]))]
+// A strip's square end 0.235 above a wall fires; a hairpin's 0.2333 notch is "space" (note A).
+#[case::mn_i_h3(".i.h3", vec![".i"; 1], mn_dens(&[]))]
+// Tile lines: strip pairs across x = 20/21/40/42, inside a tile, and a corner on 20 against a 45° wall.
+#[case::mn_i_h4(".i.h4", vec![".i"; 6], mn_dens(&[]))]
+// Fifty strip pairs, flat and as an array.
+#[case::mn_i_h5(".i.h5", vec![".i"; 50], mn_dens(&[]))]
+#[case::mn_i_h6(".i.h6", vec![".i"; 50], mn_dens(&[]))]
+// 300 µm strips and a pair at (1000, 1000).
+#[case::mn_i_h7(".i.h7", vec![".i"; 2], mn_dens(&[]))]
+// Strips 0.2051 apart: Mn.b and Mn.i.
+#[case::mn_i_h8(".i.h8", vec![".b", ".i"], mn_dens(&[]))]
+// Mn.j: 30 % stripes drawn on all three density layers are 30 % of the die, not 90.
+#[case::mn_j_h1(".j.h1", vec![".j"], vec!["Fil.a2", "Fil.b", "Fil.c"])]
+// MnFil.h: a 700 hole in a 51 % die; the 800 window holding it reads 23.4 %.
+#[case::mnfil_h_h1("Fil.h.h1", vec!["Fil.h"], vec![])]
+// MnFil.a1: 0.995 bars (x, y, a union) and a 0.99 diamond fire; 1.0, 1.004 and an L are clean.
+#[case::mnfil_a1_h1("Fil.a1.h1", vec!["Fil.a1"; 10], mn_dens(&[]))]
+// MnFil.a2: a 5.005 × 5.005 square fires (four walls); 5.005 × 5.0, a 3 × 20 bar, an L with
+// 3-wide arms and a frame with 2.25 walls are under 5 wide (finding 6).
+#[case::mnfil_a2_h1("Fil.a2.h1", vec!["Fil.a2"; 4], mn_dens(&[]))]
+// MnFil.b: 0.415 (x, y), 0.41 corner to corner and a tip at 0.415 fire; 0.42, 0.424 and a
+// U's 0.415 notch (note A) are clean.
+#[case::mnfil_b_h1("Fil.b.h1", vec!["Fil.b"; 4], mn_dens(&[]))]
+// Tile lines: 0.415 gaps straddling x = 20/21/40/42 and inside a tile.
+#[case::mnfil_b_h2("Fil.b.h2", vec!["Fil.b"; 5], mn_dens(&[]))]
+// Fifty 0.415 pairs, flat and as an array.
+#[case::mnfil_b_h3("Fil.b.h3", vec!["Fil.b"; 50], mn_dens(&[]))]
+#[case::mnfil_b_h4("Fil.b.h4", vec!["Fil.b"; 50], mn_dens(&[]))]
+// MnFil.c: 0.415 (x, y), an abutting metal (0.000) and 0.41 corner to corner fire; 0.42 and
+// an overlapping metal (settled: no pair) are clean (finding 5).
+#[case::mnfil_c_h1("Fil.c.h1", vec!["Fil.c"; 4], mn_dens(&[]))]
+// Tile lines: metal 0.415 from a filler across x = 20/21/40/42 and inside a tile.
+#[case::mnfil_c_h2("Fil.c.h2", vec!["Fil.c"; 5], mn_dens(&[]))]
+// Fifty filler/metal pairs, flat and as an array.
+#[case::mnfil_c_h3("Fil.c.h3", vec!["Fil.c"; 50], mn_dens(&[]))]
+#[case::mnfil_c_h4("Fil.c.h4", vec!["Fil.c"; 50], mn_dens(&[]))]
+// MnFil.d: 0.995 (x, y), 0.99 corner to corner and a filler inside a TRANS marker fire;
+// 1.004 and a filler across the marker's edge (settled: no pair) are clean (finding 5).
+#[case::mnfil_d_h1("Fil.d.h1", vec!["Fil.d"; 4], mn_dens(&[]))]
+fn test_metaln_hardening(
+    #[case] gds: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+    #[values(2, 3, 4, 5)] n: u32,
+) {
+    let deck = format!("metal{n}");
+    let gds = format!("metal{n}/M{n}{gds}.gds.gz");
+    let id = |s: &&str| format!("M{n}{s}");
+    let ignore: Vec<String> = ignore.iter().map(id).collect();
+    let ignore: Vec<&str> = ignore.iter().map(String::as_str).collect();
+    let mut expected: Vec<String> = expected.iter().map(id).collect();
+    expected.sort();
+    assert_eq!(drc(PDK_IHP, &deck, &gds, "TOP", &ignore), expected);
+}
+
 // --- Via1 ---
 
 const DECK_V1: &str = "via1";
