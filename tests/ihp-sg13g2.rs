@@ -1218,6 +1218,12 @@ fn test_nwell(
 
 const DECK_M1: &str = "metal1";
 
+/// The density rules, which every small layout trips, plus whatever else a hardening
+/// layout draws on purpose.
+fn m1dens(extra: &[&'static str]) -> Vec<&'static str> {
+    [&["M1.j", "M1.k", "M1Fil.h", "M1Fil.k"][..], extra].concat()
+}
+
 #[rstest]
 #[case::m1_a("metal1/M1.a.gds.gz", "TOP", vec!["M1.a", "M1.a", "M1.a", "M1.a"], vec!["M1.d", "M1.j", "M1.k", "M1Fil.h", "M1Fil.k"])]
 #[case::m1_b_space("metal1/M1.b.space.gds.gz", "TOP", vec!["M1.b", "M1.b"], vec!["M1.j", "M1.k", "M1Fil.h", "M1Fil.k"])]
@@ -1235,6 +1241,238 @@ const DECK_M1: &str = "metal1";
 #[case::m1fil_h_boundary_ring("metal1/M1Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 #[case::m1fil_k_ok("metal1/M1Fil.k.gds.gz", "TOP", vec![], vec!["M1.b", "M1.k"])]
 #[case::m1fil_k_fail("metal1/M1Fil.k.fail.gds.gz", "TOP", vec!["M1Fil.k"], vec!["M1.b", "M1.k"])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/metal1.md.  Counts follow
+// the engine's marker cuts where it is right: one per wall for min_width and max_width
+// (two per narrow bar, four per oversized square), one per pair for a space rule, one per
+// shape for area and enclosure.  The density rules are ignored throughout (`m1dens`).  A
+// wide pair under 0.22 with a run over 1.0 is M1.e as well as M1.b, and a 45° pair under
+// 0.22 is M1.i as well; both are expected where they occur.
+// 0.155 bars in x and y, a 300 µm bar, a 0.005 sliver, a bar at (1000, 1000); 0.16 clean.
+#[case::m1_a_h1("metal1/M1.a.h1.gds.gz", "TOP", vec!["M1.a"; 10], m1dens(&["M1.d"]))]
+// 45°: a 0.1556 diamond (4) and strip (2) fire; 0.1626 and the chamfered shapes are clean.
+// The small diamonds are under M1.d's area and the 3 µm strips are M1.g, both ignored.
+#[case::m1_a_h2("metal1/M1.a.h2.gds.gz", "TOP", vec!["M1.a"; 6], m1dens(&["M1.d", "M1.g"]))]
+// Unions 0.155 wide (overlapping boxes, abutting slices, one ring wall, an island) fire
+// two walls each; 0.16 unions and a 4 × 10 grid are clean.
+#[case::m1_a_h3("metal1/M1.a.h3.gds.gz", "TOP", vec!["M1.a"; 8], m1dens(&[]))]
+// Ten 0.155 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
+#[case::m1_a_h4("metal1/M1.a.h4.gds.gz", "TOP", vec!["M1.a"; 20], m1dens(&[]))]
+// Fifty 0.155 bars, flat and as a GdsArrayRef.
+#[case::m1_a_h5("metal1/M1.a.h5.gds.gz", "TOP", vec!["M1.a"; 100], m1dens(&[]))]
+#[case::m1_a_h6("metal1/M1.a.h6.gds.gz", "TOP", vec!["M1.a"; 100], m1dens(&[]))]
+// A comb with three 0.155 teeth; a U with 0.16 arms is clean.
+#[case::m1_a_h7("metal1/M1.a.h7.gds.gz", "TOP", vec!["M1.a"; 6], m1dens(&[]))]
+// Gap 0.175, a 0.125/0.125 diagonal (0.1768) and a corner-on 0.175 fire; 0.18 and the
+// 0.13/0.13 diagonal (0.1838) are clean.
+#[case::m1_b_h1("metal1/M1.b.h1.gds.gz", "TOP", vec!["M1.b"; 3], m1dens(&[]))]
+// 45° at 0.175: diamond tip to wall, two 0.566 strips (M1.e too: wide, run 2.83), chamfer
+// to corner, tip to tip; every pair is M1.i as well (ignored here, M1.i has its own cases).
+#[case::m1_b_h2("metal1/M1.b.h2.gds.gz", "TOP", vec!["M1.b", "M1.b", "M1.b", "M1.b", "M1.e"], m1dens(&["M1.i"]))]
+// "Space or notch": a straight and a 45° notch, a comb with three 0.175 slots, a slot in
+// a plate, a keyhole ring with a 0.175 hole, two facing Ls (0.5 arms: M1.e too), an
+// island 0.175 from a ring.  Nine M1.b.
+#[case::m1_b_h3("metal1/M1.b.h3.gds.gz", "TOP", vec!["M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.e"], m1dens(&["M1.i"]))]
+// Overlapping, abutting and gridded boxes each 0.175 from a third box: one each.
+#[case::m1_b_h4("metal1/M1.b.h4.gds.gz", "TOP", vec!["M1.b"; 3], m1dens(&[]))]
+// Ten 0.175 gaps on, across and straddling x = 20/21/40/42 incl. a corner pair across
+// (20, 20); the two 10 µm pairs are M1.e as well.
+#[case::m1_b_h5("metal1/M1.b.h5.gds.gz", "TOP", vec!["M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.b", "M1.e", "M1.e"], m1dens(&[]))]
+// Fifty 0.175 pairs, flat and as a GdsArrayRef.
+#[case::m1_b_h6("metal1/M1.b.h6.gds.gz", "TOP", vec!["M1.b"; 50], m1dens(&[]))]
+#[case::m1_b_h7("metal1/M1.b.h7.gds.gz", "TOP", vec!["M1.b"; 50], m1dens(&[]))]
+// A 0.005 sliver 0.175 from a box, two 300 µm bars 0.175 apart (M1.e too), a pair at
+// (1000, 1000).
+#[case::m1_b_h8("metal1/M1.b.h8.gds.gz", "TOP", vec!["M1.b", "M1.b", "M1.b", "M1.e"], m1dens(&["M1.a", "M1.d"]))]
+// Metal1 0.175 from Metal1:filler is M1Fil.c's, from Metal1:mask nobody's; two shapes on
+// one net (Via1/Metal2) and two with Conts are M1.b.
+#[case::m1_b_h9("metal1/M1.b.h9.gds.gz", "TOP", vec!["M1.b", "M1.b", "M1Fil.c"], m1dens(&[]))]
+// Conts sticking 0.005 out on each side, one half out, one with no Metal1: six; flush
+// Conts and a 0.16 line are clean.  M1.c1 is not the question here.
+#[case::m1_c_h1("metal1/M1.c.h1.gds.gz", "TOP", vec!["M1.c"; 6], m1dens(&["M1.c1"]))]
+// A Cont across a 0.005 gap, one across a ring's 0.1 hole, one whose corner a chamfer
+// cuts: three.  Seams, overlaps, a chamfer through the corner and a covering grid are
+// clean.  The gap is M1.b, the hole an M1.b notch, the small pads M1.d and M1.c1.
+#[case::m1_c_h2("metal1/M1.c.h2.gds.gz", "TOP", vec!["M1.c"; 3], m1dens(&["M1.b", "M1.c1", "M1.d"]))]
+// Conts sticking 0.005 out at metal ends on x = 10/20/21/40/42 and at (1000, 1000).
+#[case::m1_c_h3("metal1/M1.c.h3.gds.gz", "TOP", vec!["M1.c"; 6], m1dens(&["M1.c1"]))]
+// Fifty Conts sticking 0.005 out, flat and as a GdsArrayRef.
+#[case::m1_c_h4("metal1/M1.c.h4.gds.gz", "TOP", vec!["M1.c"; 50], m1dens(&["M1.c1"]))]
+#[case::m1_c_h5("metal1/M1.c.h5.gds.gz", "TOP", vec!["M1.c"; 50], m1dens(&["M1.c1"]))]
+// Endcaps of 0.045 and 0.00 on a 0.16 line, a Cont at the end of a 0.25 line (0.045 all
+// round but the far side) and a 0.05/0.045 stub: four.  0.05 endcaps, a Cont mid-line
+// and one short side alone (0.30 and 0.26 lines) are clean.  The stub is under M1.d.
+#[case::m1_c1_h1("metal1/M1.c1.h1.gds.gz", "TOP", vec!["M1.c1"; 4], m1dens(&["M1.d"]))]
+// Plate corners: flush on two adjacent sides, 0.045/0.045, a 0.02 pad, 0.05 left with
+// 0.02 elsewhere: four.  One short side, or two opposite ones, is a line running past:
+// clean.  The pads are under M1.d.
+#[case::m1_c1_h2("metal1/M1.c1.h2.gds.gz", "TOP", vec!["M1.c1"; 4], m1dens(&["M1.d"]))]
+// A Cont under two abutting boxes with 0.045 on the top and the right fires; in an L's
+// inner corner and under a chamfer passing 0.078 from its corner (projection) it is clean.
+#[case::m1_c1_h3("metal1/M1.c1.h3.gds.gz", "TOP", vec!["M1.c1"; 1], m1dens(&["M1.d"]))]
+// 0.045 endcaps at line ends on x = 10/20/21/40/42, at (1000, 1000) and straddling 20.
+#[case::m1_c1_h4("metal1/M1.c1.h4.gds.gz", "TOP", vec!["M1.c1"; 7], m1dens(&[]))]
+// Fifty 0.045 endcaps, flat and as a GdsArrayRef.
+#[case::m1_c1_h5("metal1/M1.c1.h5.gds.gz", "TOP", vec!["M1.c1"; 50], m1dens(&[]))]
+#[case::m1_c1_h6("metal1/M1.c1.h6.gds.gz", "TOP", vec!["M1.c1"; 50], m1dens(&[]))]
+// 0.0885, a 0.0896 line, an L of 0.0864, a 0.0882 diamond, a chamfered 0.085: five; 0.09,
+// 0.0904 and a 0.0925 diamond are clean.
+#[case::m1_d_h1("metal1/M1.d.h1.gds.gz", "TOP", vec!["M1.d"; 5], m1dens(&[]))]
+// A union of 0.07 once, two boxes meeting at a corner twice (the pinch is M1.a and M1.b,
+// as the M1.corner case), an island of 0.04; abutting boxes (0.12) and a grid are clean.
+#[case::m1_d_h2("metal1/M1.d.h2.gds.gz", "TOP", vec!["M1.d", "M1.d", "M1.d", "M1.d", "M1.a", "M1.b"], m1dens(&[]))]
+// 0.0885 boxes on, across and straddling x = 20/21/40/42, a 0.0896 bar across 20, one at
+// (1000, 1000); a 0.09 box straddling 20 is clean.
+#[case::m1_d_h3("metal1/M1.d.h3.gds.gz", "TOP", vec!["M1.d"; 9], m1dens(&[]))]
+// Fifty 0.08 boxes, flat and as a GdsArrayRef.
+#[case::m1_d_h4("metal1/M1.d.h4.gds.gz", "TOP", vec!["M1.d"; 50], m1dens(&[]))]
+#[case::m1_d_h5("metal1/M1.d.h5.gds.gz", "TOP", vec!["M1.d"; 50], m1dens(&[]))]
+// A 0.005 × 0.5 sliver fires; a 0.005 × 18 sliver (0.09) and a 300 µm bar are clean.
+#[case::m1_d_h6("metal1/M1.d.h6.gds.gz", "TOP", vec!["M1.d"; 1], m1dens(&["M1.a"]))]
+// A 0.305 line beside a 0.16 line at 0.20, two 0.5 lines at 0.215, a plate beside a line:
+// three; 0.30 wide, two 0.16 lines and 0.22 are clean.
+#[case::m1_e_h1("metal1/M1.e.h1.gds.gz", "TOP", vec!["M1.e"; 3], m1dens(&[]))]
+// Runs of 1.005 (aligned, and as the shared part of two 3 µm lines) fire, 1.0 does not;
+// stubs of 0.8 and 0.6 are clean; a line broken into two 2.35 pieces fires twice.
+#[case::m1_e_h2("metal1/M1.e.h2.gds.gz", "TOP", vec!["M1.e"; 4], m1dens(&[]))]
+// A 0.5 pad 1.5 long in a 0.16 line, and an L's arm, beside a line at 0.20 fire; pads 0.8
+// and 1.0 long do not - the run is the wide part's.
+#[case::m1_e_h3("metal1/M1.e.h3.gds.gz", "TOP", vec!["M1.e"; 2], m1dens(&[]))]
+// 45° pairs at 0.2015 with walls 2.83 and 1.06 long fire (the run is along the walls),
+// 0.85 does not; plates stepped to share 1.005 fire, 1.0 not; corner to corner and end-on
+// are clean.  The 0.17 strips are M1.g and every 45° pair is M1.i.
+#[case::m1_e_h4("metal1/M1.e.h4.gds.gz", "TOP", vec!["M1.e", "M1.e", "M1.e", "M1.g", "M1.g", "M1.g", "M1.g", "M1.g", "M1.g", "M1.i", "M1.i", "M1.i"], m1dens(&[]))]
+// A wide line from two overlapping or two abutting boxes fires, 0.16 + 0.14 (0.30) does
+// not; a neighbour drawn as two halves or three collinear boxes fires once each.
+#[case::m1_e_h5("metal1/M1.e.h5.gds.gz", "TOP", vec!["M1.e"; 4], m1dens(&[]))]
+// Eleven 0.305/0.16 pairs at 0.20 on, across and straddling x = 20/21/40/42, running
+// across 20 and 40, a 1.005 run ending on 20, one at (1000, 1000).
+#[case::m1_e_h6("metal1/M1.e.h6.gds.gz", "TOP", vec!["M1.e"; 11], m1dens(&[]))]
+// Fifty 0.5/0.16 pairs at 0.20, flat and as a GdsArrayRef.
+#[case::m1_e_h7("metal1/M1.e.h7.gds.gz", "TOP", vec!["M1.e"; 50], m1dens(&[]))]
+#[case::m1_e_h8("metal1/M1.e.h8.gds.gz", "TOP", vec!["M1.e"; 50], m1dens(&[]))]
+// Two wide lines on one net, a 300 µm pair and a 0.005 sliver 0.20 from a wide line fire;
+// a U with a 0.20 slot between 0.5 arms is a notch, not a "space of lines" (report).
+#[case::m1_e_h9("metal1/M1.e.h9.gds.gz", "TOP", vec!["M1.e"; 3], m1dens(&["M1.a", "M1.d"]))]
+// 10.005 wide at 0.5, at 0.595, and a run of 10.005 fire; 10.0 wide, 0.60 and a run of
+// 10.0 are clean.
+#[case::m1_f_h1("metal1/M1.f.h1.gds.gz", "TOP", vec!["M1.f"; 3], m1dens(&[]))]
+// A 12 µm pad in a 0.5 line, plates stepped to share 10.005, a 45° pair with 10.6 walls
+// spanning 7.5 in x: three; an 8 µm pad, a shared 10.0 and 8.5 walls are clean.
+#[case::m1_f_h2("metal1/M1.f.h2.gds.gz", "TOP", vec!["M1.f"; 3], m1dens(&[]))]
+// Pairs on, across and straddling x = 20/40/42, a horizontal pair across 20 and 40, one
+// at (1000, 1000), a 300 µm pair.
+#[case::m1_f_h3("metal1/M1.f.h3.gds.gz", "TOP", vec!["M1.f"; 8], m1dens(&[]))]
+// Fifty 10.005/0.5 pairs at 0.5, flat and as a GdsArrayRef.
+#[case::m1_f_h4("metal1/M1.f.h4.gds.gz", "TOP", vec!["M1.f"; 50], m1dens(&[]))]
+#[case::m1_f_h5("metal1/M1.f.h5.gds.gz", "TOP", vec!["M1.f"; 50], m1dens(&[]))]
+// Two plates on one net and a line along an L's 10.005 arm fire; a U of 10.005 arms with
+// a 0.5 slot is a notch (report).
+#[case::m1_f_h6("metal1/M1.f.h6.gds.gz", "TOP", vec!["M1.f"; 2], m1dens(&[]))]
+// 0.198 strips with 4.24 and 0.509 walls fire (two walls each), 0.2015 and 0.495 walls
+// are clean; a 0.155 strip is M1.a and M1.g; 0.198 diamonds have short edges (M1.d).
+#[case::m1_g_h1("metal1/M1.g.h1.gds.gz", "TOP", vec!["M1.g", "M1.g", "M1.g", "M1.g", "M1.g", "M1.g", "M1.a", "M1.a"], m1dens(&["M1.d"]))]
+// Z routes with a 0.198 jog of 0.509 walls, up and mirrored down, and a chamfered L with
+// 0.566/0.509 walls fire; 0.495 walls, 0.2015 and an L whose inner wall is 0.4525 are clean.
+#[case::m1_g_h2("metal1/M1.g.h2.gds.gz", "TOP", vec!["M1.g"; 6], m1dens(&[]))]
+// The firing Z with its jog straddling 20, starting on 20, across 40 and 42, at (1000, 1000).
+#[case::m1_g_h3("metal1/M1.g.h3.gds.gz", "TOP", vec!["M1.g"; 10], m1dens(&[]))]
+// Fifty firing Z routes, flat and as a GdsArrayRef.
+#[case::m1_g_h4("metal1/M1.g.h4.gds.gz", "TOP", vec!["M1.g"; 100], m1dens(&[]))]
+#[case::m1_g_h5("metal1/M1.g.h5.gds.gz", "TOP", vec!["M1.g"; 100], m1dens(&[]))]
+// A 300 µm 0.198 strip and a 0.007 45° sliver (M1.a, M1.d too).
+#[case::m1_g_h6("metal1/M1.g.h6.gds.gz", "TOP", vec!["M1.g"; 4], m1dens(&["M1.a", "M1.d"]))]
+// 0.2157 strips (M1.e too: wide, run 2.83), corner to chamfer 0.2121, tip 0.215 above a
+// wall, a strip's tip 0.215 from a wall, a corner 0.2157 from a 45° wall: five; 0.2227,
+// 0.2263, 0.22 and 0.2298 are clean.
+#[case::m1_i_h1("metal1/M1.i.h1.gds.gz", "TOP", vec!["M1.i", "M1.i", "M1.i", "M1.i", "M1.i", "M1.e"], m1dens(&[]))]
+// The figure's jog beside a plate's 45° wall and two strips on one net fire (M1.e too:
+// a wide shape, run over 1.0); a 45° U with a 0.2157 slot is a notch (report).
+#[case::m1_i_h2("metal1/M1.i.h2.gds.gz", "TOP", vec!["M1.i", "M1.i", "M1.e", "M1.e"], m1dens(&[]))]
+// Strip pairs straddling 20, ending on 20, across 40 and 42, at (1000, 1000); M1.e too.
+#[case::m1_i_h3("metal1/M1.i.h3.gds.gz", "TOP", vec!["M1.i", "M1.i", "M1.i", "M1.i", "M1.i", "M1.e", "M1.e", "M1.e", "M1.e", "M1.e"], m1dens(&[]))]
+// Fifty strip pairs (walls 2.12: M1.e too), flat and as a GdsArrayRef.
+#[case::m1_i_h4("metal1/M1.i.h4.gds.gz", "TOP", [vec!["M1.i"; 50], vec!["M1.e"; 50]].concat(), m1dens(&[]))]
+#[case::m1_i_h5("metal1/M1.i.h5.gds.gz", "TOP", [vec!["M1.i"; 50], vec!["M1.e"; 50]].concat(), m1dens(&[]))]
+// A 300 µm pair and a 0.007 sliver 0.2157 from a strip (both M1.e too; the sliver M1.a,
+// M1.d and M1.g).
+#[case::m1_i_h6("metal1/M1.i.h6.gds.gz", "TOP", vec!["M1.i", "M1.i", "M1.e", "M1.e"], m1dens(&["M1.a", "M1.d", "M1.g"]))]
+// Strips 0.1768 apart are M1.b, M1.e and M1.i; a filler corner 0.2157 from a strip is
+// M1Fil.c's.
+#[case::m1_i_h7("metal1/M1.i.h7.gds.gz", "TOP", vec!["M1.i", "M1.b", "M1.e", "M1Fil.c"], m1dens(&[]))]
+// Section 6.10: nothing is checked inside an EdgeSeal; a 0.155 bar outside and one
+// crossing the seal's edge fire.
+#[case::m1_seal_h1("metal1/M1.seal.h1.gds.gz", "TOP", vec!["M1.a"; 4], m1dens(&[]))]
+// 30 % of the die on Metal1, Metal1:filler and Metal1:mask alike: M1.j, nothing else.
+#[case::m1_j_h1("metal1/M1.j.h1.gds.gz", "TOP", vec!["M1.j"], vec!["M1Fil.a2"])]
+// 36 % Metal1 with 4.8 % of the die cut out by Metal1:slit: 31.2 % of metal, M1.j.
+#[case::m1_j_h2("metal1/M1.j.h2.gds.gz", "TOP", vec!["M1.j"], vec![])]
+// 0.995 fillers in x and y, a 300 µm bar, a 0.005 sliver, one at (1000, 1000).
+#[case::m1fil_a1_h1("metal1/M1Fil.a1.h1.gds.gz", "TOP", vec!["M1Fil.a1"; 10], m1dens(&["M1Fil.a2"]))]
+// A 0.99 diamond (4) and strip (2) fire; 1.004 and a chamfered box are clean.
+#[case::m1fil_a1_h2("metal1/M1Fil.a1.h2.gds.gz", "TOP", vec!["M1Fil.a1"; 6], m1dens(&[]))]
+// Unions 0.995 wide (overlap, slices, a ring wall, an island) fire two walls each.
+#[case::m1fil_a1_h3("metal1/M1Fil.a1.h3.gds.gz", "TOP", vec!["M1Fil.a1"; 8], m1dens(&[]))]
+// Ten 0.995 bars on, across and straddling x = 20/21/40/42 and an L cornered on 20.
+#[case::m1fil_a1_h4("metal1/M1Fil.a1.h4.gds.gz", "TOP", vec!["M1Fil.a1"; 20], m1dens(&["M1Fil.a2"]))]
+// Fifty 0.995 bars, flat and as a GdsArrayRef.
+#[case::m1fil_a1_h5("metal1/M1Fil.a1.h5.gds.gz", "TOP", vec!["M1Fil.a1"; 100], m1dens(&[]))]
+#[case::m1fil_a1_h6("metal1/M1Fil.a1.h6.gds.gz", "TOP", vec!["M1Fil.a1"; 100], m1dens(&[]))]
+// A comb with three 0.995 teeth; a U with 1.0 arms is clean.
+#[case::m1fil_a1_h7("metal1/M1Fil.a1.h7.gds.gz", "TOP", vec!["M1Fil.a1"; 6], m1dens(&[]))]
+// 5.005 × 5, 5 × 5.005, 5.005 × 5.005, a 5.005 union, an L spanning 5.005 and a ring
+// 5.005 across (two markers per oversized dimension, the ring's walls split by the hole);
+// 5 × 5 and a diamond 3.68 between its walls are clean.
+#[case::m1fil_a2_h1("metal1/M1Fil.a2.h1.gds.gz", "TOP", vec!["M1Fil.a2"; 16], m1dens(&[]))]
+// 5.005 boxes straddling 20 and 40 and at (1000, 1000); a 5 × 3 straddling 20 is clean.
+#[case::m1fil_a2_h2("metal1/M1Fil.a2.h2.gds.gz", "TOP", vec!["M1Fil.a2"; 6], m1dens(&[]))]
+// Fifty 5.005 × 2 fillers, flat and as a GdsArrayRef.
+#[case::m1fil_a2_h3("metal1/M1Fil.a2.h3.gds.gz", "TOP", vec!["M1Fil.a2"; 100], m1dens(&[]))]
+#[case::m1fil_a2_h4("metal1/M1Fil.a2.h4.gds.gz", "TOP", vec!["M1Fil.a2"; 100], m1dens(&[]))]
+// Gap 0.415, a 0.29/0.29 diagonal (0.410), corner-on 0.415; 0.42 and 0.424 are clean.
+#[case::m1fil_b_h1("metal1/M1Fil.b.h1.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&[]))]
+// 45° at 0.415: tip to wall, parallel strips, chamfer to corner, tip to tip.
+#[case::m1fil_b_h2("metal1/M1Fil.b.h2.gds.gz", "TOP", vec!["M1Fil.b"; 4], m1dens(&[]))]
+// Facing Ls and an island in a ring at 0.415 fire; a U's 0.415 slot is a notch, and
+// M1Fil.b says "space" (report).
+#[case::m1fil_b_h3("metal1/M1Fil.b.h3.gds.gz", "TOP", vec!["M1Fil.b"; 2], m1dens(&[]))]
+// Overlapping, abutting and gridded fillers each 0.415 from a third: one each.
+#[case::m1fil_b_h4("metal1/M1Fil.b.h4.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&[]))]
+// Ten 0.415 gaps on, across and straddling x = 20/21/40/42 incl. a corner pair.
+#[case::m1fil_b_h5("metal1/M1Fil.b.h5.gds.gz", "TOP", vec!["M1Fil.b"; 10], m1dens(&["M1Fil.a2"]))]
+// Fifty 0.415 pairs, flat and as a GdsArrayRef.
+#[case::m1fil_b_h6("metal1/M1Fil.b.h6.gds.gz", "TOP", vec!["M1Fil.b"; 50], m1dens(&[]))]
+#[case::m1fil_b_h7("metal1/M1Fil.b.h7.gds.gz", "TOP", vec!["M1Fil.b"; 50], m1dens(&[]))]
+// A 0.005 sliver 0.415 from a filler, two 300 µm bars 0.415 apart, a pair at (1000, 1000).
+#[case::m1fil_b_h8("metal1/M1Fil.b.h8.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&["M1Fil.a1", "M1Fil.a2"]))]
+// A filler 0.415 from Metal1 is M1Fil.c's, from Metal1:mask nobody's; overlapping and
+// abutting fillers are one filler (5.5 wide, M1Fil.a2).
+#[case::m1fil_b_h9("metal1/M1Fil.b.h9.gds.gz", "TOP", vec!["M1Fil.c"], m1dens(&["M1Fil.a2"]))]
+// 0.415, a 0.410 diagonal and corner-on 0.415 fire; 0.42 and 0.424 are clean.
+#[case::m1fil_c_h1("metal1/M1Fil.c.h1.gds.gz", "TOP", vec!["M1Fil.c"; 3], m1dens(&[]))]
+// 45°: Metal1 tip to filler, filler chamfer to Metal1 corner, parallel strips, strip tip
+// to filler wall, all under 0.42.
+#[case::m1fil_c_h2("metal1/M1Fil.c.h2.gds.gz", "TOP", vec!["M1Fil.c"; 4], m1dens(&[]))]
+// A filler abutting Metal1 along an edge and one touching it at a corner point are 0.00
+// from it; a filler crossing the Metal1 edge or inside it shares area and is no pair.
+#[case::m1fil_c_h3("metal1/M1Fil.c.h3.gds.gz", "TOP", vec!["M1Fil.c"; 2], m1dens(&[]))]
+// Ten 0.415 gaps on, across and straddling x = 20/21/40/42 incl. a corner pair.
+#[case::m1fil_c_h4("metal1/M1Fil.c.h4.gds.gz", "TOP", vec!["M1Fil.c"; 10], m1dens(&["M1Fil.a2"]))]
+// Fifty 0.415 pairs, flat and as a GdsArrayRef.
+#[case::m1fil_c_h5("metal1/M1Fil.c.h5.gds.gz", "TOP", vec!["M1Fil.c"; 50], m1dens(&[]))]
+#[case::m1fil_c_h6("metal1/M1Fil.c.h6.gds.gz", "TOP", vec!["M1Fil.c"; 50], m1dens(&[]))]
+// A 0.005 Metal1 sliver, a 300 µm pair, a pair at (1000, 1000).
+#[case::m1fil_c_h7("metal1/M1Fil.c.h7.gds.gz", "TOP", vec!["M1Fil.c"; 3], m1dens(&["M1.a", "M1.d", "M1Fil.a2"]))]
+// 0.995, a 0.99 diagonal, corner-on 0.995, a TRANS diamond tip at 0.995 and an abutting
+// TRANS fire; 1.0, 1.004, a crossing and an enclosed filler are clean.
+#[case::m1fil_d_h1("metal1/M1Fil.d.h1.gds.gz", "TOP", vec!["M1Fil.d"; 5], m1dens(&[]))]
+// Eleven 0.995 gaps on, across and straddling x = 20/21/40/42, at (1000, 1000), 300 µm.
+#[case::m1fil_d_h2("metal1/M1Fil.d.h2.gds.gz", "TOP", vec!["M1Fil.d"; 11], m1dens(&["M1Fil.a2"]))]
+// Fifty 0.995 pairs, flat and as a GdsArrayRef.
+#[case::m1fil_d_h3("metal1/M1Fil.d.h3.gds.gz", "TOP", vec!["M1Fil.d"; 50], m1dens(&[]))]
+#[case::m1fil_d_h4("metal1/M1Fil.d.h4.gds.gz", "TOP", vec!["M1Fil.d"; 50], m1dens(&[]))]
+// A Metal5:filler 0.995 from a TRANS is not the metal1 deck's business.
+#[case::m1fil_d_h5("metal1/M1Fil.d.h5.gds.gz", "TOP", vec![], m1dens(&[]))]
 fn test_metal1(
     #[case] gds: &str,
     #[case] topcell: &str,
