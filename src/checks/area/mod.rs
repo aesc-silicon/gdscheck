@@ -230,6 +230,22 @@ pub fn run_scoped(
         );
         return vec![];
     }
+    // `touching: separate`: two shapes meeting at one point are two regions with an
+    // area each, not one - a point joins no material.  KLayout merges them into one
+    // self-touching polygon by default and keeps them apart with `min_coherence`, and
+    // IHP's area rules ask for the latter; the default here is the former, as the
+    // GF180 decks read it.
+    let separate = match rule.word("touching") {
+        Some("separate") => true,
+        Some("joined") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] {name}: touching can be `joined` or `separate`, not `{other}`",
+                rule.id
+            );
+            false
+        }
+    };
     let limit = kind.limit(rule.value, dbu_to_um);
     let d2 = dbu_to_um * dbu_to_um;
     let (title, cmp) = (format!("{} area violation", kind.word()), kind.cmp());
@@ -269,7 +285,12 @@ pub fn run_scoped(
                         ""
                     }
                 );
-                for r in merged.regions(layout, key.0, key.1).to_vec() {
+                let regions = if separate {
+                    merged.regions_cut(layout, key.0, key.1)
+                } else {
+                    merged.regions(layout, key.0, key.1).to_vec()
+                };
+                for r in regions {
                     if !kind.broken_by(r.area_dbu, limit) {
                         continue;
                     }

@@ -3000,6 +3000,13 @@ pub fn stitch_regions(tiles: &TileMap, tile_dbu: i32) -> Vec<Region> {
     stitch_impl(tiles, tile_dbu, false).regions
 }
 
+/// [`stitch_regions`] with two shapes meeting at one point kept two regions.
+pub fn stitch_regions_cut(tiles: &TileMap, tile_dbu: i32) -> Vec<Region> {
+    stitch_from(tiles, tile_dbu, Record::None, None, false)
+        .0
+        .regions
+}
+
 /// Connected regions of a layer *with a point-lookup index*: like [`stitch_regions`]
 /// but each region keeps an id (its index in `regions`) and every core piece's polygon
 /// is recorded under its tile, tagged with its region id.  The connectivity engine uses
@@ -5754,6 +5761,13 @@ impl MergedCache {
 
     /// Whole-layer connected regions (areas + markers), built by stitching the
     /// per-tile merge across tile borders.  Cached per layer.
+    /// [`regions`](Self::regions) with two shapes meeting at one point kept two: what
+    /// a rule reads when a corner contact joins nothing, as IHP's area rules do.
+    pub fn regions_cut(&mut self, layout: &FlatLayout, layer: i16, datatype: i16) -> Vec<Region> {
+        self.ensure(layout, layer, datatype);
+        stitch_regions_cut(&self.layers[&(layer, datatype)], self.tile_dbu)
+    }
+
     pub fn regions(&mut self, layout: &FlatLayout, layer: i16, datatype: i16) -> &[Region] {
         self.ensure(layout, layer, datatype);
         if !self.regions.contains_key(&(layer, datatype)) {
