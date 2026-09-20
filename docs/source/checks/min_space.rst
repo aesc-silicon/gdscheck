@@ -107,6 +107,15 @@ Parameters
    Optional. ``euclidian`` (the default) or ``square``, KLayout's L-infinity metric for a
    rule worded "must not fall within a d × d square at the corner".
 
+``gap_outside``
+   Optional layer param (under ``layer_params``). A pair whose whole gap - the segment
+   between its two closest points - lies inside that layer is not reported. For a rule
+   that measures a *particular* material between two shapes: IHP ``NW.b1`` is the width
+   of PWell between two wells, and PWell is what is neither NWell nor PWell:block, so a
+   gap filled by a PWell block has no PWell to be too narrow (the block-to-well space is
+   ``PWB.c``'s), while a block strip in the middle of the gap leaves PWell either side
+   and the pair stands. IHP's KLayout deck clips the markers to PWell the same way.
+
 ``rows`` / ``cols``
    Optional, "more than N", either one defaulting to ``3``. The rule is then about the
    vias packed into an array larger than ``rows`` × ``cols``, which etch and fill
