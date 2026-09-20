@@ -224,6 +224,31 @@ pub fn run_width(
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
     let tile = merged.tile_dbu() as i64;
+    // `span: narrowest`, for a maximum: a shape is too wide only where its narrowest
+    // dimension exceeds the value - where a value x value square fits inside it -
+    // rather than wherever two facing walls are further apart than that.  A 1 x 300 µm
+    // filler stripe has a width of 1 by the first reading and of 300 by the second.
+    // IHP reads AFil.a, GFil.a and Pad.a1 the first way (an opening by half the value,
+    // what survives is the violation) and its metal-filler and LBE maxima the second
+    // (the bounding box), so the rule says which.
+    let narrowest = match rule.word("span") {
+        Some("narrowest") if matches!(limit, Limit::AtMost(_)) => true,
+        Some("narrowest") => {
+            eprintln!(
+                "[{}] {check_name}: `span: narrowest` is a maximum's reading",
+                rule.id
+            );
+            false
+        }
+        Some("any") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] {check_name}: span can be `any` or `narrowest`, not `{other}`",
+                rule.id
+            );
+            false
+        }
+    };
 
     for layer in &rule.layers {
         let (gl, gd) = (layer.gds_layer as i16, layer.gds_datatype as i16);
@@ -233,6 +258,16 @@ pub fn run_width(
             "[{}] Checking {} {} {:.2} µm on layer {} ({}/{})",
             rule.id, check_name, op, rule.value, layer.name, layer.gds_layer, layer.gds_datatype
         );
+        if narrowest {
+            violations.extend(narrowest_over(
+                rule,
+                merged,
+                (gl, gd),
+                layer.name.as_str(),
+                dbu_to_um,
+            ));
+            continue;
+        }
 
         let rid = rule.id.as_str();
         // The failing comparison is the inverse of the requirement op.
@@ -300,6 +335,48 @@ pub fn run_width(
     }
 
     violations
+}
+
+/// What a `span: narrowest` maximum reports: every region of the layer's opening by
+/// half the value - the parts a value x value square fits inside - as one violation
+/// at the region's marker.  The opening is taken per tile, where a copy is exact to
+/// the halo, which is at least the value; the pieces are cut to the tile's core and
+/// stitched, so a wide shape across tiles is one report whatever the tile.
+fn narrowest_over(
+    rule: &RuleDefinition,
+    merged: &MergedCache,
+    (gl, gd): (i16, i16),
+    lname: &str,
+    dbu_to_um: f64,
+) -> Vec<Violation> {
+    let tile = merged.tile_dbu() as i64;
+    let radius = rule.value / dbu_to_um / 2.0;
+    let opened: crate::merge::TileMap = merged
+        .tiles(gl, gd)
+        .par_iter()
+        .filter_map(|(&(tx, ty), polys)| {
+            let (x0, y0) = (tx as i64 * tile, ty as i64 * tile);
+            let wide = crate::merge::opening(polys, radius);
+            let pieces = crate::merge::clip_to_box(wide, x0, y0, x0 + tile, y0 + tile);
+            (!pieces.is_empty()).then_some(((tx, ty), pieces))
+        })
+        .collect();
+    crate::merge::stitch_regions(&opened, tile as i32)
+        .into_iter()
+        .map(|r| {
+            let (x, y) = (r.marker.0 * dbu_to_um, r.marker.1 * dbu_to_um);
+            Violation::point(
+                rule.id.as_str(),
+                "Maximum width violation",
+                format!(
+                    "{lname}: wider than {:.2} µm in every direction at ({x:.4}, {y:.4}) µm",
+                    rule.value
+                ),
+                x,
+                y,
+            )
+        })
+        .collect()
 }
 
 /// The facing-wall width of `layers[0]` measured between the walls it shares with the

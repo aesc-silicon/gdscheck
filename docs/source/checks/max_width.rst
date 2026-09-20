@@ -40,6 +40,15 @@ Parameters
    As for :doc:`min_width`: ``angle: bent`` restricts the rule to 45° runs, ``length`` to
    wall pairs sharing more than that run.
 
+``span``
+   Optional. ``any`` (the default) reports every wall-to-wall span over the value, so a
+   1 × 300 µm filler stripe is 300 wide. ``narrowest`` reads a shape's width as its
+   narrowest dimension: a shape is too wide only where a ``value`` × ``value`` square
+   fits inside it, which is KLayout's ``sized(-v/2).sized(v/2)``, and what survives is
+   reported once per region. IHP reads ``AFil.a``, ``GFil.a`` and ``Pad.a1`` the second
+   way and its metal-filler and LBE maxima the first (the bounding box), so the rule
+   says which.
+
 
 Violation markers
 ------------------
