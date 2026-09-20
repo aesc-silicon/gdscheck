@@ -1974,6 +1974,14 @@ pub fn facing_runs(a: &Poly, b: &Poly, value: f64, tol: f64, inward: bool) -> Ve
 /// gate so a net-aware rule can resolve each region to a net without a second merge.
 pub type Marker = (f64, f64);
 
+/// A box in DBU, `(x0, y0, x1, y1)`: the zone a tile's copies are exact in.
+pub type Zone = (i64, i64, i64, i64);
+
+/// The depth behind a wall along it: stretches `(from, to)` in units of the wall's
+/// squared length, each with the nearest anti-parallel wall's separation times the
+/// length, or `None` where nothing faces it.
+pub type DepthProfile = Vec<(i128, i128, Option<i128>)>;
+
 /// Absolute area (DBU²) and centroid (DBU) of a closed contour, either winding.
 pub fn ring_area_centroid(c: &[IntPoint]) -> (f64, f64, f64) {
     let n = c.len();
@@ -2424,6 +2432,9 @@ pub struct Outline<'a> {
     pub bbox: (i64, i64, i64, i64),
     /// The segments filed by cell, built on the first query that pays for it.
     grid: std::cell::OnceCell<SegGrid>,
+    /// The depth profiles read so far, by segment: a rail's facing wall is asked for
+    /// its profile by every wire beside it.
+    depths: std::cell::RefCell<HashMap<usize, std::rc::Rc<DepthProfile>>>,
 }
 
 /// An outline's segments filed under the cells of a grid over its box, so a query
@@ -2548,6 +2559,7 @@ impl<'a> Outline<'a> {
             segs,
             bbox: (x0 as i64, y0 as i64, x1 as i64, y1 as i64),
             grid: std::cell::OnceCell::new(),
+            depths: std::cell::RefCell::new(HashMap::new()),
         }
     }
 
@@ -2688,7 +2700,7 @@ pub type ClosestPair = (i128, i128, (f64, f64), (f64, f64));
 /// more apart in either axis is at least that far apart and is not looked at; a contact
 /// ends the search, since nothing is closer.
 pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestPair> {
-    let mut best: Option<ClosestPair> = None;
+    let mut best: Option<(ClosestPair, Seg, Seg)> = None;
     let ratio = |n: i128, d: i128| n as f64 / d as f64;
     let boxes_apart = |(p0, p1): Seg, (q0, q1): Seg| {
         (p0.0.min(p1.0) - q0.0.max(q1.0)).max(q0.0.min(q1.0) - p0.0.max(p1.0)) >= limit
@@ -2709,9 +2721,9 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
             let c = seg_seg_closest_sq(a0, a1, b0, b1);
             if best
                 .as_ref()
-                .is_none_or(|&(n, d, _, _)| ratio(c.num, c.den) < ratio(n, d))
+                .is_none_or(|&((n, d, _, _), _, _)| ratio(c.num, c.den) < ratio(n, d))
             {
-                best = Some((c.num, c.den, c.on_a, c.on_b));
+                best = Some(((c.num, c.den, c.on_a, c.on_b), (a0, a1), (b0, b1)));
                 touched = c.num == 0;
             }
         });
@@ -2719,7 +2731,54 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
             break;
         }
     }
-    best
+    let (pair, sa, sb) = best?;
+    // Two walls running alongside are closest all along the stretch they share, and
+    // the point the search lands on is whichever end it met first - which depends on
+    // the walls' ends as the tile's copy has them.  A shape drawn as two abutting boxes
+    // has, in the tile that sees one box, a stretch ending where the other box starts,
+    // and the copy's end became a second marker.  The marker is the stretch's lowest
+    // end (then leftmost) instead, one point for every copy that sees it, and the
+    // tile owning that point reports the pair.
+    if pair.0 > 0
+        && let Some((on_a, on_b)) = stretch_low_end(sa, sb)
+    {
+        return Some((pair.0, pair.1, on_a, on_b));
+    }
+    Some(pair)
+}
+
+/// The lowest end (then leftmost) of the stretch two parallel facing walls share, as
+/// the point on each: `None` when they are not parallel or share nothing.
+fn stretch_low_end((a0, a1): Seg, (b0, b1): Seg) -> Option<((f64, f64), (f64, f64))> {
+    let d = ((a1.0 - a0.0) as i128, (a1.1 - a0.1) as i128);
+    let e = ((b1.0 - b0.0) as i128, (b1.1 - b0.1) as i128);
+    if d.0 * e.1 - d.1 * e.0 != 0 {
+        return None;
+    }
+    let len2 = d.0 * d.0 + d.1 * d.1;
+    if len2 == 0 {
+        return None;
+    }
+    let along = |p: (i64, i64)| (p.0 - a0.0) as i128 * d.0 + (p.1 - a0.1) as i128 * d.1;
+    let (u0, u1) = (along(b0), along(b1));
+    let (lo, hi) = (u0.min(u1).max(0), u0.max(u1).min(len2));
+    if hi <= lo {
+        return None;
+    }
+    let at = |u: i128| {
+        let t = u as f64 / len2 as f64;
+        (a0.0 as f64 + d.0 as f64 * t, a0.1 as f64 + d.1 as f64 * t)
+    };
+    let (p_lo, p_hi) = (at(lo), at(hi));
+    let p = if (p_lo.1, p_lo.0) <= (p_hi.1, p_hi.0) {
+        p_lo
+    } else {
+        p_hi
+    };
+    // The foot of `p` on the other wall: the offset between the lines, perpendicular.
+    let c = cross_i(a0, a1, b0) as f64 / len2 as f64;
+    let (nx, ny) = (-(d.1 as f64) * c, d.0 as f64 * c);
+    Some((p, (p.0 + nx, p.1 + ny)))
 }
 
 /// Whether `a` and `b` run parallel as far as the grid can say - the drift test of
@@ -2741,15 +2800,24 @@ impl Outline<'_> {
         u0.max(u1).min(len2) - u0.min(u1).max(0)
     }
 
-    /// The material behind segment `i`: the squared distance, as `num / den`, to the
-    /// nearest anti-parallel segment of the same region overlapping it in projection
-    /// on its material side - the local line width there, `None` where nothing faces
-    /// it.  Material is on the left of every segment, holes included.
-    fn depth_behind(&self, i: usize) -> Option<(i128, i128)> {
+    /// The material behind segment `i`, stretch by stretch: along the segment, in units
+    /// of its squared length, the distance times the length to the nearest anti-parallel
+    /// segment of the same region behind that stretch on its material side - the local
+    /// line width there - or `None` where nothing faces it.  Material is on the left of
+    /// every segment, holes included.  A line 0.2 wide with a 0.5 part on its far side
+    /// is 0.5 deep along that part and 0.2 elsewhere, and a rule about wide lines reads
+    /// the part.
+    fn depth_profile(&self, i: usize) -> std::rc::Rc<DepthProfile> {
+        if let Some(p) = self.depths.borrow().get(&i) {
+            return p.clone();
+        }
         let (s0, s1) = self.segs[i];
         let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
         let len2 = d.0 * d.0 + d.1 * d.1;
-        let mut best: Option<i128> = None;
+        let along = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
+        // The walls behind as events along the segment: a wall opens at its start and
+        // closes at its end, and between two events the nearest open wall is the depth.
+        let mut events: Vec<(i128, bool, i128)> = Vec::new();
         for (j, &(t0, t1)) in self.segs.iter().enumerate() {
             if j == i {
                 continue;
@@ -2759,14 +2827,46 @@ impl Outline<'_> {
                 continue;
             }
             let c = cross_i(s0, s1, t0);
-            if c <= 0 || Self::shared_run((s0, s1), (t0, t1)) <= 0 {
-                continue; // on the empty side, or not alongside
+            if c <= 0 {
+                continue; // on the empty side
             }
-            if best.is_none_or(|b| c < b) {
-                best = Some(c);
+            let (u0, u1) = (along(t0), along(t1));
+            let (lo, hi) = (u0.min(u1).max(0), u0.max(u1).min(len2));
+            if hi > lo {
+                events.push((lo, true, c));
+                events.push((hi, false, c));
             }
         }
-        best.map(|c| (c * c, len2))
+        // Closings before openings at one position, so a wall ending where the next
+        // starts leaves no open gap; the map holds each open depth with its count.
+        events.sort_unstable_by_key(|&(u, open, c)| (u, open, c));
+        let mut open: std::collections::BTreeMap<i128, usize> = std::collections::BTreeMap::new();
+        let mut profile: DepthProfile = Vec::new();
+        let mut at: i128 = 0;
+        let mut push = |from: i128, to: i128, depth: Option<i128>| {
+            if to > from {
+                match profile.last_mut() {
+                    Some(last) if last.1 == from && last.2 == depth => last.1 = to,
+                    _ => profile.push((from, to, depth)),
+                }
+            }
+        };
+        for (u, opens, c) in events {
+            push(at, u, open.keys().next().copied());
+            at = u;
+            if opens {
+                *open.entry(c).or_insert(0) += 1;
+            } else if let Some(n) = open.get_mut(&c) {
+                *n -= 1;
+                if *n == 0 {
+                    open.remove(&c);
+                }
+            }
+        }
+        push(at, len2, open.keys().next().copied());
+        let p = std::rc::Rc::new(profile);
+        self.depths.borrow_mut().insert(i, p.clone());
+        p
     }
 }
 
@@ -2792,17 +2892,66 @@ pub fn has_diagonal_within(a: &Outline, b: &Outline, limit: i64) -> bool {
 /// has a wide box but a narrow line, and a stepped pad's box overlaps a neighbour for
 /// tens of microns while the metal runs alongside for a fraction of that.  A `wide` of
 /// zero asks nothing of the depth.
-pub fn parallel_run_applies(a: &Outline, b: &Outline, limit: i64, wide: i64, min_run: i64) -> bool {
+pub fn parallel_run_applies(
+    a: &Outline,
+    b: &Outline,
+    limit: i64,
+    wide: i64,
+    min_run: i64,
+    zone: Option<Zone>,
+) -> bool {
+    parallel_run(a, b, limit, wide, min_run, zone) == RunRead::Applies
+}
+
+/// What [`parallel_run`] found.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum RunRead {
+    /// A qualifying run.
+    Applies,
+    /// No qualifying run, and every facing stretch under the limit lay whole within
+    /// the zone: the reading is complete.
+    Clean,
+    /// No qualifying run within the zone, but a facing stretch under the limit reached
+    /// the zone's edge and may carry on past it.
+    Cut,
+}
+
+/// [`parallel_run_applies`], saying also whether the zone cut a stretch short.
+pub fn parallel_run(
+    a: &Outline,
+    b: &Outline,
+    limit: i64,
+    wide: i64,
+    min_run: i64,
+    zone: Option<Zone>,
+) -> RunRead {
+    let mut cut = false;
     let (lim2, wide2, run2) = (
         (limit as i128) * (limit as i128),
         (wide as i128) * (wide as i128),
         (min_run as i128) * (min_run as i128),
     );
-    let mut depth_a: Vec<Option<Option<(i128, i128)>>> = vec![None; a.segs.len()];
-    let mut depth_b: Vec<Option<Option<(i128, i128)>>> = vec![None; b.segs.len()];
-    let deeper = |d: Option<(i128, i128)>| match d {
-        None => true, // nothing behind the wall at all: as deep as it gets
-        Some((num, den)) => num > wide2 * den,
+    // Whether the wall runs deeper than `wide` for more than `min_run` within the
+    // stretch `[lo, hi]` it shares with the other: the stretches of its profile deeper
+    // than `wide` - nothing behind at all is as deep as it gets - joined where they
+    // touch, any of them longer than the run.
+    let deep_run = |profile: &DepthProfile, len2: i128, lo: i128, hi: i128| {
+        let mut run_from: Option<i128> = None;
+        let mut longest: i128 = 0;
+        for &(p0, p1, depth) in profile {
+            let (p0, p1) = (p0.max(lo), p1.min(hi));
+            let deep = match depth {
+                None => true,
+                Some(c) => c * c > wide2 * len2,
+            };
+            if p1 <= p0 || !deep {
+                run_from = None;
+                continue;
+            }
+            let start = *run_from.get_or_insert(p0);
+            longest = longest.max(p1 - start);
+        }
+        longest * longest > run2 * len2
     };
     for (i, &(s0, s1)) in a.segs.iter().enumerate() {
         let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
@@ -2818,21 +2967,78 @@ pub fn parallel_run_applies(a: &Outline, b: &Outline, limit: i64, wide: i64, min
             if c <= 0 || c * c >= lim2 * len2 {
                 continue;
             }
-            let run = Outline::shared_run((s0, s1), (t0, t1));
-            if run <= 0 || run * run <= run2 * len2 {
+            // The stretch the two walls share, along this one in units of its squared
+            // length, and within the zone: the copies are whole shapes, exact in the
+            // zone alone, and a run past it is read by the tile that owns it.
+            let along_a = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
+            let (ua0, ua1) = (along_a(t0), along_a(t1));
+            let (mut lo_a, mut hi_a) = (ua0.min(ua1).max(0), ua0.max(ua1).min(len2));
+            if hi_a <= lo_a {
+                continue;
+            }
+            if let Some(z) = zone {
+                let (zl, zh) = stretch_in_zone((s0, s1), len2, z);
+                if zl > lo_a || zh < hi_a {
+                    cut = true;
+                }
+                lo_a = lo_a.max(zl);
+                hi_a = hi_a.min(zh);
+            }
+            if hi_a <= lo_a {
+                continue;
+            }
+            let run = hi_a - lo_a;
+            if run * run <= run2 * len2 {
                 continue;
             }
             if wide == 0 {
-                return true;
+                return RunRead::Applies;
             }
-            let da = *depth_a[i].get_or_insert_with(|| a.depth_behind(i));
-            let db = *depth_b[j].get_or_insert_with(|| b.depth_behind(j));
-            if deeper(da) || deeper(db) {
-                return true;
+            // The wide line must run alongside for the length within the stretch the
+            // two walls share, read on either wall's own profile.
+            let pa = a.depth_profile(i);
+            if deep_run(&pa, len2, lo_a, hi_a) {
+                return RunRead::Applies;
+            }
+            let lenb2 = e.0 * e.0 + e.1 * e.1;
+            let along_b = |p: (i64, i64)| (p.0 - t0.0) as i128 * e.0 + (p.1 - t0.1) as i128 * e.1;
+            let (ub0, ub1) = (along_b(s0), along_b(s1));
+            let (mut lo_b, mut hi_b) = (ub0.min(ub1).max(0), ub0.max(ub1).min(lenb2));
+            if let Some(z) = zone {
+                let (zl, zh) = stretch_in_zone((t0, t1), lenb2, z);
+                lo_b = lo_b.max(zl);
+                hi_b = hi_b.min(zh);
+            }
+            let pb = b.depth_profile(j);
+            if hi_b > lo_b && deep_run(&pb, lenb2, lo_b, hi_b) {
+                return RunRead::Applies;
             }
         }
     }
-    false
+    if cut { RunRead::Cut } else { RunRead::Clean }
+}
+
+/// The stretch of segment `s` lying in the box, in units of the segment's squared
+/// length `len2` (from `0` at its start to `len2` at its end), rounded inward; empty
+/// as `(len2, 0)` when the segment misses the box.
+fn stretch_in_zone((s0, s1): Seg, len2: i128, (x0, y0, x1, y1): Zone) -> (i128, i128) {
+    let (mut t0, mut t1) = (0.0f64, 1.0f64);
+    for (p, d, lo, hi) in [(s0.0, s1.0 - s0.0, x0, x1), (s0.1, s1.1 - s0.1, y0, y1)] {
+        if d == 0 {
+            if p < lo || p > hi {
+                return (len2, 0);
+            }
+            continue;
+        }
+        let (ta, tb) = ((lo - p) as f64 / d as f64, (hi - p) as f64 / d as f64);
+        t0 = t0.max(ta.min(tb));
+        t1 = t1.min(ta.max(tb));
+    }
+    if t1 <= t0 {
+        return (len2, 0);
+    }
+    let l = len2 as f64;
+    ((t0 * l).ceil() as i128, (t1 * l).floor() as i128)
 }
 
 // ===========================================================================
@@ -3368,17 +3574,17 @@ mod space_tests {
         let (a, b) = (rect(0, 0, 1000, 300), rect(0, 850, 1000, 1150));
         let (oa, ob) = (Outline::new(&a), Outline::new(&b));
         assert!(
-            !parallel_run_applies(&oa, &ob, 600, 300, 0),
+            !parallel_run_applies(&oa, &ob, 600, 300, 0, None),
             "0.3 deep is not over 0.3"
         );
-        assert!(parallel_run_applies(&oa, &ob, 600, 299, 0));
+        assert!(parallel_run_applies(&oa, &ob, 600, 299, 0, None));
         assert!(
-            !parallel_run_applies(&oa, &ob, 600, 0, 1000),
+            !parallel_run_applies(&oa, &ob, 600, 0, 1000, None),
             "a 1 µm run is not over 1 µm"
         );
-        assert!(parallel_run_applies(&oa, &ob, 600, 0, 999));
+        assert!(parallel_run_applies(&oa, &ob, 600, 0, 999, None));
         assert!(
-            !parallel_run_applies(&oa, &ob, 550, 0, 0),
+            !parallel_run_applies(&oa, &ob, 550, 0, 0, None),
             "the gap is 550, not under it"
         );
         let l = MergedPoly {
@@ -3400,10 +3606,10 @@ mod space_tests {
         let c = rect(0, 400, 300, 500);
         let oc = Outline::new(&c);
         assert!(
-            !parallel_run_applies(&ol, &oc, 300, 250, 0),
+            !parallel_run_applies(&ol, &oc, 300, 250, 0, None),
             "an L's box is 1 µm deep, the arm facing the gap 0.2, the line across it 0.1"
         );
-        assert!(parallel_run_applies(&ol, &oc, 300, 150, 0));
+        assert!(parallel_run_applies(&ol, &oc, 300, 150, 0, None));
     }
 
     /// A bend counts only at the gap.

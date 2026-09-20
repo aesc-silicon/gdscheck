@@ -35,9 +35,13 @@ pub mod array;
 pub mod max;
 pub mod notch;
 
+use super::helper::RunCtx;
 use super::params::{NotAWord, bent_only, mode};
 use crate::connectivity::{Connectivity, LayerKey};
-use crate::geom::{Limit, Marker, Outline, has_diagonal_within, on_grid, parallel_run_applies};
+use crate::geom::{
+    Limit, Marker, Outline, RunRead, has_diagonal_within, on_grid, parallel_run,
+    parallel_run_applies,
+};
 use crate::layout::FlatLayout;
 use crate::merge::MergedCache;
 use crate::pdk::RuleDefinition;
@@ -162,15 +166,61 @@ pub fn run_min_gated(
         layout,
         dbu_to_um,
         merged,
-        move |a: &Outline, b: &Outline, ma: Marker, mb: Marker| {
+        move |a: &Outline, b: &Outline, ma: Marker, mb: Marker, ctx: &RunCtx| {
             if gates.bent && !(has_diagonal_within(a, b, limit) || has_diagonal_within(b, a, limit))
             {
                 return false;
             }
             if let Some((wide, min_run)) = run
-                && !parallel_run_applies(a, b, limit, wide, min_run)
+                && let read = parallel_run(a, b, limit, wide, min_run, Some(ctx.zone))
+                && read != RunRead::Applies
             {
-                return false;
+                // Read within the zone the copies are exact in, the run may have been
+                // cut short: a line 60 µm long in a 20 µm tile.  Where a facing stretch
+                // reaches the zone's edge, the pair's regions are assembled out to the
+                // rule's reach and read again, exact in that box.  A copy at the edge
+                // with no core piece to name its region - a shape touching the core at
+                // a tile line - is left to the tile on the other side, which has the
+                // piece.
+                if read == RunRead::Clean || !(ctx.cut(a) || ctx.cut(b)) {
+                    return false;
+                }
+                // The box is the zone grown by the reach, the same for every pair in
+                // the tile, so a rail's assembly serves every wire beside it.
+                let reach = limit + min_run + wide + 1;
+                let (zx0, zy0, zx1, zy1) = ctx.zone;
+                let box_ = (zx0 - reach, zy0 - reach, zx1 + reach, zy1 + reach);
+                let (wa, wb) = ctx.within(box_);
+                fn assembled<'p>(
+                    cut: bool,
+                    w: &'p super::helper::Within,
+                ) -> Option<Vec<Outline<'p>>> {
+                    match (cut, w) {
+                        (false, _) => Some(vec![]),
+                        (true, Some(v)) => Some(v.iter().map(Outline::new).collect()),
+                        (true, None) => None,
+                    }
+                }
+                let (Some(oa), Some(ob)) = (assembled(ctx.cut(a), &wa), assembled(ctx.cut(b), &wb))
+                else {
+                    return false;
+                };
+                let oa: Vec<&Outline> = if oa.is_empty() {
+                    vec![a]
+                } else {
+                    oa.iter().collect()
+                };
+                let ob: Vec<&Outline> = if ob.is_empty() {
+                    vec![b]
+                } else {
+                    ob.iter().collect()
+                };
+                if !oa.iter().any(|x| {
+                    ob.iter()
+                        .any(|y| parallel_run_applies(x, y, limit, wide, min_run, Some(box_)))
+                }) {
+                    return false;
+                }
             }
             if let Some((which, conn, (key_a, key_b))) = nets {
                 let na = conn.net_at(key_a, ma.0, ma.1);
