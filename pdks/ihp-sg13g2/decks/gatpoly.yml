@@ -41,10 +41,16 @@ rules:
     value: 0.18
     params:
       interacting_only: 1
+  - id: Gat.c
+    check: forbidden
+    layers: [GatPolyInsideActiv]
+    value: 0.0
   - id: Gat.d
     check: min_space
     layers: [GatPoly, Activ]
     value: 0.07
+    params:
+      abutting: report
   - id: Gat.e
     check: min_area
     layers: [GatPoly]
@@ -52,8 +58,8 @@ rules:
     params:
       touching: separate
   - id: Gat.f
-    check: no_angle
-    layers: [GatPolyOverActiv]
+    check: forbidden
+    layers: [GatPolyOverActivNotRect]
     value: 0.0
   - id: Gat.g
     check: min_width
@@ -80,38 +86,56 @@ rules:
     check: min_space
     layers: [GatPoly.filler, Activ]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.d
     check: min_space
     layers: [GatPoly.filler, GatPoly]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.d
     check: min_space
     layers: [GatPoly.filler, Cont]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.d
     check: min_space
     layers: [GatPoly.filler, pSD]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.d
     check: min_space
     layers: [GatPoly.filler, nSD.block]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.d
     check: min_space
     layers: [GatPoly.filler, SalBlock]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.e
     check: min_space
     layers: [GatPoly.filler, NWell]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.e
     check: min_space
     layers: [GatPoly.filler, nBuLay]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.f
     check: min_space
     layers: [GatPoly.filler, TRANS]
     value: 1.10
+    params:
+      abutting: report
   - id: GFil.g
     check: min_density
     layers: [GatPoly, GatPoly.filler]
@@ -130,3 +154,7 @@ rules:
     value: 0.18
     params:
       interacting_only: 1
+  - id: GFil.j
+    check: forbidden
+    layers: [GatPolyFillerInsideActivFiller]
+    value: 0.0
