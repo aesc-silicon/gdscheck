@@ -325,6 +325,185 @@ const DECK_NW: &str = "nwell";
 // NW.d1 still fires outside.  All four match KLayout 1:1.
 #[case::nw_dig("nwell/NW.dig.gds.gz", "TOP",
     vec!["NW.c1.dig", "NW.d1", "NW.d1.dig", "NW.e1.dig"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/nwell.md.  A min_width
+// violation counts two markers per narrow bar (one per long edge), as the NW.a case above.
+// Three 0.615 bars (x, y, 300 µm long across every tile line) → two markers each.
+#[case::nw_a_h1("nwell/NW.a.h1.gds.gz", "TOP", vec!["NW.a"; 6], vec![])]
+// 45°: diamond, 45° strip and octagon 0.615 across their diagonal faces fire (4 + 2 + 4
+// markers); the 0.622 diamond/strip/octagon and the chamfered shapes are clean - the
+// engine also reports chords across the legal octagon's 135° corners as 0.475 widths.
+#[case::nw_a_h2("nwell/NW.a.h2.gds.gz", "TOP", vec!["NW.a"; 10], vec![])]
+// Merged unions 0.615 wide (overlapping boxes, abutting slices, one ring side, an island
+// in a ring) fire; unions 0.62 wide and a bar drawn as a 4 × 10 grid are clean.
+#[case::nw_a_h3("nwell/NW.a.h3.gds.gz", "TOP", vec!["NW.a"; 8], vec!["NW.b1"])]
+// Ten 0.615 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
+#[case::nw_a_h4("nwell/NW.a.h4.gds.gz", "TOP", vec!["NW.a"; 20], vec![])]
+// Fifty 0.615 bars, flat and as a GdsArrayRef.
+#[case::nw_a_h5("nwell/NW.a.h5.gds.gz", "TOP", vec!["NW.a"; 100], vec![])]
+#[case::nw_a_h6("nwell/NW.a.h6.gds.gz", "TOP", vec!["NW.a"; 100], vec![])]
+// A 0.005 sliver and a 0.615 bar at (1000, 1000).
+#[case::nw_a_h7("nwell/NW.a.h7.gds.gz", "TOP", vec!["NW.a"; 4], vec![])]
+// A comb with three 0.615 teeth; a U with 0.62 arms is clean.
+#[case::nw_a_h8("nwell/NW.a.h8.gds.gz", "TOP", vec!["NW.a"; 6], vec![])]
+// Gap 0.615, a 0.43/0.43 diagonal (0.608) and a corner-to-corner 0.615 fire; 0.62 and the
+// 0.44/0.44 diagonal (0.622) are clean.  Bare wells under 1.80 apart also draw NW.b1.
+#[case::nw_b_h1("nwell/NW.b.h1.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.b1"])]
+// 45°: diamond tip to wall, two 45° strips, chamfer to corner, tip to tip at 0.615/0.601.
+#[case::nw_b_h2("nwell/NW.b.h2.gds.gz", "TOP", vec!["NW.b"; 4], vec!["NW.b1"])]
+// "Space or notch": straight and 45° notches (2 + 2), a comb with three 0.615 slots, a slot
+// in a plate, two facing Ls, a keyhole ring with a 0.615 hole, an island 0.615 from a ring.
+// The deck has no min_notch half for NW.b, so only the Ls and the island are reported.
+#[case::nw_b_h3("nwell/NW.b.h3.gds.gz", "TOP", vec!["NW.b"; 11], vec!["NW.b1"])]
+// Overlapping, abutting and gridded boxes each 0.615 from a third box: one each.
+#[case::nw_b_h4("nwell/NW.b.h4.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.b1"])]
+// Ten 0.615 gaps on, across and straddling x = 20/21/40/42, incl. a corner on x = 20.
+#[case::nw_b_h5("nwell/NW.b.h5.gds.gz", "TOP", vec!["NW.b"; 10], vec!["NW.b1"])]
+// Fifty 0.615 pairs, flat and as a GdsArrayRef.
+#[case::nw_b_h6("nwell/NW.b.h6.gds.gz", "TOP", vec!["NW.b"; 50], vec![])]
+#[case::nw_b_h7("nwell/NW.b.h7.gds.gz", "TOP", vec!["NW.b"; 50], vec![])]
+// A 0.005 sliver 0.615 from a box, two 300 µm bars 0.615 apart, a pair at (1000, 1000).
+#[case::nw_b_h8("nwell/NW.b.h8.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.a"])]
+// Two wells 0.50 apart on different Metal1 nets and two on one net: closer than 0.62 they
+// merge, so both pairs are NW.b whatever the net (KLayout calls the first NW.b1).
+#[case::nw_b_h9("nwell/NW.b.h9.gds.gz", "TOP", vec!["NW.b"; 2], vec![])]
+// Bare wells: gaps 0.62 (NW.b's limit - not merged, so NW.b1 applies), 0.625, 1.795 and
+// diagonals 1.27/1.27 (1.796), 1.20/1.20 (1.697), 0.90/0.90 (1.273) fire; 1.80 and
+// 1.28/1.28 (1.810) are clean.  The engine merges the exact-0.62 gap and bevels the
+// merged layer's corners by 0.128, so 1.796 and 1.697 read as clean.
+#[case::nw_b1_h1("nwell/NW.b1.h1.gds.gz", "TOP", vec!["NW.b1"; 6], vec!["NW.b"])]
+// Nets: ties on separate Metal1, ties joined via Metal2 (clean), P+Activ "ties" with Cont
+// and a strap (no well connection), N+Activ taps under a strap without Cont.
+#[case::nw_b1_h2("nwell/NW.b1.h2.gds.gz", "TOP", vec!["NW.b1"; 3], vec![])]
+// One net through the well itself (a U, a bridge, a tied island in a ring) is clean; the
+// same island untied fires once.
+#[case::nw_b1_h3("nwell/NW.b1.h3.gds.gz", "TOP", vec!["NW.b1"], vec![])]
+// 45°: a diamond tip 1.795 from a wall and two 45° strips 1.796 apart fire; 1.80 and
+// 1.803 are clean.  The merged layer's beveled tip hides the diamond.
+#[case::nw_b1_h4("nwell/NW.b1.h4.gds.gz", "TOP", vec!["NW.b1"; 2], vec!["NW.b"])]
+// Eight 1.795 gaps on, across and straddling x = 20/21/40/42.
+#[case::nw_b1_h5("nwell/NW.b1.h5.gds.gz", "TOP", vec!["NW.b1"; 8], vec![])]
+// Fifty bare pairs 1.00 apart, flat and as a GdsArrayRef.
+#[case::nw_b1_h6("nwell/NW.b1.h6.gds.gz", "TOP", vec!["NW.b1"; 50], vec![])]
+#[case::nw_b1_h7("nwell/NW.b1.h7.gds.gz", "TOP", vec!["NW.b1"; 50], vec![])]
+// PWell:block filling a 1.00 gap leaves no PWell between the wells (section 4.2), so
+// NW.b1 has nothing to measure; a 0.50 block strip leaves 0.25 of PWell either side → fires.
+#[case::nw_b1_h8("nwell/NW.b1.h8.gds.gz", "TOP", vec!["NW.b1"], vec![])]
+// A 0.305 margin, a chamfer 0.269 from the Activ corner, a 45° wall 0.269 from it and
+// parallel chamfers 0.304 apart fire; the 0.311 chamfers are clean.  The engine measures
+// enclosure by projection only and misses the two corner cases.
+#[case::nw_c_h1("nwell/NW.c.h1.gds.gz", "TOP", vec!["NW.c"; 4], vec![])]
+// Unions: P+Activ from two boxes (0.31 clean, 0.305 fires), NWell from two boxes (clean),
+// plain Activ is N+ (clean), pSD over half the Activ (the P+ half fires), a P+Activ 0.305
+// from a ring's hole.
+#[case::nw_c_h2("nwell/NW.c.h2.gds.gz", "TOP", vec!["NW.c"; 3], vec![])]
+// Activ crossing the well edge: P+Activ is not enclosed (NW.c); N+Activ is external at
+// zero distance (NW.d, which the engine does not report for an overlapping shape).
+#[case::nw_c_h3("nwell/NW.c.h3.gds.gz", "TOP", vec!["NW.c", "NW.d"], vec!["NW.e", "NW.f"])]
+// Nine 0.305 margins on, across and straddling x = 20/21/40/42, one 10 µm long.
+#[case::nw_c_h4("nwell/NW.c.h4.gds.gz", "TOP", vec!["NW.c"; 9], vec![])]
+// Fifty 0.305 margins, flat and as a GdsArrayRef.
+#[case::nw_c_h5("nwell/NW.c.h5.gds.gz", "TOP", vec!["NW.c"; 50], vec![])]
+#[case::nw_c_h6("nwell/NW.c.h6.gds.gz", "TOP", vec!["NW.c"; 50], vec![])]
+// TGO over half the P+Activ: the TGO half is NW.c1's, the other NW.c's; TGO abutting
+// without overlap leaves NW.c alone; a 0.005 TGO overlap makes a sliver NW.c1 must see.
+#[case::nw_c_h7("nwell/NW.c.h7.gds.gz", "TOP", vec!["NW.c", "NW.c", "NW.c", "NW.c1", "NW.c1"], vec![])]
+// A 0.005 sliver, a 300 µm P+Activ with a 0.305 bottom margin, one at (1000, 1000).
+#[case::nw_c_h8("nwell/NW.c.h8.gds.gz", "TOP", vec!["NW.c"; 3], vec![])]
+// 0.615 fires, 0.62 is clean; a chamfer 0.615 from the corner fires (projection misses
+// it); inside DigiBnd 0.305 → NW.c1.dig; a DigiBnd edge through the Activ and a DigiBnd
+// frame with the device in its hole are not "inside DigiBnd" → NW.c1 at 0.45.
+#[case::nw_c1_h1("nwell/NW.c1.h1.gds.gz", "TOP", vec!["NW.c1", "NW.c1", "NW.c1", "NW.c1", "NW.c1.dig"], vec![])]
+// Seven 0.305 margins under one DigiBnd on/across x = 10/20/21/40/42 → NW.c1.dig; a 0.615
+// margin outside it → NW.c1.
+#[case::nw_c1_h2("nwell/NW.c1.h2.gds.gz", "TOP",
+    vec!["NW.c1", "NW.c1.dig", "NW.c1.dig", "NW.c1.dig", "NW.c1.dig", "NW.c1.dig", "NW.c1.dig", "NW.c1.dig"], vec![])]
+// Fifty 0.615 margins under TGO, flat and as a GdsArrayRef.
+#[case::nw_c1_h3("nwell/NW.c1.h3.gds.gz", "TOP", vec!["NW.c1"; 50], vec![])]
+#[case::nw_c1_h4("nwell/NW.c1.h4.gds.gz", "TOP", vec!["NW.c1"; 50], vec![])]
+// Gap 0.305, a 0.215/0.215 diagonal (0.304), a diamond tip at 0.305, a corner 0.304 from a
+// 45° wall and parallel 45° edges 0.304 apart fire; 0.311 and 0.31 are clean.
+#[case::nw_d_h1("nwell/NW.d.h1.gds.gz", "TOP", vec!["NW.d"; 5], vec![])]
+// Conditions: a tie inside the well and a P+Activ outside are not NW.d's; nSD under
+// nSD:block is N+; N+Activ 0.305 from a ring's inner wall, as abutting boxes, against a
+// two-box well and in a U-notch fire; 0.31 in the hole is clean.
+#[case::nw_d_h2("nwell/NW.d.h2.gds.gz", "TOP", vec!["NW.d"; 5], vec![])]
+// Eight 0.305 gaps on, across and straddling x = 20/21/40/42, one 10 µm long.
+#[case::nw_d_h3("nwell/NW.d.h3.gds.gz", "TOP", vec!["NW.d"; 8], vec![])]
+// Fifty 0.305 gaps, flat and as a GdsArrayRef.
+#[case::nw_d_h4("nwell/NW.d.h4.gds.gz", "TOP", vec!["NW.d"; 50], vec![])]
+#[case::nw_d_h5("nwell/NW.d.h5.gds.gz", "TOP", vec!["NW.d"; 50], vec![])]
+// A 0.005 Activ sliver, a 300 µm Activ 0.305 below a 300 µm well, a pair at (1000, 1000).
+#[case::nw_d_h6("nwell/NW.d.h6.gds.gz", "TOP", vec!["NW.d"; 3], vec![])]
+// TGO over half the Activ (NW.d1 for that half), TGO abutting (NW.d only), a 0.005 TGO
+// sliver (NW.d and NW.d1); inside DigiBnd 0.305 → NW.d1.dig; a DigiBnd edge through the
+// Activ and a DigiBnd frame with the Activ in its hole are not "inside DigiBnd" → NW.d1
+// at 0.45; DigiBnd over the Activ but not the well is inside → clean at 0.45.
+#[case::nw_d_h7("nwell/NW.d.h7.gds.gz", "TOP",
+    vec!["NW.d", "NW.d", "NW.d1", "NW.d1", "NW.d1", "NW.d1", "NW.d1.dig"], vec![])]
+// 0.615, a 0.435/0.435 diagonal (0.615) and a diamond tip at 0.615 fire; 0.62/0.622 clean.
+#[case::nw_d1_h1("nwell/NW.d1.h1.gds.gz", "TOP", vec!["NW.d1"; 3], vec![])]
+// Fifty 0.615 gaps under TGO, flat and as a GdsArrayRef.
+#[case::nw_d1_h2("nwell/NW.d1.h2.gds.gz", "TOP", vec!["NW.d1"; 50], vec![])]
+#[case::nw_d1_h3("nwell/NW.d1.h3.gds.gz", "TOP", vec!["NW.d1"; 50], vec![])]
+// A 0.235 margin, a chamfer 0.233 from the tie's corner, a 45° wall 0.233 from it and
+// parallel chamfers 0.233 apart fire; 0.24/0.240 are clean.  Projection misses the corners.
+#[case::nw_e_h1("nwell/NW.e.h1.gds.gz", "TOP", vec!["NW.e"; 4], vec![])]
+// P+Activ at 0.20 is NW.c's; a drawn-nSD tie at 0.235, a tie 0.235 from a ring's hole, a
+// two-box tie with a 0.235 union margin and a tie under a two-box well at 0.235 fire; the
+// 0.24 ring and two-box well are clean.
+#[case::nw_e_h2("nwell/NW.e.h2.gds.gz", "TOP", vec!["NW.c", "NW.e", "NW.e", "NW.e", "NW.e"], vec![])]
+// Eight 0.235 margins on, across and straddling x = 20/21/40/42, one 10 µm long.
+#[case::nw_e_h3("nwell/NW.e.h3.gds.gz", "TOP", vec!["NW.e"; 8], vec![])]
+// Fifty 0.235 margins, flat and as a GdsArrayRef.
+#[case::nw_e_h4("nwell/NW.e.h4.gds.gz", "TOP", vec!["NW.e"; 50], vec![])]
+#[case::nw_e_h5("nwell/NW.e.h5.gds.gz", "TOP", vec!["NW.e"; 50], vec![])]
+// A 0.005 tie, a 300 µm tie with a 0.235 bottom margin, one at (1000, 1000).
+#[case::nw_e_h6("nwell/NW.e.h6.gds.gz", "TOP", vec!["NW.e"; 3], vec!["NW.a"])]
+// TGO over half the tie (NW.e1 for that half), TGO abutting (NW.e only), a 0.005 TGO
+// sliver (NW.e and NW.e1); inside DigiBnd 0.235 → NW.e1.dig; a DigiBnd edge through the
+// tie and a DigiBnd frame with the tie in its hole are not "inside DigiBnd" → NW.e1 at 0.45.
+#[case::nw_e_h7("nwell/NW.e.h7.gds.gz", "TOP",
+    vec!["NW.e", "NW.e", "NW.e1", "NW.e1", "NW.e1", "NW.e1", "NW.e1.dig"], vec![])]
+// A tie whose edge lies on the well edge: surrounded entirely, zero enclosure → NW.e (the
+// engine's skip_clipped drops it).
+#[case::nw_e_h8("nwell/NW.e.h8.gds.gz", "TOP", vec!["NW.e"], vec![])]
+// Activ under nSD:block without nSD or pSD is neither N+ nor P+ (section 4.2): no tie, no
+// NW.e at 0.20 (the engine takes every non-pSD Activ in the well for a tie).
+#[case::nw_e_h9("nwell/NW.e.h9.gds.gz", "TOP", vec![], vec![])]
+// 0.615 fires, 0.62 is clean; a chamfer 0.615 from the tie's corner fires (projection
+// misses it), 0.622 is clean.
+#[case::nw_e1_h1("nwell/NW.e1.h1.gds.gz", "TOP", vec!["NW.e1"; 2], vec![])]
+// Fifty 0.615 margins under TGO, flat and as a GdsArrayRef.
+#[case::nw_e1_h2("nwell/NW.e1.h2.gds.gz", "TOP", vec!["NW.e1"; 50], vec![])]
+#[case::nw_e1_h3("nwell/NW.e1.h3.gds.gz", "TOP", vec!["NW.e1"; 50], vec![])]
+// Gap 0.235, a 0.165/0.165 diagonal (0.233), a diamond tip at 0.235 and a corner 0.233
+// from a 45° wall fire; 0.24/0.240 are clean.
+#[case::nw_f_h1("nwell/NW.f.h1.gds.gz", "TOP", vec!["NW.f"; 4], vec![])]
+// P+Activ inside the well is NW.c's, plain Activ is NW.d's; P+Activ under PWell:block is
+// no substrate tie (section 4.2) → clean, half under it → fires; 0.235 in a ring's hole,
+// in a U-notch and union-to-union fire; 0.24 in the hole is clean.  The engine reports
+// the PWell:block tie too.
+#[case::nw_f_h2("nwell/NW.f.h2.gds.gz", "TOP", vec!["NW.c", "NW.d", "NW.f", "NW.f", "NW.f", "NW.f"], vec![])]
+// Eight 0.235 gaps on, across and straddling x = 20/21/40/42, one 10 µm long.
+#[case::nw_f_h3("nwell/NW.f.h3.gds.gz", "TOP", vec!["NW.f"; 8], vec![])]
+// Fifty 0.235 gaps, flat and as a GdsArrayRef.
+#[case::nw_f_h4("nwell/NW.f.h4.gds.gz", "TOP", vec!["NW.f"; 50], vec![])]
+#[case::nw_f_h5("nwell/NW.f.h5.gds.gz", "TOP", vec!["NW.f"; 50], vec![])]
+// A 0.005 P+Activ sliver, a 300 µm tie 0.235 below a 300 µm well, a pair at (1000, 1000).
+#[case::nw_f_h6("nwell/NW.f.h6.gds.gz", "TOP", vec!["NW.f"; 3], vec![])]
+// TGO over half the tie (NW.f1 for that half), TGO abutting (NW.f only), a 0.005 TGO
+// sliver (NW.f and NW.f1); section 8.1.1 relaxes NW.f1 to 0.24 inside DigiBnd: 0.30 is
+// clean and 0.235 is the digital variant (NW.f1.dig, which the deck lacks); a DigiBnd edge
+// through the tie and a DigiBnd frame with the tie in its hole are not "inside DigiBnd" →
+// NW.f1 at 0.45.
+#[case::nw_f_h7("nwell/NW.f.h7.gds.gz", "TOP",
+    vec!["NW.f", "NW.f", "NW.f1", "NW.f1", "NW.f1", "NW.f1", "NW.f1.dig"], vec![])]
+// 0.615, a 0.435/0.435 diagonal (0.615) and a diamond tip at 0.615 fire; 0.62/0.622 clean.
+#[case::nw_f1_h1("nwell/NW.f1.h1.gds.gz", "TOP", vec!["NW.f1"; 3], vec![])]
+// Fifty 0.615 gaps under TGO, flat and as a GdsArrayRef.
+#[case::nw_f1_h2("nwell/NW.f1.h2.gds.gz", "TOP", vec!["NW.f1"; 50], vec![])]
+#[case::nw_f1_h3("nwell/NW.f1.h3.gds.gz", "TOP", vec!["NW.f1"; 50], vec![])]
 fn test_nwell(
     #[case] gds: &str,
     #[case] topcell: &str,
