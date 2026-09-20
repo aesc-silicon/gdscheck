@@ -9,11 +9,11 @@ rules:
     value: 0.19
   - id: V1.b
     check: min_space
-    layers: [Via1]
+    layers: [Via1NoSealring]
     value: 0.22
   - id: V1.b1
     check: min_space
-    layers: [Via1]
+    layers: [Via1NoSealring]
     value: 0.29
     params:
       rows: 3
