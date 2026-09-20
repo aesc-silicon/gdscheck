@@ -9,7 +9,7 @@ rules:
     value: 0.90
   - id: TV2.b
     check: min_space
-    layers: [TopVia2]
+    layers: [TopVia2NoSealring]
     value: 1.06
   - id: TV2.c
     check: min_enclosure

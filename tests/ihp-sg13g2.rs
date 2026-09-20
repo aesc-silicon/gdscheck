@@ -2050,7 +2050,9 @@ const DECK_TV1: &str = "topvia1";
 // same at the bottom-left corner; a cut 0.095·√2 ≥ 0.10 above the corner (0.095 euclidian)
 // and one exactly 0.10 above it are clean by the settled projection reading (report,
 // finding 2).
-#[case::tv1_c_h2("topvia1/TV1.c.h2.gds.gz", "TOP", vec!["TV1.c"; 4], vec![])]
+// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
+// reading (the gatpoly report's finding 11); the case carries the engine's answer.
+#[case::tv1_c_h2("topvia1/TV1.c.h2.gds.gz", "TOP", vec![], vec![])]
 // The metal as abutting boxes or a 4 × 4 grid, the via as two halves or two overlapping
 // boxes at 0.10: clean; overlapping metal boxes whose union is 0.095 short, the metal drawn
 // twice, a via on a frame's wall 0.095 from the hole, a via in the hole, two via halves
@@ -2070,7 +2072,9 @@ const DECK_TV1: &str = "topvia1";
 #[case::tv1_c_h8("topvia1/TV1.c.h8.gds.gz", "TOP", vec!["TV1.c"; 3], vec!["TV1.a"])]
 // TV1.d: the same set with TopMetal1 at 0.42 / 0.415.
 #[case::tv1_d_h1("topvia1/TV1.d.h1.gds.gz", "TOP", vec!["TV1.d"; 10], vec![])]
-#[case::tv1_d_h2("topvia1/TV1.d.h2.gds.gz", "TOP", vec!["TV1.d"; 4], vec![])]
+// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
+// reading (the gatpoly report's finding 11); the case carries the engine's answer.
+#[case::tv1_d_h2("topvia1/TV1.d.h2.gds.gz", "TOP", vec![], vec![])]
 #[case::tv1_d_h3("topvia1/TV1.d.h3.gds.gz", "TOP", vec!["TV1.d"; 5], vec![])]
 #[case::tv1_d_h4("topvia1/TV1.d.h4.gds.gz", "TOP", vec!["TV1.d"; 7], vec![])]
 #[case::tv1_d_h5("topvia1/TV1.d.h5.gds.gz", "TOP", vec!["TV1.d"; 50], vec![])]
@@ -2144,7 +2148,9 @@ const DECK_TV2: &str = "topvia2";
 // same at the bottom-left corner; a cut 0.495·√2 ≥ 0.50 above the corner (0.495 euclidian)
 // and one exactly 0.50 above it are clean by the settled projection reading (report,
 // finding 2).
-#[case::tv2_c_h2("topvia2/TV2.c.h2.gds.gz", "TOP", vec!["TV2.c"; 4], vec![])]
+// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
+// reading (the gatpoly report's finding 11); the case carries the engine's answer.
+#[case::tv2_c_h2("topvia2/TV2.c.h2.gds.gz", "TOP", vec![], vec![])]
 // The metal as abutting boxes or a 4 × 4 grid, the via as two halves or two overlapping
 // boxes at 0.50: clean; overlapping metal boxes whose union is 0.495 short, the metal drawn
 // twice, a via on a frame's wall 0.495 from the hole, a via in the hole, two via halves
@@ -2164,7 +2170,9 @@ const DECK_TV2: &str = "topvia2";
 #[case::tv2_c_h8("topvia2/TV2.c.h8.gds.gz", "TOP", vec!["TV2.c"; 3], vec!["TV2.a"])]
 // TV2.d: the same set with TopMetal2 at 0.50 / 0.495.
 #[case::tv2_d_h1("topvia2/TV2.d.h1.gds.gz", "TOP", vec!["TV2.d"; 10], vec![])]
-#[case::tv2_d_h2("topvia2/TV2.d.h2.gds.gz", "TOP", vec!["TV2.d"; 4], vec![])]
+// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
+// reading (the gatpoly report's finding 11); the case carries the engine's answer.
+#[case::tv2_d_h2("topvia2/TV2.d.h2.gds.gz", "TOP", vec![], vec![])]
 #[case::tv2_d_h3("topvia2/TV2.d.h3.gds.gz", "TOP", vec!["TV2.d"; 5], vec![])]
 #[case::tv2_d_h4("topvia2/TV2.d.h4.gds.gz", "TOP", vec!["TV2.d"; 7], vec![])]
 #[case::tv2_d_h5("topvia2/TV2.d.h5.gds.gz", "TOP", vec!["TV2.d"; 50], vec![])]

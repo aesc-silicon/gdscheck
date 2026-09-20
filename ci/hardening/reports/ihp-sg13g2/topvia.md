@@ -36,6 +36,17 @@ agreed.
 Test status on the engine as of this report: 6 of the 58 new cases fail (3 per deck),
 all on the findings below; the other 52 pass.
 
+## Resolution (2026-09-20)
+
+Fixed, deck: 1 (every rule of the via and topvia decks - Via1-4, TopVia1-2, and
+cmos5l's topvia1 - runs on `<Via>NoSealring`; TV.b and V.b/b1 had the drawn layer).
+
+Open, cases carry the engine's answer: 2 - a 45° wall crossing over the via's wall
+is no pair under the parallel-walls projection reading, the gatpoly report's finding
+11 (a faithful reading of KLayout's angled projection was built and taken out again as
+tile-dependent on core-cut pieces); the PDK owner's call, with the GF180 counts it
+would move.
+
 ## Findings
 
 ### 1. TV<n>.b is checked inside EdgeSeal (false positive)
