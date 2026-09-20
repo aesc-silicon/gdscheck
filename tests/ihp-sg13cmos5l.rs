@@ -8,8 +8,8 @@
 //! (M1-M4 + TopVia1 + TopMetal1); every shared rule is value-identical.  Instead of
 //! duplicating the SG13G2 fixture tree, the parity test below runs each shared deck
 //! on the *SG13G2* fixtures under both PDKs and requires identical results — this
-//! covers the whole shared rule set, including the CMOS5L cont/nwell forks, whose
-//! DigiBnd splits must reduce to the SG13G2 behaviour on DigiBnd-free layouts.
+//! covers the whole shared rule set, including the CMOS5L cont fork, whose DigiBnd
+//! split must reduce to the SG13G2 behaviour on DigiBnd-free layouts.
 //! Only the genuinely different rules get their own fixtures (see
 //! gen/ihp_sg13cmos5l).
 
@@ -32,8 +32,8 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
     ids
 }
 
-/// Decks shared with SG13G2 (same file, or the cont/nwell forks whose digital
-/// splits are inert without DigiBnd).  Excluded because they genuinely differ:
+/// Decks shared with SG13G2 (same file, or the cont fork whose digital split is
+/// inert without DigiBnd).  Excluded because they genuinely differ:
 /// forbidden, pad, passiv, topvia1, antenna.
 const SHARED_DECKS: &[&str] = &[
     "offgrid",
@@ -91,9 +91,8 @@ fn parity_with_sg13g2_on_shared_decks() {
     );
 }
 
-/// Same-net NW.b1 regression, on the shared SG13G2 fixture (CMOS5L forks the nwell deck
-/// for its DigiBnd splits, so it needs its own assertion — the parity test above only
-/// requires both PDKs to agree, which a shared false positive satisfies).
+/// Same-net NW.b1 regression, on the shared SG13G2 fixture (the parity test above only
+/// requires both PDKs to agree, which a shared false positive would satisfy).
 ///
 /// Two NWell pairs at a 1.00 µm gap; the second is shorted well-to-well through an
 /// N+Activ tie → Cont → Metal1 strap, so exactly one pair is different-net.  Currently

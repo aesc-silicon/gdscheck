@@ -398,6 +398,58 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [NActivInNWellTGO, DigiBnd]
+  # NW.e: the NWell tie of section 4.2, (Activ AND nSD) inside NWell - N+ by drawn nSD
+  # or by default, and only a shape lying whole in the well, edge on the well's edge
+  # included.  One crossing the well edge is no tie "surrounded entirely by NWell";
+  # its outside part is external N+Activ (NW.d).
+  - name: NWellTie
+    op: inside
+    mode: lazy
+    layers: [NActFull, NWell]
+  - name: NWellTieNoTGO
+    op: difference
+    mode: lazy
+    layers: [NWellTie, ThickGateOx]
+  - name: NWellTieTGO
+    op: intersection
+    mode: lazy
+    layers: [NWellTie, ThickGateOx]
+  - name: NWellTieTGOAna
+    op: not_overlapping
+    mode: lazy
+    layers: [NWellTieTGO, DigiBnd]
+  - name: NWellTieTGODig
+    op: overlapping
+    mode: lazy
+    layers: [NWellTieTGO, DigiBnd]
+  # NW.d: external N+Activ - the N+ outside every well, which a shape crossing the well
+  # edge has at a distance of nothing.
+  - name: NActExt
+    op: difference
+    mode: lazy
+    layers: [NActFull, NWell]
+  - name: NActExtNoTGO
+    op: difference
+    mode: lazy
+    layers: [NActExt, ThickGateOx]
+  - name: NActExtTGO
+    op: intersection
+    mode: lazy
+    layers: [NActExt, ThickGateOx]
+  - name: NActExtTGOAna
+    op: not_overlapping
+    mode: lazy
+    layers: [NActExtTGO, DigiBnd]
+  - name: NActExtTGODig
+    op: overlapping
+    mode: lazy
+    layers: [NActExtTGO, DigiBnd]
+  # External N+Activ meeting the well - a shape crossing the well edge, or abutting it -
+  # is at a distance of nothing, which a space check reads as no pair at all.
+  - name: NActExtAtNWell
+    op: interacting
+    mode: lazy
+    layers: [NActExt, NWellNoSRAM]
   - name: ActivInNWell
     op: intersection
     mode: lazy
@@ -484,6 +536,28 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [Cont, PsdActivInPWell]
+  # NW.f: the substrate tie of section 4.2, P+Activ inside PWell, and PWell is what is
+  # neither NWell nor PWell:block - a P+Activ under a block is no tie.
+  - name: SubstrateTie
+    op: difference
+    mode: lazy
+    layers: [PsdActiv, NWellOrPWellBlk]
+  - name: SubstrateTieTGO
+    op: intersection
+    mode: lazy
+    layers: [SubstrateTie, ThickGateOx]
+  - name: SubstrateTieNoTGO
+    op: difference
+    mode: lazy
+    layers: [SubstrateTie, ThickGateOx]
+  - name: SubstrateTieTGOAna
+    op: not_overlapping
+    mode: lazy
+    layers: [SubstrateTieTGO, DigiBnd]
+  - name: SubstrateTieTGODig
+    op: overlapping
+    mode: lazy
+    layers: [SubstrateTieTGO, DigiBnd]
   - name: PsdActivInPWellTGO
     op: intersection
     mode: lazy
@@ -798,10 +872,12 @@ virtual_layers:
     mode: lazy
     layers: [GatPolyOverActiv, ThickGateOx]
 
+  # "NWell regions separated by less than 0.62 will be merged": a close of 0.309 a side
+  # bridges 0.615 and leaves 0.62, the next grid step, two regions.
   - name: NWellMerged
     op: close
     mode: lazy
-    radius: 0.31
+    radius: 0.309
     layers: [NWell]
   - name: NWellNoSRAM
     op: difference
@@ -810,7 +886,7 @@ virtual_layers:
   - name: NWellMergedNoSRAM
     op: close
     mode: lazy
-    radius: 0.31
+    radius: 0.309
     layers: [NWellNoSRAM]
   - name: PsdActivInNWellNoTGONoSRAM
     op: not_overlapping

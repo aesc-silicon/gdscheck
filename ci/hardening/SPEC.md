@@ -110,6 +110,33 @@ The oracle is evidence, not the judge: IHP's KLayout deck has its own bugs.  Whe
 gdscheck and KLayout disagree, read the manual and say who you believe and why.  When
 they agree and you believe the manual says otherwise, say that too.
 
+Read the oracle's KLayout column as what it is: the driver's and the maximal deck's
+markers added up, so most rules count twice there.  Before you write that KLayout is
+silent or loud on one particular shape, look at its markers: `KEEP=<dir>` keeps the
+`.lyrdb` files, and every `<value>` in them names the edge pair.  Give the coordinates
+in the report.  Do the same for gdscheck (`-v` prints every marker): a count that
+matches your intent can hide one marker missing and one you did not intend - a shape
+placed too close to a neighbour from another sub-pattern - so list which marker is
+which before you write the expected count into a case.
+
+## Settled readings
+
+Decided already, with IHP's KLayout deck; do not report them again, draw against them:
+
+- Enclosure is measured by projection, between walls.  A chamfer or a 45° wall passing
+  under the value from a *corner* of the enclosed shape, with both walls' margins
+  fine, is clean (IHP's `ext_enclosed` forces the projection metric).
+- Width and space are euclidian with a 90° angle limit, and that includes the chord
+  from the end of one wall to the end of another whose interiors face across a corner:
+  a small octagon whose flats are the minimum apart is a width violation eight times.
+- "Inside DigiBnd" is any overlap with DigiBnd.  A shape the DigiBnd edge cuts through
+  is digital; a shape in the hole of a DigiBnd frame is not.
+- Two bare wells under NW.b apart are NW.b in gdscheck (regions closer than the value
+  merge, the merged layer is NW.b1's) and NW.b1 in KLayout (unconnected is different
+  nets); both flag every such gap.
+- Markers are cut differently: gdscheck's `min_width` gives one per wall, KLayout's
+  one per edge pair; the hierarchical KLayout run counts an array cell once.
+
 ## Deliverables
 
 On your branch, committed:

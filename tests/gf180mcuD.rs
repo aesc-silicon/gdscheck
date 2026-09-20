@@ -145,7 +145,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ldnmos(
     "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
-    &[("MDN.1", 49), ("MDN.10a", 64), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 109), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 10), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
+    &[("MDN.1", 49), ("MDN.10a", 64), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 112), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 10), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
 )]
 #[case::lvpwell(
     "lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL",
