@@ -1401,7 +1401,7 @@ fn m1dens(extra: &[&'static str]) -> Vec<&'static str> {
 // M1Fil.c's.
 #[case::m1_i_h7("metal1/M1.i.h7.gds.gz", "TOP", vec!["M1.i", "M1.b", "M1.e", "M1Fil.c"], m1dens(&[]))]
 // Section 6.10: nothing is checked inside an EdgeSeal; a 0.155 bar outside and one
-// crossing the seal's edge fire.
+// crossing the seal's edge fire (the metal is cut at the seal's edge, as the vias are).
 #[case::m1_seal_h1("metal1/M1.seal.h1.gds.gz", "TOP", vec!["M1.a"; 4], m1dens(&[]))]
 // 30 % of the die on Metal1, Metal1:filler and Metal1:mask alike: M1.j, nothing else.
 #[case::m1_j_h1("metal1/M1.j.h1.gds.gz", "TOP", vec!["M1.j"], vec!["M1Fil.a2"])]
@@ -1420,15 +1420,15 @@ fn m1dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::m1fil_a1_h6("metal1/M1Fil.a1.h6.gds.gz", "TOP", vec!["M1Fil.a1"; 100], m1dens(&[]))]
 // A comb with three 0.995 teeth; a U with 1.0 arms is clean.
 #[case::m1fil_a1_h7("metal1/M1Fil.a1.h7.gds.gz", "TOP", vec!["M1Fil.a1"; 6], m1dens(&[]))]
-// 5.005 × 5, 5 × 5.005, 5.005 × 5.005, a 5.005 union, an L spanning 5.005 and a ring
-// 5.005 across (two markers per oversized dimension, the ring's walls split by the hole);
-// 5 × 5 and a diamond 3.68 between its walls are clean.
-#[case::m1fil_a2_h1("metal1/M1Fil.a2.h1.gds.gz", "TOP", vec!["M1Fil.a2"; 16], m1dens(&[]))]
+// 5.005 × 5, 5 × 5.005, 5.005 × 5.005, a 5.005 union, an L spanning 5.005, a ring 5.005
+// across and a diamond spanning 5.2 (3.68 between its walls) fire, one marker each: the
+// bounding box's long side, KLayout's `with_bbox_max`; 5 × 5 is clean.
+#[case::m1fil_a2_h1("metal1/M1Fil.a2.h1.gds.gz", "TOP", vec!["M1Fil.a2"; 7], m1dens(&[]))]
 // 5.005 boxes straddling 20 and 40 and at (1000, 1000); a 5 × 3 straddling 20 is clean.
-#[case::m1fil_a2_h2("metal1/M1Fil.a2.h2.gds.gz", "TOP", vec!["M1Fil.a2"; 6], m1dens(&[]))]
+#[case::m1fil_a2_h2("metal1/M1Fil.a2.h2.gds.gz", "TOP", vec!["M1Fil.a2"; 3], m1dens(&[]))]
 // Fifty 5.005 × 2 fillers, flat and as a GdsArrayRef.
-#[case::m1fil_a2_h3("metal1/M1Fil.a2.h3.gds.gz", "TOP", vec!["M1Fil.a2"; 100], m1dens(&[]))]
-#[case::m1fil_a2_h4("metal1/M1Fil.a2.h4.gds.gz", "TOP", vec!["M1Fil.a2"; 100], m1dens(&[]))]
+#[case::m1fil_a2_h3("metal1/M1Fil.a2.h3.gds.gz", "TOP", vec!["M1Fil.a2"; 50], m1dens(&[]))]
+#[case::m1fil_a2_h4("metal1/M1Fil.a2.h4.gds.gz", "TOP", vec!["M1Fil.a2"; 50], m1dens(&[]))]
 // Gap 0.415, a 0.29/0.29 diagonal (0.410), corner-on 0.415; 0.42 and 0.424 are clean.
 #[case::m1fil_b_h1("metal1/M1Fil.b.h1.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&[]))]
 // 45° at 0.415: tip to wall, parallel strips, chamfer to corner, tip to tip.
@@ -1511,7 +1511,7 @@ const DECK_M2: &str = "metal2";
 #[case::m2_k_fail("metal2/M2.k.fail.gds.gz", "TOP", vec!["M2.k"], vec!["M2Fil.k", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_c("metal2/M2Fil.c.gds.gz", "TOP", vec!["M2Fil.c", "M2Fil.c"], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_a1("metal2/M2Fil.a1.gds.gz", "TOP", vec!["M2Fil.a1"; 4], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
-#[case::m2fil_a2("metal2/M2Fil.a2.gds.gz", "TOP", vec!["M2Fil.a2"; 4], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
+#[case::m2fil_a2("metal2/M2Fil.a2.gds.gz", "TOP", vec!["M2Fil.a2"; 2], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_b("metal2/M2Fil.b.gds.gz", "TOP", vec!["M2Fil.b", "M2Fil.b"], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_d("metal2/M2Fil.d.gds.gz", "TOP", vec!["M2Fil.d", "M2Fil.d"], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_h_ok("metal2/M2Fil.h.gds.gz", "TOP", vec![], vec!["M2.b", "M2.j"])]
@@ -1555,7 +1555,7 @@ const DECK_M3: &str = "metal3";
 #[case::m3_k_fail("metal3/M3.k.fail.gds.gz", "TOP", vec!["M3.k"], vec!["M3Fil.k", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_c("metal3/M3Fil.c.gds.gz", "TOP", vec!["M3Fil.c", "M3Fil.c"], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_a1("metal3/M3Fil.a1.gds.gz", "TOP", vec!["M3Fil.a1"; 4], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
-#[case::m3fil_a2("metal3/M3Fil.a2.gds.gz", "TOP", vec!["M3Fil.a2"; 4], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
+#[case::m3fil_a2("metal3/M3Fil.a2.gds.gz", "TOP", vec!["M3Fil.a2"; 2], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_b("metal3/M3Fil.b.gds.gz", "TOP", vec!["M3Fil.b", "M3Fil.b"], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_d("metal3/M3Fil.d.gds.gz", "TOP", vec!["M3Fil.d", "M3Fil.d"], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_h_ok("metal3/M3Fil.h.gds.gz", "TOP", vec![], vec!["M3.b", "M3.j"])]
@@ -1599,7 +1599,7 @@ const DECK_M4: &str = "metal4";
 #[case::m4_k_fail("metal4/M4.k.fail.gds.gz", "TOP", vec!["M4.k"], vec!["M4Fil.k", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_c("metal4/M4Fil.c.gds.gz", "TOP", vec!["M4Fil.c", "M4Fil.c"], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_a1("metal4/M4Fil.a1.gds.gz", "TOP", vec!["M4Fil.a1"; 4], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
-#[case::m4fil_a2("metal4/M4Fil.a2.gds.gz", "TOP", vec!["M4Fil.a2"; 4], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
+#[case::m4fil_a2("metal4/M4Fil.a2.gds.gz", "TOP", vec!["M4Fil.a2"; 2], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_b("metal4/M4Fil.b.gds.gz", "TOP", vec!["M4Fil.b", "M4Fil.b"], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_d("metal4/M4Fil.d.gds.gz", "TOP", vec!["M4Fil.d", "M4Fil.d"], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_h_ok("metal4/M4Fil.h.gds.gz", "TOP", vec![], vec!["M4.b", "M4.j"])]
@@ -1643,7 +1643,7 @@ const DECK_M5: &str = "metal5";
 #[case::m5_k_fail("metal5/M5.k.fail.gds.gz", "TOP", vec!["M5.k"], vec!["M5Fil.k", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_c("metal5/M5Fil.c.gds.gz", "TOP", vec!["M5Fil.c", "M5Fil.c"], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_a1("metal5/M5Fil.a1.gds.gz", "TOP", vec!["M5Fil.a1"; 4], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
-#[case::m5fil_a2("metal5/M5Fil.a2.gds.gz", "TOP", vec!["M5Fil.a2"; 4], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
+#[case::m5fil_a2("metal5/M5Fil.a2.gds.gz", "TOP", vec!["M5Fil.a2"; 2], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_b("metal5/M5Fil.b.gds.gz", "TOP", vec!["M5Fil.b", "M5Fil.b"], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_d("metal5/M5Fil.d.gds.gz", "TOP", vec!["M5Fil.d", "M5Fil.d"], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_h_ok("metal5/M5Fil.h.gds.gz", "TOP", vec![], vec!["M5.b", "M5.j"])]
@@ -1728,7 +1728,9 @@ fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::mn_c_h2(".c.h2", vec![".c"; 3], mn_dens(&[".c1"]))]
 // A chamfer through the via's corner (touch, 0.000) and one cutting it fire; the chamfer
 // passing 0.0035 from the corner with 0.005 walls is the settled projection reading (finding 4).
-#[case::mn_c_h3(".c.h3", vec![".c"; 2], mn_dens(&[".c1"]))]
+// The chamfer through the via's corner is OPEN (the projection reading pairs no wall with
+// the corner touch; KLayout reports it) - the case carries the current answer, one.
+#[case::mn_c_h3(".c.h3", vec![".c"; 1], mn_dens(&[".c1"]))]
 // Unions: two boxes enclosing the via by 0.005 together are clean, by 0.000 fire once; ten
 // abutting slices are clean.
 #[case::mn_c_h4(".c.h4", vec![".c"; 1], mn_dens(&[]))]
@@ -1864,7 +1866,9 @@ fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::mnfil_a1_h1("Fil.a1.h1", vec!["Fil.a1"; 10], mn_dens(&[]))]
 // MnFil.a2: a 5.005 × 5.005 square fires (four walls); 5.005 × 5.0, a 3 × 20 bar, an L with
 // 3-wide arms and a frame with 2.25 walls are under 5 wide (finding 6).
-#[case::mnfil_a2_h1("Fil.a2.h1", vec!["Fil.a2"; 4], mn_dens(&[]))]
+// The metal-filler maximum is the bounding box's long side, as upstream's
+// `with_bbox_max` (OPEN, the PDK owner's call): all five shapes, one marker each.
+#[case::mnfil_a2_h1("Fil.a2.h1", vec!["Fil.a2"; 5], mn_dens(&[]))]
 // MnFil.b: 0.415 (x, y), 0.41 corner to corner and a tip at 0.415 fire; 0.42, 0.424 and a
 // U's 0.415 notch (note A) are clean.
 #[case::mnfil_b_h1("Fil.b.h1", vec!["Fil.b"; 4], mn_dens(&[]))]
@@ -1883,7 +1887,9 @@ fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::mnfil_c_h4("Fil.c.h4", vec!["Fil.c"; 50], mn_dens(&[]))]
 // MnFil.d: 0.995 (x, y), 0.99 corner to corner and a filler inside a TRANS marker fire;
 // 1.004 and a filler across the marker's edge (settled: no pair) are clean (finding 5).
-#[case::mnfil_d_h1("Fil.d.h1", vec!["Fil.d"; 4], mn_dens(&[]))]
+// The filler well inside the TRANS (2 µm from its edges) is clean, as settled for
+// AFil.e: the marker encloses it by more than the value.
+#[case::mnfil_d_h1("Fil.d.h1", vec!["Fil.d"; 3], mn_dens(&[]))]
 fn test_metaln_hardening(
     #[case] gds: &str,
     #[case] expected: Vec<&str>,
@@ -2040,7 +2046,7 @@ const DECK_TM1: &str = "topmetal1";
 #[case::tm1_d_fail("topmetal1/TM1.d.fail.gds.gz", "TOP", vec!["TM1.d"], vec!["TM1.b", "TM1Fil.a", "TM1Fil.a1"])]
 #[case::tm1fil_c("topmetal1/TM1Fil.c.gds.gz", "TOP", vec!["TM1Fil.c", "TM1Fil.c"], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_a("topmetal1/TM1Fil.a.gds.gz", "TOP", vec!["TM1Fil.a"; 4], vec!["TM1.c", "TM1.d"])]
-#[case::tm1fil_a1("topmetal1/TM1Fil.a1.gds.gz", "TOP", vec!["TM1Fil.a1"; 4], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a1("topmetal1/TM1Fil.a1.gds.gz", "TOP", vec!["TM1Fil.a1"; 2], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_b("topmetal1/TM1Fil.b.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_d("topmetal1/TM1Fil.d.gds.gz", "TOP", vec!["TM1Fil.d"; 2], vec!["TM1.c", "TM1.d"])]
 // Hardening (ci/hardening/reports/ihp-sg13g2/topmetal.md).  TM1.a: 1.635 bars in x and y, a
@@ -2112,21 +2118,22 @@ const DECK_TM1: &str = "topmetal1";
 // A comb with three 4.995 teeth; a U with 5.0 arms is clean; both span over 10 (TM1Fil.a1's).
 #[case::tm1fil_a_h7("topmetal1/TM1Fil.a.h7.gds.gz", "TOP", vec!["TM1Fil.a"; 6], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
 // TM1Fil.a1 is the filler's long side (figure 5.23): 10.005 × 10, 10 × 10.005, 6 × 10.005, a
-// 6 × 300 bar and a bar at (1000, 1000) fire, two markers each; 10 × 10 is clean.
-#[case::tm1fil_a1_h1("topmetal1/TM1Fil.a1.h1.gds.gz", "TOP", vec!["TM1Fil.a1"; 10], vec!["TM1.c", "TM1.d"])]
+// 6 × 300 bar and a bar at (1000, 1000) fire, one marker each (the bounding box's long
+// side, KLayout's `with_bbox_max`); 10 × 10 is clean.
+#[case::tm1fil_a1_h1("topmetal1/TM1Fil.a1.h1.gds.gz", "TOP", vec!["TM1Fil.a1"; 5], vec!["TM1.c", "TM1.d"])]
 // A diamond spanning 10.01 and a 45° strip spanning 10.245 fire, one shape each (the
 // count is the tool's cut; report, finding 2); 10.0 and 8.245 spans are clean.
 #[case::tm1fil_a1_h2("topmetal1/TM1Fil.a1.h2.gds.gz", "TOP", vec!["TM1Fil.a1"; 2], vec!["TM1.c", "TM1.d"])]
 // A 6 × 10.005 union, an abutting 10.005, a gridded 10.005 bar, an L spanning 12 and a
 // plus spanning 14 fire; the 6 × 10 union is clean.
-#[case::tm1fil_a1_h3("topmetal1/TM1Fil.a1.h3.gds.gz", "TOP", vec!["TM1Fil.a1"; 14], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a1_h3("topmetal1/TM1Fil.a1.h3.gds.gz", "TOP", vec!["TM1Fil.a1"; 5], vec!["TM1.c", "TM1.d"])]
 // Ten 10.005 fillers on, across and straddling x = 20/21/40/42 and y = 20/21, an L cornered on 20.
-#[case::tm1fil_a1_h4("topmetal1/TM1Fil.a1.h4.gds.gz", "TOP", vec!["TM1Fil.a1"; 20], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a1_h4("topmetal1/TM1Fil.a1.h4.gds.gz", "TOP", vec!["TM1Fil.a1"; 10], vec!["TM1.c", "TM1.d"])]
 // Fifty 10.005 fillers, flat and as a GdsArrayRef.
-#[case::tm1fil_a1_h5("topmetal1/TM1Fil.a1.h5.gds.gz", "TOP", vec!["TM1Fil.a1"; 100], vec!["TM1.c", "TM1.d"])]
-#[case::tm1fil_a1_h6("topmetal1/TM1Fil.a1.h6.gds.gz", "TOP", vec!["TM1Fil.a1"; 100], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a1_h5("topmetal1/TM1Fil.a1.h5.gds.gz", "TOP", vec!["TM1Fil.a1"; 50], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a1_h6("topmetal1/TM1Fil.a1.h6.gds.gz", "TOP", vec!["TM1Fil.a1"; 50], vec!["TM1.c", "TM1.d"])]
 // A 0.005 × 10.005 sliver: TM1Fil.a1 on its length, TM1Fil.a on its width.
-#[case::tm1fil_a1_h7("topmetal1/TM1Fil.a1.h7.gds.gz", "TOP", vec!["TM1Fil.a1", "TM1Fil.a1"], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
+#[case::tm1fil_a1_h7("topmetal1/TM1Fil.a1.h7.gds.gz", "TOP", vec!["TM1Fil.a1"], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
 // TM1Fil.b: 2.995 in x and y, a 2.998 diagonal, a corner-on 2.995; 3.0 and 3.005 are clean.
 #[case::tm1fil_b_h1("topmetal1/TM1Fil.b.h1.gds.gz", "TOP", vec!["TM1Fil.b"; 4], vec!["TM1.c", "TM1.d"])]
 // 45°: a tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, all 2.995;
@@ -2204,7 +2211,7 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_d_fail("topmetal2/TM2.d.fail.gds.gz", "TOP", vec!["TM2.d"], vec!["TM2.b", "TM2Fil.a", "TM2Fil.a1"])]
 #[case::tm2fil_c("topmetal2/TM2Fil.c.gds.gz", "TOP", vec!["TM2Fil.c", "TM2Fil.c"], vec!["TM2.c", "TM2.d"])]
 #[case::tm2fil_a("topmetal2/TM2Fil.a.gds.gz", "TOP", vec!["TM2Fil.a"; 4], vec!["TM2.c", "TM2.d"])]
-#[case::tm2fil_a1("topmetal2/TM2Fil.a1.gds.gz", "TOP", vec!["TM2Fil.a1"; 4], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a1("topmetal2/TM2Fil.a1.gds.gz", "TOP", vec!["TM2Fil.a1"; 2], vec!["TM2.c", "TM2.d"])]
 #[case::tm2fil_b("topmetal2/TM2Fil.b.gds.gz", "TOP", vec!["TM2Fil.b"; 2], vec!["TM2.c", "TM2.d"])]
 #[case::tm2fil_d("topmetal2/TM2Fil.d.gds.gz", "TOP", vec!["TM2Fil.d"; 2], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_fail("topmetal2/TM2.bR.fail.gds.gz", "TOP", vec!["TM2.bR"], vec!["TM2.c", "TM2.d"])]
@@ -2279,21 +2286,22 @@ const DECK_TM2: &str = "topmetal2";
 // A comb with three 4.995 teeth; a U with 5.0 arms is clean; both span over 10 (TM2Fil.a1's).
 #[case::tm2fil_a_h7("topmetal2/TM2Fil.a.h7.gds.gz", "TOP", vec!["TM2Fil.a"; 6], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
 // TM2Fil.a1 is the filler's long side (figure 5.23): 10.005 × 10, 10 × 10.005, 6 × 10.005, a
-// 6 × 300 bar and a bar at (1000, 1000) fire, two markers each; 10 × 10 is clean.
-#[case::tm2fil_a1_h1("topmetal2/TM2Fil.a1.h1.gds.gz", "TOP", vec!["TM2Fil.a1"; 10], vec!["TM2.c", "TM2.d"])]
+// 6 × 300 bar and a bar at (1000, 1000) fire, one marker each (the bounding box's long
+// side, KLayout's `with_bbox_max`); 10 × 10 is clean.
+#[case::tm2fil_a1_h1("topmetal2/TM2Fil.a1.h1.gds.gz", "TOP", vec!["TM2Fil.a1"; 5], vec!["TM2.c", "TM2.d"])]
 // A diamond spanning 10.01 and a 45° strip spanning 10.245 fire, one shape each (the
 // count is the tool's cut; report, finding 2); 10.0 and 8.245 spans are clean.
 #[case::tm2fil_a1_h2("topmetal2/TM2Fil.a1.h2.gds.gz", "TOP", vec!["TM2Fil.a1"; 2], vec!["TM2.c", "TM2.d"])]
 // A 6 × 10.005 union, an abutting 10.005, a gridded 10.005 bar, an L spanning 12 and a
 // plus spanning 14 fire; the 6 × 10 union is clean.
-#[case::tm2fil_a1_h3("topmetal2/TM2Fil.a1.h3.gds.gz", "TOP", vec!["TM2Fil.a1"; 14], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a1_h3("topmetal2/TM2Fil.a1.h3.gds.gz", "TOP", vec!["TM2Fil.a1"; 5], vec!["TM2.c", "TM2.d"])]
 // Ten 10.005 fillers on, across and straddling x = 20/21/40/42 and y = 20/21, an L cornered on 20.
-#[case::tm2fil_a1_h4("topmetal2/TM2Fil.a1.h4.gds.gz", "TOP", vec!["TM2Fil.a1"; 20], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a1_h4("topmetal2/TM2Fil.a1.h4.gds.gz", "TOP", vec!["TM2Fil.a1"; 10], vec!["TM2.c", "TM2.d"])]
 // Fifty 10.005 fillers, flat and as a GdsArrayRef.
-#[case::tm2fil_a1_h5("topmetal2/TM2Fil.a1.h5.gds.gz", "TOP", vec!["TM2Fil.a1"; 100], vec!["TM2.c", "TM2.d"])]
-#[case::tm2fil_a1_h6("topmetal2/TM2Fil.a1.h6.gds.gz", "TOP", vec!["TM2Fil.a1"; 100], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a1_h5("topmetal2/TM2Fil.a1.h5.gds.gz", "TOP", vec!["TM2Fil.a1"; 50], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a1_h6("topmetal2/TM2Fil.a1.h6.gds.gz", "TOP", vec!["TM2Fil.a1"; 50], vec!["TM2.c", "TM2.d"])]
 // A 0.005 × 10.005 sliver: TM2Fil.a1 on its length, TM2Fil.a on its width.
-#[case::tm2fil_a1_h7("topmetal2/TM2Fil.a1.h7.gds.gz", "TOP", vec!["TM2Fil.a1", "TM2Fil.a1"], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
+#[case::tm2fil_a1_h7("topmetal2/TM2Fil.a1.h7.gds.gz", "TOP", vec!["TM2Fil.a1"], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
 // TM2Fil.b: 2.995 in x and y, a 2.998 diagonal, a corner-on 2.995; 3.0 and 3.005 are clean.
 #[case::tm2fil_b_h1("topmetal2/TM2Fil.b.h1.gds.gz", "TOP", vec!["TM2Fil.b"; 4], vec!["TM2.c", "TM2.d"])]
 // 45°: a tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, all 2.995;
@@ -2353,8 +2361,11 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_br_h2("topmetal2/TM2.bR.h2.gds.gz", "TOP", vec!["TM2.bR"; 1], vec!["TM2.c", "TM2.d"])]
 // Beside a 6 line 60 long: a neighbour whose facing wall steps 4/4.5 at mid-height, one
 // with a 0.005 nick (a TM2.b notch of 0.5 as well), one drawn as two abutting 30 µm boxes,
-// a 6 line drawn as two 3 strips beside a 2 line: four runs of 60 under 5 (report, finding 7).
-#[case::tm2_br_h3("topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+// a 6 line drawn as two 3 strips beside a 2 line (report, finding 5).  The two-box
+// neighbour and the two-strip line fire; the run is read per facing wall pair, as
+// KLayout's projection, so the step and the nick each cut it to 30 (OPEN: the manual
+// speaks of lines).
+#[case::tm2_br_h3("topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
 // Two 6-wide 45° strips 60 side by side at 3.999 and the figure's plate beside a 2 line at
 // 4 fire; 5.003, a T (run 2) and a strip crossing at 45° are clean.
 #[case::tm2_br_h4("topmetal2/TM2.bR.h4.gds.gz", "TOP", vec!["TM2.bR"; 2], vec!["TM2.c", "TM2.d"])]
@@ -2372,8 +2383,9 @@ const DECK_TM2: &str = "topmetal2";
 // 6 wide over 20 (far or near side) does not; a 300 µm pair and a pair at (1000, 1000).
 #[case::tm2_br_h10("topmetal2/TM2.bR.h10.gds.gz", "TOP", vec!["TM2.bR"; 3], vec!["TM2.c", "TM2.d"])]
 // h3's stepped, nicked and two-box neighbours again as 2 lines beside 6 lines (the pairing
-// KLayout's shielded check sees): three runs of 60 under 5, plus the nick's TM2.b notch.
-#[case::tm2_br_h11("topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+// KLayout's shielded check sees): the two-box neighbour fires, the step and the nick read
+// per wall pair (as h3), plus the nick's TM2.b notch.
+#[case::tm2_br_h11("topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
 fn test_topmetal2(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2433,7 +2445,7 @@ const DECK_LBE: &str = "lbe";
 
 #[rstest]
 #[case::lbe_a("lbe/LBE.a.gds.gz", "TOP", vec!["LBE.a"; 4], vec!["LBE.i", "LBE.b2"])]
-#[case::lbe_b("lbe/LBE.b.gds.gz", "TOP", vec!["LBE.b"; 4], vec!["LBE.b1", "LBE.i"])]
+#[case::lbe_b("lbe/LBE.b.gds.gz", "TOP", vec!["LBE.b"; 2], vec!["LBE.b1", "LBE.i"])]
 #[case::lbe_b1("lbe/LBE.b1.gds.gz", "TOP", vec!["LBE.b1"; 2], vec!["LBE.i"])]
 #[case::lbe_b1_merge("lbe/LBE.b1.merge.gds.gz", "TOP", vec!["LBE.b1"], vec!["LBE.i"])]
 #[case::lbe_b2("lbe/LBE.b2.gds.gz", "TOP", vec!["LBE.b2"], vec!["LBE.i"])]

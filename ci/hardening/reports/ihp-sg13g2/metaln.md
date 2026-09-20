@@ -33,6 +33,30 @@ anywhere.
 Test status on the engine as of this report: 16 of the 89 cases fail, on every layer (64
 of 356), all on the findings below; the other 73 (292) pass.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 2 (a wall's depth is read stretch by stretch along it - the nearest
+anti-parallel wall of the same region behind each stretch - and Mn.e asks for a stretch
+deeper than the width running longer than the length within the part the two walls
+share; a 0.2 line with a 0.5 part on its far side is wide along that part, as KLayout's
+`sized(-w/2).sized(w/2)` survivor).  Fixed, deck: 1 (Mn.c1 reads `sides: adjacent` with
+`trigger: 0.05`, KLayout's `one_side_allowed, two_opposite_sides_allowed`: a via passes
+with one short side or two opposite ones, and the older `M{n}.c1` fixtures' clean via has
+its two 0.05 sides opposite now - Via1-4's V{n}.c1 likewise), 3 (Mn.a, Mn.b, Mn.d, Mn.e,
+Mn.f, Mn.g and Mn.i run on `Metal{n}NoSealring`, the metal less the EdgeSeal - cut at
+its edge like the vias; see the metal1 report on why not whole regions),
+5 (`abutting: report` on MnFil.c and MnFil.d; a filler lying inside a TRANS is read by
+an enclosure entry on `Metal{n}FillerInTRANS`, as the activ report settled AFil.d/e/i),
+and the M1Fil.d layer bug the metal1 report found on the way.
+
+Settled on KLayout's reading, cases flipped: the filler well inside the TRANS of finding
+5 (enclosed by more than the value: clean, as AFil.e's), and 6 (the metal-filler maximum
+reads the bounding box as upstream's `with_bbox_max`; the case carries all five shapes).
+
+Open: 4 (the chamfer through the via's corner - the parallel-walls reading pairs no wall
+with a corner touch; the gatpoly report's finding 11 is the same question), and 6 stays
+the PDK owner's call.
+
 ## Findings
 
 ### 1. Mn.c1 accepts any one side over 0.05; the manual's endcap is a pair of opposite sides (false negative)

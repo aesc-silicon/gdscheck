@@ -248,6 +248,118 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [TopVia1, EdgeSeal]
+  # Section 6.10: the standard metal rules are not checked within EdgeSeal regions -
+  # the metal outside the seal ring is what they read, cut at the seal's edge like the
+  # vias (IHP's deck reads `Metal1.outside(EdgeSeal)` for its area and endcap rules;
+  # dropping whole regions would stitch the power net of a whole die for it).
+  - name: Metal1NoSealring
+    op: difference
+    mode: lazy
+    layers: [Metal1, EdgeSeal]
+  - name: Metal2NoSealring
+    op: difference
+    mode: lazy
+    layers: [Metal2, EdgeSeal]
+  - name: Metal3NoSealring
+    op: difference
+    mode: lazy
+    layers: [Metal3, EdgeSeal]
+  - name: Metal4NoSealring
+    op: difference
+    mode: lazy
+    layers: [Metal4, EdgeSeal]
+  - name: Metal5NoSealring
+    op: difference
+    mode: lazy
+    layers: [Metal5, EdgeSeal]
+  # MnFil.d: a filler lying whole inside a TRANS is enclosed by the value, as the
+  # Activ:filler rules read their markers (figure 5.6).
+  - name: Metal1FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [Metal1.filler, TRANS]
+  - name: Metal2FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [Metal2.filler, TRANS]
+  - name: Metal3FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [Metal3.filler, TRANS]
+  - name: Metal4FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [Metal4.filler, TRANS]
+  - name: Metal5FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [Metal5.filler, TRANS]
+  - name: TopMetal1FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [TopMetal1.filler, TRANS]
+  - name: TopMetal2FillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [TopMetal2.filler, TRANS]
+  # The metal density rules read the metal as it is made: drawn, filler and mask, less
+  # the slits cut into wide metal (section 7.3), as IHP's density deck has it.
+  - name: Metal1Made
+    op: union
+    mode: lazy
+    layers: [Metal1, Metal1.filler, Metal1.mask]
+  - name: Metal1Density
+    op: difference
+    mode: lazy
+    layers: [Metal1Made, Metal1.slit]
+  - name: Metal2Made
+    op: union
+    mode: lazy
+    layers: [Metal2, Metal2.filler, Metal2.mask]
+  - name: Metal2Density
+    op: difference
+    mode: lazy
+    layers: [Metal2Made, Metal2.slit]
+  - name: Metal3Made
+    op: union
+    mode: lazy
+    layers: [Metal3, Metal3.filler, Metal3.mask]
+  - name: Metal3Density
+    op: difference
+    mode: lazy
+    layers: [Metal3Made, Metal3.slit]
+  - name: Metal4Made
+    op: union
+    mode: lazy
+    layers: [Metal4, Metal4.filler, Metal4.mask]
+  - name: Metal4Density
+    op: difference
+    mode: lazy
+    layers: [Metal4Made, Metal4.slit]
+  - name: Metal5Made
+    op: union
+    mode: lazy
+    layers: [Metal5, Metal5.filler, Metal5.mask]
+  - name: Metal5Density
+    op: difference
+    mode: lazy
+    layers: [Metal5Made, Metal5.slit]
+  - name: TopMetal1Made
+    op: union
+    mode: lazy
+    layers: [TopMetal1, TopMetal1.filler, TopMetal1.mask]
+  - name: TopMetal1Density
+    op: difference
+    mode: lazy
+    layers: [TopMetal1Made, TopMetal1.slit]
+  - name: TopMetal2Made
+    op: union
+    mode: lazy
+    layers: [TopMetal2, TopMetal2.filler, TopMetal2.mask]
+  - name: TopMetal2Density
+    op: difference
+    mode: lazy
+    layers: [TopMetal2Made, TopMetal2.slit]
   - name: TopVia2NoSealring
     op: difference
     mode: lazy

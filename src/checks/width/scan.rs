@@ -229,8 +229,8 @@ pub fn run_width(
     // rather than wherever two facing walls are further apart than that.  A 1 x 300 µm
     // filler stripe has a width of 1 by the first reading and of 300 by the second.
     // IHP reads AFil.a, GFil.a and Pad.a1 the first way (an opening by half the value,
-    // what survives is the violation) and its metal-filler and LBE maxima the second
-    // (the bounding box), so the rule says which.
+    // what survives is the violation); its metal-filler and LBE maxima are the bounding
+    // box's long side, `max_length`, no width at all.
     let narrowest = match rule.word("span") {
         Some("narrowest") if matches!(limit, Limit::AtMost(_)) => true,
         Some("narrowest") => {

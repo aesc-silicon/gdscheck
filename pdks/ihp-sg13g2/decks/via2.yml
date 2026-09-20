@@ -27,4 +27,5 @@ rules:
     layers: [Metal2, Via2NoSealring]
     value: 0.05
     params:
-      sides: any
+      sides: adjacent
+      trigger: 0.05

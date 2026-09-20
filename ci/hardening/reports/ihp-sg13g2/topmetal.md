@@ -32,6 +32,29 @@ and every flat/array pair agreed.
 Test status on the engine as of this report: 14 of the 129 new cases fail (5 per
 shared deck, 4 on TM2.bR), all on the findings below; the other 115 pass.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 4 (the global density counts the metal inside the boundary alone), 5's
+tile dependence and 6 (the run is read within the zone a tile's copies are exact in -
+where a difference layer such as `TopMetal2NotIND` is exact, so the IND-cut line keeps
+40, not 60 - and where a copy reaches the zone's edge the pair's regions are assembled
+from the neighbouring tiles' cores out to `value + length + width` around the gap and
+read again; the marker of a parallel pair is the shared stretch's lowest end, the same
+point from every tile that sees it, which also ends a pre-existing double report of a
+pair whose shape is drawn as two abutting boxes across a tile line), 7 (the depth
+behind a wall is read stretch by stretch, so a 4 line with a 6 part on its far side is
+wide along the part - the metaln report's finding 2).  Fixed, deck: 1 (TMFil.a1, MnFil.a2
+and LBE.b are `max_length`, the bounding box's long side, exactly KLayout's
+`with_bbox_max`; one marker per shape now, and the metal1 report's diamond fires), 2
+(`abutting: report` on TMFil.c and TMFil.d), 3 (an enclosure entry on
+`TopMetal{n}FillerInTRANS`, as the Activ and Metal filler decks have).
+
+Settled on KLayout's reading, cases flipped: the stepped and the nicked walls of 5
+(`TM2.bR.h3`, `h11`) - the run is one facing pair's, as KLayout's per-edge projection;
+a step or a nick makes two walls with two runs.  OPEN for the PDK owner: the manual
+says "lines"; a reading that joins the stretches of every facing wall within the value
+along one wall would report both (and a serrated wall's whole length).
+
 ## Findings
 
 ### 1. TMFil.a1 reads wall pairs, not the filler's extent (false negative)

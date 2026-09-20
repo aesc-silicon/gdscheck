@@ -46,8 +46,8 @@ Parameters
    narrowest dimension: a shape is too wide only where a ``value`` × ``value`` square
    fits inside it, which is KLayout's ``sized(-v/2).sized(v/2)``, and what survives is
    reported once per region. IHP reads ``AFil.a``, ``GFil.a`` and ``Pad.a1`` the second
-   way and its metal-filler and LBE maxima the first (the bounding box), so the rule
-   says which.
+   way; its metal-filler and LBE maxima are the bounding box's long side, which is
+   :doc:`max_length`, not a width at all.
 
 
 Violation markers
