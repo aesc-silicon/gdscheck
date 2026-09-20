@@ -2002,6 +2002,81 @@ const DECK_TV1: &str = "topvia1";
 #[case::tv1_b("topvia1/TV1.b.gds.gz", "TOP", vec!["TV1.b", "TV1.b"], vec!["TV1.c", "TV1.d"])]
 #[case::tv1_c("topvia1/TV1.c.gds.gz", "TOP", vec!["TV1.c"; 4], vec!["TV1.a", "TV1.b", "TV1.d"])]
 #[case::tv1_d("topvia1/TV1.d.gds.gz", "TOP", vec!["TV1.d"; 4], vec!["TV1.a", "TV1.b", "TV1.c"])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/topvia.md).  TV1.a counts one marker per
+// wall of an off-size pair; an enclosure rule one per under-enclosed via (its short
+// walls one connected run) or per wall when they are opposite; a space rule one per
+// pair.  TV1.a: a 0.42 square is the via; 0.415 or 0.425 in x or in y (two walls), a 0.415
+// square (four), a 0.42 × 0.84 bar, a 0.005 sliver, a 300 µm bar and a 0.415 square at
+// (1000, 1000).
+#[case::tv1_a_h1("topvia1/TV1.a.h1.gds.gz", "TOP", vec!["TV1.a"; 22], vec!["TV1.c", "TV1.d"])]
+// A 0.42 square as two halves, two overlapping boxes, twice, four quarters or clockwise is
+// clean; two abutting squares are a bar (two walls), an L of three quarters (four), a
+// square with a 0.005 notch (six) and one with a 0.005 bump (four) are not 0.42 squares;
+// two squares sharing a corner are 0 apart (TV1.b, no TV1.a).
+#[case::tv1_a_h2("topvia1/TV1.a.h2.gds.gz", "TOP", [vec!["TV1.a"; 16], vec!["TV1.b"]].concat(), vec!["TV1.c", "TV1.d"])]
+// 0.415 squares well inside a tile, on, straddling and starting on x = 20, straddling 21,
+// on 40, straddling 42 and straddling y = 20 (four walls each); 0.42 straddling 20 is clean.
+#[case::tv1_a_h3("topvia1/TV1.a.h3.gds.gz", "TOP", vec!["TV1.a"; 32], vec!["TV1.c", "TV1.d"])]
+// Fifty 0.415 squares, flat and as a GdsArrayRef.
+#[case::tv1_a_h4("topvia1/TV1.a.h4.gds.gz", "TOP", vec!["TV1.a"; 200], vec!["TV1.c", "TV1.d"])]
+#[case::tv1_a_h5("topvia1/TV1.a.h5.gds.gz", "TOP", vec!["TV1.a"; 200], vec!["TV1.c", "TV1.d"])]
+// Section 6.10: a 0.415 square under EdgeSeal and a 0.42 square within it on its edge are not
+// checked; a 0.42 square straddling the seal's edge leaves a half outside (two walls), a
+// 0.415 square outside on the edge and one in the hole of an EdgeSeal frame fire (four).
+#[case::tv1_a_h6("topvia1/TV1.a.h6.gds.gz", "TOP", vec!["TV1.a"; 10], vec!["TV1.c", "TV1.d"])]
+// TV1.b: 0.415 in x and in y, corner to corner under 0.42 (euclidian), corner-on at 0.415, a
+// row of three (two), a 3 × 3 at 0.415 (twelve) and a pair at (1000, 1000); 0.42 straight,
+// diagonal and corner-on, and a 3 × 3 at 0.42 are clean.
+#[case::tv1_b_h1("topvia1/TV1.b.h1.gds.gz", "TOP", vec!["TV1.b"; 19], vec!["TV1.c", "TV1.d"])]
+// A bar 0.415 from a square, a square in an L's inner corner 0.415 from both arms, two
+// 300 µm bars 0.415 apart: one pair each; two abutting squares are no pair.
+#[case::tv1_b_h2("topvia1/TV1.b.h2.gds.gz", "TOP", vec!["TV1.b"; 3], vec!["TV1.a", "TV1.c", "TV1.d"])]
+// 0.415 gaps well inside a tile, on, straddling and starting on x = 20, straddling 21, on
+// 40, straddling 42 and straddling y = 20; 0.42 straddling x = 20 is clean.
+#[case::tv1_b_h3("topvia1/TV1.b.h3.gds.gz", "TOP", vec!["TV1.b"; 8], vec!["TV1.c", "TV1.d"])]
+// Fifty 0.415 pairs, flat and as a GdsArrayRef.
+#[case::tv1_b_h4("topvia1/TV1.b.h4.gds.gz", "TOP", vec!["TV1.b"; 50], vec!["TV1.c", "TV1.d"])]
+#[case::tv1_b_h5("topvia1/TV1.b.h5.gds.gz", "TOP", vec!["TV1.b"; 50], vec!["TV1.c", "TV1.d"])]
+// Section 6.10: a 0.415 pair under EdgeSeal is not checked, nor a via within the seal
+// 0.415 from one outside (the seal's via is not the rule's layer); the pair outside fires
+// (report, finding 1).
+#[case::tv1_b_h6("topvia1/TV1.b.h6.gds.gz", "TOP", vec!["TV1.b"], vec!["TV1.c", "TV1.d"])]
+// TV1.c: Metal5 margins of 0.10 are clean; 0.095 on the right, all round, right and top
+// fire once, left and right twice; 0.005, 0 (via edge on the metal edge), a via 0.05
+// past the edge, a bare via and 0.095 at (1000, 1000) fire once.
+#[case::tv1_c_h1("topvia1/TV1.c.h1.gds.gz", "TOP", vec!["TV1.c"; 10], vec![])]
+// A 45° cut of the metal through the point 0.10/2 above the via's top-right corner - the
+// metal over the top wall's end is 0.10/2 - as a short chamfer and as a long wall, and the
+// same at the bottom-left corner; a cut 0.095·√2 ≥ 0.10 above the corner (0.095 euclidian)
+// and one exactly 0.10 above it are clean by the settled projection reading (report,
+// finding 2).
+#[case::tv1_c_h2("topvia1/TV1.c.h2.gds.gz", "TOP", vec!["TV1.c"; 4], vec![])]
+// The metal as abutting boxes or a 4 × 4 grid, the via as two halves or two overlapping
+// boxes at 0.10: clean; overlapping metal boxes whose union is 0.095 short, the metal drawn
+// twice, a via on a frame's wall 0.095 from the hole, a via in the hole, two via halves
+// 0.095 short: once each.
+#[case::tv1_c_h3("topvia1/TV1.c.h3.gds.gz", "TOP", vec!["TV1.c"; 5], vec![])]
+// 0.095 margins straddling, ending on and beginning on x = 20, at 21, 40, 42 and y = 20;
+// 0.10 straddling 20 is clean.
+#[case::tv1_c_h4("topvia1/TV1.c.h4.gds.gz", "TOP", vec!["TV1.c"; 7], vec![])]
+// Fifty vias with 0.095 on the right, flat and as a GdsArrayRef.
+#[case::tv1_c_h5("topvia1/TV1.c.h5.gds.gz", "TOP", vec!["TV1.c"; 50], vec![])]
+#[case::tv1_c_h6("topvia1/TV1.c.h6.gds.gz", "TOP", vec!["TV1.c"; 50], vec![])]
+// Three vias on a 300 µm strip 0.095 top and bottom (two walls each), one at (1000, 1000).
+#[case::tv1_c_h7("topvia1/TV1.c.h7.gds.gz", "TOP", vec!["TV1.c"; 7], vec![])]
+// Section 6.10: 0.095 all round and a bare via under EdgeSeal are not checked; a via
+// straddling the seal's edge with 0.095 outside, one outside on the edge and one at
+// (12, 2) fire.
+#[case::tv1_c_h8("topvia1/TV1.c.h8.gds.gz", "TOP", vec!["TV1.c"; 3], vec!["TV1.a"])]
+// TV1.d: the same set with TopMetal1 at 0.42 / 0.415.
+#[case::tv1_d_h1("topvia1/TV1.d.h1.gds.gz", "TOP", vec!["TV1.d"; 10], vec![])]
+#[case::tv1_d_h2("topvia1/TV1.d.h2.gds.gz", "TOP", vec!["TV1.d"; 4], vec![])]
+#[case::tv1_d_h3("topvia1/TV1.d.h3.gds.gz", "TOP", vec!["TV1.d"; 5], vec![])]
+#[case::tv1_d_h4("topvia1/TV1.d.h4.gds.gz", "TOP", vec!["TV1.d"; 7], vec![])]
+#[case::tv1_d_h5("topvia1/TV1.d.h5.gds.gz", "TOP", vec!["TV1.d"; 50], vec![])]
+#[case::tv1_d_h6("topvia1/TV1.d.h6.gds.gz", "TOP", vec!["TV1.d"; 50], vec![])]
+#[case::tv1_d_h7("topvia1/TV1.d.h7.gds.gz", "TOP", vec!["TV1.d"; 7], vec![])]
+#[case::tv1_d_h8("topvia1/TV1.d.h8.gds.gz", "TOP", vec!["TV1.d"; 3], vec!["TV1.a"])]
 fn test_topvia1(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2021,6 +2096,81 @@ const DECK_TV2: &str = "topvia2";
 #[case::tv2_b("topvia2/TV2.b.gds.gz", "TOP", vec!["TV2.b", "TV2.b"], vec!["TV2.c", "TV2.d"])]
 #[case::tv2_c("topvia2/TV2.c.gds.gz", "TOP", vec!["TV2.c"; 4], vec!["TV2.a", "TV2.b", "TV2.d"])]
 #[case::tv2_d("topvia2/TV2.d.gds.gz", "TOP", vec!["TV2.d"; 4], vec!["TV2.a", "TV2.b", "TV2.c"])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/topvia.md).  TV2.a counts one marker per
+// wall of an off-size pair; an enclosure rule one per under-enclosed via (its short
+// walls one connected run) or per wall when they are opposite; a space rule one per
+// pair.  TV2.a: a 0.90 square is the via; 0.895 or 0.905 in x or in y (two walls), a 0.895
+// square (four), a 0.90 × 1.80 bar, a 0.005 sliver, a 300 µm bar and a 0.895 square at
+// (1000, 1000).
+#[case::tv2_a_h1("topvia2/TV2.a.h1.gds.gz", "TOP", vec!["TV2.a"; 22], vec!["TV2.c", "TV2.d"])]
+// A 0.90 square as two halves, two overlapping boxes, twice, four quarters or clockwise is
+// clean; two abutting squares are a bar (two walls), an L of three quarters (four), a
+// square with a 0.005 notch (six) and one with a 0.005 bump (four) are not 0.90 squares;
+// two squares sharing a corner are 0 apart (TV2.b, no TV2.a).
+#[case::tv2_a_h2("topvia2/TV2.a.h2.gds.gz", "TOP", [vec!["TV2.a"; 16], vec!["TV2.b"]].concat(), vec!["TV2.c", "TV2.d"])]
+// 0.895 squares well inside a tile, on, straddling and starting on x = 20, straddling 21,
+// on 40, straddling 42 and straddling y = 20 (four walls each); 0.90 straddling 20 is clean.
+#[case::tv2_a_h3("topvia2/TV2.a.h3.gds.gz", "TOP", vec!["TV2.a"; 32], vec!["TV2.c", "TV2.d"])]
+// Fifty 0.895 squares, flat and as a GdsArrayRef.
+#[case::tv2_a_h4("topvia2/TV2.a.h4.gds.gz", "TOP", vec!["TV2.a"; 200], vec!["TV2.c", "TV2.d"])]
+#[case::tv2_a_h5("topvia2/TV2.a.h5.gds.gz", "TOP", vec!["TV2.a"; 200], vec!["TV2.c", "TV2.d"])]
+// Section 6.10: a 0.895 square under EdgeSeal and a 0.90 square within it on its edge are not
+// checked; a 0.90 square straddling the seal's edge leaves a half outside (two walls), a
+// 0.895 square outside on the edge and one in the hole of an EdgeSeal frame fire (four).
+#[case::tv2_a_h6("topvia2/TV2.a.h6.gds.gz", "TOP", vec!["TV2.a"; 10], vec!["TV2.c", "TV2.d"])]
+// TV2.b: 1.055 in x and in y, corner to corner under 1.06 (euclidian), corner-on at 1.055, a
+// row of three (two), a 3 × 3 at 1.055 (twelve) and a pair at (1000, 1000); 1.06 straight,
+// diagonal and corner-on, and a 3 × 3 at 1.06 are clean.
+#[case::tv2_b_h1("topvia2/TV2.b.h1.gds.gz", "TOP", vec!["TV2.b"; 19], vec!["TV2.c", "TV2.d"])]
+// A bar 1.055 from a square, a square in an L's inner corner 1.055 from both arms, two
+// 300 µm bars 1.055 apart: one pair each; two abutting squares are no pair.
+#[case::tv2_b_h2("topvia2/TV2.b.h2.gds.gz", "TOP", vec!["TV2.b"; 3], vec!["TV2.a", "TV2.c", "TV2.d"])]
+// 1.055 gaps well inside a tile, on, straddling and starting on x = 20, straddling 21, on
+// 40, straddling 42 and straddling y = 20; 1.06 straddling x = 20 is clean.
+#[case::tv2_b_h3("topvia2/TV2.b.h3.gds.gz", "TOP", vec!["TV2.b"; 8], vec!["TV2.c", "TV2.d"])]
+// Fifty 1.055 pairs, flat and as a GdsArrayRef.
+#[case::tv2_b_h4("topvia2/TV2.b.h4.gds.gz", "TOP", vec!["TV2.b"; 50], vec!["TV2.c", "TV2.d"])]
+#[case::tv2_b_h5("topvia2/TV2.b.h5.gds.gz", "TOP", vec!["TV2.b"; 50], vec!["TV2.c", "TV2.d"])]
+// Section 6.10: a 1.055 pair under EdgeSeal is not checked, nor a via within the seal
+// 1.055 from one outside (the seal's via is not the rule's layer); the pair outside fires
+// (report, finding 1).
+#[case::tv2_b_h6("topvia2/TV2.b.h6.gds.gz", "TOP", vec!["TV2.b"], vec!["TV2.c", "TV2.d"])]
+// TV2.c: TopMetal1 margins of 0.50 are clean; 0.495 on the right, all round, right and top
+// fire once, left and right twice; 0.005, 0 (via edge on the metal edge), a via 0.05
+// past the edge, a bare via and 0.495 at (1000, 1000) fire once.
+#[case::tv2_c_h1("topvia2/TV2.c.h1.gds.gz", "TOP", vec!["TV2.c"; 10], vec![])]
+// A 45° cut of the metal through the point 0.50/2 above the via's top-right corner - the
+// metal over the top wall's end is 0.50/2 - as a short chamfer and as a long wall, and the
+// same at the bottom-left corner; a cut 0.495·√2 ≥ 0.50 above the corner (0.495 euclidian)
+// and one exactly 0.50 above it are clean by the settled projection reading (report,
+// finding 2).
+#[case::tv2_c_h2("topvia2/TV2.c.h2.gds.gz", "TOP", vec!["TV2.c"; 4], vec![])]
+// The metal as abutting boxes or a 4 × 4 grid, the via as two halves or two overlapping
+// boxes at 0.50: clean; overlapping metal boxes whose union is 0.495 short, the metal drawn
+// twice, a via on a frame's wall 0.495 from the hole, a via in the hole, two via halves
+// 0.495 short: once each.
+#[case::tv2_c_h3("topvia2/TV2.c.h3.gds.gz", "TOP", vec!["TV2.c"; 5], vec![])]
+// 0.495 margins straddling, ending on and beginning on x = 20, at 21, 40, 42 and y = 20;
+// 0.50 straddling 20 is clean.
+#[case::tv2_c_h4("topvia2/TV2.c.h4.gds.gz", "TOP", vec!["TV2.c"; 7], vec![])]
+// Fifty vias with 0.495 on the right, flat and as a GdsArrayRef.
+#[case::tv2_c_h5("topvia2/TV2.c.h5.gds.gz", "TOP", vec!["TV2.c"; 50], vec![])]
+#[case::tv2_c_h6("topvia2/TV2.c.h6.gds.gz", "TOP", vec!["TV2.c"; 50], vec![])]
+// Three vias on a 300 µm strip 0.495 top and bottom (two walls each), one at (1000, 1000).
+#[case::tv2_c_h7("topvia2/TV2.c.h7.gds.gz", "TOP", vec!["TV2.c"; 7], vec![])]
+// Section 6.10: 0.495 all round and a bare via under EdgeSeal are not checked; a via
+// straddling the seal's edge with 0.495 outside, one outside on the edge and one at
+// (12, 2) fire.
+#[case::tv2_c_h8("topvia2/TV2.c.h8.gds.gz", "TOP", vec!["TV2.c"; 3], vec!["TV2.a"])]
+// TV2.d: the same set with TopMetal2 at 0.50 / 0.495.
+#[case::tv2_d_h1("topvia2/TV2.d.h1.gds.gz", "TOP", vec!["TV2.d"; 10], vec![])]
+#[case::tv2_d_h2("topvia2/TV2.d.h2.gds.gz", "TOP", vec!["TV2.d"; 4], vec![])]
+#[case::tv2_d_h3("topvia2/TV2.d.h3.gds.gz", "TOP", vec!["TV2.d"; 5], vec![])]
+#[case::tv2_d_h4("topvia2/TV2.d.h4.gds.gz", "TOP", vec!["TV2.d"; 7], vec![])]
+#[case::tv2_d_h5("topvia2/TV2.d.h5.gds.gz", "TOP", vec!["TV2.d"; 50], vec![])]
+#[case::tv2_d_h6("topvia2/TV2.d.h6.gds.gz", "TOP", vec!["TV2.d"; 50], vec![])]
+#[case::tv2_d_h7("topvia2/TV2.d.h7.gds.gz", "TOP", vec!["TV2.d"; 7], vec![])]
+#[case::tv2_d_h8("topvia2/TV2.d.h8.gds.gz", "TOP", vec!["TV2.d"; 3], vec!["TV2.a"])]
 fn test_topvia2(
     #[case] gds: &str,
     #[case] topcell: &str,
