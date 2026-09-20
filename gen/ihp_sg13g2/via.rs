@@ -76,15 +76,16 @@ fn via_c(pdk: &PdkConfig, index: i32, dir: &str) {
     write_gz(&format!("{dir}/V{index}.c.gds.gz"), library("TOP", elems));
 }
 
-/// V{n}.c1 — Metal{n} endcap enclosure of Via{n} (0.05 µm on at least one side).  A
-/// via with one 0.05 side (others 0.02) passes; a via with 0.02 on every side fails.
+/// V{n}.c1 — Metal{n} endcap enclosure of Via{n} (0.05 µm on the ends of the line
+/// running past: one side, or two opposite sides).  A via with 0.05 left and right
+/// (top and bottom 0.02) passes; a via with 0.02 on every side fails.
 fn via_c1(pdk: &PdkConfig, index: i32, dir: &str) {
     let m = layer(pdk, &format!("Metal{}", index));
     let v = layer(pdk, &format!("Via{}", index));
     let elems = vec![
-        // clean: left side is a 0.05 endcap, the other three sides are 0.02
+        // clean: a line running past left to right, 0.05 endcaps, 0.02 above and below
         rect(v, 0.0, 0.0, 0.19, 0.19),
-        rect(m, -0.05, -0.02, 0.21, 0.21),
+        rect(m, -0.05, -0.02, 0.24, 0.21),
         // fail: 0.02 on every side — no side reaches the 0.05 endcap
         rect(v, 10.0, 0.0, 10.19, 0.19),
         rect(m, 9.98, -0.02, 10.21, 0.21),

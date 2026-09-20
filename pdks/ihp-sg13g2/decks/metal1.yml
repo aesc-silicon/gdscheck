@@ -5,15 +5,15 @@
 rules:
   - id: M1.a
     check: min_width
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.16
   - id: M1.b
     check: min_space
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.18
   - id: M1.b
     check: min_notch
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.18
   - id: M1.c
     check: min_enclosure
@@ -24,49 +24,50 @@ rules:
     layers: [Metal1, ContNoSealring]
     value: 0.05
     params:
-      sides: any
+      sides: adjacent
+      trigger: 0.05
   - id: M1.d
     check: min_area
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.09
     params:
       touching: separate
   - id: M1.e
     check: min_space
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.22
     params:
       width: 0.3
       length: 1.0
   - id: M1.f
     check: min_space
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.60
     params:
       width: 10.00
       length: 10.00
   - id: M1.g
     check: min_width
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.20
     params:
       angle: bent
       length: 0.50
   - id: M1.i
     check: min_space
-    layers: [Metal1]
+    layers: [Metal1NoSealring]
     value: 0.22
     params:
       angle: bent
   - id: M1.j
     check: min_density
-    layers: [Metal1, Metal1.filler, Metal1.mask]
+    layers: [Metal1Density]
     value: 35.00
     layer_params:
       boundary: EdgeSeal.boundary
   - id: M1.k
     check: max_density
-    layers: [Metal1, Metal1.filler, Metal1.mask]
+    layers: [Metal1Density]
     value: 60.00
     layer_params:
       boundary: EdgeSeal.boundary
@@ -76,7 +77,7 @@ rules:
     layers: [Metal1.filler]
     value: 1.00
   - id: M1Fil.a2
-    check: max_width
+    check: max_length
     layers: [Metal1.filler]
     value: 5.00
   - id: M1Fil.b
@@ -87,13 +88,21 @@ rules:
     check: min_space
     layers: [Metal1.filler, Metal1]
     value: 0.42
+    params:
+      abutting: report
   - id: M1Fil.d
     check: min_space
-    layers: [Metal5.filler, TRANS]
+    layers: [Metal1.filler, TRANS]
+    value: 1.00
+    params:
+      abutting: report
+  - id: M1Fil.d
+    check: min_enclosure
+    layers: [TRANS, Metal1FillerInTRANS]
     value: 1.00
   - id: M1Fil.h
     check: min_density
-    layers: [Metal1, Metal1.filler, Metal1.mask]
+    layers: [Metal1Density]
     value: 25.00
     params:
       scope: window
@@ -102,7 +111,7 @@ rules:
       boundary: EdgeSeal.boundary
   - id: M1Fil.k
     check: max_density
-    layers: [Metal1, Metal1.filler, Metal1.mask]
+    layers: [Metal1Density]
     value: 75.00
     params:
       scope: window

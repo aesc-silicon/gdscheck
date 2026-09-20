@@ -232,11 +232,7 @@ fn tile_gaps(gap: f64) -> [(f64, f64); 7] {
 /// to the first is `gap`, rounded down (`grid_up == false`) or up onto the grid.
 fn strip_dy(gap: f64, d: f64, grid_up: bool) -> f64 {
     let dy = SQRT2 * gap + 2.0 * d;
-    if grid_up {
-        up(dy)
-    } else {
-        down(dy)
-    }
+    if grid_up { up(dy) } else { down(dy) }
 }
 
 pub fn generate(pdk: &PdkConfig) {

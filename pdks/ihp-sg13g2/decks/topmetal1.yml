@@ -17,13 +17,13 @@ rules:
     value: 1.64
   - id: TM1.c
     check: min_density
-    layers: [TopMetal1, TopMetal1.filler, TopMetal1.mask]
+    layers: [TopMetal1Density]
     value: 25.00
     layer_params:
       boundary: EdgeSeal.boundary
   - id: TM1.d
     check: max_density
-    layers: [TopMetal1, TopMetal1.filler, TopMetal1.mask]
+    layers: [TopMetal1Density]
     value: 70.00
     layer_params:
       boundary: EdgeSeal.boundary
@@ -33,7 +33,7 @@ rules:
     layers: [TopMetal1.filler]
     value: 5.00
   - id: TM1Fil.a1
-    check: max_width
+    check: max_length
     layers: [TopMetal1.filler]
     value: 10.00
   - id: TM1Fil.b
@@ -44,7 +44,15 @@ rules:
     check: min_space
     layers: [TopMetal1.filler, TopMetal1]
     value: 3.00
+    params:
+      abutting: report
   - id: TM1Fil.d
     check: min_space
     layers: [TopMetal1.filler, TRANS]
+    value: 4.90
+    params:
+      abutting: report
+  - id: TM1Fil.d
+    check: min_enclosure
+    layers: [TRANS, TopMetal1FillerInTRANS]
     value: 4.90

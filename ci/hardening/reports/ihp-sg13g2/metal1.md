@@ -28,6 +28,29 @@ cell once).
 Test status on the engine as of this report: 15 of the 96 new cases fail, all on the
 findings below; the other 81 pass, as do the 16 older cases.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 1 (a shape is enclosed only if none of the enclosing layer's walls
+crosses one of its own - a Cont across a slot in the metal has its corners on metal
+and a strip over the slot, which the slot's walls give away).  Fixed, deck: 2 (M1.c1
+reads `sides: adjacent` with `trigger: 0.05`, KLayout's `one_side_allowed,
+two_opposite_sides_allowed`; the metaln report's finding 1, applied to every Metal and
+Via deck, and the older `M{n}.c1`/`V{n}.c1` fixtures' clean via has its 0.05 sides
+opposite now), 3 (M1.a, M1.b, M1.d, M1.e, M1.f, M1.g and M1.i run on
+`Metal1NoSealring`), 4 (the density rules read `Metal1Density` = Metal1, its filler and
+its mask less Metal1:slit, as IHP's density deck; the same for Metal2-5 and the
+TopMetals), 5 (`abutting: report` on M1Fil.c and M1Fil.d, and on the Activ:filler marker
+rules), 6 (M1Fil.d on Metal1:filler, with the enclosure entry on `Metal1FillerInTRANS`
+for a filler lying inside the marker).
+
+The bar crossing the seal's edge in `M1.seal.h1` is cut at the edge and its outside
+part reported, as the case has it: `Metal1NoSealring` is the geometric difference, like
+the via layers.  Dropping whole regions overlapping the seal (the DigiBnd reading, and
+KLayout's `outside` for M1.c1/M1.d) was tried and costs a stitch of every region with a
+piece in a border tile - the power net of a whole die - per metal rule: 100 s on the
+4 mm² design.  OPEN for the PDK owner whether a crossing shape is "within EdgeSeal".
+Note G (a 0.045 endcap on a line wider than the Cont) stays as both tools read it.
+
 ## Findings
 
 ### 1. M1.c does not see a Cont lying across a hole in the Metal1 (false negative)

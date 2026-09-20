@@ -70,6 +70,8 @@ rules:
     check: min_space
     layers: [Activ.filler, NWell]
     value: 1.00
+    params:
+      abutting: report
   - id: AFil.d
     check: min_enclosure
     layers: [NWell, ActivFillerInNWell]
@@ -78,6 +80,8 @@ rules:
     check: min_space
     layers: [Activ.filler, nBuLay]
     value: 1.00
+    params:
+      abutting: report
   - id: AFil.d
     check: min_enclosure
     layers: [nBuLay, ActivFillerInNBuLay]
@@ -86,6 +90,8 @@ rules:
     check: min_space
     layers: [Activ.filler, TRANS]
     value: 1.00
+    params:
+      abutting: report
   - id: AFil.e
     check: min_enclosure
     layers: [TRANS, ActivFillerInTRANS]
@@ -124,6 +130,8 @@ rules:
     check: min_space
     layers: [Activ.filler, PWell.block]
     value: 1.50
+    params:
+      abutting: report
   - id: AFil.i
     check: min_enclosure
     layers: [PWell.block, ActivFillerWithinPWellBlock]

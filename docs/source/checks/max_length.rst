@@ -46,9 +46,9 @@ core contains that centroid).
 KLayout equivalent
 ------------------
 
-Not a single built-in KLayout ``Region`` operator — a bounding-box measurement, analogous
-to filtering on ``Region#extents.width``/``.height`` (whichever is larger) in a KLayout
-DRC script.
+``Region#with_bbox_max(value + one grid step, nil)``: the polygons whose bounding box's
+larger side is over ``value``, which is how IHP's deck reads its metal-filler maxima
+(``MnFil.a2``, ``TMnFil.a1``) and ``LBE.b``.
 
 
 Example

@@ -8,7 +8,7 @@ rules:
     layers: [LBE]
     value: 100.00
   - id: LBE.b
-    check: max_width
+    check: max_length
     layers: [LBE]
     value: 1500.00
   - id: LBE.b1
