@@ -1255,7 +1255,13 @@ fn oblique_widths(
                 }
                 continue;
             }
-            if walls.is_none() && run * run <= min_run2 * len2 {
+            // `length` on a 45° pair is each wall's own length, not the stretch the two
+            // share: "a bend longer than 0.39" is the bend's wall, and IHP's deck takes
+            // the edges of that length and measures between them.  A 45° band drawn
+            // with square ends has walls offset along their run by the band's width,
+            // so the shared stretch is shorter than either wall by that, and a 0.396
+            // bend read as one of 0.237.
+            if walls.is_none() && (len2 < min_run2 || lenj2 < min_run2) {
                 continue;
             }
             let dist = c as f64 / li;

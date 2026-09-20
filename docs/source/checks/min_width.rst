@@ -68,12 +68,15 @@ Parameters
    the plain one with its own value.
 
 ``length``
-   The run (µm) two facing walls must share — the projection of one onto the other, over
-   the whole walls — before their width counts. A rule that binds only lines longer than
-   so much, or, with ``angle: bent``, only bends long enough to be a trace rather than a
-   corner chamfer. With a run required, the readings that have none (across a corner, at a
-   pinch or acute tip, between a chamfer and a wall) are off. KLayout's
-   ``projection_limits``. Optional, defaults to ``0``.
+   The run (µm) two facing axis-aligned walls must share — the projection of one onto
+   the other, over the whole walls — before their width counts, KLayout's
+   ``projection_limits``: a rule that binds only lines longer than so much. On a 45°
+   pair, with ``angle: bent``, it is each wall's own length instead - "a bend longer
+   than 0.39" is the bend's wall, and IHP's deck takes the 45° edges of at least that
+   length and measures between them; a band drawn with square ends has its walls offset
+   along their run by its width, so the shared stretch understates the bend. With a
+   length required, the readings that have none (across a corner, at a pinch or acute
+   tip, between a chamfer and a wall) are off. Optional, defaults to ``0``.
 
 
 Violation markers
