@@ -1993,6 +1993,150 @@ fn test_via4(
     assert_eq!(drc(PDK_IHP, DECK_V4, gds, topcell, &ignore), expected);
 }
 
+// --- Via(n=1-4): the hardening layouts ---
+//
+// Section 5.19 (V1.a-V1.c1) and section 5.20 (Vn.a-Vn.c1) are one rule set on four
+// layers but for the enclosure value (V1.c 0.01, Vn.c 0.005), and so is every layout:
+// `via<n>/V<n>.<rule>.h<k>.gds.gz` carries the same geometry for n = 1..4 (Metal(n)
+// below), with the V(n).c/c1 margins taken from the deck's value.  The rule ids are
+// given as suffixes and the layer index is a second axis of the table, so a layer that
+// answers differently fails on its own.  Expected values are the manual's
+// (ci/hardening/reports/ihp-sg13g2/via.md).  The V(n).a, V(n).b and V(n).b1 layouts
+// draw no metal, so every via is V(n).c and V(n).c1 there; the cases set both aside.
+
+#[rstest]
+// V(n).a: 0.19 × 0.195, 0.195 × 0.19, 0.185 and 0.195 squares, 0.19 × 0.185, a 0.19 × 1
+// bar and an L of 0.19 arms are no 0.19 via (two walls per off direction); the square is.
+#[case::vn_a_h1(".a.h1", vec![".a"; 20], vec![".c", ".c1"])]
+// Unions: two vias overlapping by 0.09 (a 0.29 bar), a via with a 0.005 sliver and two
+// vias overlapping 0.005 at a corner fire; halves, quadrants and a clockwise via are
+// clean; two vias touching at a corner are 0.000 apart (V(n).b).
+#[case::vn_a_h2(".a.h2", [vec![".a"; 8], vec![".b"]].concat(), vec![".c", ".c1"])]
+// Tile lines: 0.185 squares inside a tile, on, across and beside x = 20/21/40/42 and
+// y = 20; 0.19 squares across and on x = 20 are clean.
+#[case::vn_a_h3(".a.h3", vec![".a"; 32], vec![".c", ".c1"])]
+// Fifty 0.185 squares, flat and as an array.
+#[case::vn_a_h4(".a.h4", vec![".a"; 200], vec![".c", ".c1"])]
+#[case::vn_a_h5(".a.h5", vec![".a"; 200], vec![".c", ".c1"])]
+// A 0.005 × 0.19 sliver, a 0.19 × 300 bar and a 0.185 square at (1000, 1000).
+#[case::vn_a_h6(".a.h6", vec![".a"; 8], vec![".c", ".c1"])]
+// The sealring: a 0.185 square and a 0.19-wide via ring under an EdgeSeal are exempt;
+// the same outside fire (4 + 8 walls); a via across the seal's edge has a 0.095 × 0.19
+// part outside (2).
+#[case::vn_a_h7(".a.h7", vec![".a"; 14], vec![".c", ".c1"])]
+// V(n).b: 0.215 in x and y, 0.219 corner to corner (twice), a corner 0.215 off a wall, a
+// row of three (2), an L of three (2) and a 2 × 2 block (4) fire; 0.22, 0.226 and 0.224
+// corner to corner and the 0.2/0.2 diagonal (0.283) are clean.
+#[case::vn_b_h1(".b.h1", vec![".b"; 13], vec![".c", ".c1"])]
+// Tile lines: 0.215 gaps across x = 20/21/40/42/14 and y = 20, beginning and ending on
+// x = 20, and at (1000, 1000).
+#[case::vn_b_h2(".b.h2", vec![".b"; 9], vec![".c", ".c1"])]
+// Fifty 0.215 pairs, flat and as an array.
+#[case::vn_b_h3(".b.h3", vec![".b"; 50], vec![".c", ".c1"])]
+#[case::vn_b_h4(".b.h4", vec![".b"; 50], vec![".c", ".c1"])]
+// A via 0.215 below a 0.19 × 300 via bar (the bar is V(n).a's); one 0.22 below is clean.
+#[case::vn_b_h5(".b.h5", vec![".b"; 1], vec![".a", ".c", ".c1"])]
+// The sealring: a 0.215 pair under an EdgeSeal is exempt, and so is a pair with one via
+// under it; the pair outside fires (finding 1).
+#[case::vn_b_h6(".b.h6", vec![".b"; 1], vec![".c", ".c1"])]
+// V(n).b1: 4 × 4 at 0.22/0.22, 0.285/0.285 and 0.25/0.25 fire; 4 × 4 with 0.29 or 0.30 in
+// one direction, 4 × 3, 3 × 4 and 3 × 3 are clean.
+#[case::vn_b1_h1(".b1.h1", vec![".b1"; 3], vec![".c", ".c1"])]
+// 5 × 5, 4 × 10, a 4 × 4 whose row gaps are 0.22/0.29/0.22, a staggered 4 × 4, a 4 × 4
+// drawn as two 2-column blocks and a 4 × 4 with a fifth via on one row fire; a 4 × 4
+// missing a corner via has a row of three and is no array of four (the cont report's
+// reading, finding 3 there).
+#[case::vn_b1_h2(".b1.h2", vec![".b1"; 6], vec![".c", ".c1"])]
+// With V(n).b: 4 × 4 at 0.215/0.215 (V(n).b1 and 24 V(n).b), at 0.215/0.29 (12 V(n).b,
+// one direction relaxed), at 0.22/0.215 (12 V(n).b and V(n).b1).
+#[case::vn_b1_h3(".b1.h3", [vec![".b1"; 2], vec![".b"; 48]].concat(), vec![".c", ".c1"])]
+// Tile lines: 4 × 4 at 0.22 inside a tile, across x = 20/21/40/42/14, a column gap
+// beginning on x = 20, a via beginning on x = 20, cornered on (20, 20), at (1000, 1000);
+// a 20 × 20 across x = 20/21 and y = 40/42 and a 4 × 50 across y = 7/14/20/21, one each.
+#[case::vn_b1_h4(".b1.h4", vec![".b1"; 12], vec![".c", ".c1"])]
+// Fifty 4 × 4 arrays at 0.22, flat and as an array reference of a cell holding one.
+#[case::vn_b1_h5(".b1.h5", vec![".b1"; 50], vec![".c", ".c1"])]
+#[case::vn_b1_h6(".b1.h6", vec![".b1"; 50], vec![".c", ".c1"])]
+// A 4 × 4 as a GdsArrayRef of a one-via cell at 0.22 gaps fires; a flat 4 × 4 at 0.29 in
+// x beside it is clean.
+#[case::vn_b1_h7(".b1.h7", vec![".b1"; 1], vec![".c", ".c1"])]
+// Via rings one and two vias thick at 0.22 gaps are clean; four thick is one 4-deep
+// field all the way round (one array); a 10 × 10 pad array fires.
+#[case::vn_b1_h8(".b1.h8", vec![".b1"; 2], vec![".c", ".c1"])]
+// The sealring: a 4 × 4 at 0.22 under an EdgeSeal is exempt; the same outside fires
+// (finding 1).
+#[case::vn_b1_h9(".b1.h9", vec![".b1"; 1], vec![".c", ".c1"])]
+// V(n).c: a via one step short below, one sticking 0.005 out, one in a pad's corner on
+// two edges and one a step short on two adjacent sides fire; the value all round is
+// clean.  The corner vias are V(n).c1 too (two adjacent short sides).
+#[case::vn_c_h1(".c.h1", vec![".c"; 4], vec![".c1"])]
+// A bare via, a via half out of a line's end, a via beside a line, a via in a metal
+// ring's hole and one on the hole's edge: none is enclosed.
+#[case::vn_c_h2(".c.h2", vec![".c"; 5], vec![".c1"])]
+// A chamfer through the via's corner (touch, 0.000) and one cutting it fire; the chamfer
+// passing 0.0035 from the corner with both walls at the value is the settled projection
+// reading (clean), and so are the diamonds (note B).  The touch is the metaln report's
+// open finding 4 (gdscheck reports the cut only).
+#[case::vn_c_h3(".c.h3", vec![".c"; 2], vec![".c1"])]
+// Unions: two boxes enclosing the via by the value together are clean, a step short fire
+// once; ten abutting slices are clean.
+#[case::vn_c_h4(".c.h4", vec![".c"; 1], vec![])]
+// Tile lines: vias a step short below across x = 20/21/40/42 and one with its edge on
+// x = 20 and the metal edge; the via ending `c` short of x = 20 sits `c` from its line's
+// end with `c` sides, which is V(n).c1's.
+#[case::vn_c_h5(".c.h5", [vec![".c"; 5], vec![".c1"]].concat(), vec![])]
+// Fifty vias a step short in a line, flat and as an array.
+#[case::vn_c_h6(".c.h6", vec![".c"; 50], vec![])]
+#[case::vn_c_h7(".c.h7", vec![".c"; 50], vec![])]
+// A via a step short at (1000, 1000) and in the middle of a 300 µm line.
+#[case::vn_c_h8(".c.h8", vec![".c"; 2], vec![])]
+// A via a step short under an EdgeSeal is exempt; outside and across the seal's edge it
+// fires (the crossing via's outside part is 0.095 wide, V(n).a's).
+#[case::vn_c_h9(".c.h9", vec![".c"; 2], vec![".a"])]
+// V(n).c1: line-end vias with a 0.045 endcap (right, top, left, the outer of two) and one
+// with 0.000 (also V(n).c) fire; 0.05 and a via mid-line are clean.
+#[case::vn_c1_h1(".c1.h1", [vec![".c1"; 5], vec![".c"]].concat(), vec![])]
+// Corners (note 2): outer margins (0.045, c) and (c, c) fire; (0.05, c), (0.05, 0.05) and
+// (c, 0.05) are clean.
+#[case::vn_c1_h2(".c1.h2", vec![".c1"; 2], vec![])]
+// Pads: one 0.05 side and three at c, two adjacent 0.05 sides, 0.045 all round, c all
+// round and (0.045, 0.05, 0.045, 0.05) fire; two opposite 0.05 sides (with c or 0.045 on
+// the others), three and four are clean.
+#[case::vn_c1_h3(".c1.h3", vec![".c1"; 5], vec![])]
+// A 0.045 endcap on a 0.5-wide line's end (0.155 sides: an opposite pair over 0.05), a
+// 0.05 endcap, a T, a cross, a chamfered end on a 0.5-wide line and a via centred in a
+// 45° strip are clean; a chamfered end on a `w`-wide line, whose chamfers run across
+// the via's sides 0.01 from their ends, fires with 0.05 to the straight end and with 0.045.
+#[case::vn_c1_h4(".c1.h4", vec![".c1"; 2], vec![])]
+// Tile lines: 0.045 endcaps ending on x = 20/21/40, vias across 20 and 42; 0.05 on 20 clean.
+#[case::vn_c1_h5(".c1.h5", vec![".c1"; 5], vec![])]
+// Fifty 0.045 endcaps, flat and as an array.
+#[case::vn_c1_h6(".c1.h6", vec![".c1"; 50], vec![])]
+#[case::vn_c1_h7(".c1.h7", vec![".c1"; 50], vec![])]
+// A 0.045 endcap at (1000, 1000) and at the far end of a 300 µm line.
+#[case::vn_c1_h8(".c1.h8", vec![".c1"; 2], vec![])]
+// A 0.045 endcap under an EdgeSeal is exempt; the same outside fires.
+#[case::vn_c1_h9(".c1.h9", vec![".c1"; 1], vec![])]
+// A 4 × 4 array in a pad with 0.05 all round is clean; with 0.045 all round its four
+// corner vias fire (two adjacent short sides), the edge vias not (one); a row of four
+// with 0.045 at both ends fires at both.
+#[case::vn_c1_h10(".c1.h10", vec![".c1"; 6], vec![])]
+fn test_via_hardening(
+    #[case] gds: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+    #[values(1, 2, 3, 4)] n: u32,
+) {
+    let deck = format!("via{n}");
+    let gds = format!("via{n}/V{n}{gds}.gds.gz");
+    let id = |s: &&str| format!("V{n}{s}");
+    let ignore: Vec<String> = ignore.iter().map(id).collect();
+    let ignore: Vec<&str> = ignore.iter().map(String::as_str).collect();
+    let mut expected: Vec<String> = expected.iter().map(id).collect();
+    expected.sort();
+    assert_eq!(drc(PDK_IHP, &deck, &gds, "TOP", &ignore), expected);
+}
+
 // --- TopVia1 ---
 
 const DECK_TV1: &str = "topvia1";

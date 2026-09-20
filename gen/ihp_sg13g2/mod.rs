@@ -39,6 +39,7 @@ mod topmetal_hardening;
 mod topvia;
 mod topvia_hardening;
 mod via;
+mod via_hardening;
 
 use gdscheck::pdk::PdkConfig;
 
@@ -57,6 +58,7 @@ pub fn generate(pdk: &PdkConfig) {
     metal1_hardening::generate(pdk);
     metaln_hardening::generate(pdk);
     via::generate(pdk);
+    via_hardening::generate(pdk);
     topvia::generate(pdk);
     topvia_hardening::generate(pdk);
     topmetal::generate(pdk);
