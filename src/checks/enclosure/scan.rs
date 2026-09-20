@@ -29,9 +29,32 @@ use std::collections::HashMap;
 /// each shape is whole (put together from its pieces) or one tile's piece of it.
 type Job<'a> = ((i32, i32), Shapes<'a>, bool);
 
-/// Enclosed shapes with their regions, each borrowed from the layer or put together
-/// from its pieces.
-type Shapes<'a> = Vec<(Cow<'a, MergedPoly>, usize)>;
+/// Enclosed shapes with their regions: one tile's core pieces as their indices in the
+/// tile's list, or shapes put together from their pieces.
+enum Shapes<'a> {
+    Indexed(&'a [(usize, usize)]),
+    Owned(Assembled<'a>),
+}
+
+/// Shapes put together from their pieces, or borrowed where one piece is the shape,
+/// each with its region.
+type Assembled<'a> = Vec<Shape<'a>>;
+
+/// One such shape with its region.
+type Shape<'a> = (Cow<'a, MergedPoly>, usize);
+
+impl<'a> Shapes<'a> {
+    /// Each shape with its region and, for a tile's piece, its index in the tile.
+    fn iter(
+        &'a self,
+        polys: &'a [MergedPoly],
+    ) -> Box<dyn Iterator<Item = (&'a MergedPoly, usize, Option<usize>)> + 'a> {
+        match self {
+            Shapes::Indexed(ps) => Box::new(ps.iter().map(move |&(i, r)| (&polys[i], r, Some(i)))),
+            Shapes::Owned(v) => Box::new(v.iter().map(|(m, r)| (&**m, *r, None))),
+        }
+    }
+}
 
 /// One tile's core pieces of the enclosed layer: each as its index in the tile's list,
 /// with its region.
@@ -380,6 +403,7 @@ pub fn run(
     let cutoff = (!max).then_some(limit.dbu());
     let um = |x: f64| x * dbu_to_um;
 
+    let labeled = merged.kin(bl, bd, true);
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
     let a_boxes = boxes_of(map_a, tile);
@@ -409,7 +433,6 @@ pub fn run(
     // region are reduced to the worst afterwards.
     // The stitch names the pieces at the tile lines; a copy lying strictly inside its
     // core is a whole shape and a region of its own, numbered on from the stitch's.
-    let labeled = crate::merge::stitch_labeled_indexed(map_b, tile as i32);
     let mut keys: Vec<(i32, i32)> = map_b.keys().copied().collect();
     keys.sort_unstable();
     // Each tile numbers its whole shapes from its own base, past every earlier tile's
@@ -428,7 +451,7 @@ pub fn run(
         .zip(bases.par_iter())
         .map(|(&k, &b)| {
             let mut next = b;
-            let pieces = labeled.pieces_of(k, &map_b[&k], tile as i32, &mut next);
+            let pieces = labeled.pieces_of(k, &b_boxes[&k].0, tile as i32, &mut next);
             (k, pieces)
         })
         .collect();
@@ -438,57 +461,72 @@ pub fn run(
     // A minimum reads wall by wall, and every piece in its own tile will do.
     let whole = max || sides == Sides::Any || sides == Sides::Adjacent;
     let jobs: Vec<Job> = if whole {
-        let mut by_owner: HashMap<(i32, i32), Shapes> = HashMap::new();
+        // The stitched regions, put together and filed under the tile holding their
+        // marker; the whole shapes of each tile stay with it, side by side.
         let mut pieces: Vec<Vec<&MergedPoly>> = vec![Vec::new(); labeled.regions.len()];
         for (k, ps) in &per_tile {
             for &(i, rid) in ps {
-                let poly = &map_b[k][i];
                 if rid < labeled.regions.len() {
-                    pieces[rid].push(poly);
-                } else {
-                    by_owner
-                        .entry(*k)
-                        .or_default()
-                        .push((Cow::Borrowed(poly), rid));
+                    pieces[rid].push(&map_b[k][i]);
                 }
             }
         }
-        for (rid, ps) in pieces.into_iter().enumerate() {
-            let (mx, my) = labeled.regions[rid].marker;
-            let owner = (
-                (mx / tile as f64).floor() as i32,
-                (my / tile as f64).floor() as i32,
-            );
-            let shape = if ps.len() == 1 {
-                Cow::Borrowed(ps[0])
-            } else {
-                let owned: Vec<MergedPoly> = ps.into_iter().cloned().collect();
-                let unioned = crate::merge::compose_tile(crate::merge::VirtualOp::Union, &[&owned]);
-                match unioned
-                    .into_iter()
-                    .find(|m| crate::merge::point_in_merged(mx, my, m))
-                {
-                    Some(m) => Cow::Owned(m),
-                    None => continue,
-                }
-            };
-            by_owner.entry(owner).or_default().push((shape, rid));
+        let assembled: Vec<((i32, i32), Shape)> = pieces
+            .into_par_iter()
+            .enumerate()
+            .filter_map(|(rid, ps)| {
+                let (mx, my) = labeled.regions[rid].marker;
+                let owner = (
+                    (mx / tile as f64).floor() as i32,
+                    (my / tile as f64).floor() as i32,
+                );
+                let shape = if ps.len() == 1 {
+                    Cow::Borrowed(ps[0])
+                } else {
+                    let owned: Vec<MergedPoly> = ps.into_iter().cloned().collect();
+                    let unioned =
+                        crate::merge::compose_tile(crate::merge::VirtualOp::Union, &[&owned]);
+                    Cow::Owned(
+                        unioned
+                            .into_iter()
+                            .find(|m| crate::merge::point_in_merged(mx, my, m))?,
+                    )
+                };
+                Some((owner, (shape, rid)))
+            })
+            .collect();
+        let mut stitched: HashMap<(i32, i32), Assembled> = HashMap::new();
+        for (owner, shape) in assembled {
+            stitched.entry(owner).or_default().push(shape);
         }
-        by_owner.into_iter().map(|(k, v)| (k, v, true)).collect()
-    } else {
-        per_tile
+        let stitched = std::sync::Mutex::new(stitched);
+        let mut jobs: Vec<Job> = per_tile
             .par_iter()
             .map(|(k, ps)| {
                 let polys = &map_b[k];
-                let v = ps
+                let mut v: Assembled = ps
                     .iter()
+                    .filter(|(_, rid)| *rid >= labeled.regions.len())
                     .map(|&(i, rid)| (Cow::Borrowed(&polys[i]), rid))
                     .collect();
-                (*k, v, false)
+                if let Some(more) = stitched.lock().expect("stitched").remove(k) {
+                    v.extend(more);
+                }
+                (*k, Shapes::Owned(v), true)
             })
+            .collect();
+        // A marker can fall in a tile the enclosed layer has no copy in - a ring's
+        // hole - and its region is read there all the same.
+        for (k, v) in stitched.into_inner().expect("stitched") {
+            jobs.push((k, Shapes::Owned(v), true));
+        }
+        jobs
+    } else {
+        per_tile
+            .iter()
+            .map(|(k, ps)| (*k, Shapes::Indexed(ps), false))
             .collect()
     };
-
     let found: Vec<Report> = jobs
         .par_iter()
         .flat_map_iter(|&((tx, ty), ref b_polys, exact)| {
@@ -528,9 +566,8 @@ pub fn run(
             // What this tile found: the region, the wall and the margin the report is
             // about (none for a report without one), the tile, and the report.
             let mut out: Vec<Report> = Vec::new();
-            for (bm, region) in b_polys {
-                let bm: &MergedPoly = bm;
-                let region = *region;
+            let b_tile: &[MergedPoly] = map_b.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]);
+            for (bm, region, index) in b_polys.iter(b_tile) {
                 // Every real wall lies in some tile's core and is read there, so a
                 // tile reads the part of the shape in its core and no more: a piece
                 // cut to the core has the same walls there, its cut walls are dropped
@@ -539,7 +576,10 @@ pub fn run(
                 // tiles, which every tile it ran through was assembling for its own
                 // sliver.  Cut at the core and not the zone, so the two tiles' pieces
                 // of one wall meet at a vertex and are one wall again in the reduction.
-                let (bx0, by0, bx1, by1) = crate::merge::poly_bbox(bm);
+                let (bx0, by0, bx1, by1) = match index {
+                    Some(i) => b_boxes[&(tx, ty)].0[i],
+                    None => crate::merge::poly_bbox(bm),
+                };
                 let in_core_whole = bx0 as i64 >= core.x0
                     && by0 as i64 >= core.y0
                     && bx1 as i64 <= core.x1

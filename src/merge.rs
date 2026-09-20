@@ -32,6 +32,7 @@ use i_overlay::mesh::outline::offset::OutlineOffset;
 use i_overlay::mesh::style::OutlineStyle;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 /// Tile size for the tiled merge (µm).
 pub const TILE_UM: f64 = 20.0;
@@ -3045,18 +3046,18 @@ impl IndexedRegions {
     /// Every core piece of one tile with its region: the filed ones, and the copies
     /// lying strictly inside the core - whole shapes, one region each - numbered on
     /// from `next`, which is moved past them.
+    /// `boxes` are the tile's polygons' boxes, in their order.
     pub fn pieces_of(
         &self,
         k: (i32, i32),
-        polys: &[MergedPoly],
+        boxes: &[BBoxDbu],
         tile_dbu: i32,
         next: &mut usize,
     ) -> Vec<(usize, usize)> {
         let mut out: Vec<(usize, usize)> = self.by_tile.get(&k).cloned().unwrap_or_default();
         let (x0, y0) = (k.0.saturating_mul(tile_dbu), k.1.saturating_mul(tile_dbu));
         let (x1, y1) = (x0.saturating_add(tile_dbu), y0.saturating_add(tile_dbu));
-        for (i, p) in polys.iter().enumerate() {
-            let b = poly_bbox(p);
+        for (i, b) in boxes.iter().enumerate() {
             if b.0 > x0 && b.1 > y0 && b.2 < x1 && b.3 < y1 {
                 out.push((i, *next));
                 *next += 1;
@@ -5376,6 +5377,11 @@ pub struct MergedCache {
     /// `params` - takes its configured halo.  `None` outside a rule.
     rule_halos: Option<RuleHalos>,
     regions: HashMap<(i16, i16), Vec<Region>>,
+    /// The indexed stitch of a layer's tiles, with and without corner contacts joined
+    /// (see [`stitch_cut_indexed`]), kept for the next rule on the layer: a contact
+    /// layer is stitched once for its twenty rules rather than once each.  Indices
+    /// into the tiles' lists, so dropped with the tiles.
+    kin: HashMap<((i16, i16), bool), Arc<IndexedRegions>>,
     /// Lazy virtual layers, keyed by their synthetic (layer, datatype); built on
     /// first `ensure` from their source layers' tiles instead of the layout.
     virtual_defs: HashMap<(i16, i16), TiledVirtual>,
@@ -5467,6 +5473,7 @@ impl MergedCache {
             layer_halo: HashMap::new(),
             rule_halos: None,
             regions: HashMap::new(),
+            kin: HashMap::new(),
             virtual_defs: HashMap::new(),
             edge_layers: HashMap::new(),
             edge_defs: HashMap::new(),
@@ -6015,6 +6022,7 @@ impl MergedCache {
             // the next rule that wants its reach, and drop what was stitched from it,
             // which inherits the tiles' reach.
             let tiles = self.layers.remove(&key).expect("checked above");
+            self.kin.retain(|(k, _), _| *k != key);
             let polys = self.layer_polys.remove(&key).unwrap_or(0);
             self.regions.remove(&key);
             self.layer_halo.remove(&key);
@@ -6047,6 +6055,7 @@ impl MergedCache {
                 self.variants.remove(&key);
             }
             self.layers.insert(key, tiles);
+            self.kin.retain(|(k, _), _| *k != key);
             self.layer_polys.insert(key, polys);
             self.layer_halo.insert(key, have);
             if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
@@ -6086,6 +6095,7 @@ impl MergedCache {
                 self.layer_polys
                     .insert(key, tiles.values().map(|v| v.len()).sum());
                 self.layers.insert(key, tiles);
+                self.kin.retain(|(k, _), _| *k != key);
                 self.layer_halo.insert(key, want);
                 return;
             }
@@ -6321,6 +6331,7 @@ impl MergedCache {
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, tiles);
+        self.kin.retain(|(k, _), _| *k != key);
         self.layer_halo.insert(key, halo);
     }
 
@@ -6363,6 +6374,7 @@ impl MergedCache {
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, tiles);
+        self.kin.retain(|(k, _), _| *k != key);
         self.layer_halo.insert(key, want);
         self.release_spent_sources(key);
     }
@@ -6414,6 +6426,7 @@ impl MergedCache {
             }
             self.layer_polys.remove(&src);
             self.layers.remove(&src);
+            self.kin.retain(|(k, _), _| *k != src);
             self.layer_halo.remove(&src);
             self.regions.remove(&src);
             self.variants.remove(&src);
@@ -6475,6 +6488,7 @@ impl MergedCache {
         if self.layer_halo.get(&key).is_some_and(|h| *h > limit) {
             let n = self.layer_polys.remove(&key).unwrap_or(0);
             self.frees.later(self.layers.remove(&key), n);
+            self.kin.retain(|(k, _), _| *k != key);
             self.layer_halo.remove(&key);
             self.frees.later(self.regions.remove(&key), 0);
         }
@@ -6516,6 +6530,7 @@ impl MergedCache {
         let key = (layer, datatype);
         let n = self.layer_polys.remove(&key).unwrap_or(0);
         self.frees.later(self.layers.remove(&key), n);
+        self.kin.retain(|(k, _), _| *k != key);
         self.layer_halo.remove(&key);
         let vs = self.variants.remove(&key);
         let vn = vs.iter().flatten().map(|(_, _, n)| n).sum();
@@ -6540,6 +6555,26 @@ impl MergedCache {
         self.layers
             .get(&(layer, datatype))
             .expect("MergedCache::tiles called before ensure")
+    }
+
+    /// The indexed stitch of a cached layer's tiles - [`stitch_labeled_indexed`] with
+    /// `touching`, [`stitch_cut_indexed`] without - built once and kept with the tiles.
+    pub fn kin(&mut self, layer: i16, datatype: i16, touching: bool) -> Arc<IndexedRegions> {
+        let key = (layer, datatype);
+        if let Some(k) = self.kin.get(&(key, touching)) {
+            return k.clone();
+        }
+        let tiles = self
+            .layers
+            .get(&key)
+            .expect("MergedCache::kin called before ensure");
+        let built = Arc::new(if touching {
+            stitch_labeled_indexed(tiles, self.tile_dbu)
+        } else {
+            stitch_cut_indexed(tiles, self.tile_dbu)
+        });
+        self.kin.insert((key, touching), built.clone());
+        built
     }
 }
 
