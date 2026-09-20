@@ -2875,7 +2875,17 @@ pub fn all_inside(inner: &Outline, outer: &Outline) -> bool {
     if ix0 < ox0 || iy0 < oy0 || ix1 > ox1 || iy1 > oy1 {
         return false;
     }
-    inner.vertices().all(|p| outer.contains_or_on(p))
+    // Every vertex inside is not enough: a contact lying across a slot in the metal has
+    // its four corners on metal and a strip of itself over the slot, which the slot's
+    // walls crossing its own give away.
+    if !inner.vertices().all(|p| outer.contains_or_on(p)) {
+        return false;
+    }
+    let mut crossed = false;
+    outer.for_segs_near(inner.bbox, 0, |t| {
+        crossed = crossed || inner.segs().iter().any(|&s| segs_cross_i(s, t));
+    });
+    !crossed
 }
 
 /// Whether two segments meet at all: properly crossing, or touching at a point.  Two
