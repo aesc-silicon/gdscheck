@@ -4,7 +4,8 @@
 
 use flate2::{Compression, write::GzEncoder};
 use gds21::{
-    GdsBoundary, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct, GdsTextElem, GdsUnits,
+    GdsArrayRef, GdsBoundary, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct,
+    GdsTextElem, GdsUnits,
 };
 use gdscheck::pdk::PdkConfig;
 
@@ -552,6 +553,95 @@ pub fn library(topcell: &str, elems: Vec<GdsElement>) -> GdsLibrary {
     // Pin all GDS timestamps to a fixed epoch (1900-01-01 00:00:00) so regenerating
     // a fixture is byte-for-byte reproducible — otherwise `BGNLIB`/`BGNSTR` record
     // the current time and every regen churns every committed fixture.
+    lib.set_all_dates(GdsDateTime::from(&[0i16, 1, 1, 0, 0, 0]));
+    lib
+}
+
+/// Diamond (45°-rotated square) of half-diagonal `a` centred on `(cx, cy)`; its width
+/// between opposite walls is `a·√2`.
+pub fn diamond(layer: (i16, i16), cx: f64, cy: f64, a: f64) -> GdsElement {
+    poly(
+        layer,
+        &[(cx, cy - a), (cx + a, cy), (cx, cy + a), (cx - a, cy)],
+    )
+}
+
+/// 45° strip from `(x0, y0)` running `len` up-right; its perpendicular width is `d·√2`.
+/// A second strip `dy` higher sits at a perpendicular gap of `(dy − 2d)/√2`.
+pub fn strip45(layer: (i16, i16), x0: f64, y0: f64, len: f64, d: f64) -> GdsElement {
+    poly(
+        layer,
+        &[
+            (x0, y0),
+            (x0 + len, y0 + len),
+            (x0 + len - d, y0 + len + d),
+            (x0 - d, y0 + d),
+        ],
+    )
+}
+
+/// Box `(x0, y0)-(x1, y1)` whose top-right corner is chamfered along `x + y = k`.
+pub fn chamfered_tr(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64, k: f64) -> GdsElement {
+    poly(
+        layer,
+        &[(x0, y0), (x1, y0), (x1, k - x1), (k - y1, y1), (x0, y1)],
+    )
+}
+
+/// Box `(x0, y0)-(x1, y1)` whose bottom-left corner is chamfered along `x + y = k`.
+pub fn chamfered_bl(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64, k: f64) -> GdsElement {
+    poly(
+        layer,
+        &[(k - y0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, k - x0)],
+    )
+}
+
+/// Translate every boundary in `elems` by `(dx, dy)` µm.
+pub fn shift(elems: &[GdsElement], dx: f64, dy: f64) -> Vec<GdsElement> {
+    elems
+        .iter()
+        .map(|e| match e {
+            GdsElement::GdsBoundary(b) => {
+                let mut b = b.clone();
+                for p in &mut b.xy {
+                    p.x += um(dx);
+                    p.y += um(dy);
+                }
+                GdsElement::GdsBoundary(b)
+            }
+            other => other.clone(),
+        })
+        .collect()
+}
+
+/// `cols × rows` copies of `cell` at `pitch`, every copy drawn in TOP.
+pub fn flat_array(cell: &[GdsElement], cols: usize, rows: usize, pitch: f64) -> Vec<GdsElement> {
+    let mut out = vec![];
+    for r in 0..rows {
+        for c in 0..cols {
+            out.extend(shift(cell, c as f64 * pitch, r as f64 * pitch));
+        }
+    }
+    out
+}
+
+/// The same array as one `GdsArrayRef` of a `CELL` struct placed in TOP.
+pub fn ref_array(cell: Vec<GdsElement>, cols: i16, rows: i16, pitch: f64) -> GdsLibrary {
+    let aref = GdsElement::GdsArrayRef(GdsArrayRef {
+        name: "CELL".into(),
+        xy: [
+            GdsPoint::new(0, 0),
+            GdsPoint::new(um(pitch * cols as f64), 0),
+            GdsPoint::new(0, um(pitch * rows as f64)),
+        ],
+        cols,
+        rows,
+        ..Default::default()
+    });
+    let mut lib = library("TOP", vec![aref]);
+    let mut child = GdsStruct::new("CELL");
+    child.elems = cell;
+    lib.structs.insert(0, child);
     lib.set_all_dates(GdsDateTime::from(&[0i16, 1, 1, 0, 0, 0]));
     lib
 }
