@@ -905,6 +905,21 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GatPolyOverActiv, ThickGateOx]
+  # Gat.f: no 45° or 90° angle in the gate - the gate region is a rectangle, or it is
+  # the violation, as IHP's deck reads it.
+  - name: GatPolyOverActivNotRect
+    op: not_rectangle
+    mode: lazy
+    layers: [GatPolyOverActiv]
+  # Gat.c, GFil.j: a poly lying whole inside the active has no end cap at all.
+  - name: GatPolyInsideActiv
+    op: inside
+    mode: lazy
+    layers: [GatPolyNoSRAM, Activ]
+  - name: GatPolyFillerInsideActivFiller
+    op: inside
+    mode: lazy
+    layers: [GatPoly.filler, Activ.filler]
 
   # "NWell regions separated by less than 0.62 will be merged": a close of 0.309 a side
   # bridges 0.615 and leaves 0.62, the next grid step, two regions.
@@ -1011,10 +1026,12 @@ virtual_layers:
     mode: lazy
     layers: [dfpad, TopMetal2]
 
+  # The NFET gate of section 4.2: GatPoly over N+Activ, N+ by drawn nSD or by default
+  # (Activ under neither pSD nor nSD:block), as IHP's deck reads it.
   - name: GatPolyOverNsdActiv
     op: intersection
     mode: lazy
-    layers: [GatPoly, Activ, nSD]
+    layers: [GatPoly, NActFull]
   - name: GatPolyOverNsdActivTGO
     op: intersection
     mode: lazy

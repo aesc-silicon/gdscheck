@@ -27,6 +27,38 @@ Test status on the engine as of this report: 28 of the 92 new cases fail, all on
 findings below (finding 10 fails at tiles 7 and 100 only); the other 64 pass, as do the 26
 older cases.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 6 (`length` on a 45° pair is each wall's own length, as KLayout's
+`with_length`, not the stretch the two share), 7 (density layers read as their union -
+the activ report's finding 9), 10 (GFil.a reads `span: narrowest`, one report per
+stitched region, whatever the tile).  Fixed, deck: 1 (the NFET gate is GatPoly over `NActFull`, N+ by drawn nSD or by default), 2
+(Gat.f is a `forbidden` on the gate regions that are no rectangle, KLayout's reading,
+one report per gate), 3 (a `forbidden` on the polys lying whole inside the active, as
+KLayout's `GatPoly.inside(Activ)`, for Gat.c and GFil.j), 4 and 5 (`abutting: report` on
+Gat.d, GFil.d, GFil.e and GFil.f).
+
+Settled on KLayout's reading, cases flipped: the nSD:block gate of finding 1 (note A: no
+N+, no NFET), the stub ending inside the active of finding 3 (no cap to read in either
+tool), the overlap halves of finding 5 (shared area is no pair), 8 (Gat.b1 between gate
+regions, both tools), 9 (a pSD gate is a PFET's without a well, as the maximal deck has
+it), the straight gate over a stepped active (note E: its gate region is no rectangle),
+the chamfered L of note G (one wall under 0.39), and the half-oxide gate of Gat.a3.h1
+(read between the poly's walls only; a TGO edge through a gate is TGO.c's).  The 50 x
+5.005 x 5 fillers of GFil.a.h3/h4 are 5.005 x 5.005 now, since 5.005 x 5 is 5.0 wide.
+
+Open: 11.  KLayout's projection metric pairs a wall at an angle - each wall cut to the
+part within the value of the other, perpendicular to the other and with its feet on it,
+the margin their closest approach (0.141 on the chamfered cap, the perpendicular to the
+chamfer; a chamfer passing a corner has its feet beyond the wall and is no pair, so the
+nwell report's settled reading holds).  A reading of it was built and taken out again:
+measured on the enclosed shape's piece in a tile it depended on where the tile line cut
+the wall, and it moved four GF180 counts (LPW.3 +2, PRES.6/LRES.6 +2, S.CO.4_LV +1 - all
+corners lying on or nanometres inside a slanted outer wall) whose standing needs a
+look of their own.  The case carries the parallel-walls reading.  On the way the PL.7
+good pattern turned out to be a PL.4 violator by KLayout's euclidian PL.4 (its 45°
+gate's wall passed 0.14 from the active's corner); the bar starts 0.15 further in now.
+
 ## Findings
 
 ### 1. Gat.a1 and Gat.a3 do not see an NFET drawn without nSD (false negative, the common case)

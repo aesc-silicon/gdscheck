@@ -198,11 +198,13 @@ pub fn generate(pdk: &PdkConfig) {
         }
     }
 
-    // PL.7: the same channel measured only where the gate runs at 45°.
+    // PL.7: the same channel measured only where the gate runs at 45°.  The bar starts
+    // 0.65 in, so its right wall passes the active's lower-right corner by 0.25 - an
+    // end cap PL.4 reads on the slanted wall, and 0.20 was short of it.
     for (id, w, thick) in [("PL.7_LV", 0.295, false), ("PL.7_MV", 0.695, true)] {
         for (polarity, w) in [("good", 1.2), ("bad", w)] {
             let mut v = vec![rect(comp, o, o, o + 3.0, o + 3.0)];
-            v.push(diagonal(poly2, o + 0.5, o - 1.0, w, 6.0));
+            v.push(diagonal(poly2, o + 0.65, o - 1.0, w, 6.0));
             if thick {
                 // A P channel: at 6 V the deck asks 0.55 µm of one and 0.7 of an N, so
                 // this fixture can bend 0.7 without breaking the channel rule as well.

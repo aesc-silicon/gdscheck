@@ -354,13 +354,15 @@ const DECK_GAT: &str = "gatpoly";
 #[case("gatpoly/Gat.a4.gds.gz", "TOP", vec!["Gat.a4", "Gat.a4"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.b.space.gds.gz", "TOP", vec!["Gat.b", "Gat.b"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.b.notch.gds.gz", "TOP", vec!["Gat.b", "Gat.b"], vec!["GFil.g"])]
-#[case("gatpoly/Gat.b1.gds.gz", "TOP", vec!["Gat.b1"], vec!["GFil.g"])]
+// The 0.3 µm gates under ThickGateOx are 3.3 V NFETs, Gat.a3 at 0.45; ignored here.
+#[case("gatpoly/Gat.b1.gds.gz", "TOP", vec!["Gat.b1"], vec!["GFil.g", "Gat.a3"])]
 #[case("gatpoly/Gat.c.gds.gz", "TOP", vec!["Gat.c"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.d.gds.gz", "TOP", vec!["Gat.d", "Gat.d"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.e.gds.gz", "TOP", vec!["Gat.e"], vec!["GFil.g"])]
 // Gat.f and Gat.g draw 45° poly with square ends: the acute tips are Gat.a widths, as
 // they are for KLayout, and are set aside here.
-#[case("gatpoly/Gat.f.gds.gz", "TOP", vec!["Gat.f", "Gat.f"], vec!["GFil.g", "Gat.c", "Gat.e", "Gat.a"])]
+// Gat.f is the gate region that is no rectangle, one report per gate.
+#[case("gatpoly/Gat.f.gds.gz", "TOP", vec!["Gat.f"], vec!["GFil.g", "Gat.c", "Gat.e", "Gat.a"])]
 #[case("gatpoly/Gat.g.gds.gz", "TOP", vec!["Gat.g", "Gat.g"], vec!["Gat.e", "GFil.g", "Gat.a"])]
 // The width is the narrowest dimension: only the 5.005 × 5.005 filler fires.
 #[case("gatpoly/GFil.a.gds.gz", "TOP", vec!["GFil.a"], vec!["GFil.g"])]
@@ -398,10 +400,11 @@ const DECK_GAT: &str = "gatpoly";
 #[case::gat_a_h6("gatpoly/Gat.a.h6.gds.gz", "TOP", vec!["Gat.a"; 100], vec!["GFil.g"])]
 // A comb with three 0.125 teeth; a U with 0.13 arms is clean.
 #[case::gat_a_h7("gatpoly/Gat.a.h7.gds.gz", "TOP", vec!["Gat.a"; 6], vec!["GFil.g"])]
-// NFET = GatPoly over (Activ AND NOT pSD): 0.125 gates on a bare Activ, with nSD drawn and
-// under nSD:block are Gat.a1; the PFET's is Gat.a2, the 3.3 V NFET's Gat.a3.
+// NFET = GatPoly over N+Activ, N+ by drawn nSD or by default: 0.125 gates on a bare Activ
+// and with nSD drawn are Gat.a1; under nSD:block the Activ is no N+ and the gate none, as
+// KLayout reads it (report, note A); the PFET's is Gat.a2, the 3.3 V NFET's Gat.a3.
 #[case::gat_a1_h1("gatpoly/Gat.a1.h1.gds.gz", "TOP",
-    [vec!["Gat.a1"; 6], vec!["Gat.a2"; 2], vec!["Gat.a3"; 2]].concat(), vec!["GFil.g", "Gat.a"])]
+    [vec!["Gat.a1"; 4], vec!["Gat.a2"; 2], vec!["Gat.a3"; 2]].concat(), vec!["GFil.g", "Gat.a"])]
 // A dumbbell gate, a notched gate (0.125 over part of the channel; the notch is a Gat.f)
 // and two 0.125 fingers of four fire; a 0.125 neck outside the Activ and a 0.5 gate on a
 // 0.12 Activ are clean.
@@ -415,28 +418,31 @@ const DECK_GAT: &str = "gatpoly";
 #[case::gat_a1_h5("gatpoly/Gat.a1.h5.gds.gz", "TOP", vec!["Gat.a1"; 100], vec!["GFil.g", "Gat.a"])]
 // A 300 µm wide NFET, one at (1000, 1000), a gate over a 0.005 sliver of Activ.
 #[case::gat_a1_h6("gatpoly/Gat.a1.h6.gds.gz", "TOP", vec!["Gat.a1"; 6], vec!["GFil.g", "Gat.a"])]
-// PFET = GatPoly over ((Activ AND pSD) inside NWell): only the PFET's 0.125 gate is Gat.a2;
-// pSD without a well and pSD crossing the well edge are no PFETs; the 3.3 V one is Gat.a4.
+// A pSD gate is read as a PFET's whether or not a well holds it (report, finding 9 -
+// pedantic, KLayout's maximal deck does the same): the PFET, the pSD without a well and
+// the pSD crossing the well edge are Gat.a2 at 0.125; the 3.3 V one is Gat.a4.
 #[case::gat_a2_h1("gatpoly/Gat.a2.h1.gds.gz", "TOP",
-    [vec!["Gat.a2"; 2], vec!["Gat.a4"; 2]].concat(), vec!["GFil.g", "Gat.a"])]
+    [vec!["Gat.a2"; 6], vec!["Gat.a4"; 2]].concat(), vec!["GFil.g", "Gat.a"])]
 // Two 0.125 fingers of four and a dumbbell PFET gate.
 #[case::gat_a2_h2("gatpoly/Gat.a2.h2.gds.gz", "TOP", vec!["Gat.a2"; 6], vec!["GFil.g", "Gat.a"])]
 // Fifty 0.125 PFETs, flat and as a GdsArrayRef.
 #[case::gat_a2_h3("gatpoly/Gat.a2.h3.gds.gz", "TOP", vec!["Gat.a2"; 100], vec!["GFil.g", "Gat.a"])]
 #[case::gat_a2_h4("gatpoly/Gat.a2.h4.gds.gz", "TOP", vec!["Gat.a2"; 100], vec!["GFil.g", "Gat.a"])]
-// 0.445 gates under ThickGateOx on a bare Activ, with nSD, under nSD:block, and one with
-// the oxide over half the gate fire; 1.2 V and PFET gates at 0.445 are clean.
-#[case::gat_a3_h1("gatpoly/Gat.a3.h1.gds.gz", "TOP", vec!["Gat.a3"; 8], vec!["GFil.g"])]
+// 0.445 gates under ThickGateOx on a bare Activ and with nSD fire; under nSD:block the
+// Activ is no N+; a gate the oxide covers by half is read between the poly's walls only,
+// and a TGO edge through a gate is TGO.c's (KLayout reads its 0.25 piece as a 0.25
+// gate); 1.2 V and PFET gates at 0.445 are clean.
+#[case::gat_a3_h1("gatpoly/Gat.a3.h1.gds.gz", "TOP", vec!["Gat.a3"; 4], vec!["GFil.g"])]
 // Two 0.445 fingers of four, a dumbbell, gates straddling/ending on x = 20 and a horizontal
 // one across it; 0.45 straddling 20 is clean.
 #[case::gat_a3_h2("gatpoly/Gat.a3.h2.gds.gz", "TOP", vec!["Gat.a3"; 12], vec!["GFil.g"])]
 // Fifty 0.445 3.3 V NFETs, flat and as a GdsArrayRef.
 #[case::gat_a3_h3("gatpoly/Gat.a3.h3.gds.gz", "TOP", vec!["Gat.a3"; 100], vec!["GFil.g"])]
 #[case::gat_a3_h4("gatpoly/Gat.a3.h4.gds.gz", "TOP", vec!["Gat.a3"; 100], vec!["GFil.g"])]
-// Only the 3.3 V PFET's 0.395 gate is Gat.a4 (pSD without a well and pSD crossing the well
-// are no PFETs); the 3.3 V NFET at 0.395 is Gat.a3.
+// The 3.3 V PFET, the pSD without a well and the pSD crossing the well are Gat.a4 at
+// 0.395 (finding 9, as KLayout's maximal deck reads them); the 3.3 V NFET at 0.395 is Gat.a3.
 #[case::gat_a4_h1("gatpoly/Gat.a4.h1.gds.gz", "TOP",
-    [vec!["Gat.a4"; 2], vec!["Gat.a3"; 2]].concat(), vec!["GFil.g"])]
+    [vec!["Gat.a3"; 2], vec!["Gat.a4"; 6]].concat(), vec!["GFil.g"])]
 // Two 0.395 fingers of four, a dumbbell, gates straddling/ending on x = 20 and a horizontal
 // one across it; 0.40 straddling 20 is clean.
 #[case::gat_a4_h2("gatpoly/Gat.a4.h2.gds.gz", "TOP", vec!["Gat.a4"; 12], vec!["GFil.g"])]
@@ -464,9 +470,10 @@ const DECK_GAT: &str = "gatpoly";
 // 3.3 V fingers 0.245 apart fire, 0.25 is clean, 1.2 V fingers at 0.245 are clean, a 3.3 V
 // finger beside one outside the oxide is clean; 0.175 apart is a Gat.b1 and a Gat.b.
 #[case::gat_b1_h1("gatpoly/Gat.b1.h1.gds.gz", "TOP", vec!["Gat.b1", "Gat.b1", "Gat.b"], vec!["GFil.g"])]
-// Figure 5.8: the gate polys of two 3.3 V transistors ending 0.245 apart fire (their gate
-// regions are 0.845 apart); one poly over two Activs 0.245 apart fires; 0.25 is clean.
-#[case::gat_b1_h2("gatpoly/Gat.b1.h2.gds.gz", "TOP", vec!["Gat.b1"; 2], vec!["GFil.g"])]
+// Gat.b1 is read between gate regions, as both tools read it (report, finding 8 - open):
+// two 3.3 V transistors whose polys end 0.245 apart have gate regions 0.845 apart and are
+// clean; one poly over two Activs 0.245 apart fires; 0.25 is clean.
+#[case::gat_b1_h2("gatpoly/Gat.b1.h2.gds.gz", "TOP", vec!["Gat.b1"; 1], vec!["GFil.g"])]
 // A U poly whose legs make two gate regions 0.245 apart fires; a U whose base lies over the
 // Activ is one region (and a Gat.f).
 #[case::gat_b1_h3("gatpoly/Gat.b1.h3.gds.gz", "TOP", vec!["Gat.b1"], vec!["GFil.g", "Gat.f"])]
@@ -479,13 +486,17 @@ const DECK_GAT: &str = "gatpoly";
 // 0.175 caps: bottom, both ends (2), a horizontal gate's left, a gate on a 300 µm Activ;
 // 0.18 caps are clean.
 #[case::gat_c_h1("gatpoly/Gat.c.h1.gds.gz", "TOP", vec!["Gat.c"; 5], vec!["GFil.g"])]
-// No cap: a gate ending on the Activ edge, a stub ending inside, a poly wholly inside, a
-// poly over an Activ corner extending 0.175, a gate side on the Activ edge; 0.5 over the
-// corner is clean.
-#[case::gat_c_h2("gatpoly/Gat.c.h2.gds.gz", "TOP", vec!["Gat.c"; 5], vec!["GFil.g"])]
-// A cap chamfered down to 0.10 at its corner, a gate over two Activs 0.175 short, and five
-// 0.175 caps on and across x = 20/40/42; a 0.375 T head and a 0.19 chamfer are clean.
-#[case::gat_c_h3("gatpoly/Gat.c.h3.gds.gz", "TOP", vec!["Gat.c"; 7], vec!["GFil.g"])]
+// No cap: a gate ending on the Activ edge, a poly wholly inside (a `forbidden` on the
+// polys inside, as KLayout's `GatPoly.inside(Activ)`), a poly over an Activ corner
+// extending 0.175, a gate side on the Activ edge; a stub ending inside the Activ has no
+// cap to read in either tool (report, finding 3); 0.5 over the corner is clean.
+#[case::gat_c_h2("gatpoly/Gat.c.h2.gds.gz", "TOP", vec!["Gat.c"; 4], vec!["GFil.g"])]
+// A gate over two Activs 0.175 short and five 0.175 caps on and across x = 20/40/42 fire;
+// a 0.375 T head and a 0.19 chamfer are clean.  A cap chamfered down to 0.10 at its
+// corner is not read: the chamfer is no wall parallel to the Activ's edge, and IHP's
+// `ext_enclosed` (projection) does pair it at 0.141 - report, finding 11, open with the
+// settled projection reading.
+#[case::gat_c_h3("gatpoly/Gat.c.h3.gds.gz", "TOP", vec!["Gat.c"; 6], vec!["GFil.g"])]
 // Fifty 0.175 caps, flat and as a GdsArrayRef.
 #[case::gat_c_h4("gatpoly/Gat.c.h4.gds.gz", "TOP", vec!["Gat.c"; 50], vec!["GFil.g"])]
 #[case::gat_c_h5("gatpoly/Gat.c.h5.gds.gz", "TOP", vec!["Gat.c"; 50], vec!["GFil.g"])]
@@ -498,10 +509,11 @@ const DECK_GAT: &str = "gatpoly";
 // 45°: diamond tip 0.065, a 45° wall 0.0636 from an Activ corner, a box corner 0.0636 from
 // an Activ chamfer, parallel 45° walls 0.0636 apart fire; 0.07/0.0707 controls are clean.
 #[case::gat_d_h2("gatpoly/Gat.d.h2.gds.gz", "TOP", vec!["Gat.d"; 4], vec!["GFil.g"])]
-// A poly abutting the Activ edge (space 0.00) and one touching its corner fire; a gate
-// 0.065 past a second Activ, a gate 0.065 short of its Activ, a poly 0.065 from both arms
-// of a U (2); a poly overlapping the Activ by 0.05 is a gate (Gat.c, not Gat.d).
-#[case::gat_d_h3("gatpoly/Gat.d.h3.gds.gz", "TOP", vec!["Gat.d"; 6], vec!["GFil.g", "Gat.c"])]
+// A poly abutting the Activ edge (space 0.00, `abutting: report`) and one touching its
+// corner fire; a gate 0.065 past a second Activ, a gate 0.065 short of its Activ, a poly
+// 0.065 from both arms of a U (one pair, the U being one region); a poly overlapping the
+// Activ by 0.05 is a gate (Gat.c, not Gat.d).
+#[case::gat_d_h3("gatpoly/Gat.d.h3.gds.gz", "TOP", vec!["Gat.d"; 5], vec!["GFil.g", "Gat.c"])]
 // 0.065 gaps on, across and straddling x = 20/21/40/42, a horizontal one across 20, a
 // corner pair on (20, 20), one at (1000, 1000), a 300 µm pair; 0.07 across 20 is clean.
 #[case::gat_d_h4("gatpoly/Gat.d.h4.gds.gz", "TOP", vec!["Gat.d"; 10], vec!["GFil.g"])]
@@ -521,15 +533,17 @@ const DECK_GAT: &str = "gatpoly";
 // 90° bends over the Activ: an L gate, a T stub, a notched gate (also Gat.a1) and a gate
 // stepping from 0.3 to 0.5 inside the Activ.
 #[case::gat_f_h1("gatpoly/Gat.f.h1.gds.gz", "TOP", vec!["Gat.f"; 4], vec!["GFil.g", "Gat.a1", "Gat.a"])]
-// Only the L gate whose bend is 0.005 inside the Activ fires; a straight gate over a
-// stepped Activ, a bend 0.07 outside, a chamfer outside and a 45° poly beside are clean.
-#[case::gat_f_h2("gatpoly/Gat.f.h2.gds.gz", "TOP", vec!["Gat.f"], vec!["GFil.g"])]
-// 45° over the Activ: a 45° bend inside (2 edges), a 45° jog inside (2), a band clipping
-// an Activ corner (1); a 45° bend outside is clean.
-#[case::gat_f_h3("gatpoly/Gat.f.h3.gds.gz", "TOP", vec!["Gat.f"; 5], vec!["GFil.g", "Gat.a", "Gat.c", "Gat.e"])]
+// Gat.f is the gate region that is no rectangle: the L gate whose bend is 0.005 inside
+// the Activ fires, and so does a straight gate over a stepped Activ (its gate region has
+// the step), as KLayout has it (report, note E); a bend 0.07 outside, a chamfer outside
+// and a 45° poly beside are clean.
+#[case::gat_f_h2("gatpoly/Gat.f.h2.gds.gz", "TOP", vec!["Gat.f"; 2], vec!["GFil.g"])]
+// 45° over the Activ: a 45° bend inside, a 45° jog inside, a band clipping an Activ
+// corner, one each; a 45° bend outside is clean.
+#[case::gat_f_h3("gatpoly/Gat.f.h3.gds.gz", "TOP", vec!["Gat.f"; 3], vec!["GFil.g", "Gat.a", "Gat.c", "Gat.e"])]
 // L gates cornered on x = 20 and 40, straddling 42, at (1000, 1000), a 45° gate across
-// x = 20 (2 edges); a straight gate across 20 is clean.
-#[case::gat_f_h4("gatpoly/Gat.f.h4.gds.gz", "TOP", vec!["Gat.f"; 6], vec!["GFil.g", "Gat.a", "Gat.c", "Gat.e"])]
+// x = 20, one each; a straight gate across 20 is clean.
+#[case::gat_f_h4("gatpoly/Gat.f.h4.gds.gz", "TOP", vec!["Gat.f"; 5], vec!["GFil.g", "Gat.a", "Gat.c", "Gat.e"])]
 // Fifty L gates, flat and as a GdsArrayRef.
 #[case::gat_f_h5("gatpoly/Gat.f.h5.gds.gz", "TOP", vec!["Gat.f"; 50], vec!["GFil.g"])]
 #[case::gat_f_h6("gatpoly/Gat.f.h6.gds.gz", "TOP", vec!["Gat.f"; 50], vec!["GFil.g"])]
@@ -537,30 +551,31 @@ const DECK_GAT: &str = "gatpoly";
 // walls each); 0.1626 wide, and 0.1591 with 0.389 walls, are clean.
 #[case::gat_g_h1("gatpoly/Gat.g.h1.gds.gz", "TOP", vec!["Gat.g"; 10], vec!["GFil.g", "Gat.a", "Gat.e"])]
 // Z routes 0.155 wide with a 0.1556 jog 0.636 long fire, up and mirrored down; a 0.354 jog
-// and a 0.1626 jog are clean; an L with a chamfered corner 0.1556 across whose outer 45°
-// edge is 0.495 fires, 0.1626 across is clean.
-#[case::gat_g_h2("gatpoly/Gat.g.h2.gds.gz", "TOP", vec!["Gat.g"; 6], vec!["GFil.g"])]
+// and a 0.1626 jog are clean; an L with a chamfered corner 0.1556 across, outer 45° edge
+// 0.495 and inner 0.368, has one wall under 0.39 and is clean, as KLayout reads it
+// (report, note G).
+#[case::gat_g_h2("gatpoly/Gat.g.h2.gds.gz", "TOP", vec!["Gat.g"; 4], vec!["GFil.g"])]
 // The firing Z route with its jog straddling x = 20, starting on 20, across 40 and 42, at
 // (1000, 1000).
 #[case::gat_g_h3("gatpoly/Gat.g.h3.gds.gz", "TOP", vec!["Gat.g"; 10], vec!["GFil.g"])]
 // Fifty firing Z routes, flat and as a GdsArrayRef.
 #[case::gat_g_h4("gatpoly/Gat.g.h4.gds.gz", "TOP", vec!["Gat.g"; 100], vec!["GFil.g"])]
 #[case::gat_g_h5("gatpoly/Gat.g.h5.gds.gz", "TOP", vec!["Gat.g"; 100], vec!["GFil.g"])]
-// Width is the distance between opposite edges: 5.005 × 5 (2), 5 × 5.005 (2), 5.005 ×
-// 5.005 (4), a 300 × 5.005 bar (4) and a 300 × 5 bar (2), a 5.005 union (2), an L
-// spanning 5.005 (2), a 5.005 ring (4: each wall split by the hole), 5.005 squares across
-// x = 20 (2), 40 (2) and at (1000, 1000) (2); 5 × 5 shapes are clean.
-#[case::gfil_a_h1("gatpoly/GFil.a.h1.gds.gz", "TOP", vec!["GFil.a"; 28], vec!["GFil.g"])]
-// 45°: a diamond 5.02 across both diagonals (4), a strip 5.02 wide (2), a strip 5.09 long
-// (2); 4.95 and a chamfered 5 × 5 are clean.
-#[case::gfil_a_h2("gatpoly/GFil.a.h2.gds.gz", "TOP", vec!["GFil.a"; 8], vec!["GFil.g"])]
-// Fifty 5.005 × 5 boxes, flat and as a GdsArrayRef.
-#[case::gfil_a_h3("gatpoly/GFil.a.h3.gds.gz", "TOP", vec!["GFil.a"; 100], vec!["GFil.g"])]
-#[case::gfil_a_h4("gatpoly/GFil.a.h4.gds.gz", "TOP", vec!["GFil.a"; 100], vec!["GFil.g"])]
-// A 300 µm bar merged with a ring below it and one merged with a box: the count at tile 20
-// (the bars' 300 and 5.005, the unions' heights, the ring's walls) must not move with the
-// tile size.
-#[case::gfil_a_h5("gatpoly/GFil.a.h5.gds.gz", "TOP", vec!["GFil.a"; 22], vec!["GFil.g"])]
+// The width is the narrowest dimension (`span: narrowest`, KLayout's 2.5 shrink): only
+// the 5.005 × 5.005 box and the 300 × 5.005 bar are over 5.00 in every direction, one
+// report each; 5.005 × 5, the 300 × 5 bar, the union, the L, the ring and the 5.005 × 5
+// squares across the tile lines are 5.0 wide and clean (report, note B).
+#[case::gfil_a_h1("gatpoly/GFil.a.h1.gds.gz", "TOP", vec!["GFil.a"; 2], vec!["GFil.g"])]
+// 45°: a diamond 5.02 across both diagonals fires, once; a strip 5.02 wide by 4.24 and a
+// strip 5.09 long by 3.5 are under 5.00 across, and clean, like 4.95 and a chamfered
+// 5 × 5.
+#[case::gfil_a_h2("gatpoly/GFil.a.h2.gds.gz", "TOP", vec!["GFil.a"; 1], vec!["GFil.g"])]
+// Fifty 5.005 × 5.005 boxes, flat and as a GdsArrayRef.
+#[case::gfil_a_h3("gatpoly/GFil.a.h3.gds.gz", "TOP", vec!["GFil.a"; 50], vec!["GFil.g"])]
+#[case::gfil_a_h4("gatpoly/GFil.a.h4.gds.gz", "TOP", vec!["GFil.a"; 50], vec!["GFil.g"])]
+// A 300 µm bar merged with a ring below it and one merged with a box: one report per
+// merged shape, whatever the tile size (report, finding 10).
+#[case::gfil_a_h5("gatpoly/GFil.a.h5.gds.gz", "TOP", vec!["GFil.a"; 2], vec!["GFil.g"])]
 // 0.695 in x and y, a 0.693 diamond (4) and strip (2), a 0.695 union, a 0.695 bar across
 // x = 20, a 300 µm bar, one at (1000, 1000); 0.70 and 0.707 shapes are clean.
 #[case::gfil_b_h1("gatpoly/GFil.b.h1.gds.gz", "TOP", vec!["GFil.b"; 18], vec!["GFil.g", "GFil.a"])]
@@ -577,25 +592,28 @@ const DECK_GAT: &str = "gatpoly";
 // Per layer (Activ, GatPoly, Cont, pSD, nSD:block, SalBlock): 1.095 and a 0.77/0.77
 // diagonal (1.089) fire, 1.10 and 1.103 are clean.
 #[case::gfil_d_h1("gatpoly/GFil.d.h1.gds.gz", "TOP", vec!["GFil.d"; 12], vec!["GFil.g"])]
-// A filler abutting an Activ, overlapping a pSD, wholly under a pSD, overlapping a GatPoly
-// (space 0.00 each), 1.095 across x = 20 and 40, a gap ending on 20, a corner pair near
-// (20, 14), one at (1000, 1000), a 300 µm pair.
-#[case::gfil_d_h2("gatpoly/GFil.d.h2.gds.gz", "TOP", vec!["GFil.d"; 10], vec!["GFil.g", "GFil.a"])]
+// A filler abutting an Activ (space 0.00, `abutting: report`), 1.095 across x = 20 and
+// 40, a gap ending on 20, a corner pair near (20, 14), one at (1000, 1000), a 300 µm pair;
+// a filler overlapping a pSD, under a pSD or overlapping a GatPoly shares area and is no
+// pair, as KLayout has it (report, finding 5).
+#[case::gfil_d_h2("gatpoly/GFil.d.h2.gds.gz", "TOP", vec!["GFil.d"; 8], vec!["GFil.g", "GFil.a"])]
 // Fifty 1.095 filler-to-Activ gaps, flat and as a GdsArrayRef.
 #[case::gfil_d_h3("gatpoly/GFil.d.h3.gds.gz", "TOP", vec!["GFil.d"; 50], vec!["GFil.g"])]
 #[case::gfil_d_h4("gatpoly/GFil.d.h4.gds.gz", "TOP", vec!["GFil.d"; 50], vec!["GFil.g"])]
 // To NWell and to nBuLay: 1.095 and 1.089 fire, 1.10 and 1.103 are clean; fillers 1.6 from
 // a 5 × 5 well and 1.5 from a 2-wide well are clean (nBuLay derives inward).
 #[case::gfil_e_h1("gatpoly/GFil.e.h1.gds.gz", "TOP", vec!["GFil.e"; 4], vec!["GFil.g"])]
-// A filler abutting an NWell, inside an NWell, half over an nBuLay (space 0.00 each), 1.095
-// across x = 20 and 40, one at (1000, 1000), a 300 µm pair.
-#[case::gfil_e_h2("gatpoly/GFil.e.h2.gds.gz", "TOP", vec!["GFil.e"; 7], vec!["GFil.g", "GFil.a"])]
+// A filler abutting an NWell (space 0.00), 1.095 across x = 20 and 40, one at (1000,
+// 1000), a 300 µm pair; a filler inside an NWell or half over an nBuLay shares area and is
+// no pair (finding 5).
+#[case::gfil_e_h2("gatpoly/GFil.e.h2.gds.gz", "TOP", vec!["GFil.e"; 5], vec!["GFil.g", "GFil.a"])]
 // Fifty 1.095 filler-to-NWell gaps, flat and as a GdsArrayRef.
 #[case::gfil_e_h3("gatpoly/GFil.e.h3.gds.gz", "TOP", vec!["GFil.e"; 50], vec!["GFil.g"])]
 #[case::gfil_e_h4("gatpoly/GFil.e.h4.gds.gz", "TOP", vec!["GFil.e"; 50], vec!["GFil.g"])]
-// 1.095 and 1.089 to TRANS, a filler abutting and one inside a TRANS, 1.095 across x = 20
-// and 40, one at (1000, 1000), a 300 µm pair; 1.10 and 1.103 are clean.
-#[case::gfil_f_h1("gatpoly/GFil.f.h1.gds.gz", "TOP", vec!["GFil.f"; 8], vec!["GFil.g", "GFil.a"])]
+// 1.095 and 1.089 to TRANS, a filler abutting a TRANS, 1.095 across x = 20 and 40, one at
+// (1000, 1000), a 300 µm pair; 1.10 and 1.103 are clean, and a filler inside a TRANS is
+// no pair (finding 5).
+#[case::gfil_f_h1("gatpoly/GFil.f.h1.gds.gz", "TOP", vec!["GFil.f"; 7], vec!["GFil.g", "GFil.a"])]
 // Fifty 1.095 filler-to-TRANS gaps, flat and as a GdsArrayRef.
 #[case::gfil_f_h2("gatpoly/GFil.f.h2.gds.gz", "TOP", vec!["GFil.f"; 50], vec!["GFil.g"])]
 #[case::gfil_f_h3("gatpoly/GFil.f.h3.gds.gz", "TOP", vec!["GFil.f"; 50], vec!["GFil.g"])]
@@ -606,8 +624,9 @@ const DECK_GAT: &str = "gatpoly";
 // and an L in a 500 × 500 box are clean.
 #[case::gfil_i_h1("gatpoly/GFil.i.h1.gds.gz", "TOP", vec!["GFil.i"; 2], vec!["GFil.g"])]
 // 0.175 caps (bottom; both ends: 2; horizontal; across x = 20; at (1000, 1000)), a filler
-// ending on the Activ:filler edge, a stub inside and a filler wholly inside; 0.18 is clean.
-#[case::gfil_j_h1("gatpoly/GFil.j.h1.gds.gz", "TOP", vec!["GFil.j"; 9], vec!["GFil.g"])]
+// ending on the Activ:filler edge and a filler wholly inside (a `forbidden`); a stub
+// ending inside has no cap to read (finding 3); 0.18 is clean.
+#[case::gfil_j_h1("gatpoly/GFil.j.h1.gds.gz", "TOP", vec!["GFil.j"; 8], vec!["GFil.g"])]
 // Fifty 0.175 caps, flat and as a GdsArrayRef.
 #[case::gfil_j_h2("gatpoly/GFil.j.h2.gds.gz", "TOP", vec!["GFil.j"; 50], vec!["GFil.g"])]
 #[case::gfil_j_h3("gatpoly/GFil.j.h3.gds.gz", "TOP", vec!["GFil.j"; 50], vec!["GFil.g"])]

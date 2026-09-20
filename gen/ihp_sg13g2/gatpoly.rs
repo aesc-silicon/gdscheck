@@ -2158,8 +2158,9 @@ fn gfil_a_h(l: &L) {
         ],
     );
 
-    // h3/h4 — fifty 5.005 × 5 boxes, flat and as an array reference.
-    arrays("GFil.a", 3, vec![rect(gf, 0.5, 0.5, 5.505, 5.5)], 8.0);
+    // h3/h4 — fifty 5.005 × 5.005 boxes, flat and as an array reference (a 5.005 × 5 box
+    // is 5.0 wide by the narrowest reading, and legal).
+    arrays("GFil.a", 3, vec![rect(gf, 0.5, 0.5, 5.505, 5.505)], 8.0);
 
     // h5 — merged shapes across tile lines.  A 300 × 5.005 bar merged with a 13 × 13 ring
     // hanging below it (the ring's hole 3 × 3), and a 300 × 5.005 bar merged with a 5 × 5.5
