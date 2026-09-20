@@ -14,6 +14,7 @@ use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 // ===========================================================================
 // Region-to-region spacing engine.
@@ -376,6 +377,8 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
     let rid = rule.id.as_str();
     let name_a = layer_a.name.as_str();
     let name_b = layer_b.name.as_str();
+    let kin_a = merged.kin(al, ad, false);
+    let kin_b = (!same_layer).then(|| merged.kin(bl, bd, false));
     let map_a = merged.tiles(al, ad);
     let map_b = if same_layer {
         map_a
@@ -388,11 +391,7 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
     // pairs, and the core filter deduplicates.
     let keys: Vec<(i32, i32)> = map_a.keys().copied().collect();
     let empty: Vec<MergedPoly> = Vec::new();
-    let kin = Kin::of(
-        map_a,
-        if same_layer { None } else { Some(map_b) },
-        tile as i32,
-    );
+    let kin = Kin::of((map_a, kin_a), kin_b.map(|k| (map_b, k)), tile as i32);
     keys.par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
@@ -430,13 +429,12 @@ pub struct Kin<'a> {
 /// contacts, freed again after every rule, was most of a spacing rule's time.
 struct Labeled<'a> {
     map: &'a TileMap,
-    regions: crate::merge::IndexedRegions,
+    regions: Arc<crate::merge::IndexedRegions>,
     grids: HashMap<(i32, i32), crate::merge::CellGrid>,
 }
 
 impl<'a> Labeled<'a> {
-    fn of(map: &'a TileMap, tile: i32) -> Labeled<'a> {
-        let regions = crate::merge::stitch_cut_indexed(map, tile);
+    fn of(map: &'a TileMap, regions: Arc<crate::merge::IndexedRegions>, tile: i32) -> Labeled<'a> {
         let grids = regions
             .by_tile
             .par_iter()
@@ -476,9 +474,13 @@ impl<'a> Labeled<'a> {
 }
 
 impl<'a> Kin<'a> {
-    fn of(map_a: &'a TileMap, map_b: Option<&'a TileMap>, tile: i32) -> Kin<'a> {
-        let a = Labeled::of(map_a, tile);
-        let b = map_b.map(|m| Labeled::of(m, tile));
+    fn of(
+        (map_a, kin_a): (&'a TileMap, Arc<crate::merge::IndexedRegions>),
+        b: Option<(&'a TileMap, Arc<crate::merge::IndexedRegions>)>,
+        tile: i32,
+    ) -> Kin<'a> {
+        let a = Labeled::of(map_a, kin_a, tile);
+        let b = b.map(|(m, k)| Labeled::of(m, k, tile));
         // Which regions share area: every core piece of `a` against every core piece
         // of `b` in the same tile, by the boxes first.
         let overlapping: HashSet<(usize, usize)> = match &b {
