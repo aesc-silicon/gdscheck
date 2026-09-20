@@ -2043,6 +2043,142 @@ const DECK_TM1: &str = "topmetal1";
 #[case::tm1fil_a1("topmetal1/TM1Fil.a1.gds.gz", "TOP", vec!["TM1Fil.a1"; 4], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_b("topmetal1/TM1Fil.b.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_d("topmetal1/TM1Fil.d.gds.gz", "TOP", vec!["TM1Fil.d"; 2], vec!["TM1.c", "TM1.d"])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/topmetal.md).  TM1.a: 1.635 bars in x and y, a
+// 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 1.64 is clean.
+#[case::tm1_a_h1("topmetal1/TM1.a.h1.gds.gz", "TOP", vec!["TM1.a"; 10], vec!["TM1.c", "TM1.d"])]
+// A diamond (4) and a 45° strip (2) one grid step under the width; the on-grid step
+// above, a chamfered box and an L with a chamfered inner corner are clean.
+#[case::tm1_a_h2("topmetal1/TM1.a.h2.gds.gz", "TOP", vec!["TM1.a"; 6], vec!["TM1.c", "TM1.d"])]
+// Unions one step narrow (overlap, slices, one ring side, an island) fire once each; the
+// unions at the width and a gridded bar are clean.
+#[case::tm1_a_h3("topmetal1/TM1.a.h3.gds.gz", "TOP", vec!["TM1.a"; 8], vec!["TM1.c", "TM1.d"])]
+// Ten narrow bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
+#[case::tm1_a_h4("topmetal1/TM1.a.h4.gds.gz", "TOP", vec!["TM1.a"; 20], vec!["TM1.c", "TM1.d"])]
+// Fifty narrow bars, flat and as a GdsArrayRef.
+#[case::tm1_a_h5("topmetal1/TM1.a.h5.gds.gz", "TOP", vec!["TM1.a"; 100], vec!["TM1.c", "TM1.d"])]
+#[case::tm1_a_h6("topmetal1/TM1.a.h6.gds.gz", "TOP", vec!["TM1.a"; 100], vec!["TM1.c", "TM1.d"])]
+// A comb with three narrow teeth; a U at the width is clean.
+#[case::tm1_a_h7("topmetal1/TM1.a.h7.gds.gz", "TOP", vec!["TM1.a"; 6], vec!["TM1.c", "TM1.d"])]
+// TM1.b: a gap one step under 1.64 in x and y, a corner-to-corner pair under it and a
+// corner-on pair; the gaps at 1.64 (straight, diagonal, corner-on) are clean.
+#[case::tm1_b_h1("topmetal1/TM1.b.h1.gds.gz", "TOP", vec!["TM1.b"; 4], vec!["TM1.c", "TM1.d"])]
+// 45°: a diamond tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, each
+// one step under; the controls at the value are clean.
+#[case::tm1_b_h2("topmetal1/TM1.b.h2.gds.gz", "TOP", vec!["TM1.b"; 4], vec!["TM1.c", "TM1.d"])]
+// "Space or notch": a U notch, a straight-vs-45° notch, a comb (two slots), a slot, a
+// keyhole hole, two facing Ls and an island in a ring, all one step under.
+#[case::tm1_b_h3("topmetal1/TM1.b.h3.gds.gz", "TOP", vec!["TM1.b"; 8], vec!["TM1.c", "TM1.d"])]
+// Two unions and a gridded plate one step under: once each; overlapping boxes are one shape.
+#[case::tm1_b_h4("topmetal1/TM1.b.h4.gds.gz", "TOP", vec!["TM1.b"; 2], vec!["TM1.c", "TM1.d"])]
+// Eleven gaps on, across and straddling x = 20/21/40/42 and y = 20/21, two corner-on.
+#[case::tm1_b_h5("topmetal1/TM1.b.h5.gds.gz", "TOP", vec!["TM1.b"; 11], vec!["TM1.c", "TM1.d"])]
+// Fifty pairs, flat and as a GdsArrayRef.
+#[case::tm1_b_h6("topmetal1/TM1.b.h6.gds.gz", "TOP", vec!["TM1.b"; 50], vec!["TM1.c", "TM1.d"])]
+#[case::tm1_b_h7("topmetal1/TM1.b.h7.gds.gz", "TOP", vec!["TM1.b"; 50], vec!["TM1.c", "TM1.d"])]
+// A 0.005 sliver one step from a plate (its width is TM1.a's), 300 µm bars, (1000, 1000).
+#[case::tm1_b_h8("topmetal1/TM1.b.h8.gds.gz", "TOP", vec!["TM1.b"; 3], vec!["TM1.c", "TM1.d", "TM1.a"])]
+// The rule names no net: a pair joined through a via and the metal below fires like the
+// bare pair beside it.
+#[case::tm1_b_h9("topmetal1/TM1.b.h9.gds.gz", "TOP", vec!["TM1.b"; 2], vec!["TM1.c", "TM1.d"])]
+// TM1.c/TM1.d: 30 % stripes on the metal, its filler and its mask alike are 30 %, not 90 %
+// (the fillers' 1000 µm stripes are TM1Fil.a1's).
+#[case::tm1_c_h1("topmetal1/TM1.c.h1.gds.gz", "TOP", vec![], vec!["TM1Fil.a1"])]
+// 25.000 % inside the boundary and a plate beside it: the plate outside is not counted
+// (report, finding 6).
+#[case::tm1_c_h2("topmetal1/TM1.c.h2.gds.gz", "TOP", vec![], vec![])]
+// A plate reaching in from below: 25.000 % of it inside is clean, 24.995 % fires (finding 6).
+#[case::tm1_c_h3("topmetal1/TM1.c.h3.gds.gz", "TOP", vec![], vec![])]
+#[case::tm1_c_h4("topmetal1/TM1.c.h4.gds.gz", "TOP", vec!["TM1.c"], vec![])]
+// Stripes placed by a GdsArrayRef: 30 % clean, 24.995 % fires.
+#[case::tm1_c_h5("topmetal1/TM1.c.h5.gds.gz", "TOP", vec![], vec![])]
+#[case::tm1_c_h6("topmetal1/TM1.c.h6.gds.gz", "TOP", vec!["TM1.c"], vec![])]
+// Metal and mask overlapping: their union is 70.000 % (clean) and 70.005 % (fires).
+#[case::tm1_d_h1("topmetal1/TM1.d.h1.gds.gz", "TOP", vec![], vec![])]
+#[case::tm1_d_h2("topmetal1/TM1.d.h2.gds.gz", "TOP", vec!["TM1.d"], vec![])]
+// TM1Fil.a: 4.995 in x and y, a 0.005 sliver, a 4.995 bar at (1000, 1000): two markers each.
+#[case::tm1fil_a_h1("topmetal1/TM1Fil.a.h1.gds.gz", "TOP", vec!["TM1Fil.a"; 8], vec!["TM1.c", "TM1.d"])]
+// A 4.999 diamond (4) and strip (2) fire; 5.006 are clean.  6 × 6 boxes with a corner
+// chamfered by 2, 3.5 and 4 are 6 − c wide between the chamfer and the opposite walls
+// (two markers each, report note A); chamfered by 1 (5.0) clean.
+#[case::tm1fil_a_h2("topmetal1/TM1Fil.a.h2.gds.gz", "TOP", vec!["TM1Fil.a"; 12], vec!["TM1.c", "TM1.d"])]
+// Unions 4.995 wide (overlap, slices, one ring wall, an island) fire once each; the rings'
+// spans are TM1Fil.a1's.
+#[case::tm1fil_a_h3("topmetal1/TM1Fil.a.h3.gds.gz", "TOP", vec!["TM1Fil.a"; 8], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
+// Ten 4.995 bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
+#[case::tm1fil_a_h4("topmetal1/TM1Fil.a.h4.gds.gz", "TOP", vec!["TM1Fil.a"; 20], vec!["TM1.c", "TM1.d"])]
+// Fifty 4.995 fillers, flat and as a GdsArrayRef.
+#[case::tm1fil_a_h5("topmetal1/TM1Fil.a.h5.gds.gz", "TOP", vec!["TM1Fil.a"; 100], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a_h6("topmetal1/TM1Fil.a.h6.gds.gz", "TOP", vec!["TM1Fil.a"; 100], vec!["TM1.c", "TM1.d"])]
+// A comb with three 4.995 teeth; a U with 5.0 arms is clean; both span over 10 (TM1Fil.a1's).
+#[case::tm1fil_a_h7("topmetal1/TM1Fil.a.h7.gds.gz", "TOP", vec!["TM1Fil.a"; 6], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
+// TM1Fil.a1 is the filler's long side (figure 5.23): 10.005 × 10, 10 × 10.005, 6 × 10.005, a
+// 6 × 300 bar and a bar at (1000, 1000) fire, two markers each; 10 × 10 is clean.
+#[case::tm1fil_a1_h1("topmetal1/TM1Fil.a1.h1.gds.gz", "TOP", vec!["TM1Fil.a1"; 10], vec!["TM1.c", "TM1.d"])]
+// A diamond spanning 10.01 and a 45° strip spanning 10.245 fire, one shape each (the
+// count is the tool's cut; report, finding 2); 10.0 and 8.245 spans are clean.
+#[case::tm1fil_a1_h2("topmetal1/TM1Fil.a1.h2.gds.gz", "TOP", vec!["TM1Fil.a1"; 2], vec!["TM1.c", "TM1.d"])]
+// A 6 × 10.005 union, an abutting 10.005, a gridded 10.005 bar, an L spanning 12 and a
+// plus spanning 14 fire; the 6 × 10 union is clean.
+#[case::tm1fil_a1_h3("topmetal1/TM1Fil.a1.h3.gds.gz", "TOP", vec!["TM1Fil.a1"; 14], vec!["TM1.c", "TM1.d"])]
+// Ten 10.005 fillers on, across and straddling x = 20/21/40/42 and y = 20/21, an L cornered on 20.
+#[case::tm1fil_a1_h4("topmetal1/TM1Fil.a1.h4.gds.gz", "TOP", vec!["TM1Fil.a1"; 20], vec!["TM1.c", "TM1.d"])]
+// Fifty 10.005 fillers, flat and as a GdsArrayRef.
+#[case::tm1fil_a1_h5("topmetal1/TM1Fil.a1.h5.gds.gz", "TOP", vec!["TM1Fil.a1"; 100], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_a1_h6("topmetal1/TM1Fil.a1.h6.gds.gz", "TOP", vec!["TM1Fil.a1"; 100], vec!["TM1.c", "TM1.d"])]
+// A 0.005 × 10.005 sliver: TM1Fil.a1 on its length, TM1Fil.a on its width.
+#[case::tm1fil_a1_h7("topmetal1/TM1Fil.a1.h7.gds.gz", "TOP", vec!["TM1Fil.a1", "TM1Fil.a1"], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
+// TM1Fil.b: 2.995 in x and y, a 2.998 diagonal, a corner-on 2.995; 3.0 and 3.005 are clean.
+#[case::tm1fil_b_h1("topmetal1/TM1Fil.b.h1.gds.gz", "TOP", vec!["TM1Fil.b"; 4], vec!["TM1.c", "TM1.d"])]
+// 45°: a tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, all 2.995;
+// the chamfered fillers are under TM1Fil.a themselves (note A), set aside here.
+#[case::tm1fil_b_h2("topmetal1/TM1Fil.b.h2.gds.gz", "TOP", vec!["TM1Fil.b"; 4], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
+// TM1Fil.b is "space", not "space or notch": a U with a 2.995 notch draws nothing; facing Ls
+// and an island in a ring at 2.995 fire.  All three span over 10 (TM1Fil.a1's).
+#[case::tm1fil_b_h3("topmetal1/TM1Fil.b.h3.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
+// Two unions and a gridded plate 2.995 apart: once each.
+#[case::tm1fil_b_h4("topmetal1/TM1Fil.b.h4.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d"])]
+// Ten 2.995 gaps on, across and straddling x = 20/21/40/42 and y = 20/21, one corner-on.
+#[case::tm1fil_b_h5("topmetal1/TM1Fil.b.h5.gds.gz", "TOP", vec!["TM1Fil.b"; 10], vec!["TM1.c", "TM1.d"])]
+// Fifty pairs 2.995 apart, flat and as a GdsArrayRef.
+#[case::tm1fil_b_h6("topmetal1/TM1Fil.b.h6.gds.gz", "TOP", vec!["TM1Fil.b"; 50], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_b_h7("topmetal1/TM1Fil.b.h7.gds.gz", "TOP", vec!["TM1Fil.b"; 50], vec!["TM1.c", "TM1.d"])]
+// A 0.005 sliver 2.995 from a filler (its width is TM1Fil.a's), 6 × 10 fillers 2.995 apart,
+// a pair at (1000, 1000).
+#[case::tm1fil_b_h8("topmetal1/TM1Fil.b.h8.gds.gz", "TOP", vec!["TM1Fil.b"; 3], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
+// TM1Fil.c: 2.995 with the metal right, left and above, a 2.998 diagonal, a corner-on; 3.0
+// and 3.005 are clean, and so is a TM1.mask shape 2.995 away (the rule names the drawing layer).
+#[case::tm1fil_c_h1("topmetal1/TM1Fil.c.h1.gds.gz", "TOP", vec!["TM1Fil.c"; 5], vec!["TM1.c", "TM1.d"])]
+// 45°: a metal tip to a filler wall, a metal strip to a filler strip, a metal chamfer to a
+// filler corner, a filler chamfer to a metal corner, all 2.995; the chamfered fillers'
+// own TM1Fil.a (note A) set aside.
+#[case::tm1fil_c_h2("topmetal1/TM1Fil.c.h2.gds.gz", "TOP", vec!["TM1Fil.c"; 4], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
+// A filler abutting a metal is a space of zero (report, finding 3); a filler across a
+// metal's edge and one inside a plate share area and are no pair.
+#[case::tm1fil_c_h3("topmetal1/TM1Fil.c.h3.gds.gz", "TOP", vec!["TM1Fil.c"; 1], vec!["TM1.c", "TM1.d"])]
+// Nine 2.995 filler/metal gaps on, across and straddling x = 20/21/40/42 and y = 20, one corner-on.
+#[case::tm1fil_c_h4("topmetal1/TM1Fil.c.h4.gds.gz", "TOP", vec!["TM1Fil.c"; 9], vec!["TM1.c", "TM1.d"])]
+// Fifty filler/metal pairs 2.995 apart, flat and as a GdsArrayRef.
+#[case::tm1fil_c_h5("topmetal1/TM1Fil.c.h5.gds.gz", "TOP", vec!["TM1Fil.c"; 50], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_c_h6("topmetal1/TM1Fil.c.h6.gds.gz", "TOP", vec!["TM1Fil.c"; 50], vec!["TM1.c", "TM1.d"])]
+// A 300 µm metal bar 2.995 from a filler, a 0.005 metal sliver 2.995 away (TM1.a's width),
+// a pair at (1000, 1000).
+#[case::tm1fil_c_h7("topmetal1/TM1Fil.c.h7.gds.gz", "TOP", vec!["TM1Fil.c"; 3], vec!["TM1.c", "TM1.d", "TM1.a"])]
+// TM1Fil.d: 4.895 in x and y, a 4.893 diagonal, a corner-on 4.895; 4.9 and 4.900 are clean.
+#[case::tm1fil_d_h1("topmetal1/TM1Fil.d.h1.gds.gz", "TOP", vec!["TM1Fil.d"; 4], vec!["TM1.c", "TM1.d"])]
+// 45°: a TRANS tip to a filler wall at 4.895, a TRANS chamfer to a filler corner, a filler
+// chamfer to a TRANS corner and TRANS/filler strips at 4.893; the chamfered filler's
+// own TM1Fil.a (note A) set aside.
+#[case::tm1fil_d_h2("topmetal1/TM1Fil.d.h2.gds.gz", "TOP", vec!["TM1Fil.d"; 4], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
+// A filler inside a TRANS 2.0 from its edge fires (report, finding 4); one 7 µm inside and
+// one across the edge do not.
+#[case::tm1fil_d_h3("topmetal1/TM1Fil.d.h3.gds.gz", "TOP", vec!["TM1Fil.d"; 1], vec!["TM1.c", "TM1.d"])]
+// Nine 4.895 filler/TRANS gaps on, across and straddling x = 20/21/40/42 and y = 20, one corner-on.
+#[case::tm1fil_d_h4("topmetal1/TM1Fil.d.h4.gds.gz", "TOP", vec!["TM1Fil.d"; 9], vec!["TM1.c", "TM1.d"])]
+// Fifty filler/TRANS pairs 4.895 apart, flat and as a GdsArrayRef.
+#[case::tm1fil_d_h5("topmetal1/TM1Fil.d.h5.gds.gz", "TOP", vec!["TM1Fil.d"; 50], vec!["TM1.c", "TM1.d"])]
+#[case::tm1fil_d_h6("topmetal1/TM1Fil.d.h6.gds.gz", "TOP", vec!["TM1Fil.d"; 50], vec!["TM1.c", "TM1.d"])]
+// A 300 µm TRANS bar 4.895 from a filler, a pair at (1000, 1000).
+#[case::tm1fil_d_h7("topmetal1/TM1Fil.d.h7.gds.gz", "TOP", vec!["TM1Fil.d"; 2], vec!["TM1.c", "TM1.d"])]
 fn test_topmetal1(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2074,6 +2210,170 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_br_fail("topmetal2/TM2.bR.fail.gds.gz", "TOP", vec!["TM2.bR"], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_ok("topmetal2/TM2.bR.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_ind("topmetal2/TM2.bR.ind.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
+// 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 2.00 is clean.
+#[case::tm2_a_h1("topmetal2/TM2.a.h1.gds.gz", "TOP", vec!["TM2.a"; 10], vec!["TM2.c", "TM2.d"])]
+// A diamond (4) and a 45° strip (2) one grid step under the width; the on-grid step
+// above, a chamfered box and an L with a chamfered inner corner are clean.
+#[case::tm2_a_h2("topmetal2/TM2.a.h2.gds.gz", "TOP", vec!["TM2.a"; 6], vec!["TM2.c", "TM2.d"])]
+// Unions one step narrow (overlap, slices, one ring side, an island) fire once each; the
+// unions at the width and a gridded bar are clean.
+#[case::tm2_a_h3("topmetal2/TM2.a.h3.gds.gz", "TOP", vec!["TM2.a"; 8], vec!["TM2.c", "TM2.d"])]
+// Ten narrow bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
+#[case::tm2_a_h4("topmetal2/TM2.a.h4.gds.gz", "TOP", vec!["TM2.a"; 20], vec!["TM2.c", "TM2.d"])]
+// Fifty narrow bars, flat and as a GdsArrayRef.
+#[case::tm2_a_h5("topmetal2/TM2.a.h5.gds.gz", "TOP", vec!["TM2.a"; 100], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_a_h6("topmetal2/TM2.a.h6.gds.gz", "TOP", vec!["TM2.a"; 100], vec!["TM2.c", "TM2.d"])]
+// A comb with three narrow teeth; a U at the width is clean.
+#[case::tm2_a_h7("topmetal2/TM2.a.h7.gds.gz", "TOP", vec!["TM2.a"; 6], vec!["TM2.c", "TM2.d"])]
+// TM2.b: a gap one step under 2.00 in x and y, a corner-to-corner pair under it and a
+// corner-on pair; the gaps at 2.00 (straight, diagonal, corner-on) are clean.
+#[case::tm2_b_h1("topmetal2/TM2.b.h1.gds.gz", "TOP", vec!["TM2.b"; 4], vec!["TM2.c", "TM2.d"])]
+// 45°: a diamond tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, each
+// one step under; the controls at the value are clean.
+#[case::tm2_b_h2("topmetal2/TM2.b.h2.gds.gz", "TOP", vec!["TM2.b"; 4], vec!["TM2.c", "TM2.d"])]
+// "Space or notch": a U notch, a straight-vs-45° notch, a comb (two slots), a slot, a
+// keyhole hole, two facing Ls and an island in a ring, all one step under.
+#[case::tm2_b_h3("topmetal2/TM2.b.h3.gds.gz", "TOP", vec!["TM2.b"; 8], vec!["TM2.c", "TM2.d"])]
+// Two unions and a gridded plate one step under: once each; overlapping boxes are one shape.
+#[case::tm2_b_h4("topmetal2/TM2.b.h4.gds.gz", "TOP", vec!["TM2.b"; 2], vec!["TM2.c", "TM2.d"])]
+// Eleven gaps on, across and straddling x = 20/21/40/42 and y = 20/21, two corner-on.
+#[case::tm2_b_h5("topmetal2/TM2.b.h5.gds.gz", "TOP", vec!["TM2.b"; 11], vec!["TM2.c", "TM2.d"])]
+// Fifty pairs, flat and as a GdsArrayRef.
+#[case::tm2_b_h6("topmetal2/TM2.b.h6.gds.gz", "TOP", vec!["TM2.b"; 50], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_b_h7("topmetal2/TM2.b.h7.gds.gz", "TOP", vec!["TM2.b"; 50], vec!["TM2.c", "TM2.d"])]
+// A 0.005 sliver one step from a plate (its width is TM2.a's), 300 µm bars, (1000, 1000).
+#[case::tm2_b_h8("topmetal2/TM2.b.h8.gds.gz", "TOP", vec!["TM2.b"; 3], vec!["TM2.c", "TM2.d", "TM2.a"])]
+// The rule names no net: a pair joined through a via and the metal below fires like the
+// bare pair beside it.
+#[case::tm2_b_h9("topmetal2/TM2.b.h9.gds.gz", "TOP", vec!["TM2.b"; 2], vec!["TM2.c", "TM2.d"])]
+// TM2.c/TM2.d: 30 % stripes on the metal, its filler and its mask alike are 30 %, not 90 %
+// (the fillers' 1000 µm stripes are TM2Fil.a1's).
+#[case::tm2_c_h1("topmetal2/TM2.c.h1.gds.gz", "TOP", vec![], vec!["TM2Fil.a1"])]
+// 25.000 % inside the boundary and a plate beside it: the plate outside is not counted
+// (report, finding 6).
+#[case::tm2_c_h2("topmetal2/TM2.c.h2.gds.gz", "TOP", vec![], vec![])]
+// A plate reaching in from below: 25.000 % of it inside is clean, 24.995 % fires (finding 6).
+#[case::tm2_c_h3("topmetal2/TM2.c.h3.gds.gz", "TOP", vec![], vec![])]
+#[case::tm2_c_h4("topmetal2/TM2.c.h4.gds.gz", "TOP", vec!["TM2.c"], vec![])]
+// Stripes placed by a GdsArrayRef: 30 % clean, 24.995 % fires.
+#[case::tm2_c_h5("topmetal2/TM2.c.h5.gds.gz", "TOP", vec![], vec![])]
+#[case::tm2_c_h6("topmetal2/TM2.c.h6.gds.gz", "TOP", vec!["TM2.c"], vec![])]
+// Metal and mask overlapping: their union is 70.000 % (clean) and 70.005 % (fires).
+#[case::tm2_d_h1("topmetal2/TM2.d.h1.gds.gz", "TOP", vec![], vec![])]
+#[case::tm2_d_h2("topmetal2/TM2.d.h2.gds.gz", "TOP", vec!["TM2.d"], vec![])]
+// TM2Fil.a: 4.995 in x and y, a 0.005 sliver, a 4.995 bar at (1000, 1000): two markers each.
+#[case::tm2fil_a_h1("topmetal2/TM2Fil.a.h1.gds.gz", "TOP", vec!["TM2Fil.a"; 8], vec!["TM2.c", "TM2.d"])]
+// A 4.999 diamond (4) and strip (2) fire; 5.006 are clean.  6 × 6 boxes with a corner
+// chamfered by 2, 3.5 and 4 are 6 − c wide between the chamfer and the opposite walls
+// (two markers each, report note A); chamfered by 1 (5.0) clean.
+#[case::tm2fil_a_h2("topmetal2/TM2Fil.a.h2.gds.gz", "TOP", vec!["TM2Fil.a"; 12], vec!["TM2.c", "TM2.d"])]
+// Unions 4.995 wide (overlap, slices, one ring wall, an island) fire once each; the rings'
+// spans are TM2Fil.a1's.
+#[case::tm2fil_a_h3("topmetal2/TM2Fil.a.h3.gds.gz", "TOP", vec!["TM2Fil.a"; 8], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
+// Ten 4.995 bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
+#[case::tm2fil_a_h4("topmetal2/TM2Fil.a.h4.gds.gz", "TOP", vec!["TM2Fil.a"; 20], vec!["TM2.c", "TM2.d"])]
+// Fifty 4.995 fillers, flat and as a GdsArrayRef.
+#[case::tm2fil_a_h5("topmetal2/TM2Fil.a.h5.gds.gz", "TOP", vec!["TM2Fil.a"; 100], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a_h6("topmetal2/TM2Fil.a.h6.gds.gz", "TOP", vec!["TM2Fil.a"; 100], vec!["TM2.c", "TM2.d"])]
+// A comb with three 4.995 teeth; a U with 5.0 arms is clean; both span over 10 (TM2Fil.a1's).
+#[case::tm2fil_a_h7("topmetal2/TM2Fil.a.h7.gds.gz", "TOP", vec!["TM2Fil.a"; 6], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
+// TM2Fil.a1 is the filler's long side (figure 5.23): 10.005 × 10, 10 × 10.005, 6 × 10.005, a
+// 6 × 300 bar and a bar at (1000, 1000) fire, two markers each; 10 × 10 is clean.
+#[case::tm2fil_a1_h1("topmetal2/TM2Fil.a1.h1.gds.gz", "TOP", vec!["TM2Fil.a1"; 10], vec!["TM2.c", "TM2.d"])]
+// A diamond spanning 10.01 and a 45° strip spanning 10.245 fire, one shape each (the
+// count is the tool's cut; report, finding 2); 10.0 and 8.245 spans are clean.
+#[case::tm2fil_a1_h2("topmetal2/TM2Fil.a1.h2.gds.gz", "TOP", vec!["TM2Fil.a1"; 2], vec!["TM2.c", "TM2.d"])]
+// A 6 × 10.005 union, an abutting 10.005, a gridded 10.005 bar, an L spanning 12 and a
+// plus spanning 14 fire; the 6 × 10 union is clean.
+#[case::tm2fil_a1_h3("topmetal2/TM2Fil.a1.h3.gds.gz", "TOP", vec!["TM2Fil.a1"; 14], vec!["TM2.c", "TM2.d"])]
+// Ten 10.005 fillers on, across and straddling x = 20/21/40/42 and y = 20/21, an L cornered on 20.
+#[case::tm2fil_a1_h4("topmetal2/TM2Fil.a1.h4.gds.gz", "TOP", vec!["TM2Fil.a1"; 20], vec!["TM2.c", "TM2.d"])]
+// Fifty 10.005 fillers, flat and as a GdsArrayRef.
+#[case::tm2fil_a1_h5("topmetal2/TM2Fil.a1.h5.gds.gz", "TOP", vec!["TM2Fil.a1"; 100], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_a1_h6("topmetal2/TM2Fil.a1.h6.gds.gz", "TOP", vec!["TM2Fil.a1"; 100], vec!["TM2.c", "TM2.d"])]
+// A 0.005 × 10.005 sliver: TM2Fil.a1 on its length, TM2Fil.a on its width.
+#[case::tm2fil_a1_h7("topmetal2/TM2Fil.a1.h7.gds.gz", "TOP", vec!["TM2Fil.a1", "TM2Fil.a1"], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
+// TM2Fil.b: 2.995 in x and y, a 2.998 diagonal, a corner-on 2.995; 3.0 and 3.005 are clean.
+#[case::tm2fil_b_h1("topmetal2/TM2Fil.b.h1.gds.gz", "TOP", vec!["TM2Fil.b"; 4], vec!["TM2.c", "TM2.d"])]
+// 45°: a tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, all 2.995;
+// the chamfered fillers are under TM2Fil.a themselves (note A), set aside here.
+#[case::tm2fil_b_h2("topmetal2/TM2Fil.b.h2.gds.gz", "TOP", vec!["TM2Fil.b"; 4], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
+// TM2Fil.b is "space", not "space or notch": a U with a 2.995 notch draws nothing; facing Ls
+// and an island in a ring at 2.995 fire.  All three span over 10 (TM2Fil.a1's).
+#[case::tm2fil_b_h3("topmetal2/TM2Fil.b.h3.gds.gz", "TOP", vec!["TM2Fil.b"; 2], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
+// Two unions and a gridded plate 2.995 apart: once each.
+#[case::tm2fil_b_h4("topmetal2/TM2Fil.b.h4.gds.gz", "TOP", vec!["TM2Fil.b"; 2], vec!["TM2.c", "TM2.d"])]
+// Ten 2.995 gaps on, across and straddling x = 20/21/40/42 and y = 20/21, one corner-on.
+#[case::tm2fil_b_h5("topmetal2/TM2Fil.b.h5.gds.gz", "TOP", vec!["TM2Fil.b"; 10], vec!["TM2.c", "TM2.d"])]
+// Fifty pairs 2.995 apart, flat and as a GdsArrayRef.
+#[case::tm2fil_b_h6("topmetal2/TM2Fil.b.h6.gds.gz", "TOP", vec!["TM2Fil.b"; 50], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_b_h7("topmetal2/TM2Fil.b.h7.gds.gz", "TOP", vec!["TM2Fil.b"; 50], vec!["TM2.c", "TM2.d"])]
+// A 0.005 sliver 2.995 from a filler (its width is TM2Fil.a's), 6 × 10 fillers 2.995 apart,
+// a pair at (1000, 1000).
+#[case::tm2fil_b_h8("topmetal2/TM2Fil.b.h8.gds.gz", "TOP", vec!["TM2Fil.b"; 3], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
+// TM2Fil.c: 2.995 with the metal right, left and above, a 2.998 diagonal, a corner-on; 3.0
+// and 3.005 are clean, and so is a TM2.mask shape 2.995 away (the rule names the drawing layer).
+#[case::tm2fil_c_h1("topmetal2/TM2Fil.c.h1.gds.gz", "TOP", vec!["TM2Fil.c"; 5], vec!["TM2.c", "TM2.d"])]
+// 45°: a metal tip to a filler wall, a metal strip to a filler strip, a metal chamfer to a
+// filler corner, a filler chamfer to a metal corner, all 2.995; the chamfered fillers'
+// own TM2Fil.a (note A) set aside.
+#[case::tm2fil_c_h2("topmetal2/TM2Fil.c.h2.gds.gz", "TOP", vec!["TM2Fil.c"; 4], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
+// A filler abutting a metal is a space of zero (report, finding 3); a filler across a
+// metal's edge and one inside a plate share area and are no pair.
+#[case::tm2fil_c_h3("topmetal2/TM2Fil.c.h3.gds.gz", "TOP", vec!["TM2Fil.c"; 1], vec!["TM2.c", "TM2.d"])]
+// Nine 2.995 filler/metal gaps on, across and straddling x = 20/21/40/42 and y = 20, one corner-on.
+#[case::tm2fil_c_h4("topmetal2/TM2Fil.c.h4.gds.gz", "TOP", vec!["TM2Fil.c"; 9], vec!["TM2.c", "TM2.d"])]
+// Fifty filler/metal pairs 2.995 apart, flat and as a GdsArrayRef.
+#[case::tm2fil_c_h5("topmetal2/TM2Fil.c.h5.gds.gz", "TOP", vec!["TM2Fil.c"; 50], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_c_h6("topmetal2/TM2Fil.c.h6.gds.gz", "TOP", vec!["TM2Fil.c"; 50], vec!["TM2.c", "TM2.d"])]
+// A 300 µm metal bar 2.995 from a filler, a 0.005 metal sliver 2.995 away (TM2.a's width),
+// a pair at (1000, 1000).
+#[case::tm2fil_c_h7("topmetal2/TM2Fil.c.h7.gds.gz", "TOP", vec!["TM2Fil.c"; 3], vec!["TM2.c", "TM2.d", "TM2.a"])]
+// TM2Fil.d: 4.895 in x and y, a 4.893 diagonal, a corner-on 4.895; 4.9 and 4.900 are clean.
+#[case::tm2fil_d_h1("topmetal2/TM2Fil.d.h1.gds.gz", "TOP", vec!["TM2Fil.d"; 4], vec!["TM2.c", "TM2.d"])]
+// 45°: a TRANS tip to a filler wall at 4.895, a TRANS chamfer to a filler corner, a filler
+// chamfer to a TRANS corner and TRANS/filler strips at 4.893; the chamfered filler's
+// own TM2Fil.a (note A) set aside.
+#[case::tm2fil_d_h2("topmetal2/TM2Fil.d.h2.gds.gz", "TOP", vec!["TM2Fil.d"; 4], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
+// A filler inside a TRANS 2.0 from its edge fires (report, finding 4); one 7 µm inside and
+// one across the edge do not.
+#[case::tm2fil_d_h3("topmetal2/TM2Fil.d.h3.gds.gz", "TOP", vec!["TM2Fil.d"; 1], vec!["TM2.c", "TM2.d"])]
+// Nine 4.895 filler/TRANS gaps on, across and straddling x = 20/21/40/42 and y = 20, one corner-on.
+#[case::tm2fil_d_h4("topmetal2/TM2Fil.d.h4.gds.gz", "TOP", vec!["TM2Fil.d"; 9], vec!["TM2.c", "TM2.d"])]
+// Fifty filler/TRANS pairs 4.895 apart, flat and as a GdsArrayRef.
+#[case::tm2fil_d_h5("topmetal2/TM2Fil.d.h5.gds.gz", "TOP", vec!["TM2Fil.d"; 50], vec!["TM2.c", "TM2.d"])]
+#[case::tm2fil_d_h6("topmetal2/TM2Fil.d.h6.gds.gz", "TOP", vec!["TM2Fil.d"; 50], vec!["TM2.c", "TM2.d"])]
+// A 300 µm TRANS bar 4.895 from a filler, a pair at (1000, 1000).
+#[case::tm2fil_d_h7("topmetal2/TM2Fil.d.h7.gds.gz", "TOP", vec!["TM2Fil.d"; 2], vec!["TM2.c", "TM2.d"])]
+// TM2.bR: a 5.005 line beside a 2 line at gap 4 over 60, two 6 lines at 4.995 over 60, two
+// 6 lines at 4 over 50.005 fire; a 6/2 pair over 50.0 and a 5.0/2 pair over 60 are clean.
+#[case::tm2_br_h1("topmetal2/TM2.bR.h1.gds.gz", "TOP", vec!["TM2.bR"; 3], vec!["TM2.c", "TM2.d"])]
+// The run is the overlap: 50.005 fires, 50.0 and a 20 µm neighbour do not.
+#[case::tm2_br_h2("topmetal2/TM2.bR.h2.gds.gz", "TOP", vec!["TM2.bR"; 1], vec!["TM2.c", "TM2.d"])]
+// Beside a 6 line 60 long: a neighbour whose facing wall steps 4/4.5 at mid-height, one
+// with a 0.005 nick (a TM2.b notch of 0.5 as well), one drawn as two abutting 30 µm boxes,
+// a 6 line drawn as two 3 strips beside a 2 line: four runs of 60 under 5 (report, finding 7).
+#[case::tm2_br_h3("topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+// Two 6-wide 45° strips 60 side by side at 3.999 and the figure's plate beside a 2 line at
+// 4 fire; 5.003, a T (run 2) and a strip crossing at 45° are clean.
+#[case::tm2_br_h4("topmetal2/TM2.bR.h4.gds.gz", "TOP", vec!["TM2.bR"; 2], vec!["TM2.c", "TM2.d"])]
+// IND over 5 µm of a 60 run leaves 55 (fires); over 20 it leaves 40 (clean, report, finding
+// 8); a wide line within IND beside a narrow one outside is not checked.
+#[case::tm2_br_h5("topmetal2/TM2.bR.h5.gds.gz", "TOP", vec!["TM2.bR"; 1], vec!["TM2.c", "TM2.d"])]
+// Two 6 lines 1.995 apart over 60: TM2.b and TM2.bR both.
+#[case::tm2_br_h6("topmetal2/TM2.bR.h6.gds.gz", "TOP", vec!["TM2.b", "TM2.bR"], vec!["TM2.c", "TM2.d"])]
+// Fifty pairs of 6 lines at 4 over 60, flat and as a GdsArrayRef.
+#[case::tm2_br_h7("topmetal2/TM2.bR.h7.gds.gz", "TOP", vec!["TM2.bR"; 50], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h8("topmetal2/TM2.bR.h8.gds.gz", "TOP", vec!["TM2.bR"; 50], vec!["TM2.c", "TM2.d"])]
+// Five 50.005 runs starting at x = 0, 20, 19.995, 7 and 40; a 50.0 run from 20 is clean.
+#[case::tm2_br_h9("topmetal2/TM2.bR.h9.gds.gz", "TOP", vec!["TM2.bR"; 5], vec!["TM2.c", "TM2.d"])]
+// A 4 line 6 wide over 55 of its 60 beside a 4 line at gap 4 fires (report, finding 9);
+// 6 wide over 20 (far or near side) does not; a 300 µm pair and a pair at (1000, 1000).
+#[case::tm2_br_h10("topmetal2/TM2.bR.h10.gds.gz", "TOP", vec!["TM2.bR"; 3], vec!["TM2.c", "TM2.d"])]
+// h3's stepped, nicked and two-box neighbours again as 2 lines beside 6 lines (the pairing
+// KLayout's shielded check sees): three runs of 60 under 5, plus the nick's TM2.b notch.
+#[case::tm2_br_h11("topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
 fn test_topmetal2(
     #[case] gds: &str,
     #[case] topcell: &str,
