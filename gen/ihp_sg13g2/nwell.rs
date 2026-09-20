@@ -4,10 +4,10 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
-    layer, library, min_width_pattern, mixed_notch_pattern, notch_pattern, poly, rect, strap, tap,
-    um, write_gz,
+    chamfered_bl, chamfered_tr, diamond, flat_array, layer, library, min_width_pattern,
+    mixed_notch_pattern, notch_pattern, poly, rect, ref_array, strap, strip45, tap, write_gz,
 };
-use gds21::{GdsArrayRef, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct};
+use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/nwell";
@@ -494,45 +494,6 @@ impl L {
     }
 }
 
-/// Diamond (45°-rotated square) of half-diagonal `a` centred on `(cx, cy)`; its width
-/// between opposite walls is `a·√2`.
-fn diamond(layer: (i16, i16), cx: f64, cy: f64, a: f64) -> GdsElement {
-    poly(
-        layer,
-        &[(cx, cy - a), (cx + a, cy), (cx, cy + a), (cx - a, cy)],
-    )
-}
-
-/// 45° strip from `(x0, y0)` running `len` up-right; its perpendicular width is `d·√2`.
-/// A second strip `dy` higher sits at a perpendicular gap of `(dy − 2d)/√2`.
-fn strip45(layer: (i16, i16), x0: f64, y0: f64, len: f64, d: f64) -> GdsElement {
-    poly(
-        layer,
-        &[
-            (x0, y0),
-            (x0 + len, y0 + len),
-            (x0 + len - d, y0 + len + d),
-            (x0 - d, y0 + d),
-        ],
-    )
-}
-
-/// Box `(x0, y0)-(x1, y1)` whose top-right corner is chamfered along `x + y = k`.
-fn chamfered_tr(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64, k: f64) -> GdsElement {
-    poly(
-        layer,
-        &[(x0, y0), (x1, y0), (x1, k - x1), (k - y1, y1), (x0, y1)],
-    )
-}
-
-/// Box `(x0, y0)-(x1, y1)` whose bottom-left corner is chamfered along `x + y = k`.
-fn chamfered_bl(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64, k: f64) -> GdsElement {
-    poly(
-        layer,
-        &[(k - y0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, k - x0)],
-    )
-}
-
 /// NWell 1.7 × 1.9 trapezoid at `(x, y)` whose right side is a 45° wall from
 /// `(x+1.7, y+0.9)` up-left to `(x+0.7, y+1.9)`, i.e. along `X + Y = x + y + 2.6`.  No
 /// corner is acute (the manual forbids angles below 87°), the wedge between the bottom
@@ -548,56 +509,6 @@ fn slant_nw(nw: (i16, i16), x: f64, y: f64) -> GdsElement {
             (x, y + 1.9),
         ],
     )
-}
-
-/// Translate every boundary in `elems` by `(dx, dy)` µm.
-fn shift(elems: &[GdsElement], dx: f64, dy: f64) -> Vec<GdsElement> {
-    elems
-        .iter()
-        .map(|e| match e {
-            GdsElement::GdsBoundary(b) => {
-                let mut b = b.clone();
-                for p in &mut b.xy {
-                    p.x += um(dx);
-                    p.y += um(dy);
-                }
-                GdsElement::GdsBoundary(b)
-            }
-            other => other.clone(),
-        })
-        .collect()
-}
-
-/// `cols × rows` copies of `cell` at `pitch`, every copy drawn in TOP.
-fn flat_array(cell: &[GdsElement], cols: usize, rows: usize, pitch: f64) -> Vec<GdsElement> {
-    let mut out = vec![];
-    for r in 0..rows {
-        for c in 0..cols {
-            out.extend(shift(cell, c as f64 * pitch, r as f64 * pitch));
-        }
-    }
-    out
-}
-
-/// The same array as one `GdsArrayRef` of a `CELL` struct placed in TOP.
-fn ref_array(cell: Vec<GdsElement>, cols: i16, rows: i16, pitch: f64) -> GdsLibrary {
-    let aref = GdsElement::GdsArrayRef(GdsArrayRef {
-        name: "CELL".into(),
-        xy: [
-            GdsPoint::new(0, 0),
-            GdsPoint::new(um(pitch * cols as f64), 0),
-            GdsPoint::new(0, um(pitch * rows as f64)),
-        ],
-        cols,
-        rows,
-        ..Default::default()
-    });
-    let mut lib = library("TOP", vec![aref]);
-    let mut child = GdsStruct::new("CELL");
-    child.elems = cell;
-    lib.structs.insert(0, child);
-    lib.set_all_dates(GdsDateTime::from(&[0i16, 1, 1, 0, 0, 0]));
-    lib
 }
 
 fn write(name: &str, elems: Vec<GdsElement>) {
