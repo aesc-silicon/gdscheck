@@ -2077,7 +2077,8 @@ fn test_via4(
 // passing 0.0035 from the corner with both walls at the value is the settled projection
 // reading (clean), and so are the diamonds (note B).  The touch is the metaln report's
 // open finding 4 (gdscheck reports the cut only).
-#[case::vn_c_h3(".c.h3", vec![".c"; 2], vec![".c1"])]
+// OPEN as there: the case carries the current answer, the cut corner alone.
+#[case::vn_c_h3(".c.h3", vec![".c"; 1], vec![".c1"])]
 // Unions: two boxes enclosing the via by the value together are clean, a step short fire
 // once; ten abutting slices are clean.
 #[case::vn_c_h4(".c.h4", vec![".c"; 1], vec![])]
