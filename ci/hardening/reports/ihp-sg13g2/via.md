@@ -38,6 +38,16 @@ every layout alike - no difference between Via1, Via2, Via3 and Via4 anywhere.
 Test status on the engine as of this report: 3 of the 41 cases fail, on every layer (12
 of 164), all on the findings below; the other 38 (152) pass.
 
+## Resolution (2026-09-20)
+
+Fixed, deck: 1 (every rule of the via decks runs on `Via<n>NoSealring`; the topvia
+report found the same split, one commit covers both).
+
+Open, case carries the engine's answer: 2 - the chamfer through the via's corner is the
+metaln report's finding 4 (a corner touch pairs no wall under the projection reading),
+the PDK owner's call together with the angled-wall projection of the gatpoly report's
+finding 11.
+
 ## Findings
 
 ### 1. V(n).b and V(n).b1 are checked within EdgeSeal (false positive)
