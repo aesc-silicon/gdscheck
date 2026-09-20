@@ -93,9 +93,17 @@ pub fn run(
     // them at all: KLayout's `projecting >= x`.  Staggered rows overlapping by less are
     // not neighbours in the array sense; with nothing asked, any overlap at all.
     let projection = rule.num("projection").map(dbu).unwrap_or(0).max(1);
-    // What counts as "next to" for the purpose of finding the array. With `axes: 1` that
-    // is the same question as the violation, so the two thresholds coincide.
-    let link = if axes >= 2 { pitch.max(value) } else { value };
+    // What counts as "next to" for the purpose of finding the array.  With `axes: 1`
+    // a gap of exactly the value still belongs to the array - the array is the vias
+    // within the value of each other, and the rule is that one of its two directions
+    // is relaxed to the value *throughout*.  An array whose row gaps alternate under
+    // and at the value is tight in both directions and a violation, and linking by the
+    // strict gap broke it into stacks two rows deep that no rule saw.
+    let link = if axes >= 2 {
+        pitch.max(value)
+    } else {
+        value + 1
+    };
 
     println!(
         "[{}] Checking min_space >= {:.2} µm in {} of 2 axes, arrays over {}×{}, on layer {}",
@@ -335,7 +343,12 @@ pub fn run(
             .count()
             > rows_thr
     };
-    let tight_pair_in = |stack: &[usize], members: &[usize]| -> Option<(usize, usize, bool)> {
+    // `along`: a pair across a row (`Some(true)`), down a column (`Some(false)`) or
+    // either (`None`).
+    let tight_pair_in = |stack: &[usize],
+                         members: &[usize],
+                         along: Option<bool>|
+     -> Option<(usize, usize, bool)> {
         let set: std::collections::HashSet<usize> = members.iter().copied().collect();
         members.iter().find_map(|&i| {
             let a = &vias[i];
@@ -352,12 +365,20 @@ pub fn run(
                             let xgap = (b.x0 - a.x1).max(a.x0 - b.x1);
                             let ygap = (b.y0 - a.y1).max(a.y0 - b.y1);
                             // Overlapping vias are one via; see the row linking above.
-                            let row = a.y1.min(b.y1) - a.y0.max(b.y0) >= projection
+                            // Neighbours that miss each other's projection are
+                            // still under the limit when their corners are: a row
+                            // staggered by half a pitch lies 0.18 below the row
+                            // above, its vias 0.1803 from theirs corner to corner.
+                            let near_corners =
+                                xgap > 0 && ygap > 0 && xgap * xgap + ygap * ygap < value * value;
+                            let row = along != Some(false)
                                 && xgap >= 0
-                                && xgap < value;
-                            let col = a.x1.min(b.x1) - a.x0.max(b.x0) >= projection
+                                && xgap < value
+                                && (a.y1.min(b.y1) - a.y0.max(b.y0) >= projection || near_corners);
+                            let col = along != Some(true)
                                 && ygap >= 0
-                                && ygap < value;
+                                && ygap < value
+                                && (a.x1.min(b.x1) - a.x0.max(b.x0) >= projection || near_corners);
                             let (sx0, sx1) = if row {
                                 (a.x0.min(b.x0), a.x1.max(b.x1))
                             } else {
@@ -384,9 +405,17 @@ pub fn run(
             continue;
         }
         let pair = if axes >= 2 {
-            tight_pair_in(stack, &members)
+            tight_pair_in(stack, &members, None)
         } else {
-            None
+            // Tight in both directions, or one of them is relaxed throughout and the
+            // array is legal.
+            match (
+                tight_pair_in(stack, &members, Some(true)),
+                tight_pair_in(stack, &members, Some(false)),
+            ) {
+                (Some(_), Some(_)) => None,
+                _ => continue,
+            }
         };
         if axes >= 2 && pair.is_none() {
             continue;
