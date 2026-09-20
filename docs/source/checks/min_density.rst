@@ -14,9 +14,8 @@ Semantics
 ---------
 
 The listed layers' merged coverage (overlapping and nested shapes are not
-double-counted) is summed on the shared merge cache and divided by the area the scope
-names. For the standard density rules the listed layers are disjoint (drawing, filler
-and mask occupy different datatypes), so the sum is just their union area.
+double-counted, and several layers are read as their union) is summed on the shared
+merge cache and divided by the area the scope names.
 
 ``scope: chip`` (default)
    One chip-wide percentage. The denominator is the chip's bounding box: the box of
@@ -25,19 +24,17 @@ and mask occupy different datatypes), so the sum is just their union area.
    seal ring is drawn as a hollow frame around the die, so its own area is the thin
    frame and would wildly undercount the region it stands for.
 ``scope: window``
-   The chip is split into ``window`` × ``window`` µm tiles and every tile gets its own
-   percentage, summed exactly by clipping the cache's regions to each window, so a region
-   spanning cache tiles is still counted once. The grid always starts at the chip's raw
-   bounding box, whatever ``boundary`` says. Chip dimensions are rarely a multiple of
-   the window, so the last row and column of tiles are usually smaller than a full
-   window and may extend past the seal ring entirely. That is what ``boundary`` is for
-   here: it restricts what part of each window counts to the boundary layer's bounding
-   box. Without it an edge or corner window that falls outside the seal ring is measured
-   against its full nominal area and fails the floor for a reason that has nothing to do
-   with underfill. On a 900×900 µm die with an 800 µm window the last row was measured
-   against a 200 µm tall denominator of which only 100 µm could hold geometry, reading
-   half the true density. A window with no overlap with the boundary box is skipped, not
-   failed.
+   "Any ``window`` × ``window`` µm area": the windows slide over the die a merge tile at
+   a time (20 µm by default) from the die's corner, and one more is laid against each
+   far edge, so every part of the die lies in some whole window and no window is a
+   clipped remainder. The die is the ``boundary`` layer's bounding box when the rule
+   names one, else the chip's raw bounding box; a die narrower than the window in a
+   direction gets one window there, cut to the die. The coverage is summed once per
+   merge tile and the windows on the tile grid are read off a summed-area table, so the
+   number of windows costs nothing; the edge-anchored windows are clipped exactly.
+   Overlapping violating windows are one violation, reported at the worst of them. IHP's
+   own deck lays its windows in steps of half a window with the same edge anchoring; the
+   finer step here only finds what falls between its windows.
 ``scope: region``
    Two layers, positional: a *base* layer whose connected regions are measured, and a
    *feature* layer whose coverage inside each of them is the density. Only regions at

@@ -33,6 +33,7 @@ use crate::merge::{MergedCache, TileMap, clipped_area_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
+use std::collections::HashMap;
 
 /// Which bound a density rule puts on the percentage.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -241,11 +242,37 @@ pub fn run(
         merged.ensure(layout, l.gds_layer as i16, l.gds_datatype as i16);
     }
     let tile = merged.tile_dbu() as i64;
-    let maps: Vec<&TileMap> = rule
+    let layer_maps: Vec<&TileMap> = rule
         .layers
         .iter()
         .map(|l| merged.tiles(l.gds_layer as i16, l.gds_datatype as i16))
         .collect();
+    // Several layers are read as their union: the drawing, its filler and its mask are
+    // meant to be disjoint, but a mask drawn over the active - or a stripe on all three
+    // layers at once - counted three times and read 90 % where 30 % was covered.
+    let union: TileMap;
+    let maps: Vec<&TileMap> = if layer_maps.len() > 1 {
+        let keys: std::collections::HashSet<(i32, i32)> =
+            layer_maps.iter().flat_map(|m| m.keys().copied()).collect();
+        union = keys
+            .into_par_iter()
+            .map(|k| {
+                let parts: Vec<&[crate::merge::MergedPoly]> = layer_maps
+                    .iter()
+                    .filter_map(|m| m.get(&k).map(Vec::as_slice))
+                    .collect();
+                let polys = if parts.len() == 1 {
+                    parts[0].to_vec()
+                } else {
+                    crate::merge::compose_tile(crate::merge::VirtualOp::Union, &parts)
+                };
+                (k, polys)
+            })
+            .collect();
+        vec![&union]
+    } else {
+        layer_maps
+    };
     let um2 = dbu_to_um * dbu_to_um;
 
     let Some(window_um) = window_um else {
@@ -273,41 +300,143 @@ pub fn run(
         )];
     };
 
+    // "Any window x window area": the windows slide over the die a merge tile at a
+    // time, from the die's corner, and one more is laid against each far edge, so
+    // every part of the die is in some whole window and no window is a clipped
+    // remainder - a 200 µm strip read as a window of its own reported the density of
+    // what happened to lie there, and a hole a step off the grid was in no window at
+    // all.  The coverage is summed once per tile core and the windows on the tile grid
+    // are read off a summed-area table; the edge-anchored ones are clipped exactly.
+    // Overlapping violating windows are one violation, reported at the worst of them.
     let win = (window_um / dbu_to_um).round() as i64;
-    let (cx0, cy0, cx1, cy1) = chip;
-    let cols = ((cx1 - cx0).max(0) / win + 1) as usize;
-    let rows = ((cy1 - cy0).max(0) / win + 1) as usize;
-    let cells: Vec<(usize, usize)> = (0..rows)
-        .flat_map(|r| (0..cols).map(move |c| (r, c)))
+    let (bx0, by0, bx1, by1) = boundary.unwrap_or(chip);
+    let per_tile: HashMap<(i32, i32), f64> = maps
+        .iter()
+        .flat_map(|m| m.keys().copied())
+        .collect::<std::collections::HashSet<_>>()
+        .into_par_iter()
+        .map(|(tx, ty)| {
+            let core = (
+                tx as i64 * tile,
+                ty as i64 * tile,
+                (tx as i64 + 1) * tile,
+                (ty as i64 + 1) * tile,
+            );
+            ((tx, ty), coverage_dbu2(&maps, tile, core))
+        })
         .collect();
-    let rid = rule.id.as_str();
-    cells
+    let (tx0, ty0) = (bx0.div_euclid(tile), by0.div_euclid(tile));
+    let (tx1, ty1) = (
+        (bx1 - 1).div_euclid(tile) + 1,
+        (by1 - 1).div_euclid(tile) + 1,
+    );
+    let (nx, ny) = ((tx1 - tx0) as usize, (ty1 - ty0) as usize);
+    // Summed-area table over the tile grid of the die, one cell wider each way.
+    let mut sat = vec![0.0f64; (nx + 1) * (ny + 1)];
+    for iy in 0..ny {
+        for ix in 0..nx {
+            let c = per_tile
+                .get(&((tx0 + ix as i64) as i32, (ty0 + iy as i64) as i32))
+                .copied()
+                .unwrap_or(0.0);
+            sat[(iy + 1) * (nx + 1) + ix + 1] =
+                c + sat[iy * (nx + 1) + ix + 1] + sat[(iy + 1) * (nx + 1) + ix]
+                    - sat[iy * (nx + 1) + ix];
+        }
+    }
+    let sum = |ix0: usize, iy0: usize, ix1: usize, iy1: usize| -> f64 {
+        sat[iy1 * (nx + 1) + ix1] - sat[iy0 * (nx + 1) + ix1] - sat[iy1 * (nx + 1) + ix0]
+            + sat[iy0 * (nx + 1) + ix0]
+    };
+    // Window origins: every tile line from the die's first, as long as the window
+    // stays in the die, then the die's far edge less a window.
+    let origins = |lo: i64, hi: i64, t0: i64| -> Vec<(i64, bool)> {
+        if hi - lo <= win {
+            return vec![(lo, false)];
+        }
+        let mut v: Vec<(i64, bool)> = (0..)
+            .map(|k| (t0 + k) * tile)
+            .skip_while(|&o| o < lo)
+            .take_while(|&o| o + win <= hi)
+            .map(|o| (o, true))
+            .collect();
+        if v.last().is_none_or(|&(o, _)| o + win < hi) {
+            v.push((hi - win, false));
+        }
+        v
+    };
+    let xs = origins(bx0, bx1, tx0);
+    let ys = origins(by0, by1, ty0);
+    let cells: Vec<(usize, usize)> = (0..ys.len())
+        .flat_map(|j| (0..xs.len()).map(move |i| (i, j)))
+        .collect();
+    let readings: Vec<Option<(Box, f64)>> = cells
         .par_iter()
-        .filter_map(|&(row, col)| {
-            let wx0 = cx0 + col as i64 * win;
-            let wy0 = cy0 + row as i64 * win;
-            let window = (wx0, wy0, (wx0 + win).min(cx1), (wy0 + win).min(cy1));
-            // What part of the window is there to measure: its overlap with the
-            // boundary's box, or all of it.
-            let denominator = area(boundary.map_or(window, |b| intersect(window, b)));
+        .map(|&(i, j)| {
+            let ((wx0, ax), (wy0, ay)) = (xs[i], ys[j]);
+            let window = (wx0, wy0, (wx0 + win).min(bx1), (wy0 + win).min(by1));
+            let denominator = area(intersect(window, (bx0, by0, bx1, by1)));
             if denominator <= 0.0 {
                 return None;
             }
-            let density = coverage_dbu2(&maps, tile, window) / denominator * 100.0;
-            if !kind.broken_by(density, rule.value) {
-                return None;
-            }
+            let covered = if ax && ay && win % tile == 0 {
+                let (ix, iy) = (((wx0 / tile) - tx0) as usize, ((wy0 / tile) - ty0) as usize);
+                let n = (win / tile) as usize;
+                sum(ix, iy, (ix + n).min(nx), (iy + n).min(ny))
+            } else {
+                coverage_dbu2(&maps, tile, window)
+            };
+            let density = covered / denominator * 100.0;
+            kind.broken_by(density, rule.value)
+                .then_some((window, density))
+        })
+        .collect();
+    // Cluster the violating windows: neighbours on the origin grid that both violate
+    // are one violation.
+    let mut uf = crate::merge::UnionFind::new(cells.len());
+    for (k, &(i, j)) in cells.iter().enumerate() {
+        if readings[k].is_none() {
+            continue;
+        }
+        if i + 1 < xs.len() && readings[k + 1].is_some() {
+            uf.union(k, k + 1);
+        }
+        if j + 1 < ys.len() && readings[k + xs.len()].is_some() {
+            uf.union(k, k + xs.len());
+        }
+    }
+    let mut worst: HashMap<usize, (Box, f64)> = HashMap::new();
+    for (k, r) in readings.iter().enumerate() {
+        let Some((window, density)) = *r else {
+            continue;
+        };
+        let root = uf.find(k);
+        let e = worst.entry(root).or_insert((window, density));
+        let further = match kind {
+            Kind::Min => density < e.1,
+            Kind::Max => density > e.1,
+        };
+        if further {
+            *e = (window, density);
+        }
+    }
+    let rid = rule.id.as_str();
+    let mut found: Vec<(Box, f64)> = worst.into_values().collect();
+    found.sort_by(|a, b| a.0.cmp(&b.0));
+    found
+        .into_iter()
+        .map(|(window, density)| {
             let (ux0, uy0, ux1, uy1) = (
                 window.0 as f64 * dbu_to_um,
                 window.1 as f64 * dbu_to_um,
                 window.2 as f64 * dbu_to_um,
                 window.3 as f64 * dbu_to_um,
             );
-            Some(Violation::edge(
+            Violation::edge(
                 rid,
                 &format!("{} windowed density violation", kind.bound()),
                 format!(
-                    "windowed density {density:.2}% {} {:.2}% in tile ({ux0:.2}, {uy0:.2})-({ux1:.2}, {uy1:.2}) µm",
+                    "windowed density {density:.2}% {} {:.2}% in window ({ux0:.2}, {uy0:.2})-({ux1:.2}, {uy1:.2}) µm",
                     kind.cmp(),
                     rule.value
                 ),
@@ -315,7 +444,7 @@ pub fn run(
                 uy0,
                 ux1,
                 uy1,
-            ))
+            )
         })
         .collect()
 }

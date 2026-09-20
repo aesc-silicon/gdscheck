@@ -139,9 +139,11 @@ fn the_denominator_is_a_box_not_material() {
     assert!(v.is_empty());
 }
 
-/// A 100 µm die in 50 µm windows: four windows, A filling the lower-left one and half
-/// of the one above it.  A 60 % floor fails the three others; a 60 % cap fails the full
-/// one.  The stripe across the tile line at 20 µm is counted once.
+/// A 100 µm die in 50 µm windows sliding a tile at a time, A filling the lower-left
+/// quarter and half of the quarter above it.  A 60 % floor fails every window off the
+/// A, which overlap into one violation reported at the emptiest; a 60 % cap fails the
+/// windows on it, one violation at the full one.  The stripe across the tile line at
+/// 20 µm is counted once.
 #[test]
 fn windowed_density_reads_every_window() {
     let lay = layout(vec![
@@ -155,10 +157,8 @@ fn windowed_density_reads_every_window() {
         run(kind, &windowed(rule(&[A], value, &p)), &lay, DBU, m)
     };
     let v = go(Kind::Min, 60.0, &mut m);
-    assert_eq!(v.len(), 3, "{v:?}");
-    let mut ds: Vec<f64> = v.iter().map(density_of).collect();
-    ds.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    assert_eq!(ds, vec![0.0, 0.0, 50.0]);
+    assert_eq!(v.len(), 1, "{v:?}");
+    assert_eq!(density_of(&v[0]), 0.0);
     let v = go(Kind::Max, 60.0, &mut m);
     assert_eq!(v.len(), 1);
     assert_eq!(density_of(&v[0]), 100.0);
@@ -168,10 +168,10 @@ fn windowed_density_reads_every_window() {
     assert_eq!((x1, y1, x2, y2), (0.0, 0.0, 50.0, 50.0));
 }
 
-/// The grid starts at the chip's box, and a window is measured against its overlap
-/// with the boundary's box: a die 130 µm wide in 50 µm windows has a 30 µm third
-/// column, whose coverage is judged against 30 × 50 and not 50 × 50.  A window past the
-/// boundary altogether is skipped.
+/// The windows are laid over the boundary's box, one against its far edge, and none
+/// past it: a die 130 µm wide in 50 µm windows has windows at 0, 20, 40, 60 and 80
+/// and nothing over the island at 150.  Without a boundary the chip's box is the die,
+/// and the windows reach the island.
 #[test]
 fn a_partial_window_is_measured_against_what_is_there() {
     let lay = layout(vec![
@@ -189,9 +189,10 @@ fn a_partial_window_is_measured_against_what_is_there() {
         DBU,
         &mut m,
     );
-    // Three windows over the boundary, each 40 % - and none over the B island at 150.
-    assert_eq!(v.len(), 3, "{v:?}");
-    assert!(v.iter().all(|v| density_of(v) == 40.0), "{v:?}");
+    // Every window over the boundary is 40 %, one violation - and none over the B
+    // island at 150.
+    assert_eq!(v.len(), 1, "{v:?}");
+    assert_eq!(density_of(&v[0]), 40.0);
     let v = run(
         Kind::Min,
         &windowed(rule(&[A], 50.0, &[("window", 50.0)])),
@@ -199,11 +200,10 @@ fn a_partial_window_is_measured_against_what_is_there() {
         DBU,
         &mut m,
     );
-    // Without a boundary the third window is nominally 50 wide: 30 × 20 over 50 × 50 is
-    // 24 %; and the fourth, over the island, is empty of A.
-    let mut ds: Vec<f64> = v.iter().map(density_of).collect();
-    ds.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    assert_eq!(ds, vec![0.0, 24.0, 40.0, 40.0]);
+    // Without a boundary the die runs to 160 and the window against its far edge, at
+    // 110, holds 20 × 20 of A: 16 %, the worst of one violation.
+    assert_eq!(v.len(), 1, "{v:?}");
+    assert_eq!(density_of(&v[0]), 16.0);
 }
 
 /// A rule without a window, or with a boundary nobody drew, says so or falls back.
