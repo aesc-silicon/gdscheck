@@ -107,6 +107,16 @@ Parameters
    Optional. ``euclidian`` (the default) or ``square``, KLayout's L-infinity metric for a
    rule worded "must not fall within a d × d square at the corner".
 
+``abutting``
+   Optional. ``ignore`` (the default) or ``report``. Two shapes of the two layers drawn
+   edge to edge share a run of boundary and no gap; by default that is no violation,
+   as a butted tie is drawn edge to edge by design and the GF180 decks read every
+   abutment so. ``report`` reads it as a space of nothing: IHP's ``Cnt.e`` (Activ
+   against a gate contact), ``Cnt.f``, ``Cnt.g1`` and ``NW.d`` (external N+Activ at the
+   well edge) do, and IHP's KLayout deck reports the shared edge. A contact at an
+   isolated point - two shapes meeting corner to corner - is always a space of zero,
+   whatever the param.
+
 ``gap_outside``
    Optional layer param (under ``layer_params``). A pair whose whole gap - the segment
    between its two closest points - lies inside that layer is not reported. For a rule

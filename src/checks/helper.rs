@@ -38,6 +38,9 @@ pub struct SpaceMode {
     /// Measure how deeply the pair penetrates rather than how far apart it is - the
     /// same facing-edge scan run inward.  Implies `overlapping`.
     inward: bool,
+    /// Report two shapes of the two layers drawn edge to edge as a space of nothing.
+    /// Off, an abutment along a run is no gap; a contact at an isolated point always is.
+    abutting: bool,
 }
 
 /// A region's float outline, built the first time a reading asks for it: the spacing,
@@ -229,7 +232,8 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
                 match closest_approach(&a.outline, &b.outline, limit.dbu()) {
                     None => None,
                     Some((0, _, p, q)) => {
-                        if shaving || share_boundary_run(&a.outline, &b.outline) {
+                        if shaving || (!mode.abutting && share_boundary_run(&a.outline, &b.outline))
+                        {
                             None
                         } else {
                             Some((0.0, p, q))
@@ -307,6 +311,7 @@ pub fn run_overlap(
         overlapping: true,
         square: false,
         inward: true,
+        abutting: false,
     };
     run_gated_with(rule, layout, dbu_to_um, merged, Some(mode), |_, _, _, _| {
         true
@@ -381,10 +386,27 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
             false
         }
     };
+    // `abutting: report`: two shapes of the two layers drawn edge to edge are a space
+    // of nothing.  IHP's Cnt.e reads an Activ against a gate contact's own edge that
+    // way, and its KLayout deck reports the shared edge; the default leaves an
+    // abutment alone, since a butted tie is drawn edge to edge by design and the
+    // GF180 decks read every abutment as no gap.
+    let abutting = match rule.word("abutting") {
+        Some("report") => true,
+        Some("ignore") | None => false,
+        Some(other) => {
+            eprintln!(
+                "[{}] unknown abutting '{other}' — expected report or ignore;                  using ignore",
+                rule.id
+            );
+            false
+        }
+    };
     let mode = forced.unwrap_or(SpaceMode {
         overlapping: overlapping_pairs,
         square,
         inward: false,
+        abutting,
     });
     let tile = merged.tile_dbu() as i64;
     let rid = rule.id.as_str();
