@@ -8,8 +8,7 @@
 //! (M1-M4 + TopVia1 + TopMetal1); every shared rule is value-identical.  Instead of
 //! duplicating the SG13G2 fixture tree, the parity test below runs each shared deck
 //! on the *SG13G2* fixtures under both PDKs and requires identical results — this
-//! covers the whole shared rule set, including the CMOS5L cont fork, whose DigiBnd
-//! split must reduce to the SG13G2 behaviour on DigiBnd-free layouts.
+//! covers the whole shared rule set.
 //! Only the genuinely different rules get their own fixtures (see
 //! gen/ihp_sg13cmos5l).
 
@@ -32,8 +31,7 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
     ids
 }
 
-/// Decks shared with SG13G2 (same file, or the cont fork whose digital split is
-/// inert without DigiBnd).  Excluded because they genuinely differ:
+/// Decks shared with SG13G2 (the same files).  Excluded because they genuinely differ:
 /// forbidden, pad, passiv, topvia1, antenna.
 const SHARED_DECKS: &[&str] = &[
     "offgrid",
@@ -118,8 +116,8 @@ fn nw_b1_same_net() {
 // One shape on each of Metal5 / TRANS / nBuLay / MIM (§3.2 forbidden in CMOS5L).
 #[case::forbidden("forbidden.gds.gz", "forbidden", vec!["forbidden"; 4], vec![])]
 // Cnt.c relaxes from 0.07 to 0.05 inside a DigiBnd: 0.065 fires only outside,
-// 0.045 fires inside as Cnt.c.Digi.
-#[case::cnt_digi("cont/Cnt.c.digi.gds.gz", "cont", vec!["Cnt.c", "Cnt.c.Digi"], vec![])]
+// 0.045 fires inside as Cnt.c.dig.
+#[case::cnt_digi("cont/Cnt.c.digi.gds.gz", "cont", vec!["Cnt.c", "Cnt.c.dig"], vec![])]
 // NW.f1 relaxes from 0.62 to 0.24 inside a DigiBnd: gap 0.30 fires only outside,
 // 0.20 fires inside as NW.f1.dig.
 #[case::nw_f1_digi("nwell/NW.f1.digi.gds.gz", "nwell", vec!["NW.f1", "NW.f1.dig"], vec![])]

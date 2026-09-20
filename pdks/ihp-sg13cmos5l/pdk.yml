@@ -52,8 +52,8 @@ decks:
     path: ../ihp-sg13g2/decks/extblock.yml
     description: EXTBlock
   - name: cont
-    path: decks/cont.yml
-    description: Contacts (Cnt.c split by DigiBnd)
+    path: ../ihp-sg13g2/decks/cont.yml
+    description: Contacts
   - name: contbar
     path: ../ihp-sg13g2/decks/contbar.yml
     description: Contact bars
@@ -149,11 +149,3 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [dfpad, TopMetal1]
-  - name: ContOnActivAna
-    op: not_overlapping
-    mode: lazy
-    layers: [ContOnActivNoSRAM, DigiBnd]
-  - name: ContOnActivDig
-    op: overlapping
-    mode: lazy
-    layers: [ContOnActivNoSRAM, DigiBnd]

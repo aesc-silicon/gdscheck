@@ -39,18 +39,20 @@ rules:
     check: min_space
     layers: [NWellNoSRAM, NActExtNoTGO]
     value: 0.31
-  - id: NW.d
-    check: forbidden
-    layers: [NActExtAtNWell]
-    value: 0.0
+    params:
+      abutting: report
   - id: NW.d1
     check: min_space
     layers: [NWellNoSRAM, NActExtTGOAna]
     value: 0.62
+    params:
+      abutting: report
   - id: NW.d1.dig
     check: min_space
     layers: [NWellNoSRAM, NActExtTGODig]
     value: 0.31
+    params:
+      abutting: report
   - id: NW.e
     check: min_enclosure
     layers: [NWell, NWellTieNoTGO]
