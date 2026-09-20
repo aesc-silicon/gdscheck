@@ -138,12 +138,12 @@ fn cont_at(pdk: &PdkConfig, x: f64, y: f64, m: f64) -> Vec<GdsElement> {
 /// Cnt.c split by DigiBnd (0.07 analog / 0.05 digital):
 /// - margin 0.065 outside the DigiBnd → Cnt.c fires;
 /// - margin 0.065 inside → clean (only 0.05 applies there);
-/// - margin 0.045 inside → Cnt.c.Digi fires.
+/// - margin 0.045 inside → Cnt.c.dig fires.
 fn cnt_digi(pdk: &PdkConfig) {
     let o = OFFSET;
     let mut elems = cont_at(pdk, o, o, 0.065); // analog → Cnt.c
     elems.extend(cont_at(pdk, o + 10.0, o, 0.065)); // digital, relaxed → clean
-    elems.extend(cont_at(pdk, o + 14.0, o, 0.045)); // digital → Cnt.c.Digi
+    elems.extend(cont_at(pdk, o + 14.0, o, 0.045)); // digital → Cnt.c.dig
     elems.push(rect(
         layer(pdk, "DigiBnd"),
         o + 8.0,

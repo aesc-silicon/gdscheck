@@ -288,10 +288,20 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [ContOnActiv, SRAM]
+  # Cnt.c: 0.07 in the analog flow, 0.05 inside DigiBnd (section 8.1.2).
+  - name: ContOnActivAna
+    op: not_overlapping
+    mode: lazy
+    layers: [ContOnActivNoSRAM, DigiBnd]
+  - name: ContOnActivDig
+    op: overlapping
+    mode: lazy
+    layers: [ContOnActivNoSRAM, DigiBnd]
+  # Cnt.g1: the Cont on N+Activ, N+ by drawn nSD or by default (section 4.2).
   - name: ContOnNsdActiv
     op: intersection
     mode: lazy
-    layers: [ContSquare, Activ, nSD]
+    layers: [ContSquare, NActFull]
   - name: ContOnPsdActiv
     op: intersection
     mode: lazy
@@ -444,12 +454,6 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [NActExtTGO, DigiBnd]
-  # External N+Activ meeting the well - a shape crossing the well edge, or abutting it -
-  # is at a distance of nothing, which a space check reads as no pair at all.
-  - name: NActExtAtNWell
-    op: interacting
-    mode: lazy
-    layers: [NActExt, NWellNoSRAM]
   - name: ActivInNWell
     op: intersection
     mode: lazy

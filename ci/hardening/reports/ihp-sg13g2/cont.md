@@ -25,6 +25,24 @@ size in any layout, and every flat/array pair agreed.
 Test status on the engine as of this report: 10 of the 64 new cases fail, all on the
 findings below; the other 54 pass.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 2 (a via array is the vias within the value of each other, linked at the
+value rather than under it, and violates under `axes: 1` only when it is tight in both
+directions - a row pair and a column pair under the value, corner to corner counting, so
+the staggered array stays one; the legal 0.18/0.20 array stays clean); 4 (`abutting:
+report`, a new `min_space` param: the shared edge is a space of nothing; set on Cnt.e,
+Cnt.f, Cnt.g1 and, in place of a forbidden entry, the nwell deck's NW.d/d1/d1.dig - the
+default stays as it was, since the GF180 decks read every abutment as no gap and
+twenty-three of their fixtures say so).  Fixed, deck: 1 (Cnt.c.dig at 0.05; the
+ihp-sg13cmos5l fork of the deck is gone, it shares this one), 5 (`ContOnNsdActiv` is
+the Cont on `NActFull`, N+ by drawn nSD or by default).
+
+Cases flipped to KLayout's reading: 3 (the 5 × 5 missing its centre has a row of two
+runs of two and is no array of five to either tool) and 6 (two squares corner to corner
+merge into one non-square Cont, the contbar deck's; KLayout lets the pair through, the
+case expects one Cnt.b).
+
 ## Findings
 
 ### 1. Cnt.c has no DigiBnd variant, and section 8.1.2 is not in the deck (false positive; rule missing)

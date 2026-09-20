@@ -20,8 +20,12 @@ rules:
       cols: 4
   - id: Cnt.c
     check: min_enclosure
-    layers: [Activ, ContOnActivNoSRAM]
+    layers: [Activ, ContOnActivAna]
     value: 0.07
+  - id: Cnt.c.dig
+    check: min_enclosure
+    layers: [Activ, ContOnActivDig]
+    value: 0.05
   - id: Cnt.d
     check: min_enclosure
     layers: [GatPoly, ContOnGatPoly]
@@ -30,10 +34,14 @@ rules:
     check: min_space
     layers: [ContOnGatPoly, Activ]
     value: 0.14
+    params:
+      abutting: report
   - id: Cnt.f
     check: min_space
     layers: [ContOnActiv, GatPoly]
     value: 0.11
+    params:
+      abutting: report
   - id: Cnt.g
     check: forbidden
     layers: [ContSquare, Activ, GatPoly]
@@ -44,6 +52,8 @@ rules:
     check: min_space
     layers: [pSD, ContOnNsdActiv]
     value: 0.09
+    params:
+      abutting: report
   - id: Cnt.g2
     check: min_enclosure
     layers: [pSD, ContOnPsdActiv]

@@ -164,15 +164,19 @@ const DECK_CNT: &str = "cont";
 // Fifty 0.175 pairs, flat and as a GdsArrayRef.
 #[case::cnt_b_h3("cont/Cnt.b.h3.gds.gz", "TOP", vec!["Cnt.b"; 50], vec![])]
 #[case::cnt_b_h4("cont/Cnt.b.h4.gds.gz", "TOP", vec!["Cnt.b"; 50], vec![])]
-// Two squares touching at a corner are 0 apart (Cnt.b); a 0.155 square 0.175 from a 0.16
-// one is Cnt.b and four Cnt.a; a square 0.175 from a bar is CntB.b2's (report, finding 6).
-#[case::cnt_b_h5("cont/Cnt.b.h5.gds.gz", "TOP", vec!["Cnt.a", "Cnt.a", "Cnt.a", "Cnt.a", "Cnt.b", "Cnt.b"], vec![])]
+// Two squares touching at a corner merge into one non-square Cont, which is the contbar
+// deck's (CntB.a, CntB.a1, CntB.b) and not Cnt.b's - KLayout lets the pair through
+// altogether; a 0.155 square 0.175 from a 0.16 one is Cnt.b and four Cnt.a; a square
+// 0.175 from a bar is CntB.b2's (report, finding 6).
+#[case::cnt_b_h5("cont/Cnt.b.h5.gds.gz", "TOP", vec!["Cnt.a", "Cnt.a", "Cnt.a", "Cnt.a", "Cnt.b"], vec![])]
 // 5 × 5 at 0.18/0.18 and at 0.195/0.195 fire; 5 × 5 with 0.20 in one direction, 4 × 5,
 // 5 × 4 and 4 × 4 at 0.18 are clean.
 #[case::cnt_b1_h1("cont/Cnt.b1.h1.gds.gz", "TOP", vec!["Cnt.b1"; 2], vec![])]
-// 6 × 6, 5 × 10, a 5 × 5 missing its centre, a 5 × 5 whose row gaps alternate 0.18/0.20,
-// a staggered 5 × 5 and a 5 × 5 drawn as a 3- and a 2-column block (report, findings 2, 3).
-#[case::cnt_b1_h2("cont/Cnt.b1.h2.gds.gz", "TOP", vec!["Cnt.b1"; 6], vec![])]
+// 6 × 6, 5 × 10, a 5 × 5 whose row gaps alternate 0.18/0.20 (no direction relaxed
+// throughout), a staggered 5 × 5 (0.1803 corner to corner between rows) and a 5 × 5
+// drawn as a 3- and a 2-column block fire; a 5 × 5 missing its centre has a row of two
+// runs of two and is no array of five, as KLayout has it (report, findings 2, 3).
+#[case::cnt_b1_h2("cont/Cnt.b1.h2.gds.gz", "TOP", vec!["Cnt.b1"; 5], vec![])]
 // 5 × 5 arrays at 0.18 well inside a tile, straddling x = 20/21/40/42/14, the corner
 // (20, 20), and at (1000, 1000).
 #[case::cnt_b1_h3("cont/Cnt.b1.h3.gds.gz", "TOP", vec!["Cnt.b1"; 8], vec![])]
