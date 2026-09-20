@@ -35,6 +35,12 @@ two: ``layers[0]`` the container, ``layers[1]`` the contained layer.
 Parameters
 ----------
 
+``touching``
+   Optional, with ``scope: region``. ``joined`` (the default): two shapes meeting at
+   one point are one region, as KLayout merges them. ``separate``: they are two, each
+   with its own area - a point joins no material, and IHP's area rules read it so
+   (KLayout's ``min_coherence``).
+
 ``scope``
    Optional. What the area is summed over.
 
