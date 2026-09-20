@@ -72,6 +72,7 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
     name_b: &str,
     mode: SpaceMode,
     gate: &G,
+    gap_outside: Option<&[MergedPoly]>,
 ) -> Vec<Violation> {
     let half = dbu_to_um * 0.5;
     // The bound on the grid: a minimum rounds up, and every gap is then an integer
@@ -253,6 +254,18 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
             if !gate(&a.outline, &b.outline, a.marker, b.marker) {
                 continue;
             }
+            // A gap lying wholly in the `gap_outside` layer is not the rule's: NW.b1 is
+            // the width of PWell between two wells, and under a PWell block there is no
+            // PWell to be too narrow.
+            if let Some(polys) = gap_outside
+                && covered_by(
+                    (ax / dbu_to_um, ay / dbu_to_um),
+                    (bx / dbu_to_um, by / dbu_to_um),
+                    polys,
+                )
+            {
+                continue;
+            }
             // Own the violation by the gap midpoint; mark the gap itself.
             let mx = (ax + bx) * 0.5;
             let my = (ay + by) * 0.5;
@@ -379,6 +392,16 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
     let name_b = layer_b.name.as_str();
     let kin_a = merged.kin(al, ad, false);
     let kin_b = (!same_layer).then(|| merged.kin(bl, bd, false));
+    // `gap_outside`, a layer param: a pair whose whole gap lies in that layer is not
+    // reported.  Ensured at the rule's reach, as every layer the rule names is.
+    let gap_key = rule.num("gap_outside").map(|l| {
+        let dt = rule.num("gap_outside_dt").unwrap_or(0.0);
+        (l as i16, dt as i16)
+    });
+    if let Some((gl, gd)) = gap_key {
+        merged.ensure(layout, gl, gd);
+    }
+    let gap_map = gap_key.map(|(gl, gd)| merged.tiles(gl, gd));
     let map_a = merged.tiles(al, ad);
     let map_b = if same_layer {
         map_a
@@ -402,13 +425,49 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
             };
             let a_polys = &map_a[&(tx, ty)];
             let b_polys = map_b.get(&(tx, ty)).unwrap_or(&empty);
+            let gap_polys = gap_map.map(|m| m.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]));
             check_tile(
                 a_polys, b_polys, same_layer, &kin, core, value, dbu_to_um, rid, name_a, name_b,
-                mode, &gate,
+                mode, &gate, gap_polys,
             )
             .into_iter()
         })
         .collect()
+}
+
+/// Whether the segment `p`-`q` (DBU) lies wholly inside the merged polygons: cut at
+/// every crossing of a polygon edge, and every piece's midpoint inside one of them.
+fn covered_by(p: (f64, f64), q: (f64, f64), polys: &[MergedPoly]) -> bool {
+    let (dx, dy) = (q.0 - p.0, q.1 - p.1);
+    let mut ts: Vec<f64> = vec![0.0, 1.0];
+    for m in polys {
+        for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+            let n = ring.len();
+            for i in 0..n {
+                let (a, b) = (ring[i], ring[(i + 1) % n]);
+                let (ex, ey) = (b.x as f64 - a.x as f64, b.y as f64 - a.y as f64);
+                let den = dx * ey - dy * ex;
+                if den == 0.0 {
+                    continue; // parallel: no crossing, and along it the pieces decide
+                }
+                let (wx, wy) = (a.x as f64 - p.0, a.y as f64 - p.1);
+                let t = (wx * ey - wy * ex) / den;
+                let u = (wx * dy - wy * dx) / den;
+                if (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u) {
+                    ts.push(t);
+                }
+            }
+        }
+    }
+    ts.sort_by(|a, b| a.total_cmp(b));
+    ts.windows(2).all(|w| {
+        if w[1] - w[0] <= 0.0 {
+            return true;
+        }
+        let t = (w[0] + w[1]) * 0.5;
+        let (x, y) = (p.0 + dx * t, p.1 + dy * t);
+        polys.iter().any(|m| crate::merge::point_in_merged(x, y, m))
+    })
 }
 
 /// The regions of the two layers of a spacing rule, and which of them share area:
