@@ -95,7 +95,12 @@ Parameters
    run of a wide enough line, ``length`` alone any line running parallel long enough.
    Both are measured on the facing edges, not the bounding boxes — an L-shaped or
    stepped pad's box can look wide, or overlap a neighbour for tens of microns, while the
-   metal actually running alongside is narrow or short.
+   metal actually running alongside is narrow or short. The run is one facing pair's, as
+   KLayout's projection: a wall stepped or nicked mid-way is two walls with two runs.
+   The depth is read along the wall, stretch by stretch, so a 0.2 µm line carrying a
+   0.5 µm part on its far side is wide along that part, whichever side the part is on.
+   A run longer than the tile is read on the pair's regions assembled out to
+   ``value + length + width`` around the gap, so the answer does not depend on the tile.
 
 ``pairs``
    Optional. ``disjoint`` (the default) measures pairs that share no area at their

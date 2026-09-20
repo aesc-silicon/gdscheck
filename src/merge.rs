@@ -4406,6 +4406,15 @@ fn assemble(
     }
 }
 
+/// The union of a few polygons, as [`assemble`] joins the cores' pieces.
+pub fn union_pieces(block: Vec<MergedPoly>) -> Vec<MergedPoly> {
+    if block.len() <= 1 {
+        block
+    } else {
+        shapes_to_merged(tile_shapes(&block).simplify_shape(FillRule::NonZero))
+    }
+}
+
 /// A region's holes as filled polygons.  Hole contours are stored clockwise (see
 /// [`MergedPoly`]); reversed to CCW so downstream ops see solid regions.
 fn holes_of(m: &MergedPoly) -> Vec<MergedPoly> {

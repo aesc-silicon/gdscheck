@@ -62,12 +62,13 @@ impl LazyPoly<'_> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
+fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
     a_polys: &'a [MergedPoly],
     b_polys: &'a [MergedPoly],
     same_layer: bool,
     kin: &Kin,
     core: Core,
+    zone: Zone,
     value: f64,
     dbu_to_um: f64,
     rule_id: &str,
@@ -99,11 +100,14 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
         lazy: LazyPoly<'a>,
         marker: Marker,
         material: bool,
+        /// Its index in the tile's list, which is how the kinship index files it.
+        index: usize,
     }
     let prep = |ms: &'a [MergedPoly]| -> Vec<Side<'a>> {
         ms.iter()
-            .filter(|m| m.outer.len() >= 3)
-            .map(|m| Side {
+            .enumerate()
+            .filter(|(_, m)| m.outer.len() >= 3)
+            .map(|(index, m)| Side {
                 outline: Outline::new(m),
                 lazy: LazyPoly {
                     m,
@@ -112,9 +116,15 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
                 },
                 marker: representative_point(m),
                 material: crate::merge::merged_area_dbu(m) >= SHAVING_DBU2,
+                index,
             })
             .collect()
     };
+    let tile_key = (
+        core.x0.div_euclid(kin.tile as i64) as i32,
+        core.y0.div_euclid(kin.tile as i64) as i32,
+    );
+    let assembled: Assembled = std::cell::RefCell::new(HashMap::new());
     let sa = prep(a_polys);
     let sb = if same_layer {
         Vec::new()
@@ -255,7 +265,16 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker) -> bool>(
             let Some((min_dist, (ax, ay), (bx, by))) = found else {
                 continue;
             };
-            if !gate(&a.outline, &b.outline, a.marker, b.marker) {
+            let ctx = RunCtx {
+                zone,
+                kin,
+                tile: tile_key,
+                same_layer,
+                ia: a.index,
+                ib: b.index,
+                cache: &assembled,
+            };
+            if !gate(&a.outline, &b.outline, a.marker, b.marker, &ctx) {
                 continue;
             }
             // A gap lying wholly in the `gap_outside` layer is not the rule's: NW.b1 is
@@ -313,12 +332,17 @@ pub fn run_overlap(
         inward: true,
         abutting: false,
     };
-    run_gated_with(rule, layout, dbu_to_um, merged, Some(mode), |_, _, _, _| {
-        true
-    })
+    run_gated_with(
+        rule,
+        layout,
+        dbu_to_um,
+        merged,
+        Some(mode),
+        |_, _, _, _, _: &RunCtx| true,
+    )
 }
 
-pub fn run_gated<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
+pub fn run_gated<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
@@ -329,7 +353,7 @@ pub fn run_gated<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
 }
 
 /// `forced` overrides what the `pairs` param would say, for a check that *is* a mode.
-fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
+fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + Sync>(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
@@ -424,6 +448,11 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
         merged.ensure(layout, gl, gd);
     }
     let gap_map = gap_key.map(|(gl, gd)| merged.tiles(gl, gd));
+    // The zone a tile's copies are exact in: its core grown by the layers' halo.  A
+    // copy is the whole shape, but past the zone it may be wrong - a difference layer
+    // built in the tile has its subtrahend only within reach - so a gate reading along
+    // the walls reads within the zone alone.
+    let zone_halo = merged.halo_dbu(al, ad).min(merged.halo_dbu(bl, bd)) as i64;
     let map_a = merged.tiles(al, ad);
     let map_b = if same_layer {
         map_a
@@ -448,9 +477,15 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker) -> bool + Sync>(
             let a_polys = &map_a[&(tx, ty)];
             let b_polys = map_b.get(&(tx, ty)).unwrap_or(&empty);
             let gap_polys = gap_map.map(|m| m.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]));
+            let zone = (
+                core.x0 - zone_halo,
+                core.y0 - zone_halo,
+                core.x1 + zone_halo,
+                core.y1 + zone_halo,
+            );
             check_tile(
-                a_polys, b_polys, same_layer, &kin, core, value, dbu_to_um, rid, name_a, name_b,
-                mode, &gate, gap_polys,
+                a_polys, b_polys, same_layer, &kin, core, zone, value, dbu_to_um, rid, name_a,
+                name_b, mode, &gate, gap_polys,
             )
             .into_iter()
         })
@@ -490,6 +525,141 @@ fn covered_by(p: (f64, f64), q: (f64, f64), polys: &[MergedPoly]) -> bool {
         let (x, y) = (p.0 + dx * t, p.1 + dy * t);
         polys.iter().any(|m| crate::merge::point_in_merged(x, y, m))
     })
+}
+
+/// A region assembled within a box, shared by every pair that asks for it.
+pub type Within = Option<Arc<Vec<MergedPoly>>>;
+/// The regions assembled for a tile's gates, by side, copy and box.
+type Assembled = std::cell::RefCell<HashMap<(bool, usize, Zone), Arc<Vec<MergedPoly>>>>;
+
+/// What a gate reading along the walls of a pair gets besides the pair: the zone the
+/// tile's copies are exact in, and the pair's regions assembled past it on request.
+pub struct RunCtx<'c> {
+    /// The tile's core grown by the layers' halo: a copy is exact within it, and the
+    /// merged region it is a piece of may be missing shapes beyond it.
+    pub zone: Zone,
+    kin: &'c Kin<'c>,
+    tile: (i32, i32),
+    same_layer: bool,
+    ia: usize,
+    ib: usize,
+    cache: &'c Assembled,
+}
+
+impl RunCtx<'_> {
+    /// Whether a copy's box reaches the zone's edge: past it the region it belongs to
+    /// may carry on, unseen by this tile.
+    pub fn cut(&self, o: &Outline) -> bool {
+        let (x0, y0, x1, y1) = o.bbox;
+        x0 <= self.zone.0 || y0 <= self.zone.1 || x1 >= self.zone.2 || y1 >= self.zone.3
+    }
+
+    /// The pair's regions within `bx`, assembled from the cores of every tile the box
+    /// touches - exact in the box, cut at its edge - for a reading the zone cut short:
+    /// a run of 50 µm read in a 20 µm tile.  `None` for a copy lying whole inside the
+    /// core, which the tile sees entire.  Cached per copy and box, since a long line
+    /// has many pairs.
+    pub fn within(&self, bx: Zone) -> (Within, Within) {
+        let get = |side_b: bool, idx: usize| -> Within {
+            let key = (side_b, idx, bx);
+            if let Some(v) = self.cache.borrow().get(&key) {
+                return Some(v.clone());
+            }
+            let l = if side_b && !self.same_layer {
+                self.kin.b.as_ref()?
+            } else {
+                &self.kin.a
+            };
+            let polys = region_within(l, self.kin.tile, self.tile, idx, bx)?;
+            let v = Arc::new(polys);
+            self.cache.borrow_mut().insert(key, v.clone());
+            Some(v)
+        };
+        (get(false, self.ia), get(true, self.ib))
+    }
+}
+
+/// The region the `idx`-th polygon of tile `key` is a piece of, within `bx`: the
+/// region's pieces in every tile the box touches, each cut to its core and the box,
+/// unioned.  `None` when the polygon is not filed - a shape whole inside the core.
+fn region_within(
+    l: &Labeled,
+    tile: i32,
+    key: (i32, i32),
+    idx: usize,
+    bx: Zone,
+) -> Option<Vec<MergedPoly>> {
+    let t = tile as i64;
+    let (x0, y0, x1, y1) = bx;
+    let filed = l
+        .regions
+        .by_tile
+        .get(&key)
+        .and_then(|ps| ps.iter().find(|&&(i, _)| i == idx).map(|&(_, r)| r));
+    let region = match filed {
+        Some(r) => r,
+        None => {
+            // A copy with no core part here - a shape in the halo - is filed by the
+            // tile a point of it lies in, or is whole inside that tile's core, exact
+            // there as it is.
+            let m = &l.map[&key][idx];
+            let (px, py) = crate::merge::inside_point(m);
+            let k2 = (
+                (px / t as f64).floor() as i32,
+                (py / t as f64).floor() as i32,
+            );
+            let polys = l.map.get(&k2)?;
+            let hit = l.regions.by_tile.get(&k2).and_then(|pieces| {
+                l.grids
+                    .get(&k2)?
+                    .at(px.round() as i32, py.round() as i32)
+                    .iter()
+                    .map(|&h| pieces[h as usize])
+                    .find(|&(i, _)| crate::merge::point_in_merged(px, py, &polys[i]))
+                    .map(|(_, r)| r)
+            });
+            match hit {
+                Some(r) => r,
+                None => {
+                    let whole = polys
+                        .iter()
+                        .find(|p| crate::merge::point_in_merged(px, py, p))?;
+                    return Some(crate::merge::clip_to_box(
+                        vec![whole.clone()],
+                        x0,
+                        y0,
+                        x1,
+                        y1,
+                    ));
+                }
+            }
+        }
+    };
+    let mut block: Vec<MergedPoly> = Vec::new();
+    for ty in y0.div_euclid(t)..=(y1.max(y0 + 1) - 1).div_euclid(t) {
+        for tx in x0.div_euclid(t)..=(x1.max(x0 + 1) - 1).div_euclid(t) {
+            let k = (tx as i32, ty as i32);
+            let Some(pieces) = l.regions.by_tile.get(&k) else {
+                continue;
+            };
+            let polys = &l.map[&k];
+            let (cx0, cy0) = (tx * t, ty * t);
+            let (cx1, cy1) = (cx0 + t, cy0 + t);
+            let own: Vec<MergedPoly> = pieces
+                .iter()
+                .filter(|&&(_, r)| r == region)
+                .map(|&(i, _)| polys[i].clone())
+                .collect();
+            block.extend(crate::merge::clip_to_box(
+                own,
+                cx0.max(x0),
+                cy0.max(y0),
+                cx1.min(x1),
+                cy1.min(y1),
+            ));
+        }
+    }
+    Some(crate::merge::union_pieces(block))
 }
 
 /// The regions of the two layers of a spacing rule, and which of them share area:
