@@ -142,6 +142,181 @@ const DECK_CNT: &str = "cont";
 #[case::cnt_g2("cont/Cnt.g2.gds.gz", "TOP", vec!["Cnt.g2"], vec!["Cnt.d", "Cnt.h"])]
 #[case::cnt_h("cont/Cnt.h.gds.gz", "TOP", vec!["Cnt.h"], vec!["Cnt.c", "Cnt.d", "Cnt.g"])]
 #[case::cnt_j("cont/Cnt.j.gds.gz", "TOP", vec!["Cnt.j"], vec!["Cnt.c", "Cnt.h"])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/cont.md.  Every layout
+// carries Activ/GatPoly and Metal1 under its Conts where the rule under test does not
+// need them bare, so no case ignores a rule.  Cnt.a counts four walls per off-size
+// square; an enclosure rule counts one marker per under-enclosed Cont (its violating
+// walls are one connected run); a space rule one per pair.
+// A 0.16 square drawn six ways is clean; a clockwise 0.155, a 0.155 and a 0.165 square
+// fail four walls each; a 0.16 × 0.165 rectangle and a notched square are ContBars.
+#[case::cnt_a_h1("cont/Cnt.a.h1.gds.gz", "TOP", vec!["Cnt.a"; 12], vec![])]
+// 0.155 squares straddling x = 20/21/40/42, y = 20, ending on x = 20 and at (1000, 1000).
+#[case::cnt_a_h2("cont/Cnt.a.h2.gds.gz", "TOP", vec!["Cnt.a"; 28], vec![])]
+// Fifty 0.155 squares, flat and as a GdsArrayRef.
+#[case::cnt_a_h3("cont/Cnt.a.h3.gds.gz", "TOP", vec!["Cnt.a"; 200], vec![])]
+#[case::cnt_a_h4("cont/Cnt.a.h4.gds.gz", "TOP", vec!["Cnt.a"; 200], vec![])]
+// 0.175 in x, in y, 0.177 corner to corner, and a row of three (two pairs); 0.18, 0.184
+// diagonal and 0.10/0.15 (0.180 euclidian) are clean.
+#[case::cnt_b_h1("cont/Cnt.b.h1.gds.gz", "TOP", vec!["Cnt.b"; 5], vec![])]
+// 0.175 gaps straddling, starting on and ending on the tile lines, and at (1000, 1000).
+#[case::cnt_b_h2("cont/Cnt.b.h2.gds.gz", "TOP", vec!["Cnt.b"; 9], vec![])]
+// Fifty 0.175 pairs, flat and as a GdsArrayRef.
+#[case::cnt_b_h3("cont/Cnt.b.h3.gds.gz", "TOP", vec!["Cnt.b"; 50], vec![])]
+#[case::cnt_b_h4("cont/Cnt.b.h4.gds.gz", "TOP", vec!["Cnt.b"; 50], vec![])]
+// Two squares touching at a corner are 0 apart (Cnt.b); a 0.155 square 0.175 from a 0.16
+// one is Cnt.b and four Cnt.a; a square 0.175 from a bar is CntB.b2's (report, finding 6).
+#[case::cnt_b_h5("cont/Cnt.b.h5.gds.gz", "TOP", vec!["Cnt.a", "Cnt.a", "Cnt.a", "Cnt.a", "Cnt.b", "Cnt.b"], vec![])]
+// 5 × 5 at 0.18/0.18 and at 0.195/0.195 fire; 5 × 5 with 0.20 in one direction, 4 × 5,
+// 5 × 4 and 4 × 4 at 0.18 are clean.
+#[case::cnt_b1_h1("cont/Cnt.b1.h1.gds.gz", "TOP", vec!["Cnt.b1"; 2], vec![])]
+// 6 × 6, 5 × 10, a 5 × 5 missing its centre, a 5 × 5 whose row gaps alternate 0.18/0.20,
+// a staggered 5 × 5 and a 5 × 5 drawn as a 3- and a 2-column block (report, findings 2, 3).
+#[case::cnt_b1_h2("cont/Cnt.b1.h2.gds.gz", "TOP", vec!["Cnt.b1"; 6], vec![])]
+// 5 × 5 arrays at 0.18 well inside a tile, straddling x = 20/21/40/42/14, the corner
+// (20, 20), and at (1000, 1000).
+#[case::cnt_b1_h3("cont/Cnt.b1.h3.gds.gz", "TOP", vec!["Cnt.b1"; 8], vec![])]
+// Fifty 5 × 5 arrays at 0.18, flat and as a GdsArrayRef of a cell holding one array.
+#[case::cnt_b1_h4("cont/Cnt.b1.h4.gds.gz", "TOP", vec!["Cnt.b1"; 50], vec![])]
+#[case::cnt_b1_h5("cont/Cnt.b1.h5.gds.gz", "TOP", vec!["Cnt.b1"; 50], vec![])]
+// A 5 × 5 as a GdsArrayRef of a one-Cont cell at 0.18 gaps fires; a flat 5 × 5 at 0.175
+// both ways is Cnt.b1 and forty Cnt.b; a 5 × 5 with 0.20 in x is clean.
+#[case::cnt_b1_h6("cont/Cnt.b1.h6.gds.gz", "TOP",
+    [vec!["Cnt.b1"; 2], vec!["Cnt.b"; 40]].concat(), vec![])]
+// Activ margins: 0.07 clean; 0.065 right, 0.065 all round, 0.065 right and top, 0.005,
+// 0 (Cont edge on the Activ edge) fire once each; a Cont 0.05 past the edge is Cnt.c
+// and Cnt.g.
+#[case::cnt_c_h1("cont/Cnt.c.h1.gds.gz", "TOP", vec!["Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c", "Cnt.g"], vec![])]
+// A chamfer and a 45° wall passing 0.064 from the Cont's corner with both axis margins
+// fine: clean by the settled projection reading (report, note B).
+#[case::cnt_c_h2("cont/Cnt.c.h2.gds.gz", "TOP", vec![], vec![])]
+// Unions (abutting, overlapping, a 4 × 4 grid) enclose by their union; a union with
+// 0.065, an Activ drawn twice with 0.065 (once) and a ring wall 0.065 from its hole fire.
+#[case::cnt_c_h3("cont/Cnt.c.h3.gds.gz", "TOP", vec!["Cnt.c"; 3], vec![])]
+// 0.065 margins straddling, ending on and beginning on the tile lines; 0.07 across x = 20 is clean.
+#[case::cnt_c_h4("cont/Cnt.c.h4.gds.gz", "TOP", vec!["Cnt.c"; 8], vec![])]
+// Fifty Conts with 0.065 on the right, flat and as a GdsArrayRef.
+#[case::cnt_c_h5("cont/Cnt.c.h5.gds.gz", "TOP", vec!["Cnt.c"; 50], vec![])]
+#[case::cnt_c_h6("cont/Cnt.c.h6.gds.gz", "TOP", vec!["Cnt.c"; 50], vec![])]
+// Three Conts on a 300 µm strip 0.065 top and bottom (two walls each), one at (1000, 1000).
+#[case::cnt_c_h7("cont/Cnt.c.h7.gds.gz", "TOP", vec!["Cnt.c"; 7], vec![])]
+// Section 8.1.2: under DigiBnd 0.05 is the value - 0.045 fires the digital variant (twice:
+// once inside a tile, once straddling x = 40), 0.05 and 0.065 are clean; 0.065 outside
+// DigiBnd and in a DigiBnd frame's hole fire Cnt.c; the DigiBnd edge through the Activ
+// or through the Cont, and a DigiBnd inside the Cont, are digital and clean (finding 1).
+#[case::cnt_c_h8("cont/Cnt.c.h8.gds.gz", "TOP", vec!["Cnt.c", "Cnt.c", "Cnt.c.dig", "Cnt.c.dig"], vec![])]
+// GatPoly margins, as Cnt.c.h1.
+#[case::cnt_d_h1("cont/Cnt.d.h1.gds.gz", "TOP", vec!["Cnt.d", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.g"], vec![])]
+// 45° cuts of the GatPoly near the Cont's corner: clean by the settled projection reading.
+#[case::cnt_d_h2("cont/Cnt.d.h2.gds.gz", "TOP", vec![], vec![])]
+// Merged GatPoly, as Cnt.c.h3.
+#[case::cnt_d_h3("cont/Cnt.d.h3.gds.gz", "TOP", vec!["Cnt.d"; 3], vec![])]
+// Tile lines, as Cnt.c.h4.
+#[case::cnt_d_h4("cont/Cnt.d.h4.gds.gz", "TOP", vec!["Cnt.d"; 8], vec![])]
+// Fifty Conts with 0.065 of GatPoly on the right, flat and as a GdsArrayRef.
+#[case::cnt_d_h5("cont/Cnt.d.h5.gds.gz", "TOP", vec!["Cnt.d"; 50], vec![])]
+#[case::cnt_d_h6("cont/Cnt.d.h6.gds.gz", "TOP", vec!["Cnt.d"; 50], vec![])]
+// 300 µm GatPoly strips and (1000, 1000), as Cnt.c.h7.
+#[case::cnt_d_h7("cont/Cnt.d.h7.gds.gz", "TOP", vec!["Cnt.d"; 7], vec![])]
+// A gate contact with 0.065 of poly is Cnt.d and Cnt.j; a Cont straddling the seam of an
+// abutting GatPoly and Activ is enclosed by neither (Cnt.d, Cnt.c) and 0 from each
+// (Cnt.e, Cnt.f), covered by their union (no Cnt.g), overlapping nothing (no Cnt.j); a
+// Cont half on poly and half on nothing is Cnt.d and Cnt.g (finding 4).
+#[case::cnt_d_h8("cont/Cnt.d.h8.gds.gz", "TOP",
+    vec!["Cnt.c", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.e", "Cnt.f", "Cnt.g", "Cnt.j"], vec![])]
+// Activ 0.135 from a gate contact, 0.134 corner to corner, 0.134 corner to a 45° wall,
+// abutting (0: finding 4), the gate's own Activ at 0.135, and Activ 0.135 on both sides
+// (two); 0.14, 0.141 diagonal, 0.144 (0.12 in the axis), the 0.141 wall and 0.22 are clean.
+#[case::cnt_e_h1("cont/Cnt.e.h1.gds.gz", "TOP", vec!["Cnt.e"; 7], vec![])]
+// 0.135 gaps straddling x = 20 four ways, x = 21/40/42/14 and y = 20; 0.14 across x = 20 is clean.
+#[case::cnt_e_h2("cont/Cnt.e.h2.gds.gz", "TOP", vec!["Cnt.e"; 9], vec![])]
+// Fifty gate contacts 0.135 from Activ, flat and as a GdsArrayRef.
+#[case::cnt_e_h3("cont/Cnt.e.h3.gds.gz", "TOP", vec!["Cnt.e"; 50], vec![])]
+#[case::cnt_e_h4("cont/Cnt.e.h4.gds.gz", "TOP", vec!["Cnt.e"; 50], vec![])]
+// A 300 µm Activ strip 0.135 from a gate contact, one at (1000, 1000); a ContBar on poly
+// 0.135 from Activ is CntB.e's.
+#[case::cnt_e_h5("cont/Cnt.e.h5.gds.gz", "TOP", vec!["Cnt.e"; 2], vec![])]
+// GatPoly 0.105 from a diffusion contact, 0.106 corner to corner, 0.106 corner to a 45°
+// wall, abutting (0: finding 4), a gate at 0.105, two gates at 0.105 (two), a field poly
+// at 0.105; 0.11, 0.113 diagonal, 0.114 (0.09 in the axis) and the 0.113 wall are clean.
+#[case::cnt_f_h1("cont/Cnt.f.h1.gds.gz", "TOP", vec!["Cnt.f"; 8], vec![])]
+// 0.105 gaps on and across the tile lines; 0.11 across x = 20 is clean.
+#[case::cnt_f_h2("cont/Cnt.f.h2.gds.gz", "TOP", vec!["Cnt.f"; 9], vec![])]
+// Fifty diffusion contacts 0.105 from GatPoly, flat and as a GdsArrayRef.
+#[case::cnt_f_h3("cont/Cnt.f.h3.gds.gz", "TOP", vec!["Cnt.f"; 50], vec![])]
+#[case::cnt_f_h4("cont/Cnt.f.h4.gds.gz", "TOP", vec!["Cnt.f"; 50], vec![])]
+// A 300 µm GatPoly strip 0.105 from a diffusion contact, one at (1000, 1000); a ContBar
+// on Activ 0.105 from GatPoly is CntB.f's.
+#[case::cnt_f_h5("cont/Cnt.f.h5.gds.gz", "TOP", vec!["Cnt.f"; 2], vec![])]
+// A bare Cont, one 0.005 past the Activ edge and one half outside (those two also Cnt.c,
+// enclosed by 0), one in an Activ ring's hole, one abutting Activ from outside and one at
+// (1000, 1000) fire; Conts in Activ, in GatPoly, over abutting Activ boxes and over four
+// quadrants are within; a Cont on Activ under GatPoly is Cnt.j, not Cnt.g.
+#[case::cnt_g_h1("cont/Cnt.g.h1.gds.gz", "TOP",
+    vec!["Cnt.c", "Cnt.c", "Cnt.g", "Cnt.g", "Cnt.g", "Cnt.g", "Cnt.g", "Cnt.g", "Cnt.j"], vec![])]
+// Bare Conts straddling the tile lines (six) and a Cont straddling x = 20 whose Activ
+// ends on the line (Cnt.g and Cnt.c); a Cont ending on x = 20 with its Activ ending there
+// is within, but enclosed by 0 (Cnt.c).
+#[case::cnt_g_h2("cont/Cnt.g.h2.gds.gz", "TOP",
+    [vec!["Cnt.c"; 2], vec!["Cnt.g"; 7]].concat(), vec![])]
+// Fifty bare Conts, flat and as a GdsArrayRef.
+#[case::cnt_g_h3("cont/Cnt.g.h3.gds.gz", "TOP", vec!["Cnt.g"; 50], vec![])]
+#[case::cnt_g_h4("cont/Cnt.g.h4.gds.gz", "TOP", vec!["Cnt.g"; 50], vec![])]
+// pSD 0.085 from a Cont on nSD-Activ, 0.085 corner to corner, 0.085 corner to a 45° wall,
+// abutting (0: finding 4), 0.085 from a Cont on plain Activ (section 4.2: nSD-Activ,
+// finding 5) and from a well tie; 0.09, 0.092 diagonal, 0.094 (0.08 in the axis), the
+// 0.092 wall and a Cont on Activ under nSD:block are clean.
+#[case::cnt_g1_h1("cont/Cnt.g1.h1.gds.gz", "TOP", vec!["Cnt.g1"; 6], vec![])]
+// 0.085 gaps on and across the tile lines; 0.09 across x = 20 is clean.
+#[case::cnt_g1_h2("cont/Cnt.g1.h2.gds.gz", "TOP", vec!["Cnt.g1"; 9], vec![])]
+// Fifty Conts on nSD-Activ 0.085 from pSD, flat and as a GdsArrayRef.
+#[case::cnt_g1_h3("cont/Cnt.g1.h3.gds.gz", "TOP", vec!["Cnt.g1"; 50], vec![])]
+#[case::cnt_g1_h4("cont/Cnt.g1.h4.gds.gz", "TOP", vec!["Cnt.g1"; 50], vec![])]
+// A 300 µm pSD strip 0.085 from a Cont on nSD-Activ, one at (1000, 1000); a ContBar on
+// nSD-Activ 0.085 from pSD is CntB.g1's.
+#[case::cnt_g1_h5("cont/Cnt.g1.h5.gds.gz", "TOP", vec!["Cnt.g1"; 2], vec![])]
+// pSD margins: 0.09 clean; 0.085 right, all round, right and top, 0.005, 0, and a pSD
+// ending on the Activ edge 0.07 from the Cont fire once each; the pSD edge through the
+// Cont fires Cnt.g2 and, the bare half being on nSD-Activ 0 from pSD, Cnt.g1 (finding 5).
+#[case::cnt_g2_h1("cont/Cnt.g2.h1.gds.gz", "TOP",
+    [vec!["Cnt.g2"; 7], vec!["Cnt.g1"]].concat(), vec![])]
+// pSD chamfers 0.085/0.092 from the Cont corner are clean by the settled reading; pSD
+// as abutting halves and as overlapping boxes is clean; a union with 0.085 and a pSD
+// drawn twice with 0.085 fire once each.
+#[case::cnt_g2_h2("cont/Cnt.g2.h2.gds.gz", "TOP", vec!["Cnt.g2"; 2], vec![])]
+// 0.085 pSD margins on and across the tile lines; 0.09 across x = 20 is clean.
+#[case::cnt_g2_h3("cont/Cnt.g2.h3.gds.gz", "TOP", vec!["Cnt.g2"; 8], vec![])]
+// Fifty Conts with 0.085 of pSD on the right, flat and as a GdsArrayRef.
+#[case::cnt_g2_h4("cont/Cnt.g2.h4.gds.gz", "TOP", vec!["Cnt.g2"; 50], vec![])]
+#[case::cnt_g2_h5("cont/Cnt.g2.h5.gds.gz", "TOP", vec!["Cnt.g2"; 50], vec![])]
+// Three Conts on a 300 µm pSD strip 0.085 top and bottom (two walls each), one at (1000, 1000).
+#[case::cnt_g2_h6("cont/Cnt.g2.h6.gds.gz", "TOP", vec!["Cnt.g2"; 7], vec![])]
+// No Metal1, a 0.005 sliver uncovered, half covered, in a Metal1 ring's hole, Metal1
+// abutting from outside, and a bare Cont at (1000, 1000) fire; Metal1 with margins,
+// coincident, as abutting halves and as overlapping boxes covers.
+#[case::cnt_h_h1("cont/Cnt.h.h1.gds.gz", "TOP", vec!["Cnt.h"; 6], vec![])]
+// Bare Conts straddling the tile lines (six) and one straddling x = 20 whose Metal1 ends
+// on the line; Metal1 ending where the Cont ends, and two Metal1 boxes meeting on the
+// line under the Cont, cover.
+#[case::cnt_h_h2("cont/Cnt.h.h2.gds.gz", "TOP", vec!["Cnt.h"; 7], vec![])]
+// Fifty bare Conts, flat and as a GdsArrayRef.
+#[case::cnt_h_h3("cont/Cnt.h.h3.gds.gz", "TOP", vec!["Cnt.h"; 50], vec![])]
+#[case::cnt_h_h4("cont/Cnt.h.h4.gds.gz", "TOP", vec!["Cnt.h"; 50], vec![])]
+// A Cont in a gate, one overlapping Activ by a 0.005 strip, one by a 0.005 × 0.005 corner,
+// one over two 0.05 Activ fingers (two overlap pieces, two markers), one on a gate over
+// two abutting Activ boxes and one at (1000, 1000) fire Cnt.j; the strip, the corner and
+// the fingers are Conts on Activ enclosed by 0 (Cnt.c: one, one, four walls); the Cont
+// on poly abutting Activ is not over it, but 0 from it (Cnt.e, finding 4).
+#[case::cnt_j_h1("cont/Cnt.j.h1.gds.gz", "TOP",
+    [vec!["Cnt.c"; 6], vec!["Cnt.e"], vec!["Cnt.j"; 7]].concat(), vec![])]
+// Gate contacts straddling the tile lines (six) and a Cont on poly whose Activ begins on
+// x = 20 under its right half (Cnt.j, and Cnt.c for the half on Activ); one whose Activ
+// begins where the Cont ends abuts it: no Cnt.j, but Cnt.e at 0 (finding 4).
+#[case::cnt_j_h2("cont/Cnt.j.h2.gds.gz", "TOP",
+    [vec!["Cnt.c"], vec!["Cnt.e"], vec!["Cnt.j"; 7]].concat(), vec![])]
+// Fifty gate contacts, flat and as a GdsArrayRef.
+#[case::cnt_j_h3("cont/Cnt.j.h3.gds.gz", "TOP", vec!["Cnt.j"; 50], vec![])]
+#[case::cnt_j_h4("cont/Cnt.j.h4.gds.gz", "TOP", vec!["Cnt.j"; 50], vec![])]
 fn test_cont(
     #[case] gds: &str,
     #[case] topcell: &str,
