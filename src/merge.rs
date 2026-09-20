@@ -29,7 +29,7 @@ use i_overlay::float::single::SingleFloatOverlay;
 // this module's surface - only its name was missing.
 pub use i_overlay::i_float::int::point::IntPoint;
 use i_overlay::mesh::outline::offset::OutlineOffset;
-use i_overlay::mesh::style::OutlineStyle;
+use i_overlay::mesh::style::{LineJoin, OutlineStyle};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -81,6 +81,20 @@ fn signed_area2_xy(pts: &[gds21::GdsPoint]) -> i64 {
         acc -= pts[j].x as i64 * pts[i].y as i64;
     }
     acc
+}
+
+/// The offset every size, grow, shrink, opening and closing is taken with: edges moved
+/// by `d`, corners of a right angle or wider kept sharp, sharper ones cut.  KLayout's
+/// `sized` in its default mode does the same, so a box grown by `d` is a box and a
+/// diamond a diamond.  The default join bevels every corner instead, and a closing -
+/// grow then shrink - then cut 0.128 µm off every corner of a well it was meant to
+/// leave alone, which put a diagonal pair of wells 0.18 µm further apart than drawn.
+fn offset(d: f64) -> OutlineStyle<f64> {
+    OutlineStyle {
+        outer_offset: d,
+        inner_offset: d,
+        join: LineJoin::Miter(std::f64::consts::FRAC_PI_2),
+    }
 }
 
 /// Union the given boundaries into non-overlapping regions at full integer
@@ -238,11 +252,11 @@ pub fn opening(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     }
     // Unioned first, for the same reason as `shrink`.
     let whole = tile_shapes(polys).simplify_shape(FillRule::NonZero);
-    let eroded = whole.outline(&OutlineStyle::new(-radius));
+    let eroded = whole.outline(&offset(-radius));
     if eroded.is_empty() {
         return Vec::new();
     }
-    shapes_to_merged(eroded.outline(&OutlineStyle::new(radius)))
+    shapes_to_merged(eroded.outline(&offset(radius)))
 }
 
 /// Morphological *closing*: dilate by `radius` (DBU) then erode by `radius`.  Merges gaps
@@ -253,11 +267,11 @@ pub fn closing(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     if polys.is_empty() || radius <= 0.0 {
         return polys.to_vec();
     }
-    let dilated = tile_shapes(polys).outline(&OutlineStyle::new(radius));
+    let dilated = tile_shapes(polys).outline(&offset(radius));
     if dilated.is_empty() {
         return Vec::new();
     }
-    shapes_to_merged(dilated.outline(&OutlineStyle::new(-radius)))
+    shapes_to_merged(dilated.outline(&offset(-radius)))
 }
 
 /// Morphological dilate (grow) by `radius` DBU, one-directional — no erode back, unlike
@@ -292,7 +306,7 @@ pub fn grow_by(polys: &[MergedPoly], radius: f64, margin: f64) -> Vec<MergedPoly
     if polys.is_empty() {
         return Vec::new();
     }
-    shapes_to_merged(tile_shapes(polys).outline(&OutlineStyle::new(radius + margin)))
+    shapes_to_merged(tile_shapes(polys).outline(&offset(radius + margin)))
 }
 
 /// Morphological erode (shrink) by `radius` DBU — the inverse of [`grow`], and KLayout's
@@ -307,7 +321,7 @@ pub fn shrink(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
     // one region that abut along a cut would each lose a strip along it.  Merged tile
     // geometry never abuts, but a layer delivered as core-clipped pieces does.
     let whole = tile_shapes(polys).simplify_shape(FillRule::NonZero);
-    shapes_to_merged(whole.outline(&OutlineStyle::new(-radius)))
+    shapes_to_merged(whole.outline(&offset(-radius)))
 }
 
 /// Directional dilate: the Minkowski sum of `polys` with the segment from `-d` to `+d`,
@@ -5171,7 +5185,7 @@ pub fn analyze_regions(
                 return hits.into_iter();
             }
             let metal_shapes = neigh.simplify_shape(FillRule::NonZero);
-            let eroded = metal_shapes.outline(&OutlineStyle::new(-erode_radius));
+            let eroded = metal_shapes.outline(&offset(-erode_radius));
             let local: Vec<usize> = tile_pieces
                 .get(&(tx, ty))
                 .map(|ids| {
