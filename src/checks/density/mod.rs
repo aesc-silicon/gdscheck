@@ -277,13 +277,16 @@ pub fn run(
 
     let Some(window_um) = window_um else {
         // The whole coverage against the die: the boundary's box if the rule names one
-        // and it is drawn, else the box of everything.
-        let denominator = area(boundary.unwrap_or(chip)) * um2;
+        // and it is drawn, else the box of everything.  What lies outside the boundary
+        // is no part of the die and counts for nothing - a block checked with its
+        // boundary drawn smaller than its metal read 125 % otherwise.
+        let die = boundary.unwrap_or(chip);
+        let denominator = area(die) * um2;
         if denominator == 0.0 {
             eprintln!("[{}] Could not compute density", rule.id);
             return vec![];
         }
-        let covered = coverage_dbu2(&maps, tile, chip) * um2;
+        let covered = coverage_dbu2(&maps, tile, die) * um2;
         let density = (covered / denominator * 100.0 * 1000.0).round() / 1000.0;
         println!("[{}] Density: {density:.2}%", rule.id);
         if !kind.broken_by(density, rule.value) {
