@@ -6,7 +6,7 @@ use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
     chamfered_bl, chamfered_tr, density_pattern, diamond, flat_array, layer, library,
     max_width_pattern, min_width_pattern, mixed_notch_pattern, notch_pattern, poly, rect,
-    ref_array, space_pattern, strip45, write_gz,
+    ref_array, space_pattern, strip45, stripes, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -124,9 +124,12 @@ fn act_d_merge(pdk: &PdkConfig) {
     write_gz(&format!("{DIR}/Act.d.merge.gds.gz"), library("TOP", elems));
 }
 
+/// AFil.a — max. Activ:filler width 5.00, read as the narrowest dimension: a 5.005 × 5.0
+/// and a 5.0 × 5.005 filler are 5.0 wide and clean, a 5.005 × 5.005 one is not.
 fn afil_a(pdk: &PdkConfig) {
     let l = layer(pdk, "Activ.filler");
-    let elems = max_width_pattern(l, 5.0, 5.0, 20.0, OFFSET, SPACE_DELTA);
+    let mut elems = max_width_pattern(l, 5.0, 5.0, 20.0, OFFSET, SPACE_DELTA);
+    elems.push(rect(l, OFFSET + 60.0, 0.0, OFFSET + 65.005, 5.005));
     write_gz(&format!("{DIR}/AFil.a.gds.gz"), library("TOP", elems));
 }
 
@@ -264,23 +267,14 @@ fn afil_g1(pdk: &PdkConfig) {
 fn afil_g2(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // min_density per window: shapes split per 800 µm window rather than full-width.
+    // min_density in any 800 µm window: uniform stripes read the same in every window,
+    // 26 % is clean, 24 % fails everywhere - one violation, the windows overlap.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
-    elems.extend([
-        rect(act, 0.0, 0.0, 800.0, 200.0),
-        rect(act, 800.0, 0.0, 1000.0, 200.0),
-        rect(act, 0.0, 800.0, 800.0, 850.0),
-        rect(act, 800.0, 800.0, 1000.0, 850.0),
-    ]);
+    elems.extend(stripes(act, 1000.0, 26.0));
     write_gz(&format!("{DIR}/AFil.g2.gds.gz"), library("TOP", elems));
 
     let mut elems_fail = density_pattern(boundary, 1000.0, &[]);
-    elems_fail.extend([
-        rect(act, 0.0, 0.0, 800.0, 199.99),
-        rect(act, 800.0, 0.0, 1000.0, 199.99),
-        rect(act, 0.0, 800.0, 800.0, 849.99),
-        rect(act, 800.0, 800.0, 1000.0, 849.9),
-    ]);
+    elems_fail.extend(stripes(act, 1000.0, 24.0));
     write_gz(
         &format!("{DIR}/AFil.g2.fail.gds.gz"),
         library("TOP", elems_fail),
@@ -290,23 +284,14 @@ fn afil_g2(pdk: &PdkConfig) {
 fn afil_g3(pdk: &PdkConfig) {
     let act = layer(pdk, "Activ");
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // max_density per window: shapes split per 800 µm window rather than full-width.
+    // max_density in any 800 µm window: 64 % is clean, 66 % fails everywhere, one
+    // violation.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
-    elems.extend([
-        rect(act, 0.0, 0.0, 800.0, 520.0),
-        rect(act, 800.0, 0.0, 1000.0, 520.0),
-        rect(act, 0.0, 800.0, 800.0, 930.0),
-        rect(act, 800.0, 800.0, 1000.0, 930.0),
-    ]);
+    elems.extend(stripes(act, 1000.0, 64.0));
     write_gz(&format!("{DIR}/AFil.g3.gds.gz"), library("TOP", elems));
 
     let mut elems_fail = density_pattern(boundary, 1000.0, &[]);
-    elems_fail.extend([
-        rect(act, 0.0, 0.0, 800.0, 520.01),
-        rect(act, 800.0, 0.0, 1000.0, 520.01),
-        rect(act, 0.0, 800.0, 800.0, 930.01),
-        rect(act, 800.0, 800.0, 1000.0, 930.01),
-    ]);
+    elems_fail.extend(stripes(act, 1000.0, 66.0));
     write_gz(
         &format!("{DIR}/AFil.g3.fail.gds.gz"),
         library("TOP", elems_fail),

@@ -5,7 +5,7 @@
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
     density_pattern, enclosure_pattern, layer, library, max_width_pattern, min_width_pattern,
-    notch_pattern, poly, rect, space_pattern, write_gz,
+    notch_pattern, poly, rect, space_pattern, stripes, write_gz,
 };
 use gdscheck::pdk::PdkConfig;
 use std::f64::consts::SQRT_2;
@@ -341,33 +341,21 @@ fn mfil_c_space(pdk: &PdkConfig, index: i32, dir: &str) {
 fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // min_density per window: every 800 µm window must stay above the floor; the
-    // shapes are split per window rather than spanning the full width.
+    // min_density in any 800 µm window: the windows slide a tile at a time and one is
+    // laid against each far edge.  Uniform stripes read the same in every window: 26 %
+    // is clean, 24 % fails everywhere - one violation, the windows overlap.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
-    elems.extend([
-        rect(met, 0.0, 0.0, 800.0, 200.0),
-        rect(met, 800.0, 0.0, 1000.0, 200.0),
-        rect(met, 0.0, 800.0, 800.0, 850.0),
-        rect(met, 800.0, 800.0, 1000.0, 850.0),
-        // Nested duplicates: absorbed by the merge so coverage is unchanged;
-        // without merging they would double-count and inflate the density.
-        rect(met, 100.0, 50.0, 700.0, 150.0),
-        rect(met, 850.0, 50.0, 950.0, 150.0),
-        rect(met, 100.0, 810.0, 700.0, 840.0),
-        rect(met, 850.0, 810.0, 950.0, 840.0),
-    ]);
+    elems.extend(stripes(met, 1000.0, 26.0));
+    // Nested duplicates: absorbed by the merge so coverage is unchanged; without
+    // merging they would double-count and inflate the density.
+    elems.push(rect(met, 100.0, 5.0, 700.0, 20.0));
     write_gz(
         &format!("{dir}/M{index}Fil.h.gds.gz"),
         library("TOP", elems),
     );
 
     let mut elems_fail = density_pattern(boundary, 1000.0, &[]);
-    elems_fail.extend([
-        rect(met, 0.0, 0.0, 800.0, 199.99),
-        rect(met, 800.0, 0.0, 1000.0, 199.99),
-        rect(met, 0.0, 800.0, 800.0, 849.99),
-        rect(met, 800.0, 800.0, 1000.0, 849.9),
-    ]);
+    elems_fail.extend(stripes(met, 1000.0, 24.0));
     write_gz(
         &format!("{dir}/M{index}Fil.h.fail.gds.gz"),
         library("TOP", elems_fail),
@@ -377,22 +365,21 @@ fn mfil_h(pdk: &PdkConfig, index: i32, dir: &str) {
 /// M{n}Fil.h/k boundary handling: the chip's raw bounding box (from *all* shapes)
 /// extends past the true EdgeSeal — a small unrelated marker on TRANS sits outside the
 /// seal ring, at (950, 950)-(1000, 1000), stretching the overall bbox from the sealed
-/// 900x900 die out to 1000x1000.  With an 800 µm window this makes the last row/column
-/// of tiles straddle the seal boundary, so their `boundary`-clipped area (only the
-/// part actually inside EdgeSeal) must be used as the density denominator — not the
-/// nominal (and here doubled) window footprint.
+/// 900x900 die out to 1000x1000.  The windows are laid over the `boundary` layer's
+/// box, so the 900x900 die gets four 800 µm windows (at 0 and at 100, each way) and
+/// none reaches past the seal into the empty strip the marker adds.
 ///
 /// `ok`: uniform 40% fill (period-100, height-40 stripes) everywhere inside the 900x900
-/// EdgeSeal, including the boundary-straddling tiles — every tile's *true* (seal-clipped)
-/// density is 40%, comfortably inside [25%, 75%].  Without the boundary fix, the last
-/// row/column would be measured against a doubled denominator (only half of which can
-/// ever be filled, since fill stops at the seal) and register a false ~20% underfill.
+/// EdgeSeal - every window reads 40%, comfortably inside [25%, 75%].  Laid over the raw
+/// bounding box instead, a window against the far edge would take in 100 µm of nothing
+/// and read 35% - still clean here, but not the die's density.
 ///
-/// `fail`: identical, except the (800, 800)-(900, 900) corner — inside EdgeSeal but in
-/// the boundary-straddling tile — is starved down to a tiny block, so it genuinely reads
-/// under the 25% floor even measured against the correct (seal-clipped) denominator.
-/// Proves the boundary fix narrows the denominator without ever *suppressing* a real
-/// violation in an edge/corner tile.
+/// `fail`: the same 40% stripes with the corner (400, 400)-(900, 900) left empty.  The
+/// windows slide a tile at a time; the one against the far corner, (100, 100)-(900, 900),
+/// holds the whole hole and reads 24.4%, the windows next to it less of it - the
+/// violating windows overlap and are one violation, reported at the worst.  The window
+/// at the origin reads 30%, one against a single far edge 27.5%.  The die is at 27.7%,
+/// which the global M{n}.j (35%) reports; the case ignores it.
 fn mfil_h_boundary(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let boundary = layer(pdk, "EdgeSeal.boundary");
@@ -415,14 +402,11 @@ fn mfil_h_boundary(pdk: &PdkConfig, index: i32, dir: &str) {
         rect(boundary, 0.0, 0.0, 900.0, 900.0),
         rect(trans, 950.0, 950.0, 1000.0, 1000.0),
     ];
-    for k in 0..=7 {
+    for k in 0..=8 {
         let y0 = k as f64 * 100.0;
-        elems_fail.push(rect(met, 0.0, y0, 900.0, y0 + 40.0));
+        let x1 = if y0 >= 400.0 { 400.0 } else { 900.0 };
+        elems_fail.push(rect(met, 0.0, y0, x1, y0 + 40.0));
     }
-    // Row 8 (y = 800-840): full width everywhere except the last (boundary-straddling)
-    // column, which gets only a small starved block instead of the usual stripe.
-    elems_fail.push(rect(met, 0.0, 800.0, 800.0, 840.0));
-    elems_fail.push(rect(met, 800.0, 800.0, 820.0, 820.0));
     write_gz(
         &format!("{dir}/M{index}Fil.h.boundary_fail.gds.gz"),
         library("TOP", elems_fail),
@@ -462,32 +446,20 @@ fn mfil_h_boundary_ring(pdk: &PdkConfig, index: i32, dir: &str) {
 fn mfil_k(pdk: &PdkConfig, index: i32, dir: &str) {
     let met = layer(pdk, &format!("Metal{}", index));
     let boundary = layer(pdk, "EdgeSeal.boundary");
-    // max_density per window: every 800 µm window must stay below the ceiling.
+    // max_density in any 800 µm window, as `mfil_h`: 74 % is clean, 76 % fails
+    // everywhere, one violation.
     let mut elems = density_pattern(boundary, 1000.0, &[]);
-    elems.extend([
-        rect(met, 0.0, 0.0, 800.0, 600.0),
-        rect(met, 800.0, 0.0, 1000.0, 600.0),
-        rect(met, 0.0, 800.0, 800.0, 950.0),
-        rect(met, 800.0, 800.0, 1000.0, 950.0),
-        // Nested duplicates: absorbed by the merge so coverage is unchanged;
-        // without merging they would double-count and inflate the density.
-        rect(met, 100.0, 100.0, 700.0, 500.0),
-        rect(met, 850.0, 100.0, 950.0, 500.0),
-        rect(met, 100.0, 810.0, 700.0, 940.0),
-        rect(met, 850.0, 810.0, 950.0, 940.0),
-    ]);
+    elems.extend(stripes(met, 1000.0, 74.0));
+    // Nested duplicates: absorbed by the merge so coverage is unchanged; without
+    // merging they would double-count and inflate the density.
+    elems.push(rect(met, 100.0, 5.0, 700.0, 60.0));
     write_gz(
         &format!("{dir}/M{index}Fil.k.gds.gz"),
         library("TOP", elems),
     );
 
     let mut elems_fail = density_pattern(boundary, 1000.0, &[]);
-    elems_fail.extend([
-        rect(met, 0.0, 0.0, 800.0, 600.01),
-        rect(met, 800.0, 0.0, 1000.0, 600.01),
-        rect(met, 0.0, 800.0, 800.0, 950.01),
-        rect(met, 800.0, 800.0, 1000.0, 950.01),
-    ]);
+    elems_fail.extend(stripes(met, 1000.0, 76.0));
     write_gz(
         &format!("{dir}/M{index}Fil.k.fail.gds.gz"),
         library("TOP", elems_fail),

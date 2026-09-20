@@ -15,10 +15,14 @@ rules:
     check: max_area
     layers: [LBE]
     value: 250000.00
+    params:
+      touching: separate
   - id: LBE.b2
     check: min_area
     layers: [LBE]
     value: 30000.00
+    params:
+      touching: separate
   - id: LBE.c
     check: min_space
     layers: [LBE]

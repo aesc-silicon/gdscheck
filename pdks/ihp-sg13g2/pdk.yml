@@ -739,6 +739,16 @@ virtual_layers:
     op: holes
     mode: lazy
     layers: [pSD]
+  # Act.e: the empty area an Activ ring encloses - its hole less any Activ island in
+  # it, which IHP's deck reads the same way (holes minus Activ).
+  - name: ActivHole
+    op: holes
+    mode: lazy
+    layers: [Activ]
+  - name: ActivHoleEmpty
+    op: difference
+    mode: lazy
+    layers: [ActivHole, Activ]
   - name: NpnTieHole
     op: with_text
     mode: lazy
@@ -854,6 +864,26 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [nSD.block, SalBlock]
+  # AFil.d, AFil.e, AFil.i: figure 5.6 measures the filler's distance to a well, a
+  # TRANS and a PWell block edge from inside as well as from outside, so a filler
+  # lying whole inside one is enclosed by the value.  A filler crossing the edge is
+  # in neither reading, as IHP's deck has it.
+  - name: ActivFillerInNWell
+    op: inside
+    mode: lazy
+    layers: [Activ.filler, NWell]
+  - name: ActivFillerInNBuLay
+    op: inside
+    mode: lazy
+    layers: [Activ.filler, nBuLay]
+  - name: ActivFillerInTRANS
+    op: inside
+    mode: lazy
+    layers: [Activ.filler, TRANS]
+  - name: ActivFillerWithinPWellBlock
+    op: inside
+    mode: lazy
+    layers: [Activ.filler, PWell.block]
 
   - name: GatPolyOverActiv
     op: intersection

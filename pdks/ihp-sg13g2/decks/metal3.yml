@@ -29,6 +29,8 @@ rules:
     check: min_area
     layers: [Metal3]
     value: 0.144
+    params:
+      touching: separate
   - id: M3.e
     check: min_space
     layers: [Metal3]

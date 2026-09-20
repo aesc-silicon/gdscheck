@@ -44,10 +44,14 @@ rules:
     check: min_area
     layers: [NTapNoGateOutSRAM]
     value: 0.09
+    params:
+      touching: separate
   - id: pSD.g
     check: min_area
     layers: [PTapNoGateOutSRAM]
     value: 0.09
+    params:
+      touching: separate
   - id: pSD.i
     check: min_enclosure
     layers: [pSDNoSRAM, GatPolyOverPsdActivNoTGO]
@@ -72,6 +76,8 @@ rules:
     check: min_area
     layers: [pSD]
     value: 0.25
+    params:
+      touching: separate
   - id: pSD.l
     check: min_area
     layers: [pSD]

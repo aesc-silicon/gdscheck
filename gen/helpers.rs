@@ -534,6 +534,18 @@ pub fn density_pattern(
     elems
 }
 
+/// Uniform stripes of `layer` over `(0, 0)-(size, size)`: `pct` percent of every window
+/// of any size and placement that is a multiple of the 100 µm period, for the density
+/// rules, whose windows slide over the die.
+pub fn stripes(layer: (i16, i16), size: f64, pct: f64) -> Vec<GdsElement> {
+    (0..(size / 100.0) as i32)
+        .map(|k| {
+            let y0 = k as f64 * 100.0;
+            rect(layer, 0.0, y0, size, y0 + pct)
+        })
+        .collect()
+}
+
 pub fn write_gz(path: &str, lib: GdsLibrary) {
     let out = std::fs::File::create(path).expect("failed to create file");
     let mut encoder = GzEncoder::new(out, Compression::best());

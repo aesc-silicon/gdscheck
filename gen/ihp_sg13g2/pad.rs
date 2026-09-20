@@ -155,7 +155,8 @@ fn seal_activ(pdk: &PdkConfig, x: f64, y: f64, w: f64, h: f64) -> Vec<gds21::Gds
     ]
 }
 
-/// Pad.a1 — a 160 µm pad opening exceeds the 150 µm max width.
+/// Pad.a1 — a 160 µm pad opening exceeds the 150 µm max width; the width is the
+/// narrowest dimension, so the square opening is one violation.
 fn pad_a1(pdk: &PdkConfig) {
     let mut elems = opening(pdk, OFFSET, OFFSET, 160.0, 160.0);
     elems.extend(opening(pdk, OFFSET + 200.0, OFFSET, 100.0, 100.0)); // clean

@@ -39,7 +39,9 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case("activ/Act.e.gds.gz", "TOP", vec!["Act.e"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/Act.d.gds.gz", "TOP", vec!["Act.d"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/Act.d.merge.gds.gz", "TOP", vec![], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
-#[case("activ/AFil.a.gds.gz", "TOP", vec!["AFil.a", "AFil.a", "AFil.a", "AFil.a"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
+// The width is the narrowest dimension: the 5.005 × 5.0 and 5.0 × 5.005 fillers are 5.0
+// wide and clean, the 5.005 × 5.005 one fires.
+#[case("activ/AFil.a.gds.gz", "TOP", vec!["AFil.a"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/AFil.a1.gds.gz", "TOP", vec!["AFil.a1", "AFil.a1", "AFil.a1", "AFil.a1"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/AFil.b.gds.gz", "TOP", vec!["AFil.b", "AFil.b"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/AFil.c.cont.gds.gz", "TOP", vec!["AFil.c", "AFil.c"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
@@ -49,15 +51,15 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case("activ/AFil.d.nbulay.gds.gz", "TOP", vec!["AFil.d", "AFil.d"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/AFil.e.gds.gz", "TOP", vec!["AFil.e", "AFil.e"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
 #[case("activ/AFil.i.gds.gz", "TOP", vec!["AFil.i", "AFil.i"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
-#[case("activ/AFil.j.gds.gz", "TOP", vec!["AFil.j"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"])]
-#[case("activ/AFil.g.gds.gz", "TOP", vec![], vec!["AFil.a"])]
-#[case("activ/AFil.g.fail.gds.gz", "TOP", vec!["AFil.g"], vec!["AFil.a"])]
+#[case("activ/AFil.j.gds.gz", "TOP", vec!["AFil.j"], vec!["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3", "AFil.i"])]
+#[case("activ/AFil.g.gds.gz", "TOP", vec![], vec!["AFil.a", "AFil.g2", "AFil.g3"])]
+#[case("activ/AFil.g.fail.gds.gz", "TOP", vec!["AFil.g"], vec!["AFil.a", "AFil.g2", "AFil.g3"])]
 #[case("activ/AFil.g1.gds.gz", "TOP", vec![], vec!["AFil.a", "AFil.g3"])]
 #[case("activ/AFil.g1.fail.gds.gz", "TOP", vec!["AFil.g1"], vec!["AFil.a", "AFil.g3"])]
 #[case("activ/AFil.g2.gds.gz", "TOP", vec![], vec!["Act.b", "AFil.g"])]
-#[case("activ/AFil.g2.fail.gds.gz", "TOP", vec!["AFil.g2"; 4], vec!["Act.b", "AFil.g"])]
+#[case("activ/AFil.g2.fail.gds.gz", "TOP", vec!["AFil.g2"], vec!["Act.b", "AFil.g"])]
 #[case("activ/AFil.g3.gds.gz", "TOP", vec![], vec!["Act.b", "AFil.g1"])]
-#[case("activ/AFil.g3.fail.gds.gz", "TOP", vec!["AFil.g3"; 4], vec!["Act.b", "AFil.g1"])]
+#[case("activ/AFil.g3.fail.gds.gz", "TOP", vec!["AFil.g3"], vec!["Act.b", "AFil.g1"])]
 #[case::afil_g2_boundary_ok("activ/AFil.g2.boundary_ok.gds.gz", "TOP", vec![], vec![])]
 #[case::afil_g2_boundary_ring("activ/AFil.g2.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 // --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
@@ -108,8 +110,8 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // A gate from two overlapping poly boxes reads the union (0.225 fires once); a hole 0.16
 // from the gate is a 0.16 S/D.  GatPoly beside or abutting the Activ, an Activ S/D from
 // two abutting boxes, a gate across a sliver are nothing; the Activ past a gate *end*
-// inside the Activ is no drain/source either (Gat.c's business) - report, finding 1.
-#[case::act_c_h3("activ/Act.c.h3.gds.gz", "TOP", vec!["Act.c"; 2], dens(&["Act.a", "Act.d"]))]
+// inside the Activ reads as a 0.10 extension, in KLayout too (report, finding 1).
+#[case::act_c_h3("activ/Act.c.h3.gds.gz", "TOP", vec!["Act.c"; 3], dens(&["Act.a", "Act.d"]))]
 // Nine 0.225 S/Ds on, across and straddling x = 20/21/40/42, two of them 10 µm wide.
 #[case::act_c_h4("activ/Act.c.h4.gds.gz", "TOP", vec!["Act.c"; 9], dens(&[]))]
 // Fifty transistors with a 0.225 S/D, flat and as a GdsArrayRef.
@@ -150,21 +152,22 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::act_e_h5("activ/Act.e.h5.gds.gz", "TOP", vec!["Act.e"; 50], dens(&[]))]
 // A 0.005 × 0.5 hole and a 0.12 hole at (1000, 1000); a 300 µm ring's hole is clean.
 #[case::act_e_h6("activ/Act.e.h6.gds.gz", "TOP", vec!["Act.e"; 2], dens(&["Act.b"]))]
-// A 5.005 square fires (four walls).  A 5.005 × 5.0 filler is 5.0 wide, a 3 × 20 bar 3, an L
-// with 3-wide arms 3: clean - the width is the smaller span (report, finding 4).
-#[case::afil_a_h1("activ/AFil.a.h1.gds.gz", "TOP", vec!["AFil.a"; 4], dens(&[]))]
-// A 5.02 diamond (4), a 5.02 45° strip (2), a 5.005 × 6 union (2) and a 5.005 square from
-// four boxes (4) fire; 4.95, a 5.0 × 6 union and a 6 × 6 filler with a hole (2.75 wide) are
+// A 5.005 square fires, once (a maximum's `span: narrowest` reports the part a 5 × 5
+// square fits in, one per region).  A 5.005 × 5.0 filler is 5.0 wide, a 3 × 20 bar 3, an
+// L with 3-wide arms 3: clean - the width is the smaller span (report, finding 4).
+#[case::afil_a_h1("activ/AFil.a.h1.gds.gz", "TOP", vec!["AFil.a"; 1], dens(&[]))]
+// A 5.02 diamond, a 5.02 45° strip, a 5.005 × 6 union and a 5.005 square from four boxes
+// fire, one each; 4.95, a 5.0 × 6 union and a 6 × 6 filler with a hole (2.75 wide) are
 // clean.
-#[case::afil_a_h2("activ/AFil.a.h2.gds.gz", "TOP", vec!["AFil.a"; 12], dens(&[]))]
-// Seven 5.005 squares on, across and straddling x = 20/21/40/42 (4 each) and a 5.005-tall
-// 30 µm bar (2); a 5.0 square straddling 20 and a 5.0-tall bar are clean.
-#[case::afil_a_h3("activ/AFil.a.h3.gds.gz", "TOP", vec!["AFil.a"; 30], dens(&[]))]
+#[case::afil_a_h2("activ/AFil.a.h2.gds.gz", "TOP", vec!["AFil.a"; 4], dens(&[]))]
+// Seven 5.005 squares on, across and straddling x = 20/21/40/42 and a 5.005-tall 30 µm
+// bar, one each; a 5.0 square straddling 20 and a 5.0-tall bar are clean.
+#[case::afil_a_h3("activ/AFil.a.h3.gds.gz", "TOP", vec!["AFil.a"; 8], dens(&[]))]
 // Fifty 5.005 squares, flat and as a GdsArrayRef.
-#[case::afil_a_h4("activ/AFil.a.h4.gds.gz", "TOP", vec!["AFil.a"; 200], dens(&[]))]
-#[case::afil_a_h5("activ/AFil.a.h5.gds.gz", "TOP", vec!["AFil.a"; 200], dens(&[]))]
-// A 300 × 5.005 bar (2) and a 5.005 square at (1000, 1000) (4).
-#[case::afil_a_h6("activ/AFil.a.h6.gds.gz", "TOP", vec!["AFil.a"; 6], dens(&[]))]
+#[case::afil_a_h4("activ/AFil.a.h4.gds.gz", "TOP", vec!["AFil.a"; 50], dens(&[]))]
+#[case::afil_a_h5("activ/AFil.a.h5.gds.gz", "TOP", vec!["AFil.a"; 50], dens(&[]))]
+// A 300 × 5.005 bar and a 5.005 square at (1000, 1000), one each.
+#[case::afil_a_h6("activ/AFil.a.h6.gds.gz", "TOP", vec!["AFil.a"; 2], dens(&[]))]
 // Three 0.995 bars (x, y, 300 µm long) → two markers each.  The 300 µm bars also draw
 // AFil.a on their length (finding 4), set aside here and in the cases below.
 #[case::afil_a1_h1("activ/AFil.a1.h1.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&["AFil.a"]))]
@@ -207,9 +210,9 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // fire; a chamfer at 1.103 is clean.
 #[case::afil_c_h2("activ/AFil.c.h2.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&[]))]
 // A Cont bar at 1.095 and a Cont on an Activ at 1.095 fire; a GatPoly:filler at 1.095 is
-// not GatPoly; a Cont overlapping the filler's edge is at no distance (fires) - report,
-// finding 5.
-#[case::afil_c_h3("activ/AFil.c.h3.gds.gz", "TOP", vec!["AFil.c"; 3], dens(&[]))]
+// not GatPoly; a Cont overlapping the filler's edge shares area with it and is no pair,
+// as KLayout has it (report, finding 5).
+#[case::afil_c_h3("activ/AFil.c.h3.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&[]))]
 // Eight 1.095 gaps on, across and straddling x = 20/21/40/42, one to a 10 µm GatPoly.
 #[case::afil_c_h4("activ/AFil.c.h4.gds.gz", "TOP", vec!["AFil.c"; 8], dens(&["AFil.a"]))]
 // Fifty filler/Cont pairs at 1.095, flat and as a GdsArrayRef.
@@ -222,9 +225,10 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // 45°: an Activ diamond tip, an Activ strip against a filler strip, a filler chamfer
 // against an Activ corner, all at 0.415-0.417.
 #[case::afil_c1_h2("activ/AFil.c1.h2.gds.gz", "TOP", vec!["AFil.c1"; 3], dens(&["AFil.a"]))]
-// Activ.mask is not Activ, a filler is AFil.b's; an Activ abutting a filler and one
-// overlapping it are at no distance (fire) - report, finding 5.
-#[case::afil_c1_h3("activ/AFil.c1.h3.gds.gz", "TOP", vec!["AFil.c1"; 2], dens(&["AFil.b"]))]
+// Activ.mask is not Activ, a filler is AFil.b's; an Activ abutting a filler is at no
+// distance (`abutting: report`), one overlapping it shares area and is no pair, as
+// KLayout has it (report, finding 5).
+#[case::afil_c1_h3("activ/AFil.c1.h3.gds.gz", "TOP", vec!["AFil.c1"; 1], dens(&["AFil.b"]))]
 // Eight 0.415 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
 #[case::afil_c1_h4("activ/AFil.c1.h4.gds.gz", "TOP", vec!["AFil.c1"; 8], dens(&["AFil.a"]))]
 // Fifty filler/Activ pairs at 0.415, flat and as a GdsArrayRef.
@@ -235,14 +239,14 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // NWell and nBuLay at 0.995 and at a 0.705/0.705 diagonal (0.997) fire; 1.0/1.004 clean.
 #[case::afil_d_h1("activ/AFil.d.h1.gds.gz", "TOP", vec!["AFil.d"; 4], dens(&[]))]
 // Figure 5.6 measures "d" inside the well too: a filler 0.5 inside a NWell and one 0.5
-// inside an nBuLay fire, 1.0 inside is clean; fillers crossing a NWell's and an nBuLay's
-// edge are at no distance (fire) - report, finding 6.
-#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 4], dens(&[]))]
-// Section 4.2's nBuLay: a filler 1.5 from a 3.0 µm NWell is 0.5 from its derived nBuLay
-// (fires), 1.5 from a 2.995 well and 2.0 from a 3.0 well are clean; a drawn nBuLay under
-// nBuLay:block is none (0.5 away: clean), a half-blocked one fires for the filler 0.5 from
-// its open half only - report, finding 7.
-#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
+// inside an nBuLay fire (an enclosure entry on the fillers inside), 1.0 inside is clean;
+// a filler crossing the edge is in neither reading, as KLayout has it (report, finding 6).
+#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
+// nBuLay is read as drawn, as IHP's deck reads it (report, finding 7 - open): a filler
+// 1.5 from a 3.0 µm NWell has no drawn nBuLay near it and is clean, a drawn nBuLay
+// under nBuLay:block still counts (0.5 away: fires), the half-blocked one fires for
+// both fillers 0.5 from it.  Section 4.2's derived nBuLay would read 1, 0 and 1.
+#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 3], dens(&[]))]
 // 45°: a NWell diamond tip at 0.995 and a NWell chamfer 0.997 from a corner fire; 1.004 clean.
 #[case::afil_d_h4("activ/AFil.d.h4.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
 // Eight 0.995 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
@@ -254,9 +258,10 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::afil_d_h8("activ/AFil.d.h8.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&["AFil.a"]))]
 // TRANS at 0.995, at a 0.705/0.705 diagonal (0.997) and corner-on fire; 1.0/1.004 clean.
 #[case::afil_e_h1("activ/AFil.e.h1.gds.gz", "TOP", vec!["AFil.e"; 3], dens(&[]))]
-// A filler inside a TRANS and one crossing its edge are at no distance (fire) - report,
-// finding 6; a TRANS diamond tip at 0.995 fires.
-#[case::afil_e_h2("activ/AFil.e.h2.gds.gz", "TOP", vec!["AFil.e"; 3], dens(&[]))]
+// A filler well inside a TRANS is enclosed by more than the value and one crossing its
+// edge is in neither reading, as KLayout has it (report, finding 6); a TRANS diamond
+// tip at 0.995 fires.
+#[case::afil_e_h2("activ/AFil.e.h2.gds.gz", "TOP", vec!["AFil.e"; 1], dens(&[]))]
 // Eight 0.995 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
 #[case::afil_e_h3("activ/AFil.e.h3.gds.gz", "TOP", vec!["AFil.e"; 8], dens(&["AFil.a"]))]
 // Fifty filler/TRANS pairs at 0.995, flat and as a GdsArrayRef.
@@ -266,9 +271,10 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::afil_e_h6("activ/AFil.e.h6.gds.gz", "TOP", vec!["AFil.e"; 2], dens(&["AFil.a"]))]
 // PWell:block at 1.495, at a 1.06/1.06 diagonal (1.499) and corner-on fire; 1.5/1.506 clean.
 #[case::afil_i_h1("activ/AFil.i.h1.gds.gz", "TOP", vec!["AFil.i"; 3], dens(&[]))]
-// "Space to edges": a filler inside a block 1.495 from its edge fires (1.5 is clean), a
-// filler crossing the edge is at no distance (fires) - report, finding 8.
-#[case::afil_i_h2("activ/AFil.i.h2.gds.gz", "TOP", vec!["AFil.i"; 2], dens(&[]))]
+// "Space to edges": a filler inside a block 1.495 from its edge fires (an enclosure
+// entry; 1.5 is clean), a filler crossing the edge is in neither reading, as KLayout
+// has it (report, finding 8).
+#[case::afil_i_h2("activ/AFil.i.h2.gds.gz", "TOP", vec!["AFil.i"; 1], dens(&[]))]
 // 45°: a block chamfer 1.499 from a filler's corner and a block diamond tip at 1.495 fire.
 #[case::afil_i_h3("activ/AFil.i.h3.gds.gz", "TOP", vec!["AFil.i"; 2], dens(&[]))]
 // Eight 1.495 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
@@ -356,7 +362,8 @@ const DECK_GAT: &str = "gatpoly";
 // they are for KLayout, and are set aside here.
 #[case("gatpoly/Gat.f.gds.gz", "TOP", vec!["Gat.f", "Gat.f"], vec!["GFil.g", "Gat.c", "Gat.e", "Gat.a"])]
 #[case("gatpoly/Gat.g.gds.gz", "TOP", vec!["Gat.g", "Gat.g"], vec!["Gat.e", "GFil.g", "Gat.a"])]
-#[case("gatpoly/GFil.a.gds.gz", "TOP", vec!["GFil.a"; 4], vec!["GFil.g"])]
+// The width is the narrowest dimension: only the 5.005 × 5.005 filler fires.
+#[case("gatpoly/GFil.a.gds.gz", "TOP", vec!["GFil.a"], vec!["GFil.g"])]
 #[case("gatpoly/GFil.b.gds.gz", "TOP", vec!["GFil.b"; 4], vec!["GFil.g"])]
 #[case("gatpoly/GFil.c.gds.gz", "TOP", vec!["GFil.c", "GFil.c"], vec!["GFil.g"])]
 #[case("gatpoly/GFil.d.gds.gz", "TOP", vec!["GFil.d"; 12], vec!["GFil.g"])]
@@ -962,18 +969,18 @@ const DECK_M1: &str = "metal1";
 #[case::m1_b_space("metal1/M1.b.space.gds.gz", "TOP", vec!["M1.b", "M1.b"], vec!["M1.j", "M1.k", "M1Fil.h", "M1Fil.k"])]
 #[case::m1_b_notch("metal1/M1.b.notch.gds.gz", "TOP", vec!["M1.b", "M1.b"], vec!["M1.j", "M1.k", "M1Fil.h", "M1Fil.k"])]
 #[case::m1_corner("metal1/M1.corner.gds.gz", "TOP", vec!["M1.a", "M1.b"], vec!["M1.j", "M1.k", "M1Fil.h", "M1Fil.k"])]
-#[case::m1_j_ok("metal1/M1.j.gds.gz", "TOP", vec![], vec!["M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2"])]
-#[case::m1_j_fail("metal1/M1.j.fail.gds.gz", "TOP", vec!["M1.j"], vec!["M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2"])]
-#[case::m1_k_ok("metal1/M1.k.gds.gz", "TOP", vec![], vec!["M1Fil.k", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2"])]
-#[case::m1_k_fail("metal1/M1.k.fail.gds.gz", "TOP", vec!["M1.k"], vec!["M1Fil.k", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2"])]
+#[case::m1_j_ok("metal1/M1.j.gds.gz", "TOP", vec![], vec!["M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.h", "M1Fil.k"])]
+#[case::m1_j_fail("metal1/M1.j.fail.gds.gz", "TOP", vec!["M1.j"], vec!["M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.h", "M1Fil.k"])]
+#[case::m1_k_ok("metal1/M1.k.gds.gz", "TOP", vec![], vec!["M1Fil.k", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.h", "M1Fil.k"])]
+#[case::m1_k_fail("metal1/M1.k.fail.gds.gz", "TOP", vec!["M1.k"], vec!["M1Fil.k", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.a2", "M1Fil.h", "M1Fil.k"])]
 #[case::m1fil_c("metal1/M1Fil.c.gds.gz", "TOP", vec!["M1Fil.c", "M1Fil.c"], vec!["M1.j", "M1.k", "M1Fil.h", "M1Fil.k"])]
 #[case::m1fil_h_ok("metal1/M1Fil.h.gds.gz", "TOP", vec![], vec!["M1.b", "M1.j"])]
-#[case::m1fil_h_fail("metal1/M1Fil.h.fail.gds.gz", "TOP", vec!["M1Fil.h"; 4], vec!["M1.b", "M1.j"])]
+#[case::m1fil_h_fail("metal1/M1Fil.h.fail.gds.gz", "TOP", vec!["M1Fil.h"], vec!["M1.b", "M1.j"])]
 #[case::m1fil_h_boundary_ok("metal1/M1Fil.h.boundary_ok.gds.gz", "TOP", vec![], vec![])]
-#[case::m1fil_h_boundary_fail("metal1/M1Fil.h.boundary_fail.gds.gz", "TOP", vec!["M1Fil.h"], vec![])]
+#[case::m1fil_h_boundary_fail("metal1/M1Fil.h.boundary_fail.gds.gz", "TOP", vec!["M1Fil.h"], vec!["M1.j"])]
 #[case::m1fil_h_boundary_ring("metal1/M1Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 #[case::m1fil_k_ok("metal1/M1Fil.k.gds.gz", "TOP", vec![], vec!["M1.b", "M1.k"])]
-#[case::m1fil_k_fail("metal1/M1Fil.k.fail.gds.gz", "TOP", vec!["M1Fil.k"; 4], vec!["M1.b", "M1.k"])]
+#[case::m1fil_k_fail("metal1/M1Fil.k.fail.gds.gz", "TOP", vec!["M1Fil.k"], vec!["M1.b", "M1.k"])]
 fn test_metal1(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -1006,21 +1013,21 @@ const DECK_M2: &str = "metal2";
 // about the bent width, so M*.a is set aside.
 #[case::m2_g("metal2/M2.g.gds.gz", "TOP", vec!["M2.g", "M2.g"], vec!["M2.a", "M2.d", "M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2_i("metal2/M2.i.gds.gz", "TOP", vec!["M2.i"], vec!["M2.a", "M2.b", "M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
-#[case::m2_j_ok("metal2/M2.j.gds.gz", "TOP", vec![], vec!["M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2"])]
-#[case::m2_j_fail("metal2/M2.j.fail.gds.gz", "TOP", vec!["M2.j"], vec!["M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2"])]
-#[case::m2_k_ok("metal2/M2.k.gds.gz", "TOP", vec![], vec!["M2Fil.k", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2"])]
-#[case::m2_k_fail("metal2/M2.k.fail.gds.gz", "TOP", vec!["M2.k"], vec!["M2Fil.k", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2"])]
+#[case::m2_j_ok("metal2/M2.j.gds.gz", "TOP", vec![], vec!["M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.h", "M2Fil.k"])]
+#[case::m2_j_fail("metal2/M2.j.fail.gds.gz", "TOP", vec!["M2.j"], vec!["M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.h", "M2Fil.k"])]
+#[case::m2_k_ok("metal2/M2.k.gds.gz", "TOP", vec![], vec!["M2Fil.k", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.h", "M2Fil.k"])]
+#[case::m2_k_fail("metal2/M2.k.fail.gds.gz", "TOP", vec!["M2.k"], vec!["M2Fil.k", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.a2", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_c("metal2/M2Fil.c.gds.gz", "TOP", vec!["M2Fil.c", "M2Fil.c"], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_a1("metal2/M2Fil.a1.gds.gz", "TOP", vec!["M2Fil.a1"; 4], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_a2("metal2/M2Fil.a2.gds.gz", "TOP", vec!["M2Fil.a2"; 4], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_b("metal2/M2Fil.b.gds.gz", "TOP", vec!["M2Fil.b", "M2Fil.b"], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_d("metal2/M2Fil.d.gds.gz", "TOP", vec!["M2Fil.d", "M2Fil.d"], vec!["M2.j", "M2.k", "M2Fil.h", "M2Fil.k"])]
 #[case::m2fil_h_ok("metal2/M2Fil.h.gds.gz", "TOP", vec![], vec!["M2.b", "M2.j"])]
-#[case::m2fil_h_fail("metal2/M2Fil.h.fail.gds.gz", "TOP", vec!["M2Fil.h"; 4], vec!["M2.b", "M2.j"])]
+#[case::m2fil_h_fail("metal2/M2Fil.h.fail.gds.gz", "TOP", vec!["M2Fil.h"], vec!["M2.b", "M2.j"])]
 #[case::m2fil_k_ok("metal2/M2Fil.k.gds.gz", "TOP", vec![], vec!["M2.b", "M2.k"])]
-#[case::m2fil_k_fail("metal2/M2Fil.k.fail.gds.gz", "TOP", vec!["M2Fil.k"; 4], vec!["M2.b", "M2.k"])]
+#[case::m2fil_k_fail("metal2/M2Fil.k.fail.gds.gz", "TOP", vec!["M2Fil.k"], vec!["M2.b", "M2.k"])]
 #[case::m2fil_h_boundary_ok("metal2/M2Fil.h.boundary_ok.gds.gz", "TOP", vec![], vec![])]
-#[case::m2fil_h_boundary_fail("metal2/M2Fil.h.boundary_fail.gds.gz", "TOP", vec!["M2Fil.h"], vec![])]
+#[case::m2fil_h_boundary_fail("metal2/M2Fil.h.boundary_fail.gds.gz", "TOP", vec!["M2Fil.h"], vec!["M2.j"])]
 #[case::m2fil_h_boundary_ring("metal2/M2Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 fn test_metal2(
     #[case] gds: &str,
@@ -1050,21 +1057,21 @@ const DECK_M3: &str = "metal3";
 #[case::m3_f_ok("metal3/M3.f.gds.gz", "TOP", vec![], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3_g("metal3/M3.g.gds.gz", "TOP", vec!["M3.g", "M3.g"], vec!["M3.a", "M3.d", "M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3_i("metal3/M3.i.gds.gz", "TOP", vec!["M3.i"], vec!["M3.a", "M3.b", "M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
-#[case::m3_j_ok("metal3/M3.j.gds.gz", "TOP", vec![], vec!["M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2"])]
-#[case::m3_j_fail("metal3/M3.j.fail.gds.gz", "TOP", vec!["M3.j"], vec!["M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2"])]
-#[case::m3_k_ok("metal3/M3.k.gds.gz", "TOP", vec![], vec!["M3Fil.k", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2"])]
-#[case::m3_k_fail("metal3/M3.k.fail.gds.gz", "TOP", vec!["M3.k"], vec!["M3Fil.k", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2"])]
+#[case::m3_j_ok("metal3/M3.j.gds.gz", "TOP", vec![], vec!["M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.h", "M3Fil.k"])]
+#[case::m3_j_fail("metal3/M3.j.fail.gds.gz", "TOP", vec!["M3.j"], vec!["M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.h", "M3Fil.k"])]
+#[case::m3_k_ok("metal3/M3.k.gds.gz", "TOP", vec![], vec!["M3Fil.k", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.h", "M3Fil.k"])]
+#[case::m3_k_fail("metal3/M3.k.fail.gds.gz", "TOP", vec!["M3.k"], vec!["M3Fil.k", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.a2", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_c("metal3/M3Fil.c.gds.gz", "TOP", vec!["M3Fil.c", "M3Fil.c"], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_a1("metal3/M3Fil.a1.gds.gz", "TOP", vec!["M3Fil.a1"; 4], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_a2("metal3/M3Fil.a2.gds.gz", "TOP", vec!["M3Fil.a2"; 4], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_b("metal3/M3Fil.b.gds.gz", "TOP", vec!["M3Fil.b", "M3Fil.b"], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_d("metal3/M3Fil.d.gds.gz", "TOP", vec!["M3Fil.d", "M3Fil.d"], vec!["M3.j", "M3.k", "M3Fil.h", "M3Fil.k"])]
 #[case::m3fil_h_ok("metal3/M3Fil.h.gds.gz", "TOP", vec![], vec!["M3.b", "M3.j"])]
-#[case::m3fil_h_fail("metal3/M3Fil.h.fail.gds.gz", "TOP", vec!["M3Fil.h"; 4], vec!["M3.b", "M3.j"])]
+#[case::m3fil_h_fail("metal3/M3Fil.h.fail.gds.gz", "TOP", vec!["M3Fil.h"], vec!["M3.b", "M3.j"])]
 #[case::m3fil_k_ok("metal3/M3Fil.k.gds.gz", "TOP", vec![], vec!["M3.b", "M3.k"])]
-#[case::m3fil_k_fail("metal3/M3Fil.k.fail.gds.gz", "TOP", vec!["M3Fil.k"; 4], vec!["M3.b", "M3.k"])]
+#[case::m3fil_k_fail("metal3/M3Fil.k.fail.gds.gz", "TOP", vec!["M3Fil.k"], vec!["M3.b", "M3.k"])]
 #[case::m3fil_h_boundary_ok("metal3/M3Fil.h.boundary_ok.gds.gz", "TOP", vec![], vec![])]
-#[case::m3fil_h_boundary_fail("metal3/M3Fil.h.boundary_fail.gds.gz", "TOP", vec!["M3Fil.h"], vec![])]
+#[case::m3fil_h_boundary_fail("metal3/M3Fil.h.boundary_fail.gds.gz", "TOP", vec!["M3Fil.h"], vec!["M3.j"])]
 #[case::m3fil_h_boundary_ring("metal3/M3Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 fn test_metal3(
     #[case] gds: &str,
@@ -1094,21 +1101,21 @@ const DECK_M4: &str = "metal4";
 #[case::m4_f_ok("metal4/M4.f.gds.gz", "TOP", vec![], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4_g("metal4/M4.g.gds.gz", "TOP", vec!["M4.g", "M4.g"], vec!["M4.a", "M4.d", "M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4_i("metal4/M4.i.gds.gz", "TOP", vec!["M4.i"], vec!["M4.a", "M4.b", "M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
-#[case::m4_j_ok("metal4/M4.j.gds.gz", "TOP", vec![], vec!["M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2"])]
-#[case::m4_j_fail("metal4/M4.j.fail.gds.gz", "TOP", vec!["M4.j"], vec!["M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2"])]
-#[case::m4_k_ok("metal4/M4.k.gds.gz", "TOP", vec![], vec!["M4Fil.k", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2"])]
-#[case::m4_k_fail("metal4/M4.k.fail.gds.gz", "TOP", vec!["M4.k"], vec!["M4Fil.k", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2"])]
+#[case::m4_j_ok("metal4/M4.j.gds.gz", "TOP", vec![], vec!["M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.h", "M4Fil.k"])]
+#[case::m4_j_fail("metal4/M4.j.fail.gds.gz", "TOP", vec!["M4.j"], vec!["M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.h", "M4Fil.k"])]
+#[case::m4_k_ok("metal4/M4.k.gds.gz", "TOP", vec![], vec!["M4Fil.k", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.h", "M4Fil.k"])]
+#[case::m4_k_fail("metal4/M4.k.fail.gds.gz", "TOP", vec!["M4.k"], vec!["M4Fil.k", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.a2", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_c("metal4/M4Fil.c.gds.gz", "TOP", vec!["M4Fil.c", "M4Fil.c"], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_a1("metal4/M4Fil.a1.gds.gz", "TOP", vec!["M4Fil.a1"; 4], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_a2("metal4/M4Fil.a2.gds.gz", "TOP", vec!["M4Fil.a2"; 4], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_b("metal4/M4Fil.b.gds.gz", "TOP", vec!["M4Fil.b", "M4Fil.b"], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_d("metal4/M4Fil.d.gds.gz", "TOP", vec!["M4Fil.d", "M4Fil.d"], vec!["M4.j", "M4.k", "M4Fil.h", "M4Fil.k"])]
 #[case::m4fil_h_ok("metal4/M4Fil.h.gds.gz", "TOP", vec![], vec!["M4.b", "M4.j"])]
-#[case::m4fil_h_fail("metal4/M4Fil.h.fail.gds.gz", "TOP", vec!["M4Fil.h"; 4], vec!["M4.b", "M4.j"])]
+#[case::m4fil_h_fail("metal4/M4Fil.h.fail.gds.gz", "TOP", vec!["M4Fil.h"], vec!["M4.b", "M4.j"])]
 #[case::m4fil_k_ok("metal4/M4Fil.k.gds.gz", "TOP", vec![], vec!["M4.b", "M4.k"])]
-#[case::m4fil_k_fail("metal4/M4Fil.k.fail.gds.gz", "TOP", vec!["M4Fil.k"; 4], vec!["M4.b", "M4.k"])]
+#[case::m4fil_k_fail("metal4/M4Fil.k.fail.gds.gz", "TOP", vec!["M4Fil.k"], vec!["M4.b", "M4.k"])]
 #[case::m4fil_h_boundary_ok("metal4/M4Fil.h.boundary_ok.gds.gz", "TOP", vec![], vec![])]
-#[case::m4fil_h_boundary_fail("metal4/M4Fil.h.boundary_fail.gds.gz", "TOP", vec!["M4Fil.h"], vec![])]
+#[case::m4fil_h_boundary_fail("metal4/M4Fil.h.boundary_fail.gds.gz", "TOP", vec!["M4Fil.h"], vec!["M4.j"])]
 #[case::m4fil_h_boundary_ring("metal4/M4Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 fn test_metal4(
     #[case] gds: &str,
@@ -1138,21 +1145,21 @@ const DECK_M5: &str = "metal5";
 #[case::m5_f_ok("metal5/M5.f.gds.gz", "TOP", vec![], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5_g("metal5/M5.g.gds.gz", "TOP", vec!["M5.g", "M5.g"], vec!["M5.a", "M5.d", "M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5_i("metal5/M5.i.gds.gz", "TOP", vec!["M5.i"], vec!["M5.a", "M5.b", "M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
-#[case::m5_j_ok("metal5/M5.j.gds.gz", "TOP", vec![], vec!["M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2"])]
-#[case::m5_j_fail("metal5/M5.j.fail.gds.gz", "TOP", vec!["M5.j"], vec!["M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2"])]
-#[case::m5_k_ok("metal5/M5.k.gds.gz", "TOP", vec![], vec!["M5Fil.k", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2"])]
-#[case::m5_k_fail("metal5/M5.k.fail.gds.gz", "TOP", vec!["M5.k"], vec!["M5Fil.k", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2"])]
+#[case::m5_j_ok("metal5/M5.j.gds.gz", "TOP", vec![], vec!["M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.h", "M5Fil.k"])]
+#[case::m5_j_fail("metal5/M5.j.fail.gds.gz", "TOP", vec!["M5.j"], vec!["M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.h", "M5Fil.k"])]
+#[case::m5_k_ok("metal5/M5.k.gds.gz", "TOP", vec![], vec!["M5Fil.k", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.h", "M5Fil.k"])]
+#[case::m5_k_fail("metal5/M5.k.fail.gds.gz", "TOP", vec!["M5.k"], vec!["M5Fil.k", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.a2", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_c("metal5/M5Fil.c.gds.gz", "TOP", vec!["M5Fil.c", "M5Fil.c"], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_a1("metal5/M5Fil.a1.gds.gz", "TOP", vec!["M5Fil.a1"; 4], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_a2("metal5/M5Fil.a2.gds.gz", "TOP", vec!["M5Fil.a2"; 4], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_b("metal5/M5Fil.b.gds.gz", "TOP", vec!["M5Fil.b", "M5Fil.b"], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_d("metal5/M5Fil.d.gds.gz", "TOP", vec!["M5Fil.d", "M5Fil.d"], vec!["M5.j", "M5.k", "M5Fil.h", "M5Fil.k"])]
 #[case::m5fil_h_ok("metal5/M5Fil.h.gds.gz", "TOP", vec![], vec!["M5.b", "M5.j"])]
-#[case::m5fil_h_fail("metal5/M5Fil.h.fail.gds.gz", "TOP", vec!["M5Fil.h"; 4], vec!["M5.b", "M5.j"])]
+#[case::m5fil_h_fail("metal5/M5Fil.h.fail.gds.gz", "TOP", vec!["M5Fil.h"], vec!["M5.b", "M5.j"])]
 #[case::m5fil_k_ok("metal5/M5Fil.k.gds.gz", "TOP", vec![], vec!["M5.b", "M5.k"])]
-#[case::m5fil_k_fail("metal5/M5Fil.k.fail.gds.gz", "TOP", vec!["M5Fil.k"; 4], vec!["M5.b", "M5.k"])]
+#[case::m5fil_k_fail("metal5/M5Fil.k.fail.gds.gz", "TOP", vec!["M5Fil.k"], vec!["M5.b", "M5.k"])]
 #[case::m5fil_h_boundary_ok("metal5/M5Fil.h.boundary_ok.gds.gz", "TOP", vec![], vec![])]
-#[case::m5fil_h_boundary_fail("metal5/M5Fil.h.boundary_fail.gds.gz", "TOP", vec!["M5Fil.h"], vec![])]
+#[case::m5fil_h_boundary_fail("metal5/M5Fil.h.boundary_fail.gds.gz", "TOP", vec!["M5Fil.h"], vec!["M5.j"])]
 #[case::m5fil_h_boundary_ring("metal5/M5Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 fn test_metal5(
     #[case] gds: &str,
@@ -1444,7 +1451,7 @@ fn test_extblock(
 const DECK_PAD: &str = "pad";
 
 #[rstest]
-#[case::pad_a1("pad/Pad.a1.gds.gz", "TOP", vec!["Pad.a1"; 4], vec!["Pad.d", "Padb.a", "Padc.a", "Pad.i"])]
+#[case::pad_a1("pad/Pad.a1.gds.gz", "TOP", vec!["Pad.a1"], vec!["Pad.d", "Padb.a", "Padc.a", "Pad.i"])]
 #[case::pad_d("pad/Pad.d.gds.gz", "TOP", vec!["Pad.d"; 1], vec!["Pad.a1", "Padb.a", "Padc.a", "Pad.i"])]
 #[case::pad_i("pad/Pad.i.gds.gz", "TOP", vec!["Pad.i"; 1], vec![])]
 #[case::padb_a("pad/Padb.a.gds.gz", "TOP", vec!["Padb.a"; 8], vec!["Padb.c", "Padc.a", "Padc.b", "Padc.c", "Pad.i", "Padb.f"])]
