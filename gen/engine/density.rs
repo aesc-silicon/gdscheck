@@ -53,9 +53,10 @@ pub fn generate(pdk: &PdkConfig) {
         ],
     );
 
-    // Four 50 µm windows over a 100 µm box: Outer fills the lower-left one and half of
-    // the one above it.  D.wmin at 50 %: the two empty windows (the half-full one is not
-    // under 50).  D.wmax at 60 %: the full one.
+    // 50 µm windows sliding over a 100 µm box: Outer fills the lower-left quarter and
+    // half of the quarter above it.  D.wmin at 50 %: every window off the Outer is
+    // under, and they overlap into one violation (the window at (0, 50) is exactly
+    // 50 and not under).  D.wmax at 60 %: the windows on the Outer, one violation.
     write(
         "window_quarters",
         vec![
@@ -64,9 +65,9 @@ pub fn generate(pdk: &PdkConfig) {
         ],
     );
 
-    // A die 130 by 50 in 50 µm windows: the third column is 30 µm wide.  Outer over the
-    // lower 20 µm is 40 % of every window, the narrow one included, because a window is
-    // measured against its overlap with the box.  D.wmin: 3.  D.wmax: 0.
+    // A die 130 by 50 in 50 µm windows: the windows slide along and one is laid against
+    // the far edge.  Outer over the lower 20 µm is 40 % of every window: one D.wmin
+    // violation, no D.wmax.
     write(
         "window_partial",
         vec![
