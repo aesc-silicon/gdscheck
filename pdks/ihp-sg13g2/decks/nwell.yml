@@ -11,12 +11,18 @@ rules:
     check: min_space
     layers: [NWell]
     value: 0.62
+  - id: NW.b
+    check: min_notch
+    layers: [NWell]
+    value: 0.62
   - id: NW.b1
     check: min_space
     layers: [NWellMergedNoSRAM]
     value: 1.80
     params:
       net: different
+    layer_params:
+      gap_outside: NWellOrPWellBlk
   - id: NW.c
     check: min_enclosure
     layers: [NWell, PsdActivInNWellNoTGONoSRAM]
@@ -31,39 +37,41 @@ rules:
     value: 0.31
   - id: NW.d
     check: min_space
-    layers: [NWellNoSRAM, NActFullNoTGO]
+    layers: [NWellNoSRAM, NActExtNoTGO]
     value: 0.31
+  - id: NW.d
+    check: forbidden
+    layers: [NActExtAtNWell]
+    value: 0.0
   - id: NW.d1
     check: min_space
-    layers: [NWellNoSRAM, NActFullTGOAna]
+    layers: [NWellNoSRAM, NActExtTGOAna]
     value: 0.62
   - id: NW.d1.dig
     check: min_space
-    layers: [NWellNoSRAM, NActFullTGODig]
+    layers: [NWellNoSRAM, NActExtTGODig]
     value: 0.31
   - id: NW.e
     check: min_enclosure
-    layers: [NWell, NActivInNWellNoTGO]
+    layers: [NWell, NWellTieNoTGO]
     value: 0.24
-    params:
-      skip_clipped: 1
   - id: NW.e1
     check: min_enclosure
-    layers: [NWell, NActivInNWellTGOAna]
+    layers: [NWell, NWellTieTGOAna]
     value: 0.62
-    params:
-      skip_clipped: 1
   - id: NW.e1.dig
     check: min_enclosure
-    layers: [NWell, NActivInNWellTGODig]
+    layers: [NWell, NWellTieTGODig]
     value: 0.24
-    params:
-      skip_clipped: 1
   - id: NW.f
     check: min_space
-    layers: [NWell, PsdActivInPWellNoTGO]
+    layers: [NWell, SubstrateTieNoTGO]
     value: 0.24
   - id: NW.f1
     check: min_space
-    layers: [NWell, PsdActivInPWellTGO]
+    layers: [NWell, SubstrateTieTGOAna]
     value: 0.62
+  - id: NW.f1.dig
+    check: min_space
+    layers: [NWell, SubstrateTieTGODig]
+    value: 0.24

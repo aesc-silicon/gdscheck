@@ -21,6 +21,35 @@ size in any layout, and every flat/array pair agreed.
 Test status on the engine as of this report: 16 of the 69 new cases fail, all on the
 findings below; the other 53 pass.
 
+## Resolution (2026-09-20)
+
+Fixed, engine: 3 (every offset - size, close, open - now keeps corners of a right angle
+or wider sharp, as KLayout's `sized` does; the bevel cut 0.128 µm off every corner of a
+closed well).  Fixed, deck and derived layers: 1 (NW.b `min_notch`), 2 (close radius
+0.309: "less than 0.62" merges, 0.62 does not), 4 (`gap_outside: NWellOrPWellBlk` on
+NW.b1, a new `min_space` layer param - the gap must run through PWell), 5 (external N+
+meeting the well is a `forbidden` NW.d, since a space check has no pair at a touch),
+6+7 (the NWell tie is `NActFull inside NWell`, section 4.2 to the letter: whole shapes
+only, edge on the well edge included, undoped Activ excluded; `skip_clipped` gone),
+8 (the substrate tie is P+Activ minus NWell minus PWell:block), 9 (NW.f1 split by
+DigiBnd; ihp-sg13cmos5l now shares the deck).
+
+Not a finding: 11.  KLayout's maximal deck reports the same eight 0.475 µm chords on the
+legal octagon (`ext_width` is euclidian, angle limit 90°); the count in the oracle
+column was read as "nothing on the legal octagon" by mistake.  The chord from a
+diagonal's end to the end of the wall two edges on is a stretch of material between
+two boundary points shorter than the width, and both tools read it.  The case now
+expects 26.
+
+Open, left as the engine and KLayout read them, cases flipped: 10 (enclosure by
+projection: IHP's `ext_enclosed` forces it) and 12 (a device the DigiBnd edge cuts
+through is digital as far as it overlaps).  Either is a one-line change if the PDK
+owner reads the manual the other way.
+
+Layout `NW.b1.h1` had an unintended pair: the 1.28/1.28 "clean" well sat 1.469 from the
+0.90/0.90 pair's well.  The latter moved to x = 15; the case's count of six was right
+by accident before (the 0.62 pair missing, the accident counted).
+
 ## Findings
 
 ### 1. NW.b has no notch half (false negative)
