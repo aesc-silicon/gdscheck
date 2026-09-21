@@ -4006,6 +4006,107 @@ const DECK_NPN: &str = "npn";
 #[case::npn_13g2("npn/npn13G2.gds.gz", "TOP",
     vec!["npn13G2.a", "npn13G2.a", "npn13G2L.a", "npn13G2L.b", "npn13G2V.a", "npn13G2V.b"],
     vec![])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/npn.md).  The devices are drawn as the
+// reference cells: a TRANS filling the hole of a pSD ring 0.9 wide with its Activ ring
+// 0.2 inside, or with the hole grown so a neighbour fits in it.
+// Labelled tie rings with no TRANS: four boxes, one cut polygon, an octagon, one with
+// a P+ island in its hole; an unlabelled empty ring and a ring with its TRANS are clean.
+#[case::npn_g2_b_h1("npn/npnG2.b.h1.gds.gz", "TOP", vec!["npnG2.b"; 4], vec![])]
+// Ties that do not enclose their TRANS: the TRANS crossing the ring, a labelled TRANS
+// with no tie, a TRANS in a ring with a 0.5 gap, a TRANS in a pSD-only ring (no Activ,
+// no tie by npnG2.a).  "Must enclose TRANS": four.
+#[case::npn_g2_b_h2("npn/npnG2.b.h2.gds.gz", "TOP", vec!["npnG2.b"; 4], vec![])]
+// Empty labelled rings straddling x = 20, on x = 21, 40, 42, straddling 100, at (1000, 1000).
+#[case::npn_g2_b_h3("npn/npnG2.b.h3.gds.gz", "TOP", vec!["npnG2.b"; 6], vec![])]
+// Fifty empty labelled rings, flat and as a GdsArrayRef.
+#[case::npn_g2_b_h4("npn/npnG2.b.h4.gds.gz", "TOP", vec!["npnG2.b"; 50], vec![])]
+#[case::npn_g2_b_h5("npn/npnG2.b.h5.gds.gz", "TOP", vec!["npnG2.b"; 50], vec![])]
+// The tie's Activ 0.195 inside the pSD's outer wall (one side), inside its hole wall
+// (one side), 0.195 all round (one closed run), an octagonal tie's four diagonals at
+// 0.1945 (four walls), a pSD corner chamfered 0.1945 from the Activ's corner; 0.2 as
+// boxes, as one cut polygon and as an octagon are clean.
+#[case::npn_g2_c_h1("npn/npnG2.c.h1.gds.gz", "TOP", vec!["npnG2.c"; 8], vec![])]
+// The Activ flush with the pSD's hole wall (enclosure 0), the Activ sticking 0.1 out of
+// the pSD (enclosure 0, and the bare 0.1 is N+Activ 0.9 from the TRANS: npnG2.d); a P+
+// island 0.45 from the hole with 0.19 pSD is not the tie's Activ.
+#[case::npn_g2_c_h2("npn/npnG2.c.h2.gds.gz", "TOP", vec!["npnG2.c", "npnG2.c", "npnG2.d"], vec![])]
+// The 0.195 outer margin straddling x = 20, the Activ wall on 21, straddling 40, the
+// pSD wall on 42, straddling 100, at (1000, 1000).
+#[case::npn_g2_c_h3("npn/npnG2.c.h3.gds.gz", "TOP", vec!["npnG2.c"; 6], vec![])]
+// Fifty devices with the 0.195 outer margin, flat and as a GdsArrayRef.
+#[case::npn_g2_c_h4("npn/npnG2.c.h4.gds.gz", "TOP", vec!["npnG2.c"; 50], vec![])]
+#[case::npn_g2_c_h5("npn/npnG2.c.h5.gds.gz", "TOP", vec!["npnG2.c"; 50], vec![])]
+// N+Activ, NWell, PWell:block, nBuLay, nSD:block at 1.205 (fire) and 1.21 (clean).
+#[case::npn_g2_d_h1("npn/npnG2.d.h1.gds.gz", "TOP", vec!["npnG2.d"; 5], vec![])]
+// N+Activ (drawn nSD under an abutting block) at 1.0, an nSD:block in the hole at 1.0,
+// an nSD:block 0.305 past a reference tie's pSD (1.205); P+Activ at 1.0, Activ under
+// an abutting nSD:block with no nSD (no N+), an abutting N+Activ, an overlapping NWell,
+// an N+Activ touching the TRANS at a corner point (touching is related), five layers
+// at 1.0 from an unlabelled tie's TRANS are clean.
+#[case::npn_g2_d_h2("npn/npnG2.d.h2.gds.gz", "TOP", vec!["npnG2.d"; 3], vec![])]
+// Corner to corner 0.85/0.85 (1.202), a chamfer 1.205 from the TRANS corner, a diamond
+// tip at 1.205, a 45° NWell strip 1.205 from a wall; 0.86/0.86 (1.216) and 1.205 in x
+// with 2.0 in y are clean.
+#[case::npn_g2_d_h3("npn/npnG2.d.h3.gds.gz", "TOP", vec!["npnG2.d"; 4], vec![])]
+// Two overlapping N+Activ boxes at 1.205, a comb with three teeth at 1.205, an NWell
+// ring around the TRANS at 1.205, two ties sharing a wall (npnG2.f) with an NWell 1.205
+// from one TRANS: one marker per shape pair.
+#[case::npn_g2_d_h4("npn/npnG2.d.h4.gds.gz", "TOP", vec!["npnG2.d"; 4], vec![])]
+// The 1.205 gap straddling x = 20, the TRANS wall on 21, the N+Activ wall on 40, the
+// gap straddling 42 and 100, at (1000, 1000).
+#[case::npn_g2_d_h5("npn/npnG2.d.h5.gds.gz", "TOP", vec!["npnG2.d"; 6], vec![])]
+// Fifty devices with an NWell 1.205 away, flat and as a GdsArrayRef.
+#[case::npn_g2_d_h6("npn/npnG2.d.h6.gds.gz", "TOP", vec!["npnG2.d"; 50], vec![])]
+#[case::npn_g2_d_h7("npn/npnG2.d.h7.gds.gz", "TOP", vec!["npnG2.d"; 50], vec![])]
+// A 4.0 wide NWell overlapping the TRANS by 0.5: section 4.2's generated nBuLay lies
+// 0.5 outside the TRANS, unrelated, 0.5 < 1.21.  The same under nBuLay:block, a 2.0
+// wide well, and the well with a drawn nBuLay overlapping the TRANS are clean.
+#[case::npn_g2_d_h8("npn/npnG2.d.h8.gds.gz", "TOP", vec!["npnG2.d"], vec![])]
+// GatPoly at 0.895, the part of a GatPoly outside an SRAM marker at 0.5, a 45° strip
+// 0.895 from the corner, corner to corner 0.63/0.63 (0.891); 0.9, GatPoly in SRAM at
+// 0.5, abutting GatPoly, 0.64/0.64 (0.905), 0.895 from an unlabelled tie are clean.
+#[case::npn_g2_d1_h1("npn/npnG2.d1.h1.gds.gz", "TOP", vec!["npnG2.d1"; 4], vec![])]
+// GatPoly 0.895 straddling x = 20, the TRANS wall on 21, the GatPoly wall on 40,
+// straddling 42 and 100, at (1000, 1000).
+#[case::npn_g2_d1_h2("npn/npnG2.d1.h2.gds.gz", "TOP", vec!["npnG2.d1"; 6], vec![])]
+// SalBlock at 0.895, a SalBlock U whose arms face the TRANS's top and bottom at 0.895
+// (one shape pair); 0.9, an abutting SalBlock and one over the TRANS are clean.
+#[case::npn_g2_d2_h1("npn/npnG2.d2.h1.gds.gz", "TOP", vec!["npnG2.d2"; 2], vec![])]
+// Fifty devices with a SalBlock 0.895 away, flat and as a GdsArrayRef.
+#[case::npn_g2_d2_h2("npn/npnG2.d2.h2.gds.gz", "TOP", vec!["npnG2.d2"; 50], vec![])]
+#[case::npn_g2_d2_h3("npn/npnG2.d2.h3.gds.gz", "TOP", vec!["npnG2.d2"; 50], vec![])]
+// A Cont at 0.265, corner to corner 0.185/0.185 (0.262), a 0.16 x 0.5 ContBar at 0.265;
+// 0.27, an abutting Cont, one inside the TRANS, 0.195/0.195 (0.276), the tie's own
+// Cont 0.27 from the TRANS, 0.265 from an unlabelled tie are clean.
+#[case::npn_g2_e_h1("npn/npnG2.e.h1.gds.gz", "TOP", vec!["npnG2.e"; 3], vec![])]
+// A Cont 0.265 straddling x = 20, the TRANS wall on 21, the Cont wall on 40,
+// straddling 42 and 100, at (1000, 1000).
+#[case::npn_g2_e_h2("npn/npnG2.e.h2.gds.gz", "TOP", vec!["npnG2.e"; 6], vec![])]
+// Fifty devices with a Cont 0.265 away, flat and as a GdsArrayRef.
+#[case::npn_g2_e_h3("npn/npnG2.e.h3.gds.gz", "TOP", vec!["npnG2.e"; 50], vec![])]
+#[case::npn_g2_e_h4("npn/npnG2.e.h4.gds.gz", "TOP", vec!["npnG2.e"; 50], vec![])]
+// npn13G2 windows 0.895 and 0.905, a horizontal 0.895, a 0.895 of two overlapping
+// boxes, a 0.895 crossing the TRANS wall, ten 0.895 in a row; 0.9 (vertical,
+// horizontal, two abutting halves, crossing the wall, ten in a row) and a 0.9 x 0.9
+// square are clean.
+#[case::npn_13g2_a_h1("npn/npn13G2.a.h1.gds.gz", "TOP", vec!["npn13G2.a"; 15], vec![])]
+// A labelled TRANS with no tie and a 0.895 window fires; an unlabelled TRANS, a label
+// outside the TRANS, "npn13G2C" and "npn13G2X" are no flavour.
+#[case::npn_13g2_a_h2("npn/npn13G2.a.h2.gds.gz", "TOP", vec!["npn13G2.a"], vec![])]
+// 0.895 windows straddling x = 20, crossing 21, ending on 40, starting on 42,
+// straddling 100, at (1000, 1000).
+#[case::npn_13g2_a_h3("npn/npn13G2.a.h3.gds.gz", "TOP", vec!["npn13G2.a"; 6], vec![])]
+// Fifty devices with a 0.895 window, flat and as a GdsArrayRef.
+#[case::npn_13g2_a_h4("npn/npn13G2.a.h4.gds.gz", "TOP", vec!["npn13G2.a"; 50], vec![])]
+#[case::npn_13g2_a_h5("npn/npn13G2.a.h5.gds.gz", "TOP", vec!["npn13G2.a"; 50], vec![])]
+// npn13G2L windows 0.995 and 2.505, an "npn13G2L" with a 0.9 window (L.a, not G2.a), an
+// "npn13G2" with a 2.0 window (G2.a, not L); 1.0, 2.0 and 2.5 are clean.
+#[case::npn_13g2l_a_h1("npn/npn13G2L.a.h1.gds.gz", "TOP",
+    vec!["npn13G2.a", "npn13G2L.a", "npn13G2L.a", "npn13G2L.b"], vec![])]
+// npn13G2V windows 0.995 and 5.005, a 0.07 x 0.9 window (the width is no rule); 1.0
+// and 5.0 are clean.
+#[case::npn_13g2v_a_h1("npn/npn13G2V.a.h1.gds.gz", "TOP",
+    vec!["npn13G2V.a", "npn13G2V.a", "npn13G2V.b"], vec![])]
 fn test_npn(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4023,6 +4124,42 @@ const DECK_SDIOD: &str = "sdiod";
 #[rstest]
 #[case::sdiod("sdiod/Sdiod.gds.gz", "TOP",
     vec!["Sdiod.a", "Sdiod.b", "Sdiod.c", "Sdiod.d", "Sdiod.e"], vec![])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/npn.md).  The diode is drawn as the
+// reference cell: a 0.30 x 1.00 ContBar under PWell:block, nSD:block and SalBlock at
+// 0.25, 0.40 and 0.45 in a drawn nBuLay, the NWell ring, the PWell:block ring, the P+
+// tie ring, ThickGateOx and Recog:diode around it.
+// The block's right margin one step under and one step over, left and right under
+// (two), all four under (one run), all four over (one), a corner chamfered one step
+// under from the bar's corner; exact is clean.  For each of the three blocks.
+#[case::sdiod_a_h1("sdiod/Sdiod.a.h1.gds.gz", "TOP", vec!["Sdiod.a"; 7], vec![])]
+#[case::sdiod_b_h1("sdiod/Sdiod.b.h1.gds.gz", "TOP", vec!["Sdiod.b"; 7], vec![])]
+#[case::sdiod_c_h1("sdiod/Sdiod.c.h1.gds.gz", "TOP", vec!["Sdiod.c"; 7], vec![])]
+// A PWell:block plate 2.0 past the bar and one 0.8 past it under the NWell ring (max);
+// the block as four overlapping boxes at 0.25 and a separate block 0.5 away are clean.
+#[case::sdiod_a_h2("sdiod/Sdiod.a.h2.gds.gz", "TOP", vec!["Sdiod.a"; 2], vec![])]
+// The 0.245 margin: the block wall on x = 20, the bar straddling 21, the bar wall on
+// 40, the gap straddling 42, the bar's top wall on y = 20, straddling x = 100, at
+// (1000, 1000).
+#[case::sdiod_a_h3("sdiod/Sdiod.a.h3.gds.gz", "TOP", vec!["Sdiod.a"; 7], vec![])]
+// Two bars 0.5 apart in one stack: each bar's inner side is enclosed by 1.05, 1.2 and
+// 1.25, over every max.
+#[case::sdiod_a_h4("sdiod/Sdiod.a.h4.gds.gz", "TOP",
+    vec!["Sdiod.a", "Sdiod.a", "Sdiod.b", "Sdiod.b", "Sdiod.c", "Sdiod.c"], vec![])]
+// Fifty diodes with the 0.245 margin, flat and as a GdsArrayRef.
+#[case::sdiod_a_h5("sdiod/Sdiod.a.h5.gds.gz", "TOP", vec!["Sdiod.a"; 50], vec![])]
+#[case::sdiod_a_h6("sdiod/Sdiod.a.h6.gds.gz", "TOP", vec!["Sdiod.a"; 50], vec![])]
+// Bars 0.295 and 0.305 wide, 0.995 and 1.005 long, a 0.3 x 0.305 bar (its length), a
+// 0.295 of two overlapping boxes; a lying 1.0 x 0.3, a 0.3 x 0.3 (a Cont, no bar) and
+// a 0.3 x 1.0 of two abutting halves are clean.
+#[case::sdiod_d_h1("sdiod/Sdiod.d.h1.gds.gz", "TOP",
+    vec!["Sdiod.d", "Sdiod.d", "Sdiod.d", "Sdiod.e", "Sdiod.e", "Sdiod.e"], vec![])]
+// Recognition is "ContBar enclosed by" the four layers: a 0.295 bar with no nBuLay, a
+// 0.295 bar the nBuLay's edge cuts through, a bar crossing the PWell:block's wall are
+// no diode.
+#[case::sdiod_d_h2("sdiod/Sdiod.d.h2.gds.gz", "TOP", vec![], vec![])]
+// A 0.295 bar in the stack inside a 6.0 wide NWell with no drawn nBuLay: section 4.2's
+// generated nBuLay encloses it.
+#[case::sdiod_d_h3("sdiod/Sdiod.d.h3.gds.gz", "TOP", vec!["Sdiod.d"], vec![])]
 fn test_sdiod(
     #[case] gds: &str,
     #[case] topcell: &str,
