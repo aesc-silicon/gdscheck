@@ -553,6 +553,112 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     by_pair.into_values().collect()
 }
 
+/// The notches of one region that lie between two of its pieces in a tile: the gap
+/// between facing walls of two copies the tile holds apart, which the stitcher knows
+/// for one region.  A tile's copy of a drawn layer is the merge of the shapes reaching
+/// its zone, so a shape whose parts join beyond the zone is several polygons there: a
+/// ring with a slit cut through one wall is, in the tile of the slit, the two halves of
+/// that wall, each a polygon of its own, 0.005 apart.  The width scan reads a notch
+/// within one polygon and finds none in either; the spacing scan reads pairs of
+/// polygons and passes over two of one region, since what lies between two pieces of a
+/// shape is a notch and not a space.  The notch between pieces is read here, as the
+/// spacing scan reads a pair - the closest approach - kept where the two walls run
+/// alongside, which is what the scan within one polygon reports, and owned by the low
+/// end of the stretch they share, the point the scan owns the same notch by in a tile
+/// that holds the shape whole.  A gap of nothing is the seam a cut left, not a notch.
+#[allow(clippy::too_many_arguments)]
+pub fn piece_notches(
+    rule: &RuleDefinition,
+    layout: &FlatLayout,
+    dbu_to_um: f64,
+    merged: &mut MergedCache,
+    key: (i16, i16),
+    lname: &str,
+    limit: Limit,
+    bent: bool,
+    min_run: i64,
+) -> Vec<Violation> {
+    let (gl, gd) = key;
+    merged.ensure(layout, gl, gd);
+    let tile = merged.tile_dbu() as i64;
+    let regions = merged.kin(gl, gd, false);
+    let map = merged.tiles(gl, gd);
+    let kin = Kin::of((map, regions), None, tile as i32, false);
+    let (rid, limit_um) = (rule.id.as_str(), rule.value);
+    map.par_iter()
+        .filter(|(_, polys)| polys.len() > 1)
+        .flat_map_iter(|(&(tx, ty), polys)| {
+            let core = Core {
+                x0: tx as i64 * tile,
+                y0: ty as i64 * tile,
+                x1: (tx as i64 + 1) * tile,
+                y1: (ty as i64 + 1) * tile,
+            };
+            let mut out = Vec::new();
+            // Only copies that are pieces of a region other copies of the tile can be
+            // pieces of: a copy whole inside the core is looked up as none.
+            let sides: Vec<(Outline, usize)> = polys
+                .iter()
+                .filter(|m| m.outer.len() >= 3)
+                .filter_map(|m| kin.region_a(m, &core).map(|r| (Outline::new(m), r)))
+                .collect();
+            for (i, (a, ra)) in sides.iter().enumerate() {
+                for (b, rb) in &sides[i + 1..] {
+                    if ra != rb || !a.possibly_within(b, limit.dbu()) {
+                        continue;
+                    }
+                    let Some(((num, den, p, q), sa, sb)) = closest_approach_segs(a, b, limit.dbu())
+                    else {
+                        continue;
+                    };
+                    if num == 0 || !limit.broken_by_sq(num, den) {
+                        continue;
+                    }
+                    let Some(run) = shared_run(sa, sb) else {
+                        continue; // a corner or an end, which a notch does not read
+                    };
+                    let axis = sa.0.0 == sa.1.0 || sa.0.1 == sa.1.1;
+                    if (bent && axis) || run <= min_run as f64 {
+                        continue;
+                    }
+                    let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
+                    if !core.owns_from(mx, my) {
+                        continue;
+                    }
+                    // A third piece lying in the gap makes it two notches, read against
+                    // that piece.
+                    if polys
+                        .iter()
+                        .any(|m| crate::merge::point_in_merged(mx, my, m))
+                    {
+                        continue;
+                    }
+                    let g = (num as f64 / den as f64).sqrt() * dbu_to_um;
+                    let (x1, y1, x2, y2) = (
+                        p.0 * dbu_to_um,
+                        p.1 * dbu_to_um,
+                        q.0 * dbu_to_um,
+                        q.1 * dbu_to_um,
+                    );
+                    out.push(Violation::edge(
+                        rid,
+                        "Minimum notch violation",
+                        format!(
+                            "{lname}: notch {g:.4} µm < {limit_um:.2} µm at \
+                             ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                        ),
+                        x1,
+                        y1,
+                        x2,
+                        y2,
+                    ));
+                }
+            }
+            out
+        })
+        .collect()
+}
+
 /// What a space report's pair of regions is known by: the kinship index's id for a
 /// region it files, a point of the shape for one whole inside some core.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]

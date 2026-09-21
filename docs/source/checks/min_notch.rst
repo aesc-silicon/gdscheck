@@ -34,6 +34,15 @@ passes run, covering every combination of wall orientation:
 What the width scan reads that a notch has no use for is left out: a plain box has no
 notch, and the corner and acute-tip readings are about material narrowing to nothing.
 
+A tile's copy of a layer is the merge of the shapes reaching its zone, so a region whose
+parts join beyond the zone is several polygons there: a ring with a slit cut through one
+wall is, in the tile of the slit, the two halves of that wall. The scan above finds no
+notch in either, and :doc:`min_space` passes over two pieces of one region, so the gap
+between two pieces of one region in a tile is read as well — as a spacing scan reads a
+pair, at the closest approach, kept where the two walls run alongside — and owned by the
+low end of the stretch they share, the same point the scan owns the notch by in a tile
+that holds the shape whole.
+
 
 Layers
 ------

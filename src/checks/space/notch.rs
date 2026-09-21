@@ -8,6 +8,7 @@
 //! rule adds: its bound, `angle: bent` for the 45° gaps alone, `length` for gaps whose
 //! walls share more than so much run.
 
+use super::super::helper::piece_notches;
 use super::super::params::{bent_only, min_run};
 use crate::geom::{Limit, notch_pairs};
 use crate::layout::FlatLayout;
@@ -83,6 +84,18 @@ pub fn run(
             })
             .collect();
         violations.append(&mut layer_violations);
+        // A notch between two pieces of one region, where the tile holds them apart.
+        violations.extend(piece_notches(
+            rule,
+            layout,
+            dbu_to_um,
+            merged,
+            (gl, gd),
+            lname,
+            limit,
+            bent,
+            min_run_dbu,
+        ));
     }
     violations
 }
