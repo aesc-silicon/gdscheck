@@ -51,6 +51,27 @@ Test status on the engine as of this report: 7 of the 59 new cases fail at tile 
 (`padb_a_h1`, `padb_f_h1`, `padc_a_h1`, `padc_b_h1`, `mim_d_h1`, `mim_e_h1`,
 `mim_h_h1`), and `padb_c_h1` passes at 20 and 7 and fails at 100; the other 51 pass.
 
+## Resolution (2026-09-21)
+
+Fixed, deck: 1 and 2 (Padb.a is the pad's extent - `exact_dim` and `exact_length` on
+the bounding box - figure 6.9's `a`; the pcell's regular octagon, its 64-gon circle and
+a 60 octagon with small chamfers are 60 pads, one marker per off-size side now; the
+same for Padc.a), 4 (table 6.1: `CuPillarPadOffSize` = the pads whose box is none of
+35, 40 or 45 square, a `forbidden`; Padc.b = 40 between any pads and 50 where a 45 µm
+pad is involved, `CuPillarPad45` against itself and against the rest), 5 (MIM.d reads
+`TopVia1OnMIM`, the vias lying on a plate, whole - a via over the plate's edge or
+corner is enclosed by nothing there; MIM.h is a `forbidden` on `MIMNoVia`, the plates no
+via lies over, so the abutting via counts for nothing), 6 (a second MIM.e entry with
+`pairs: overlapping` reads the cap's own exit wire against the plate it also covers),
+7 (`SBumpPad` and `CuPillarPad` are lazy virtuals: an eager one keeps its result's
+outer ring only, and the ring pad had lost its hole before Padb.f's circle test).
+
+Fixed, engine: 3 (a closest approach read at an angle is filed under its corner, not
+the wall it was read on, and joins the run of walls at that corner alone: the octagon
+in an octagon is four runs at every tile, where the corner reads had chained all
+eight walls into one when no tile line cut them; a via in a diamond is four corners
+now, `V(n).c.h3`).
+
 ## Findings
 
 ### 1. The regular octagon and the circle the bump and pillar rules allow are off-size (false positive)

@@ -2087,8 +2087,9 @@ fn test_via4(
 // reading (clean), and so are the diamonds (note B).  The touch is the metaln report's
 // open finding 4 (gdscheck reports the cut only).
 // The cut corner, the touch, the chamfer 0.0035 from the corner and the diamond all fire:
-// the margin is the closest approach (euclidian, decided 2026-09-21).
-#[case::vn_c_h3(".c.h3", vec![".c"; 4], vec![".c1"])]
+// the margin is the closest approach (euclidian, decided 2026-09-21); the diamond's four
+// corners are four (a closest approach at an angle is the corner's, one per corner).
+#[case::vn_c_h3(".c.h3", vec![".c"; 7], vec![".c1"])]
 // Unions: two boxes enclosing the via by the value together are clean, a step short fire
 // once; ten abutting slices are clean.
 #[case::vn_c_h4(".c.h4", vec![".c"; 1], vec![])]
@@ -2119,8 +2120,8 @@ fn test_via4(
 // 45° strip are clean; a chamfered end on a `w`-wide line, whose chamfers run across
 // the via's sides 0.01 from their ends, fires with 0.05 to the straight end and with 0.045.
 // The chamfers running across the via's sides pass under 0.01 from its corners: V(n).c
-// as well (closest approach).
-#[case::vn_c1_h4(".c1.h4", [vec![".c1"; 2], vec![".c"; 2]].concat(), vec![])]
+// as well (closest approach, one per corner).
+#[case::vn_c1_h4(".c1.h4", [vec![".c1"; 2], vec![".c"; 4]].concat(), vec![])]
 // Tile lines: 0.045 endcaps ending on x = 20/21/40, vias across 20 and 42; 0.05 on 20 clean.
 #[case::vn_c1_h5(".c1.h5", vec![".c1"; 5], vec![])]
 // Fifty 0.045 endcaps, flat and as an array.
@@ -2845,14 +2846,14 @@ const DECK_PAD: &str = "pad";
 #[case::pad_a1("pad/Pad.a1.gds.gz", "TOP", vec!["Pad.a1"], vec!["Pad.d", "Padb.a", "Padc.a", "Pad.i"])]
 #[case::pad_d("pad/Pad.d.gds.gz", "TOP", vec!["Pad.d"; 1], vec!["Pad.a1", "Padb.a", "Padc.a", "Pad.i"])]
 #[case::pad_i("pad/Pad.i.gds.gz", "TOP", vec!["Pad.i"; 1], vec![])]
-#[case::padb_a("pad/Padb.a.gds.gz", "TOP", vec!["Padb.a"; 8], vec!["Padb.c", "Padc.a", "Padc.b", "Padc.c", "Pad.i", "Padb.f"])]
+#[case::padb_a("pad/Padb.a.gds.gz", "TOP", vec!["Padb.a"; 4], vec!["Padb.c", "Padc.a", "Padc.b", "Padc.c", "Pad.i", "Padb.f"])]
 #[case::padb_b("pad/Padb.b.gds.gz", "TOP", vec!["Padb.b"; 2], vec!["Padb.c", "Padc.a", "Padc.b", "Padc.c", "Pad.i", "Padb.f"])]
 #[case::padb_c("pad/Padb.c.gds.gz", "TOP", vec!["Padb.c"; 4], vec!["Padb.a", "Padc.a", "Padc.b", "Padc.c", "Padb.f"])]
 #[case::padb_d("pad/Padb.d.gds.gz", "TOP", vec!["Padb.d"; 1], vec!["Padb.f"])]
 // Pad at 25 µm from the seal-Activ fires (1/1 exact match vs KLayout); at exactly 30.0 µm
 // clean in both.  The square pads trip Padc.f (circle-only, BEOL rule) — ignored here.
 #[case::padc_d("pad/Padc.d.gds.gz", "TOP", vec!["Padc.d"; 1], vec!["Padc.f"])]
-#[case::padc_a("pad/Padc.a.gds.gz", "TOP", vec!["Padc.a"; 8], vec!["Padc.c", "Padb.a", "Padb.b", "Padb.c", "Pad.i", "Padc.f"])]
+#[case::padc_a("pad/Padc.a.gds.gz", "TOP", vec!["Padc.a"; 4], vec!["Padc.c", "Padb.a", "Padb.b", "Padb.c", "Pad.i", "Padc.f"])]
 #[case::padc_b("pad/Padc.b.gds.gz", "TOP", vec!["Padc.b"; 2], vec!["Padc.c", "Padb.a", "Padb.b", "Padb.c", "Pad.i", "Padc.f"])]
 #[case::padc_c("pad/Padc.c.gds.gz", "TOP", vec!["Padc.c"; 4], vec!["Padc.a", "Padb.a", "Padb.b", "Padb.c", "Padc.f"])]
 // A square SBumpPad violates (not circle/octagon); an octagon and a circle both pass.
@@ -2900,14 +2901,15 @@ const DECK_PAD: &str = "pad";
 // of 59.995 and 60.005 (eight), a circle of radius 29.995 (64), a 60 × 50 pad (two);
 // a 60 square, the regular octagon of 60 IHP's pcell draws, an octagon of 60 cut 10,
 // the 64-point circle of radius 30 the pcell draws, and 60 as two boxes are clean
-// (report, findings 1 and 2).
-#[case::padb_a_h1("pad/Padb.a.h1.gds.gz", "TOP", vec!["Padb.a"; 92], vec!["Padb.f"])]
+// (report, findings 1 and 2).  The size is the pad's extent (`exact_dim` and
+// `exact_length` on the bounding box): one marker per off-size side, twelve on the seven.
+#[case::padb_a_h1("pad/Padb.a.h1.gds.gz", "TOP", vec!["Padb.a"; 12], vec!["Padb.f"])]
 // 59.995 squares across x = 20/21/40/42, ending on 100, starting on 100 and at (1000,
-// 1000) (four walls each); 60 across the lines is clean.
-#[case::padb_a_h2("pad/Padb.a.h2.gds.gz", "TOP", vec!["Padb.a"; 16], vec!["Padb.f"])]
+// 1000) (both sides each); 60 across the lines is clean.
+#[case::padb_a_h2("pad/Padb.a.h2.gds.gz", "TOP", vec!["Padb.a"; 8], vec!["Padb.f"])]
 // Fifty 59.995 squares, flat and as a GdsArrayRef.
-#[case::padb_a_h3("pad/Padb.a.h3.gds.gz", "TOP", vec!["Padb.a"; 200], vec!["Padb.f"])]
-#[case::padb_a_h4("pad/Padb.a.h4.gds.gz", "TOP", vec!["Padb.a"; 200], vec!["Padb.f"])]
+#[case::padb_a_h3("pad/Padb.a.h3.gds.gz", "TOP", vec!["Padb.a"; 100], vec!["Padb.f"])]
+#[case::padb_a_h4("pad/Padb.a.h4.gds.gz", "TOP", vec!["Padb.a"; 100], vec!["Padb.f"])]
 // Padb.b: 69.995 straight, 69.99 corner to corner, two regular octagons 69.9965 across
 // their diagonals, two circles 69.995 vertex to vertex; 70, 70.004 corner to corner, dx =
 // 69 with dy = 100, octagons at 70.0015 and circles at 70 are clean.
@@ -2938,10 +2940,11 @@ const DECK_PAD: &str = "pad";
 // hole are neither octagon nor circle; a regular octagon, one cut 10, one cut 10 and 15,
 // a 64-point and a 128-point circle are (report, note D: the ring passes).
 #[case::padb_f_h1("pad/Padb.f.h1.gds.gz", "TOP", vec!["Padb.f"; 7], vec!["Padb.a", "Padb.b"])]
-// Padc.a by table 6.1: 34.995 and 35.005 squares (four walls), a circle of radius 17.495
-// (64); a 35 square, the 64-point circle of radius 17.5, and the table's 40 and 45
-// openings as squares and circles are clean (report, findings 1 and 4).
-#[case::padc_a_h1("pad/Padc.a.h1.gds.gz", "TOP", vec!["Padc.a"; 72], vec!["Padc.f"])]
+// Padc.a by table 6.1: 34.995 and 35.005 squares and a circle of radius 17.495 are no
+// 35, 40 or 45 opening (one marker each, `CuPillarPadOffSize`); a 35 square, the 64-point
+// circle of radius 17.5, and the table's 40 and 45 openings as squares and circles are
+// clean (report, findings 1 and 4).
+#[case::padc_a_h1("pad/Padc.a.h1.gds.gz", "TOP", vec!["Padc.a"; 3], vec!["Padc.f"])]
 // Padc.b by table 6.1: 35s at 39.995 and 39.99 corner to corner, 40s at 39.995, 45s at
 // 49.995 and at 45 (their space is 50); 35s at 40 and 40.008 corner to corner, 40s at
 // 40 and 45s at 50 are clean (report, finding 4).

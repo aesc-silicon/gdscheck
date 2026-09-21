@@ -192,16 +192,16 @@ virtual_layers:
       - Passiv.sbump
       - Passiv.pillar
       - dfpad
+  # Lazy: an eager virtual keeps its result's outer ring only, and a bump pad with a
+  # hole is exactly what Padb.f's circle test must see.
   - name: SBumpPad
     op: intersection
-    layers:
-      - Passiv.sbump
-      - dfpad
+    mode: lazy
+    layers: [Passiv.sbump, dfpad]
   - name: CuPillarPad
     op: intersection
-    layers:
-      - Passiv.pillar
-      - dfpad
+    mode: lazy
+    layers: [Passiv.pillar, dfpad]
   - name: SBumpPadBadShape
     op: not_circle_or_octagon
     mode: lazy
@@ -210,6 +210,70 @@ virtual_layers:
     op: not_circle
     mode: lazy
     layers: [CuPillarPad]
+  # Padc.a: table 6.1 allows openings of 35, 40 and 45 µm - a pad is one of them, or
+  # it is the violation; Padc.b: 45 µm openings keep 50, the others 40.
+  - name: CuPillarPad35Wide
+    op: with_bbox_max
+    mode: lazy
+    min: 35.0
+    max: 35.005
+    layers: [CuPillarPad]
+  - name: CuPillarPad35
+    op: with_bbox_min
+    mode: lazy
+    min: 35.0
+    max: 35.005
+    layers: [CuPillarPad35Wide]
+  - name: CuPillarPad40Wide
+    op: with_bbox_max
+    mode: lazy
+    min: 40.0
+    max: 40.005
+    layers: [CuPillarPad]
+  - name: CuPillarPad40
+    op: with_bbox_min
+    mode: lazy
+    min: 40.0
+    max: 40.005
+    layers: [CuPillarPad40Wide]
+  - name: CuPillarPad45Wide
+    op: with_bbox_max
+    mode: lazy
+    min: 45.0
+    max: 45.005
+    layers: [CuPillarPad]
+  - name: CuPillarPad45
+    op: with_bbox_min
+    mode: lazy
+    min: 45.0
+    max: 45.005
+    layers: [CuPillarPad45Wide]
+  - name: CuPillarPadNot45
+    op: not_overlapping
+    mode: lazy
+    layers: [CuPillarPad, CuPillarPad45]
+  - name: CuPillarPadSized
+    op: union
+    mode: lazy
+    layers: [CuPillarPad35, CuPillarPad40, CuPillarPad45]
+  - name: CuPillarPadOffSize
+    op: not_overlapping
+    mode: lazy
+    layers: [CuPillarPad, CuPillarPadSized]
+  # MIM.d reads the vias lying on the plate, whole - a via over the plate's edge is
+  # enclosed by nothing there; MIM.h a plate no via lies over.
+  - name: TopVia1OnMIM
+    op: overlapping
+    mode: lazy
+    layers: [TopVia1, MIM]
+  - name: ViaOnMIMAny
+    op: union
+    mode: lazy
+    layers: [TopVia1, Vmim]
+  - name: MIMNoVia
+    op: not_overlapping
+    mode: lazy
+    layers: [MIM, ViaOnMIMAny]
   - name: CuPillarPadGrown
     op: grow
     slack: 0.005
