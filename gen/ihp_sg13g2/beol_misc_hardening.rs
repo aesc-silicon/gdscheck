@@ -273,6 +273,7 @@ pub fn generate(pdk: &PdkConfig) {
     seal_f(&p);
     seal_l(&p);
     seal_n(&p);
+    seal_pcell(&p);
     slt_a(&p);
     slt_b(&p);
     slt_c(&p);
@@ -329,6 +330,59 @@ fn seal_l(p: &P) {
 }
 
 // --- Seal.n: the sealring must be enclosed by an unbroken Passiv ring ---
+
+// --- The pcell's ring, whole ---
+
+/// h1 - a seal ring as IHP's pcell places it, whole, on every layer: the 4.2 EdgeSeal
+/// marker on the box (32.2, 32.2)-(117.8, 117.8) carrying Activ, pSD, Metal1-5 and both
+/// TopMetals, the via rings 2.0 in (Cont 0.16, Via1-4 0.19, TopVia1 0.42, TopVia2 0.9),
+/// the Passiv ring 3 outside and 4.2 wide, and the boundary 30 past the marker at
+/// (0, 0)-(150, 150): the whole sealring deck is clean on it.  h2 - the same ring with
+/// two Metal1 squares beyond the boundary (Seal.l, 2) and a 1.0 break in the Passiv
+/// ring's right wall (Seal.n).
+fn seal_pcell(p: &P) {
+    let (x0, y0, x1, y1) = (32.2, 32.2, 117.8, 117.8);
+    let ring = |broken: bool| -> Vec<GdsElement> {
+        let mut e = vec![rect(p.bnd, 0.0, 0.0, 150.0, 150.0)];
+        e.extend(seal(
+            p,
+            &[p.activ, p.psd, p.m1, p.m2, p.m3, p.m4, p.m5, p.tm1, p.tm2],
+            x0,
+            y0,
+            x1,
+            y1,
+            4.2,
+        ));
+        for &(l, t) in &[
+            (p.cont, 0.16),
+            (p.via1, 0.19),
+            (p.via2, 0.19),
+            (p.via3, 0.19),
+            (p.via4, 0.19),
+            (p.tv1, 0.42),
+            (p.tv2, 0.9),
+        ] {
+            e.extend(via_ring(l, x0, y0, x1, y1, 2.0, t));
+        }
+        if broken {
+            // The ring's three whole walls and its right wall in two pieces, 1.0 apart.
+            let (px0, py0, px1, py1) = (x0 - 7.2, y0 - 7.2, x1 + 7.2, y1 + 7.2);
+            e.push(rect(p.passiv, px0, py0, px1, py0 + 4.2));
+            e.push(rect(p.passiv, px0, py1 - 4.2, px1, py1));
+            e.push(rect(p.passiv, px0, py0, px0 + 4.2, py1));
+            e.push(rect(p.passiv, px1 - 4.2, py0, px1, 74.5));
+            e.push(rect(p.passiv, px1 - 4.2, 75.5, px1, py1));
+        } else {
+            e.extend(passiv_ring(p, x0, y0, x1, y1, 3.0, 4.2));
+        }
+        e
+    };
+    write("sealring", "Seal.pcell.h1", ring(false));
+    let mut e = ring(true);
+    e.push(rect(p.m1, -9.8, 49.0, -7.8, 51.0));
+    e.push(rect(p.m1, -9.8, 53.2, -7.8, 55.2));
+    write("sealring", "Seal.pcell.h2", e);
+}
 
 /// h1 - the ring.  Seal frames (EdgeSeal + Metal1, 4.2 wide, 40 boxes) each with its
 /// Passiv ring 3 outside, 4.2 wide: (a) whole, clean; (b) with a 1.0 break in its right

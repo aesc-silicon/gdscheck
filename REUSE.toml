@@ -54,11 +54,3 @@ SPDX-License-Identifier = "Apache-2.0"
 path = ["tests/data/gf180mcuD/generated/*.gds.gz", "tests/data/gf180mcuD/generated/**/*.gds.gz"]
 SPDX-FileCopyrightText = "2026 aesc silicon"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
-
-[[annotations]]
-# Sealring corner cases, generated with the IHP Open PDK's P-Cell generator, so the
-# geometry derives from the PDK rather than from us.  Listed after the generic
-# tests/data globs so this more specific entry takes precedence over them.
-path = "tests/data/ihp-sg13g2/static/sealring/*.gds.gz"
-SPDX-FileCopyrightText = "IHP PDK Authors"
-SPDX-License-Identifier = "Apache-2.0"

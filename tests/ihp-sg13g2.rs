@@ -4522,10 +4522,10 @@ fn test_antenna(
 const DECK_SEALRING: &str = "sealring";
 
 #[rstest]
-#[case::seal_l_clean("static/sealring/Seal.l.gds.gz", "TOP", vec![], vec![])]
-#[case::seal_l_fail("static/sealring/Seal.l.fail.gds.gz", "TOP", vec!["Seal.l"; 2], vec![])]
-#[case::seal_n_clean("static/sealring/Seal.n.gds.gz", "TOP", vec![], vec![])]
-#[case::seal_n_fail("static/sealring/Seal.n.fail.gds.gz", "TOP", vec!["Seal.n"], vec!["Seal.e"])]
+// The pcell's ring whole, on every layer with its via rings, Passiv ring and boundary:
+// clean; with two Metal1 squares beyond the boundary and a break in the Passiv ring.
+#[case::seal_pcell_h1("sealring/Seal.pcell.h1.gds.gz", "TOP", vec![], vec![])]
+#[case::seal_pcell_h2("sealring/Seal.pcell.h2.gds.gz", "TOP", vec!["Seal.l", "Seal.l", "Seal.n"], vec![])]
 // A thin passiv ring 0.5 µm from a seal-Activ: Seal.e (frame < 4.20) + Seal.f (space < 1.00).
 // Seal.n (ring-covering) is incidental to the synthetic ring and ignored here.
 #[case::seal_ef("sealring/Seal.ef.gds.gz", "TOP", { let mut v = vec!["Seal.e"; 8]; v.push("Seal.f"); v }, vec!["Seal.n"])]
