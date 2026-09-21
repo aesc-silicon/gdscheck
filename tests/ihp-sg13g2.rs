@@ -958,6 +958,144 @@ const DECK_CNTB: &str = "contbar";
 #[case::cntb_h1("contbar/CntB.h1.gds.gz", "TOP", vec!["CntB.h1"], vec!["CntB.c", "CntB.d", "CntB.g"])]
 #[case::cntb_g("contbar/CntB.g.gds.gz", "TOP", vec!["CntB.g"], vec!["CntB.c", "CntB.d", "CntB.h", "CntB.h1"])]
 #[case::cntb_j("contbar/CntB.j.gds.gz", "TOP", vec!["CntB.j"], vec!["CntB.c", "CntB.h", "CntB.h1"])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
+// one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
+// 0.155 and 0.165 wide bars both ways (four), a 0.005 nick in a bar's side and two bars
+// overlapping sideways into 0.26 are CntB.a, a 45° bar of width 0.163 too; 0.335 and
+// 0.165 long bars both ways are CntB.a1; an L and a T of 0.16 arms, a 0.17 square (a
+// Cont, not a bar) and bars drawn as halves, overlapping boxes or an abutting square
+// are clean (report, finding 12).
+#[case::cntb_a_h1("contbar/CntB.a.h1.gds.gz", "TOP", [vec!["CntB.a"; 7], vec!["CntB.a1"; 4]].concat(), vec![])]
+// 0.155 × 0.5 bars and 0.16 × 0.335 bars across, ending on and starting on the tile
+// lines, at (1000, 1000), and a 0.155 × 300 bar; a 0.16 × 5 bar across x = 20 is clean.
+#[case::cntb_a_h2("contbar/CntB.a.h2.gds.gz", "TOP", [vec!["CntB.a"; 9], vec!["CntB.a1"; 8]].concat(), vec![])]
+// Fifty cells of a 0.155 bar and a 0.335 bar, flat and as a GdsArrayRef.
+#[case::cntb_a_h3("contbar/CntB.a.h3.gds.gz", "TOP", [vec!["CntB.a"; 50], vec!["CntB.a1"; 50]].concat(), vec![])]
+#[case::cntb_a_h4("contbar/CntB.a.h4.gds.gz", "TOP", [vec!["CntB.a"; 50], vec!["CntB.a1"; 50]].concat(), vec![])]
+// 0.275 side by side, end to end, end to side and 0.276 corner to corner; 0.28, 0.283
+// diagonal and 0.1 in x with 0.28 in y are clean; two 5.5 bars 0.275 apart are CntB.b
+// and CntB.b1.
+#[case::cntb_b_h1("contbar/CntB.b.h1.gds.gz", "TOP", [vec!["CntB.b"; 5], vec!["CntB.b1"]].concat(), vec![])]
+// 0.275 gaps on and across the tile lines, a corner pair on (60, 20), (1000, 1000), and
+// two 300 µm bars (CntB.b and CntB.b1).
+#[case::cntb_b_h2("contbar/CntB.b.h2.gds.gz", "TOP", [vec!["CntB.b"; 10], vec!["CntB.b1"]].concat(), vec![])]
+// Fifty 0.275 pairs, flat and as a GdsArrayRef.
+#[case::cntb_b_h3("contbar/CntB.b.h3.gds.gz", "TOP", vec!["CntB.b"; 50], vec![])]
+#[case::cntb_b_h4("contbar/CntB.b.h4.gds.gz", "TOP", vec!["CntB.b"; 50], vec![])]
+// 6 µm bars 0.355 apart, 5.005 bars, 6 bars offset to a run of 5.005, a bar whose upper
+// half jogs 0.05 closer (one stepped wall, a run of 6; the 0.11 chord across the jog is
+// CntB.a, note E), five bars (four pairs); 0.36, a run of exactly 5, a run of 4.5, three
+// collinear 1.9 bars (a run of 1.9 each) and a bar end at a bar's side are clean.
+#[case::cntb_b1_h1("contbar/CntB.b1.h1.gds.gz", "TOP", [vec!["CntB.b1"; 8], vec!["CntB.a"]].concat(), vec![])]
+// Runs of 6 cut by x = 20 and 21, ending on and starting on x = 20, across 40 and 42,
+// across 7, across y = 20, a 5.005 run cut by x = 20, two 300 µm bars, (1000, 1000).
+#[case::cntb_b1_h2("contbar/CntB.b1.h2.gds.gz", "TOP", vec!["CntB.b1"; 9], vec![])]
+// Fifty 0.355 pairs of 6 µm bars, flat and as a GdsArrayRef.
+#[case::cntb_b1_h3("contbar/CntB.b1.h3.gds.gz", "TOP", vec!["CntB.b1"; 50], vec![])]
+#[case::cntb_b1_h4("contbar/CntB.b1.h4.gds.gz", "TOP", vec!["CntB.b1"; 50], vec![])]
+// A square 0.215 beside a bar, 0.215 off its end and 0.212 corner to corner; 0.22,
+// 0.226 diagonal and 0.1 in x with 0.22 in y are clean.
+#[case::cntb_b2_h1("contbar/CntB.b2.h1.gds.gz", "TOP", vec!["CntB.b2"; 3], vec![])]
+// 0.215 gaps on and across the tile lines, a corner on (60, 20), a 300 µm bar, (1000, 1000).
+#[case::cntb_b2_h2("contbar/CntB.b2.h2.gds.gz", "TOP", vec!["CntB.b2"; 10], vec![])]
+// Fifty 0.215 pairs, flat and as a GdsArrayRef.
+#[case::cntb_b2_h3("contbar/CntB.b2.h3.gds.gz", "TOP", vec!["CntB.b2"; 50], vec![])]
+#[case::cntb_b2_h4("contbar/CntB.b2.h4.gds.gz", "TOP", vec!["CntB.b2"; 50], vec![])]
+// Activ margins 0.065 on each side, all round, a chamfer 0.064 from the bar's corner
+// and the bar's edge on the Activ edge fire once each; a bar half out of the Activ is
+// CntB.c and CntB.g; 0.07 and a 0.071 chamfer are clean.
+#[case::cntb_c_h1("contbar/CntB.c.h1.gds.gz", "TOP", [vec!["CntB.c"; 8], vec!["CntB.g"]].concat(), vec![])]
+// 0.065 margins on and across the tile lines, a 300 µm Activ strip, (1000, 1000); 0.07 across x = 20 is clean.
+#[case::cntb_c_h2("contbar/CntB.c.h2.gds.gz", "TOP", vec!["CntB.c"; 10], vec![])]
+// Fifty bars with 0.065 on the right, flat and as a GdsArrayRef.
+#[case::cntb_c_h3("contbar/CntB.c.h3.gds.gz", "TOP", vec!["CntB.c"; 50], vec![])]
+#[case::cntb_c_h4("contbar/CntB.c.h4.gds.gz", "TOP", vec!["CntB.c"; 50], vec![])]
+// GatPoly margins, as CntB.c.h1.
+#[case::cntb_d_h1("contbar/CntB.d.h1.gds.gz", "TOP", [vec!["CntB.d"; 8], vec!["CntB.g"]].concat(), vec![])]
+#[case::cntb_d_h2("contbar/CntB.d.h2.gds.gz", "TOP", vec!["CntB.d"; 10], vec![])]
+#[case::cntb_d_h3("contbar/CntB.d.h3.gds.gz", "TOP", vec!["CntB.d"; 50], vec![])]
+#[case::cntb_d_h4("contbar/CntB.d.h4.gds.gz", "TOP", vec!["CntB.d"; 50], vec![])]
+// Activ 0.135 from a bar on poly, 0.134 corner to corner, a 0.135 Activ diamond tip, a
+// chamfer 0.134 from the bar's corner, and Activ abutting the bar (0: finding 1); 0.14,
+// 0.141 diagonal and 0.1 in x with 0.14 in y are clean.
+#[case::cntb_e_h1("contbar/CntB.e.h1.gds.gz", "TOP", vec!["CntB.e"; 5], vec![])]
+// 0.135 gaps on and across the tile lines, a corner on (60, 20), a 300 µm Activ, (1000, 1000).
+#[case::cntb_e_h2("contbar/CntB.e.h2.gds.gz", "TOP", vec!["CntB.e"; 10], vec![])]
+// Fifty bars on poly 0.135 from Activ, flat and as a GdsArrayRef.
+#[case::cntb_e_h3("contbar/CntB.e.h3.gds.gz", "TOP", vec!["CntB.e"; 50], vec![])]
+#[case::cntb_e_h4("contbar/CntB.e.h4.gds.gz", "TOP", vec!["CntB.e"; 50], vec![])]
+// GatPoly 0.105 from a bar on Activ, 0.106 diagonal, a poly diamond tip and chamfer, and
+// poly abutting the bar (0: finding 1); 0.11 and 0.113 diagonal are clean.
+#[case::cntb_f_h1("contbar/CntB.f.h1.gds.gz", "TOP", vec!["CntB.f"; 5], vec![])]
+#[case::cntb_f_h2("contbar/CntB.f.h2.gds.gz", "TOP", vec!["CntB.f"; 10], vec![])]
+#[case::cntb_f_h3("contbar/CntB.f.h3.gds.gz", "TOP", vec!["CntB.f"; 50], vec![])]
+#[case::cntb_f_h4("contbar/CntB.f.h4.gds.gz", "TOP", vec!["CntB.f"; 50], vec![])]
+// A bar wholly bare, 0.05 past its Activ (with CntB.c), half out of its poly (with
+// CntB.d), in an Activ ring's hole, abutting Activ from outside and at (1000, 1000) are
+// CntB.g; a bar on the seam of abutting Activ and poly is within their union but
+// enclosed by neither (CntB.c, CntB.d) and 0 from each (CntB.e, CntB.f: finding 1); a bar
+// on Activ under poly is CntB.j.
+#[case::cntb_g_h1("contbar/CntB.g.h1.gds.gz", "TOP",
+    vec!["CntB.c", "CntB.c", "CntB.d", "CntB.d", "CntB.e", "CntB.f", "CntB.g", "CntB.g", "CntB.g", "CntB.g", "CntB.g", "CntB.g", "CntB.j"], vec![])]
+// Bare bars on and across the tile lines (seven), one across x = 20 whose Activ ends on
+// the line (CntB.g and CntB.c), one ending on x = 20 with its Activ (CntB.c).
+#[case::cntb_g_h2("contbar/CntB.g.h2.gds.gz", "TOP", [vec!["CntB.c"; 2], vec!["CntB.g"; 8]].concat(), vec![])]
+// Fifty bare bars, flat and as a GdsArrayRef.
+#[case::cntb_g_h3("contbar/CntB.g.h3.gds.gz", "TOP", vec!["CntB.g"; 50], vec![])]
+#[case::cntb_g_h4("contbar/CntB.g.h4.gds.gz", "TOP", vec!["CntB.g"; 50], vec![])]
+// pSD 0.085 from a bar on plain Activ (N+ by section 4.2's default: finding 2), 0.085
+// corner to corner, a pSD diamond tip and chamfer, and pSD abutting the bar (finding 1).
+#[case::cntb_g1_h1("contbar/CntB.g1.h1.gds.gz", "TOP", vec!["CntB.g1"; 5], vec![])]
+#[case::cntb_g1_h2("contbar/CntB.g1.h2.gds.gz", "TOP", vec!["CntB.g1"; 10], vec![])]
+#[case::cntb_g1_h3("contbar/CntB.g1.h3.gds.gz", "TOP", vec!["CntB.g1"; 50], vec![])]
+#[case::cntb_g1_h4("contbar/CntB.g1.h4.gds.gz", "TOP", vec!["CntB.g1"; 50], vec![])]
+// pSD 0.085 from a bar on plain Activ and on Activ under drawn nSD fire; under nSD:block
+// and on P+Activ are clean.
+#[case::cntb_g1_h5("contbar/CntB.g1.h5.gds.gz", "TOP", vec!["CntB.g1"; 2], vec![])]
+// pSD margins 0.085 each side, all round, a 0.085 chamfer and the bar's edge on the pSD
+// edge fire; a bar half out of pSD is CntB.g2 for the covered half and CntB.g1 for the
+// bare half, on N+Activ 0 from pSD (findings 1, 2).
+#[case::cntb_g2_h1("contbar/CntB.g2.h1.gds.gz", "TOP", [vec!["CntB.g2"; 8], vec!["CntB.g1"]].concat(), vec![])]
+#[case::cntb_g2_h2("contbar/CntB.g2.h2.gds.gz", "TOP", vec!["CntB.g2"; 10], vec![])]
+#[case::cntb_g2_h3("contbar/CntB.g2.h3.gds.gz", "TOP", vec!["CntB.g2"; 50], vec![])]
+#[case::cntb_g2_h4("contbar/CntB.g2.h4.gds.gz", "TOP", vec!["CntB.g2"; 50], vec![])]
+// The pSD edge through the middle of a bar on Activ: CntB.g2 and CntB.g1.
+#[case::cntb_g2_h5("contbar/CntB.g2.h5.gds.gz", "TOP", vec!["CntB.g1", "CntB.g2"], vec![])]
+// No Metal1, a 0.005 strip bare, half covered, in a Metal1 ring's hole, Metal1 abutting
+// and a bare bar at (1000, 1000) are CntB.h, and CntB.h1 too (enclosed by less than
+// 0.05); Metal1 coincident with the bar covers it but encloses by 0 (CntB.h1); Metal1
+// with margins, as halves and as overlapping boxes is clean.
+#[case::cntb_h_h1("contbar/CntB.h.h1.gds.gz", "TOP", [vec!["CntB.h"; 6], vec!["CntB.h1"; 7]].concat(), vec![])]
+// Bare bars on and across the tile lines (seven, CntB.h and CntB.h1), one across x = 20
+// whose Metal1 ends on the line (both), Metal1 ending where the bar ends (CntB.h1), two
+// Metal1 boxes meeting on x = 20 under a bar (clean).
+#[case::cntb_h_h2("contbar/CntB.h.h2.gds.gz", "TOP", [vec!["CntB.h"; 8], vec!["CntB.h1"; 9]].concat(), vec![])]
+// Fifty bare bars on Activ, flat and as a GdsArrayRef.
+#[case::cntb_h_h3("contbar/CntB.h.h3.gds.gz", "TOP", [vec!["CntB.h"; 50], vec!["CntB.h1"; 50]].concat(), vec![])]
+#[case::cntb_h_h4("contbar/CntB.h.h4.gds.gz", "TOP", [vec!["CntB.h"; 50], vec!["CntB.h1"; 50]].concat(), vec![])]
+// Metal1 margins 0.045 each side, all round, a 0.049 chamfer and a coincident edge
+// fire; a bar half out of its Metal1 is CntB.h1 and CntB.h; 0.05 is clean.
+#[case::cntb_h1_h1("contbar/CntB.h1.h1.gds.gz", "TOP", [vec!["CntB.h1"; 8], vec!["CntB.h"]].concat(), vec![])]
+#[case::cntb_h1_h2("contbar/CntB.h1.h2.gds.gz", "TOP", vec!["CntB.h1"; 10], vec![])]
+#[case::cntb_h1_h3("contbar/CntB.h1.h3.gds.gz", "TOP", vec!["CntB.h1"; 50], vec![])]
+#[case::cntb_h1_h4("contbar/CntB.h1.h4.gds.gz", "TOP", vec!["CntB.h1"; 50], vec![])]
+// A bar in a gate, one over a 0.005 Activ strip, one over a 0.005 corner, one over two
+// 0.05 Activ fingers (two pieces) and one in a gate at (1000, 1000) are CntB.j; the
+// strip, the corner and the fingers are bars on Activ enclosed by 0 (CntB.c: one, one,
+// four walls); a bar on poly abutting Activ is not over it but 0 from it (CntB.e,
+// finding 1); 0.14 away is clean.
+#[case::cntb_j_h1("contbar/CntB.j.h1.gds.gz", "TOP",
+    [vec!["CntB.c"; 6], vec!["CntB.e"], vec!["CntB.j"; 6]].concat(), vec![])]
+// Gate bars on and across the tile lines (seven), a bar on poly whose Activ begins on
+// x = 20 under its right half (CntB.j and CntB.c), one whose Activ begins where the bar
+// ends (CntB.e, finding 1).
+#[case::cntb_j_h2("contbar/CntB.j.h2.gds.gz", "TOP",
+    [vec!["CntB.c"], vec!["CntB.e"], vec!["CntB.j"; 8]].concat(), vec![])]
+// Fifty gate bars, flat and as a GdsArrayRef.
+#[case::cntb_j_h3("contbar/CntB.j.h3.gds.gz", "TOP", vec!["CntB.j"; 50], vec![])]
+#[case::cntb_j_h4("contbar/CntB.j.h4.gds.gz", "TOP", vec!["CntB.j"; 50], vec![])]
 fn test_contbar(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -979,6 +1117,67 @@ const DECK_SAL: &str = "salblock";
 #[case::sal_c("salblock/Sal.c.gds.gz", "TOP", vec!["Sal.c"], vec![])]
 #[case::sal_d("salblock/Sal.d.gds.gz", "TOP", vec!["Sal.d", "Sal.d"], vec![])]
 #[case::sal_e("salblock/Sal.e.gds.gz", "TOP", vec!["Sal.e", "Sal.e"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
+// one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
+// 0.415 bars both ways, a 0.417 diamond, a 0.417 45° strip and an L of 0.415 arms; a
+// 0.42 square, 0.424 diamond and strip, and a chamfered 0.62 box are clean.
+#[case::sal_a_h1("salblock/Sal.a.h1.gds.gz", "TOP", vec!["Sal.a"; 14], vec![])]
+// Overlapping boxes 0.415 wide, a bar of three boxes, a frame's 0.415 side, a 0.005
+// sliver; unions of 0.42, halves, quadrants, a clockwise square and an island are clean.
+#[case::sal_a_h2("salblock/Sal.a.h2.gds.gz", "TOP", vec!["Sal.a"; 8], vec![])]
+// 0.415 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
+#[case::sal_a_h3("salblock/Sal.a.h3.gds.gz", "TOP", vec!["Sal.a"; 20], vec![])]
+// Fifty 0.415 bars, flat and as a GdsArrayRef.
+#[case::sal_a_h4("salblock/Sal.a.h4.gds.gz", "TOP", vec!["Sal.a"; 100], vec![])]
+#[case::sal_a_h5("salblock/Sal.a.h5.gds.gz", "TOP", vec!["Sal.a"; 100], vec![])]
+// 0.415, 0.417 corner to corner, a diamond tip at 0.415, a chamfer 0.417 from a corner
+// and two chamfers 0.417 apart; 0.42, 0.424 and 0.1 in x with 0.42 in y are clean.
+#[case::sal_b_h1("salblock/Sal.b.h1.gds.gz", "TOP", vec!["Sal.b"; 5], vec![])]
+// A U and a straight-vs-45° notch of 0.415 both ways, a comb with three 0.415 slots, a
+// ring with a 0.415 hole, an island 0.415 from a ring's wall, two unions 0.415 apart.
+#[case::sal_b_h2("salblock/Sal.b.h2.gds.gz", "TOP", vec!["Sal.b"; 10], vec![])]
+// 0.415 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
+#[case::sal_b_h3("salblock/Sal.b.h3.gds.gz", "TOP", vec!["Sal.b"; 10], vec![])]
+// Fifty 0.415 pairs, flat and as a GdsArrayRef.
+#[case::sal_b_h4("salblock/Sal.b.h4.gds.gz", "TOP", vec!["Sal.b"; 50], vec![])]
+#[case::sal_b_h5("salblock/Sal.b.h5.gds.gz", "TOP", vec!["Sal.b"; 50], vec![])]
+// Extensions 0.195 on each side, all round, a chamfer 0.198 from the Activ's corner and
+// the Activ's edge on the block's edge fire; an Activ running out of the block with 0.7
+// beside it, 0.2 and a 0.205 chamfer are clean.
+#[case::sal_c_h1("salblock/Sal.c.h1.gds.gz", "TOP", vec!["Sal.c"; 7], vec![])]
+// 0.195 margins on and across the tile lines, a 300 µm block, (1000, 1000); 0.2 across x = 20 is clean.
+#[case::sal_c_h2("salblock/Sal.c.h2.gds.gz", "TOP", vec!["Sal.c"; 10], vec![])]
+// Fifty Activs with 0.195 on the right, flat and as a GdsArrayRef.
+#[case::sal_c_h3("salblock/Sal.c.h3.gds.gz", "TOP", vec!["Sal.c"; 50], vec![])]
+#[case::sal_c_h4("salblock/Sal.c.h4.gds.gz", "TOP", vec!["Sal.c"; 50], vec![])]
+// A block extending 0.195 past an Activ strip that crosses it, the same over a GatPoly
+// strip, and an Activ 0.195 from the block's edge with poly inside the block fire; 0.2,
+// and an Activ 0.195 from the edge wholly under a poly that runs out of the block (the
+// union's boundary there is the poly's), are clean.
+#[case::sal_c_h5("salblock/Sal.c.h5.gds.gz", "TOP", vec!["Sal.c"; 3], vec![])]
+// Activ 0.195 from a block, 0.198 corner to corner, a block diamond tip, a block chamfer
+// 0.198 from the Activ's corner, and Activ abutting the block (0: finding 1); 0.2,
+// 0.205 and 0.1 in x with 0.2 in y are clean.
+#[case::sal_d_h1("salblock/Sal.d.h1.gds.gz", "TOP", vec!["Sal.d"; 5], vec![])]
+// 0.195 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
+#[case::sal_d_h2("salblock/Sal.d.h2.gds.gz", "TOP", vec!["Sal.d"; 10], vec![])]
+// Fifty Activs 0.195 from a block, flat and as a GdsArrayRef.
+#[case::sal_d_h3("salblock/Sal.d.h3.gds.gz", "TOP", vec!["Sal.d"; 50], vec![])]
+#[case::sal_d_h4("salblock/Sal.d.h4.gds.gz", "TOP", vec!["Sal.d"; 50], vec![])]
+// GatPoly 0.195 from a block, the uncovered arm of a U-shaped Activ whose other arm the
+// block covers (finding 11), and an Activ 0.195 from a block covering another Activ.
+#[case::sal_d_h5("salblock/Sal.d.h5.gds.gz", "TOP", vec!["Sal.d"; 3], vec![])]
+// A Cont 0.195 from a block, 0.198 corner to corner, a Cont abutting the block, a Cont
+// crossing the block's edge (finding 1) and a bar 0.195 away fire; 0.2, 0.205 corner to
+// corner and a Cont inside the block are clean.
+#[case::sal_e_h1("salblock/Sal.e.h1.gds.gz", "TOP", vec!["Sal.e"; 5], vec![])]
+// 0.195 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
+#[case::sal_e_h2("salblock/Sal.e.h2.gds.gz", "TOP", vec!["Sal.e"; 10], vec![])]
+// Fifty Conts 0.195 from a block, flat and as a GdsArrayRef.
+#[case::sal_e_h3("salblock/Sal.e.h3.gds.gz", "TOP", vec!["Sal.e"; 50], vec![])]
+#[case::sal_e_h4("salblock/Sal.e.h4.gds.gz", "TOP", vec!["Sal.e"; 50], vec![])]
 fn test_salblock(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -1070,6 +1269,60 @@ const DECK_NBLB: &str = "nbulayblock";
 #[case::nblb_b_notch("nbulayblock/NBLB.b.notch.gds.gz", "TOP", vec!["NBLB.b", "NBLB.b"], vec!["NBLB.c"])]
 #[case::nblb_c("nbulayblock/NBLB.c.gds.gz", "TOP", vec!["NBLB.c"; 4], vec![])]
 #[case::nblb_d("nbulayblock/NBLB.d.gds.gz", "TOP", vec!["NBLB.d", "NBLB.d"], vec!["NBLB.c"])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
+// one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
+// The width and space cases ignore NBLB.c: the engine reports every block that no
+// drawn nBuLay encloses (finding 8), which is every block of theirs.
+// 1.495 bars both ways, a 1.499 diamond, a 1.499 45° strip and an L of 1.495 arms; 1.5,
+// 1.506 and a chamfered 1.7 box are clean.
+#[case::nblb_a_h1("nbulayblock/NBLB.a.h1.gds.gz", "TOP", vec!["NBLB.a"; 14], vec!["NBLB.c"])]
+// Overlapping boxes 1.495 wide, a bar of three boxes, a frame's 1.495 side, a 0.005 sliver.
+#[case::nblb_a_h2("nbulayblock/NBLB.a.h2.gds.gz", "TOP", vec!["NBLB.a"; 8], vec!["NBLB.c"])]
+// 1.495 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
+#[case::nblb_a_h3("nbulayblock/NBLB.a.h3.gds.gz", "TOP", vec!["NBLB.a"; 20], vec!["NBLB.c"])]
+// Fifty 1.495 bars, flat and as a GdsArrayRef.
+#[case::nblb_a_h4("nbulayblock/NBLB.a.h4.gds.gz", "TOP", vec!["NBLB.a"; 100], vec!["NBLB.c"])]
+#[case::nblb_a_h5("nbulayblock/NBLB.a.h5.gds.gz", "TOP", vec!["NBLB.a"; 100], vec!["NBLB.c"])]
+// 0.995, 0.997 corner to corner, a diamond tip at 0.995, a chamfer 0.997 from a corner
+// and two chamfers 0.997 apart; 1.0, 1.004 and 0.1 in x with 1.0 in y are clean.
+#[case::nblb_b_h1("nbulayblock/NBLB.b.h1.gds.gz", "TOP", vec!["NBLB.b"; 5], vec!["NBLB.c"])]
+// A U and a straight-vs-45° notch of 0.995 both ways, a comb with three slots, a ring
+// with a 0.995 hole, an island 0.995 from a ring's wall, two unions 0.995 apart.
+#[case::nblb_b_h2("nbulayblock/NBLB.b.h2.gds.gz", "TOP", vec!["NBLB.b"; 10], vec!["NBLB.c"])]
+// 0.995 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
+#[case::nblb_b_h3("nbulayblock/NBLB.b.h3.gds.gz", "TOP", vec!["NBLB.b"; 10], vec!["NBLB.c"])]
+// Fifty 0.995 pairs, flat and as a GdsArrayRef.
+#[case::nblb_b_h4("nbulayblock/NBLB.b.h4.gds.gz", "TOP", vec!["NBLB.b"; 50], vec!["NBLB.c"])]
+#[case::nblb_b_h5("nbulayblock/NBLB.b.h5.gds.gz", "TOP", vec!["NBLB.b"; 50], vec!["NBLB.c"])]
+// Enclosures 0.995 on each side, all round, a chamfer 0.997 from the block's corner, a
+// block half out of the nBuLay and a block edge on the nBuLay edge fire; 1.0 and a
+// 1.004 chamfer are clean.
+#[case::nblb_c_h1("nbulayblock/NBLB.c.h1.gds.gz", "TOP", vec!["NBLB.c"; 8], vec![])]
+// 0.995 margins on and across the tile lines, a 300 µm nBuLay, (1000, 1000); 1.0 across x = 20 is clean.
+#[case::nblb_c_h2("nbulayblock/NBLB.c.h2.gds.gz", "TOP", vec!["NBLB.c"; 10], vec![])]
+// Fifty blocks with 0.995 on the right, flat and as a GdsArrayRef.
+#[case::nblb_c_h3("nbulayblock/NBLB.c.h3.gds.gz", "TOP", vec!["NBLB.c"; 50], vec![])]
+#[case::nblb_c_h4("nbulayblock/NBLB.c.h4.gds.gz", "TOP", vec!["NBLB.c"; 50], vec![])]
+// A bare block, a block 2.5 inside a 10 × 10 well and a block over a whole well are
+// clean; a block 1.5 inside a 10 × 10 well is enclosed by 0.5 of the well's generated
+// nBuLay (section 4.2, the well inset by 1.0: findings 8, 9).
+#[case::nblb_c_h5("nbulayblock/NBLB.c.h5.gds.gz", "TOP", vec!["NBLB.c"], vec![])]
+// nBuLay 1.495 from a block, 1.499 corner to corner, a block diamond tip at 1.495 and a
+// block chamfer 1.499 from the nBuLay's corner; 1.5, 1.506 and 0.1 in x with 1.5 in y
+// are clean.
+#[case::nblb_d_h1("nbulayblock/NBLB.d.h1.gds.gz", "TOP", vec!["NBLB.d"; 4], vec!["NBLB.c"])]
+// 1.495 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
+#[case::nblb_d_h2("nbulayblock/NBLB.d.h2.gds.gz", "TOP", vec!["NBLB.d"; 10], vec!["NBLB.c"])]
+// Fifty nBuLays 1.495 from a block, flat and as a GdsArrayRef.
+#[case::nblb_d_h3("nbulayblock/NBLB.d.h3.gds.gz", "TOP", vec!["NBLB.d"; 50], vec!["NBLB.c"])]
+#[case::nblb_d_h4("nbulayblock/NBLB.d.h4.gds.gz", "TOP", vec!["NBLB.d"; 50], vec!["NBLB.c"])]
+// A block abutting an nBuLay from outside (0: finding 1) and a block 0.4 outside a
+// 6 × 6 well (1.4 from its generated nBuLay: finding 9) are NBLB.d; a block crossing the
+// nBuLay edge is NBLB.c; a block inside an nBuLay with 1.0 margins and a block 0.5
+// outside a well are clean.
+#[case::nblb_d_h5("nbulayblock/NBLB.d.h5.gds.gz", "TOP", vec!["NBLB.c", "NBLB.d", "NBLB.d"], vec![])]
 fn test_nbulayblock(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -1101,6 +1354,101 @@ const DECK_NBL: &str = "nbulay";
 // strapped to the buried layer through its sinker, a tap and a Metal1 plate — so only the
 // bare row fires.
 #[case::nbl_d_same_net("nbulay/NBL.d.same_net.gds.gz", "TOP", vec!["NBL.d"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
+// one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
+// The NBL.b cases ignore NBL.c: their controls at 1.5 and over are unconnected
+// regions under 3.2 apart, which is NBL.c by the manual (note A of the report).
+// 0.995 bars both ways, a 0.997 diamond, a 0.997 45° strip and an L of 0.995 arms; 1.0,
+// 1.004 and a chamfered 1.2 box are clean.
+#[case::nbl_a_h1("nbulay/NBL.a.h1.gds.gz", "TOP", vec!["NBL.a"; 14], vec![])]
+// Overlapping boxes 0.995 wide, a bar of three boxes, a frame's 0.995 side, a 0.005 sliver.
+#[case::nbl_a_h2("nbulay/NBL.a.h2.gds.gz", "TOP", vec!["NBL.a"; 8], vec![])]
+// 0.995 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
+#[case::nbl_a_h3("nbulay/NBL.a.h3.gds.gz", "TOP", vec!["NBL.a"; 20], vec![])]
+// Fifty 0.995 bars, flat and as a GdsArrayRef.
+#[case::nbl_a_h4("nbulay/NBL.a.h4.gds.gz", "TOP", vec!["NBL.a"; 100], vec![])]
+#[case::nbl_a_h5("nbulay/NBL.a.h5.gds.gz", "TOP", vec!["NBL.a"; 100], vec![])]
+// 1.495, 1.499 corner to corner, a diamond tip at 1.495, a chamfer 1.499 from a corner
+// and two chamfers 1.499 apart; 1.5, 1.506 and 0.1 in x with 1.5 in y are clean for NBL.b.
+#[case::nbl_b_h1("nbulay/NBL.b.h1.gds.gz", "TOP", vec!["NBL.b"; 5], vec!["NBL.c"])]
+// "Space or notch": a U and a straight-vs-45° notch of 1.495 both ways, a comb with
+// three 1.495 slots and a ring with a 1.495 hole (eight, finding 3); an island 1.495 from
+// a ring's wall and two unions 1.495 apart (two).
+#[case::nbl_b_h2("nbulay/NBL.b.h2.gds.gz", "TOP", vec!["NBL.b"; 10], vec!["NBL.c"])]
+// 1.495 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
+#[case::nbl_b_h3("nbulay/NBL.b.h3.gds.gz", "TOP", vec!["NBL.b"; 10], vec!["NBL.c"])]
+// Fifty 1.495 pairs, flat and as a GdsArrayRef.
+#[case::nbl_b_h4("nbulay/NBL.b.h4.gds.gz", "TOP", vec!["NBL.b"; 50], vec!["NBL.c"])]
+#[case::nbl_b_h5("nbulay/NBL.b.h5.gds.gz", "TOP", vec!["NBL.b"; 50], vec!["NBL.c"])]
+// A square in a ring's hole 1.495 from the hole's right and top walls: two walls under
+// the value (the count moves with the tile size: finding 4).
+#[case::nbl_b_h6("nbulay/NBL.b.h6.gds.gz", "TOP", vec!["NBL.b"; 2], vec!["NBL.c"])]
+// Bare regions 3.195 apart, 3.196 corner to corner, a diamond tip at 3.195, a chamfer
+// 3.196 from a corner and two chamfers 3.196 apart; 3.2, 3.203 and 0.1 in x with 3.2 in
+// y are clean.
+#[case::nbl_c_h1("nbulay/NBL.c.h1.gds.gz", "TOP", vec!["NBL.c"; 5], vec![])]
+// 3.195 gaps on and across the tile lines, a corner on (80, 20), 300 µm bars, (1000, 1000).
+#[case::nbl_c_h3("nbulay/NBL.c.h3.gds.gz", "TOP", vec!["NBL.c"; 10], vec![])]
+// Fifty 3.195 pairs, flat and as a GdsArrayRef.
+#[case::nbl_c_h4("nbulay/NBL.c.h4.gds.gz", "TOP", vec!["NBL.c"; 50], vec![])]
+#[case::nbl_c_h5("nbulay/NBL.c.h5.gds.gz", "TOP", vec!["NBL.c"; 50], vec![])]
+// Two nBuLay 2.0 apart with a 0.7 PWell:block strip in the middle (0.65 of PWell either
+// side) fire; with the block over the whole gap there is no PWell between them (finding 6).
+#[case::nbl_c_h6("nbulay/NBL.c.h6.gds.gz", "TOP", vec!["NBL.c"], vec![])]
+// Section 4.2's generated nBuLay, the well inset by 1.0 (note 1, finding 9): a 6 × 6 well
+// 2.195 from a drawn nBuLay is NBL.d and, its generated nBuLay 3.195 away, NBL.c; two 6 × 6
+// wells 1.15 apart are NBL.c (3.15) and NBL.d (2.15); a 2.5-wide well 2.195 from a drawn
+// nBuLay is NBL.d only; two 6 × 6 wells 1.2 apart are clean.
+#[case::nbl_c_h7("nbulay/NBL.c.h7.gds.gz", "TOP", vec!["NBL.c", "NBL.c", "NBL.d", "NBL.d", "NBL.d"], vec![])]
+// Bare pairs: 1.495 is NBL.b; 1.5 (finding 5), 1.505 and 3.195 are NBL.c; 3.2 is clean.
+#[case::nbl_c_h8("nbulay/NBL.c.h8.gds.gz", "TOP", vec!["NBL.b", "NBL.c", "NBL.c", "NBL.c"], vec![])]
+// Figure 5.3's c: a PWell:block adjoining one nBuLay and reaching to 3.195 from another
+// 5.0 away (finding 7); reaching to 3.2, and a block adjoining no nBuLay, are clean.
+#[case::nbl_c_h9("nbulay/NBL.c.h9.gds.gz", "TOP", vec!["NBL.c"], vec![])]
+// A well 2.195 from an nBuLay, 2.199 corner to corner, an nBuLay diamond tip at 2.195
+// and a chamfer 2.199 from the well's corner; 2.2, 2.206 and 0.1 in x with 2.2 in y are clean.
+#[case::nbl_d_h1("nbulay/NBL.d.h1.gds.gz", "TOP", vec!["NBL.d"; 4], vec![])]
+// 2.195 gaps on and across the tile lines, a corner on (60, 20), a 300 µm nBuLay, (1000, 1000).
+#[case::nbl_d_h2("nbulay/NBL.d.h2.gds.gz", "TOP", vec!["NBL.d"; 10], vec![])]
+// Fifty wells 2.195 from an nBuLay, flat and as a GdsArrayRef.
+#[case::nbl_d_h3("nbulay/NBL.d.h3.gds.gz", "TOP", vec!["NBL.d"; 50], vec![])]
+#[case::nbl_d_h4("nbulay/NBL.d.h4.gds.gz", "TOP", vec!["NBL.d"; 50], vec![])]
+// A well 2.0 from an nBuLay with a 0.7 PWell:block strip between fires; with the block
+// over the whole gap (finding 6), a well overlapping the nBuLay and a well abutting it
+// (one net) are clean.
+#[case::nbl_d_h5("nbulay/NBL.d.h5.gds.gz", "TOP", vec!["NBL.d"], vec![])]
+// A 6 × 6 well 1.15 from a 1 × 1 well: its generated nBuLay is 2.15 from the small well
+// (finding 9); 1.5 apart (2.5) and a 2.5-wide well 1.15 apart are clean.
+#[case::nbl_d_h6("nbulay/NBL.d.h6.gds.gz", "TOP", vec!["NBL.d"], vec![])]
+// Figure 5.3's d: a PWell:block adjoining the well and reaching to 2.195 from an nBuLay
+// 4.0 away, and one adjoining the nBuLay reaching to 2.195 from the well (finding 7).
+#[case::nbl_d_h7("nbulay/NBL.d.h7.gds.gz", "TOP", vec!["NBL.d"; 2], vec![])]
+// Plain Activ (N+ by default) 0.995 from an nBuLay, 0.997 corner to corner, an nBuLay
+// diamond tip and chamfer, and Activ abutting the nBuLay (0: finding 1); 1.0, 1.004 and
+// 0.1 in x with 1.0 in y are clean.
+#[case::nbl_e_h1("nbulay/NBL.e.h1.gds.gz", "TOP", vec!["NBL.e"; 5], vec![])]
+// 0.995 gaps on and across the tile lines, a corner on (60, 20), a 300 µm nBuLay, (1000, 1000).
+#[case::nbl_e_h2("nbulay/NBL.e.h2.gds.gz", "TOP", vec!["NBL.e"; 10], vec![])]
+// Fifty Activs 0.995 from an nBuLay, flat and as a GdsArrayRef.
+#[case::nbl_e_h3("nbulay/NBL.e.h3.gds.gz", "TOP", vec!["NBL.e"; 50], vec![])]
+#[case::nbl_e_h4("nbulay/NBL.e.h4.gds.gz", "TOP", vec!["NBL.e"; 50], vec![])]
+// Plain Activ and Activ under drawn nSD 0.995 away, and an Activ crossing the nBuLay
+// edge (finding 1), fire; Activ under nSD:block (neither implant: finding 2), P+Activ, a
+// tap in the nBuLay's own well sinker 0.5 outside it and a tap strapped to that sinker
+// (one net, "unrelated" they are not: finding 10) are clean.
+#[case::nbl_e_h5("nbulay/NBL.e.h5.gds.gz", "TOP", vec!["NBL.e"; 3], vec![])]
+// P+Activ 0.495 from an nBuLay, 0.497 corner to corner, a diamond tip and chamfer, and
+// P+Activ abutting the nBuLay (finding 1); 0.5, 0.502 and 0.1 in x with 0.5 in y are clean.
+#[case::nbl_f_h1("nbulay/NBL.f.h1.gds.gz", "TOP", vec!["NBL.f"; 5], vec![])]
+#[case::nbl_f_h2("nbulay/NBL.f.h2.gds.gz", "TOP", vec!["NBL.f"; 10], vec![])]
+#[case::nbl_f_h3("nbulay/NBL.f.h3.gds.gz", "TOP", vec!["NBL.f"; 50], vec![])]
+#[case::nbl_f_h4("nbulay/NBL.f.h4.gds.gz", "TOP", vec!["NBL.f"; 50], vec![])]
+// The P+ half of an Activ 0.495 away (its bare half is N+ 0.995 away: NBL.e) and a
+// P+Activ crossing the nBuLay edge fire; a PMOS's diffusion in the nBuLay's own well
+// sinker and a P+ tie strapped to the sinker are related (finding 10) and clean.
+#[case::nbl_f_h5("nbulay/NBL.f.h5.gds.gz", "TOP", vec!["NBL.e", "NBL.f", "NBL.f"], vec![])]
 fn test_nbulay(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -1124,6 +1472,73 @@ const DECK_PWB: &str = "pwellblock";
 #[case::pwb_e1("pwellblock/PWB.e1.gds.gz", "TOP", vec!["PWB.e1"], vec![])]
 #[case::pwb_f("pwellblock/PWB.f.gds.gz", "TOP", vec!["PWB.f"], vec![])]
 #[case::pwb_f1("pwellblock/PWB.f1.gds.gz", "TOP", vec!["PWB.f1"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
+// one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
+// 0.615 bars both ways, a 0.615 diamond, a 0.615 45° strip and an L of 0.615 arms; 0.62,
+// 0.622 and a chamfered 0.82 box are clean.
+#[case::pwb_a_h1("pwellblock/PWB.a.h1.gds.gz", "TOP", vec!["PWB.a"; 14], vec![])]
+// Overlapping boxes 0.615 wide, a bar of three boxes, a frame's 0.615 side, a 0.005 sliver.
+#[case::pwb_a_h2("pwellblock/PWB.a.h2.gds.gz", "TOP", vec!["PWB.a"; 8], vec![])]
+// 0.615 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
+#[case::pwb_a_h3("pwellblock/PWB.a.h3.gds.gz", "TOP", vec!["PWB.a"; 20], vec![])]
+// Fifty 0.615 bars, flat and as a GdsArrayRef.
+#[case::pwb_a_h4("pwellblock/PWB.a.h4.gds.gz", "TOP", vec!["PWB.a"; 100], vec![])]
+#[case::pwb_a_h5("pwellblock/PWB.a.h5.gds.gz", "TOP", vec!["PWB.a"; 100], vec![])]
+// 0.615, 0.615 corner to corner, a diamond tip at 0.615, a chamfer 0.615 from a corner
+// and two chamfers 0.615 apart; 0.62, 0.622 and 0.1 in x with 0.62 in y are clean.
+#[case::pwb_b_h1("pwellblock/PWB.b.h1.gds.gz", "TOP", vec!["PWB.b"; 5], vec![])]
+// A U and a straight-vs-45° notch of 0.615 both ways, a comb with three slots, a ring
+// with a 0.615 hole, an island 0.615 from a ring's wall, two unions 0.615 apart.
+#[case::pwb_b_h2("pwellblock/PWB.b.h2.gds.gz", "TOP", vec!["PWB.b"; 10], vec![])]
+// 0.615 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
+#[case::pwb_b_h3("pwellblock/PWB.b.h3.gds.gz", "TOP", vec!["PWB.b"; 10], vec![])]
+// Fifty 0.615 pairs, flat and as a GdsArrayRef.
+#[case::pwb_b_h4("pwellblock/PWB.b.h4.gds.gz", "TOP", vec!["PWB.b"; 50], vec![])]
+#[case::pwb_b_h5("pwellblock/PWB.b.h5.gds.gz", "TOP", vec!["PWB.b"; 50], vec![])]
+// A well 0.615 from a block, 0.615 corner to corner, a block diamond tip and chamfer;
+// 0.62, 0.622, 0.1 in x with 0.62 in y and a well abutting the block (PWB.d) are clean.
+#[case::pwb_c_h1("pwellblock/PWB.c.h1.gds.gz", "TOP", vec!["PWB.c"; 4], vec![])]
+// 0.615 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
+#[case::pwb_c_h2("pwellblock/PWB.c.h2.gds.gz", "TOP", vec!["PWB.c"; 10], vec![])]
+// Fifty wells 0.615 from a block, flat and as a GdsArrayRef.
+#[case::pwb_c_h3("pwellblock/PWB.c.h3.gds.gz", "TOP", vec!["PWB.c"; 50], vec![])]
+#[case::pwb_c_h4("pwellblock/PWB.c.h4.gds.gz", "TOP", vec!["PWB.c"; 50], vec![])]
+// Figure 5.2: a U-shaped well overlapping the block whose other arm is 0.615 above it
+// (finding 11), and a well ring 0.615 from the block on one side, fire; a well
+// overlapping, inside and around the block, and the U at 0.62, are clean.
+#[case::pwb_c_h5("pwellblock/PWB.c.h5.gds.gz", "TOP", vec!["PWB.c"; 2], vec![])]
+// Plain Activ (N+ by section 4.2's default: finding 2) 0.305 from a block, 0.304 corner
+// to corner, a block diamond tip and chamfer, and Activ abutting the block (finding 1);
+// 0.31, 0.311 and 0.1 in x with 0.31 in y are clean.
+#[case::pwb_e_h1("pwellblock/PWB.e.h1.gds.gz", "TOP", vec!["PWB.e"; 5], vec![])]
+// 0.305 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
+#[case::pwb_e_h2("pwellblock/PWB.e.h2.gds.gz", "TOP", vec!["PWB.e"; 10], vec![])]
+// Fifty Activs 0.305 from a block, flat and as a GdsArrayRef.
+#[case::pwb_e_h3("pwellblock/PWB.e.h3.gds.gz", "TOP", vec!["PWB.e"; 50], vec![])]
+#[case::pwb_e_h4("pwellblock/PWB.e.h4.gds.gz", "TOP", vec!["PWB.e"; 50], vec![])]
+// 0.305 from a block: plain Activ, Activ under drawn nSD, the PWell part of an Activ
+// crossing a well edge, Activ with ThickGateOx abutting but not over it, and the
+// outside half of an Activ half under the block (0) are PWB.e; Activ under ThickGateOx
+// and the covered near half of an Activ 0.5 away are PWB.e1; Activ under nSD:block,
+// under pSD, inside a well and wholly under the block are clean.
+#[case::pwb_e_h5("pwellblock/PWB.e.h5.gds.gz", "TOP", [vec!["PWB.e"; 5], vec!["PWB.e1"; 2]].concat(), vec![])]
+// N+Activ under ThickGateOx 0.615 from a block fires; 0.62, and 0.615 with the oxide
+// over its far half only, are clean.
+#[case::pwb_e1_h1("pwellblock/PWB.e1.h1.gds.gz", "TOP", vec!["PWB.e1"], vec![])]
+// P+Activ 0.235 from a block, 0.233 corner to corner, a block diamond tip and chamfer,
+// and P+Activ abutting the block (finding 1); 0.24, 0.24 diagonal and 0.1 in x with 0.24
+// in y are clean.
+#[case::pwb_f_h1("pwellblock/PWB.f.h1.gds.gz", "TOP", vec!["PWB.f"; 5], vec![])]
+#[case::pwb_f_h2("pwellblock/PWB.f.h2.gds.gz", "TOP", vec!["PWB.f"; 10], vec![])]
+#[case::pwb_f_h3("pwellblock/PWB.f.h3.gds.gz", "TOP", vec!["PWB.f"; 50], vec![])]
+#[case::pwb_f_h4("pwellblock/PWB.f.h4.gds.gz", "TOP", vec!["PWB.f"; 50], vec![])]
+// pSD over the near half of an Activ 0.235 away (PWB.f) and over its far half (the near
+// half is N+ at 0.235: PWB.e, finding 2); P+Activ in a well and under the block are clean.
+#[case::pwb_f_h5("pwellblock/PWB.f.h5.gds.gz", "TOP", vec!["PWB.e", "PWB.f"], vec![])]
+// P+Activ under ThickGateOx 0.615 from a block fires; 0.62 is clean.
+#[case::pwb_f1_h1("pwellblock/PWB.f1.h1.gds.gz", "TOP", vec!["PWB.f1"], vec![])]
 fn test_pwellblock(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2972,6 +3387,39 @@ const DECK_EXTB: &str = "extblock";
 #[case::extb_b_space("extblock/EXTB.b.space.gds.gz", "TOP", vec!["EXTB.b"; 2], vec![])]
 #[case::extb_b_notch("extblock/EXTB.b.notch.gds.gz", "TOP", vec!["EXTB.b"; 2], vec![])]
 #[case::extb_c("extblock/EXTB.c.gds.gz", "TOP", vec!["EXTB.c"; 2], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
+// one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
+// 0.305 bars both ways, a 0.304 diamond, a 0.304 45° strip and an L of 0.305 arms; 0.31,
+// 0.311 and a chamfered 0.51 box are clean.
+#[case::extb_a_h1("extblock/EXTB.a.h1.gds.gz", "TOP", vec!["EXTB.a"; 14], vec![])]
+// Overlapping boxes 0.305 wide, a bar of three boxes, a frame's 0.305 side, a 0.005 sliver.
+#[case::extb_a_h2("extblock/EXTB.a.h2.gds.gz", "TOP", vec!["EXTB.a"; 8], vec![])]
+// 0.305 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
+#[case::extb_a_h3("extblock/EXTB.a.h3.gds.gz", "TOP", vec!["EXTB.a"; 20], vec![])]
+// Fifty 0.305 bars, flat and as a GdsArrayRef.
+#[case::extb_a_h4("extblock/EXTB.a.h4.gds.gz", "TOP", vec!["EXTB.a"; 100], vec![])]
+#[case::extb_a_h5("extblock/EXTB.a.h5.gds.gz", "TOP", vec!["EXTB.a"; 100], vec![])]
+// 0.305, 0.304 corner to corner, a diamond tip at 0.305, a chamfer 0.304 from a corner
+// and two chamfers 0.304 apart; 0.31, 0.311 and 0.1 in x with 0.31 in y are clean.
+#[case::extb_b_h1("extblock/EXTB.b.h1.gds.gz", "TOP", vec!["EXTB.b"; 5], vec![])]
+// A U and a straight-vs-45° notch of 0.305 both ways, a comb with three slots, a ring
+// with a 0.305 hole, an island 0.305 from a ring's wall, two unions 0.305 apart.
+#[case::extb_b_h2("extblock/EXTB.b.h2.gds.gz", "TOP", vec!["EXTB.b"; 10], vec![])]
+// 0.305 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
+#[case::extb_b_h3("extblock/EXTB.b.h3.gds.gz", "TOP", vec!["EXTB.b"; 10], vec![])]
+// Fifty 0.305 pairs, flat and as a GdsArrayRef.
+#[case::extb_b_h4("extblock/EXTB.b.h4.gds.gz", "TOP", vec!["EXTB.b"; 50], vec![])]
+#[case::extb_b_h5("extblock/EXTB.b.h5.gds.gz", "TOP", vec!["EXTB.b"; 50], vec![])]
+// pSD 0.305 from a block, 0.304 corner to corner, a block diamond tip and chamfer, and
+// pSD abutting the block (0: finding 1); 0.31, 0.311 and 0.1 in x with 0.31 in y are clean.
+#[case::extb_c_h1("extblock/EXTB.c.h1.gds.gz", "TOP", vec!["EXTB.c"; 5], vec![])]
+// 0.305 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
+#[case::extb_c_h2("extblock/EXTB.c.h2.gds.gz", "TOP", vec!["EXTB.c"; 10], vec![])]
+// Fifty pSDs 0.305 from a block, flat and as a GdsArrayRef.
+#[case::extb_c_h3("extblock/EXTB.c.h3.gds.gz", "TOP", vec!["EXTB.c"; 50], vec![])]
+#[case::extb_c_h4("extblock/EXTB.c.h4.gds.gz", "TOP", vec!["EXTB.c"; 50], vec![])]
 fn test_extblock(
     #[case] gds: &str,
     #[case] topcell: &str,
