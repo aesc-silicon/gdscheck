@@ -549,8 +549,31 @@ fn f64_bbox(p: &MergedPoly) -> (f64, f64, f64, f64) {
     (bx0 as f64, by0 as f64, bx1 as f64, by1 as f64)
 }
 
-pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Vec<(f64, f64)> {
-    let grown = grown_reference(b, value, tile_dbu);
+pub fn max_space_gaps(
+    a: &TileMap,
+    b: &TileMap,
+    value: f64,
+    tile_dbu: i32,
+    within: Option<(&TileMap, f64)>,
+) -> Vec<(f64, f64)> {
+    // Confined to a layer, the cover is the reach grown inside it (see
+    // `confined_reference`), per tile, in place of the grown rectangles: a tie in the
+    // next well over reaches nothing in this one.
+    let confined: Option<HashMap<(i32, i32), Vec<MergedPoly>>> = within.map(|(w, step)| {
+        let r = (value / tile_dbu as f64).ceil() as i32;
+        let near: HashSet<(i32, i32)> = a
+            .keys()
+            .flat_map(|&(tx, ty)| {
+                (-r..=r).flat_map(move |dx| (-r..=r).map(move |dy| (tx + dx, ty + dy)))
+            })
+            .collect();
+        confined_reference(b, w, value, step, tile_dbu, &near)
+    });
+    let grown = if confined.is_some() {
+        HashMap::new()
+    } else {
+        grown_reference(b, value, tile_dbu)
+    };
     // The grown rectangles of a tile unioned once: a tap array grown by the value is
     // one blob, and a tile of `a` in reach of it took the difference against every
     // rectangle of it, hundreds of them, batch by batch.
@@ -589,6 +612,7 @@ pub fn max_space_gaps(a: &TileMap, b: &TileMap, value: f64, tile_dbu: i32) -> Ve
             (k, shapes_to_merged(level))
         })
         .collect();
+    let blobs = confined.unwrap_or(blobs);
 
     // The gaps as core pieces, then stitched: a gap across a tile line is one gap and
     // one marker, not one per tile it has a piece in.
@@ -5879,10 +5903,21 @@ impl MergedCache {
         a: (i16, i16),
         b: (i16, i16),
         value: f64,
+        within: Option<((i16, i16), f64)>,
     ) -> Vec<(f64, f64)> {
         self.ensure(layout, a.0, a.1);
         self.ensure(layout, b.0, b.1);
-        max_space_gaps(&self.layers[&a], &self.layers[&b], value, self.tile_dbu)
+        if let Some((w, _)) = within {
+            self.ensure(layout, w.0, w.1);
+        }
+        let within = within.map(|(w, step)| (&self.layers[&w], step));
+        max_space_gaps(
+            &self.layers[&a],
+            &self.layers[&b],
+            value,
+            self.tile_dbu,
+            within,
+        )
     }
 
     /// Regions of `a` no part of which lies within `value` of `b` (see

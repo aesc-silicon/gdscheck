@@ -63,13 +63,15 @@ Parameters
    Optional. ``part`` (the default), ``polygon`` or ``edge``, as above.
 
 ``within``
-   Optional layer param (under ``layer_params``), with ``scope: polygon``. Confines the
-   reach to that layer: the reference is grown in half-micron steps and cut back to the
-   layer after each, so the reach goes round a slot in the layer and never crosses the
-   gap to another region of it. This is how the GF180 well-tap rules read — the tap is
-   grown inside the well, in steps under the well's own spacing — so a diffusion on the
-   far leg of a U-shaped well has no tap in reach across the slot however near the tap
-   lies, and a tap in a neighbouring well is no tap for this one.
+   Optional layer param (under ``layer_params``), with ``scope: part`` or ``polygon``.
+   Confines the reach to that layer: the reference is grown in half-micron steps and cut
+   back to the layer after each, so the reach goes round a slot in the layer and never
+   crosses the gap to another region of it. This is how the GF180 well-tap rules read —
+   the tap is grown inside the well, in steps under the well's own spacing — so a
+   diffusion on the far leg of a U-shaped well has no tap in reach across the slot
+   however near the tap lies, and a tap in a neighbouring well is no tap for this one.
+   Under ``part`` the confined reach is what is subtracted from the target, and the
+   reach is grown squarely, as the plain one is.
 
 
 Violation markers
@@ -98,6 +100,8 @@ Examples
       check: max_space
       layers: [PsdActivInNWell, NActivInNWell]
       value: 20.00
+      layer_params:
+        within: NWell
 
     - id: DF.13_MV
       check: max_space
