@@ -608,7 +608,7 @@ pub fn chamfered_bl(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64, k: f6
     )
 }
 
-/// Translate every boundary in `elems` by `(dx, dy)` µm.
+/// Translate every boundary and text in `elems` by `(dx, dy)` µm.
 pub fn shift(elems: &[GdsElement], dx: f64, dy: f64) -> Vec<GdsElement> {
     elems
         .iter()
@@ -620,6 +620,12 @@ pub fn shift(elems: &[GdsElement], dx: f64, dy: f64) -> Vec<GdsElement> {
                     p.y += um(dy);
                 }
                 GdsElement::GdsBoundary(b)
+            }
+            GdsElement::GdsTextElem(t) => {
+                let mut t = t.clone();
+                t.xy.x += um(dx);
+                t.xy.y += um(dy);
+                GdsElement::GdsTextElem(t)
             }
             other => other.clone(),
         })
