@@ -11,11 +11,16 @@ rules:
     check: min_space
     layers: [pSD]
     value: 0.31
+  - id: pSD.b
+    check: min_notch
+    layers: [pSD]
+    value: 0.31
   - id: pSD.c
     check: min_enclosure
     layers: [pSD, ActivInNWell]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
       skip_coincident: 1
   - id: pSD.c1
@@ -23,11 +28,14 @@ rules:
     layers: [pSD, PsdC1Target]
     value: 0.03
     params:
+      metric: euclidian
       interacting_only: 1
   - id: pSD.d
     check: min_space
     layers: [pSD, NActivInPWell]
     value: 0.18
+    params:
+      abutting: related
   - id: pSD.d1
     check: min_space
     layers: [pSD, NActivInNWell]
@@ -42,13 +50,13 @@ rules:
     value: 0.0
   - id: pSD.g
     check: min_area
-    layers: [NTapNoGateOutSRAM]
+    layers: [NTapAbutted]
     value: 0.09
     params:
       touching: separate
   - id: pSD.g
     check: min_area
-    layers: [PTapNoGateOutSRAM]
+    layers: [PTapAbutted]
     value: 0.09
     params:
       touching: separate
@@ -57,12 +65,14 @@ rules:
     layers: [pSDNoSRAM, GatPolyOverPsdActivNoTGO]
     value: 0.30
     params:
+      metric: euclidian
       interacting_only: 1
   - id: pSD.i1
     check: min_enclosure
     layers: [pSDNoSRAM, GatPolyOverPsdActivTGO]
     value: 0.40
     params:
+      metric: euclidian
       interacting_only: 1
   - id: pSD.j
     check: min_space
@@ -80,10 +90,8 @@ rules:
       touching: separate
   - id: pSD.l
     check: min_area
-    layers: [pSD]
+    layers: [PsdHoleEmpty]
     value: 0.25
-    params:
-      scope: hole
   - id: pSD.m
     check: min_space
     layers: [GPRsilExtended, pSD]
@@ -93,4 +101,5 @@ rules:
     layers: [pSD, RppdAll]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1

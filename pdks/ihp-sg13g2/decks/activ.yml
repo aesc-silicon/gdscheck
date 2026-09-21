@@ -20,6 +20,7 @@ rules:
     layers: [Activ, GatPoly]
     value: 0.23
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Act.d
     check: min_area

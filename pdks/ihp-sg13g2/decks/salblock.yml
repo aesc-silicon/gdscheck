@@ -20,6 +20,7 @@ rules:
     layers: [SalBlock, ActivOrGatPoly]
     value: 0.20
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Sal.d
     check: min_space

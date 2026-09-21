@@ -494,7 +494,7 @@ virtual_layers:
   - name: ContBarOnNsdActiv
     op: intersection
     mode: lazy
-    layers: [ContBar, Activ, nSD]
+    layers: [ContBar, NActiv]
   - name: ContBarOnPsdActiv
     op: intersection
     mode: lazy
@@ -540,10 +540,12 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [NActFull, ThickGateOx]
+  # Section 4.2: N+Activ = Activ AND nSD, nSD = NOT (pSD OR nSD:block) OR nSD:drawing -
+  # an Activ under nSD:block with no nSD drawn is no N+.
   - name: NActiv
-    op: difference
+    op: union
     mode: lazy
-    layers: [Activ, pSD]
+    layers: [NsdActiv, ActivDefaultN]
   - name: NActivInNWell
     op: intersection
     mode: lazy
@@ -556,10 +558,12 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [NActivInNWell, ThickGateOx]
+  # Section 4.2: PWell = NOT (NWell OR PWell:block) OR PWell:drawing - under a
+  # PWell:block an Activ is in no well at all.
   - name: NActivInPWell
     op: difference
     mode: lazy
-    layers: [NActiv, NWell]
+    layers: [NActiv, NWell, PWell.block]
   - name: PsdActivInNWellTGOAna
     op: not_inside
     mode: lazy
@@ -658,6 +662,16 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [PTapNoGate, SRAM]
+  # pSD.g: "when forming abutted tie" - the tap that touches a tap of the other
+  # polarity; a tap on its own is Act.d's.
+  - name: NTapAbutted
+    op: interacting
+    mode: lazy
+    layers: [NTapNoGateOutSRAM, PsdActiv]
+  - name: PTapAbutted
+    op: interacting
+    mode: lazy
+    layers: [PTapNoGateOutSRAM, NActiv]
   - name: ActivNoSRAM
     op: difference
     mode: lazy
@@ -699,7 +713,7 @@ virtual_layers:
   - name: NsdActivInPWell
     op: difference
     mode: lazy
-    layers: [NsdActiv, NWell]
+    layers: [NActiv, NWell]
   - name: NsdActivInPWellTGO
     op: intersection
     mode: lazy
@@ -925,6 +939,15 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [ActivHole, Activ]
+  # pSD.l: the empty area of a pSD hole, less what pSD lies in it (figure 5.10).
+  - name: PsdHole
+    op: holes
+    mode: lazy
+    layers: [pSD]
+  - name: PsdHoleEmpty
+    op: difference
+    mode: lazy
+    layers: [PsdHole, pSD]
   - name: NpnTieHole
     op: with_text
     mode: lazy

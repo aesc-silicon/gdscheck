@@ -33,6 +33,34 @@ Test status on the engine as of this report: 12 of the 111 cases fail, all on th
 findings below (`psd_d_h2` at tile 7 only); the other 99 pass, as do the 25 older cases
 of the three tables.
 
+## Resolution (2026-09-21)
+
+Fixed, engine: 1 (`min_enclosure` takes an `over` layer param - a pair counts only
+where its stretch lies over that layer, KLayout's `.ext_and(Activ)` - and TGO.c reads the
+gate to the unclipped oxide `over: Activ`; the old `TGO.c` fixture, an Act.c pattern,
+is redrawn with the oxide's edge crossing the Activ), 8 and 9 (`abutting: related`,
+the glossary's reading: two shapes touching anywhere, along an edge or at a corner, are
+related and no pair wherever else they face - found across every tile, so the L that
+touches in one tile is no pair in the next; pSD.d has it).  Fixed, deck: 2 and 3
+(`abutting: report` on TGO.d: the gate the oxide's edge cuts through, and the gate
+abutting it, are TGO.d; the crossing gate is no TGO.c pair, the oxide's edge crosses its
+sides), 4 and 5 (`min_notch` halves for TGO.e and pSD.b), 6 (`NActiv` is section 4.2's
+N+Activ - `NsdActiv` or the Activ under neither pSD nor nSD:block - for every rule
+that names it: pSD.d/d1, NBL.e, npn, the PWell:block and ContBar rules), 7 (`NActivInPWell`
+is N+Activ less NWell less PWell:block: under a block the Activ is in no well), 10
+(pSD.g on `NTapAbutted`/`PTapAbutted`, the taps touching a tap of the other polarity;
+the old `pSD.g` fixture's N-taps abut a P+ tap now and its P+ corner sliver forms no
+tie), 12 (pSD.l on `PsdHoleEmpty`, the hole less the pSD in it, as Act.e), 13 (a second
+nSDB.c entry with `pairs: overlapping` reads the U-block's far arm against the pSD
+lying over its near one).
+
+Kept, cases flipped: 11 (pSD.e reads the P+ part's width, as both tools; a 0.295 part
+is a bad tie), the abutting Activ of 3 (`ActivOutsideTGO` is a difference layer whose
+every crossing Activ abuts the oxide; figure 5.7 draws the crossing as legal), and the
+45° oxide edge of 1 (`TGO.c.h2`): TGO.c is an extension read on a poly crossing the
+oxide, by projection - OPEN with Gat.c's chamfered cap.  The chamfer and diamond cases
+of TGO.a and pSD.c count one marker per corner under the closest approach.
+
 ## Findings
 
 ### 1. TGO.c reads the oxide clipped to the Activ: an Activ ending inside the oxide fires at S/D under 0.34 (false positive)

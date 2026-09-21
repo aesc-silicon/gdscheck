@@ -12,6 +12,7 @@ rules:
     layers: [pSD, NpnTieRingActiv]
     value: 0.20
     params:
+      metric: euclidian
       interacting_only: 1
       skip_coincident: 1
   - id: npnG2.d

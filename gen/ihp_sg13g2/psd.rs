@@ -250,18 +250,24 @@ fn psd_l(pdk: &PdkConfig) {
 
 /// pSD.g — min. abutted-tie area 0.09 µm², checked on both the N-tap (Activ in NWell) and
 /// P-tap (Activ+pSD outside NWell) flavours: a 0.06 µm² tie fails, a 0.12+ µm² one is clean.
+/// The rule is "when forming abutted tie": each N-tap abuts a P+ Activ (a tap on its own
+/// is Act.d's).
 fn psd_g(pdk: &PdkConfig) {
     let o = OFFSET;
     let activ = layer(pdk, "Activ");
     let psd = layer(pdk, "pSD");
     let nwell = layer(pdk, "NWell");
     let elems = vec![
-        // N-tap: bare Activ (no pSD) inside NWell — the whole tie area is the tiny one, so
-        // it doesn't collide with any raw-pSD rule.
+        // N-tap: bare Activ (no pSD) inside NWell abutting a P+ Activ on its left — the
+        // whole tie area is the tiny one, so it doesn't collide with any raw-pSD rule.
         rect(nwell, o - 1.0, o - 1.0, o + 1.0, o + 1.0),
-        rect(activ, o, o, o + 0.2, o + 0.3), // 0.06 µm² → violation
+        rect(activ, o, o, o + 0.3, o + 0.2), // 0.06 µm² → violation (0.3 deep: pSD.f clear)
+        rect(activ, o - 0.5, o - 0.15, o, o + 0.35),
+        rect(psd, o - 0.7, o - 0.35, o, o + 0.55), // the P+ tap it abuts (0.5 wide: pSD.e clear)
         rect(nwell, o + 5.0 - 1.0, o - 1.0, o + 5.0 + 1.0, o + 1.0),
-        rect(activ, o + 5.0, o, o + 5.4, o + 0.3), // 0.12 µm² → clean
+        rect(activ, o + 5.0, o, o + 5.3, o + 0.4), // 0.12 µm² → clean
+        rect(activ, o + 4.5, o - 0.05, o + 5.0, o + 0.45),
+        rect(psd, o + 4.3, o - 0.25, o + 5.0, o + 0.65),
         // P-tap: a 1.0×1.0 Activ square with pSD extended 0.2 µm past it on every side (so
         // pSD's own boundary never coincides with the NWell-clipped tie edge — avoiding the
         // pre-existing pSD.c coincident-edge false positive, see [[gdscheck-min-enclosure-

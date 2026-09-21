@@ -40,6 +40,7 @@ rules:
     layers: [GatPolyNoSRAM, Activ]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Gat.c
     check: forbidden
@@ -153,6 +154,7 @@ rules:
     layers: [GatPoly.filler, Activ.filler]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: GFil.j
     check: forbidden
