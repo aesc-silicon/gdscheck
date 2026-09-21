@@ -151,6 +151,22 @@ Decided already, with IHP's KLayout deck; do not report them again, draw against
 - Markers are cut differently: gdscheck's `min_width` gives one per wall, KLayout's
   one per edge pair; the hierarchical KLayout run counts an array cell once.
 
+## Where a pattern belongs
+
+A pattern that asks something of the *check* - the bound and the step past it, the two
+metrics, a 45° wall, boxes that merge, a notch, a tile line, an array, a shape far off -
+is the same on every layer and in every PDK, and belongs in the engine family:
+`gen/engine/<check>.rs` drawing on the engine PDK's generic layers
+(`tests/data/engine/pdk.yml`: Inner, Outer, Via, Diode), with its case in
+`tests/engine_checks.rs`.  Drawn there once, it covers every deck of every PDK, and the
+GF180 round starts with it already tested.  A deck's own fixtures are for what only that
+deck has: the rule's conditions (a marker, a gate, a device), the layer derivations, the
+values and the exemptions.  Two decks that are the same template on two layers -
+Metal2 and Metal3, Via1 and Via2 - share one set of fixtures on one of them, plus a
+layout apiece proving the other runs on its own layer.  (The IHP rounds of 2026-09 drew
+everything per deck; sorting those into the engine family is the next round's first
+job.)
+
 ## Deliverables
 
 On your branch, committed:
