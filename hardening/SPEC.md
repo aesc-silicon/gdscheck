@@ -16,14 +16,14 @@ it came from the rules and not from the code.
 ## Ground rules
 
 - **Never open `src/`.**  Not to read, not to grep, not to build a hypothesis.  The same
-  goes for `docs/` and everything under `ci/` except `ci/hardening/`.  If a question
-  seems to need the code, the answer is a layout that asks it.
+  goes for `docs/` and `ci/`.  If a question seems to need the code, the answer is a
+  layout that asks it.
 - Read freely: the rule manual (`SG13G2_os_layout_rules.pdf`, `pdftotext` is
   installed), `pdks/<process>/` (the deck YAMLs say which rules gdscheck claims, with
   their values and parameters), `gen/` (how fixtures are drawn), `tests/` (how they are
   asserted), and the KLayout deck under `$PDKS/ihp-sg13g2/libs.tech/klayout/tech/drc/`
   when the oracle's verdict needs explaining.
-- Write only to `gen/`, `tests/` and `ci/hardening/reports/`.
+- Write only to `gen/`, `tests/` and `hardening/reports/`.
 - Work in the worktree you were started in, on the branch you were given, and commit
   there.  Commit messages end with `Signed-off-by: Daniel Schultz <dnltz@aesc-silicon.de>`.
 
@@ -41,7 +41,7 @@ not in the deck is a finding of its own (see *What counts*).
 The oracle:
 
 ```bash
-ci/hardening/oracle-ihp.sh <layout.gds.gz> [topcell] [tile ...]     # default tiles 20 7
+hardening/oracle-ihp.sh <layout.gds.gz> [topcell] [tile ...]     # default tiles 20 7
 ```
 
 runs the layout through gdscheck (at each tile size) and through IHP's KLayout decks
@@ -165,7 +165,7 @@ On your branch, committed:
    and why it fires.  Clean layouts that are near misses get a case with `vec![]`.
    Keep every fixture small; the whole set for a deck should stay under a few hundred
    kilobytes.
-4. `ci/hardening/reports/ihp-sg13g2/<deck>.md`: the report - one section per finding,
+4. `hardening/reports/ihp-sg13g2/<deck>.md`: the report - one section per finding,
    with the rule, the manual's wording, the layout (fixture name and a sentence of
    geometry), gdscheck's answer at each tile size, KLayout's answer, and your verdict.
    Then a short list of what you tested and found clean, so nobody redoes it.

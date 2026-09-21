@@ -12,7 +12,7 @@ and 7.1 (Ant.a-Ant.i).  51 layouts, `tests/data/ihp-sg13g2/<deck>/<RULE>.h<k>.gd
 drawn by `gen/ihp_sg13g2/misc_hardening.rs`, each with a `#[case]` in `test_nmosi`,
 `test_pin` or `test_antenna` of `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck
 at tiles 20, 7 and 100 and through IHP's KLayout decks: the nmosi and pin layouts with
-`ci/hardening/oracle-ihp.sh` (the driver's tables plus the maximal deck; the nmosi rules
+`hardening/oracle-ihp.sh` (the driver's tables plus the maximal deck; the nmosi rules
 live in the maximal deck only, which the driver runs as well, so they count twice there),
 the antenna layouts with the same container running `rule_decks/antenna.drc` in deep
 mode, as the driver does with `--antenna` (the oracle script does not pass it).  No

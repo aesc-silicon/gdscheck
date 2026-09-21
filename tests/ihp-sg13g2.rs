@@ -62,8 +62,8 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case("activ/AFil.g3.fail.gds.gz", "TOP", vec!["AFil.g3"], vec!["Act.b", "AFil.g1"])]
 #[case::afil_g2_boundary_ok("activ/AFil.g2.boundary_ok.gds.gz", "TOP", vec![], vec![])]
 #[case::afil_g2_boundary_ring("activ/AFil.g2.boundary_ring.gds.gz", "TOP", vec![], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/activ.md.  A min_width
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/activ.md.  A min_width
 // violation counts two markers per narrow bar (one per long edge), as the Act.a case above;
 // max_width likewise one per wall (four on a square).
 // Three 0.145 bars (x, y, 300 µm long across every tile line) → two markers each.
@@ -336,8 +336,8 @@ const DECK_TGO: &str = "tgo";
 #[case("tgo/TGO.d.gds.gz", "TOP", vec!["TGO.d"], vec![])]
 #[case("tgo/TGO.e.gds.gz", "TOP", vec!["TGO.e", "TGO.e"], vec![])]
 #[case("tgo/TGO.f.gds.gz", "TOP", vec!["TGO.f"; 4], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/implant.md.  An
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/implant.md.  An
 // enclosure counts one marker per enclosed shape, a space one per pair, a width one per
 // wall.
 // 0.265 left, 0.265 top, 0.265 all round, a right margin of 0 and the 0.265 one of two
@@ -475,8 +475,8 @@ const DECK_GAT: &str = "gatpoly";
 #[case("gatpoly/GFil.g.fail.gds.gz", "TOP", vec!["GFil.g"], vec!["GFil.a"])]
 #[case::gfil_g_boundary_ok("gatpoly/GFil.g.boundary_ok.gds.gz", "TOP", vec![], vec![])]
 #[case::gfil_g_boundary_ring("gatpoly/GFil.g.boundary_ring.gds.gz", "TOP", vec![], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/gatpoly.md.  Counts follow
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/gatpoly.md.  Counts follow
 // the engine's marker cuts where it is right: two per narrow wall pair (min_width and the
 // gate-length rules), one per space or enclosure pair, one per area, one per forbidden
 // 45° gate edge and one per 90°-bent gate.  GFil.g is ignored throughout (every small
@@ -752,8 +752,8 @@ const DECK_CNT: &str = "cont";
 #[case::cnt_g2("cont/Cnt.g2.gds.gz", "TOP", vec!["Cnt.g2"], vec!["Cnt.d", "Cnt.h"])]
 #[case::cnt_h("cont/Cnt.h.gds.gz", "TOP", vec!["Cnt.h"], vec!["Cnt.c", "Cnt.d", "Cnt.g"])]
 #[case::cnt_j("cont/Cnt.j.gds.gz", "TOP", vec!["Cnt.j"], vec!["Cnt.c", "Cnt.h"])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/cont.md.  Every layout
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/cont.md.  Every layout
 // carries Activ/GatPoly and Metal1 under its Conts where the rule under test does not
 // need them bare, so no case ignores a rule.  Cnt.a counts four walls per off-size
 // square; an enclosure rule counts one marker per under-enclosed Cont (its violating
@@ -956,8 +956,8 @@ const DECK_CNTB: &str = "contbar";
 #[case::cntb_h1("contbar/CntB.h1.gds.gz", "TOP", vec!["CntB.h1"], vec!["CntB.c", "CntB.d", "CntB.g"])]
 #[case::cntb_g("contbar/CntB.g.gds.gz", "TOP", vec!["CntB.g"], vec!["CntB.c", "CntB.d", "CntB.h", "CntB.h1"])]
 #[case::cntb_j("contbar/CntB.j.gds.gz", "TOP", vec!["CntB.j"], vec!["CntB.c", "CntB.h", "CntB.h1"])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/block.md.  `min_width`
 // counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
 // one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
 // 0.155 and 0.165 wide bars both ways (four), a 0.005 nick in a bar's side and two bars
@@ -1117,8 +1117,8 @@ const DECK_SAL: &str = "salblock";
 #[case::sal_c("salblock/Sal.c.gds.gz", "TOP", vec!["Sal.c"], vec![])]
 #[case::sal_d("salblock/Sal.d.gds.gz", "TOP", vec!["Sal.d", "Sal.d"], vec![])]
 #[case::sal_e("salblock/Sal.e.gds.gz", "TOP", vec!["Sal.e", "Sal.e"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/block.md.  `min_width`
 // counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
 // one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
 // 0.415 bars both ways, a 0.417 diamond, a 0.417 45° strip and an L of 0.415 arms; a
@@ -1201,8 +1201,8 @@ const DECK_NSDB: &str = "nsdblock";
 #[case::nsdb_b_notch("nsdblock/nSDB.b.notch.gds.gz", "TOP", vec!["nSDB.b", "nSDB.b"], vec![])]
 #[case::nsdb_c("nsdblock/nSDB.c.gds.gz", "TOP", vec!["nSDB.c", "nSDB.c"], vec![])]
 #[case::nsdb_e("nsdblock/nSDB.e.gds.gz", "TOP", vec!["nSDB.e"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/implant.md.  A space
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/implant.md.  A space
 // counts one marker per pair, a width one per wall.
 // 0.305 bars in x and y, a 0.005 sliver and a 0.305 × 300 bar fire, two walls each; 0.31 is
 // clean.
@@ -1272,8 +1272,8 @@ const DECK_NBLB: &str = "nbulayblock";
 #[case::nblb_b_notch("nbulayblock/NBLB.b.notch.gds.gz", "TOP", vec!["NBLB.b", "NBLB.b"], vec!["NBLB.c"])]
 #[case::nblb_c("nbulayblock/NBLB.c.gds.gz", "TOP", vec!["NBLB.c"; 4], vec![])]
 #[case::nblb_d("nbulayblock/NBLB.d.gds.gz", "TOP", vec!["NBLB.d", "NBLB.d"], vec!["NBLB.c"])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/block.md.  `min_width`
 // counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
 // one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
 // The width and space cases ignore NBLB.c: the engine reports every block that no
@@ -1366,8 +1366,8 @@ const DECK_NBL: &str = "nbulay";
 // strapped to the buried layer through its sinker, a tap and a Metal1 plate — so only the
 // bare row fires.
 #[case::nbl_d_same_net("nbulay/NBL.d.same_net.gds.gz", "TOP", vec!["NBL.d"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/block.md.  `min_width`
 // counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
 // one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
 // The NBL.b cases ignore NBL.c: their controls at 1.5 and over are unconnected
@@ -1494,8 +1494,8 @@ const DECK_PWB: &str = "pwellblock";
 #[case::pwb_e1("pwellblock/PWB.e1.gds.gz", "TOP", vec!["PWB.e1"], vec![])]
 #[case::pwb_f("pwellblock/PWB.f.gds.gz", "TOP", vec!["PWB.f"], vec![])]
 #[case::pwb_f1("pwellblock/PWB.f1.gds.gz", "TOP", vec!["PWB.f1"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/block.md.  `min_width`
 // counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
 // one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
 // 0.615 bars both ways, a 0.615 diamond, a 0.615 45° strip and an L of 0.615 arms; 0.62,
@@ -1607,8 +1607,8 @@ const DECK_NW: &str = "nwell";
 // NW.d1 still fires outside.  All four match KLayout 1:1.
 #[case::nw_dig("nwell/NW.dig.gds.gz", "TOP",
     vec!["NW.c1.dig", "NW.d1", "NW.d1.dig", "NW.e1.dig"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/nwell.md.  A min_width
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/nwell.md.  A min_width
 // violation counts two markers per narrow bar (one per long edge), as the NW.a case above.
 // Three 0.615 bars (x, y, 300 µm long across every tile line) → two markers each.
 #[case::nw_a_h1("nwell/NW.a.h1.gds.gz", "TOP", vec!["NW.a"; 6], vec![])]
@@ -1831,8 +1831,8 @@ fn m1dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::m1fil_h_boundary_ring("metal1/M1Fil.h.boundary_ring.gds.gz", "TOP", vec![], vec![])]
 #[case::m1fil_k_ok("metal1/M1Fil.k.gds.gz", "TOP", vec![], vec!["M1.b", "M1.k"])]
 #[case::m1fil_k_fail("metal1/M1Fil.k.fail.gds.gz", "TOP", vec!["M1Fil.k"], vec!["M1.b", "M1.k"])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/metal1.md.  Counts follow
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/metal1.md.  Counts follow
 // the engine's marker cuts where it is right: one per wall for min_width and max_width
 // (two per narrow bar, four per oversized square), one per pair for a space rule, one per
 // shape for area and enclosure.  The density rules are ignored throughout (`m1dens`).  A
@@ -2259,7 +2259,7 @@ fn test_metal5(
 // so is every layout: `metal<n>/M<n>.<rule>.h<k>.gds.gz` carries the same geometry for
 // n = 2..5 (Via(n-1) and Metal(n-1) below).  The rule ids are given as suffixes and the
 // layer index is a second axis of the table, so a layer that answers differently fails on
-// its own.  Expected values are the manual's (ci/hardening/reports/ihp-sg13g2/metaln.md);
+// its own.  Expected values are the manual's (hardening/reports/ihp-sg13g2/metaln.md);
 // `mn_dens` sets the density rules aside, which every small layout trips.
 
 /// The density rules, which every small layout trips, plus whatever else a layout draws
@@ -2591,7 +2591,7 @@ fn test_via4(
 // below), with the V(n).c/c1 margins taken from the deck's value.  The rule ids are
 // given as suffixes and the layer index is a second axis of the table, so a layer that
 // answers differently fails on its own.  Expected values are the manual's
-// (ci/hardening/reports/ihp-sg13g2/via.md).  The V(n).a, V(n).b and V(n).b1 layouts
+// (hardening/reports/ihp-sg13g2/via.md).  The V(n).a, V(n).b and V(n).b1 layouts
 // draw no metal, so every via is V(n).c and V(n).c1 there; the cases set both aside.
 
 #[rstest]
@@ -2741,7 +2741,7 @@ const DECK_TV1: &str = "topvia1";
 #[case::tv1_b("topvia1/TV1.b.gds.gz", "TOP", vec!["TV1.b", "TV1.b"], vec!["TV1.c", "TV1.d"])]
 #[case::tv1_c("topvia1/TV1.c.gds.gz", "TOP", vec!["TV1.c"; 4], vec!["TV1.a", "TV1.b", "TV1.d"])]
 #[case::tv1_d("topvia1/TV1.d.gds.gz", "TOP", vec!["TV1.d"; 4], vec!["TV1.a", "TV1.b", "TV1.c"])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/topvia.md).  TV1.a counts one marker per
+// Hardening (hardening/reports/ihp-sg13g2/topvia.md).  TV1.a counts one marker per
 // wall of an off-size pair; an enclosure rule one per under-enclosed via (its short
 // walls one connected run) or per wall when they are opposite; a space rule one per
 // pair.  TV1.a: a 0.42 square is the via; 0.415 or 0.425 in x or in y (two walls), a 0.415
@@ -2839,7 +2839,7 @@ const DECK_TV2: &str = "topvia2";
 #[case::tv2_b("topvia2/TV2.b.gds.gz", "TOP", vec!["TV2.b", "TV2.b"], vec!["TV2.c", "TV2.d"])]
 #[case::tv2_c("topvia2/TV2.c.gds.gz", "TOP", vec!["TV2.c"; 4], vec!["TV2.a", "TV2.b", "TV2.d"])]
 #[case::tv2_d("topvia2/TV2.d.gds.gz", "TOP", vec!["TV2.d"; 4], vec!["TV2.a", "TV2.b", "TV2.c"])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/topvia.md).  TV2.a counts one marker per
+// Hardening (hardening/reports/ihp-sg13g2/topvia.md).  TV2.a counts one marker per
 // wall of an off-size pair; an enclosure rule one per under-enclosed via (its short
 // walls one connected run) or per wall when they are opposite; a space rule one per
 // pair.  TV2.a: a 0.90 square is the via; 0.895 or 0.905 in x or in y (two walls), a 0.895
@@ -2946,7 +2946,7 @@ const DECK_TM1: &str = "topmetal1";
 #[case::tm1fil_a1("topmetal1/TM1Fil.a1.gds.gz", "TOP", vec!["TM1Fil.a1"; 2], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_b("topmetal1/TM1Fil.b.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d"])]
 #[case::tm1fil_d("topmetal1/TM1Fil.d.gds.gz", "TOP", vec!["TM1Fil.d"; 2], vec!["TM1.c", "TM1.d"])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/topmetal.md).  TM1.a: 1.635 bars in x and y, a
+// Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM1.a: 1.635 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 1.64 is clean.
 #[case::tm1_a_h1("topmetal1/TM1.a.h1.gds.gz", "TOP", vec!["TM1.a"; 10], vec!["TM1.c", "TM1.d"])]
 // A diamond (4) and a 45° strip (2) one grid step under the width; the on-grid step
@@ -3114,7 +3114,7 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_br_fail("topmetal2/TM2.bR.fail.gds.gz", "TOP", vec!["TM2.bR"], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_ok("topmetal2/TM2.bR.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_ind("topmetal2/TM2.bR.ind.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
+// Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 2.00 is clean.
 #[case::tm2_a_h1("topmetal2/TM2.a.h1.gds.gz", "TOP", vec!["TM2.a"; 10], vec!["TM2.c", "TM2.d"])]
 // A diamond (4) and a 45° strip (2) one grid step under the width; the on-grid step
@@ -3300,7 +3300,7 @@ const DECK_PAS: &str = "passiv";
 #[case::pas_b_space("passiv/Pas.b.space.gds.gz", "TOP", vec!["Pas.b", "Pas.b"], vec![])]
 #[case::pas_b_notch("passiv/Pas.b.notch.gds.gz", "TOP", vec!["Pas.b", "Pas.b"], vec![])]
 #[case::pas_c("passiv/Pas.c.gds.gz", "TOP", vec!["Pas.c"; 4], vec![])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/pad.md).  Pas.a counts one marker per
+// Hardening (hardening/reports/ihp-sg13g2/pad.md).  Pas.a counts one marker per
 // wall, Pas.b one per pair or notch, Pas.c one per under-enclosed opening (adjacent
 // short walls one run) or per wall when opposite.  Pas.a: 2.095 in x and in y, a 45°
 // strip and a diamond of 2.093, an L of 2.095 arms (four), a 2.095 neck, a 0.005 sliver,
@@ -3361,8 +3361,8 @@ const DECK_PIN: &str = "pin";
 #[case::pin_f_m5("pin/Pin.f.m5.gds.gz", "TOP", vec!["Pin.f"; 4], vec![])]
 #[case::pin_g("pin/Pin.g.gds.gz", "TOP", vec!["Pin.g"; 4], vec![])]
 #[case::pin_h("pin/Pin.h.gds.gz", "TOP", vec!["Pin.h"; 4], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): the manual's answer, reasoning in
-// ci/hardening/reports/ihp-sg13g2/misc.md.  One marker per uncovered region.
+// --- Hardening (hardening/SPEC.md): the manual's answer, reasoning in
+// hardening/reports/ihp-sg13g2/misc.md.  One marker per uncovered region.
 // The pin coincident with its metal and one 0.1 inside are clean; 0.005 past it on the
 // right, on top, 0.5 clear of it and a 0.005 sliver outside it fire.
 #[case::pin_e_h1("pin/Pin.e.h1.gds.gz", "TOP", vec!["Pin.e"; 4], vec![])]
@@ -3409,7 +3409,7 @@ const DECK_LBE: &str = "lbe";
 #[case::lbe_h_open("lbe/LBE.h.open.gds.gz", "TOP", vec![], vec!["LBE.i", "LBE.c"])]
 #[case::lbe_i("lbe/LBE.i.gds.gz", "TOP", vec![], vec![])]
 #[case::lbe_i_fail("lbe/LBE.i.fail.gds.gz", "TOP", vec!["LBE.i"], vec![])]
-// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  LBE.i reads the
+// Hardening cases (hardening/reports/ihp-sg13g2/beol_misc.md).  LBE.i reads the
 // whole layout when no boundary is drawn and is ignored where it is not under test;
 // shapes under 30000 µm² are LBE.b2's and ignored where they are drawn for another rule.
 //
@@ -3477,8 +3477,8 @@ const DECK_EXTB: &str = "extblock";
 #[case::extb_b_space("extblock/EXTB.b.space.gds.gz", "TOP", vec!["EXTB.b"; 2], vec![])]
 #[case::extb_b_notch("extblock/EXTB.b.notch.gds.gz", "TOP", vec!["EXTB.b"; 2], vec![])]
 #[case::extb_c("extblock/EXTB.c.gds.gz", "TOP", vec!["EXTB.c"; 2], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/block.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/block.md.  `min_width`
 // counts one marker per wall (two per narrow bar, four per diamond or L); a space rule
 // one per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides.
 // 0.305 bars both ways, a 0.304 diamond, a 0.304 45° strip and an L of 0.305 arms; 0.31,
@@ -3544,7 +3544,7 @@ const DECK_PAD: &str = "pad";
 #[case::padb_f("pad/Padb.f.gds.gz", "TOP", vec!["Padb.f"; 1], vec!["Padb.a", "Padb.b"])]
 // A square AND an octagon CuPillarPad both violate (only circle is allowed); a circle passes.
 #[case::padc_f("pad/Padc.f.gds.gz", "TOP", vec!["Padc.f"; 2], vec!["Padc.a"])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/pad.md).  Pad.a1 and Pad.i count one marker
+// Hardening (hardening/reports/ihp-sg13g2/pad.md).  Pad.a1 and Pad.i count one marker
 // per shape or piece, Pad.d one per pair, Padb.a/Padc.a one per off-size wall, the
 // enclosures one per under-enclosed pad (adjacent short walls one run) or per wall.
 // Pad.a1 on the opening (Passiv AND dfpad): 150.005 square, 300 × 150.005, a regular
@@ -3679,8 +3679,8 @@ const DECK_PSD: &str = "psd";
 // is clean (protruding part ignored) while a crossing tie with a 0.02 lateral margin
 // fires — all validated 1:1 against the FEOL driver (rule is not in the maximal deck).
 #[case::psd_c1("psd/pSD.c1.gds.gz", "TOP", vec!["pSD.c1"; 3], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/implant.md.  An
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/implant.md.  An
 // enclosure counts one marker per enclosed shape, a space one per pair, a width one per
 // wall, an area one per region.
 // 0.305 bars in x and y, a 0.005 sliver (a pSD.k, set aside) and a 0.305 × 300 bar fire,
@@ -3864,8 +3864,8 @@ const DECK_RESISTOR: &str = "resistor";
 // (Rhi.c once per shape now: a poly out of its implants is enclosed by nothing.)
 #[case::rhi_b("resistor/Rhi.b.gds.gz", "TOP",
     vec!["Rhi.b", "Rhi.b", "Rhi.c", "Rhi.c"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
-// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/resistor.md.  `min_width`
+// --- Hardening (hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in hardening/reports/ihp-sg13g2/resistor.md.  `min_width`
 // counts one marker per wall (two per narrow body, four per diamond); a space rule one
 // per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides; a
 // forbidden region one per piece.  The width cases ignore the length rule of their
@@ -4043,8 +4043,8 @@ const DECK_NMOSI: &str = "nmosi";
 // exactly), 0.20 clean, flush-0.00 fires here only (PDF-first; KLayout's coincident-pair
 // marker is zero-area and vanishes under its .and(Activ) — see the deck comment).
 #[case::nmosi_g("nmosi/nmosi.g.gds.gz", "TOP", vec!["nmosi.g"; 2], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): the manual's answer, reasoning in
-// ci/hardening/reports/ihp-sg13g2/misc.md.  Every layout is an Activ in the hole of a
+// --- Hardening (hardening/SPEC.md): the manual's answer, reasoning in
+// hardening/reports/ihp-sg13g2/misc.md.  Every layout is an Activ in the hole of a
 // closed NWell ring on nBuLay unless said otherwise.  min_enclosure and min_space give one
 // marker per shape pair on axis-aligned walls (a box short on all four sides is one) and
 // the enclosure one per 45° wall (the diamond nBuLay four), min_width one per wall, the
@@ -4156,7 +4156,7 @@ const DECK_NPN: &str = "npn";
 #[case::npn_13g2("npn/npn13G2.gds.gz", "TOP",
     vec!["npn13G2.a", "npn13G2.a", "npn13G2L.a", "npn13G2L.b", "npn13G2V.a", "npn13G2V.b"],
     vec!["npnG2.b"])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/npn.md).  The devices are drawn as the
+// Hardening (hardening/reports/ihp-sg13g2/npn.md).  The devices are drawn as the
 // reference cells: a TRANS filling the hole of a pSD ring 0.9 wide with its Activ ring
 // 0.2 inside, or with the hole grown so a neighbour fits in it.
 // Labelled tie rings with no TRANS: four boxes, one cut polygon, an octagon, one with
@@ -4276,7 +4276,7 @@ const DECK_SDIOD: &str = "sdiod";
 #[rstest]
 #[case::sdiod("sdiod/Sdiod.gds.gz", "TOP",
     vec!["Sdiod.a", "Sdiod.b", "Sdiod.c", "Sdiod.d", "Sdiod.e"], vec![])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/npn.md).  The diode is drawn as the
+// Hardening (hardening/reports/ihp-sg13g2/npn.md).  The diode is drawn as the
 // reference cell: a 0.30 x 1.00 ContBar under PWell:block, nSD:block and SalBlock at
 // 0.25, 0.40 and 0.45 in a drawn nBuLay, the NWell ring, the PWell:block ring, the P+
 // tie ring, ThickGateOx and Recog:diode around it.
@@ -4337,7 +4337,7 @@ const DECK_SLIT: &str = "slit";
 #[case("slit/Slt.f.gds.gz", "TOP", vec!["Slt.f"], vec![])]
 #[case("slit/Slt.h1.gds.gz", "TOP", vec!["Slt.h1"], vec![])]
 #[case("slit/Slt.i.gds.gz", "TOP", vec!["Slt.i"], vec![])]
-// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).
+// Hardening cases (hardening/reports/ihp-sg13g2/beol_misc.md).
 //
 // Slt.a: 2.795 slits in x and y, a 45° strip 2.793 wide, a 0.2 nick, slits across
 // x = 20 and 40, at (1000, 1000), on TopMetal2 and Metal3: two walls each.
@@ -4406,7 +4406,7 @@ const DECK_LU: &str = "lu";
 #[case("lu/LU.b.gds.gz", "TOP", vec!["LU.b"], vec![])]
 #[case("lu/LU.c.gds.gz", "TOP", vec!["LU.d"], vec![])]
 #[case("lu/LU.c1.gds.gz", "TOP", vec!["LU.d1"], vec![])]
-// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  "Any portion" of the
+// Hardening cases (hardening/reports/ihp-sg13g2/beol_misc.md).  "Any portion" of the
 // Activ is within the value, so a shape is read by its farthest point; LU.c/c1 are the
 // abutted ties (figure 7.4), LU.d/d1 the ties standing alone.
 //
@@ -4460,8 +4460,8 @@ const DECK_ANTENNA: &str = "antenna";
 // A bare n-diode in an NWell trips Ant.h; an identical one inside a text-tagged `isolbox`
 // is exempt. Exercises text-label matching + region-interaction selectors.
 #[case("antenna/Ant.h.gds.gz", "TOP", vec!["Ant.h"], vec![])]
-// --- Hardening (ci/hardening/SPEC.md): the manual's answer, reasoning in
-// ci/hardening/reports/ihp-sg13g2/misc.md.  The gate is 0.1 µm² everywhere; a ratio is
+// --- Hardening (hardening/SPEC.md): the manual's answer, reasoning in
+// hardening/reports/ihp-sg13g2/misc.md.  The gate is 0.1 µm² everywhere; a ratio is
 // one marker per gate.  "Max. ratio" is met at the value: 200.0 is clean, 200.2 fires.
 // Metal1 19.98, 20.0 and 20.02 µm² on one gate: 199.8, 200.0, 200.2.
 #[case::ant_b_h1("antenna/Ant.b.h1.gds.gz", "TOP", vec!["Ant.b"], vec![])]
@@ -4538,7 +4538,7 @@ const DECK_SEALRING: &str = "sealring";
 // worst.  KLayout reports one edge pair per side; the case used to read three, which
 // were the pieces the tiling cut the ring into, and moved with the tile size.
 #[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 1], vec!["Seal.l"])]
-// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  Every fixture but
+// Hardening cases (hardening/reports/ihp-sg13g2/beol_misc.md).  Every fixture but
 // Seal.l.h1/h2 holds several seal frames, so Seal.l (everything is outside some other
 // frame) and Seal.n (no Passiv ring) are ignored where they are not the rule under test.
 //
@@ -4618,7 +4618,7 @@ const DECK_MIM: &str = "mim";
     vec!["MIM.a", "MIM.a", "MIM.a", "MIM.a", "MIM.b", "MIM.d", "MIM.d", "MIM.d", "MIM.f", "MIM.h"],
     vec![])]
 #[case("mim/MIM.gR.gds.gz", "TOP", vec!["MIM.gR"], vec![])]
-// Hardening (ci/hardening/reports/ihp-sg13g2/pad.md).  MIM.a counts one marker per wall,
+// Hardening (hardening/reports/ihp-sg13g2/pad.md).  MIM.a counts one marker per wall,
 // MIM.b one per pair, MIM.c/MIM.d one per under-enclosed shape (adjacent short walls one
 // run) or per wall, MIM.f/MIM.g/MIM.h one per device.  MIM.a: 1.135 in x and in y, a 45°
 // strip and a diamond of 1.1314, an L of 1.135 arms (four), a 1.135 neck, a 0.005 sliver,
@@ -4693,7 +4693,7 @@ const DECK_FORBIDDEN: &str = "forbidden";
 
 #[rstest]
 #[case("forbidden/forbidden.gds.gz", "TOP", vec!["forbidden"; 11], vec![])]
-// --- Hardening (ci/hardening/SPEC.md, gen/ihp_sg13g2/offgrid_hardening.rs): one report per
+// --- Hardening (hardening/SPEC.md, gen/ihp_sg13g2/offgrid_hardening.rs): one report per
 // forbidden shape.  A BiWind across x = 20 and 40, one at (1000, 1000), a BiWind and a PEmWind
 // overlapping, a 0.005 NoDRC square.
 #[case("forbidden/forbidden.h1.gds.gz", "TOP", vec!["forbidden"; 5], vec![])]

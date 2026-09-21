@@ -14,7 +14,7 @@ The two decks share their rule text with different values (0.42/0.42/0.10/0.42 a
 both: 29 layouts per deck (`tests/data/ihp-sg13g2/topvia<n>/TV<n>.*.h<k>.gds.gz`), 58 in
 all, each with a `#[case]` in the `topvia1`/`topvia2` tables of `tests/ihp-sg13g2.rs`.
 Every layout ran through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`).  TopVia is 90° only (section 3.1), so the 45° geometry
+(`hardening/oracle-ihp.sh`).  TopVia is 90° only (section 3.1), so the 45° geometry
 is the enclosing metal's.
 
 `show-deck` lists TV<n>.a (`exact_width` on `TopVia<n>NoSealring`), TV<n>.b (`min_space`

@@ -15,7 +15,7 @@ margins take the deck's value `c`, 0.01 on Via1 and 0.005 on Via2-4, so "a step 
 0.005 on Via1 and 0.000 on the others), each with a `#[case]` in `test_via_hardening` of
 `tests/ihp-sg13g2.rs`, a table whose second axis is the layer index 1-4.  Every Via1 and
 Via2 layout ran through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`); the Via3 and Via4 copies ran through gdscheck at the
+(`hardening/oracle-ihp.sh`); the Via3 and Via4 copies ran through gdscheck at the
 three tiles and through the test table.  `show-deck` lists every rule of both sections
 for each deck (V(n).a, V(n).b, V(n).b1 with rows/cols 3, V(n).c, V(n).c1 with `sides:
 adjacent`, `trigger: 0.05`), and the four decks are identical but for the index and the

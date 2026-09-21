@@ -12,7 +12,7 @@ rule of the three sections is in the deck.  69 layouts,
 `tests/data/ihp-sg13g2/resistor/<RULE>.h<n>.gds.gz`, drawn by
 `gen/ihp_sg13g2/resistor_hardening.rs`, each with a `#[case]` in the resistor table of
 `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100 and
-through IHP's KLayout decks (`ci/hardening/oracle-ihp.sh`).
+through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 
 A resistor is drawn as figures 6.3-6.5 draw it: a GatPoly stripe (0.5 wide, 2.0 under
 the block unless the rule needs otherwise), the block over the body - RES for Rsil,

@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Hardening patterns (ci/hardening/SPEC.md) for the `topmetal1` and `topmetal2` decks:
+// Hardening patterns (hardening/SPEC.md) for the `topmetal1` and `topmetal2` decks:
 // layouts drawn from the manual's sections 5.22/5.23 (TM1.*, TM1Fil.*) and 5.25/5.26
 // (TM2.*, TM2Fil.*) alone, one fixture per theme, `TM<n>.<rule>.h<k>` and
 // `TM<n>Fil.<rule>.h<k>`.  The two decks share every rule but TM2.bR, so one function
 // draws each theme for both, with the deck's own values.  Each function's comment
 // states the geometry and what the manual says about it; the expected answers are in
 // the `topmetal1`/`topmetal2` tables of tests/ihp-sg13g2.rs and the reasoning in
-// ci/hardening/reports/ihp-sg13g2/topmetal.md.
+// hardening/reports/ihp-sg13g2/topmetal.md.
 
 use crate::helpers::{
     chamfered_tr, density_pattern, diamond, flat_array, layer, library, poly, rect, ref_array,

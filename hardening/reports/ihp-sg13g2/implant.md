@@ -13,7 +13,7 @@ ties) and the glossary of section 4.1 ("unrelated - two regions which do not tou
 other").  111 layouts (444 KB), `tests/data/ihp-sg13g2/<deck>/<rule>.h<n>.gds.gz`, drawn by
 `gen/ihp_sg13g2/implant_hardening.rs`, each with a `#[case]` in the `tgo`, `psd` and
 `nsdblock` tables of `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles
-20, 7 and 100 and through IHP's KLayout decks (`ci/hardening/oracle-ihp.sh`).
+20, 7 and 100 and through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 `show-deck` lists every rule of the three sections (nSDB.d, "overlap allowed", is no check;
 nSDB.b as `min_space` and `min_notch`).  Section 8.1 has no DigiBnd variant for any rule
 of these sections (only NW.c1/d1/e1/f1 and Cnt.c), so there was nothing to draw there.

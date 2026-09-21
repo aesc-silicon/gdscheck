@@ -5,7 +5,7 @@
 #
 # One layout through gdscheck and through IHP's own KLayout decks, rule by rule.
 #
-#   ci/hardening/oracle-ihp.sh <layout.gds[.gz]> [topcell] [tile_um ...]
+#   hardening/oracle-ihp.sh <layout.gds[.gz]> [topcell] [tile_um ...]
 #
 # Prints one line per rule either side reported: the rule, gdscheck's marker count at
 # each tile size asked for (default 20 and 7), and KLayout's.  KLayout is the driver

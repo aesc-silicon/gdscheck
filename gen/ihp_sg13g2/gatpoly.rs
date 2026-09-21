@@ -362,11 +362,11 @@ fn gfil_g_boundary(pdk: &PdkConfig) {
 }
 
 // ---------------------------------------------------------------------------------------
-// Hardening patterns (ci/hardening/SPEC.md): layouts drawn from the manual's sections 5.8
+// Hardening patterns (hardening/SPEC.md): layouts drawn from the manual's sections 5.8
 // (GatPoly) and 5.9 (GatPoly:filler) alone, one fixture per theme, `<rule>.h<n>`.  Each
 // function's comment states the geometry and what the manual says about it; the expected
 // answers are in the `gatpoly` table of tests/ihp-sg13g2.rs and the reasoning in
-// ci/hardening/reports/ihp-sg13g2/gatpoly.md.
+// hardening/reports/ihp-sg13g2/gatpoly.md.
 // ---------------------------------------------------------------------------------------
 
 /// Layers the hardening patterns draw on.

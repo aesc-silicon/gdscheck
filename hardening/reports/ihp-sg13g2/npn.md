@@ -15,7 +15,7 @@ chip) are recommended and deliberately left out.  45 layouts,
 `tests/data/ihp-sg13g2/{npn,sdiod}/<RULE>.h<n>.gds.gz`, drawn by
 `gen/ihp_sg13g2/npn_hardening.rs`, each with a `#[case]` in `tests/ihp-sg13g2.rs`.
 Every layout ran through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`).
+(`hardening/oracle-ihp.sh`).
 
 The devices are drawn as IHP's reference cells (`libs.ref/sg13g2_pr/gds/sg13g2_pr.gds`)
 have them.  The npn13G2 abstract is a TRANS box filling the hole of a pSD ring 0.9 wide

@@ -341,11 +341,11 @@ fn nw_f1(pdk: &PdkConfig) {
 }
 
 // ---------------------------------------------------------------------------------------
-// Hardening patterns (ci/hardening/SPEC.md): layouts drawn from the manual's section 5.1
+// Hardening patterns (hardening/SPEC.md): layouts drawn from the manual's section 5.1
 // and 8.1.1 alone, one fixture per theme, `NW.<rule>.h<n>`.  Each function's comment
 // states the geometry and what the manual says about it; the expected answers are in
 // the `nwell` table of tests/ihp-sg13g2.rs and the reasoning in
-// ci/hardening/reports/ihp-sg13g2/nwell.md.
+// hardening/reports/ihp-sg13g2/nwell.md.
 // ---------------------------------------------------------------------------------------
 
 /// Layers the hardening patterns draw on.

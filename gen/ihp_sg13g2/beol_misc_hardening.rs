@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Hardening layouts (ci/hardening/SPEC.md) for the `sealring`, `slit`, `lbe` and `lu`
+//! Hardening layouts (hardening/SPEC.md) for the `sealring`, `slit`, `lbe` and `lu`
 //! decks: sections 6.10 (Sealring, Seal.*), 7.3 (Metal Slits, Slt.*), 9.1 (Localized
 //! Backside Etching, LBE.*) and 7.2.2 (Latch-up, LU.*) of the SG13G2 layout rules.
 //! Every layout is `tests/data/ihp-sg13g2/<deck>/<RULE>.h<k>.gds.gz`; each function's
 //! comment states the geometry and what the manual says about it, the expected answers
 //! are in the decks' tables of tests/ihp-sg13g2.rs and the reasoning in
-//! ci/hardening/reports/ihp-sg13g2/beol_misc.md.
+//! hardening/reports/ihp-sg13g2/beol_misc.md.
 //!
 //! The seal frames are drawn as IHP's `sealring` pcell draws them: the EdgeSeal marker
 //! is the 4.2 µm ring itself, the conductors coincide with it, the via rings are 4.2
