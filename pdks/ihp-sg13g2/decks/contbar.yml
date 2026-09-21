@@ -45,10 +45,14 @@ rules:
     check: min_space
     layers: [ContBarOnGatPoly, Activ]
     value: 0.14
+    params:
+      abutting: report
   - id: CntB.f
     check: min_space
     layers: [ContBarOnActiv, GatPoly]
     value: 0.11
+    params:
+      abutting: report
   - id: CntB.g
     check: forbidden
     layers: [ContBar, Activ, GatPoly]
@@ -59,6 +63,8 @@ rules:
     check: min_space
     layers: [pSD, ContBarOnNsdActiv]
     value: 0.09
+    params:
+      abutting: report
   - id: CntB.g2
     check: min_enclosure
     layers: [pSD, ContBarOnPsdActiv]

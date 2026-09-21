@@ -17,11 +17,14 @@ rules:
     value: 1.00
   - id: NBLB.c
     check: min_enclosure
-    layers: [nBuLay, nBuLay.block]
+    layers: [nBuLayAll, nBuLay.block]
     value: 1.00
     params:
       metric: euclidian
+      interacting_only: 1
   - id: NBLB.d
     check: min_space
-    layers: [nBuLay.block, nBuLay]
+    layers: [nBuLay.block, nBuLayAll]
     value: 1.50
+    params:
+      abutting: related

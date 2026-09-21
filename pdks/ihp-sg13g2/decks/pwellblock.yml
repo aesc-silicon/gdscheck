@@ -19,19 +19,33 @@ rules:
     check: min_space
     layers: [PWell.block, NWell]
     value: 0.62
+  - id: PWB.c
+    check: min_space
+    layers: [PWell.block, NWell]
+    value: 0.62
+    params:
+      pairs: overlapping
   - id: PWB.e
     check: min_space
     layers: [PWell.block, NsdActivInPWellNoTGO]
     value: 0.31
+    params:
+      abutting: report
   - id: PWB.e1
     check: min_space
     layers: [PWell.block, NsdActivInPWellTGO]
     value: 0.62
+    params:
+      abutting: report
   - id: PWB.f
     check: min_space
     layers: [PWell.block, PsdActivInPWellNoTGO]
     value: 0.24
+    params:
+      abutting: report
   - id: PWB.f1
     check: min_space
     layers: [PWell.block, PsdActivInPWellTGO]
     value: 0.62
+    params:
+      abutting: report

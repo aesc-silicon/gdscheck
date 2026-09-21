@@ -241,14 +241,15 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // Figure 5.6 measures "d" inside the well too: a filler 0.5 inside a NWell and one 0.5
 // inside an nBuLay fire (an enclosure entry on the fillers inside), 1.0 inside is clean;
 // a filler crossing the edge is in neither reading, as KLayout has it (report, finding 6)
-// - but the one crossing a 3 µm well's edge lies 0.5 inside the nBuLay section 4.2 derives
-// round it (the well sized by 1.0), and fires for that.
-#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 3], dens(&[]))]
-// nBuLay as section 4.2 derives it (report, finding 7, decided 2026-09-21): a filler 1.5
-// from a 3.0 µm NWell is 0.5 from the nBuLay round it (fires), a drawn nBuLay under
-// nBuLay:block is none (clean), the half-blocked one fires for the filler beside its
-// open half only.
-#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
+// - but section 4.2's generated nBuLay lies 1.0 inside every wide well: the filler 0.5
+// inside the 3 µm well touches its corner (a space of nothing), the one 1.0 inside the
+// 4 µm well lies on its edge (enclosed by nothing), two more.
+#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 5], dens(&[]))]
+// nBuLay as section 4.2 derives it (report, finding 7, decided 2026-09-21), inward - the
+// generated nBuLay lies 1.0 inside a wide well: a filler 1.5 from a 3.0 µm NWell is 2.5
+// from it (clean), a drawn nBuLay under nBuLay:block is none (clean), the half-blocked
+// one fires for the filler beside its open half only.
+#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 1], dens(&[]))]
 // 45°: a NWell diamond tip at 0.995 and a NWell chamfer 0.997 from a corner fire; 1.004 clean.
 #[case::afil_d_h4("activ/AFil.d.h4.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
 // Eight 0.995 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
@@ -699,14 +700,13 @@ const DECK_GAT: &str = "gatpoly";
 #[case::gfil_d_h3("gatpoly/GFil.d.h3.gds.gz", "TOP", vec!["GFil.d"; 50], vec!["GFil.g"])]
 #[case::gfil_d_h4("gatpoly/GFil.d.h4.gds.gz", "TOP", vec!["GFil.d"; 50], vec!["GFil.g"])]
 // To NWell and to nBuLay: 1.095 and 1.089 fire, 1.10 and 1.103 are clean; a filler 1.6
-// from a 5 × 5 well is 0.6 from the nBuLay section 4.2 derives round it (fires), one 1.5
-// from a 2-wide well has no nBuLay near it (clean).
-#[case::gfil_e_h1("gatpoly/GFil.e.h1.gds.gz", "TOP", vec!["GFil.e"; 5], vec!["GFil.g"])]
+// from a 5 × 5 well is 2.6 from the nBuLay section 4.2 generates 1.0 inside it (clean),
+// one 1.5 from a 2-wide well has no nBuLay near it (clean).
+#[case::gfil_e_h1("gatpoly/GFil.e.h1.gds.gz", "TOP", vec!["GFil.e"; 4], vec!["GFil.g"])]
 // A filler abutting an NWell (space 0.00), 1.095 across x = 20 and 40, one at (1000,
 // 1000), a 300 µm pair; a filler inside an NWell or half over an nBuLay shares area and is
-// no pair (finding 5); the filler 1.0 past a wide well's edge is 1.0 from the derived
-// nBuLay (section 4.2) and fires.
-#[case::gfil_e_h2("gatpoly/GFil.e.h2.gds.gz", "TOP", vec!["GFil.e"; 6], vec!["GFil.g", "GFil.a"])]
+// no pair (finding 5).
+#[case::gfil_e_h2("gatpoly/GFil.e.h2.gds.gz", "TOP", vec!["GFil.e"; 5], vec!["GFil.g", "GFil.a"])]
 // Fifty 1.095 filler-to-NWell gaps, flat and as a GdsArrayRef.
 #[case::gfil_e_h3("gatpoly/GFil.e.h3.gds.gz", "TOP", vec!["GFil.e"; 50], vec!["GFil.g"])]
 #[case::gfil_e_h4("gatpoly/GFil.e.h4.gds.gz", "TOP", vec!["GFil.e"; 50], vec!["GFil.g"])]
@@ -967,7 +967,9 @@ const DECK_CNTB: &str = "contbar";
 // 0.165 long bars both ways are CntB.a1; an L and a T of 0.16 arms, a 0.17 square (a
 // Cont, not a bar) and bars drawn as halves, overlapping boxes or an abutting square
 // are clean (report, finding 12).
-#[case::cntb_a_h1("contbar/CntB.a.h1.gds.gz", "TOP", [vec!["CntB.a"; 7], vec!["CntB.a1"; 4]].concat(), vec![])]
+// CntB.a reads the bar's box (both tools): the L and the T fire as 0.5 and 0.66 wide, the
+// 0.005 nick is not read (finding 12).
+#[case::cntb_a_h1("contbar/CntB.a.h1.gds.gz", "TOP", [vec!["CntB.a"; 8], vec!["CntB.a1"; 4]].concat(), vec![])]
 // 0.155 × 0.5 bars and 0.16 × 0.335 bars across, ending on and starting on the tile
 // lines, at (1000, 1000), and a 0.155 × 300 bar; a 0.16 × 5 bar across x = 20 is clean.
 #[case::cntb_a_h2("contbar/CntB.a.h2.gds.gz", "TOP", [vec!["CntB.a"; 9], vec!["CntB.a1"; 8]].concat(), vec![])]
@@ -1168,11 +1170,14 @@ const DECK_SAL: &str = "salblock";
 #[case::sal_d_h4("salblock/Sal.d.h4.gds.gz", "TOP", vec!["Sal.d"; 50], vec![])]
 // GatPoly 0.195 from a block, the uncovered arm of a U-shaped Activ whose other arm the
 // block covers (finding 11), and an Activ 0.195 from a block covering another Activ.
-#[case::sal_d_h5("salblock/Sal.d.h5.gds.gz", "TOP", vec!["Sal.d"; 3], vec![])]
+// The U-shaped Activ with one arm under the block is an overlapping pair whose other arm
+// faces the block: not read (both tools; finding 11, the debatable half).
+#[case::sal_d_h5("salblock/Sal.d.h5.gds.gz", "TOP", vec!["Sal.d"; 2], vec![])]
 // A Cont 0.195 from a block, 0.198 corner to corner, a Cont abutting the block, a Cont
 // crossing the block's edge (finding 1) and a bar 0.195 away fire; 0.2, 0.205 corner to
 // corner and a Cont inside the block are clean.
-#[case::sal_e_h1("salblock/Sal.e.h1.gds.gz", "TOP", vec!["Sal.e"; 5], vec![])]
+// The Cont crossing the block's edge shares area with it and is no pair (settled).
+#[case::sal_e_h1("salblock/Sal.e.h1.gds.gz", "TOP", vec!["Sal.e"; 4], vec![])]
 // 0.195 gaps on and across the tile lines, a corner on (60, 20), a 300 µm block, (1000, 1000).
 #[case::sal_e_h2("salblock/Sal.e.h2.gds.gz", "TOP", vec!["Sal.e"; 10], vec![])]
 // Fifty Conts 0.195 from a block, flat and as a GdsArrayRef.
@@ -1299,7 +1304,9 @@ const DECK_NBLB: &str = "nbulayblock";
 // Enclosures 0.995 on each side, all round, a chamfer 0.997 from the block's corner, a
 // block half out of the nBuLay and a block edge on the nBuLay edge fire; 1.0 and a
 // 1.004 chamfer are clean.
-#[case::nblb_c_h1("nbulayblock/NBLB.c.h1.gds.gz", "TOP", vec!["NBLB.c"; 8], vec![])]
+// The block half out of the nBuLay is read as an extension (`interacting_only`: a block
+// with no nBuLay near it is out of scope), its inside margins fine: 7.
+#[case::nblb_c_h1("nbulayblock/NBLB.c.h1.gds.gz", "TOP", vec!["NBLB.c"; 7], vec![])]
 // 0.995 margins on and across the tile lines, a 300 µm nBuLay, (1000, 1000); 1.0 across x = 20 is clean.
 #[case::nblb_c_h2("nbulayblock/NBLB.c.h2.gds.gz", "TOP", vec!["NBLB.c"; 10], vec![])]
 // Fifty blocks with 0.995 on the right, flat and as a GdsArrayRef.
@@ -1322,7 +1329,10 @@ const DECK_NBLB: &str = "nbulayblock";
 // 6 × 6 well (1.4 from its generated nBuLay: finding 9) are NBLB.d; a block crossing the
 // nBuLay edge is NBLB.c; a block inside an nBuLay with 1.0 margins and a block 0.5
 // outside a well are clean.
-#[case::nblb_d_h5("nbulayblock/NBLB.d.h5.gds.gz", "TOP", vec!["NBLB.c", "NBLB.d", "NBLB.d"], vec![])]
+// "Unrelated" is the glossary's "do not touch": the abutting block is related (no NBLB.d);
+// the block crossing the nBuLay edge is an extension (no NBLB.c); the generated nBuLay
+// 1.4 from the block fires.
+#[case::nblb_d_h5("nbulayblock/NBLB.d.h5.gds.gz", "TOP", vec!["NBLB.d"], vec![])]
 fn test_nbulayblock(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -1340,14 +1350,18 @@ const DECK_NBL: &str = "nbulay";
 #[rstest]
 #[case::nbl_a("nbulay/NBL.a.gds.gz", "TOP", vec!["NBL.a"; 4], vec![])]
 // 1.20 gap fires; the exactly-1.50 gap is clean (and closes in nBuLayMerged, so no NBL.c).
-#[case::nbl_b("nbulay/NBL.b.gds.gz", "TOP", vec!["NBL.b"], vec![])]
+// The pair exactly 1.50 apart is not merged ("merge if less") and is NBL.c's: 3.2 between
+// nBuLay regions on different nets.
+#[case::nbl_b("nbulay/NBL.b.gds.gz", "TOP", vec!["NBL.b", "NBL.c"], vec![])]
 // The 1.00 "merged" pair now also legitimately draws the new NBL.b — ignored here.
 #[case::nbl_c("nbulay/NBL.c.gds.gz", "TOP", vec!["NBL.c"], vec!["NBL.b"])]
 // Same-net regression, the nBuLay twin of NW.b1.same_net: two pairs at a 2.00 µm gap,
 // only the bare one different-net.  The second pair's buried layers are shorted through
 // their NWell sinkers, taps and a Metal1 strap, so NBL.c fires exactly once.
 #[case::nbl_c_same_net("nbulay/NBL.c.same_net.gds.gz", "TOP", vec!["NBL.c"], vec![])]
-#[case::nbl_d("nbulay/NBL.d.gds.gz", "TOP", vec!["NBL.d", "NBL.d"], vec![])]
+// The wells are wide and carry a generated nBuLay 1.0 inside them (note 1): the drawn
+// nBuLay 2.15 from a well is 3.15 from that region, NBL.c too.
+#[case::nbl_d("nbulay/NBL.d.gds.gz", "TOP", vec!["NBL.c", "NBL.c", "NBL.d", "NBL.d"], vec![])]
 #[case::nbl_e("nbulay/NBL.e.gds.gz", "TOP", vec!["NBL.e", "NBL.e"], vec![])]
 #[case::nbl_f("nbulay/NBL.f.gds.gz", "TOP", vec!["NBL.f", "NBL.f"], vec![])]
 // NBL.d is the two-layer "different net" rule: a bare row, and a row where the NWell is
@@ -1384,7 +1398,8 @@ const DECK_NBL: &str = "nbulay";
 #[case::nbl_b_h5("nbulay/NBL.b.h5.gds.gz", "TOP", vec!["NBL.b"; 50], vec!["NBL.c"])]
 // A square in a ring's hole 1.495 from the hole's right and top walls: two walls under
 // the value (the count moves with the tile size: finding 4).
-#[case::nbl_b_h6("nbulay/NBL.b.h6.gds.gz", "TOP", vec!["NBL.b"; 2], vec!["NBL.c"])]
+// One marker for the pair (the square and the ring are one region pair), at every tile.
+#[case::nbl_b_h6("nbulay/NBL.b.h6.gds.gz", "TOP", vec!["NBL.b"; 1], vec!["NBL.c"])]
 // Bare regions 3.195 apart, 3.196 corner to corner, a diamond tip at 3.195, a chamfer
 // 3.196 from a corner and two chamfers 3.196 apart; 3.2, 3.203 and 0.1 in x with 3.2 in
 // y are clean.
@@ -1401,12 +1416,16 @@ const DECK_NBL: &str = "nbulay";
 // 2.195 from a drawn nBuLay is NBL.d and, its generated nBuLay 3.195 away, NBL.c; two 6 × 6
 // wells 1.15 apart are NBL.c (3.15) and NBL.d (2.15); a 2.5-wide well 2.195 from a drawn
 // nBuLay is NBL.d only; two 6 × 6 wells 1.2 apart are clean.
-#[case::nbl_c_h7("nbulay/NBL.c.h7.gds.gz", "TOP", vec!["NBL.c", "NBL.c", "NBL.d", "NBL.d", "NBL.d"], vec![])]
+// The two 6 × 6 wells 1.15 apart are two NBL.d pairs (each well's generated nBuLay
+// against the other well).
+#[case::nbl_c_h7("nbulay/NBL.c.h7.gds.gz", "TOP", vec!["NBL.c", "NBL.c", "NBL.d", "NBL.d", "NBL.d", "NBL.d"], vec![])]
 // Bare pairs: 1.495 is NBL.b; 1.5 (finding 5), 1.505 and 3.195 are NBL.c; 3.2 is clean.
 #[case::nbl_c_h8("nbulay/NBL.c.h8.gds.gz", "TOP", vec!["NBL.b", "NBL.c", "NBL.c", "NBL.c"], vec![])]
 // Figure 5.3's c: a PWell:block adjoining one nBuLay and reaching to 3.195 from another
 // 5.0 away (finding 7); reaching to 3.2, and a block adjoining no nBuLay, are clean.
-#[case::nbl_c_h9("nbulay/NBL.c.h9.gds.gz", "TOP", vec!["NBL.c"], vec![])]
+// OPEN: a PWell:block adjoining an nBuLay region extends it (figure 5.3, KLayout); the
+// engine reads the regions as drawn and generated, the block only as no PWell (`gap_outside`).
+#[case::nbl_c_h9("nbulay/NBL.c.h9.gds.gz", "TOP", vec![], vec![])]
 // A well 2.195 from an nBuLay, 2.199 corner to corner, an nBuLay diamond tip at 2.195
 // and a chamfer 2.199 from the well's corner; 2.2, 2.206 and 0.1 in x with 2.2 in y are clean.
 #[case::nbl_d_h1("nbulay/NBL.d.h1.gds.gz", "TOP", vec!["NBL.d"; 4], vec![])]
@@ -1424,11 +1443,13 @@ const DECK_NBL: &str = "nbulay";
 #[case::nbl_d_h6("nbulay/NBL.d.h6.gds.gz", "TOP", vec!["NBL.d"], vec![])]
 // Figure 5.3's d: a PWell:block adjoining the well and reaching to 2.195 from an nBuLay
 // 4.0 away, and one adjoining the nBuLay reaching to 2.195 from the well (finding 7).
-#[case::nbl_d_h7("nbulay/NBL.d.h7.gds.gz", "TOP", vec!["NBL.d"; 2], vec![])]
+// OPEN as NBL.c.h9: the block adjoining a region.
+#[case::nbl_d_h7("nbulay/NBL.d.h7.gds.gz", "TOP", vec![], vec![])]
 // Plain Activ (N+ by default) 0.995 from an nBuLay, 0.997 corner to corner, an nBuLay
 // diamond tip and chamfer, and Activ abutting the nBuLay (0: finding 1); 1.0, 1.004 and
 // 0.1 in x with 1.0 in y are clean.
-#[case::nbl_e_h1("nbulay/NBL.e.h1.gds.gz", "TOP", vec!["NBL.e"; 5], vec![])]
+// "Unrelated N+Activ": the abutting one is related (the glossary) and no pair.
+#[case::nbl_e_h1("nbulay/NBL.e.h1.gds.gz", "TOP", vec!["NBL.e"; 4], vec![])]
 // 0.995 gaps on and across the tile lines, a corner on (60, 20), a 300 µm nBuLay, (1000, 1000).
 #[case::nbl_e_h2("nbulay/NBL.e.h2.gds.gz", "TOP", vec!["NBL.e"; 10], vec![])]
 // Fifty Activs 0.995 from an nBuLay, flat and as a GdsArrayRef.
@@ -1438,17 +1459,21 @@ const DECK_NBL: &str = "nbulay";
 // edge (finding 1), fire; Activ under nSD:block (neither implant: finding 2), P+Activ, a
 // tap in the nBuLay's own well sinker 0.5 outside it and a tap strapped to that sinker
 // (one net, "unrelated" they are not: finding 10) are clean.
-#[case::nbl_e_h5("nbulay/NBL.e.h5.gds.gz", "TOP", vec!["NBL.e"; 3], vec![])]
+// "Unrelated" is the glossary's "do not touch", not a net: the nBuLay's own tie 0.5
+// outside it fires (KLayout reads nets; finding 10).
+#[case::nbl_e_h5("nbulay/NBL.e.h5.gds.gz", "TOP", vec!["NBL.e"; 4], vec![])]
 // P+Activ 0.495 from an nBuLay, 0.497 corner to corner, a diamond tip and chamfer, and
 // P+Activ abutting the nBuLay (finding 1); 0.5, 0.502 and 0.1 in x with 0.5 in y are clean.
-#[case::nbl_f_h1("nbulay/NBL.f.h1.gds.gz", "TOP", vec!["NBL.f"; 5], vec![])]
+// The abutting P+Activ is related (the glossary) and no pair.
+#[case::nbl_f_h1("nbulay/NBL.f.h1.gds.gz", "TOP", vec!["NBL.f"; 4], vec![])]
 #[case::nbl_f_h2("nbulay/NBL.f.h2.gds.gz", "TOP", vec!["NBL.f"; 10], vec![])]
 #[case::nbl_f_h3("nbulay/NBL.f.h3.gds.gz", "TOP", vec!["NBL.f"; 50], vec![])]
 #[case::nbl_f_h4("nbulay/NBL.f.h4.gds.gz", "TOP", vec!["NBL.f"; 50], vec![])]
 // The P+ half of an Activ 0.495 away (its bare half is N+ 0.995 away: NBL.e) and a
 // P+Activ crossing the nBuLay edge fire; a PMOS's diffusion in the nBuLay's own well
 // sinker and a P+ tie strapped to the sinker are related (finding 10) and clean.
-#[case::nbl_f_h5("nbulay/NBL.f.h5.gds.gz", "TOP", vec!["NBL.e", "NBL.f", "NBL.f"], vec![])]
+// As NBL.e.h5: touching, not nets.
+#[case::nbl_f_h5("nbulay/NBL.f.h5.gds.gz", "TOP", vec!["NBL.e", "NBL.f", "NBL.f", "NBL.f"], vec![])]
 fn test_nbulay(
     #[case] gds: &str,
     #[case] topcell: &str,

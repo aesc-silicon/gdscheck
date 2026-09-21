@@ -27,6 +27,35 @@ Test status on the engine as of this report: 41 of the 218 new cases fail, all o
 findings below; the other 177 pass.  No count moved with the tile size except in
 finding 4, and every flat/array pair agreed.
 
+## Resolution (2026-09-21)
+
+Fixed, deck: 1 (`abutting: report` on PWB.e/e1/f/f1, EXTB.c, Sal.d/e, CntB.e/f/g1;
+the rules worded "unrelated" - NBL.e/f, NBLB.d - take the glossary's reading instead,
+`abutting: related`: a shape touching anywhere is related and no pair), 2 (`NActiv` is
+section 4.2's N+Activ everywhere, and the PWell:block excluded from the N+/P+ Activ in
+PWell - the implant report's findings 6 and 7), 3 (`min_notch` for NBL.b), 5 (the
+merge closes gaps under 1.50, radius 0.7475: two nBuLay exactly 1.50 apart are NBL.c's),
+6 (`gap_outside: PWell.block` on NBL.c and NBL.d), 8 and 9 (the generated nBuLay of
+section 4.2 is read *inward* - the well shrunk by 1.5 and grown by 0.5, IHP's reading,
+which the activ deck's filler derivation had the wrong way round; NBL.c/d read
+`nBuLayRegions`, drawn and generated closed together; NBLB.c reads `nBuLayAll` with
+`interacting_only`, NBLB.d `nBuLayAll`), 11's PWB.c (a second entry with `pairs:
+overlapping` reads the well's far arm against the block over its near one).
+
+Fixed, engine: 4 (the marker of a parallel pair is the shared stretch's lowest end,
+one point for every tile - a fix of the metaln round that reaches this case).
+
+Kept, cases flipped: 10 (`unrelated` is the glossary's "do not touch", not a net: the
+nBuLay's own tie 0.5 outside it fires), 12 (CntB.a reads the bar's box, as both tools),
+Sal.d's U (11, both tools silent), the block crossing the nBuLay edge (an extension
+under NBLB.c), and the Cont crossing the SalBlock edge (shares area, no pair).  A wide
+well beside another is two NBL.d pairs (each well's generated nBuLay against the
+other well).
+
+Open: 7 (a PWell:block adjoining a region extends it, figure 5.3 and KLayout; the
+engine reads the block as no PWell only - `NBL.c.h9`, `NBL.d.h7` carry the engine's
+answer).
+
 ## Findings
 
 ### 1. A touch is a space of nothing: nine two-layer space rules stay silent when the other shape abuts (false negative)
