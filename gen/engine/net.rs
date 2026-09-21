@@ -40,22 +40,26 @@ pub fn generate(pdk: &PdkConfig) {
         v
     };
 
-    // A plate of exactly 10 µm² is a ratio of 10, which reaches N.ant's limit; one of
-    // 9.995 does not.  N.ant: 1 and 0.  Read through Inner's step alone, the plate is
-    // not on the gate's net yet: N.level: 0 and 0.  N.bare: 1 and 0, no diode about.
+    // A plate of exactly 10 µm² is a ratio of 10, which meets N.ant's limit; one of
+    // 10.005 is over it, one of 9.995 under.  N.ant: 0, 1 and 0.  Read through Inner's
+    // step alone, the plate is not on the gate's net yet: N.level: 0.  N.bare: 0, 1 and
+    // 0, no diode about.
     write("ratio_exact", antenna(5.0, 2.0, false));
+    write("ratio_over", antenna(5.0025, 2.0, false));
     write("ratio_under", antenna(4.9975, 2.0, false));
 
     // The same 10 µm² plate with a diode on the net: N.bare leaves it alone and
-    // N.protected's 100 is far off, 0 and 0; a 100 µm² plate with a diode reaches it:
-    // N.protected 1, N.bare 0.  Without the diode the 100 µm² plate is N.bare's: 1.
+    // N.protected's 100 is far off, 0 and 0; a 100.005 µm² plate with a diode is over
+    // it: N.protected 1, N.bare 0.  Without the diode the 100 µm² plate is N.bare's: 1.
     write("diode_small", antenna(5.0, 2.0, true));
-    write("diode_big", antenna(20.0, 5.0, true));
+    write("diode_big", antenna(20.001, 5.0, true));
     write("bare_big", antenna(20.0, 5.0, false));
 
     // By sidewall at 0.5 µm thickness: a 4 by 6 plate has a perimeter of 20, a sidewall
-    // of 10, exactly N.side's limit; 4 by 5.995 is under.  N.side: 1 and 0.
+    // of 10, exactly N.side's limit; 4 by 6.005 is over, 4 by 5.995 under.  N.side: 0,
+    // 1 and 0.
     write("side_exact", antenna(6.0, 4.0, false));
+    write("side_over", antenna(6.005, 4.0, false));
     write("side_under", antenna(5.995, 4.0, false));
 
     // An Outer marker over two Inner squares.  Tied to the marker through Vias, both
