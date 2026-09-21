@@ -13,6 +13,12 @@
 //! measures a metal by its sidewall (`metric: sidewall`, perimeter times `thickness`)
 //! and credits a diode by adding `diode_factor` times its area to the denominator.
 //!
+//! The diode is read level by level too, on the net as it is at that level: a diode
+//! the net reaches only through a higher metal does not protect the gate while the
+//! lower one is etched, so `diode: without` judges the sum up to the last level the
+//! gate is unprotected at, and `diode: with` the whole sum of a gate protected at the
+//! top (IHP's deck reads the diode on the final net, a simplification).
+//!
 //! `layers` are the conductors, one per level being accumulated.  The gate and the
 //! diodes are layer params - `gate`, `diode_1`, `diode_2`, `diode_3` - each with a
 //! `_net_of` naming the conductor its net is looked up on, since a gate sits on poly and
@@ -238,8 +244,12 @@ pub fn run(
         out
     };
 
-    // Cumulative ratio per gate, summed level by level with each level's own partition.
+    // Cumulative ratio per gate, summed level by level with each level's own partition;
+    // whether a diode protects the gate at the level last read, and the sum up to the
+    // last level none did.
     let mut cum = vec![0.0f64; gates.len()];
+    let mut protected = vec![false; gates.len()];
+    let mut bare: Vec<Option<(f64, &str)>> = vec![None; gates.len()];
     for l in &rule.layers {
         let lkey = key(l);
         let Some(prefix) = fixed_level.or_else(|| conn.connect_prefix(lkey)) else {
@@ -311,58 +321,72 @@ pub fn run(
             );
         }
 
-        // The diode credit, when the rule uses one, is evaluated on the *same* net as the
-        // antenna it offsets — a diode only protects a gate it is already connected to at
-        // this level of the stack.
-        let level_diode =
-            diode_factor.map(|_| diode_area_per_net(&diodes, conn, &part, layout, merged, d2));
+        // The diode is read on the *same* net as the antenna it protects, at this
+        // level of the stack: a diode protects a gate it is connected to when the
+        // level is etched, and one the net reaches only through a higher metal does
+        // not exist yet at the lower one (figure 7.1's sum, level by level).  With
+        // `diode_factor` it credits the denominator; with `diode: with`/`without` it
+        // says which rule the level is under.
+        let level_diode = (diode_factor.is_some() || require_diode.is_some())
+            .then(|| diode_area_per_net(&diodes, conn, &part, layout, merged, d2));
 
         for (i, (_, _, node)) in gates.iter().enumerate() {
             let net = part.net_of(*node);
             let g = gate_area.get(&net).copied().unwrap_or(0.0);
-            let denom = match (diode_factor, &level_diode) {
-                (Some(mf), Some(d)) => g + mf * d.get(&net).copied().unwrap_or(0.0),
-                _ => g,
+            // A diode of the size the diode rule asks for (`diode_area`, Ant.g's 0.16)
+            // protects: the diode rule's floor is met at its value, and a diode that
+            // meets it is a protection diode.
+            let diode_here = level_diode
+                .as_ref()
+                .map(|d| d.get(&net).copied().unwrap_or(0.0))
+                .unwrap_or(0.0);
+            let denom = match diode_factor {
+                Some(mf) => g + mf * diode_here,
+                None => g,
             };
             if denom > 0.0 {
                 cum[i] += layer_area.get(&net).copied().unwrap_or(0.0) / denom;
             }
+            if diode_here >= diode_min * (1.0 - 1e-9) {
+                protected[i] = true;
+            } else {
+                // The sum up to the last level the gate is unprotected at, and that
+                // level: what `diode: without` judges.
+                bare[i] = Some((cum[i], l.name.as_str()));
+            }
         }
     }
 
-    // Diode presence on the full net (relaxes the limit).  The full partition is cached.
-    let full = conn.partition(usize::MAX);
-    let diode_area: HashMap<usize, f64> = if require_diode.is_some() {
-        diode_area_per_net(&diodes, conn, &full, layout, merged, d2)
-    } else {
-        HashMap::new()
-    };
-
     let mut out = Vec::new();
-    for (i, (gate_a, marker, node)) in gates.iter().enumerate() {
+    for (i, (gate_a, marker, _)) in gates.iter().enumerate() {
         if *gate_a <= 0.0 {
             continue;
         }
-        // A diode of the size the diode rule asks for (`diode_area`, Ant.g's 0.16)
-        // protects: the diode rule's floor is met at its value, and a diode that meets
-        // it is a protection diode.
-        let has_diode =
-            diode_area.get(&full.net_of(*node)).copied().unwrap_or(0.0) >= diode_min * (1.0 - 1e-9);
-        if require_diode.is_some_and(|req| has_diode != req) {
-            continue;
-        }
+        // `diode: without` judges the sum up to the last unprotected level; `diode:
+        // with` the whole sum of a gate protected at the top; neither, the whole sum.
+        let (ratio, note) = match require_diode {
+            Some(false) => match bare[i] {
+                Some((c, at)) => (c, format!(", no diode at {at}")),
+                None => continue,
+            },
+            Some(true) => {
+                if !protected[i] {
+                    continue;
+                }
+                (cum[i], ", with diode".to_string())
+            }
+            None => (cum[i], String::new()),
+        };
         // A maximum is met at its value, as every rule of a manual is; a ratio of
         // exactly 200 is clean.  The sum of the levels is read a hair past the value,
         // since 20.0 / 0.1 in floating point is not always 200.
-        if cum[i] > limit * (1.0 + 1e-9) {
+        if ratio > limit * (1.0 + 1e-9) {
             let (x, y) = (marker.0 * dbu_to_um, marker.1 * dbu_to_um);
             out.push(Violation::point(
                 &rule.id,
                 "Antenna ratio violation",
                 format!(
-                    "cumulative antenna ratio {:.1} > {limit} (gate {gate_a:.4} µm²{}) at ({x:.4}, {y:.4}) µm",
-                    cum[i],
-                    if has_diode { ", with diode" } else { "" },
+                    "cumulative antenna ratio {ratio:.1} > {limit} (gate {gate_a:.4} µm²{note}) at ({x:.4}, {y:.4}) µm"
                 ),
                 x, y,
             ));

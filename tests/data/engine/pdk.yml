@@ -65,12 +65,12 @@ edge_layers:
     op: edges
     layers: [Outer]
 
-# Via joins Inner, then Outer, then Diode, for the rules gated on nets and for the
+# Via joins Inner, then Diode, then Outer, for the rules gated on nets and for the
 # antenna rule's levels: through Inner's step alone, Outer is not yet on the net.
 connectivity:
   - connector: Via
     layers: [Inner]
   - connector: Via
-    layers: [Outer]
-  - connector: Via
     layers: [Diode]
+  - connector: Via
+    layers: [Outer]
