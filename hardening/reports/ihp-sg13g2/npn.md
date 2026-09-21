@@ -69,7 +69,7 @@ Open: 7 (section 6.7's "do not apply" list - NW.c1, NW.e1, PWB.f1, CntB.a, LU.d 
 recognised Schottky diode - lives in five other decks; an exemption layer subtracted
 from each of those rules' layers is the way, not done here).
 
-Decided (2026-09-21, PDK owner): 7 - the five rules read their layers less what
+Decided (2026-09-21, gdscheck owner): 7 - the five rules read their layers less what
 overlaps the recognised diode (the bar for CntB.a; the four-layer stack grown by 2.5,
 out to the P+ tie ring, for the others).  nSDB.e is not on the manual's list and stays.
 

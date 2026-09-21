@@ -52,7 +52,7 @@ The AFil.a and GFil.a fixtures of the old suite expected the wall-pair reading a
 now carry a 5.005 x 5.005 filler for the narrowest one; the old metal and Activ
 density fixtures were laid out per 800 µm grid cell and are uniform stripes now.
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 7: nBuLay for AFil.d (and GFil.e) is section 4.2's derivation, `nBuLayDerived` = the
 wells 3.0 µm and wider sized by 1.0 *inward* (IHP's `sized(-1.5).sized(0.5)`; the
@@ -183,7 +183,7 @@ is under nBuLay:block, with a filler 0.5 to its right and one 0.5 to its left.
 - Verdict: the 3.0 well carries an nBuLay 1.0 wide around it, so the filler 1.5 away is
   0.5 from nBuLay and fires; the blocked nBuLay and the blocked half are no nBuLay and the
   two fillers beside them are clean; the open half fires.  Expected 2 (`afil_d_h3`).
-  Whether the deck should derive nBuLay from wide wells for this rule is the PDK owner's
+  Whether the deck should derive nBuLay from wide wells for this rule is the gdscheck owner's
   call - the `nbulay` deck may already do it for its own rules.
 
 ### 8. AFil.i does not look inside PWell:block (false negative, KLayout too)

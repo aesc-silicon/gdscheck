@@ -51,7 +51,7 @@ piece in a border tile - the power net of a whole die - per metal rule: 100 s on
 4 mm² design.
 Note G (a 0.045 endcap on a line wider than the Cont) stays as both tools read it.
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 A crossing shape is cut at the marker's edge and its outside part read: the seal ring
 is isolated from the chip, its own via rings would fail the standard rules anyway, and
@@ -198,7 +198,7 @@ from a TRANS, no Metal1:filler anywhere).
   (`M1.i.h2`), the 45° notch of `M1.b.h3`, a filler U with a 0.415 slot (`M1Fil.b.h3`).
   gdscheck is quiet on all five; KLayout is quiet on the M1.e/M1.f ones and reports the
   M1.i ones (`edges.sep`) and the M1Fil.b one (`space`).  The cases follow the wording,
-  as the activ report did for AFil.b; if the PDK owner reads a notch into these rules,
+  as the activ report did for AFil.b; if the gdscheck owner reads a notch into these rules,
   `min_notch` entries and +1/+1/+1/+1 on the four cases do it.
 - C. Both tools report M1.c1 as well as M1.c on a Cont that sticks out of the Metal1 or
   has none (`M1.c.h1`-`h5`); the M1.c cases ignore M1.c1.

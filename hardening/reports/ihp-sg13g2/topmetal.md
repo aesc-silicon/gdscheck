@@ -49,7 +49,7 @@ and LBE.b are `max_length`, the bounding box's long side, exactly KLayout's
 (`abutting: report` on TMFil.c and TMFil.d), 3 (an enclosure entry on
 `TopMetal{n}FillerInTRANS`, as the Activ and Metal filler decks have).
 
-Decided (2026-09-21, PDK owner): the run is the manual's "lines" - along a wall, the
+Decided (2026-09-21, gdscheck owner): the run is the manual's "lines" - along a wall, the
 stretches of every wall facing it under the value are joined, so the stepped and the
 nicked neighbours of 5 (`TM2.bR.h3`, `h11`) run 60 and fire, as the cases first
 expected; KLayout's per-edge projection stays the stricter tool's miss.
@@ -150,7 +150,7 @@ line beside a straight 6 line, the pairing KLayout's check can see (note C).
   h11 (`tm2_br_h11`).  (c) is certain and tile-dependent: the union of two abutting boxes
   is one 60 µm edge at tile 100 (and to KLayout) and two 30 µm edges at 20 and 7 - the
   stitched merge keeps the seam vertex at (70, 30) as a break in the run.  (a)
-  and (b) are the manual's reading against KLayout's per-edge one; if the PDK owner
+  and (b) are the manual's reading against KLayout's per-edge one; if the gdscheck owner
   takes the latter the two cases drop two markers each.
 
 ### 6. TM2.bR: a line cut by IND keeps its full run (false positive)
@@ -172,7 +172,7 @@ of the run (40 outside, `IND -2-18 × 40-62`); the same with the IND over the to
   run condition is still met - apparently measured on the uncut edges.  The reading is
   the deck's own and KLayout's (its wide layer is `not(ind_drw)` and the projection is of
   the cut edge); a reading that keeps the drawn lines' run and only silences the markers
-  inside IND would flag the 40 pair - if the PDK owner prefers it the case flips, the
+  inside IND would flag the 40 pair - if the gdscheck owner prefers it the case flips, the
   engine does not.
 
 ### 7. TM2.bR does not see a line that is wide over most of its run (false negative)
@@ -222,7 +222,7 @@ bulge 20 long, one with the bulge on the near side (gap 4 over 20, 6 over the re
 - E. TMFil.c and `TopMetal<n>.mask`: a filler 2.995 from a mask shape (`TM<n>Fil.c.h1`)
   draws nothing in either tool; the rule names the drawing layer.  The mask layer is
   "added to TopMetal1:drawing at mask" and counts for the density; whether a filler must
-  keep 3.00 from it is the PDK owner's question, the case expects nothing.
+  keep 3.00 from it is the gdscheck owner's question, the case expects nothing.
 - F. `TM2.bR.h6` (two 6 lines 1.995 apart over 60) reports TM2.b and TM2.bR both, as the
   manual gives no exclusion; the case expects both.
 - G. The nick of `TM2.bR.h3` and `h11` is a TM2.b notch: a 0.5 × 0.005 nick in a wall is

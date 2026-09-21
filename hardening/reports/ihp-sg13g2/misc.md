@@ -70,7 +70,7 @@ alone; note 4's PDarea = 0.02 x Vn_area / gate area is in neither tool), 6 (sect
 6.5's "only tested inside a closed ring of NWell AND nBuLay" is not implemented, nor by
 IHP's deck: the patterns on a bare nBuLay and in a C fire as they would in a ring).
 
-Decided (2026-09-21, PDK owner): 3 - the diode is read level by level, on the net as it
+Decided (2026-09-21, gdscheck owner): 3 - the diode is read level by level, on the net as it
 is at that level: `Ant.b.h6` fires at Metal1 ("no diode at Metal1"); 4 - the table's
 0.16 stays, as KLayout has it.  6 - implemented: the Iso-PWell-Activ lies in a hole of
 the NWell-and-nBuLay rings, nmosi.d reads the ring whose hole holds one;
@@ -144,7 +144,7 @@ Metal1 level the gate's net is the 30 µm² alone; the diode joins at Metal2.
 - gdscheck @20/7/100: nothing.
 - KLayout: nothing (`diode_presence` is evaluated once, after every `connect`, on the
   final net).
-- Verdict: a reading, the PDK owner's call.  The Metal1 etch happens before Metal2
+- Verdict: a reading, the gdscheck owner's call.  The Metal1 etch happens before Metal2
   exists, so at that level the antenna has no discharge path; the per-level sum of
   figure 7.1 taken to its end says the diode counts from the level it joins at, and
   the case expects Ant.b × 1 (`ant_b_h6`).  KLayout's reading (a diode anywhere on the
@@ -164,7 +164,7 @@ n-diode: by note 4 the diode must be 0.02 × 40.1 = 0.80 µm².
 - KLayout: nothing (`with_area(0, 0.16)`).
 - Verdict: I read the table's 0.16 as the floor and note 4 as the size a net with a
   large via area needs, so the case expects Ant.g × 1 (`ant_g_h2`); neither tool has
-  the formula.  The PDK owner's call whether Ant.g carries note 4 or the 0.16 alone.
+  the formula.  The gdscheck owner's call whether Ant.g carries note 4 or the 0.16 alone.
 
 ### 5. A p-diode under drawn PWell inside an NWell (marginal)
 
@@ -177,7 +177,7 @@ under a drawn PWell (1.5, 1.5)-(3.5, 3.5).
 - gdscheck @20/7/100: nothing (`AntIError` subtracts NWell and PWell:block).
 - KLayout: nothing (`.not(nwell_drw.join(pwell_block))`).
 - Verdict: by section 4.2 the diode is in PWell and Ant.i fires; expected Ant.i × 1
-  (`ant_i_h2`).  Drawn PWell inside an NWell is an odd layout and the PDK owner may
+  (`ant_i_h2`).  Drawn PWell inside an NWell is an odd layout and the gdscheck owner may
   decide the derivation is not worth it.
 
 ### 6. The nmosi rules are tested outside a closed ring (a reading)
@@ -203,7 +203,7 @@ the nBuLay's edge beside a proper 0.8 ring.
   manual's sentence says, and both tools disagree.  The condition is cheap to state and
   hard to mean: a C round an nmos leaves the PWell unisolated, so the isolation rules
   have nothing to protect, but an nBuLay 1.0 past an Activ is also simply a bad nmosi in
-  the making.  The PDK owner's call; if the sentence is not to be implemented, the two
+  the making.  The gdscheck owner's call; if the sentence is not to be implemented, the two
   cases carry the engine's counts (2/6/4/4 and 18).
 
 ### 7. An NWell island inside the ring is not read by nmosi.c (false negative, both tools)

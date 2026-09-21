@@ -101,7 +101,7 @@ grid puts them at 60.000 (17.57 gives 60.0056); (f) at (730, 30) an octagon of 6
   circle's "size 60" can only mean 60 across, since no polygon on the grid has every
   wall pair at 60.000 and the rule's own shapes (Padb.f) are the ones that fail.  On (e)
   gdscheck rejects the pcell's own bump pad; on (g) and (d) it rejects the pcell's
-  circle, and IHP's deck does the same - if the PDK owner wants the 64-gon's walls
+  circle, and IHP's deck does the same - if the gdscheck owner wants the 64-gon's walls
   read (59.93), the pcell's circle is a Padb.a violation in both tools and the cases
   `padb_a_h1` and `padc_a_h1` gain 64 markers each.  (f) is the weaker reading: a
   60-bbox octagon with small chamfers is a 60 pad by figure 6.9, and its diagonals are
@@ -249,7 +249,7 @@ hole of radius 5.
   topvia report's note C did for TV.b).  `MIM.b.h1`: a U of 0.59, a comb with 0.595
   slots and a ring with a 0.59 hole are silent in gdscheck and MIM.b to KLayout
   (`space` covers notches there): 5 to 14.  A 0.59 notch in a MIM plate is the same
-  distance between the same layer's walls as a 0.59 space; if the PDK owner reads
+  distance between the same layer's walls as a 0.59 space; if the gdscheck owner reads
   MIM.b like Pas.b, `mim_b_h1` gains 5 (U, two slots, ring both ways).
 - F. Counts.  A square 3.495 (0.595) from all four walls of a ring's hole is one pair
   to gdscheck and four edge pairs to KLayout (`Pas.b.h1` (m), `MIM.b.h1` (l)); an

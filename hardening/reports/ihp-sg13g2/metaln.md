@@ -55,9 +55,9 @@ reads the bounding box as upstream's `with_bbox_max`; the case carries all five 
 
 Open: 4 (the chamfer through the via's corner - the parallel-walls reading pairs no wall
 with a corner touch; the gatpoly report's finding 11 is the same question), and 6 stays
-the PDK owner's call.
+the gdscheck owner's call.
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 4: the chamfer through the via's corner, and the one passing 0.0035 from it, fire - enclosure is the closest approach (`metric: euclidian`), decided 2026-09-21.
 
@@ -197,7 +197,7 @@ with 3-wide arms in an 8 × 8 box; a 6 × 6 frame with 2.25 walls.
 - Verdict: only the 5.005 square is over 5 wide.  Expected 4 (`mnfil_a2_h1`, four walls).
   The activ report's resolution says the metal-filler maximum keeps the bounding-box
   reading because upstream has it; the case carries the manual's answer and it is the
-  PDK owner's call which one the deck follows.
+  gdscheck owner's call which one the deck follows.
 
 ## Notes that are not findings
 

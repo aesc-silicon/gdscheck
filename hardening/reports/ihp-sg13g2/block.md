@@ -56,7 +56,7 @@ Open: 7 (a PWell:block adjoining a region extends it, figure 5.3 and KLayout; th
 engine reads the block as no PWell only - `NBL.c.h9`, `NBL.d.h7` carry the engine's
 answer).
 
-Decided (2026-09-21, PDK owner): 7 - the block adjoining a region extends it
+Decided (2026-09-21, gdscheck owner): 7 - the block adjoining a region extends it
 (`nBuLayRegionsExt`, `NWellExt`); `NBL.c.h9` reads 1, `NBL.d.h7` 2.
 
 ## Findings
@@ -201,7 +201,7 @@ a full block (2, 9) and under a 0.7 strip (13, 9).
 - KLayout (driver, `... .and(pwell)`): the half-blocked pairs only (the 0.65 strips).
 - Verdict: with the gap fully blocked there is no PWell whose width the rule could
   measure; the block-to-region distance is the block's own rule.  Expected 1 in
-  `nbl_c_h6`, 1 in `nbl_d_h5`.  Debatable exactly as NW.b1's was; if the PDK owner wants
+  `nbl_c_h6`, 1 in `nbl_d_h5`.  Debatable exactly as NW.b1's was; if the gdscheck owner wants
   the physical reading here the cases flip, not the engine.
 
 ### 7. NBL.c and NBL.d do not measure from a PWell:block that adjoins a region (false negative)
@@ -343,7 +343,7 @@ elsewhere (28, 8).  `Sal.d.h5` (6, 2): a U-shaped Activ whose left arm is under 
   block covers one arm and neither extends over (Sal.c) nor keeps 0.2 from (Sal.d) the
   other; "unrelated" describes the arm, not the polygon.  The engine's `min_space` skips
   a pair once it overlaps anywhere, which both layouts show.  The Sal.d half is the less
-  certain: both tools read "unrelated" per polygon; if the PDK owner does too, `sal_d_h5`
+  certain: both tools read "unrelated" per polygon; if the gdscheck owner does too, `sal_d_h5`
   drops to 2 - the PWB.c half stands on the figure.
 
 ### 12. CntB.a: a nick in a bar's side is missed, an L and a T of 0.16 arms are reported (false negative, false positive)

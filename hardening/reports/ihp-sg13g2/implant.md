@@ -196,7 +196,7 @@ Layouts `pSD.d.h1` at (3.175, 10): Activ 3.175-4.175 × 10-11 under PWell:block
   `NAct_PWell` is the rest).
 - Verdict: by section 4.2 the Activ is in no PWell, and nothing makes it NWell; the cases
   expect nothing for both (`psd_d_h1`, `psd_d1_h1`).  Debatable: KLayout's reading treats
-  the blocked substrate like a well (0.03), gdscheck's like PWell (0.18); the PDK owner
+  the blocked substrate like a well (0.03), gdscheck's like PWell (0.18); the gdscheck owner
   may prefer either to the letter.  Its pwellblock deck (PWB.e/f) is where the block's
   own spacing lives.
 
