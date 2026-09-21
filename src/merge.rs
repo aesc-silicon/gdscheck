@@ -5100,6 +5100,24 @@ pub fn analyze_regions(
             let cx1 = ((tx as i64 + 1) * t) as f64;
             let cy1 = ((ty as i64 + 1) * t) as f64;
             let feats = feature.get(&(tx, ty)).unwrap_or(&empty);
+            // Each feature's part within this core, for the metal it lies on.  A
+            // feature's area is what lies on the metal: a slit reaching over the
+            // plate's edge counts by its part on the plate, and a slit along a bar
+            // counts in a tile whose copy of the plate is the stub alone - the
+            // feature's centroid, which used to place it, lay off that copy.
+            let feats: Vec<(BBoxDbu, Vec<MergedPoly>)> = feats
+                .iter()
+                .filter_map(|f| {
+                    let cut = clip_to_box(
+                        vec![f.clone()],
+                        cx0 as i64,
+                        cy0 as i64,
+                        cx1 as i64,
+                        cy1 as i64,
+                    );
+                    (!cut.is_empty()).then(|| (poly_bbox(f), cut))
+                })
+                .collect();
             let mut local: Vec<(PlatePiece, usize)> = Vec::new();
             for (i, poly) in polys.iter().enumerate() {
                 let area = clipped_area_dbu(poly, cx0, cy0, cx1, cy1);
@@ -5113,14 +5131,18 @@ pub fn analyze_regions(
                     bx1 = bx1.max(p.x);
                     by1 = by1.max(p.y);
                 }
-                // Features are enclosed in metal, so each one's centroid lands in exactly
-                // one metal poly; attribute its core-clipped area there.
                 let mut feature = 0.0;
-                for f in feats {
-                    let (fcx, fcy) = merged_centroid_dbu(f);
-                    if point_in_merged(fcx, fcy, poly) {
-                        feature += clipped_area_dbu(f, cx0, cy0, cx1, cy1);
+                for (fb, cut) in &feats {
+                    if fb.0 >= bx1 || fb.2 <= bx0 || fb.1 >= by1 || fb.3 <= by0 {
+                        continue;
                     }
+                    feature += compose_tile(
+                        VirtualOp::Intersection,
+                        &[cut.as_slice(), std::slice::from_ref(poly)],
+                    )
+                    .iter()
+                    .map(merged_area_dbu)
+                    .sum::<f64>();
                 }
                 local.push((
                     PlatePiece {
@@ -5231,10 +5253,24 @@ pub fn analyze_regions(
                 .unwrap_or_default();
             let polys = &metal[&(tx, ty)];
             for e in shapes_to_merged(eroded) {
-                if clipped_area_dbu(&e, cx0, cy0, cx1, cy1) <= 0.5 {
+                // The wide spot is a point of the eroded metal in this core: a point
+                // inside the part cut to the core, since the centroid of what is left
+                // of a plate with a hole, or of an L, lies off the metal - a ring of
+                // 30.005 walls eroded to a 0.005 ring had its centroid in its hole,
+                // and was wide at tile 20, where the window held part of it, and not
+                // at tile 100, where it held the whole.
+                let Some((ecx, ecy)) = clip_to_box(
+                    vec![e.clone()],
+                    cx0 as i64,
+                    cy0 as i64,
+                    cx1 as i64,
+                    cy1 as i64,
+                )
+                .iter()
+                .find(|c| merged_area_dbu(c) > 0.5)
+                .map(inside_point) else {
                     continue;
-                }
-                let (ecx, ecy) = merged_centroid_dbu(&e);
+                };
                 // The `outline` erosion can fill narrow slots/notches (closing a self-slotted
                 // plate into a false wide spot).  Verify exactly against the slot-preserving
                 // local metal: the radius disk must be fully covered (disk − metal empty).
