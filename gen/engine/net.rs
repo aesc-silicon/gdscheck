@@ -7,7 +7,8 @@
 //! diode, and read at a level below the conductor; and the nets under one marker.
 //!
 //! The gate is a 1 µm square of Inner tied through a Via to an Outer plate, so the
-//! plate's area is the ratio.  The connect graph joins Inner, then Outer, then Diode.
+//! plate's area is the ratio.  The connect graph joins Inner, then Diode, then Outer,
+//! so a diode is on the net at the plate's level, as a diffusion diode is at Metal1.
 
 use crate::helpers::{layer, library, rect, write_gz};
 use gdscheck::pdk::PdkConfig;

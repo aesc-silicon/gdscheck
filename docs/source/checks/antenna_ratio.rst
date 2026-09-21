@@ -28,7 +28,10 @@ value (IHP's own deck reads its cumulative rules as ``>=`` and its per-level one
 
 A gate's net optionally carries a **protection diode** — a diffusion diode tied to the
 same net, of at least the size the diode rule asks for (``diode_area``, 0.16 µm² by
-default, Ant.g's floor; a diode that meets that rule is a protection diode). ``diode: without`` checks the nets
+default, Ant.g's floor; a diode that meets that rule is a protection diode). Whether it
+is tied is read at each level, on that level's net (the ``diode`` parameter below); IHP's
+deck reads the final net, which lets a diode reached only through Metal2 stand for a
+Metal1 antenna. ``diode: without`` checks the nets
 without one against the strict limit, ``diode: with`` the nets with one against the
 relaxed limit; without the param every net is checked.
 
@@ -51,7 +54,11 @@ Parameters
 
 ``diode``
    Optional. ``with`` or ``without``: which nets the rule is about, by whether a
-   protection diode is tied to them. Decided once, on the full net.
+   protection diode is tied to them — read level by level, on the net as it is at each
+   level. A diode the net reaches only through a higher metal does not protect the gate
+   while the lower one is etched: ``without`` judges the sum up to the last level the
+   gate is unprotected at, ``with`` the whole sum of a gate protected at the top. The
+   message names the level (``no diode at Metal1``).
 
 ``metric``
    Optional. ``area`` (the default) or ``sidewall``, perimeter times ``thickness``.

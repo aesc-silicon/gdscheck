@@ -4479,9 +4479,9 @@ const DECK_ANTENNA: &str = "antenna";
 // Metal1 50 + Metal2 80 + Metal3 80 = 210 fires; 190 and 200.0 are clean; a stack to
 // TopMetal2 summing to 222.5 fires there.
 #[case::ant_b_h5("antenna/Ant.b.h5.gds.gz", "TOP", vec!["Ant.b"; 2], vec![])]
-// A 300 Metal1 net whose diode joins only at Metal2: a diode anywhere on the final net
-// protects every level, as IHP's deck reads it (the per-level reading is open).
-#[case::ant_b_h6("antenna/Ant.b.h6.gds.gz", "TOP", vec![], vec![])]
+// A 300 Metal1 net whose diode joins only at Metal2: at the Metal1 level the gate is
+// unprotected (figure 7.1's sum level by level, decided; IHP reads the final net).
+#[case::ant_b_h6("antenna/Ant.b.h6.gds.gz", "TOP", vec!["Ant.b"], vec![])]
 // Via1 20.1 fires, 20.0 and 19.9 are clean; Via1 10 + Via2 10.1 fires; with a diode Via1
 // 20.1 is clean and 500.5 is an Ant.f; a 40.2 × 0.05 Via1 across x = 20 and 40 (20.1);
 // two gates on one net: 4.0 / 0.2 = 20.0 clean, 4.02 fires (one marker per gate).

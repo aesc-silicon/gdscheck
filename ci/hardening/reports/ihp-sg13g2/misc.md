@@ -70,7 +70,9 @@ alone; note 4's PDarea = 0.02 x Vn_area / gate area is in neither tool), 6 (sect
 6.5's "only tested inside a closed ring of NWell AND nBuLay" is not implemented, nor by
 IHP's deck: the patterns on a bare nBuLay and in a C fire as they would in a ring).
 
-Decided (2026-09-21, PDK owner): 6 - implemented: the Iso-PWell-Activ lies in a hole of
+Decided (2026-09-21, PDK owner): 3 - the diode is read level by level, on the net as it
+is at that level: `Ant.b.h6` fires at Metal1 ("no diode at Metal1"); 4 - the table's
+0.16 stays, as KLayout has it.  6 - implemented: the Iso-PWell-Activ lies in a hole of
 the NWell-and-nBuLay rings, nmosi.d reads the ring whose hole holds one;
 `nmosi.ring.h1` and `nmosi.d.h6` read nothing, the older fixtures sit in rings now.
 
