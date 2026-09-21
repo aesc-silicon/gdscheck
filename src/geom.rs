@@ -2708,6 +2708,15 @@ pub type ClosestPair = (i128, i128, (f64, f64), (f64, f64));
 /// more apart in either axis is at least that far apart and is not looked at; a contact
 /// ends the search, since nothing is closer.
 pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestPair> {
+    closest_approach_segs(a, b, limit).map(|(pair, _, _)| pair)
+}
+
+/// [`closest_approach`] with the two segments it was read between.
+pub fn closest_approach_segs(
+    a: &Outline,
+    b: &Outline,
+    limit: i64,
+) -> Option<(ClosestPair, Seg, Seg)> {
     let mut best: Option<(ClosestPair, Seg, Seg)> = None;
     let ratio = |n: i128, d: i128| n as f64 / d as f64;
     let boxes_apart = |(p0, p1): Seg, (q0, q1): Seg| {
@@ -2727,10 +2736,22 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
                 return;
             }
             let c = seg_seg_closest_sq(a0, a1, b0, b1);
-            if best
-                .as_ref()
-                .is_none_or(|&((n, d, _, _), _, _)| ratio(c.num, c.den) < ratio(n, d))
-            {
+            // At a tie, two walls running alongside beat a corner reaching the same
+            // distance: the stretch they share has a low end every copy agrees on,
+            // where the corner the search met first is whichever the copy's order
+            // gave, and a tile's copy of a ring's cut wall met its corner before the
+            // wall it faces.
+            let better = match &best {
+                None => true,
+                Some(((n, d, _, _), sa, sb)) => {
+                    let (r, r0) = (ratio(c.num, c.den), ratio(*n, *d));
+                    r < r0
+                        || (r == r0
+                            && stretch_low_end(*sa, *sb).is_none()
+                            && stretch_low_end((a0, a1), (b0, b1)).is_some())
+                }
+            };
+            if better {
                 best = Some(((c.num, c.den, c.on_a, c.on_b), (a0, a1), (b0, b1)));
                 touched = c.num == 0;
             }
@@ -2750,9 +2771,27 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
     if pair.0 > 0
         && let Some((on_a, on_b)) = stretch_low_end(sa, sb)
     {
-        return Some((pair.0, pair.1, on_a, on_b));
+        return Some(((pair.0, pair.1, on_a, on_b), sa, sb));
     }
-    Some(pair)
+    Some((pair, sa, sb))
+}
+
+/// The run two parallel segments share, in DBU: `None` when they are not parallel or
+/// share nothing.
+pub fn shared_run(a: Seg, b: Seg) -> Option<f64> {
+    let d = ((a.1.0 - a.0.0) as i128, (a.1.1 - a.0.1) as i128);
+    let e = ((b.1.0 - b.0.0) as i128, (b.1.1 - b.0.1) as i128);
+    if d.0 * e.1 - d.1 * e.0 != 0 {
+        return None;
+    }
+    let len2 = d.0 * d.0 + d.1 * d.1;
+    if len2 == 0 {
+        return None;
+    }
+    let along = |p: (i64, i64)| (p.0 - a.0.0) as i128 * d.0 + (p.1 - a.0.1) as i128 * d.1;
+    let (u0, u1) = (along(b.0), along(b.1));
+    let (lo, hi) = (u0.min(u1).max(0), u0.max(u1).min(len2));
+    (hi > lo).then(|| (hi - lo) as f64 / (len2 as f64).sqrt())
 }
 
 /// The lowest end (then leftmost) of the stretch two parallel facing walls share, as
