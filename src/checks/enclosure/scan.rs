@@ -603,6 +603,57 @@ pub fn run(
                         || y1 == core.y0 as f64
                         || y1 == core.y1 as f64)
             };
+            // A closest approach read at the core's edge from a wall the tile cut:
+            // the wall goes on, and its true closest approach to the outer wall may
+            // lie past the cut - read on the whole wall, and kept only where that
+            // closest point is this core's, so every tile names the same one.  A gate
+            // ending on a tile line read 0.0707 to a chamfer from its cut vertex.
+            // `None`: the point is a vertex of the shape itself, not a cut - keep the
+            // read; `Some(None)`: a cut whose whole wall's closest point is another
+            // tile's; `Some(Some(..))`: the read on the whole wall.
+            type Reread = Option<Option<((i128, i128), (f64, f64, f64, f64))>>;
+            let uncut = |p: &crate::geom::MarginPair, whole: &MergedPoly, piece: &Outline| -> Reread {
+                let (wx1, wy1) = (p.edge.0, p.edge.1);
+                let on_wall = |w: Seg| {
+                    let (d0, d1) = (
+                        (w.0.0 as f64 - wx1, w.0.1 as f64 - wy1),
+                        (w.1.0 as f64 - wx1, w.1.1 as f64 - wy1),
+                    );
+                    // The cut point lies on the whole wall, strictly between its ends.
+                    let cross = d0.0 * d1.1 - d0.1 * d1.0;
+                    let dot = d0.0 * d1.0 + d0.1 * d1.1;
+                    cross.abs() < 0.5 * ((d0.0 * d0.0 + d0.1 * d0.1).sqrt() + 1.0) && dot < 0.0
+                };
+                let rings = std::iter::once(&whole.outer).chain(whole.holes.iter());
+                for ring in rings {
+                    let n = ring.len();
+                    for i in 0..n {
+                        let w: Seg = (
+                            (ring[i].x as i64, ring[i].y as i64),
+                            (ring[(i + 1) % n].x as i64, ring[(i + 1) % n].y as i64),
+                        );
+                        if !on_wall(w) {
+                            continue;
+                        }
+                        let (num, den, on_a, on_b) = crate::geom::seg_closest(w, p.outer);
+                        if !core.owns(on_a.0, on_a.1) {
+                            return Some(None);
+                        }
+                        return Some(Some(((num, den), (on_a.0, on_a.1, on_b.0, on_b.1))));
+                    }
+                }
+                // A vertex of the copy: the shape's own corner, or - on a layer whose
+                // copies are clipped - a clip's.  A clip meets a wall the shape does
+                // not have; where one of the walls at the vertex is no wall of the
+                // shape, the read is the clip's and the tile past it reads the wall.
+                let c = (wx1.round() as i64, wy1.round() as i64);
+                let clipped = piece
+                    .segs()
+                    .iter()
+                    .filter(|w| w.0 == c || w.1 == c)
+                    .any(|&w| !real_wall(w));
+                if clipped { Some(None) } else { None }
+            };
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
             // The line-end caps of each enclosing shape of the tile, found once: a
@@ -718,11 +769,22 @@ pub fn run(
                     // (complete there) exposes and drops it.
                     let mut here: Walls = Walls::new();
                     let mut worst: Option<Read> = None;
-                    for p in pairs {
+                    for mut p in pairs {
                         if cuttable
                             && (!in_zone(p.edge) || !real_wall(p.wall) || (p.oblique && p.num == 0 && at_cut(p.edge)))
                         {
                             continue;
+                        }
+                        if cuttable && p.oblique && at_cut(p.edge) {
+                            match uncut(&p, bm, &bp) {
+                                Some(Some(((num, den), edge))) => {
+                                    p.num = num;
+                                    p.den = den;
+                                    p.edge = edge;
+                                }
+                                Some(None) => continue,
+                                None => {}
+                            }
                         }
                         if !over_pair(p.edge) {
                             continue;
@@ -919,11 +981,22 @@ pub fn run(
                         for (am, a) in touching {
                             let (pairs, _) =
                                 margin_pairs(&bp, a, cutoff, skip_coincident, false);
-                            for p in pairs {
+                            for mut p in pairs {
                                 if cuttable
                             && (!in_zone(p.edge) || !real_wall(p.wall) || (p.oblique && p.num == 0 && at_cut(p.edge)))
                         {
                                     continue;
+                                }
+                                if cuttable && p.oblique && at_cut(p.edge) {
+                                    match uncut(&p, bm, &bp) {
+                                        Some(Some(((num, den), edge))) => {
+                                            p.num = num;
+                                            p.den = den;
+                                            p.edge = edge;
+                                        }
+                                        Some(None) => continue,
+                                        None => {}
+                                    }
                                 }
                                 if !over_pair(p.edge) {
                                     continue;
