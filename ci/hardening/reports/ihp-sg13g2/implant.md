@@ -57,8 +57,10 @@ lying over its near one).
 Kept, cases flipped: 11 (pSD.e reads the P+ part's width, as both tools; a 0.295 part
 is a bad tie), the abutting Activ of 3 (`ActivOutsideTGO` is a difference layer whose
 every crossing Activ abuts the oxide; figure 5.7 draws the crossing as legal), and the
-45° oxide edge of 1 (`TGO.c.h2`): TGO.c is an extension read on a poly crossing the
-oxide, by projection - OPEN with Gat.c's chamfered cap.  The chamfer and diamond cases
+45° oxide edge of 1 (`TGO.c.h2`): decided 2026-09-21 - the extension rules read the
+closest approach too, but a margin read `over` Activ counts where it lies, and the 0.336
+from the gate's corner lands below the Activ; along the Activ's edge the oxide is 0.475
+from the gate, clean.  The chamfer and diamond cases
 of TGO.a and pSD.c count one marker per corner under the closest approach.
 
 ## Findings

@@ -47,7 +47,7 @@ the chamfered L of note G (one wall under 0.39), and the half-oxide gate of Gat.
 (read between the poly's walls only; a TGO edge through a gate is TGO.c's).  The 50 x
 5.005 x 5 fillers of GFil.a.h3/h4 are 5.005 x 5.005 now, since 5.005 x 5 is 5.0 wide.
 
-Open: 11.  KLayout's projection metric pairs a wall at an angle - each wall cut to the
+Open (decided below): 11.  KLayout's projection metric pairs a wall at an angle - each wall cut to the
 part within the value of the other, perpendicular to the other and with its feet on it,
 the margin their closest approach (0.141 on the chamfered cap, the perpendicular to the
 chamfer; a chamfer passing a corner has its feet beyond the wall and is no pair, so the
@@ -60,6 +60,13 @@ good pattern turned out to be a PL.4 violator by KLayout's euclidian PL.4 (its 4
 gate's wall passed 0.14 from the active's corner); the bar starts 0.15 further in now.
 
 ## Decided (2026-09-21, PDK owner)
+
+11: the extension rules read the closest approach like every other enclosure rule (the
+`metric` of the rule); the cap chamfered to 0.10 fires (`Gat.c.h3`, 7).  The 2560 Act.c
+of the first attempt were the tile's cut vertices read as corners; a cut vertex is
+re-read on the whole wall of the tile's copy now, or left to the tile past it, so no
+assembly of the shape is needed and the rule costs what it did (Act.c 1.6 s, Gat.c 1.0 s
+on the 4 mm² design).
 
 8: Gat.b1 is the space between the whole polys of 3.3 V transistors (`GatPolyHV`, the
 GatPoly overlapping a gate under ThickGateOx), figure 5.8's reading; two transistors

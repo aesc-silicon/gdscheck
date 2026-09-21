@@ -127,7 +127,10 @@ Parameters
    contained side — which is what an *extension* rule is: a cover that must reach past
    the target it crosses by so much, measured on the target's walls under the cover
    and not on the ends that run out past it (IHP ``Gat.c``, the poly endcap over
-   Activ; ``Sal.c``, the salicide block over the active it crosses).
+   Activ; ``Sal.c``, the salicide block over the active it crosses). The rule's
+   ``metric`` applies here as anywhere: under ``euclidian`` a chamfered endcap is read
+   at its corner, and a corner the tile's cut made is read on the whole wall or left to
+   the tile past it, never taken for a corner of the shape.
 
 ``skip_coincident``
    Off by default. Ignore inner/outer edge pairs that are coincident (flush, ~0 offset)

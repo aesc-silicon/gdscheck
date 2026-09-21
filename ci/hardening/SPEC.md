@@ -130,8 +130,10 @@ Decided already, with IHP's KLayout deck; do not report them again, draw against
   is an enclosure of nothing.  IHP's `ext_enclosed` (projection) misses the corner
   cases; its driver's euclidian rules agree.  The extension rules read on a shape that
   crosses the other (`interacting_only`: Act.c, Gat.c, the resistor and tie extensions)
-  stay on the projection metric, as IHP's deck has them; a chamfered gate cap under the
-  value (Gat.c) is a known miss there.
+  read the same way on the walls under the cover (decided 2026-09-21): a chamfered gate
+  cap 0.10 from the Activ's edge fires; IHP's `ext_enclosed` misses it.  A margin read
+  `over` a layer (TGO.c over Activ) counts where the margin lies: a 45° oxide edge whose
+  closest approach to the gate's corner lands below the Activ is clean.
 - Width and space are euclidian with a 90° angle limit, and that includes the chord
   from the end of one wall to the end of another whose interiors face across a corner:
   a small octagon whose flats are the minimum apart is a width violation eight times.
