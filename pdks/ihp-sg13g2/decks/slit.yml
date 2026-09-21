@@ -172,41 +172,101 @@ rules:
     layers: [Metal1.slit, Cont]
     value: 0.30
   - id: Slt.h1
+    check: forbidden
+    layers: [Metal1.slit, Cont]
+    value: 0.0
+    params:
+      op: overlap
+  - id: Slt.h1
     check: min_space
     layers: [Metal1.slit, Via1]
     value: 0.30
+  - id: Slt.h1
+    check: forbidden
+    layers: [Metal1.slit, Via1]
+    value: 0.0
+    params:
+      op: overlap
   - id: Slt.h2
     check: min_space
     layers: [Metal2.slit, Via1]
     value: 0.30
   - id: Slt.h2
+    check: forbidden
+    layers: [Metal2.slit, Via1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: Slt.h2
     check: min_space
     layers: [Metal2.slit, Via2]
     value: 0.30
+  - id: Slt.h2
+    check: forbidden
+    layers: [Metal2.slit, Via2]
+    value: 0.0
+    params:
+      op: overlap
   - id: Slt.h2
     check: min_space
     layers: [Metal3.slit, Via2]
     value: 0.30
   - id: Slt.h2
+    check: forbidden
+    layers: [Metal3.slit, Via2]
+    value: 0.0
+    params:
+      op: overlap
+  - id: Slt.h2
     check: min_space
     layers: [Metal3.slit, Via3]
     value: 0.30
+  - id: Slt.h2
+    check: forbidden
+    layers: [Metal3.slit, Via3]
+    value: 0.0
+    params:
+      op: overlap
   - id: Slt.h2
     check: min_space
     layers: [Metal4.slit, Via3]
     value: 0.30
   - id: Slt.h2
+    check: forbidden
+    layers: [Metal4.slit, Via3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: Slt.h2
     check: min_space
     layers: [Metal4.slit, Via4]
     value: 0.30
+  - id: Slt.h2
+    check: forbidden
+    layers: [Metal4.slit, Via4]
+    value: 0.0
+    params:
+      op: overlap
   - id: Slt.h2
     check: min_space
     layers: [Metal5.slit, Via4]
     value: 0.30
   - id: Slt.h2
+    check: forbidden
+    layers: [Metal5.slit, Via4]
+    value: 0.0
+    params:
+      op: overlap
+  - id: Slt.h2
     check: min_space
     layers: [Metal5.slit, TopVia1]
     value: 0.30
+  - id: Slt.h2
+    check: forbidden
+    layers: [Metal5.slit, TopVia1]
+    value: 0.0
+    params:
+      op: overlap
   - id: Slt.h3
     check: min_space
     layers: [TopMetal1.slit, TopVia1]

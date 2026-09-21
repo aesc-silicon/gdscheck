@@ -43,6 +43,18 @@ rules:
     check: min_space
     layers: [LBE, Passiv]
     value: 50.0
+  - id: LBE.e
+    check: forbidden
+    layers: [LBE, dfpad]
+    value: 0.0
+    params:
+      op: overlap
+  - id: LBE.e
+    check: forbidden
+    layers: [LBE, Passiv]
+    value: 0.0
+    params:
+      op: overlap
   - id: LBE.f
     check: min_space
     layers: [LBE, Activ]

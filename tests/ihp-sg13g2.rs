@@ -3439,7 +3439,9 @@ const DECK_LBE: &str = "lbe";
 #[case::lbe_i_h1("lbe/LBE.i.h1.gds.gz", "TOP", vec![], vec![])]
 #[case::lbe_i_h2("lbe/LBE.i.h2.gds.gz", "TOP", vec!["LBE.i"], vec![])]
 #[case::lbe_i_h3("lbe/LBE.i.h3.gds.gz", "TOP", vec![], vec![])]
-#[case::lbe_i_h4("lbe/LBE.i.h4.gds.gz", "TOP", vec![], vec![])]
+// With no boundary drawn the box of everything stands in for the die, as for every
+// density rule: an LBE alone is 100 % of it.
+#[case::lbe_i_h4("lbe/LBE.i.h4.gds.gz", "TOP", vec!["LBE.i"], vec![])]
 fn test_lbe(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4294,36 +4296,37 @@ fn test_slit(
 
 // --- latch-up ---
 //
-// LU.c/LU.d (and LU.c1/LU.d1) enforce the identical "tie Activ within 6 µm of its Cont"
-// constraint, so a tie-extension fixture trips both ids of the pair.
+// LU.c/LU.d (and LU.c1/LU.d1): a tie standing alone is read from its own Conts (LU.d);
+// an abutted tie with none of its own from the Conts of the tap it abuts (LU.c).
 
 const DECK_LU: &str = "lu";
 
 #[rstest]
 #[case("lu/LU.a.gds.gz", "TOP", vec!["LU.a"], vec![])]
 #[case("lu/LU.b.gds.gz", "TOP", vec!["LU.b"], vec![])]
-#[case("lu/LU.c.gds.gz", "TOP", vec!["LU.c", "LU.d"], vec![])]
-#[case("lu/LU.c1.gds.gz", "TOP", vec!["LU.c1", "LU.d1"], vec![])]
+#[case("lu/LU.c.gds.gz", "TOP", vec!["LU.d"], vec![])]
+#[case("lu/LU.c1.gds.gz", "TOP", vec!["LU.d1"], vec![])]
 // Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  "Any portion" of the
 // Activ is within the value, so a shape is read by its farthest point; LU.c/c1 are the
 // abutted ties (figure 7.4), LU.d/d1 the ties standing alone.
 //
-// LU.a: a P+ whose far edge is 20.005 from the tie, one whose far corner is 20.5 from the
-// tie's corner, a 52 bar, a P+ whose tie is in another well, a P+ with no tie at all (5);
-// an uncontacted N+ 10 from a P+ is a tie for LU.a, and its own LU.d.
-#[case::lu_a_h1("lu/LU.a.h1.gds.gz", "TOP", { let mut v = vec!["LU.a"; 5]; v.push("LU.d"); v }, vec![])]
+// LU.a: a P+ whose far edge is 20.005 from the tie, a 52 bar, a P+ whose tie is in
+// another well, a P+ with no tie at all (4); an uncontacted N+ 10 from a P+ is a tie for
+// LU.a, and its own LU.d.  A P+ whose far corner is 20.5 from the tie's corner and under
+// 20 on either axis is clean: the reach is grown squarely, as IHP's deck grows it.
+#[case::lu_a_h1("lu/LU.a.h1.gds.gz", "TOP", { let mut v = vec!["LU.a"; 4]; v.push("LU.d"); v }, vec![])]
 // LU.a: fifty wells with a P+ 20.005 from the tie, flat and as an array reference.
 #[case::lu_a_h2("lu/LU.a.h2.gds.gz", "TOP", vec!["LU.a"; 50], vec![])]
 #[case::lu_a_h3("lu/LU.a.h3.gds.gz", "TOP", vec!["LU.a"; 50], vec![])]
-// LU.b: as LU.a in the substrate; an N+ under a PWell:block is in no well.
-#[case::lu_b_h1("lu/LU.b.h1.gds.gz", "TOP", { let mut v = vec!["LU.b"; 5]; v.push("LU.d1"); v }, vec![])]
-// LU.c/LU.d: a tie 6.005 beyond its Cont, two Conts 12.01 apart, a tie with no Cont, and
-// 6.005 at (1000, 1000) are ties standing alone (LU.d); figure 7.4's abutted tie 6.005
-// below the source's Cont is LU.c; 6.0, a 12.16 square, and the abutted tie at 5.92 are
-// clean.
-#[case::lu_c_h1("lu/LU.c.h1.gds.gz", "TOP", { let mut v = vec!["LU.d"; 4]; v.push("LU.c"); v }, vec![])]
+// LU.b: as LU.a in the substrate (3); an N+ under a PWell:block is in no well.
+#[case::lu_b_h1("lu/LU.b.h1.gds.gz", "TOP", { let mut v = vec!["LU.b"; 3]; v.push("LU.d1"); v }, vec![])]
+// LU.c/LU.d: a tie 6.005 beyond its Cont (both ends, 2), two Conts 12.01 apart, a tie
+// with no Cont, and 6.005 at (1000, 1000) (both ends, 2) are ties standing alone (LU.d,
+// one marker per part out of reach); figure 7.4's abutted tie 6.005 below the source's
+// Cont is LU.c; 6.0, a 12.16 square, and the abutted tie at 5.92 are clean.
+#[case::lu_c_h1("lu/LU.c.h1.gds.gz", "TOP", { let mut v = vec!["LU.d"; 6]; v.push("LU.c"); v }, vec![])]
 // LU.c1/LU.d1: the same in the substrate.
-#[case::lu_c1_h1("lu/LU.c1.h1.gds.gz", "TOP", { let mut v = vec!["LU.d1"; 4]; v.push("LU.c1"); v }, vec![])]
+#[case::lu_c1_h1("lu/LU.c1.h1.gds.gz", "TOP", { let mut v = vec!["LU.d1"; 6]; v.push("LU.c1"); v }, vec![])]
 fn test_lu(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4402,8 +4405,9 @@ const DECK_SEALRING: &str = "sealring";
 #[case::seal_a_h3("sealring/Seal.a.h3.gds.gz", "TOP", vec!["Seal.a"; 400], vec!["Seal.l", "Seal.n"])]
 #[case::seal_a_h4("sealring/Seal.a.h4.gds.gz", "TOP", vec!["Seal.a"; 400], vec!["Seal.l", "Seal.n"])]
 // Seal.b: 4.895 inside, 4.893 corner to corner, 4.895 outside (3), 4.895 from a frame of
-// Activ + pSD (2), an Activ running into the frame's wall (0 space, 1).
-#[case::seal_b_h1("sealring/Seal.b.h1.gds.gz", "TOP", vec!["Seal.b"; 6], vec!["Seal.l", "Seal.n"])]
+// Activ + pSD (2), an Activ running into the frame's wall: its part outside the marker
+// abuts the seal's Activ and pSD (0 space, 2).
+#[case::seal_b_h1("sealring/Seal.b.h1.gds.gz", "TOP", vec!["Seal.b"; 7], vec!["Seal.l", "Seal.n"])]
 // Seal.b: a corner 4.893 from a 45° inner wall, a diamond's vertex 4.895 from a wall, gaps
 // across x = 20, from x = 100, at (1000, 1000).
 #[case::seal_b_h2("sealring/Seal.b.h2.gds.gz", "TOP", vec!["Seal.b"; 5], vec!["Seal.l", "Seal.n"])]
@@ -4412,16 +4416,18 @@ const DECK_SEALRING: &str = "sealring";
 #[case::seal_b_h4("sealring/Seal.b.h4.gds.gz", "TOP", vec!["Seal.b"; 50], vec!["Seal.l", "Seal.n"])]
 // Seal.c-c3: via rings 0.005 under their width (8 walls each: Cont, Via1, TopVia1,
 // TopVia2, then Via2/3/4), and a Cont ring 0.2 and a Via1 ring 0.25 wide - "ring width
-// 0.16" is no minimum (8 each).  Tile 20 loses every ring cut through its middle.
+// 0.16" is no minimum: a ring wider than the value is one region wider than it in every
+// direction (1 each).
 #[case::seal_c_h1("sealring/Seal.c.h1.gds.gz", "TOP",
-    { let mut v = vec!["Seal.c"; 16]; v.extend(vec!["Seal.c1"; 40]); v.extend(vec!["Seal.c2"; 8]); v.extend(vec!["Seal.c3"; 8]); v },
+    { let mut v = vec!["Seal.c"; 9]; v.extend(vec!["Seal.c1"; 33]); v.extend(vec!["Seal.c2"; 8]); v.extend(vec!["Seal.c3"; 8]); v },
     vec!["Seal.l", "Seal.n"])]
 // Seal.d: a Cont ring 1.295 from the outer edge, a Via1 ring 1.295 from the inner edge, a
 // Cont ring 1.0 from an Activ narrower than the marker, a Cont ring with no Activ at all.
 #[case::seal_d_h1("sealring/Seal.d.h1.gds.gz", "TOP", vec!["Seal.d"; 4], vec!["Seal.l", "Seal.n"])]
 // Seal.d: a Cont ring's four 45° walls 1.294 from the frame's (4), 1.295 rings across
-// x = 20, ending on x = 100, at (1000, 1000) (3).
-#[case::seal_d_h2("sealring/Seal.d.h2.gds.gz", "TOP", vec!["Seal.d"; 7], vec!["Seal.l", "Seal.n"])]
+// x = 20, ending on x = 100, at (1000, 1000) (3).  The 45° rings' diagonal walls are
+// drawn 0.163 wide, over the ring width: Seal.c on each (8).
+#[case::seal_d_h2("sealring/Seal.d.h2.gds.gz", "TOP", { let mut v = vec!["Seal.d"; 7]; v.extend(vec!["Seal.c"; 8]); v }, vec!["Seal.l", "Seal.n"])]
 // Seal.d: fifty frames with a 1.295 Cont ring, flat and as an array reference.
 #[case::seal_d_h3("sealring/Seal.d.h3.gds.gz", "TOP", vec!["Seal.d"; 50], vec!["Seal.l", "Seal.n"])]
 #[case::seal_d_h4("sealring/Seal.d.h4.gds.gz", "TOP", vec!["Seal.d"; 50], vec!["Seal.l", "Seal.n"])]
