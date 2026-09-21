@@ -121,8 +121,13 @@ Parameters
    abutment so. ``report`` reads it as a space of nothing: IHP's ``Cnt.e`` (Activ
    against a gate contact), ``Cnt.f``, ``Cnt.g1`` and ``NW.d`` (external N+Activ at the
    well edge) do, and IHP's KLayout deck reports the shared edge. A contact at an
-   isolated point - two shapes meeting corner to corner - is always a space of zero,
-   whatever the param.
+   isolated point - two shapes meeting corner to corner - is a space of zero under
+   both. ``related`` is the third reading, IHP's glossary's "unrelated: two regions
+   which do not touch each other": two shapes that touch anywhere, along an edge or at
+   a corner, are related and no pair at all, wherever else they face each other
+   (``pSD.d``: an L-shaped pSD abutting an N+Activ on one edge and 0.175 from the other
+   is clean). The touch is looked for across every tile, so a pair touching in one
+   tile is no pair in the next.
 
 ``gap_outside``
    Optional layer param (under ``layer_params``). A pair whose whole gap - the segment

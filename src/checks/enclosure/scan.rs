@@ -166,10 +166,12 @@ impl Walls {
     /// no length.  A wall keeps one margin along it and one at each of its corners; a
     /// via in a diamond is four corners, not one wall's worst corner.
     fn key(p: &crate::geom::MarginPair) -> Seg {
-        if p.oblique {
-            let c = (p.edge.0.round() as i64, p.edge.1.round() as i64);
+        let c = (p.edge.0.round() as i64, p.edge.1.round() as i64);
+        if p.oblique && (c == p.wall.0 || c == p.wall.1) {
             (c, c)
         } else {
+            // Along the wall, or a closest approach from an outer corner to the
+            // wall's interior: the wall's own margin either way.
             p.wall
         }
     }
@@ -416,11 +418,35 @@ pub fn run(
     let cutoff = (!max).then_some(limit.dbu());
     let um = |x: f64| x * dbu_to_um;
 
+    // `over`, a layer param: only a pair whose stretch lies over that layer counts -
+    // KLayout's `.ext_and(Activ)` on a margin read.  TGO.c reads the gate to the
+    // oxide's edge where that edge crosses the Activ; the oxide's edge past the
+    // Activ's end is TGO.a's.
+    let over_key = rule.num("over").map(|l| {
+        let dt = rule.num("over_dt").unwrap_or(0.0);
+        (l as i16, dt as i16)
+    });
+    if let Some((ol, od)) = over_key {
+        merged.ensure(layout, ol, od);
+    }
     let labeled = merged.kin(bl, bd, true);
     let map_a = merged.tiles(al, ad);
     let map_b = merged.tiles(bl, bd);
     let a_boxes = boxes_of(map_a, tile);
     let b_boxes = boxes_of(map_b, tile);
+    let over = over_key.map(|(ol, od)| {
+        let m = merged.tiles(ol, od);
+        (m, boxes_of(m, tile))
+    });
+    let over_pair = |edge: (f64, f64, f64, f64)| -> bool {
+        match &over {
+            None => true,
+            Some((m, bx)) => {
+                let (x1, y1, x2, y2) = edge;
+                point_in_layer_at_own_tile(m, bx, tile, ((x1 + x2) * 0.5, (y1 + y2) * 0.5))
+            }
+        }
+    };
     // Whether an inner wall is the shape's own and not where a tile cut it: just past
     // the wall, on its empty side, the enclosed layer goes on if it is a cut.  Read in
     // the tile that holds the point, whose copy is exact there.  A cut wall lies in
@@ -698,6 +724,9 @@ pub fn run(
                         {
                             continue;
                         }
+                        if !over_pair(p.edge) {
+                            continue;
+                        }
                         if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
                             continue;
                         }
@@ -882,13 +911,21 @@ pub fn run(
                         // Per wall for a minimum, the shape as a whole for a maximum.
                         let mut walls: Walls = Walls::new();
                         let mut worst: Option<Read> = None;
+                        // Read by projection whatever the rule's metric: a shape
+                        // crossing the enclosing boundary is an extension, and a
+                        // closest approach read on the tile's piece of it took the
+                        // cut vertices for corners (2560 Act.c on a 4 mm² design, all
+                        // on tile lines).
                         for (am, a) in touching {
                             let (pairs, _) =
-                                margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
+                                margin_pairs(&bp, a, cutoff, skip_coincident, false);
                             for p in pairs {
                                 if cuttable
                             && (!in_zone(p.edge) || !real_wall(p.wall) || (p.oblique && p.num == 0 && at_cut(p.edge)))
                         {
+                                    continue;
+                                }
+                                if !over_pair(p.edge) {
                                     continue;
                                 }
                                 // A touch at an angle is a corner of the crossing
