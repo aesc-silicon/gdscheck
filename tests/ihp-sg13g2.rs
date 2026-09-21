@@ -2718,6 +2718,43 @@ const DECK_PAS: &str = "passiv";
 #[case::pas_b_space("passiv/Pas.b.space.gds.gz", "TOP", vec!["Pas.b", "Pas.b"], vec![])]
 #[case::pas_b_notch("passiv/Pas.b.notch.gds.gz", "TOP", vec!["Pas.b", "Pas.b"], vec![])]
 #[case::pas_c("passiv/Pas.c.gds.gz", "TOP", vec!["Pas.c"; 4], vec![])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/pad.md).  Pas.a counts one marker per
+// wall, Pas.b one per pair or notch, Pas.c one per under-enclosed opening (adjacent
+// short walls one run) or per wall when opposite.  Pas.a: 2.095 in x and in y, a 45°
+// strip and a diamond of 2.093, an L of 2.095 arms (four), a 2.095 neck, a 0.005 sliver,
+// a 300 µm bar and a bar at (1000, 1000); 2.1 straight, at 45° and as a diamond are clean.
+#[case::pas_a_h1("passiv/Pas.a.h1.gds.gz", "TOP", vec!["Pas.a"; 22], vec![])]
+// 2.095 bars across x = 20 and 21, across 40 and 42, starting on 100, across y = 20 and
+// ending on x = 20 (two walls each); a 2.1 bar across 60 is clean.
+#[case::pas_a_h2("passiv/Pas.a.h2.gds.gz", "TOP", vec!["Pas.a"; 10], vec![])]
+// Fifty 2.095 bars, flat and as a GdsArrayRef.
+#[case::pas_a_h3("passiv/Pas.a.h3.gds.gz", "TOP", vec!["Pas.a"; 100], vec![])]
+#[case::pas_a_h4("passiv/Pas.a.h4.gds.gz", "TOP", vec!["Pas.a"; 100], vec![])]
+// Pas.b: 3.495 straight, corner to corner under 3.5 (euclidian), two 45° strips 3.493
+// apart, a U of 3.49, a comb with two 3.495 slots, a 3.495 slot, a ring with a 3.49
+// hole (both ways), a 3 square 3.495 from the walls of a ring's hole (one pair), a merged
+// shape 3.495 from a square; 3.5 straight, 3.507 corner to corner, dx = 3 with dy = 6,
+// strips 3.5002 apart, a U of 3.5 and a square 3.5 from a hole's walls are clean.
+#[case::pas_b_h1("passiv/Pas.b.h1.gds.gz", "TOP", vec!["Pas.b"; 11], vec![])]
+// 3.495 gaps across x = 20 and 21, across 40, starting on 20, ending on 42, across 100,
+// at (1000, 1000) and corner to corner on (60, 60).
+#[case::pas_b_h2("passiv/Pas.b.h2.gds.gz", "TOP", vec!["Pas.b"; 7], vec![])]
+// Fifty 3.495 pairs, flat and as a GdsArrayRef.
+#[case::pas_b_h3("passiv/Pas.b.h3.gds.gz", "TOP", vec!["Pas.b"; 50], vec![])]
+#[case::pas_b_h4("passiv/Pas.b.h4.gds.gz", "TOP", vec!["Pas.b"; 50], vec![])]
+// Pas.c: in the hole of an EdgeSeal frame, TopMetal2 2.095 short on the right, a corner
+// cut passing 2.093 from the opening's corner and an opening with no TopMetal2 fire;
+// 2.1, a cut passing 2.104 and TopMetal2 as two abutting boxes are clean; an opening
+// outside the frame is not checked; one on the frame itself is not "outside of
+// sealring" and fires (report, note C).
+#[case::pas_c_h1("passiv/Pas.c.h1.gds.gz", "TOP", vec!["Pas.c"; 4], vec![])]
+// In a frame whose hole starts on x = 20: 2.095 margins ending on 20, across 40 and 42,
+// all round an opening across 100, and at (1000, 1000) in its own frame; 2.1 ending on
+// 102.1 is clean.
+#[case::pas_c_h2("passiv/Pas.c.h2.gds.gz", "TOP", vec!["Pas.c"; 4], vec![])]
+// Fifty openings 2.095 short of TopMetal2 in one frame, flat and as a GdsArrayRef.
+#[case::pas_c_h3("passiv/Pas.c.h3.gds.gz", "TOP", vec!["Pas.c"; 50], vec![])]
+#[case::pas_c_h4("passiv/Pas.c.h4.gds.gz", "TOP", vec!["Pas.c"; 50], vec![])]
 fn test_passiv(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2824,6 +2861,101 @@ const DECK_PAD: &str = "pad";
 #[case::padb_f("pad/Padb.f.gds.gz", "TOP", vec!["Padb.f"; 1], vec!["Padb.a", "Padb.b"])]
 // A square AND an octagon CuPillarPad both violate (only circle is allowed); a circle passes.
 #[case::padc_f("pad/Padc.f.gds.gz", "TOP", vec!["Padc.f"; 2], vec!["Padc.a"])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/pad.md).  Pad.a1 and Pad.i count one marker
+// per shape or piece, Pad.d one per pair, Padb.a/Padc.a one per off-size wall, the
+// enclosures one per under-enclosed pad (adjacent short walls one run) or per wall.
+// Pad.a1 on the opening (Passiv AND dfpad): 150.005 square, 300 × 150.005, a regular
+// octagon of 150.005, a diamond of 150.6, a ring with 180 walls, 150.005 as two boxes,
+// Passiv 200 under dfpad 160; 150, 150.005 × 100, 300 × 149.995, an octagon of 150, a
+// diamond of 149.9, an L of 100 arms, a ring with 100 walls, dfpad 200 × 100 under Passiv
+// 200 and Passiv 160 with no dfpad are clean (IHP's deck reads Passiv alone).
+#[case::pad_a1_h1("pad/Pad.a1.h1.gds.gz", "TOP", vec!["Pad.a1"; 7], vec![])]
+// 150.005 squares across x = 20/21/40/42/100, starting on 20, ending on 100 and at (1000,
+// 1000); 149.995 across the same lines is clean.
+#[case::pad_a1_h2("pad/Pad.a1.h2.gds.gz", "TOP", vec!["Pad.a1"; 4], vec![])]
+// Fifty 150.005 squares, flat and as a GdsArrayRef.
+#[case::pad_a1_h3("pad/Pad.a1.h3.gds.gz", "TOP", vec!["Pad.a1"; 50], vec![])]
+#[case::pad_a1_h4("pad/Pad.a1.h4.gds.gz", "TOP", vec!["Pad.a1"; 50], vec![])]
+// Pad.d to the seal's Activ: 7.495 straight, 7.495 corner to corner, the opening (not
+// the Passiv) 7.495 from the seal, a corner 7.495 from a 45° seal wall; 7.5, 7.517 and
+// 9.9 corner to corner, the opening 7.5 with Passiv at 5.0, Activ without EdgeSeal and
+// EdgeSeal without Activ at 7.0, and 7.502 from a 45° wall are clean.
+#[case::pad_d_h1("pad/Pad.d.h1.gds.gz", "TOP", vec!["Pad.d"; 4], vec![])]
+// A seal ring with 45° corners whose inner wall is on x = 20: 7.495 from the left wall
+// (gap across 21 and 28), the corner 7.495 from the ring's 45° corner, and 7.495 outside
+// the ring fire; 7.5 above the bottom wall is clean.
+#[case::pad_d_h2("pad/Pad.d.h2.gds.gz", "TOP", vec!["Pad.d"; 3], vec![])]
+// Fifty openings 7.495 from one seal bar, flat and as a GdsArrayRef under the bar.
+#[case::pad_d_h3("pad/Pad.d.h3.gds.gz", "TOP", vec!["Pad.d"; 50], vec![])]
+#[case::pad_d_h4("pad/Pad.d.h4.gds.gz", "TOP", vec!["Pad.d"; 50], vec![])]
+// Pad.i: TopMetal2 0.005 short, with a hole, with its corners cut (four pieces), absent,
+// ending on x = 100 under a dfpad reaching 120, absent at (1000, 1000); TopMetal2 the same
+// box, as two halves, square under a chamfered dfpad and under two overlapping dfpad
+// boxes is clean.
+#[case::pad_i_h1("pad/Pad.i.h1.gds.gz", "TOP", vec!["Pad.i"; 9], vec![])]
+// Fifty dfpads 0.005 past TopMetal2, flat and as a GdsArrayRef.
+#[case::pad_i_h2("pad/Pad.i.h2.gds.gz", "TOP", vec!["Pad.i"; 50], vec![])]
+#[case::pad_i_h3("pad/Pad.i.h3.gds.gz", "TOP", vec!["Pad.i"; 50], vec![])]
+// Padb.a: 59.995 and 60.005 squares (four walls), 60 × 59.995 (two), regular octagons
+// of 59.995 and 60.005 (eight), a circle of radius 29.995 (64), a 60 × 50 pad (two);
+// a 60 square, the regular octagon of 60 IHP's pcell draws, an octagon of 60 cut 10,
+// the 64-point circle of radius 30 the pcell draws, and 60 as two boxes are clean
+// (report, findings 1 and 2).
+#[case::padb_a_h1("pad/Padb.a.h1.gds.gz", "TOP", vec!["Padb.a"; 92], vec!["Padb.f"])]
+// 59.995 squares across x = 20/21/40/42, ending on 100, starting on 100 and at (1000,
+// 1000) (four walls each); 60 across the lines is clean.
+#[case::padb_a_h2("pad/Padb.a.h2.gds.gz", "TOP", vec!["Padb.a"; 16], vec!["Padb.f"])]
+// Fifty 59.995 squares, flat and as a GdsArrayRef.
+#[case::padb_a_h3("pad/Padb.a.h3.gds.gz", "TOP", vec!["Padb.a"; 200], vec!["Padb.f"])]
+#[case::padb_a_h4("pad/Padb.a.h4.gds.gz", "TOP", vec!["Padb.a"; 200], vec!["Padb.f"])]
+// Padb.b: 69.995 straight, 69.99 corner to corner, two regular octagons 69.9965 across
+// their diagonals, two circles 69.995 vertex to vertex; 70, 70.004 corner to corner, dx =
+// 69 with dy = 100, octagons at 70.0015 and circles at 70 are clean.
+#[case::padb_b_h1("pad/Padb.b.h1.gds.gz", "TOP", vec!["Padb.b"; 4], vec!["Padb.a", "Padb.f"])]
+// 69.995 gaps across x = 100, starting on 100 and at (1000, 1000).
+#[case::padb_b_h2("pad/Padb.b.h2.gds.gz", "TOP", vec!["Padb.b"; 3], vec!["Padb.f"])]
+// Fifty 69.995 pairs, flat and as a GdsArrayRef.
+#[case::padb_b_h3("pad/Padb.b.h3.gds.gz", "TOP", vec!["Padb.b"; 50], vec!["Padb.f"])]
+#[case::padb_b_h4("pad/Padb.b.h4.gds.gz", "TOP", vec!["Padb.b"; 50], vec!["Padb.f"])]
+// Padb.c: TopMetal2 9.995 on the right, 9.995 all round (one run), a corner cut passing
+// 9.995 from the pad's corner, an octagon in an octagon 9.995 across each diagonal
+// (four), a circle in a square 9.995 from four vertices (four), no TopMetal2 (and
+// Pad.i); 10, a cut passing 10.002, a regular octagon in a regular octagon, a circle
+// in a circle of radius 40.02, two abutting boxes and a plate with an exit wire are
+// clean.  The octagon's four diagonals are one at tile 100 (report, finding 3).
+#[case::padb_c_h1("pad/Padb.c.h1.gds.gz", "TOP", [vec!["Padb.c"; 12], vec!["Pad.i"]].concat(), vec!["Padb.a", "Padb.f"])]
+// TopMetal2 ending on x = 100 at 9.995 from a pad, and at (1000, 1000); 10 ending on 100
+// is clean.
+#[case::padb_c_h2("pad/Padb.c.h2.gds.gz", "TOP", vec!["Padb.c"; 2], vec!["Padb.f"])]
+// Fifty pads 9.995 short on the right, flat and as a GdsArrayRef.
+#[case::padb_c_h3("pad/Padb.c.h3.gds.gz", "TOP", vec!["Padb.c"; 50], vec!["Padb.f"])]
+#[case::padb_c_h4("pad/Padb.c.h4.gds.gz", "TOP", vec!["Padb.c"; 50], vec!["Padb.f"])]
+// Padb.d to the EdgeSeal marker: 49.995 straight, 49.992 corner to corner, 49.995 inside
+// an EdgeSeal frame, 49.995 at (1000, 1000); 50, 50.006 corner to corner and Activ with
+// no EdgeSeal at 49.995 are clean.
+#[case::padb_d_h1("pad/Padb.d.h1.gds.gz", "TOP", vec!["Padb.d"; 4], vec!["Padb.f"])]
+// Padb.f: a square, a diamond, a hexagon, a D, an ellipse, a 16-gon and a circle with a
+// hole are neither octagon nor circle; a regular octagon, one cut 10, one cut 10 and 15,
+// a 64-point and a 128-point circle are (report, note D: the ring passes).
+#[case::padb_f_h1("pad/Padb.f.h1.gds.gz", "TOP", vec!["Padb.f"; 7], vec!["Padb.a", "Padb.b"])]
+// Padc.a by table 6.1: 34.995 and 35.005 squares (four walls), a circle of radius 17.495
+// (64); a 35 square, the 64-point circle of radius 17.5, and the table's 40 and 45
+// openings as squares and circles are clean (report, findings 1 and 4).
+#[case::padc_a_h1("pad/Padc.a.h1.gds.gz", "TOP", vec!["Padc.a"; 72], vec!["Padc.f"])]
+// Padc.b by table 6.1: 35s at 39.995 and 39.99 corner to corner, 40s at 39.995, 45s at
+// 49.995 and at 45 (their space is 50); 35s at 40 and 40.008 corner to corner, 40s at
+// 40 and 45s at 50 are clean (report, finding 4).
+#[case::padc_b_h1("pad/Padc.b.h1.gds.gz", "TOP", vec!["Padc.b"; 5], vec!["Padc.a", "Padc.f"])]
+// Padc.c: TopMetal2 7.495 on the right, a corner cut passing 7.495, no TopMetal2 (and
+// Pad.i); 7.5, a cut passing 7.502 and a circle in a circle of radius 25.02 are clean.
+#[case::padc_c_h1("pad/Padc.c.h1.gds.gz", "TOP", [vec!["Padc.c"; 3], vec!["Pad.i"]].concat(), vec!["Padc.a", "Padc.f"])]
+// Padc.d to the seal's Activ: 29.995 straight, 29.995 corner to corner, a corner 29.995
+// from a 45° seal wall; 30, 30.01 corner to corner, dx = 29 with dy = 40 and Activ with
+// no EdgeSeal at 29.995 are clean.
+#[case::padc_d_h1("pad/Padc.d.h1.gds.gz", "TOP", vec!["Padc.d"; 3], vec!["Padc.f"])]
+// Padc.f: a regular octagon, a square, a 16-gon and a D are not circles; 64- and
+// 128-point circles are.
+#[case::padc_f_h1("pad/Padc.f.h1.gds.gz", "TOP", vec!["Padc.f"; 4], vec!["Padc.a"])]
 fn test_pad(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -3101,6 +3233,65 @@ const DECK_MIM: &str = "mim";
     vec!["MIM.a", "MIM.a", "MIM.a", "MIM.a", "MIM.b", "MIM.d", "MIM.d", "MIM.d", "MIM.f", "MIM.h"],
     vec![])]
 #[case("mim/MIM.gR.gds.gz", "TOP", vec!["MIM.gR"], vec![])]
+// Hardening (ci/hardening/reports/ihp-sg13g2/pad.md).  MIM.a counts one marker per wall,
+// MIM.b one per pair, MIM.c/MIM.d one per under-enclosed shape (adjacent short walls one
+// run) or per wall, MIM.f/MIM.g/MIM.h one per device.  MIM.a: 1.135 in x and in y, a 45°
+// strip and a diamond of 1.1314, an L of 1.135 arms (four), a 1.135 neck, a 0.005 sliver,
+// a 300 µm bar and a bar at (1000, 1000); 1.14 straight, at 45° and as a diamond are clean.
+#[case::mim_a_h1("mim/MIM.a.h1.gds.gz", "TOP", vec!["MIM.a"; 22], vec!["MIM.f", "MIM.h"])]
+// 1.135 bars across x = 20 and 21, across 40, starting on 100, across y = 20 and ending
+// on x = 42 (two walls each); a 1.14 bar across 7 is clean.
+#[case::mim_a_h2("mim/MIM.a.h2.gds.gz", "TOP", vec!["MIM.a"; 10], vec!["MIM.h"])]
+// Fifty 1.135 bars, flat and as a GdsArrayRef.
+#[case::mim_a_h3("mim/MIM.a.h3.gds.gz", "TOP", vec!["MIM.a"; 100], vec!["MIM.h"])]
+#[case::mim_a_h4("mim/MIM.a.h4.gds.gz", "TOP", vec!["MIM.a"; 100], vec!["MIM.h"])]
+// MIM.b is a space, not a notch (the manual's wording; report, note E): 0.595 straight,
+// 0.594 corner to corner, two 45° strips 0.594 apart, a 2 square 0.595 from the walls
+// of a ring's hole (one pair), a merged shape 0.595 from a square fire; a U of 0.59, a
+// comb with 0.595 slots and a ring with a 0.59 hole do not; 0.6, 0.601 corner to
+// corner, dx = 0.5 with dy = 3, strips 0.601 apart, a U of 0.6 and a square 0.6 from a
+// hole's walls are clean.
+#[case::mim_b_h1("mim/MIM.b.h1.gds.gz", "TOP", vec!["MIM.b"; 5], vec!["MIM.f", "MIM.h"])]
+// 0.595 gaps across x = 20 and 21, starting on 40, ending on 42, across 100, at (1000,
+// 1000) and corner to corner on (60, 60).
+#[case::mim_b_h2("mim/MIM.b.h2.gds.gz", "TOP", vec!["MIM.b"; 7], vec!["MIM.h"])]
+// Fifty 0.595 pairs, flat and as a GdsArrayRef.
+#[case::mim_b_h3("mim/MIM.b.h3.gds.gz", "TOP", vec!["MIM.b"; 50], vec!["MIM.h"])]
+#[case::mim_b_h4("mim/MIM.b.h4.gds.gz", "TOP", vec!["MIM.b"; 50], vec!["MIM.h"])]
+// MIM.c: Metal5 0.595 on the right, a corner cut passing 0.594, no Metal5, the plate
+// 0.5 over Metal5's edge, 0.595 all round (one run); 0.6, a cut passing 0.601 and two
+// abutting boxes are clean.
+#[case::mim_c_h1("mim/MIM.c.h1.gds.gz", "TOP", vec!["MIM.c"; 5], vec![])]
+// 0.595 margins ending on x = 20, starting on 20, across 40, across 100 and at (1000,
+// 1000); 0.6 starting on 20 is clean.
+#[case::mim_c_h2("mim/MIM.c.h2.gds.gz", "TOP", vec!["MIM.c"; 5], vec![])]
+// MIM.d: a via 0.355 from a wall, 0.355 from two walls (one run), a via 0.2 over the
+// plate's wall, a via 0.2 over its corner, a corner cut passing 0.3536 from the via's
+// corner; 0.36, a cut passing 0.3606, a via outside the plate and a Vmim at 0.355 are
+// clean (report, finding 5 for the vias over the edge).
+#[case::mim_d_h1("mim/MIM.d.h1.gds.gz", "TOP", vec!["MIM.d"; 5], vec![])]
+// 0.355 margins ending on x = 20, starting on 20, across 40, across 100 and at (1000,
+// 1000); 0.36 starting on 20 is clean.
+#[case::mim_d_h2("mim/MIM.d.h2.gds.gz", "TOP", vec!["MIM.d"; 5], vec![])]
+// MIM.e: a TopMetal1 wire 0.595 from the plate, 0.594 corner to corner, the cap's own
+// exit wire turning back along the plate's wall 0.595 outside it, a 45° wall passing
+// 0.594 from the plate's corner; 0.6, 0.601 corner to corner, the top plate over the
+// MIM and its exit wire crossing the MIM's wall are clean (report, finding 6).
+#[case::mim_e_h1("mim/MIM.e.h1.gds.gz", "TOP", vec!["MIM.e"; 4], vec![])]
+// MIM.f per device: 1.2996, 1.2935 and two 1.0 squares touching at a corner; 1.3053,
+// 1.3, two 1.0 squares sharing a wall (2.0), overlapping (1.75) and an L of 2.04 are
+// clean.
+#[case::mim_f_h1("mim/MIM.f.h1.gds.gz", "TOP", vec!["MIM.f"; 4], vec!["MIM.a", "MIM.b", "MIM.h"])]
+// MIM.g per device: 75 × 75.005, two 60s sharing a wall (7200), two 60s overlapping
+// (6000), an L of 7500, 75 × 75.005 as two boxes; 75 × 75, 100 × 56.25 and a ring of
+// 5500 are clean.
+#[case::mim_g_h1("mim/MIM.g.h1.gds.gz", "TOP", vec!["MIM.g"; 5], vec![])]
+// MIM.gR: 32 caps of 74 × 74 (175232) placed by one GdsArrayRef.
+#[case::mim_gr_h1("mim/MIM.gR.h1.gds.gz", "TOP", vec!["MIM.gR"], vec![])]
+// MIM.h per device: no via, a via abutting the plate from outside, a ring with the via
+// in its hole, no via at (1000, 1000); a TopVia1, a Vmim, two plates sharing a wall
+// with one via are clean; a via 0.2 over the wall is over the plate (MIM.d instead).
+#[case::mim_h_h1("mim/MIM.h.h1.gds.gz", "TOP", [vec!["MIM.h"; 4], vec!["MIM.d"]].concat(), vec![])]
 fn test_mim(
     #[case] gds: &str,
     #[case] topcell: &str,
