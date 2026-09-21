@@ -438,14 +438,36 @@ pub fn run(
         let m = merged.tiles(ol, od);
         (m, boxes_of(m, tile))
     });
-    let over_pair = |edge: (f64, f64, f64, f64)| -> bool {
-        match &over {
-            None => true,
-            Some((m, bx)) => {
-                let (x1, y1, x2, y2) = edge;
-                point_in_layer_at_own_tile(m, bx, tile, ((x1 + x2) * 0.5, (y1 + y2) * 0.5))
+    // Read just outside the inner wall, where the margin lies: a wall flush with the
+    // layer's own edge has its margin off the layer, and is not the rule's (an
+    // nSD:block ending with the Activ wants no SalBlock past it there).  A closest
+    // approach read at a corner is read just past the corner, the way it was read; a
+    // touch at a corner has no margin to lie anywhere, and the wall along the touching
+    // boundary is read on its own.
+    let over_pair = |p: &crate::geom::MarginPair| -> bool {
+        let Some((m, bx)) = &over else {
+            return true;
+        };
+        let (px, py) = if p.oblique {
+            if p.num == 0 {
+                return false;
             }
-        }
+            let (x1, y1, x2, y2) = p.edge;
+            let (dx, dy) = (x2 - x1, y2 - y1);
+            let len = (dx * dx + dy * dy).sqrt();
+            (x1 + dx / len * 1.5, y1 + dy / len * 1.5)
+        } else {
+            let (a, b) = p.wall;
+            let (dx, dy) = ((b.0 - a.0) as f64, (b.1 - a.1) as f64);
+            let len = (dx * dx + dy * dy).sqrt();
+            if len == 0.0 {
+                return true;
+            }
+            let (mx, my) = ((a.0 + b.0) as f64 * 0.5, (a.1 + b.1) as f64 * 0.5);
+            // Material lies on the left of every segment of an outline; the right is out.
+            (mx + dy / len * 1.5, my - dx / len * 1.5)
+        };
+        point_in_layer_at_own_tile(m, bx, tile, (px, py))
     };
     // Whether an inner wall is the shape's own and not where a tile cut it: just past
     // the wall, on its empty side, the enclosed layer goes on if it is a cut.  Read in
@@ -786,7 +808,7 @@ pub fn run(
                                 None => {}
                             }
                         }
-                        if !over_pair(p.edge) {
+                        if !over_pair(&p) {
                             continue;
                         }
                         if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
@@ -998,7 +1020,7 @@ pub fn run(
                                         None => {}
                                     }
                                 }
-                                if !over_pair(p.edge) {
+                                if !over_pair(&p) {
                                     continue;
                                 }
                                 // A touch at an angle is a corner of the crossing
