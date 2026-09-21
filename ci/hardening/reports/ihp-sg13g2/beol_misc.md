@@ -53,6 +53,58 @@ Test status on the engine as of this report: 15 of the 54 new cases fail at tile
 `lu_c_h1`, `lu_c1_h1`); at tile 7 `seal_a_h1` and `seal_a_h2` fail too (and `seal_d_h1`
 passes by accident, finding 3); at tile 100 `slt_c_h1` fails too (finding 4).
 
+## Resolution (2026-09-21)
+
+Fixed, engine: 3 (a width pair is owned by the low end of the stretch its walls share,
+half-open, not by the stretch's midpoint: a tile's copy of a drawn layer is the merge of
+the shapes reaching its zone, so a U across a line is an L in each side's copy and the
+stretch between the arms had a different midpoint in each - neither tile owned the
+ring's walls at tile 20; a bar drawn as two boxes had two midpoints and was reported
+twice.  Enclosure runs join on the walls of the region put together from its pieces,
+so a wall cut 0.095 short of its corner by a tile line still meets the next wall there:
+`Seal.d.h1` (c) is one run at every tile), 4 (the wide spot of a plate is a point inside
+the eroded metal cut to the core, not its centroid: the eroded ring's centroid lay in
+its hole, the L's off its arms), 7 (`regions_overlap` read a shape with every vertex on
+the rim of another's hole as lying inside it, and the touching Passiv ring was set aside
+as overlapping the seal; a point inside the shape decides), 10 (a slit's area on a plate
+is the intersection, per core, not the whole slit charged to the plate holding its
+centroid: 5.875 % and 5.25 % at every tile), 11 (a notch between two pieces of one region
+in a tile - the two halves of a cut wall, joined beyond the zone - is read as the spacing
+scan reads a pair, at the closest approach where the walls run alongside, owned by the
+stretch's low end; the closest approach prefers a parallel pair to a corner at the same
+distance, so its marker is the same in every copy), 15 (`within` confines `scope: part`
+too: LU.a's reach grows inside `NWell`).
+
+Fixed, deck: 1 (Seal.l reads beyond `EdgeSeal.boundary`, as the manual, the pcell and
+IHP's deck have it; with no boundary drawn there is nothing to be outside of, and the
+static `Seal.l.fail` fixture's two squares moved beyond the boundary), 2 (`RingPassiv` is
+the Passiv with a hole - `PassivRings` - not overlapping the seal, not every opening on
+the die), 5 (Seal.c-c3 keep the minimum and add a `max_width` with `span: narrowest`,
+IHP's `sized(-w/2).sized(w/2)`: a ring wider than the value is one region wider than it
+in every direction, so the 0.2 Cont ring and the 0.25 Via1 ring are one report each,
+not eight - `Seal.d.h2`'s 45° rings, drawn 0.163 wide on the diagonals, fire it too),
+6 (Seal.d without `interacting_only`/`skip_coincident`: a ring on no Activ is enclosed
+by nothing), 7 (Seal.f `abutting: report`), 8 (Seal.b reads `ActivNoSealring`, Activ
+less the marker, `abutting: report` - the bar running into the wall abuts the seal's
+Activ and pSD where the marker cuts it, two reports as (g) has two), 9 and 12 (a
+`forbidden` `op: overlap` entry beside every Slt.h1-h4 and LBE.e space entry: a via in
+a slit, a Passiv or dfpad over the LBE), 16 (LU.c/c1 read the abutted tie with no Cont
+of its own - `NWellTieAbuttedNoCont`, `SubstrateTieAbuttedNoCont` - from any Cont
+within 6 along `ActivNotGat`; LU.d/d1 the tie standing alone, `NWellTieStandalone` /
+`SubstrateTieStandalone`, the N+ (P+) on an Activ no gate touches; a tie 6.005 past its
+Cont at both ends is two parts out of reach and two markers, `part` scope, as KLayout
+has two polygons).
+
+Kept: 13 (with no boundary drawn the box of everything stands in for the die, as for
+every density rule: an LBE alone is 100 % of it), 14 (the reach is grown squarely, as
+IHP's deck grows it - the euclidian reach would want a round grow of thousands of Cont
+squares at 0.005 precision; the 20.5 corner case stays clean and is listed for the
+owner).
+
+Decided cases: `seal_c_h1` 9/33/8/8, `seal_d_h2` + Seal.c 8, `seal_b_h1` 7, `lu_a_h1`
+LU.a 4 + LU.d, `lu_b_h1` LU.b 3 + LU.d1, `lu_c_h1`/`lu_c1_h1` LU.d 6 + LU.c, `lbe_i_h4`
+LBE.i, the older `lu_c`/`lu_c1` LU.d alone.
+
 ## Findings
 
 ### 1. Seal.l reads "outside the EdgeSeal ring", not "outside the sealring boundary" (false positive)

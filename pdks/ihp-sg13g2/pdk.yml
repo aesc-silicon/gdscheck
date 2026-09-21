@@ -285,6 +285,10 @@ virtual_layers:
     mode: lazy
     layers: [CuPillarPadGrown, SealActiv]
 
+  - name: ActivNoSealring
+    op: difference
+    mode: lazy
+    layers: [Activ, EdgeSeal]
   - name: ContNoSealring
     op: difference
     mode: lazy
@@ -730,6 +734,29 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [Cont, PsdActivInPWell]
+  # LU.c/LU.d (figure 7.4): an abutted tie is contacted through the tap of the other
+  # polarity it shares an edge with and is read from that tap's Conts; a tie standing
+  # alone - on an Activ no gate touches - is read from its own.
+  - name: ActivAtGate
+    op: interacting
+    mode: lazy
+    layers: [Activ, GatPoly]
+  - name: NWellTieAbuttedNoCont
+    op: not_overlapping
+    mode: lazy
+    layers: [NTapAbutted, Cont]
+  - name: NWellTieStandalone
+    op: not_interacting
+    mode: lazy
+    layers: [NActivInNWell, ActivAtGate]
+  - name: SubstrateTieAbuttedNoCont
+    op: not_overlapping
+    mode: lazy
+    layers: [PTapAbutted, Cont]
+  - name: SubstrateTieStandalone
+    op: not_interacting
+    mode: lazy
+    layers: [PsdActivInPWell, ActivAtGate]
   # NW.f: the substrate tie of section 4.2, P+Activ inside PWell, and PWell is what is
   # neither NWell nor PWell:block - a P+Activ under a block is no tie.
   - name: SubstrateTie
@@ -1283,10 +1310,16 @@ virtual_layers:
     mode: lazy
     layers: [TopVia2, EdgeSeal]
 
+  # Seal.e/f: the Passiv ring outside the seal ring - a Passiv shape with a hole, the
+  # seal in it - not every pad opening on the die.
+  - name: PassivRings
+    op: with_holes
+    mode: lazy
+    layers: [Passiv]
   - name: RingPassiv
     op: not_overlapping
     mode: lazy
-    layers: [Passiv, EdgeSeal]
+    layers: [PassivRings, EdgeSeal]
 
   - name: PassivDfpad
     op: intersection

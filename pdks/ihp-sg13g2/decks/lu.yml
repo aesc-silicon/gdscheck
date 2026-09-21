@@ -7,23 +7,33 @@ rules:
     check: max_space
     layers: [PsdActivInNWell, NActivInNWell]
     value: 20.00
+    layer_params:
+      within: NWell
   - id: LU.b
     check: max_space
     layers: [NActivInPWell, PsdActivInPWell]
     value: 20.00
   - id: LU.c
     check: max_space
-    layers: [NActivInNWell, ContOnNWellTie]
+    layers: [NWellTieAbuttedNoCont, Cont]
     value: 6.00
+    layer_params:
+      within: ActivNotGat
   - id: LU.c1
     check: max_space
-    layers: [PsdActivInPWell, ContOnSubstrateTie]
+    layers: [SubstrateTieAbuttedNoCont, Cont]
     value: 6.00
+    layer_params:
+      within: ActivNotGat
   - id: LU.d
     check: max_space
-    layers: [NActivInNWell, ContOnNWellTie]
+    layers: [NWellTieStandalone, Cont]
     value: 6.00
+    layer_params:
+      within: ActivNotGat
   - id: LU.d1
     check: max_space
-    layers: [PsdActivInPWell, ContOnSubstrateTie]
+    layers: [SubstrateTieStandalone, Cont]
     value: 6.00
+    layer_params:
+      within: ActivNotGat

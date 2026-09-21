@@ -41,124 +41,170 @@ rules:
     value: 3.50
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealActiv]
+    layers: [ActivNoSealring, SealActiv]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealpSD]
+    layers: [ActivNoSealring, SealpSD]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealMetal1]
+    layers: [ActivNoSealring, SealMetal1]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealMetal2]
+    layers: [ActivNoSealring, SealMetal2]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealMetal3]
+    layers: [ActivNoSealring, SealMetal3]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealMetal4]
+    layers: [ActivNoSealring, SealMetal4]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealMetal5]
+    layers: [ActivNoSealring, SealMetal5]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealTopMetal1]
+    layers: [ActivNoSealring, SealTopMetal1]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.b
     check: min_space
-    layers: [Activ, SealTopMetal2]
+    layers: [ActivNoSealring, SealTopMetal2]
     value: 4.90
+    params:
+      abutting: report
   - id: Seal.c
     check: min_width
     layers: [SealCont]
     value: 0.16
+  - id: Seal.c
+    check: max_width
+    layers: [SealCont]
+    value: 0.16
+    params:
+      span: narrowest
   - id: Seal.c1
     check: min_width
     layers: [SealVia1]
     value: 0.19
   - id: Seal.c1
+    check: max_width
+    layers: [SealVia1]
+    value: 0.19
+    params:
+      span: narrowest
+  - id: Seal.c1
     check: min_width
     layers: [SealVia2]
     value: 0.19
+  - id: Seal.c1
+    check: max_width
+    layers: [SealVia2]
+    value: 0.19
+    params:
+      span: narrowest
   - id: Seal.c1
     check: min_width
     layers: [SealVia3]
     value: 0.19
   - id: Seal.c1
+    check: max_width
+    layers: [SealVia3]
+    value: 0.19
+    params:
+      span: narrowest
+  - id: Seal.c1
     check: min_width
     layers: [SealVia4]
     value: 0.19
+  - id: Seal.c1
+    check: max_width
+    layers: [SealVia4]
+    value: 0.19
+    params:
+      span: narrowest
   - id: Seal.c2
     check: min_width
     layers: [SealTopVia1]
     value: 0.42
+  - id: Seal.c2
+    check: max_width
+    layers: [SealTopVia1]
+    value: 0.42
+    params:
+      span: narrowest
   - id: Seal.c3
     check: min_width
     layers: [SealTopVia2]
     value: 0.90
+  - id: Seal.c3
+    check: max_width
+    layers: [SealTopVia2]
+    value: 0.90
+    params:
+      span: narrowest
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealCont]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealVia1]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealVia2]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealVia3]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealVia4]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealTopVia1]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.d
     check: min_enclosure
     layers: [SealActiv, SealTopVia2]
     value: 1.30
     params:
       metric: euclidian
-      skip_coincident: 1
-      interacting_only: 1
   - id: Seal.e
     check: min_width
     layers: [RingPassiv]
@@ -167,48 +213,65 @@ rules:
     check: min_space
     layers: [RingPassiv, SealActiv]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealpSD]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealMetal1]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealMetal2]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealMetal3]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealMetal4]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealMetal5]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealTopMetal1]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.f
     check: min_space
     layers: [RingPassiv, SealTopMetal2]
     value: 1.00
+    params:
+      abutting: report
   - id: Seal.l
     check: forbidden
-    layers: [EdgeSeal]
+    layers: [EdgeSeal.boundary]
     value: 0.0
     params:
       op: beyond
     ignore:
       - Passiv
       - Pad
-      - EdgeSeal.boundary
       - prBoundary.boundary
       - TopMetal1.dt30
       - TopMetal2.dt30
