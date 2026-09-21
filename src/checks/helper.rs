@@ -41,6 +41,10 @@ pub struct SpaceMode {
     /// Report two shapes of the two layers drawn edge to edge as a space of nothing.
     /// Off, an abutment along a run is no gap; a contact at an isolated point always is.
     abutting: bool,
+    /// Two shapes that touch anywhere - along an edge or at a point - are related and
+    /// no pair at all, wherever else they face each other (`abutting: related`): IHP's
+    /// "unrelated" is "two regions which do not touch each other".
+    related: bool,
 }
 
 /// A region's float outline, built the first time a reading asks for it: the spacing,
@@ -242,7 +246,9 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                 match closest_approach(&a.outline, &b.outline, limit.dbu()) {
                     None => None,
                     Some((0, _, p, q)) => {
-                        if shaving || (!mode.abutting && share_boundary_run(&a.outline, &b.outline))
+                        if shaving
+                            || mode.related
+                            || (!mode.abutting && share_boundary_run(&a.outline, &b.outline))
                         {
                             None
                         } else {
@@ -331,6 +337,7 @@ pub fn run_overlap(
         square: false,
         inward: true,
         abutting: false,
+        related: false,
     };
     run_gated_with(
         rule,
@@ -415,15 +422,17 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     // way, and its KLayout deck reports the shared edge; the default leaves an
     // abutment alone, since a butted tie is drawn edge to edge by design and the
     // GF180 decks read every abutment as no gap.
-    let abutting = match rule.word("abutting") {
-        Some("report") => true,
-        Some("ignore") | None => false,
+    let (abutting, related) = match rule.word("abutting") {
+        Some("report") => (true, false),
+        Some("related") => (false, true),
+        Some("ignore") | None => (false, false),
         Some(other) => {
             eprintln!(
-                "[{}] unknown abutting '{other}' — expected report or ignore;                  using ignore",
+                "[{}] unknown abutting '{other}' — expected report, ignore or related; \
+                 using ignore",
                 rule.id
             );
-            false
+            (false, false)
         }
     };
     let mode = forced.unwrap_or(SpaceMode {
@@ -431,6 +440,7 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
         square,
         inward: false,
         abutting,
+        related,
     });
     let tile = merged.tile_dbu() as i64;
     let rid = rule.id.as_str();
@@ -465,7 +475,12 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     // pairs, and the core filter deduplicates.
     let keys: Vec<(i32, i32)> = map_a.keys().copied().collect();
     let empty: Vec<MergedPoly> = Vec::new();
-    let kin = Kin::of((map_a, kin_a), kin_b.map(|k| (map_b, k)), tile as i32);
+    let kin = Kin::of(
+        (map_a, kin_a),
+        kin_b.map(|k| (map_b, k)),
+        tile as i32,
+        mode.related,
+    );
     keys.par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
@@ -729,11 +744,13 @@ impl<'a> Kin<'a> {
         (map_a, kin_a): (&'a TileMap, Arc<crate::merge::IndexedRegions>),
         b: Option<(&'a TileMap, Arc<crate::merge::IndexedRegions>)>,
         tile: i32,
+        touching: bool,
     ) -> Kin<'a> {
         let a = Labeled::of(map_a, kin_a, tile);
         let b = b.map(|(m, k)| Labeled::of(m, k, tile));
-        // Which regions share area: every core piece of `a` against every core piece
-        // of `b` in the same tile, by the boxes first.
+        // Which regions share area - or, for `abutting: related`, touch anywhere:
+        // every core piece of `a` against every core piece of `b` in the same tile,
+        // by the boxes first.
         let overlapping: HashSet<(usize, usize)> = match &b {
             None => HashSet::new(),
             Some(b) => a
@@ -749,7 +766,13 @@ impl<'a> Kin<'a> {
                             b.pieces(k).map(|(m, r)| (Outline::new(m), r)).collect();
                         for (x, ra) in &oa {
                             for (y, rb) in &ob {
-                                if x.possibly_within(y, 1) && regions_overlap(x, y) {
+                                if x.possibly_within(y, 1)
+                                    && if touching {
+                                        regions_interact(x, y)
+                                    } else {
+                                        regions_overlap(x, y)
+                                    }
+                                {
                                     found.push((*ra, *rb));
                                 }
                             }
