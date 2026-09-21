@@ -15,7 +15,11 @@ rules:
     check: min_enclosure
     layers: [TopMetal1, TopVia2NoSealring]
     value: 0.50
+    params:
+      metric: euclidian
   - id: TV2.d
     check: min_enclosure
     layers: [TopMetal2, TopVia2NoSealring]
     value: 0.50
+    params:
+      metric: euclidian

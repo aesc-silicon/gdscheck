@@ -19,11 +19,14 @@ rules:
     check: min_enclosure
     layers: [Metal3, Via2NoSealring]
     value: 0.005
+    params:
+      metric: euclidian
   - id: M3.c1
     check: min_enclosure
     layers: [Metal3, Via2NoSealring]
     value: 0.05
     params:
+      metric: euclidian
       sides: adjacent
       trigger: 0.05
   - id: M3.d
@@ -100,6 +103,8 @@ rules:
     check: min_enclosure
     layers: [TRANS, Metal3FillerInTRANS]
     value: 1.00
+    params:
+      metric: euclidian
   - id: M3Fil.h
     check: min_density
     layers: [Metal3Density]

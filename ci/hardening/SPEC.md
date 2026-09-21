@@ -123,14 +123,26 @@ which before you write the expected count into a case.
 
 Decided already, with IHP's KLayout deck; do not report them again, draw against them:
 
-- Enclosure is measured by projection, between walls.  A chamfer or a 45° wall passing
-  under the value from a *corner* of the enclosed shape, with both walls' margins
-  fine, is clean (IHP's `ext_enclosed` forces the projection metric).
+- Enclosure of a shape lying inside another (vias, contacts, ties, fillers in markers)
+  is the closest approach from its boundary to the enclosing one (`metric: euclidian`,
+  decided 2026-09-21): a chamfer or a 45° wall passing under the value from a corner or
+  over a wall of the enclosed shape fires, and a corner touching the enclosing boundary
+  is an enclosure of nothing.  IHP's `ext_enclosed` (projection) misses the corner
+  cases; its driver's euclidian rules agree.  The extension rules read on a shape that
+  crosses the other (`interacting_only`: Act.c, Gat.c, the resistor and tie extensions)
+  stay on the projection metric, as IHP's deck has them; a chamfered gate cap under the
+  value (Gat.c) is a known miss there.
 - Width and space are euclidian with a 90° angle limit, and that includes the chord
   from the end of one wall to the end of another whose interiors face across a corner:
   a small octagon whose flats are the minimum apart is a width violation eight times.
-- "Inside DigiBnd" is any overlap with DigiBnd.  A shape the DigiBnd edge cuts through
-  is digital; a shape in the hole of a DigiBnd frame is not.
+- "Inside DigiBnd" is the whole shape inside DigiBnd (decided 2026-09-21, the manual's
+  "must enclose the complete layout").  A shape the DigiBnd edge cuts through is analog,
+  and so is a shape in the hole of a DigiBnd frame; KLayout relaxes both.
+- nBuLay, for the filler rules, is section 4.2's derivation: the wells 3.0 µm and wider
+  sized by 1.0, plus the drawn nBuLay, less nBuLay:block.  KLayout reads the drawn layer.
+- A run-gated space (`length`) joins the stretches of every facing wall under the value
+  along a wall: a stepped or nicked neighbour is one line running alongside.  KLayout's
+  projection reads each edge pair alone.
 - Two bare wells under NW.b apart are NW.b in gdscheck (regions closer than the value
   merge, the merged layer is NW.b1's) and NW.b1 in KLayout (unconnected is different
   nets); both flag every such gap.

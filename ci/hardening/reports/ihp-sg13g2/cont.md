@@ -43,6 +43,13 @@ runs of two and is no array of five to either tool) and 6 (two squares corner to
 merge into one non-square Cont, the contbar deck's; KLayout lets the pair through, the
 case expects one Cnt.b).
 
+## Decided (2026-09-21, PDK owner)
+
+Enclosure is the closest approach (`metric: euclidian` on every IHP enclosure rule): the
+chamfers and 45° walls passing under the value from a Cont's corner (note B, `Cnt.c.h2`,
+`Cnt.d.h2`, `Cnt.g2.h2`) fire now.  "Inside DigiBnd" is the whole shape inside: a DigiBnd
+lying inside a Cont makes it no digital Cont (`Cnt.c.h8`).
+
 ## Findings
 
 ### 1. Cnt.c has no DigiBnd variant, and section 8.1.2 is not in the deck (false positive; rule missing)

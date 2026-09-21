@@ -47,6 +47,10 @@ is no pair under the parallel-walls projection reading, the gatpoly report's fin
 tile-dependent on core-cut pieces); the PDK owner's call, with the GF180 counts it
 would move.
 
+## Decided (2026-09-21, PDK owner)
+
+2: the 45° wall over the via's wall fires, and the two controls cut under the value from the corner with it - enclosure is the closest approach (`metric: euclidian`), decided 2026-09-21.
+
 ## Findings
 
 ### 1. TV<n>.b is checked inside EdgeSeal (false positive)

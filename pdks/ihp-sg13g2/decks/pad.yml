@@ -30,6 +30,8 @@ rules:
     check: min_enclosure
     layers: [TopMetal2, SBumpPad]
     value: 10.0
+    params:
+      metric: euclidian
   - id: Padb.d
     check: min_space
     layers: [SBumpPad, EdgeSeal]
@@ -51,6 +53,8 @@ rules:
     check: min_enclosure
     layers: [TopMetal2, CuPillarPad]
     value: 7.5
+    params:
+      metric: euclidian
   - id: Padc.d
     check: forbidden
     layers: [PadcDBad]

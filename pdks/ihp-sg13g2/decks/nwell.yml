@@ -27,14 +27,20 @@ rules:
     check: min_enclosure
     layers: [NWell, PsdActivInNWellNoTGONoSRAM]
     value: 0.31
+    params:
+      metric: euclidian
   - id: NW.c1
     check: min_enclosure
     layers: [NWell, PsdActivInNWellTGOAna]
     value: 0.62
+    params:
+      metric: euclidian
   - id: NW.c1.dig
     check: min_enclosure
     layers: [NWell, PsdActivInNWellTGODig]
     value: 0.31
+    params:
+      metric: euclidian
   - id: NW.d
     check: min_space
     layers: [NWellNoSRAM, NActExtNoTGO]
@@ -57,14 +63,20 @@ rules:
     check: min_enclosure
     layers: [NWell, NWellTieNoTGO]
     value: 0.24
+    params:
+      metric: euclidian
   - id: NW.e1
     check: min_enclosure
     layers: [NWell, NWellTieTGOAna]
     value: 0.62
+    params:
+      metric: euclidian
   - id: NW.e1.dig
     check: min_enclosure
     layers: [NWell, NWellTieTGODig]
     value: 0.24
+    params:
+      metric: euclidian
   - id: NW.f
     check: min_space
     layers: [NWell, SubstrateTieNoTGO]

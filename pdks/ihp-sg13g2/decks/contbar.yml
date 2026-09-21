@@ -33,10 +33,14 @@ rules:
     check: min_enclosure
     layers: [Activ, ContBarOnActiv]
     value: 0.07
+    params:
+      metric: euclidian
   - id: CntB.d
     check: min_enclosure
     layers: [GatPoly, ContBarOnGatPoly]
     value: 0.07
+    params:
+      metric: euclidian
   - id: CntB.e
     check: min_space
     layers: [ContBarOnGatPoly, Activ]
@@ -59,6 +63,8 @@ rules:
     check: min_enclosure
     layers: [pSD, ContBarOnPsdActiv]
     value: 0.09
+    params:
+      metric: euclidian
   - id: CntB.h
     check: forbidden
     layers: [ContBar, Metal1]
@@ -69,6 +75,8 @@ rules:
     check: min_enclosure
     layers: [Metal1, ContBar]
     value: 0.05
+    params:
+      metric: euclidian
   - id: CntB.j
     check: forbidden
     layers: [ContBarOnGatPoly, Activ]

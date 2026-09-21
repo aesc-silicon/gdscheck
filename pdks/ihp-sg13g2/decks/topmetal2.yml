@@ -63,3 +63,5 @@ rules:
     check: min_enclosure
     layers: [TRANS, TopMetal2FillerInTRANS]
     value: 4.90
+    params:
+      metric: euclidian

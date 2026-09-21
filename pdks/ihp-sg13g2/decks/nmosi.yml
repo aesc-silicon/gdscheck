@@ -7,6 +7,8 @@ rules:
     check: min_enclosure
     layers: [nBuLay, IsoPWellAct]
     value: 1.24
+    params:
+      metric: euclidian
   - id: nmosi.c
     check: min_space
     layers: [NWellRing, IsoPWellAct]

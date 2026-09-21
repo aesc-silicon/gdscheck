@@ -402,11 +402,11 @@ virtual_layers:
     layers: [ContOnActiv, SRAM]
   # Cnt.c: 0.07 in the analog flow, 0.05 inside DigiBnd (section 8.1.2).
   - name: ContOnActivAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [ContOnActivNoSRAM, DigiBnd]
   - name: ContOnActivDig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [ContOnActivNoSRAM, DigiBnd]
   # Cnt.g1: the Cont on N+Activ, N+ by drawn nSD or by default (section 4.2).
@@ -497,27 +497,27 @@ virtual_layers:
     mode: lazy
     layers: [NActiv, NWell]
   - name: PsdActivInNWellTGOAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [PsdActivInNWellTGO, DigiBnd]
   - name: PsdActivInNWellTGODig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [PsdActivInNWellTGO, DigiBnd]
   - name: NActFullTGOAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [NActFullTGO, DigiBnd]
   - name: NActFullTGODig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [NActFullTGO, DigiBnd]
   - name: NActivInNWellTGOAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [NActivInNWellTGO, DigiBnd]
   - name: NActivInNWellTGODig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [NActivInNWellTGO, DigiBnd]
   # NW.e: the NWell tie of section 4.2, (Activ AND nSD) inside NWell - N+ by drawn nSD
@@ -537,11 +537,11 @@ virtual_layers:
     mode: lazy
     layers: [NWellTie, ThickGateOx]
   - name: NWellTieTGOAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [NWellTieTGO, DigiBnd]
   - name: NWellTieTGODig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [NWellTieTGO, DigiBnd]
   # NW.d: external N+Activ - the N+ outside every well, which a shape crossing the well
@@ -559,11 +559,11 @@ virtual_layers:
     mode: lazy
     layers: [NActExt, ThickGateOx]
   - name: NActExtTGOAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [NActExtTGO, DigiBnd]
   - name: NActExtTGODig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [NActExtTGO, DigiBnd]
   - name: ActivInNWell
@@ -667,11 +667,11 @@ virtual_layers:
     mode: lazy
     layers: [SubstrateTie, ThickGateOx]
   - name: SubstrateTieTGOAna
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [SubstrateTieTGO, DigiBnd]
   - name: SubstrateTieTGODig
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [SubstrateTieTGO, DigiBnd]
   - name: PsdActivInPWellTGO
@@ -984,10 +984,30 @@ virtual_layers:
     op: inside
     mode: lazy
     layers: [Activ.filler, NWell]
+  # Section 4.2: nBuLay = (((NWell >= 3.0 µm) sized by 1.0 µm/side) OR nBuLay:drawing)
+  # AND NOT nBuLay:block - what the filler rules keep their distance from.
+  - name: NWellWide
+    op: open
+    mode: lazy
+    radius: 1.4975
+    layers: [NWell]
+  - name: NWellWideSized
+    op: grow
+    mode: lazy
+    radius: 1.0
+    layers: [NWellWide]
+  - name: nBuLayAll
+    op: union
+    mode: lazy
+    layers: [NWellWideSized, nBuLay]
+  - name: nBuLayDerived
+    op: difference
+    mode: lazy
+    layers: [nBuLayAll, nBuLay.block]
   - name: ActivFillerInNBuLay
     op: inside
     mode: lazy
-    layers: [Activ.filler, nBuLay]
+    layers: [Activ.filler, nBuLayDerived]
   - name: ActivFillerInTRANS
     op: inside
     mode: lazy
@@ -1017,6 +1037,12 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GatPolyOverActiv, ThickGateOx]
+  # Gat.b1: the polys of the 3.3 V transistors, whole - figure 5.8 draws b1 between the
+  # ends of two such polys outside their Activs.
+  - name: GatPolyHV
+    op: overlapping
+    mode: lazy
+    layers: [GatPoly, GatPolyOverActivTGO]
   # Gat.f: no 45° or 90° angle in the gate - the gate region is a rectangle, or it is
   # the violation, as IHP's deck reads it.
   - name: GatPolyOverActivNotRect

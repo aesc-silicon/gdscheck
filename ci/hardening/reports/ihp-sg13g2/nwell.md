@@ -50,6 +50,13 @@ Layout `NW.b1.h1` had an unintended pair: the 1.28/1.28 "clean" well sat 1.469 f
 0.90/0.90 pair's well.  The latter moved to x = 15; the case's count of six was right
 by accident before (the 0.62 pair missing, the accident counted).
 
+## Decided (2026-09-21, PDK owner)
+
+10: enclosure is the closest approach (`metric: euclidian` on every IHP enclosure rule);
+the chamfers passing under the value from a corner fire, as the cases first expected.
+12: "inside DigiBnd" is the whole shape inside; a device the DigiBnd edge cuts through
+is analog (the `*Dig`/`*Ana` layers are `inside`/`not_inside` now).
+
 ## Findings
 
 ### 1. NW.b has no notch half (false negative)
