@@ -59,6 +59,18 @@ look of their own.  The case carries the parallel-walls reading.  On the way the
 good pattern turned out to be a PL.4 violator by KLayout's euclidian PL.4 (its 45°
 gate's wall passed 0.14 from the active's corner); the bar starts 0.15 further in now.
 
+## Decided (2026-09-21, PDK owner)
+
+8: Gat.b1 is the space between the whole polys of 3.3 V transistors (`GatPolyHV`, the
+GatPoly overlapping a gate under ThickGateOx), figure 5.8's reading; two transistors
+whose polys end 0.245 apart fire, one poly over two Activs or a U is one poly and
+clean.  11 stays OPEN: the closest-approach metric on Gat.c - an extension read on a
+poly crossing the Activ - read the cut vertices of the tile's pieces as corners (2560
+Act.c on a 4 mm² design), so the extension rules keep the projection metric, as IHP's
+deck has them (`ext_enclosed(..., metric: projection)`); the chamfered cap wants
+KLayout's angled projection, the reading built and taken out again for tile
+dependence.
+
 ## Findings
 
 ### 1. Gat.a1 and Gat.a3 do not see an NFET drawn without nSD (false negative, the common case)

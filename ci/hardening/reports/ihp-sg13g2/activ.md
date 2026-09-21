@@ -52,6 +52,15 @@ The AFil.a and GFil.a fixtures of the old suite expected the wall-pair reading a
 now carry a 5.005 x 5.005 filler for the narrowest one; the old metal and Activ
 density fixtures were laid out per 800 µm grid cell and are uniform stripes now.
 
+## Decided (2026-09-21, PDK owner)
+
+7: nBuLay for AFil.d (and GFil.e) is section 4.2's derivation, `nBuLayDerived` = the
+wells 3.0 µm and wider sized by 1.0, or the drawn nBuLay, less nBuLay:block.  Note: the
+reference designs' fillers, placed by gdsfill at 1.0 from wide wells, are 0.15-0.85
+from that nBuLay - 70 findings per design, which KLayout (drawn nBuLay) does not see.
+Also: the chamfer 0.20 from a filler corner (AFil.j.h3) fires under the euclidian
+enclosure now.
+
 ## Findings
 
 ### 1. Act.c reports the Activ past a gate's end (false positive, KLayout too)

@@ -19,6 +19,8 @@ rules:
     check: min_enclosure
     layers: [nBuLay, nBuLay.block]
     value: 1.00
+    params:
+      metric: euclidian
   - id: NBLB.d
     check: min_space
     layers: [nBuLay.block, nBuLay]

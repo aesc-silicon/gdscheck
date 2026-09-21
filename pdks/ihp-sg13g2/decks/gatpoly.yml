@@ -33,7 +33,7 @@ rules:
     value: 0.18
   - id: Gat.b1
     check: min_space
-    layers: [GatPolyOverActivTGO]
+    layers: [GatPolyHV]
     value: 0.25
   - id: Gat.c
     check: min_enclosure
@@ -126,7 +126,7 @@ rules:
       abutting: report
   - id: GFil.e
     check: min_space
-    layers: [GatPoly.filler, nBuLay]
+    layers: [GatPoly.filler, nBuLayDerived]
     value: 1.10
     params:
       abutting: report

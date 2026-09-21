@@ -19,3 +19,5 @@ rules:
     check: min_enclosure
     layers: [TopMetal2, PassivInSeal]
     value: 2.10
+    params:
+      metric: euclidian

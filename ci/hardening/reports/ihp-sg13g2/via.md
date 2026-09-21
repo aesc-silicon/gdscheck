@@ -48,6 +48,10 @@ metaln report's finding 4 (a corner touch pairs no wall under the projection rea
 the PDK owner's call together with the angled-wall projection of the gatpoly report's
 finding 11.
 
+## Decided (2026-09-21, PDK owner)
+
+2: the chamfer through the via's corner fires - enclosure is the closest approach (`metric: euclidian`), decided 2026-09-21; the diamond and the 0.0035 chamfer of `V(n).c.h3` and the chamfers of `V(n).c1.h4` with it.
+
 ## Findings
 
 ### 1. V(n).b and V(n).b1 are checked within EdgeSeal (false positive)

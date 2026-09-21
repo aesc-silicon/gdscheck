@@ -49,11 +49,10 @@ and LBE.b are `max_length`, the bounding box's long side, exactly KLayout's
 (`abutting: report` on TMFil.c and TMFil.d), 3 (an enclosure entry on
 `TopMetal{n}FillerInTRANS`, as the Activ and Metal filler decks have).
 
-Settled on KLayout's reading, cases flipped: the stepped and the nicked walls of 5
-(`TM2.bR.h3`, `h11`) - the run is one facing pair's, as KLayout's per-edge projection;
-a step or a nick makes two walls with two runs.  OPEN for the PDK owner: the manual
-says "lines"; a reading that joins the stretches of every facing wall within the value
-along one wall would report both (and a serrated wall's whole length).
+Decided (2026-09-21, PDK owner): the run is the manual's "lines" - along a wall, the
+stretches of every wall facing it under the value are joined, so the stepped and the
+nicked neighbours of 5 (`TM2.bR.h3`, `h11`) run 60 and fire, as the cases first
+expected; KLayout's per-edge projection stays the stricter tool's miss.
 
 ## Findings
 

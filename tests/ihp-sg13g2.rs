@@ -240,13 +240,15 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::afil_d_h1("activ/AFil.d.h1.gds.gz", "TOP", vec!["AFil.d"; 4], dens(&[]))]
 // Figure 5.6 measures "d" inside the well too: a filler 0.5 inside a NWell and one 0.5
 // inside an nBuLay fire (an enclosure entry on the fillers inside), 1.0 inside is clean;
-// a filler crossing the edge is in neither reading, as KLayout has it (report, finding 6).
-#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
-// nBuLay is read as drawn, as IHP's deck reads it (report, finding 7 - open): a filler
-// 1.5 from a 3.0 µm NWell has no drawn nBuLay near it and is clean, a drawn nBuLay
-// under nBuLay:block still counts (0.5 away: fires), the half-blocked one fires for
-// both fillers 0.5 from it.  Section 4.2's derived nBuLay would read 1, 0 and 1.
-#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 3], dens(&[]))]
+// a filler crossing the edge is in neither reading, as KLayout has it (report, finding 6)
+// - but the one crossing a 3 µm well's edge lies 0.5 inside the nBuLay section 4.2 derives
+// round it (the well sized by 1.0), and fires for that.
+#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 3], dens(&[]))]
+// nBuLay as section 4.2 derives it (report, finding 7, decided 2026-09-21): a filler 1.5
+// from a 3.0 µm NWell is 0.5 from the nBuLay round it (fires), a drawn nBuLay under
+// nBuLay:block is none (clean), the half-blocked one fires for the filler beside its
+// open half only.
+#[case::afil_d_h3("activ/AFil.d.h3.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
 // 45°: a NWell diamond tip at 0.995 and a NWell chamfer 0.997 from a corner fire; 1.004 clean.
 #[case::afil_d_h4("activ/AFil.d.h4.gds.gz", "TOP", vec!["AFil.d"; 2], dens(&[]))]
 // Eight 0.995 gaps on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
@@ -292,8 +294,9 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // round, and one half under the block (those three are AFil.i's).
 #[case::afil_j_h2("activ/AFil.j.h2.gds.gz", "TOP", vec!["AFil.j"; 1], dens(&["AFil.i"]))]
 // Parallel chamfers: nSD:block 0.244 from the filler's chamfer fires, SalBlock at 0.251 is
-// clean; a chamfer 0.20 from a square corner with the walls at 0.30 is clean (projection).
-#[case::afil_j_h3("activ/AFil.j.h3.gds.gz", "TOP", vec!["AFil.j"; 1], dens(&[]))]
+// clean; a chamfer 0.20 from a square corner with the walls at 0.30 fires: the margin is
+// the closest approach, whatever the angle (euclidian, decided 2026-09-21).
+#[case::afil_j_h3("activ/AFil.j.h3.gds.gz", "TOP", vec!["AFil.j"; 2], dens(&[]))]
 // Eight 0.245 margins on, across and straddling x = 20/21/40/42, one along a 10 µm filler.
 #[case::afil_j_h4("activ/AFil.j.h4.gds.gz", "TOP", vec!["AFil.j"; 8], dens(&["AFil.a"]))]
 // Fifty fillers with a 0.245 margin, flat and as a GdsArrayRef.
@@ -470,13 +473,14 @@ const DECK_GAT: &str = "gatpoly";
 // 3.3 V fingers 0.245 apart fire, 0.25 is clean, 1.2 V fingers at 0.245 are clean, a 3.3 V
 // finger beside one outside the oxide is clean; 0.175 apart is a Gat.b1 and a Gat.b.
 #[case::gat_b1_h1("gatpoly/Gat.b1.h1.gds.gz", "TOP", vec!["Gat.b1", "Gat.b1", "Gat.b"], vec!["GFil.g"])]
-// Gat.b1 is read between gate regions, as both tools read it (report, finding 8 - open):
-// two 3.3 V transistors whose polys end 0.245 apart have gate regions 0.845 apart and are
-// clean; one poly over two Activs 0.245 apart fires; 0.25 is clean.
+// Gat.b1 is read between the whole polys of 3.3 V transistors, as figure 5.8 draws it
+// (report, finding 8, decided 2026-09-21): two transistors whose polys end 0.245 apart
+// fire; one poly over two Activs 0.245 apart is one poly, related to itself (clean, and
+// Gat.b's business at 0.18); 0.25 is clean.
 #[case::gat_b1_h2("gatpoly/Gat.b1.h2.gds.gz", "TOP", vec!["Gat.b1"; 1], vec!["GFil.g"])]
-// A U poly whose legs make two gate regions 0.245 apart fires; a U whose base lies over the
-// Activ is one region (and a Gat.f).
-#[case::gat_b1_h3("gatpoly/Gat.b1.h3.gds.gz", "TOP", vec!["Gat.b1"], vec!["GFil.g", "Gat.f"])]
+// A U poly whose legs cross one Activ 0.245 apart is one poly: clean for Gat.b1 (its notch
+// is Gat.b's); a U whose base lies over the Activ is a Gat.f.
+#[case::gat_b1_h3("gatpoly/Gat.b1.h3.gds.gz", "TOP", vec![], vec!["GFil.g", "Gat.f"])]
 // 0.245 finger gaps straddling/ending on x = 20/21/40/42, at (1000, 1000), and two 300 µm
 // gate regions 0.245 apart.
 #[case::gat_b1_h4("gatpoly/Gat.b1.h4.gds.gz", "TOP", vec!["Gat.b1"; 7], vec!["GFil.g"])]
@@ -493,9 +497,10 @@ const DECK_GAT: &str = "gatpoly";
 #[case::gat_c_h2("gatpoly/Gat.c.h2.gds.gz", "TOP", vec!["Gat.c"; 4], vec!["GFil.g"])]
 // A gate over two Activs 0.175 short and five 0.175 caps on and across x = 20/40/42 fire;
 // a 0.375 T head and a 0.19 chamfer are clean.  A cap chamfered down to 0.10 at its
-// corner is not read: the chamfer is no wall parallel to the Activ's edge, and IHP's
-// `ext_enclosed` (projection) does pair it at 0.141 - report, finding 11, open with the
-// settled projection reading.
+// corner is not read (report, finding 11 - OPEN): Gat.c is an extension read on a poly
+// crossing the Activ, where the closest-approach metric read the cut vertices of the
+// tile's pieces as corners (2560 Act.c on a 4 mm² design), so the extension rules keep
+// the projection metric; the chamfer wants KLayout's angled projection instead.
 #[case::gat_c_h3("gatpoly/Gat.c.h3.gds.gz", "TOP", vec!["Gat.c"; 6], vec!["GFil.g"])]
 // Fifty 0.175 caps, flat and as a GdsArrayRef.
 #[case::gat_c_h4("gatpoly/Gat.c.h4.gds.gz", "TOP", vec!["Gat.c"; 50], vec!["GFil.g"])]
@@ -600,13 +605,15 @@ const DECK_GAT: &str = "gatpoly";
 // Fifty 1.095 filler-to-Activ gaps, flat and as a GdsArrayRef.
 #[case::gfil_d_h3("gatpoly/GFil.d.h3.gds.gz", "TOP", vec!["GFil.d"; 50], vec!["GFil.g"])]
 #[case::gfil_d_h4("gatpoly/GFil.d.h4.gds.gz", "TOP", vec!["GFil.d"; 50], vec!["GFil.g"])]
-// To NWell and to nBuLay: 1.095 and 1.089 fire, 1.10 and 1.103 are clean; fillers 1.6 from
-// a 5 × 5 well and 1.5 from a 2-wide well are clean (nBuLay derives inward).
-#[case::gfil_e_h1("gatpoly/GFil.e.h1.gds.gz", "TOP", vec!["GFil.e"; 4], vec!["GFil.g"])]
+// To NWell and to nBuLay: 1.095 and 1.089 fire, 1.10 and 1.103 are clean; a filler 1.6
+// from a 5 × 5 well is 0.6 from the nBuLay section 4.2 derives round it (fires), one 1.5
+// from a 2-wide well has no nBuLay near it (clean).
+#[case::gfil_e_h1("gatpoly/GFil.e.h1.gds.gz", "TOP", vec!["GFil.e"; 5], vec!["GFil.g"])]
 // A filler abutting an NWell (space 0.00), 1.095 across x = 20 and 40, one at (1000,
 // 1000), a 300 µm pair; a filler inside an NWell or half over an nBuLay shares area and is
-// no pair (finding 5).
-#[case::gfil_e_h2("gatpoly/GFil.e.h2.gds.gz", "TOP", vec!["GFil.e"; 5], vec!["GFil.g", "GFil.a"])]
+// no pair (finding 5); the filler 1.0 past a wide well's edge is 1.0 from the derived
+// nBuLay (section 4.2) and fires.
+#[case::gfil_e_h2("gatpoly/GFil.e.h2.gds.gz", "TOP", vec!["GFil.e"; 6], vec!["GFil.g", "GFil.a"])]
 // Fifty 1.095 filler-to-NWell gaps, flat and as a GdsArrayRef.
 #[case::gfil_e_h3("gatpoly/GFil.e.h3.gds.gz", "TOP", vec!["GFil.e"; 50], vec!["GFil.g"])]
 #[case::gfil_e_h4("gatpoly/GFil.e.h4.gds.gz", "TOP", vec!["GFil.e"; 50], vec!["GFil.g"])]
@@ -704,8 +711,8 @@ const DECK_CNT: &str = "cont";
 // and Cnt.g.
 #[case::cnt_c_h1("cont/Cnt.c.h1.gds.gz", "TOP", vec!["Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c", "Cnt.g"], vec![])]
 // A chamfer and a 45° wall passing 0.064 from the Cont's corner with both axis margins
-// fine: clean by the settled projection reading (report, note B).
-#[case::cnt_c_h2("cont/Cnt.c.h2.gds.gz", "TOP", vec![], vec![])]
+// fine fire: the margin is the closest approach (euclidian, decided 2026-09-21).
+#[case::cnt_c_h2("cont/Cnt.c.h2.gds.gz", "TOP", vec!["Cnt.c"; 2], vec![])]
 // Unions (abutting, overlapping, a 4 × 4 grid) enclose by their union; a union with
 // 0.065, an Activ drawn twice with 0.065 (once) and a ring wall 0.065 from its hole fire.
 #[case::cnt_c_h3("cont/Cnt.c.h3.gds.gz", "TOP", vec!["Cnt.c"; 3], vec![])]
@@ -719,12 +726,14 @@ const DECK_CNT: &str = "cont";
 // Section 8.1.2: under DigiBnd 0.05 is the value - 0.045 fires the digital variant (twice:
 // once inside a tile, once straddling x = 40), 0.05 and 0.065 are clean; 0.065 outside
 // DigiBnd and in a DigiBnd frame's hole fire Cnt.c; the DigiBnd edge through the Activ
-// or through the Cont, and a DigiBnd inside the Cont, are digital and clean (finding 1).
-#[case::cnt_c_h8("cont/Cnt.c.h8.gds.gz", "TOP", vec!["Cnt.c", "Cnt.c", "Cnt.c.dig", "Cnt.c.dig"], vec![])]
+// or through the Cont (margins 0.10) are analog and clean, a DigiBnd inside the Cont is
+// analog and its 0.065 fires: "inside DigiBnd" is the whole shape inside (manual, decided
+// 2026-09-21).
+#[case::cnt_c_h8("cont/Cnt.c.h8.gds.gz", "TOP", vec!["Cnt.c", "Cnt.c", "Cnt.c", "Cnt.c.dig", "Cnt.c.dig"], vec![])]
 // GatPoly margins, as Cnt.c.h1.
 #[case::cnt_d_h1("cont/Cnt.d.h1.gds.gz", "TOP", vec!["Cnt.d", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.d", "Cnt.g"], vec![])]
-// 45° cuts of the GatPoly near the Cont's corner: clean by the settled projection reading.
-#[case::cnt_d_h2("cont/Cnt.d.h2.gds.gz", "TOP", vec![], vec![])]
+// 45° cuts of the GatPoly under the value from the Cont's corner fire (euclidian, decided 2026-09-21).
+#[case::cnt_d_h2("cont/Cnt.d.h2.gds.gz", "TOP", vec!["Cnt.d"; 2], vec![])]
 // Merged GatPoly, as Cnt.c.h3.
 #[case::cnt_d_h3("cont/Cnt.d.h3.gds.gz", "TOP", vec!["Cnt.d"; 3], vec![])]
 // Tile lines, as Cnt.c.h4.
@@ -796,10 +805,10 @@ const DECK_CNT: &str = "cont";
 // Cont fires Cnt.g2 and, the bare half being on nSD-Activ 0 from pSD, Cnt.g1 (finding 5).
 #[case::cnt_g2_h1("cont/Cnt.g2.h1.gds.gz", "TOP",
     [vec!["Cnt.g2"; 7], vec!["Cnt.g1"]].concat(), vec![])]
-// pSD chamfers 0.085/0.092 from the Cont corner are clean by the settled reading; pSD
+// The pSD chamfer 0.085 from the Cont corner fires, 0.092 is clean (euclidian, decided 2026-09-21); pSD
 // as abutting halves and as overlapping boxes is clean; a union with 0.085 and a pSD
 // drawn twice with 0.085 fire once each.
-#[case::cnt_g2_h2("cont/Cnt.g2.h2.gds.gz", "TOP", vec!["Cnt.g2"; 2], vec![])]
+#[case::cnt_g2_h2("cont/Cnt.g2.h2.gds.gz", "TOP", vec!["Cnt.g2"; 3], vec![])]
 // 0.085 pSD margins on and across the tile lines; 0.09 across x = 20 is clean.
 #[case::cnt_g2_h3("cont/Cnt.g2.h3.gds.gz", "TOP", vec!["Cnt.g2"; 8], vec![])]
 // Fifty Conts with 0.085 of pSD on the right, flat and as a GdsArrayRef.
@@ -1085,10 +1094,9 @@ const DECK_NW: &str = "nwell";
 // NW.b1 has nothing to measure; a 0.50 block strip leaves 0.25 of PWell either side → fires.
 #[case::nw_b1_h8("nwell/NW.b1.h8.gds.gz", "TOP", vec!["NW.b1"], vec![])]
 // A 0.305 margin and parallel chamfers 0.304 apart fire; the 0.311 chamfers are clean.
-// A chamfer or a 45° wall passing 0.269 from the Activ's *corner* is not read: enclosure
-// is measured by projection, between walls, as IHP's `ext_enclosed` reads it (hardening
-// report, finding 10 - open).
-#[case::nw_c_h1("nwell/NW.c.h1.gds.gz", "TOP", vec!["NW.c"; 2], vec![])]
+// A chamfer or a 45° wall passing 0.269 from the Activ's *corner* fires: the margin is
+// the closest approach, whatever the angle (euclidian, decided 2026-09-21) - report, finding 10.
+#[case::nw_c_h1("nwell/NW.c.h1.gds.gz", "TOP", vec!["NW.c"; 4], vec![])]
 // Unions: P+Activ from two boxes (0.31 clean, 0.305 fires), NWell from two boxes (clean),
 // plain Activ is N+ (clean), pSD over half the Activ (the P+ half fires), a P+Activ 0.305
 // from a ring's hole.
@@ -1107,11 +1115,12 @@ const DECK_NW: &str = "nwell";
 #[case::nw_c_h7("nwell/NW.c.h7.gds.gz", "TOP", vec!["NW.c", "NW.c", "NW.c", "NW.c1", "NW.c1"], vec![])]
 // A 0.005 sliver, a 300 µm P+Activ with a 0.305 bottom margin, one at (1000, 1000).
 #[case::nw_c_h8("nwell/NW.c.h8.gds.gz", "TOP", vec!["NW.c"; 3], vec![])]
-// 0.615 fires, 0.62 is clean; a chamfer 0.615 from the corner is not read (projection,
+// 0.615 fires, 0.62 is clean; a chamfer 0.615 from the corner fires too (closest approach,
 // finding 10); inside DigiBnd 0.305 → NW.c1.dig; a device the DigiBnd edge cuts through
-// is inside as far as it overlaps, as KLayout reads it (finding 12 - open), so 0.45 is
-// clean there; a DigiBnd frame with the device in its hole is not inside → NW.c1 at 0.45.
-#[case::nw_c1_h1("nwell/NW.c1.h1.gds.gz", "TOP", vec!["NW.c1", "NW.c1", "NW.c1.dig"], vec![])]
+// is not inside (the whole shape must be - manual, finding 12, decided 2026-09-21), so
+// 0.45 fires NW.c1 there; a DigiBnd frame with the device in its hole is not inside →
+// NW.c1 at 0.45.
+#[case::nw_c1_h1("nwell/NW.c1.h1.gds.gz", "TOP", vec!["NW.c1", "NW.c1", "NW.c1", "NW.c1", "NW.c1.dig"], vec![])]
 // Seven 0.305 margins under one DigiBnd on/across x = 10/20/21/40/42 → NW.c1.dig; a 0.615
 // margin outside it → NW.c1.
 #[case::nw_c1_h2("nwell/NW.c1.h2.gds.gz", "TOP",
@@ -1135,19 +1144,19 @@ const DECK_NW: &str = "nwell";
 #[case::nw_d_h6("nwell/NW.d.h6.gds.gz", "TOP", vec!["NW.d"; 3], vec![])]
 // TGO over half the Activ (NW.d1 for that half), TGO abutting (NW.d only), a 0.005 TGO
 // sliver (NW.d and NW.d1); inside DigiBnd 0.305 → NW.d1.dig; an Activ the DigiBnd edge
-// cuts through is inside (finding 12 - open) → clean at 0.45; a DigiBnd frame with the
-// Activ in its hole is not inside → NW.d1 at 0.45; DigiBnd over the Activ but not the
-// well is inside → clean at 0.45.
+// cuts through is not inside (finding 12, decided 2026-09-21) → NW.d1 at 0.45; a DigiBnd
+// frame with the Activ in its hole is not inside → NW.d1 at 0.45; DigiBnd over the Activ
+// but not the well is inside → clean at 0.45.
 #[case::nw_d_h7("nwell/NW.d.h7.gds.gz", "TOP",
-    vec!["NW.d", "NW.d", "NW.d1", "NW.d1", "NW.d1", "NW.d1.dig"], vec![])]
+    vec!["NW.d", "NW.d", "NW.d1", "NW.d1", "NW.d1", "NW.d1", "NW.d1.dig"], vec![])]
 // 0.615, a 0.435/0.435 diagonal (0.615) and a diamond tip at 0.615 fire; 0.62/0.622 clean.
 #[case::nw_d1_h1("nwell/NW.d1.h1.gds.gz", "TOP", vec!["NW.d1"; 3], vec![])]
 // Fifty 0.615 gaps under TGO, flat and as a GdsArrayRef.
 #[case::nw_d1_h2("nwell/NW.d1.h2.gds.gz", "TOP", vec!["NW.d1"; 50], vec![])]
 #[case::nw_d1_h3("nwell/NW.d1.h3.gds.gz", "TOP", vec!["NW.d1"; 50], vec![])]
 // A 0.235 margin and parallel chamfers 0.233 apart fire; 0.24/0.240 are clean.  A
-// chamfer or 45° wall 0.233 from the tie's corner is not read (projection, finding 10).
-#[case::nw_e_h1("nwell/NW.e.h1.gds.gz", "TOP", vec!["NW.e"; 2], vec![])]
+// chamfer or 45° wall 0.233 from the tie's corner fires (closest approach, finding 10).
+#[case::nw_e_h1("nwell/NW.e.h1.gds.gz", "TOP", vec!["NW.e"; 4], vec![])]
 // P+Activ at 0.20 is NW.c's; a drawn-nSD tie at 0.235, a tie 0.235 from a ring's hole, a
 // two-box tie with a 0.235 union margin and a tie under a two-box well at 0.235 fire; the
 // 0.24 ring and two-box well are clean.
@@ -1161,19 +1170,19 @@ const DECK_NW: &str = "nwell";
 #[case::nw_e_h6("nwell/NW.e.h6.gds.gz", "TOP", vec!["NW.e"; 3], vec!["NW.a"])]
 // TGO over half the tie (NW.e1 for that half), TGO abutting (NW.e only), a 0.005 TGO
 // sliver (NW.e and NW.e1); inside DigiBnd 0.235 → NW.e1.dig; a tie the DigiBnd edge cuts
-// through is inside (finding 12 - open) → clean at 0.45; a DigiBnd frame with the tie in
-// its hole is not inside → NW.e1 at 0.45.
+// through is not inside (finding 12, decided 2026-09-21) → NW.e1 at 0.45; a DigiBnd
+// frame with the tie in its hole is not inside → NW.e1 at 0.45.
 #[case::nw_e_h7("nwell/NW.e.h7.gds.gz", "TOP",
-    vec!["NW.e", "NW.e", "NW.e1", "NW.e1", "NW.e1", "NW.e1.dig"], vec![])]
+    vec!["NW.e", "NW.e", "NW.e1", "NW.e1", "NW.e1", "NW.e1", "NW.e1.dig"], vec![])]
 // A tie whose edge lies on the well edge: surrounded entirely, zero enclosure → NW.e (the
 // engine's skip_clipped drops it).
 #[case::nw_e_h8("nwell/NW.e.h8.gds.gz", "TOP", vec!["NW.e"], vec![])]
 // Activ under nSD:block without nSD or pSD is neither N+ nor P+ (section 4.2): no tie, no
 // NW.e at 0.20 (the engine takes every non-pSD Activ in the well for a tie).
 #[case::nw_e_h9("nwell/NW.e.h9.gds.gz", "TOP", vec![], vec![])]
-// 0.615 fires, 0.62 is clean; a chamfer 0.615 from the tie's corner is not read
-// (projection, finding 10), 0.622 is clean.
-#[case::nw_e1_h1("nwell/NW.e1.h1.gds.gz", "TOP", vec!["NW.e1"; 1], vec![])]
+// 0.615 fires, 0.62 is clean; a chamfer 0.615 from the tie's corner fires (closest
+// approach, finding 10), 0.622 is clean.
+#[case::nw_e1_h1("nwell/NW.e1.h1.gds.gz", "TOP", vec!["NW.e1"; 2], vec![])]
 // Fifty 0.615 margins under TGO, flat and as a GdsArrayRef.
 #[case::nw_e1_h2("nwell/NW.e1.h2.gds.gz", "TOP", vec!["NW.e1"; 50], vec![])]
 #[case::nw_e1_h3("nwell/NW.e1.h3.gds.gz", "TOP", vec!["NW.e1"; 50], vec![])]
@@ -1195,10 +1204,10 @@ const DECK_NW: &str = "nwell";
 // TGO over half the tie (NW.f1 for that half), TGO abutting (NW.f only), a 0.005 TGO
 // sliver (NW.f and NW.f1); section 8.1.1 relaxes NW.f1 to 0.24 inside DigiBnd: 0.30 is
 // clean and 0.235 is the digital variant NW.f1.dig; a tie the DigiBnd edge cuts through
-// is inside (finding 12 - open) → clean at 0.45; a DigiBnd frame with the tie in its hole
-// is not inside → NW.f1 at 0.45.
+// is not inside (finding 12, decided 2026-09-21) → NW.f1 at 0.45; a DigiBnd frame with
+// the tie in its hole is not inside → NW.f1 at 0.45.
 #[case::nw_f_h7("nwell/NW.f.h7.gds.gz", "TOP",
-    vec!["NW.f", "NW.f", "NW.f1", "NW.f1", "NW.f1", "NW.f1.dig"], vec![])]
+    vec!["NW.f", "NW.f", "NW.f1", "NW.f1", "NW.f1", "NW.f1", "NW.f1.dig"], vec![])]
 // 0.615, a 0.435/0.435 diagonal (0.615) and a diamond tip at 0.615 fire; 0.62/0.622 clean.
 #[case::nw_f1_h1("nwell/NW.f1.h1.gds.gz", "TOP", vec!["NW.f1"; 3], vec![])]
 // Fifty 0.615 gaps under TGO, flat and as a GdsArrayRef.
@@ -1728,9 +1737,9 @@ fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::mn_c_h2(".c.h2", vec![".c"; 3], mn_dens(&[".c1"]))]
 // A chamfer through the via's corner (touch, 0.000) and one cutting it fire; the chamfer
 // passing 0.0035 from the corner with 0.005 walls is the settled projection reading (finding 4).
-// The chamfer through the via's corner is OPEN (the projection reading pairs no wall with
-// the corner touch; KLayout reports it) - the case carries the current answer, one.
-#[case::mn_c_h3(".c.h3", vec![".c"; 1], mn_dens(&[".c1"]))]
+// The cut corner, the touch and the chamfer 0.0035 from the corner all fire: the margin
+// is the closest approach (euclidian, decided 2026-09-21).
+#[case::mn_c_h3(".c.h3", vec![".c"; 3], mn_dens(&[".c1"]))]
 // Unions: two boxes enclosing the via by 0.005 together are clean, by 0.000 fire once; ten
 // abutting slices are clean.
 #[case::mn_c_h4(".c.h4", vec![".c"; 1], mn_dens(&[]))]
@@ -2077,8 +2086,9 @@ fn test_via4(
 // passing 0.0035 from the corner with both walls at the value is the settled projection
 // reading (clean), and so are the diamonds (note B).  The touch is the metaln report's
 // open finding 4 (gdscheck reports the cut only).
-// OPEN as there: the case carries the current answer, the cut corner alone.
-#[case::vn_c_h3(".c.h3", vec![".c"; 1], vec![".c1"])]
+// The cut corner, the touch, the chamfer 0.0035 from the corner and the diamond all fire:
+// the margin is the closest approach (euclidian, decided 2026-09-21).
+#[case::vn_c_h3(".c.h3", vec![".c"; 4], vec![".c1"])]
 // Unions: two boxes enclosing the via by the value together are clean, a step short fire
 // once; ten abutting slices are clean.
 #[case::vn_c_h4(".c.h4", vec![".c"; 1], vec![])]
@@ -2108,7 +2118,9 @@ fn test_via4(
 // 0.05 endcap, a T, a cross, a chamfered end on a 0.5-wide line and a via centred in a
 // 45° strip are clean; a chamfered end on a `w`-wide line, whose chamfers run across
 // the via's sides 0.01 from their ends, fires with 0.05 to the straight end and with 0.045.
-#[case::vn_c1_h4(".c1.h4", vec![".c1"; 2], vec![])]
+// The chamfers running across the via's sides pass under 0.01 from its corners: V(n).c
+// as well (closest approach).
+#[case::vn_c1_h4(".c1.h4", [vec![".c1"; 2], vec![".c"; 2]].concat(), vec![])]
 // Tile lines: 0.045 endcaps ending on x = 20/21/40, vias across 20 and 42; 0.05 on 20 clean.
 #[case::vn_c1_h5(".c1.h5", vec![".c1"; 5], vec![])]
 // Fifty 0.045 endcaps, flat and as an array.
@@ -2195,9 +2207,9 @@ const DECK_TV1: &str = "topvia1";
 // same at the bottom-left corner; a cut 0.095·√2 ≥ 0.10 above the corner (0.095 euclidian)
 // and one exactly 0.10 above it are clean by the settled projection reading (report,
 // finding 2).
-// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
-// reading (the gatpoly report's finding 11); the case carries the engine's answer.
-#[case::tv1_c_h2("topvia1/TV1.c.h2.gds.gz", "TOP", vec![], vec![])]
+// The 45° walls crossing over the via's wall fire, and so do the two controls cut under
+// the value from the corner: the margin is the closest approach (euclidian, decided 2026-09-21).
+#[case::tv1_c_h2("topvia1/TV1.c.h2.gds.gz", "TOP", vec!["TV1.c"; 6], vec![])]
 // The metal as abutting boxes or a 4 × 4 grid, the via as two halves or two overlapping
 // boxes at 0.10: clean; overlapping metal boxes whose union is 0.095 short, the metal drawn
 // twice, a via on a frame's wall 0.095 from the hole, a via in the hole, two via halves
@@ -2217,9 +2229,9 @@ const DECK_TV1: &str = "topvia1";
 #[case::tv1_c_h8("topvia1/TV1.c.h8.gds.gz", "TOP", vec!["TV1.c"; 3], vec!["TV1.a"])]
 // TV1.d: the same set with TopMetal1 at 0.42 / 0.415.
 #[case::tv1_d_h1("topvia1/TV1.d.h1.gds.gz", "TOP", vec!["TV1.d"; 10], vec![])]
-// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
-// reading (the gatpoly report's finding 11); the case carries the engine's answer.
-#[case::tv1_d_h2("topvia1/TV1.d.h2.gds.gz", "TOP", vec![], vec![])]
+// The 45° walls crossing over the via's wall fire, and so do the two controls cut under
+// the value from the corner: the margin is the closest approach (euclidian, decided 2026-09-21).
+#[case::tv1_d_h2("topvia1/TV1.d.h2.gds.gz", "TOP", vec!["TV1.d"; 6], vec![])]
 #[case::tv1_d_h3("topvia1/TV1.d.h3.gds.gz", "TOP", vec!["TV1.d"; 5], vec![])]
 #[case::tv1_d_h4("topvia1/TV1.d.h4.gds.gz", "TOP", vec!["TV1.d"; 7], vec![])]
 #[case::tv1_d_h5("topvia1/TV1.d.h5.gds.gz", "TOP", vec!["TV1.d"; 50], vec![])]
@@ -2293,9 +2305,9 @@ const DECK_TV2: &str = "topvia2";
 // same at the bottom-left corner; a cut 0.495·√2 ≥ 0.50 above the corner (0.495 euclidian)
 // and one exactly 0.50 above it are clean by the settled projection reading (report,
 // finding 2).
-// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
-// reading (the gatpoly report's finding 11); the case carries the engine's answer.
-#[case::tv2_c_h2("topvia2/TV2.c.h2.gds.gz", "TOP", vec![], vec![])]
+// The 45° walls crossing over the via's wall fire, and so do the two controls cut under
+// the value from the corner: the margin is the closest approach (euclidian, decided 2026-09-21).
+#[case::tv2_c_h2("topvia2/TV2.c.h2.gds.gz", "TOP", vec!["TV2.c"; 6], vec![])]
 // The metal as abutting boxes or a 4 × 4 grid, the via as two halves or two overlapping
 // boxes at 0.50: clean; overlapping metal boxes whose union is 0.495 short, the metal drawn
 // twice, a via on a frame's wall 0.495 from the hole, a via in the hole, two via halves
@@ -2315,9 +2327,9 @@ const DECK_TV2: &str = "topvia2";
 #[case::tv2_c_h8("topvia2/TV2.c.h8.gds.gz", "TOP", vec!["TV2.c"; 3], vec!["TV2.a"])]
 // TV2.d: the same set with TopMetal2 at 0.50 / 0.495.
 #[case::tv2_d_h1("topvia2/TV2.d.h1.gds.gz", "TOP", vec!["TV2.d"; 10], vec![])]
-// OPEN: a 45° wall crossing over the via's wall is no pair under the parallel-walls
-// reading (the gatpoly report's finding 11); the case carries the engine's answer.
-#[case::tv2_d_h2("topvia2/TV2.d.h2.gds.gz", "TOP", vec![], vec![])]
+// The 45° walls crossing over the via's wall fire, and so do the two controls cut under
+// the value from the corner: the margin is the closest approach (euclidian, decided 2026-09-21).
+#[case::tv2_d_h2("topvia2/TV2.d.h2.gds.gz", "TOP", vec!["TV2.d"; 6], vec![])]
 #[case::tv2_d_h3("topvia2/TV2.d.h3.gds.gz", "TOP", vec!["TV2.d"; 5], vec![])]
 #[case::tv2_d_h4("topvia2/TV2.d.h4.gds.gz", "TOP", vec!["TV2.d"; 7], vec![])]
 #[case::tv2_d_h5("topvia2/TV2.d.h5.gds.gz", "TOP", vec!["TV2.d"; 50], vec![])]
@@ -2664,11 +2676,10 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_br_h2("topmetal2/TM2.bR.h2.gds.gz", "TOP", vec!["TM2.bR"; 1], vec!["TM2.c", "TM2.d"])]
 // Beside a 6 line 60 long: a neighbour whose facing wall steps 4/4.5 at mid-height, one
 // with a 0.005 nick (a TM2.b notch of 0.5 as well), one drawn as two abutting 30 µm boxes,
-// a 6 line drawn as two 3 strips beside a 2 line (report, finding 5).  The two-box
-// neighbour and the two-strip line fire; the run is read per facing wall pair, as
-// KLayout's projection, so the step and the nick each cut it to 30 (OPEN: the manual
-// speaks of lines).
-#[case::tm2_br_h3("topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+// a 6 line drawn as two 3 strips beside a 2 line: four runs of 60 under 5 (report, finding
+// 5) - the run is the joined stretch of every facing wall under the value, the manual's
+// "lines", where KLayout's per-edge projection sees two 30s at the step and the nick.
+#[case::tm2_br_h3("topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
 // Two 6-wide 45° strips 60 side by side at 3.999 and the figure's plate beside a 2 line at
 // 4 fire; 5.003, a T (run 2) and a strip crossing at 45° are clean.
 #[case::tm2_br_h4("topmetal2/TM2.bR.h4.gds.gz", "TOP", vec!["TM2.bR"; 2], vec!["TM2.c", "TM2.d"])]
@@ -2686,9 +2697,8 @@ const DECK_TM2: &str = "topmetal2";
 // 6 wide over 20 (far or near side) does not; a 300 µm pair and a pair at (1000, 1000).
 #[case::tm2_br_h10("topmetal2/TM2.bR.h10.gds.gz", "TOP", vec!["TM2.bR"; 3], vec!["TM2.c", "TM2.d"])]
 // h3's stepped, nicked and two-box neighbours again as 2 lines beside 6 lines (the pairing
-// KLayout's shielded check sees): the two-box neighbour fires, the step and the nick read
-// per wall pair (as h3), plus the nick's TM2.b notch.
-#[case::tm2_br_h11("topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+// KLayout's shielded check sees): three runs of 60 under 5, plus the nick's TM2.b notch.
+#[case::tm2_br_h11("topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
 fn test_topmetal2(
     #[case] gds: &str,
     #[case] topcell: &str,

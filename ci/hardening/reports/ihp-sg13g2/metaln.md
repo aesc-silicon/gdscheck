@@ -57,6 +57,10 @@ Open: 4 (the chamfer through the via's corner - the parallel-walls reading pairs
 with a corner touch; the gatpoly report's finding 11 is the same question), and 6 stays
 the PDK owner's call.
 
+## Decided (2026-09-21, PDK owner)
+
+4: the chamfer through the via's corner, and the one passing 0.0035 from it, fire - enclosure is the closest approach (`metric: euclidian`), decided 2026-09-21.
+
 ## Findings
 
 ### 1. Mn.c1 accepts any one side over 0.05; the manual's endcap is a pair of opposite sides (false negative)

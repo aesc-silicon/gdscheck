@@ -76,16 +76,20 @@ rules:
     check: min_enclosure
     layers: [NWell, ActivFillerInNWell]
     value: 1.00
+    params:
+      metric: euclidian
   - id: AFil.d
     check: min_space
-    layers: [Activ.filler, nBuLay]
+    layers: [Activ.filler, nBuLayDerived]
     value: 1.00
     params:
       abutting: report
   - id: AFil.d
     check: min_enclosure
-    layers: [nBuLay, ActivFillerInNBuLay]
+    layers: [nBuLayDerived, ActivFillerInNBuLay]
     value: 1.00
+    params:
+      metric: euclidian
   - id: AFil.e
     check: min_space
     layers: [Activ.filler, TRANS]
@@ -96,6 +100,8 @@ rules:
     check: min_enclosure
     layers: [TRANS, ActivFillerInTRANS]
     value: 1.00
+    params:
+      metric: euclidian
   - id: AFil.g
     check: min_density
     layers: [Activ, Activ.filler, Activ.mask]
@@ -136,7 +142,11 @@ rules:
     check: min_enclosure
     layers: [PWell.block, ActivFillerWithinPWellBlock]
     value: 1.50
+    params:
+      metric: euclidian
   - id: AFil.j
     check: min_enclosure
     layers: [nSDBlockAndSalBlock, ActivFillerInPWellBlock]
     value: 0.25
+    params:
+      metric: euclidian

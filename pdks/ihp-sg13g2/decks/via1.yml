@@ -22,10 +22,13 @@ rules:
     check: min_enclosure
     layers: [Metal1, Via1NoSealring]
     value: 0.01
+    params:
+      metric: euclidian
   - id: V1.c1
     check: min_enclosure
     layers: [Metal1, Via1NoSealring]
     value: 0.05
     params:
+      metric: euclidian
       sides: adjacent
       trigger: 0.05
