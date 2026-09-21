@@ -23,7 +23,7 @@ pub fn generate(pdk: &PdkConfig) {
     }
 
     write_gz(
-        "tests/data/ihp-sg13g2/forbidden.gds.gz",
+        "tests/data/ihp-sg13g2/forbidden/forbidden.gds.gz",
         library("TOP", elems),
     );
 }
