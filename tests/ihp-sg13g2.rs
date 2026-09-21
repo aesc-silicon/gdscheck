@@ -4072,7 +4072,14 @@ fn test_mim(
 const DECK_FORBIDDEN: &str = "forbidden";
 
 #[rstest]
-#[case("forbidden.gds.gz", "TOP", vec!["forbidden"; 11], vec![])]
+#[case("forbidden/forbidden.gds.gz", "TOP", vec!["forbidden"; 11], vec![])]
+// --- Hardening (ci/hardening/SPEC.md, gen/ihp_sg13g2/offgrid_hardening.rs): one report per
+// forbidden shape.  A BiWind across x = 20 and 40, one at (1000, 1000), a BiWind and a PEmWind
+// overlapping, a 0.005 NoDRC square.
+#[case("forbidden/forbidden.h1.gds.gz", "TOP", vec!["forbidden"; 5], vec![])]
+// Fifty LDMOS boxes, flat and as a GdsArrayRef.
+#[case("forbidden/forbidden.h2.gds.gz", "TOP", vec!["forbidden"; 50], vec![])]
+#[case("forbidden/forbidden.h3.gds.gz", "TOP", vec!["forbidden"; 50], vec![])]
 fn test_forbidden(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4179,6 +4186,30 @@ const OFFGRID_LAYERS: &[&str] = &[
     "Exchange3",
     "Exchange4",
 ];
+
+// Hardening (gen/ihp_sg13g2/offgrid_hardening.rs): one report per off-grid vertex, at every
+// tile size.  h1: edges 0.001, 0.003, 0.004 and 0.006 off (two vertices each), a box with all
+// four vertices off, boxes at -0.005 (clean) and -0.003 (four); h2: a diamond with one vertex
+// 0.002 off, a 45° strip whose far end is 0.003 off in y (two), on-grid 45° shapes clean;
+// h3: vertices 0.002 past x = 20, 0.002 short of 40, straddling 100 with the far edge off,
+// boxes at (1000.003, 1000) and (-1000, -1000.002) (four each), a box on x = 21 clean;
+// h4/h5: fifty boxes with an off-grid edge, flat and as a GdsArrayRef; h6: fifty on-grid
+// boxes placed by a GdsArrayRef of pitch 2.003 - every copy off but the origin and the
+// fifth column's first row (192).
+#[rstest]
+#[case::h1("h1", 16)]
+#[case::h2("h2", 3)]
+#[case::h3("h3", 14)]
+#[case::h4("h4", 100)]
+#[case::h5("h5", 100)]
+#[case::h6("h6", 192)]
+fn test_offgrid_hardening(#[case] name: &str, #[case] count: usize) {
+    let gds = format!("offgrid/Metal1.offgrid.{name}.gds.gz");
+    assert_eq!(
+        drc(PDK_IHP, DECK_OFFGRID, &gds, "TOP", &[]),
+        vec!["Metal1.offgrid"; count]
+    );
+}
 
 #[test]
 fn test_offgrid() {
