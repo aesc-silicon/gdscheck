@@ -2668,7 +2668,17 @@ pub fn regions_overlap(a: &Outline, b: &Outline) -> bool {
     {
         return true;
     }
-    if a.vertices().all(|p| b.contains_or_on(p)) || b.vertices().all(|p| a.contains_or_on(p)) {
+    // Every vertex inside or on: the shape lies within the other, or lies in a hole of
+    // it with every vertex on the hole's rim - a seal ring in the opening of the
+    // Passiv ring round it - which shares nothing.  A point inside the shape tells.
+    let within = |a: &Outline, b: &Outline| {
+        a.vertices().all(|p| b.contains_or_on(p)) && {
+            let (x, y) = crate::merge::inside_point(a.poly());
+            let p = (x.round() as i64, y.round() as i64);
+            b.strictly_contains(p) || !b.on_boundary(p) && b.contains_or_on(p)
+        }
+    };
+    if within(a, b) || within(b, a) {
         return true;
     }
     a.segs
