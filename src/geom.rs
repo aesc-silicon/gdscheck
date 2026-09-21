@@ -2925,37 +2925,83 @@ pub fn parallel_run(
     min_run: i64,
     zone: Option<Zone>,
 ) -> RunRead {
+    // Read along the walls of either region: a stepped wall is several walls, each
+    // sharing part of the run with the straight one opposite, and only the straight
+    // one sees the run whole.
+    match run_along(a, b, limit, wide, min_run, zone) {
+        RunRead::Applies => RunRead::Applies,
+        first => match run_along(b, a, limit, wide, min_run, zone) {
+            RunRead::Clean => first,
+            second => second,
+        },
+    }
+}
+
+/// The longest of the intervals once those that touch or overlap are joined.
+fn longest_joined(iv: &mut [(i128, i128)]) -> i128 {
+    iv.sort_unstable();
+    let mut longest = 0;
+    let mut cur: Option<(i128, i128)> = None;
+    for &(lo, hi) in iv.iter() {
+        match cur {
+            Some((clo, chi)) if lo <= chi => cur = Some((clo, chi.max(hi))),
+            _ => {
+                if let Some((clo, chi)) = cur {
+                    longest = longest.max(chi - clo);
+                }
+                cur = Some((lo, hi));
+            }
+        }
+    }
+    if let Some((clo, chi)) = cur {
+        longest = longest.max(chi - clo);
+    }
+    longest
+}
+
+/// [`parallel_run`] read along the walls of `a`: for each wall, the stretches every
+/// facing wall of `b` under the limit shares with it, joined where they touch - a
+/// neighbour whose facing wall steps or carries a nick is still one line running
+/// alongside - and the depth read over the joined run on either side.
+fn run_along(
+    a: &Outline,
+    b: &Outline,
+    limit: i64,
+    wide: i64,
+    min_run: i64,
+    zone: Option<Zone>,
+) -> RunRead {
     let mut cut = false;
     let (lim2, wide2, run2) = (
         (limit as i128) * (limit as i128),
         (wide as i128) * (wide as i128),
         (min_run as i128) * (min_run as i128),
     );
-    // Whether the wall runs deeper than `wide` for more than `min_run` within the
-    // stretch `[lo, hi]` it shares with the other: the stretches of its profile deeper
-    // than `wide` - nothing behind at all is as deep as it gets - joined where they
-    // touch, any of them longer than the run.
-    let deep_run = |profile: &DepthProfile, len2: i128, lo: i128, hi: i128| {
-        let mut run_from: Option<i128> = None;
-        let mut longest: i128 = 0;
-        for &(p0, p1, depth) in profile {
-            let (p0, p1) = (p0.max(lo), p1.min(hi));
-            let deep = match depth {
-                None => true,
-                Some(c) => c * c > wide2 * len2,
-            };
-            if p1 <= p0 || !deep {
-                run_from = None;
-                continue;
-            }
-            let start = *run_from.get_or_insert(p0);
-            longest = longest.max(p1 - start);
-        }
-        longest * longest > run2 * len2
+    // The stretches of a profile deeper than `wide` within `[lo, hi]`, in the
+    // profile's own units; nothing behind at all is as deep as it gets.
+    let deep_stretches = |profile: &DepthProfile, len2: i128, lo: i128, hi: i128| {
+        profile
+            .iter()
+            .filter_map(|&(p0, p1, depth)| {
+                let (p0, p1) = (p0.max(lo), p1.min(hi));
+                let deep = match depth {
+                    None => true,
+                    Some(c) => c * c > wide2 * len2,
+                };
+                (p1 > p0 && deep).then_some((p0, p1))
+            })
+            .collect::<Vec<_>>()
     };
     for (i, &(s0, s1)) in a.segs.iter().enumerate() {
         let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
         let len2 = d.0 * d.0 + d.1 * d.1;
+        if len2 == 0 {
+            continue;
+        }
+        let along_a = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
+        // Every facing wall of `b` under the limit: the stretch shared along this
+        // wall, and where it lies along that wall.
+        let mut shared: Vec<(i128, i128, usize, i128, i128)> = Vec::new();
         for (j, &(t0, t1)) in b.segs.iter().enumerate() {
             let e = ((t1.0 - t0.0) as i128, (t1.1 - t0.1) as i128);
             if d.0 * e.0 + d.1 * e.1 >= 0 || !parallel_i(d, e) {
@@ -2970,7 +3016,6 @@ pub fn parallel_run(
             // The stretch the two walls share, along this one in units of its squared
             // length, and within the zone: the copies are whole shapes, exact in the
             // zone alone, and a run past it is read by the tile that owns it.
-            let along_a = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
             let (ua0, ua1) = (along_a(t0), along_a(t1));
             let (mut lo_a, mut hi_a) = (ua0.min(ua1).max(0), ua0.max(ua1).min(len2));
             if hi_a <= lo_a {
@@ -2987,19 +3032,6 @@ pub fn parallel_run(
             if hi_a <= lo_a {
                 continue;
             }
-            let run = hi_a - lo_a;
-            if run * run <= run2 * len2 {
-                continue;
-            }
-            if wide == 0 {
-                return RunRead::Applies;
-            }
-            // The wide line must run alongside for the length within the stretch the
-            // two walls share, read on either wall's own profile.
-            let pa = a.depth_profile(i);
-            if deep_run(&pa, len2, lo_a, hi_a) {
-                return RunRead::Applies;
-            }
             let lenb2 = e.0 * e.0 + e.1 * e.1;
             let along_b = |p: (i64, i64)| (p.0 - t0.0) as i128 * e.0 + (p.1 - t0.1) as i128 * e.1;
             let (ub0, ub1) = (along_b(s0), along_b(s1));
@@ -3009,10 +3041,55 @@ pub fn parallel_run(
                 lo_b = lo_b.max(zl);
                 hi_b = hi_b.min(zh);
             }
-            let pb = b.depth_profile(j);
-            if hi_b > lo_b && deep_run(&pb, lenb2, lo_b, hi_b) {
-                return RunRead::Applies;
+            shared.push((lo_a, hi_a, j, lo_b, hi_b));
+        }
+        if shared.is_empty() {
+            continue;
+        }
+        // The run is the joined stretch, whichever walls of `b` make it up.
+        let mut runs: Vec<(i128, i128)> =
+            shared.iter().map(|&(lo, hi, _, _, _)| (lo, hi)).collect();
+        let run = longest_joined(&mut runs);
+        if run * run <= run2 * len2 {
+            continue;
+        }
+        if wide == 0 {
+            return RunRead::Applies;
+        }
+        // The wide line must run alongside for the length within the joined run: this
+        // wall's own depth over it, or the depth of the walls of `b` making it up,
+        // each read on its own profile and laid along this wall.
+        let (lo, hi) = (
+            shared.iter().map(|s| s.0).min().unwrap_or(0),
+            shared.iter().map(|s| s.1).max().unwrap_or(0),
+        );
+        let pa = a.depth_profile(i);
+        let mut deep_a = deep_stretches(&pa, len2, lo, hi);
+        if longest_joined(&mut deep_a) * longest_joined(&mut deep_a) > run2 * len2 {
+            return RunRead::Applies;
+        }
+        let mut deep_b: Vec<(i128, i128)> = Vec::new();
+        for &(lo_a, hi_a, j, lo_b, hi_b) in &shared {
+            if hi_b <= lo_b {
+                continue;
             }
+            let (t0, t1) = b.segs[j];
+            let e = ((t1.0 - t0.0) as i128, (t1.1 - t0.1) as i128);
+            let lenb2 = e.0 * e.0 + e.1 * e.1;
+            let ed = e.0 * d.0 + e.1 * d.1; // negative: the walls run opposite ways
+            let base = along_a(t0);
+            let pb = b.depth_profile(j);
+            for (q0, q1) in deep_stretches(&pb, lenb2, lo_b, hi_b) {
+                let (x, y) = (base + ed * q0 / lenb2, base + ed * q1 / lenb2);
+                let (x, y) = (x.min(y).max(lo_a), x.max(y).min(hi_a));
+                if y > x {
+                    deep_b.push((x, y));
+                }
+            }
+        }
+        let l = longest_joined(&mut deep_b);
+        if l * l > run2 * len2 {
+            return RunRead::Applies;
         }
     }
     if cut { RunRead::Cut } else { RunRead::Clean }
@@ -3061,6 +3138,8 @@ pub struct MarginPair {
     pub probe: (f64, f64),
     /// The inner wall the margin was read on.
     pub wall: Seg,
+    /// Read against an outer wall at an angle - a closest approach, not a facing run.
+    pub oblique: bool,
 }
 
 impl MarginPair {
@@ -3164,6 +3243,12 @@ pub fn margin_pairs(
                 if !euclidian {
                     continue;
                 }
+                // Walls that cross are no margin: the shape is not enclosed there at
+                // all, which `all_inside` says, or the rule reads a shape it does not
+                // expect enclosed (`interacting_only`).
+                if segs_cross_i((a0, a1), (b0, b1)) {
+                    continue;
+                }
                 let c = seg_seg_closest_sq(a0, a1, b0, b1);
                 if !under(c.num, c.den) {
                     continue;
@@ -3179,6 +3264,7 @@ pub fn margin_pairs(
                         edge: (c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1),
                         probe: (c.on_a.0 + nx * 2.0, c.on_a.1 + ny * 2.0),
                         wall: (a0, a1),
+                        oblique: true,
                     });
                     continue;
                 }
@@ -3196,6 +3282,7 @@ pub fn margin_pairs(
                     edge: (c.on_a.0, c.on_a.1, c.on_b.0, c.on_b.1),
                     probe: (c.on_a.0 + wx * (dist + 2.0), c.on_a.1 + wy * (dist + 2.0)),
                     wall: (a0, a1),
+                    oblique: true,
                 });
                 continue;
             }
@@ -3236,6 +3323,7 @@ pub fn margin_pairs(
                 edge: (p0.0, p0.1, p1.0, p1.1),
                 probe: (mid.0 + nx * (dist + 2.0), mid.1 + ny * (dist + 2.0)),
                 wall: (a0, a1),
+                oblique: false,
             });
         }
     }

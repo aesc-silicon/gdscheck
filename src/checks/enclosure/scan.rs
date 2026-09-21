@@ -555,6 +555,15 @@ pub fn run(
                 mx >= zone.0 as f64 && mx <= zone.2 as f64 && my >= zone.1 as f64 && my <= zone.3 as f64
             };
             let real_wall = |seg: Seg| exact || real_wall(seg);
+            // A touch read at the core's edge is the piece's cut, not the shape's
+            // boundary: the wall carries on into the next tile, which reads it whole.
+            let at_cut = |(x1, y1, _, _): (f64, f64, f64, f64)| {
+                !exact
+                    && (x1 == core.x0 as f64
+                        || x1 == core.x1 as f64
+                        || y1 == core.y0 as f64
+                        || y1 == core.y1 as f64)
+            };
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
             // The line-end caps of each enclosing shape of the tile, found once: a
@@ -671,7 +680,9 @@ pub fn run(
                     let mut here: Walls = Walls::new();
                     let mut worst: Option<Read> = None;
                     for p in pairs {
-                        if cuttable && (!in_zone(p.edge) || !real_wall(p.wall)) {
+                        if cuttable
+                            && (!in_zone(p.edge) || !real_wall(p.wall) || (p.oblique && p.num == 0 && at_cut(p.edge)))
+                        {
                             continue;
                         }
                         if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
@@ -862,7 +873,14 @@ pub fn run(
                             let (pairs, _) =
                                 margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
                             for p in pairs {
-                                if cuttable && (!in_zone(p.edge) || !real_wall(p.wall)) {
+                                if cuttable
+                            && (!in_zone(p.edge) || !real_wall(p.wall) || (p.oblique && p.num == 0 && at_cut(p.edge)))
+                        {
+                                    continue;
+                                }
+                                // A touch at an angle is a corner of the crossing
+                                // boundary itself, not a margin of the part inside.
+                                if p.oblique && p.num == 0 {
                                     continue;
                                 }
                                 let (x1, y1, x2, y2) = p.edge;
