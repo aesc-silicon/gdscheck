@@ -24,6 +24,7 @@ mod nsdblock;
 mod nwell;
 mod offgrid;
 mod pad;
+mod pad_hardening;
 mod passiv;
 mod pin;
 mod psd;
@@ -67,6 +68,7 @@ pub fn generate(pdk: &PdkConfig) {
     pin::generate(pdk);
     lbe::generate(pdk);
     pad::generate(pdk);
+    pad_hardening::generate(pdk);
     contbar::generate(pdk);
     salblock::generate(pdk);
     nsdblock::generate(pdk);
