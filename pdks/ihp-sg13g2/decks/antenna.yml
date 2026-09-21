@@ -83,3 +83,7 @@ rules:
     check: forbidden
     layers: [AntIError]
     value: 0.0
+  - id: Ant.i
+    check: forbidden
+    layers: [AntIErrorDrawn]
+    value: 0.0

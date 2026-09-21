@@ -15,25 +15,21 @@ rules:
     value: 20.00
   - id: LU.c
     check: max_space
-    layers: [NWellTieAbuttedNoCont, Cont]
+    layers: [NWellTieAbuttedNoCont, ContOnPsdActivInNWell]
     value: 6.00
     layer_params:
       within: ActivNotGat
   - id: LU.c1
     check: max_space
-    layers: [SubstrateTieAbuttedNoCont, Cont]
+    layers: [SubstrateTieAbuttedNoCont, ContOnNsdActivInPWell]
     value: 6.00
     layer_params:
       within: ActivNotGat
   - id: LU.d
     check: max_space
-    layers: [NWellTieStandalone, Cont]
+    layers: [NWellTieStandalone, ContOnNWellTie]
     value: 6.00
-    layer_params:
-      within: ActivNotGat
   - id: LU.d1
     check: max_space
-    layers: [SubstrateTieStandalone, Cont]
+    layers: [SubstrateTieStandalone, ContOnSubstrateTie]
     value: 6.00
-    layer_params:
-      within: ActivNotGat

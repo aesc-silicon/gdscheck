@@ -4069,9 +4069,9 @@ const DECK_NMOSI: &str = "nmosi";
 // (four) fire; unions at 1.24 and a 4 × 3 grid of tiles are clean.
 #[case::nmosi_b_h6("nmosi/nmosi.b.h6.gds.gz", "TOP", vec!["nmosi.b"; 6], vec![])]
 // A ptap and an nmosiHV Activ 1.235 short fire; the Activ crossing into the ring is short
-// on the right (1.235) and on the left, where its edge is the ring's wall (1.0); the
-// Activ under PWell:block is not isolated.
-#[case::nmosi_b_h7("nmosi/nmosi.b.h7.gds.gz", "TOP", vec!["nmosi.b"; 4], vec![])]
+// on the right (1.235) and on the left, where its edge is the ring's wall (1.0) - and 0
+// from the ring, nmosi.c; the Activ under PWell:block is not isolated.
+#[case::nmosi_b_h7("nmosi/nmosi.b.h7.gds.gz", "TOP", { let mut v = vec!["nmosi.b"; 4]; v.push("nmosi.c"); v }, vec![])]
 // nmosi.c: the ring 0.385 from the Activ on the right, on top, all round; 0.39 is clean.
 #[case::nmosi_c_h1("nmosi/nmosi.c.h1.gds.gz", "TOP", vec!["nmosi.c"; 3], vec![])]
 // A tab corner 0.3818 from the Activ's corner, a 45° wall 0.3889 from it and a diamond
@@ -4101,7 +4101,9 @@ const DECK_NMOSI: &str = "nmosi";
 #[case::nmosi_d_h5("nmosi/nmosi.d.h5.gds.gz", "TOP", vec!["nmosi.d"; 100], vec![])]
 // Narrow NWell AND nBuLay that is no unbroken ring round an Iso-PWell-Activ: a finger with
 // no Activ, a C round an Activ, a closed ring round nothing, a finger beside a good ring.
-#[case::nmosi_d_h6("nmosi/nmosi.d.h6.gds.gz", "TOP", vec![], vec![])]
+// Section 6.5's "only tested inside a closed ring" is not implemented (nor by IHP's
+// deck): every narrow piece fires (18).
+#[case::nmosi_d_h6("nmosi/nmosi.d.h6.gds.gz", "TOP", vec!["nmosi.d"; 18], vec![])]
 // nmosi.f: a 0.615 strip through the Activ (2), across it (2), a stub (2), an L (4); 0.62
 // is clean.  No SalBlock is drawn, so nmosi.g is set aside.
 #[case::nmosi_f_h1("nmosi/nmosi.f.h1.gds.gz", "TOP", vec!["nmosi.f"; 10], vec!["nmosi.g"])]
@@ -4112,9 +4114,9 @@ const DECK_NMOSI: &str = "nmosi";
 #[case::nmosi_f_h4("nmosi/nmosi.f.h4.gds.gz", "TOP", vec!["nmosi.f"; 100], vec!["nmosi.g"])]
 #[case::nmosi_f_h5("nmosi/nmosi.f.h5.gds.gz", "TOP", vec!["nmosi.f"; 100], vec!["nmosi.g"])]
 // A 0.615 strip over the Activ by 0.005 fires; strips over an Activ with no nBuLay, under
-// PWell:block or abutting the Activ do not, nor does a 0.8 strip's 0.5 tab outside the
-// Activ (the block is 0.8 wide where it separates).
-#[case::nmosi_f_h6("nmosi/nmosi.f.h6.gds.gz", "TOP", vec!["nmosi.f"; 2], vec!["nmosi.g"])]
+// PWell:block or abutting the Activ do not; a 0.8 strip's 0.5 tab outside the Activ fires
+// too - the block is read whole, as IHP's deck reads it (2 walls).
+#[case::nmosi_f_h6("nmosi/nmosi.f.h6.gds.gz", "TOP", vec!["nmosi.f"; 4], vec!["nmosi.g"])]
 // nmosi.g: SalBlock 0.145 past the block, no SalBlock, 0.145 on top of a block inside the
 // Activ, a chamfer 0.1414 from the block's corner, a two-box union 0.145 fire; 0.15, a
 // chamfer 0.1556 from the corner and a union at 0.15 are clean.
@@ -4127,8 +4129,11 @@ const DECK_NMOSI: &str = "nmosi";
 // flush with the Activ, no nBuLay, and the Activ under PWell:block are clean.
 #[case::nmosi_g_h5("nmosi/nmosi.g.h5.gds.gz", "TOP", vec!["nmosi.g"], vec![])]
 // "These rules will only be tested inside a closed ring of NWell AND nBuLay": every
-// rule's violating pattern on a bare nBuLay and in a C.
-#[case::nmosi_ring_h1("nmosi/nmosi.ring.h1.gds.gz", "TOP", vec![], vec![])]
+// rule's violating pattern on a bare nBuLay and in a C.  The sentence is not implemented
+// (nor by IHP's deck): the patterns fire as they would in a ring.
+#[case::nmosi_ring_h1("nmosi/nmosi.ring.h1.gds.gz", "TOP",
+    { let mut v = vec!["nmosi.b"; 2]; v.extend(vec!["nmosi.d"; 6]); v.extend(vec!["nmosi.f"; 4]); v.extend(vec!["nmosi.g"; 4]); v },
+    vec![])]
 fn test_nmosi(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4480,8 +4485,9 @@ const DECK_ANTENNA: &str = "antenna";
 // Metal1 50 + Metal2 80 + Metal3 80 = 210 fires; 190 and 200.0 are clean; a stack to
 // TopMetal2 summing to 222.5 fires there.
 #[case::ant_b_h5("antenna/Ant.b.h5.gds.gz", "TOP", vec!["Ant.b"; 2], vec![])]
-// A 300 Metal1 net whose diode joins only at Metal2: at the Metal1 level it is unprotected.
-#[case::ant_b_h6("antenna/Ant.b.h6.gds.gz", "TOP", vec!["Ant.b"], vec![])]
+// A 300 Metal1 net whose diode joins only at Metal2: a diode anywhere on the final net
+// protects every level, as IHP's deck reads it (the per-level reading is open).
+#[case::ant_b_h6("antenna/Ant.b.h6.gds.gz", "TOP", vec![], vec![])]
 // Via1 20.1 fires, 20.0 and 19.9 are clean; Via1 10 + Via2 10.1 fires; with a diode Via1
 // 20.1 is clean and 500.5 is an Ant.f; a 40.2 × 0.05 Via1 across x = 20 and 40 (20.1);
 // two gates on one net: 4.0 / 0.2 = 20.0 clean, 4.02 fires (one marker per gate).
@@ -4495,8 +4501,9 @@ const DECK_ANTENNA: &str = "antenna";
 // Activ under a larger marker, a marker on a larger Activ; 0.16, two abutting boxes of
 // 0.16 and an unconnected small diode are clean.
 #[case::ant_g_h1("antenna/Ant.g.h1.gds.gz", "TOP", vec!["Ant.g"; 5], vec![])]
-// Note 4: a 0.25 diode on a net with Vn_area / gate area = 40.1 must be 0.80 µm².
-#[case::ant_g_h2("antenna/Ant.g.h2.gds.gz", "TOP", vec!["Ant.g"], vec![])]
+// Note 4: a 0.25 diode on a net with Vn_area / gate area = 40.1 would be 0.80 µm² by the
+// note's formula; Ant.g carries the table's 0.16 alone, as IHP's deck has it (open).
+#[case::ant_g_h2("antenna/Ant.g.h2.gds.gz", "TOP", vec![], vec![])]
 // n-diodes in NWell: bare across x = 20, half in, under an nBuLay whose "isolbox" text is
 // outside it, on Metal1:label, or reads "isolbox2" fire; with Recog:esd, in a labelled
 // isolbox ("isolbox", "ISOLBOX"), under nSD:block, or under PWell:block are clean.

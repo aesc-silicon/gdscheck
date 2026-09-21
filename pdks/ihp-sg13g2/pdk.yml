@@ -741,6 +741,14 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [Activ, GatPoly]
+  - name: ContOnPsdActivInNWell
+    op: intersection
+    mode: lazy
+    layers: [Cont, PsdActivInNWell]
+  - name: ContOnNsdActivInPWell
+    op: intersection
+    mode: lazy
+    layers: [Cont, NsdActivInPWell]
   - name: NWellTieAbuttedNoCont
     op: not_overlapping
     mode: lazy
@@ -1099,24 +1107,24 @@ virtual_layers:
     op: with_holes
     mode: lazy
     layers: [NWell]
+  # nmosi.c: the ring, and an NWell island lying in a ring's hole - inside the closed
+  # ring, where section 6.5's rules apply; a plain NWell with no ring is not tested.
+  - name: NWellRingHoles
+    op: holes
+    mode: lazy
+    layers: [NWellRing]
+  - name: NWellInRingHole
+    op: inside
+    mode: lazy
+    layers: [NWell, NWellRingHoles]
+  - name: NWellNmosi
+    op: union
+    mode: lazy
+    layers: [NWellRing, NWellInRingHole]
   - name: SalBlockIso
     op: overlapping
     mode: lazy
     layers: [SalBlock, IsoPWellAct]
-  - name: NSDBlockIsoGrown
-    op: grow
-    slack: 0.005
-    mode: lazy
-    radius: 0.145
-    layers: [nSDBlockIso]
-  - name: NSDBlockUncov
-    op: difference
-    mode: lazy
-    layers: [NSDBlockIsoGrown, SalBlockIso]
-  - name: NmosiGBad
-    op: intersection
-    mode: lazy
-    layers: [NSDBlockUncov, Activ]
 
   - name: ActivFillerInPWellBlock
     op: intersection
@@ -1434,6 +1442,11 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [AntDpDiode, Recog.esd, NWell, PWell.block]
+  # Section 4.2: PWell is also PWell:drawing, wherever it is drawn - in an NWell too.
+  - name: AntIErrorDrawn
+    op: intersection
+    mode: lazy
+    layers: [AntDpDiode, PWell]
 
   - name: NActivCon
     op: difference
