@@ -19,15 +19,7 @@ and measures the margin as a facing-edge-pair scan: each inner edge is paired wi
 parallel outer edges that have positive projected overlap onto it (KLayout's
 ``projection`` metric, not a raw closest-point distance), and the worst (smallest) margin
 among those pairs is the shape's measured enclosure. A shape not contained by any
-enclosing region is itself a violation ("not enclosed at all") unless ``over`` (a ``layer_params`` entry)
-   Optional. Only a pair whose margin lies over that layer counts - read just outside
-   the inner wall, so a wall flush with the layer's own edge has no margin to read -
-   KLayout's ``.ext_and(layer)`` on a margin read. IHP's ``TGO.c`` reads the gate to the thick
-   oxide's edge where that edge crosses the Activ (``over: Activ``); the oxide's edge
-   past the Activ's end is ``TGO.a``'s, and an Activ ending inside the oxide has no
-   oxide edge over it at all.
-
-``interacting_only``
+enclosing region is itself a violation ("not enclosed at all") unless ``interacting_only``
 says otherwise.
 
 The measurement is exact on the grid: the coordinates are integers, so a margin between
@@ -108,6 +100,14 @@ Parameters
    edges that project onto it; ``euclidian`` reads the closest approach, which is
    KLayout's own default. The two agree on orthogonal geometry and part company at any
    corner that is not square.
+
+``over`` (a ``layer_params`` entry)
+   Optional. Only a pair whose margin lies over that layer counts - read just outside
+   the inner wall, so a wall flush with the layer's own edge has no margin to read -
+   KLayout's ``.ext_and(layer)`` on a margin read. IHP's ``TGO.c`` reads the gate to the
+   thick oxide's edge where that edge crosses the Activ (``over: Activ``); the oxide's
+   edge past the Activ's end is ``TGO.a``'s, and an Activ ending inside the oxide has no
+   oxide edge over it at all.
 
 ``trigger``
    With ``sides: adjacent``: the margin below which a side starts asking something of

@@ -425,7 +425,7 @@ pub fn run(
     }
     let rid = rule.id.as_str();
     let mut found: Vec<(Box, f64)> = worst.into_values().collect();
-    found.sort_by(|a, b| a.0.cmp(&b.0));
+    found.sort_by_key(|a| a.0);
     found
         .into_iter()
         .map(|(window, density)| {
