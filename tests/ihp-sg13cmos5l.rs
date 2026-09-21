@@ -31,62 +31,58 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
     ids
 }
 
-/// Decks shared with SG13G2 (the same files).  Excluded because they genuinely differ:
-/// forbidden, pad, passiv, topvia1, antenna.
-const SHARED_DECKS: &[&str] = &[
-    "offgrid",
-    "pin",
-    "lbe",
-    "activ",
-    "tgo",
-    "gatpoly",
-    "extblock",
-    "cont",
-    "contbar",
-    "salblock",
-    "nsdblock",
-    "psd",
-    "resistor",
-    "nwell",
-    "pwellblock",
-    "metal1",
-    "metal2",
-    "metal3",
-    "metal4",
-    "via1",
-    "via2",
-    "via3",
-    "topmetal1",
-    "sealring",
-    "slit",
-    "lu",
-];
-
-/// Run every SG13G2 fixture of every shared deck under both PDKs and require
-/// identical violation lists.
-#[test]
-fn parity_with_sg13g2_on_shared_decks() {
-    let mut checked = 0;
-    for deck in SHARED_DECKS {
-        let dir = format!("{G2_DATA}/{deck}");
-        let mut entries: Vec<_> = std::fs::read_dir(&dir)
-            .unwrap_or_else(|e| panic!("fixture dir {dir}: {e}"))
-            .map(|e| e.unwrap().path())
-            .filter(|p| p.to_string_lossy().ends_with(".gds.gz"))
-            .collect();
-        entries.sort();
-        for path in entries {
-            let path = path.to_string_lossy();
-            let g2 = drc(G2, &path, deck, &[]);
-            let c5l = drc(C5L, &path, deck, &[]);
-            assert_eq!(g2, c5l, "deck '{deck}', fixture '{path}'");
-            checked += 1;
-        }
+/// Run every SG13G2 fixture of a shared deck (the same files under both PDKs; the
+/// decks that genuinely differ - forbidden, pad, passiv, topvia1, antenna - have their
+/// own fixtures) under both PDKs and require identical violation lists.  One test per
+/// deck, so the harness runs the decks side by side:
+/// the hardening rounds put 700 fixtures on the shared decks, and one test walking
+/// them all twice ran past a minute on the CI runner at the 7 µm tile.
+#[rstest]
+fn parity_with_sg13g2_on_shared_decks(
+    #[values(
+        "offgrid",
+        "pin",
+        "lbe",
+        "activ",
+        "tgo",
+        "gatpoly",
+        "extblock",
+        "cont",
+        "contbar",
+        "salblock",
+        "nsdblock",
+        "psd",
+        "resistor",
+        "nwell",
+        "pwellblock",
+        "metal1",
+        "metal2",
+        "metal3",
+        "metal4",
+        "via1",
+        "via2",
+        "via3",
+        "topmetal1",
+        "sealring",
+        "slit",
+        "lu"
+    )]
+    deck: &str,
+) {
+    let dir = format!("{G2_DATA}/{deck}");
+    let mut entries: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("fixture dir {dir}: {e}"))
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.to_string_lossy().ends_with(".gds.gz"))
+        .collect();
+    entries.sort();
+    assert!(!entries.is_empty(), "no fixtures in {dir} — walker broken?");
+    for path in entries {
+        let path = path.to_string_lossy();
+        let g2 = drc(G2, &path, deck, &[]);
+        let c5l = drc(C5L, &path, deck, &[]);
+        assert_eq!(g2, c5l, "deck '{deck}', fixture '{path}'");
     }
-    assert!(
-        checked > 100,
-        "only {checked} fixtures checked — walker broken?"
-    );
 }
 
 /// Same-net NW.b1 regression, on the shared SG13G2 fixture (the parity test above only
