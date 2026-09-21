@@ -40,6 +40,40 @@ antenna polygon, two per net.
 Test status on the engine as of this report: 13 of the 51 cases fail, all on the
 findings below (nmosi: 5 of 32; pin: 0 of 6; antenna: 8 of 13).
 
+## Resolution (2026-09-21)
+
+Fixed, engine: 1 (a ratio at the value meets the maximum, as every rule of the manual
+is met at its value: the six ratio rules read `>` alike, a hair past the value since
+20.0 / 0.1 in floating point is not always 200), 2 (a diode of the size the diode rule
+asks for protects - `diode_area`, 0.16 by default, read `>=`), 9 (`over` reads just
+outside the inner wall, where the margin lies, and a closest approach at a corner just
+past the corner the way it was read; a touch at a corner has no margin to lie anywhere
+and the wall along the touching boundary is read on its own - so an nSD:block flush
+with the Activ wants no SalBlock past it there).
+
+Fixed, deck: 5 (a second Ant.i entry on the p-diode under drawn PWell, section 4.2's
+PWell wherever it is drawn), 7 and 8 (nmosi.c reads `NWellNmosi` - the ring, and an
+NWell island lying in a ring's hole, inside the closed ring where the section's rules
+apply; a plain NWell with no ring stays untested - with `abutting: report`: the Activ
+running into the ring is 0 from it), 9 (nmosi.g is a `min_enclosure` of the nSD:block
+by the SalBlock, 0.15, `metric: euclidian`, read `over: Activ`: the chamfer 0.1556 from
+the block's corner is clean, 0.1414 fires, and a block with no SalBlock at all is
+enclosed by nothing).
+
+Kept: 10 (the block is read whole, as IHP's deck reads it: the 0.5 tab outside the
+Activ fires, 2 walls).
+
+Open, the owner's call (the cases carry the engine's reading, which is IHP's): 3 (a
+diode anywhere on the final net protects every level; the per-level reading of figure
+7.1 would count it from the level it joins at), 4 (Ant.g carries the table's 0.16
+alone; note 4's PDarea = 0.02 x Vn_area / gate area is in neither tool), 6 (section
+6.5's "only tested inside a closed ring of NWell AND nBuLay" is not implemented, nor by
+IHP's deck: the patterns on a bare nBuLay and in a C fire as they would in a ring).
+
+Decided cases: `nmosi_b_h7` + nmosi.c (the crossing Activ, finding 8), `nmosi_f_h6` 4,
+`nmosi_d_h6` 18 and `nmosi_ring_h1` 2/6/4/4 (finding 6), `ant_b_h6` and `ant_g_h2`
+clean (findings 3 and 4).
+
 ## Findings
 
 ### 1. The antenna ratios fire at exactly the value (false positive), and not all of them

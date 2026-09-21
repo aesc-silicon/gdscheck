@@ -48,8 +48,15 @@ part reported, as the case has it: `Metal1NoSealring` is the geometric differenc
 the via layers.  Dropping whole regions overlapping the seal (the DigiBnd reading, and
 KLayout's `outside` for M1.c1/M1.d) was tried and costs a stitch of every region with a
 piece in a border tile - the power net of a whole die - per metal rule: 100 s on the
-4 mm² design.  OPEN for the PDK owner whether a crossing shape is "within EdgeSeal".
+4 mm² design.
 Note G (a 0.045 endcap on a line wider than the Cont) stays as both tools read it.
+
+## Decided (2026-09-21, PDK owner)
+
+A crossing shape is cut at the marker's edge and its outside part read: the seal ring
+is isolated from the chip, its own via rings would fail the standard rules anyway, and
+the geometric difference is all the waiver needs.  Note G stays as it is: no :mask is
+drawn, and an endcap on a line wider than the Cont is neither tool's reading.
 
 ## Findings
 

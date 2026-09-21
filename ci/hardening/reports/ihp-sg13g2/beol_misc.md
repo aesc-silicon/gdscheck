@@ -89,9 +89,11 @@ less the marker, `abutting: report` - the bar running into the wall abuts the se
 Activ and pSD where the marker cuts it, two reports as (g) has two), 9 and 12 (a
 `forbidden` `op: overlap` entry beside every Slt.h1-h4 and LBE.e space entry: a via in
 a slit, a Passiv or dfpad over the LBE), 16 (LU.c/c1 read the abutted tie with no Cont
-of its own - `NWellTieAbuttedNoCont`, `SubstrateTieAbuttedNoCont` - from any Cont
-within 6 along `ActivNotGat`; LU.d/d1 the tie standing alone, `NWellTieStandalone` /
-`SubstrateTieStandalone`, the N+ (P+) on an Activ no gate touches; a tie 6.005 past its
+of its own (`NWellTieAbuttedNoCont`, `SubstrateTieAbuttedNoCont` - from the Conts on the
+abutting tap within 6 along `ActivNotGat`; LU.d/d1 the tie standing alone,
+`NWellTieStandalone` / `SubstrateTieStandalone`, the N+ (P+) on an Activ no gate
+touches, from the Conts on the ties of its well, squarely - confined to the Activ it
+cost 25 s on a 4 mm² design; a tie 6.005 past its
 Cont at both ends is two parts out of reach and two markers, `part` scope, as KLayout
 has two polygons).
 
