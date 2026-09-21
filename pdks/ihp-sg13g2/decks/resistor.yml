@@ -11,6 +11,8 @@ rules:
     check: min_space
     layers: [RES, Cont]
     value: 0.12
+    params:
+      abutting: report
   - id: Rsil.c
     check: forbidden
     layers: [RsilResProtrusionNoCont]
@@ -19,13 +21,14 @@ rules:
     check: min_space
     layers: [GPRsilExtended, pSD]
     value: 0.18
+    params:
+      abutting: report
   - id: Rsil.e
     check: min_enclosure
     layers: [EXTBlock, GPRsilExtended]
     value: 0.18
     params:
       metric: euclidian
-      interacting_only: 1
   - id: Rsil.f
     check: min_width
     layers: [RES]
@@ -37,15 +40,16 @@ rules:
     value: 0.50
   - id: Rppd.b
     check: min_enclosure
-    layers: [pSD, RppdAll]
+    layers: [pSD, GPRppdExtended]
     value: 0.18
     params:
       metric: euclidian
-      interacting_only: 1
   - id: Rppd.c
     check: min_space
     layers: [RppdCont, SalBlockRppd]
     value: 0.20
+    params:
+      abutting: report
   - id: Rppd.c
     check: forbidden
     layers: [RppdContTooFar]
@@ -56,7 +60,6 @@ rules:
     value: 0.18
     params:
       metric: euclidian
-      interacting_only: 1
   - id: Rppd.e
     check: min_width
     layers: [SalBlockRppd]
@@ -70,17 +73,22 @@ rules:
     check: forbidden
     layers: [NsdMismatchAtRhigh]
     value: 0.0
+  - id: Rhi.b
+    check: forbidden
+    layers: [PsdMismatchAtRhigh]
+    value: 0.0
   - id: Rhi.c
     check: min_enclosure
     layers: [pSDnSD, GPRhighExtended]
     value: 0.18
     params:
       metric: euclidian
-      interacting_only: 1
   - id: Rhi.d
     check: min_space
     layers: [RhighCont, SalBlockRhigh]
     value: 0.20
+    params:
+      abutting: report
   - id: Rhi.d
     check: forbidden
     layers: [RhighContTooFar]
@@ -91,7 +99,6 @@ rules:
     value: 0.18
     params:
       metric: euclidian
-      interacting_only: 1
   - id: Rhi.f
     check: min_width
     layers: [SalBlockRhigh]

@@ -35,6 +35,33 @@ Test status on the engine as of this report: 18 of the 77 new cases fail, all on
 findings below; the other 59 pass.  No count moved with the tile size except in
 finding 4, and every flat/array pair agreed.
 
+## Resolution (2026-09-21)
+
+Fixed, engine: 4 (a selection layer's copies are rebroadcast to the halo the layer is
+built at - it was rebroadcast to the halo the *running* rule had raised for it, none
+when the layer was first built as a source of another (Rsil.c's), so the tile past a
+poly ending on a tile line had no copy of it and Rsil.d lost the pair; the fix reaches
+every selection, region-filter and holes layer).
+
+Fixed, deck: 2 (`abutting: report` on Rsil.b, Rsil.d, Rppd.c, Rhi.d), 3 (the enclosure
+rules Rsil.e, Rppd.d, Rhi.e, Rppd.b, Rhi.c read the resistor's whole poly as a
+contained shape: a head running out of the layer, a layer over the body only, or no
+EXTBlock at all is "not enclosed", once per shape; Rsil = RES + GatPoly, the EXTBlock
+no longer part of the recognition), 5 (Rppd.b on `GPRppdExtended`, the whole poly), 7
+(Rhi.b compares the resistor's whole pSD and nSD shapes: `RhighNsd` less pSD and
+`RhighPsd` less nSD, so a pSD past the nSD anywhere along the resistor fires; the
+half-covered Rhigh's Rhi.d artefact is gone with `SalBlockRhigh`/`SalBlockRppd` read as
+the whole SalBlock of the resistor, which also settles the length rules' extra markers).
+
+Kept, cases flipped: 6 (length and width read the same two dimensions, as both tools:
+a second id, never a miss) and the bare nSD:drawing of 7 (note 1's letter against the
+N+ ties every design draws with nSD; KLayout does not flag it either - OPEN).
+
+Open: 1 (the manual's Rsil.c is the RES stopping short of the poly's *long* edge, which
+wants the resistor's length direction - the heads run out of the RES at both ends by
+construction, so neither an enclosure nor a protrusion tells the long side from the
+ends without it; the deck keeps IHP's reading, RES outside the poly and under no Cont).
+
 ## Findings
 
 ### 1. Rsil.c reads "RES extension over GatPoly" backwards: a RES past the poly's edge fires, a RES short of it does not
