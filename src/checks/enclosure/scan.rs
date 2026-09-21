@@ -1147,6 +1147,56 @@ pub fn run(
     }
     let mut regions: Vec<usize> = by_region.keys().copied().collect();
     regions.sort_unstable();
+    // A wall is read as its pieces, one per tile, and a piece's ends are where the
+    // tile cut it: the runs join by the walls of the region put together, so the
+    // corner where a wall meets the next is the same point in every piece's reading
+    // of it - a ring's bottom wall, cut 0.095 short of its corner by a tile line, met
+    // its right wall in the piece the line left clean, and the two were two runs at
+    // one tile size and one at another.  A wall not on any of the whole region's -
+    // a corner read as a wall of no length - keeps its own.
+    let whole_walls: HashMap<usize, Vec<Seg>> = {
+        let mut pieces: HashMap<usize, Vec<&MergedPoly>> = HashMap::new();
+        for (k, ps) in &per_tile {
+            for &(i, rid) in ps {
+                if by_region
+                    .get(&rid)
+                    .is_some_and(|rs| rs.iter().any(|r| r.1.is_some()))
+                {
+                    pieces.entry(rid).or_default().push(&map_b[k][i]);
+                }
+            }
+        }
+        pieces
+            .into_par_iter()
+            .map(|(rid, ps)| {
+                let owned: Vec<MergedPoly> = ps.into_iter().cloned().collect();
+                let unioned = crate::merge::union_pieces(owned);
+                let mut segs = Vec::new();
+                for m in &unioned {
+                    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+                        let n = ring.len();
+                        for i in 0..n {
+                            let (a, b) = (ring[i], ring[(i + 1) % n]);
+                            segs.push(((a.x as i64, a.y as i64), (b.x as i64, b.y as i64)));
+                        }
+                    }
+                }
+                (rid, segs)
+            })
+            .collect()
+    };
+    let on_whole = |region: usize, w: Seg| -> Seg {
+        let Some(segs) = whole_walls.get(&region) else {
+            return w;
+        };
+        if w.0 == w.1 {
+            return w;
+        }
+        segs.iter()
+            .copied()
+            .find(|&s| collinear(s, w) && within_seg(s, w.0) && within_seg(s, w.1))
+            .unwrap_or(w)
+    };
     let mut out = Vec::new();
     for region in regions {
         let reports = by_region.remove(&region).expect("keyed");
@@ -1195,7 +1245,7 @@ pub fn run(
         let mut uf = crate::merge::UnionFind::new(walled.len());
         let mut at: HashMap<(i64, i64), usize> = HashMap::new();
         for (i, r) in walled.iter().enumerate() {
-            let (p, q) = r.1.expect("walled");
+            let (p, q) = on_whole(region, r.1.expect("walled"));
             // A margin read along the wall is the wall's, and joins the runs at both
             // its ends; a closest approach read at an angle is the corner's alone - it
             // joins the run at that corner and does not carry the wall it was read on
@@ -1276,6 +1326,11 @@ pub fn run(
 }
 
 /// Whether two walls lie on one line.
+/// Whether `p`, on the line of `s`, lies within `s`.
+fn within_seg((a, b): Seg, p: (i64, i64)) -> bool {
+    p.0 >= a.0.min(b.0) && p.0 <= a.0.max(b.0) && p.1 >= a.1.min(b.1) && p.1 <= a.1.max(b.1)
+}
+
 fn collinear((a0, a1): Seg, (b0, b1): Seg) -> bool {
     let cross = |p: (i64, i64), q: (i64, i64), r: (i64, i64)| {
         (q.0 - p.0) as i128 * (r.1 - p.1) as i128 - (q.1 - p.1) as i128 * (r.0 - p.0) as i128
