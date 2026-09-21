@@ -81,7 +81,7 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
     mode: SpaceMode,
     gate: &G,
     gap_outside: Option<&[MergedPoly]>,
-) -> Vec<Violation> {
+) -> Vec<((RegionKey, RegionKey), Violation)> {
     let half = dbu_to_um * 0.5;
     // The bound on the grid: a minimum rounds up, and every gap is then an integer
     // under it or not.  The one float reading below, the square metric, keeps half a
@@ -162,6 +162,23 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                 continue;
             }
             let (ia, ib) = (ra[i], if same_layer { ra[j] } else { rb[j] });
+            // The pair's regions: a report is one per pair, and two tiles seeing
+            // different pieces of the same pair name different gaps.  A region the
+            // kinship index files has its id; a shape whole inside some core - the same
+            // copy wherever it is seen - is known by a point of it.
+            let key_of = |id: Option<usize>, m: &MergedPoly| match id {
+                Some(id) => RegionKey::Id(id),
+                None => {
+                    let (x, y) = representative_point(m);
+                    RegionKey::At(x.round() as i64, y.round() as i64)
+                }
+            };
+            let (ka, kb) = (key_of(ia, a.outline.poly()), key_of(ib, b.outline.poly()));
+            let pair = if same_layer {
+                (ka.min(kb), ka.max(kb))
+            } else {
+                (ka, kb)
+            };
             if let (Some(ia), Some(ib)) = (ia, ib) {
                 if same_layer && ia == ib {
                     continue;
@@ -306,14 +323,17 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             } else {
                 ("Minimum space violation", "space")
             };
-            out.push(Violation::edge(
-                rule_id,
-                title,
-                format!(
-                    "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
-                    min_dist, value, name_a, name_b, ax, ay, bx, by
+            out.push((
+                pair,
+                Violation::edge(
+                    rule_id,
+                    title,
+                    format!(
+                        "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                        min_dist, value, name_a, name_b, ax, ay, bx, by
+                    ),
+                    ax, ay, bx, by,
                 ),
-                ax, ay, bx, by,
             ));
         }
     }
@@ -481,7 +501,8 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
         tile as i32,
         mode.related,
     );
-    keys.par_iter()
+    let reports: Vec<((RegionKey, RegionKey), Violation)> = keys
+        .par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let core = Core {
                 x0: tx as i64 * tile,
@@ -504,7 +525,40 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
             )
             .into_iter()
         })
-        .collect()
+        .collect::<Vec<_>>();
+    // One report per pair of regions.  A pair of stitched regions is one violation,
+    // read within one tile at its closest approach; where the pair spans tiles, the
+    // tile cutting it sees a piece facing the other at another gap and named a second
+    // marker - a SalBlock U round a TRANS was two at tile 20 and one at 100.  The
+    // reports of one pair keep the lowest, then leftmost, wherever it was read.
+    let lower = |a: &Violation, b: &Violation| {
+        let m = |v: &Violation| match v.geometry {
+            crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                ((y1 + y2) * 0.5, (x1 + x2) * 0.5)
+            }
+            crate::violation::ViolationGeometry::Point { x, y } => (y, x),
+            crate::violation::ViolationGeometry::None => (0.0, 0.0),
+        };
+        m(a) < m(b)
+    };
+    let mut by_pair: HashMap<(RegionKey, RegionKey), Violation> = HashMap::new();
+    for (key, v) in reports {
+        match by_pair.get(&key) {
+            Some(have) if !lower(&v, have) => {}
+            _ => {
+                by_pair.insert(key, v);
+            }
+        }
+    }
+    by_pair.into_values().collect()
+}
+
+/// What a space report's pair of regions is known by: the kinship index's id for a
+/// region it files, a point of the shape for one whole inside some core.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub enum RegionKey {
+    Id(usize),
+    At(i64, i64),
 }
 
 /// Whether the segment `p`-`q` (DBU) lies wholly inside the merged polygons: cut at
