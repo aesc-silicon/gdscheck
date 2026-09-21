@@ -31,7 +31,7 @@ rules:
       metric: euclidian
   - id: NW.c1
     check: min_enclosure
-    layers: [NWell, PsdActivInNWellTGOAna]
+    layers: [NWell, PsdActivInNWellTGOAnaNoSchottky]
     value: 0.62
     params:
       metric: euclidian
@@ -67,7 +67,7 @@ rules:
       metric: euclidian
   - id: NW.e1
     check: min_enclosure
-    layers: [NWell, NWellTieTGOAna]
+    layers: [NWell, NWellTieTGOAnaNoSchottky]
     value: 0.62
     params:
       metric: euclidian

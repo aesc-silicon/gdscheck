@@ -45,7 +45,7 @@ rules:
       abutting: report
   - id: PWB.f1
     check: min_space
-    layers: [PWell.block, PsdActivInPWellTGO]
+    layers: [PWellBlockNoSchottky, PsdActivInPWellTGO]
     value: 0.62
     params:
       abutting: report

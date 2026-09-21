@@ -70,6 +70,10 @@ alone; note 4's PDarea = 0.02 x Vn_area / gate area is in neither tool), 6 (sect
 6.5's "only tested inside a closed ring of NWell AND nBuLay" is not implemented, nor by
 IHP's deck: the patterns on a bare nBuLay and in a C fire as they would in a ring).
 
+Decided (2026-09-21, PDK owner): 6 - implemented: the Iso-PWell-Activ lies in a hole of
+the NWell-and-nBuLay rings, nmosi.d reads the ring whose hole holds one;
+`nmosi.ring.h1` and `nmosi.d.h6` read nothing, the older fixtures sit in rings now.
+
 Decided cases: `nmosi_b_h7` + nmosi.c (the crossing Activ, finding 8), `nmosi_f_h6` 4,
 `nmosi_d_h6` 18 and `nmosi_ring_h1` 2/6/4/4 (finding 6), `ant_b_h6` and `ant_g_h2`
 clean (findings 3 and 4).

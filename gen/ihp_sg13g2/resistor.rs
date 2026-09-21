@@ -50,25 +50,23 @@ fn rsil_body(pdk: &PdkConfig) {
     write_gz(&format!("{DIR}/RsilBody.gds.gz"), library("TOP", e));
 }
 
-/// Rsil.c — RES (a back-annotation marker, not physical geometry) protrudes 0.3 µm past
-/// the resistor's GatPoly body on the left.  First instance: uncovered → violation.
-/// Second instance: the same protrusion, but a Cont sits inside the protruding RES
-/// sliver (so it overlaps RES directly and doesn't itself trip Rsil.b) → clean.
+/// Rsil.c — "Min. RES extension over GatPoly 0.00": the RES reaches the poly's long
+/// edges.  A resistor (GatPoly 1.0 x 3.0, the RES over its middle 2.0, the heads out
+/// at both ends) whose RES stops 0.05 inside the left long edge fires; one whose RES
+/// runs 0.3 past it does not, nor does one flush with it.
 fn rsil_c(pdk: &PdkConfig) {
     let o = OFFSET;
-    let mut e = vec![
-        lr(pdk, "RES", o - 0.3, o, o + 1.0, o + 3.0), // protrudes 0.3 past GatPoly, left
-        lr(pdk, "GatPoly", o, o, o + 1.0, o + 3.0),
-        lr(pdk, "EXTBlock", o - 0.6, o - 0.3, o + 1.3, o + 3.3),
-    ];
-    let o2 = o + 10.0;
-    e.extend(vec![
-        lr(pdk, "RES", o2 - 0.3, o, o2 + 1.0, o + 3.0), // same protrusion
-        lr(pdk, "GatPoly", o2, o, o2 + 1.0, o + 3.0),
-        lr(pdk, "EXTBlock", o2 - 0.6, o - 0.3, o2 + 1.3, o + 3.3),
-        // Sits inside the protruding RES sliver (x in [o2-0.3, o2)).
-        lr(pdk, "Cont", o2 - 0.25, o + 1.0, o2 - 0.05, o + 1.2),
-    ]);
+    let mut e = vec![];
+    for (i, dx) in [(0.0, 0.05), (10.0, -0.3), (20.0, 0.0)] {
+        let x = o + i;
+        e.extend(vec![
+            lr(pdk, "GatPoly", x, o, x + 1.0, o + 3.0),
+            lr(pdk, "RES", x + dx, o + 0.5, x + 1.0, o + 2.5),
+            lr(pdk, "EXTBlock", x - 0.6, o - 0.3, x + 1.3, o + 3.3),
+            lr(pdk, "Cont", x + 0.42, o + 0.17, x + 0.58, o + 0.33),
+            lr(pdk, "Cont", x + 0.42, o + 2.67, x + 0.58, o + 2.83),
+        ]);
+    }
     write_gz(&format!("{DIR}/Rsil.c.gds.gz"), library("TOP", e));
 }
 

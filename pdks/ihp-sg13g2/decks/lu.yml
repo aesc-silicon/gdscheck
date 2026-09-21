@@ -27,7 +27,7 @@ rules:
       within: ActivNotGat
   - id: LU.d
     check: max_space
-    layers: [NWellTieStandalone, ContOnNWellTie]
+    layers: [NWellTieStandaloneNoSchottky, ContOnNWellTie]
     value: 6.00
   - id: LU.d1
     check: max_space

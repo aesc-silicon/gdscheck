@@ -1419,11 +1419,10 @@ const DECK_NBL: &str = "nbulay";
 #[case::nbl_c_h7("nbulay/NBL.c.h7.gds.gz", "TOP", vec!["NBL.c", "NBL.c", "NBL.d", "NBL.d", "NBL.d", "NBL.d"], vec![])]
 // Bare pairs: 1.495 is NBL.b; 1.5 (finding 5), 1.505 and 3.195 are NBL.c; 3.2 is clean.
 #[case::nbl_c_h8("nbulay/NBL.c.h8.gds.gz", "TOP", vec!["NBL.b", "NBL.c", "NBL.c", "NBL.c"], vec![])]
-// Figure 5.3's c: a PWell:block adjoining one nBuLay and reaching to 3.195 from another
-// 5.0 away (finding 7); reaching to 3.2, and a block adjoining no nBuLay, are clean.
-// OPEN: a PWell:block adjoining an nBuLay region extends it (figure 5.3, KLayout); the
-// engine reads the regions as drawn and generated, the block only as no PWell (`gap_outside`).
-#[case::nbl_c_h9("nbulay/NBL.c.h9.gds.gz", "TOP", vec![], vec![])]
+// Figure 5.3's c: a PWell:block adjoining one nBuLay extends it and reaches to 3.195 from
+// another 5.0 away (finding 7, decided); reaching to 3.2, and a block adjoining no nBuLay,
+// are clean.
+#[case::nbl_c_h9("nbulay/NBL.c.h9.gds.gz", "TOP", vec!["NBL.c"], vec![])]
 // A well 2.195 from an nBuLay, 2.199 corner to corner, an nBuLay diamond tip at 2.195
 // and a chamfer 2.199 from the well's corner; 2.2, 2.206 and 0.1 in x with 2.2 in y are clean.
 #[case::nbl_d_h1("nbulay/NBL.d.h1.gds.gz", "TOP", vec!["NBL.d"; 4], vec![])]
@@ -1440,9 +1439,9 @@ const DECK_NBL: &str = "nbulay";
 // (finding 9); 1.5 apart (2.5) and a 2.5-wide well 1.15 apart are clean.
 #[case::nbl_d_h6("nbulay/NBL.d.h6.gds.gz", "TOP", vec!["NBL.d"], vec![])]
 // Figure 5.3's d: a PWell:block adjoining the well and reaching to 2.195 from an nBuLay
-// 4.0 away, and one adjoining the nBuLay reaching to 2.195 from the well (finding 7).
-// OPEN as NBL.c.h9: the block adjoining a region.
-#[case::nbl_d_h7("nbulay/NBL.d.h7.gds.gz", "TOP", vec![], vec![])]
+// 4.0 away, and one adjoining the nBuLay reaching to 2.195 from the well (finding 7,
+// decided: the block extends the region it adjoins).
+#[case::nbl_d_h7("nbulay/NBL.d.h7.gds.gz", "TOP", vec!["NBL.d"; 2], vec![])]
 // Plain Activ (N+ by default) 0.995 from an nBuLay, 0.997 corner to corner, an nBuLay
 // diamond tip and chamfer, and Activ abutting the nBuLay (0: finding 1); 1.0, 1.004 and
 // 0.1 in x with 1.0 in y are clean.
@@ -3893,14 +3892,13 @@ const DECK_RESISTOR: &str = "resistor";
 // Fifty with 0.115 on the left, flat and as a GdsArrayRef.
 #[case::rsil_b_h3("resistor/Rsil.b.h3.gds.gz", "TOP", vec!["Rsil.b"; 50], vec![])]
 #[case::rsil_b_h4("resistor/Rsil.b.h4.gds.gz", "TOP", vec!["Rsil.b"; 50], vec![])]
-// Rsil.c: the RES ending 0.05 inside the poly's long edge, on one side and on both
-// (finding 1); coincident, 0.05 past the edge and 1.5 past it are clean.
-// OPEN (finding 1): the manual's Rsil.c is the RES stopping short of the poly's *long*
-// edge, which wants the resistor's length direction; the deck keeps IHP's reading (RES
-// outside the poly and under no Cont) and reports the two outsets.
-#[case::rsil_c_h1("resistor/Rsil.c.h1.gds.gz", "TOP", vec!["Rsil.c"; 2], vec![])]
-// The inset across x = 20 and at (1000, 1000); the outset across x = 40 is clean.
-#[case::rsil_c_h2("resistor/Rsil.c.h2.gds.gz", "TOP", vec!["Rsil.c"; 1], vec![])]
+// Finding 1, decided: Rsil.c is the RES stopping short of the poly's *long* edge - the
+// strip of poly it leaves outside along that edge, which the heads' full width tells
+// apart from them.  The RES 0.05 inside the top edge and 0.05 inside both edges fire
+// (3); the outsets, 0.05 and 1.5, and the coincident RES are clean.
+#[case::rsil_c_h1("resistor/Rsil.c.h1.gds.gz", "TOP", vec!["Rsil.c"; 3], vec![])]
+// The inset across x = 20 and at (1000, 1000) (2); the outset across x = 40 is clean.
+#[case::rsil_c_h2("resistor/Rsil.c.h2.gds.gz", "TOP", vec!["Rsil.c"; 2], vec![])]
 // Rsil.d: pSD 0.175 below the body, 0.12/0.12 from the head's corner (0.170), abutting
 // the head (finding 2), an Rppd's pSD 0.175 from the head, and pSD 0.175 below a
 // resistor with no EXTBlock (finding 3); 0.18, 0.13/0.13 (0.184) and 0.175 from a plain
@@ -4099,9 +4097,9 @@ const DECK_NMOSI: &str = "nmosi";
 #[case::nmosi_d_h5("nmosi/nmosi.d.h5.gds.gz", "TOP", vec!["nmosi.d"; 100], vec![])]
 // Narrow NWell AND nBuLay that is no unbroken ring round an Iso-PWell-Activ: a finger with
 // no Activ, a C round an Activ, a closed ring round nothing, a finger beside a good ring.
-// Section 6.5's "only tested inside a closed ring" is not implemented (nor by IHP's
-// deck): every narrow piece fires (18).
-#[case::nmosi_d_h6("nmosi/nmosi.d.h6.gds.gz", "TOP", vec!["nmosi.d"; 18], vec![])]
+// Section 6.5: the rules are tested inside a closed ring of NWell AND nBuLay round an
+// Iso-PWell-Activ only (decided; IHP's deck reads every piece) - none of these is one.
+#[case::nmosi_d_h6("nmosi/nmosi.d.h6.gds.gz", "TOP", vec![], vec![])]
 // nmosi.f: a 0.615 strip through the Activ (2), across it (2), a stub (2), an L (4); 0.62
 // is clean.  No SalBlock is drawn, so nmosi.g is set aside.
 #[case::nmosi_f_h1("nmosi/nmosi.f.h1.gds.gz", "TOP", vec!["nmosi.f"; 10], vec!["nmosi.g"])]
@@ -4127,11 +4125,9 @@ const DECK_NMOSI: &str = "nmosi";
 // flush with the Activ, no nBuLay, and the Activ under PWell:block are clean.
 #[case::nmosi_g_h5("nmosi/nmosi.g.h5.gds.gz", "TOP", vec!["nmosi.g"], vec![])]
 // "These rules will only be tested inside a closed ring of NWell AND nBuLay": every
-// rule's violating pattern on a bare nBuLay and in a C.  The sentence is not implemented
-// (nor by IHP's deck): the patterns fire as they would in a ring.
-#[case::nmosi_ring_h1("nmosi/nmosi.ring.h1.gds.gz", "TOP",
-    { let mut v = vec!["nmosi.b"; 2]; v.extend(vec!["nmosi.d"; 6]); v.extend(vec!["nmosi.f"; 4]); v.extend(vec!["nmosi.g"; 4]); v },
-    vec![])]
+// rule's violating pattern on a bare nBuLay and in a C: neither is inside a closed ring,
+// and nothing fires (decided; IHP's deck reads them as in a ring).
+#[case::nmosi_ring_h1("nmosi/nmosi.ring.h1.gds.gz", "TOP", vec![], vec![])]
 fn test_nmosi(
     #[case] gds: &str,
     #[case] topcell: &str,

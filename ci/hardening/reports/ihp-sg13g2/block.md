@@ -56,6 +56,9 @@ Open: 7 (a PWell:block adjoining a region extends it, figure 5.3 and KLayout; th
 engine reads the block as no PWell only - `NBL.c.h9`, `NBL.d.h7` carry the engine's
 answer).
 
+Decided (2026-09-21, PDK owner): 7 - the block adjoining a region extends it
+(`nBuLayRegionsExt`, `NWellExt`); `NBL.c.h9` reads 1, `NBL.d.h7` 2.
+
 ## Findings
 
 ### 1. A touch is a space of nothing: nine two-layer space rules stay silent when the other shape abuts (false negative)
