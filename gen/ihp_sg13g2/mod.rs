@@ -19,6 +19,7 @@ mod metal;
 mod metal1_hardening;
 mod metaln_hardening;
 mod mim;
+mod misc_hardening;
 mod nbulay;
 mod nbulayblock;
 mod nmosi;
@@ -66,6 +67,7 @@ pub fn generate(pdk: &PdkConfig) {
     metal::generate(pdk);
     metal1_hardening::generate(pdk);
     metaln_hardening::generate(pdk);
+    misc_hardening::generate(pdk);
     via::generate(pdk);
     via_hardening::generate(pdk);
     topvia::generate(pdk);
