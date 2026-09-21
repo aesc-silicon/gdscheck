@@ -380,9 +380,9 @@ const DECK_TGO: &str = "tgo";
 // is no TGO.c pair); a poly over field under the oxide is nothing.
 #[case::tgo_c_h1("tgo/TGO.c.h1.gds.gz", "TOP", vec!["TGO.c", "TGO.c", "TGO.c", "TGO.c", "TGO.d"], vec![])]
 // A 45° oxide edge crossing the Activ 0.336 from the gate's corner (the perpendicular's
-// foot below the Activ) is not read: TGO.c is an extension on a poly crossing the oxide,
-// read by projection (OPEN with Gat.c's chamfered cap); an oxide and an Activ drawn as
-// two boxes each, the union's oxide edge 0.335 from the gate, fire.
+// foot below the Activ) is clean: the margin is read where it lies, and it lies below the
+// Activ, off the rule's `over` layer; an oxide and an Activ drawn as two boxes each, the
+// union's oxide edge 0.335 from the gate, fire.
 #[case::tgo_c_h2("tgo/TGO.c.h2.gds.gz", "TOP", vec!["TGO.c"; 1], vec![])]
 // 0.335 with the Activ's end on x = 20, straddling 21, on 40 and straddling 42.
 #[case::tgo_c_h3("tgo/TGO.c.h3.gds.gz", "TOP", vec!["TGO.c"; 4], vec![])]
@@ -589,13 +589,11 @@ const DECK_GAT: &str = "gatpoly";
 // extending 0.175, a gate side on the Activ edge; a stub ending inside the Activ has no
 // cap to read in either tool (report, finding 3); 0.5 over the corner is clean.
 #[case::gat_c_h2("gatpoly/Gat.c.h2.gds.gz", "TOP", vec!["Gat.c"; 4], vec!["GFil.g"])]
-// A gate over two Activs 0.175 short and five 0.175 caps on and across x = 20/40/42 fire;
-// a 0.375 T head and a 0.19 chamfer are clean.  A cap chamfered down to 0.10 at its
-// corner is not read (report, finding 11 - OPEN): Gat.c is an extension read on a poly
-// crossing the Activ, where the closest-approach metric read the cut vertices of the
-// tile's pieces as corners (2560 Act.c on a 4 mm² design), so the extension rules keep
-// the projection metric; the chamfer wants KLayout's angled projection instead.
-#[case::gat_c_h3("gatpoly/Gat.c.h3.gds.gz", "TOP", vec!["Gat.c"; 6], vec!["GFil.g"])]
+// A gate over two Activs 0.175 short and five 0.175 caps on and across x = 20/40/42 fire,
+// and so does a cap chamfered down to 0.10 at its corner - the extension is read at the
+// closest approach like every enclosure, a cut vertex of the tile's piece re-read on the
+// whole wall; a 0.375 T head and a 0.19 chamfer are clean.
+#[case::gat_c_h3("gatpoly/Gat.c.h3.gds.gz", "TOP", vec!["Gat.c"; 7], vec!["GFil.g"])]
 // Fifty 0.175 caps, flat and as a GdsArrayRef.
 #[case::gat_c_h4("gatpoly/Gat.c.h4.gds.gz", "TOP", vec!["Gat.c"; 50], vec!["GFil.g"])]
 #[case::gat_c_h5("gatpoly/Gat.c.h5.gds.gz", "TOP", vec!["Gat.c"; 50], vec!["GFil.g"])]

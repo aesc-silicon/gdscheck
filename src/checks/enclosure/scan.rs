@@ -1002,7 +1002,7 @@ pub fn run(
                         // on tile lines).
                         for (am, a) in touching {
                             let (pairs, _) =
-                                margin_pairs(&bp, a, cutoff, skip_coincident, false);
+                                margin_pairs(&bp, a, cutoff, skip_coincident, euclidian);
                             for mut p in pairs {
                                 if cuttable
                             && (!in_zone(p.edge) || !real_wall(p.wall) || (p.oblique && p.num == 0 && at_cut(p.edge)))
