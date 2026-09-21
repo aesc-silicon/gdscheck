@@ -6223,7 +6223,7 @@ impl MergedCache {
                 let tiles = if self.clippable.contains(&key) {
                     tiles
                 } else {
-                    assemble_zone_copies(tiles, self.tile_dbu, self.stitch_halo(key))
+                    assemble_zone_copies(tiles, self.tile_dbu, want)
                 };
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
@@ -6236,9 +6236,9 @@ impl MergedCache {
                     tiles
                 } else if keep_regions {
                     let whole = self.whole_chain.contains(&key);
-                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), !whole)
+                    rebroadcast_halo(tiles, self.tile_dbu, want, !whole)
                 } else {
-                    assemble_zone_copies(tiles, self.tile_dbu, self.stitch_halo(key))
+                    assemble_zone_copies(tiles, self.tile_dbu, want)
                 };
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
@@ -6250,7 +6250,7 @@ impl MergedCache {
                     tiles
                 } else {
                     let whole = self.whole_chain.contains(&key);
-                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), !whole)
+                    rebroadcast_halo(tiles, self.tile_dbu, want, !whole)
                 };
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
@@ -6302,9 +6302,9 @@ impl MergedCache {
                     // for the boolean, but not for the enclosure engine downstream of
                     // it, which wants a MIM plate whole over a sixty-micron window
                     // (MIMTM.3 on the MIMTM.11 pattern).
-                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), false)
+                    rebroadcast_halo(tiles, self.tile_dbu, want, false)
                 } else {
-                    rebroadcast_halo(tiles, self.tile_dbu, self.stitch_halo(key), true)
+                    rebroadcast_halo(tiles, self.tile_dbu, want, true)
                 };
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
@@ -6387,7 +6387,7 @@ impl MergedCache {
         let clipped = self.clippable.contains(&key);
         let tiles = if clipped {
             let pieces = clip_to_cores(tiles, self.tile_dbu);
-            rebroadcast_halo(pieces, self.tile_dbu, self.stitch_halo(key), true)
+            rebroadcast_halo(pieces, self.tile_dbu, want, true)
         } else {
             tiles
         };
