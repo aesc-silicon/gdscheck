@@ -818,14 +818,17 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GatPolyRes, pSDnSD, SalBlockClean]
+  # The resistor's SalBlock, whole: a Cont is read against the block as drawn, not the
+  # part of it the recognition covers.
   - name: SalBlockRhigh
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [SalBlock, RhighA]
+  # Rsil = RES + GatPoly (section 6.2); the EXTBlock is Rsil.e's, not the recognition's.
   - name: RsilBase
     op: intersection
     mode: lazy
-    layers: [GatPolyRes, RES, EXTBlock]
+    layers: [GatPolyRes, RES]
   - name: RsilAll
     op: not_overlapping
     mode: lazy
@@ -842,6 +845,10 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [GatPolyRes, Rsil]
+  # Rsil.c, IHP's reading: RES outside the resistor's poly and under no Cont.  The
+  # manual's "RES extension over GatPoly 0.00" - the RES stopping short of the poly's
+  # long edge - wants the resistor's length direction, which no op here has (the
+  # heads run out of the RES at both ends by construction).
   - name: RsilResProtrusion
     op: difference
     mode: lazy
@@ -867,7 +874,7 @@ virtual_layers:
     mode: lazy
     layers: [GatPolyRes, RppdAll]
   - name: SalBlockRppd
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [SalBlock, RppdAll]
   - name: RppdCont
@@ -902,10 +909,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [RhighCont, SalBlockRhighGrown]
-  - name: NsdMismatch
-    op: difference
-    mode: lazy
-    layers: [nSD, pSD]
   - name: RhighRecogBase
     op: intersection
     mode: lazy
@@ -920,10 +923,24 @@ virtual_layers:
     mode: lazy
     radius: 0.0
     layers: [RhighRecog]
-  - name: NsdMismatchAtRhigh
+  # Rhi.b: the resistor's pSD and nSD shapes, whole, are identical - whatever one has
+  # beyond the other, anywhere along it, is the mismatch.
+  - name: RhighNsd
     op: overlapping
     mode: lazy
-    layers: [NsdMismatch, RhighRecogGrown]
+    layers: [nSD, RhighRecogGrown]
+  - name: NsdMismatchAtRhigh
+    op: difference
+    mode: lazy
+    layers: [RhighNsd, pSD]
+  - name: RhighPsd
+    op: overlapping
+    mode: lazy
+    layers: [pSD, RhighRecogGrown]
+  - name: PsdMismatchAtRhigh
+    op: difference
+    mode: lazy
+    layers: [RhighPsd, nSD]
 
   - name: PsdRingHole
     op: holes
