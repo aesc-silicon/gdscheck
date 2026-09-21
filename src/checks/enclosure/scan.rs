@@ -161,6 +161,19 @@ impl Walls {
         Walls(Vec::new())
     }
 
+    /// What a pair is filed under: the inner wall it was read along, or - for a
+    /// closest approach read at an angle - the corner it was read at, as a wall of
+    /// no length.  A wall keeps one margin along it and one at each of its corners; a
+    /// via in a diamond is four corners, not one wall's worst corner.
+    fn key(p: &crate::geom::MarginPair) -> Seg {
+        if p.oblique {
+            let c = (p.edge.0.round() as i64, p.edge.1.round() as i64);
+            (c, c)
+        } else {
+            p.wall
+        }
+    }
+
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -692,7 +705,7 @@ pub fn run(
                         if worst.is_none_or(|(w, _)| worse(largest, m.0, w)) {
                             worst = Some(m);
                         }
-                        let e = here.entry(p.wall, m);
+                        let e = here.entry(Walls::key(&p), m);
                         if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
                             *e = m;
                         }
@@ -897,7 +910,7 @@ pub fn run(
                                 if worst.is_none_or(|(w, _)| worse(largest, m.0, w)) {
                                     worst = Some(m);
                                 }
-                                let e = walls.entry(p.wall, m);
+                                let e = walls.entry(Walls::key(&p), m);
                                 if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
                                     *e = m;
                                 }
@@ -1073,7 +1086,29 @@ pub fn run(
         let mut at: HashMap<(i64, i64), usize> = HashMap::new();
         for (i, r) in walled.iter().enumerate() {
             let (p, q) = r.1.expect("walled");
-            for v in [p, q] {
+            // A margin read along the wall is the wall's, and joins the runs at both
+            // its ends; a closest approach read at an angle is the corner's alone - it
+            // joins the run at that corner and does not carry the wall it was read on
+            // into it.  An octagon in an octagon 9.995 across each diagonal is four
+            // runs, whether or not a tile line cuts its straight walls in two.
+            let vs: Vec<(i64, i64)> = match r.4.geometry {
+                crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                    let (dx, dy) = (x2 - x1, y2 - y1);
+                    let (wx, wy) = ((q.0 - p.0) as f64, (q.1 - p.1) as f64);
+                    let cross = dx * wy - dy * wx;
+                    let along = (dx * dx + dy * dy).sqrt() * (wx * wx + wy * wy).sqrt();
+                    if along > 0.0 && cross.abs() > 1e-6 * along {
+                        vec![(
+                            (x1 / dbu_to_um).round() as i64,
+                            (y1 / dbu_to_um).round() as i64,
+                        )]
+                    } else {
+                        vec![p, q]
+                    }
+                }
+                _ => vec![p, q],
+            };
+            for v in vs {
                 match at.get(&v) {
                     Some(&j) => uf.union(i, j),
                     None => {
