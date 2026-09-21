@@ -3393,6 +3393,53 @@ const DECK_LBE: &str = "lbe";
 #[case::lbe_h_open("lbe/LBE.h.open.gds.gz", "TOP", vec![], vec!["LBE.i", "LBE.c"])]
 #[case::lbe_i("lbe/LBE.i.gds.gz", "TOP", vec![], vec![])]
 #[case::lbe_i_fail("lbe/LBE.i.fail.gds.gz", "TOP", vec!["LBE.i"], vec![])]
+// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  LBE.i reads the
+// whole layout when no boundary is drawn and is ignored where it is not under test;
+// shapes under 30000 µm² are LBE.b2's and ignored where they are drawn for another rule.
+//
+// LBE.a: 99.995 in x and y, a 45° strip and a diamond 99.985 across (2 and 4), an L of
+// 99.995 arms (4), a 0.005 sliver.
+#[case::lbe_a_h1("lbe/LBE.a.h1.gds.gz", "TOP", vec!["LBE.a"; 16], vec!["LBE.b2", "LBE.i"])]
+// LBE.a: fifty 99.995 bars, flat and as an array reference.
+#[case::lbe_a_h2("lbe/LBE.a.h2.gds.gz", "TOP", vec!["LBE.a"; 100], vec!["LBE.b2", "LBE.i"])]
+#[case::lbe_a_h3("lbe/LBE.a.h3.gds.gz", "TOP", vec!["LBE.a"; 100], vec!["LBE.b2", "LBE.i"])]
+// LBE.b: 1500.005 in x and in y, two abutting 800 boxes (1600); the 1500 bars and the L
+// are over 250000 µm² (LBE.b1).
+#[case::lbe_b_h1("lbe/LBE.b.h1.gds.gz", "TOP",
+    { let mut v = vec!["LBE.b"; 3]; v.extend(vec!["LBE.b1"; 5]); v },
+    vec!["LBE.i"])]
+// LBE.b1: 500 × 500.005, two boxes sharing a wall (300000), a ring (270000, and LBE.h);
+// two boxes touching at a corner are two areas of 150000 (and a 0 space, LBE.c, and a
+// pinch, LBE.a); an L of 210000 and a 500 square are clean.
+#[case::lbe_b1_h1("lbe/LBE.b1.h1.gds.gz", "TOP",
+    vec!["LBE.b1", "LBE.b1", "LBE.b1", "LBE.h", "LBE.c", "LBE.a"],
+    vec!["LBE.i"])]
+// LBE.b2: 200 × 149.995, two 15000 boxes touching at a corner (twice, and their 0 space
+// and pinch); 30000 as one box and as two sharing a wall are clean.
+#[case::lbe_b2_h1("lbe/LBE.b2.h1.gds.gz", "TOP",
+    vec!["LBE.b2", "LBE.b2", "LBE.b2", "LBE.c", "LBE.a"],
+    vec!["LBE.i"])]
+// LBE.c: 99.995 apart, 99.985 corner to corner, a 99.995 notch, a corner 99.99 from a
+// 45° wall; 100 apart and 100.006 corner to corner are clean.
+#[case::lbe_c_h1("lbe/LBE.c.h1.gds.gz", "TOP", vec!["LBE.c"; 4], vec!["LBE.i"])]
+// LBE.d: 149.995 from the inner wall, a corner 149.99 from a 45° inner wall.
+#[case::lbe_d_h1("lbe/LBE.d.h1.gds.gz", "TOP", vec!["LBE.d"; 2], vec!["LBE.i"])]
+// LBE.e: a dfpad 49.995 away, a Passiv 49.995 away, a Passiv corner 49.99 away, a 45°
+// Passiv wall 49.99 away, a Passiv over the LBE's corner.
+#[case::lbe_e_h1("lbe/LBE.e.h1.gds.gz", "TOP", vec!["LBE.e"; 5], vec!["LBE.i"])]
+// LBE.f: an Activ 29.995 away, a corner 29.995 away, a 45° wall 29.99 away.
+#[case::lbe_f_h1("lbe/LBE.f.h1.gds.gz", "TOP", vec!["LBE.f"; 3], vec!["LBE.i"])]
+// LBE.h: a ring, two abutting U's, a ring with an island, a polygon with a hole, a ring
+// with 45° corners; a U is open, and a C with a 0.005 gap is open (the gap is LBE.c).
+#[case::lbe_h_h1("lbe/LBE.h.h1.gds.gz", "TOP",
+    { let mut v = vec!["LBE.h"; 5]; v.push("LBE.c"); v },
+    vec!["LBE.b2", "LBE.i"])]
+// LBE.i: 20.000 % of the boundary is clean, 20.001 % fires, an LBE reaching beyond the
+// boundary counts by what lies inside (20 %), and with no boundary there is no chip.
+#[case::lbe_i_h1("lbe/LBE.i.h1.gds.gz", "TOP", vec![], vec![])]
+#[case::lbe_i_h2("lbe/LBE.i.h2.gds.gz", "TOP", vec!["LBE.i"], vec![])]
+#[case::lbe_i_h3("lbe/LBE.i.h3.gds.gz", "TOP", vec![], vec![])]
+#[case::lbe_i_h4("lbe/LBE.i.h4.gds.gz", "TOP", vec![], vec![])]
 fn test_lbe(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4188,6 +4235,53 @@ const DECK_SLIT: &str = "slit";
 #[case("slit/Slt.f.gds.gz", "TOP", vec!["Slt.f"], vec![])]
 #[case("slit/Slt.h1.gds.gz", "TOP", vec!["Slt.h1"], vec![])]
 #[case("slit/Slt.i.gds.gz", "TOP", vec!["Slt.i"], vec![])]
+// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).
+//
+// Slt.a: 2.795 slits in x and y, a 45° strip 2.793 wide, a 0.2 nick, slits across
+// x = 20 and 40, at (1000, 1000), on TopMetal2 and Metal3: two walls each.
+#[case::slt_a_h1("slit/Slt.a.h1.gds.gz", "TOP", vec!["Slt.a"; 18], vec![])]
+// Slt.a: fifty 2.795 slits, flat and as an array reference.
+#[case::slt_a_h2("slit/Slt.a.h2.gds.gz", "TOP", vec!["Slt.a"; 100], vec![])]
+#[case::slt_a_h3("slit/Slt.a.h3.gds.gz", "TOP", vec!["Slt.a"; 100], vec![])]
+// Slt.b: 20.005 × 6, 6 × 20.005, a 3 × 25 slit (figure 7.5's `b` is the long side),
+// 20.005 square (4), a 45° slit 21.2 long; an L-shaped slit in a 15 box is clean.
+#[case::slt_b_h1("slit/Slt.b.h1.gds.gz", "TOP", vec!["Slt.b"; 12], vec![])]
+// Slt.c: 30.005 square and bar, two abutting boxes, a ring with 30.005 walls, a diamond
+// 30.01 across, an L, a 45° strip, across x = 20 and 200, at (1000, 1000), a plate whose
+// Passiv exemption leaves 35 (11); the 38 and 30 long slits of the slotted plates are
+// Slt.b's, the 40 plates with too little slit Slt.i's.
+#[case::slt_c_h1("slit/Slt.c.h1.gds.gz", "TOP",
+    { let mut v = vec!["Slt.c"; 11]; v.extend(vec!["Slt.b"; 4]); v.extend(vec!["Slt.i"; 2]); v },
+    vec![])]
+// Slt.c: fifty 30.005 squares, flat and as an array reference.
+#[case::slt_c_h2("slit/Slt.c.h2.gds.gz", "TOP", vec!["Slt.c"; 50], vec![])]
+#[case::slt_c_h3("slit/Slt.c.h3.gds.gz", "TOP", vec!["Slt.c"; 50], vec![])]
+// Slt.e: a slit inside the pad's dfpad and one across its edge; one touching the dfpad
+// from outside and one under a dfpad with no Passiv are off the pad.
+#[case::slt_e_h1("slit/Slt.e.h1.gds.gz", "TOP", vec!["Slt.e"; 2], vec![])]
+// Slt.f: 0.995 on one side, on all four (one run), a slit on the plate's edge, across it,
+// with no metal at all, 0.9935 from a 45° corner, 0.995 ending on x = 20, across x = 40,
+// at (1000, 1000).
+#[case::slt_f_h1("slit/Slt.f.h1.gds.gz", "TOP", vec!["Slt.f"; 9], vec![])]
+// Slt.g: a Metal5 slit and a TopMetal1 slit 0.595 from a MIM, a slit corner 0.594 from
+// the MIM's corner; a Metal1 slit has no rule.
+#[case::slt_g_h1("slit/Slt.g.h1.gds.gz", "TOP", vec!["Slt.g"; 3], vec![])]
+// Slt.h1-h4: 0.295 to Cont and Via1, a Via1 lying in the slit, a Cont corner 0.297 away
+// (h1); Metal2 to Via1/Via2, Metal5 to Via4/TopVia1 (h2); TopMetal1 0.995 to
+// TopVia1/TopVia2 (h3); TopMetal2 to TopVia2 (h4).
+#[case::slt_h_h1("slit/Slt.h.h1.gds.gz", "TOP",
+    { let mut v = vec!["Slt.h1"; 4]; v.extend(vec!["Slt.h2"; 4]); v.extend(vec!["Slt.h3"; 2]); v.push("Slt.h4"); v },
+    vec![])]
+// Slt.i: a 35.005 plate with one slit, 5.996 %, a 48 × 100 bus with one lengthwise slit,
+// an L, a slit half off the plate, two overlapping slits counted once, two abutting boxes,
+// across x = 100, at (1000, 1000) (9); the lengthwise slits are over 20 long (Slt.b), the
+// slit off the plate is not enclosed (Slt.f); 35 × 35 and 6.0 % are clean.
+#[case::slt_i_h1("slit/Slt.i.h1.gds.gz", "TOP",
+    { let mut v = vec!["Slt.i"; 9]; v.extend(vec!["Slt.b"; 6]); v.push("Slt.f"); v },
+    vec![])]
+// Slt.i: fifty 35.005 plates with one slit, flat and as an array reference.
+#[case::slt_i_h2("slit/Slt.i.h2.gds.gz", "TOP", vec!["Slt.i"; 50], vec![])]
+#[case::slt_i_h3("slit/Slt.i.h3.gds.gz", "TOP", vec!["Slt.i"; 50], vec![])]
 fn test_slit(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4210,6 +4304,26 @@ const DECK_LU: &str = "lu";
 #[case("lu/LU.b.gds.gz", "TOP", vec!["LU.b"], vec![])]
 #[case("lu/LU.c.gds.gz", "TOP", vec!["LU.c", "LU.d"], vec![])]
 #[case("lu/LU.c1.gds.gz", "TOP", vec!["LU.c1", "LU.d1"], vec![])]
+// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  "Any portion" of the
+// Activ is within the value, so a shape is read by its farthest point; LU.c/c1 are the
+// abutted ties (figure 7.4), LU.d/d1 the ties standing alone.
+//
+// LU.a: a P+ whose far edge is 20.005 from the tie, one whose far corner is 20.5 from the
+// tie's corner, a 52 bar, a P+ whose tie is in another well, a P+ with no tie at all (5);
+// an uncontacted N+ 10 from a P+ is a tie for LU.a, and its own LU.d.
+#[case::lu_a_h1("lu/LU.a.h1.gds.gz", "TOP", { let mut v = vec!["LU.a"; 5]; v.push("LU.d"); v }, vec![])]
+// LU.a: fifty wells with a P+ 20.005 from the tie, flat and as an array reference.
+#[case::lu_a_h2("lu/LU.a.h2.gds.gz", "TOP", vec!["LU.a"; 50], vec![])]
+#[case::lu_a_h3("lu/LU.a.h3.gds.gz", "TOP", vec!["LU.a"; 50], vec![])]
+// LU.b: as LU.a in the substrate; an N+ under a PWell:block is in no well.
+#[case::lu_b_h1("lu/LU.b.h1.gds.gz", "TOP", { let mut v = vec!["LU.b"; 5]; v.push("LU.d1"); v }, vec![])]
+// LU.c/LU.d: a tie 6.005 beyond its Cont, two Conts 12.01 apart, a tie with no Cont, and
+// 6.005 at (1000, 1000) are ties standing alone (LU.d); figure 7.4's abutted tie 6.005
+// below the source's Cont is LU.c; 6.0, a 12.16 square, and the abutted tie at 5.92 are
+// clean.
+#[case::lu_c_h1("lu/LU.c.h1.gds.gz", "TOP", { let mut v = vec!["LU.d"; 4]; v.push("LU.c"); v }, vec![])]
+// LU.c1/LU.d1: the same in the substrate.
+#[case::lu_c1_h1("lu/LU.c1.h1.gds.gz", "TOP", { let mut v = vec!["LU.d1"; 4]; v.push("LU.c1"); v }, vec![])]
 fn test_lu(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4274,6 +4388,61 @@ const DECK_SEALRING: &str = "sealring";
 // worst.  KLayout reports one edge pair per side; the case used to read three, which
 // were the pieces the tiling cut the ring into, and moved with the tile size.
 #[case::seal_d("sealring/Seal.d.gds.gz", "TOP", vec!["Seal.d"; 1], vec!["Seal.l"])]
+// Hardening cases (ci/hardening/reports/ihp-sg13g2/beol_misc.md).  Every fixture but
+// Seal.l.h1/h2 holds several seal frames, so Seal.l (everything is outside some other
+// frame) and Seal.n (no Passiv ring) are ignored where they are not the rule under test.
+//
+// Seal.a: six 3.495 frames (8 walls each), a 3.5 Metal1 under a 3.495 EdgeSeal (8), a
+// 0.5 × 3 Metal1 bar inside a marker (4): 60.  Tile 7 loses 36 of them.
+#[case::seal_a_h1("sealring/Seal.a.h1.gds.gz", "TOP", vec!["Seal.a"; 60], vec!["Seal.l", "Seal.n"])]
+// Seal.a: 45° corners 3.493 across (16), the ring as a polygon with a hole (8), as sixteen
+// boxes (8), a 0.2 nick (2), rings across x = 20/40, ending on 100, at (1000, 1000) (24).
+#[case::seal_a_h2("sealring/Seal.a.h2.gds.gz", "TOP", vec!["Seal.a"; 58], vec!["Seal.l", "Seal.n"])]
+// Seal.a: fifty 3.495 frames, flat and as an array reference.
+#[case::seal_a_h3("sealring/Seal.a.h3.gds.gz", "TOP", vec!["Seal.a"; 400], vec!["Seal.l", "Seal.n"])]
+#[case::seal_a_h4("sealring/Seal.a.h4.gds.gz", "TOP", vec!["Seal.a"; 400], vec!["Seal.l", "Seal.n"])]
+// Seal.b: 4.895 inside, 4.893 corner to corner, 4.895 outside (3), 4.895 from a frame of
+// Activ + pSD (2), an Activ running into the frame's wall (0 space, 1).
+#[case::seal_b_h1("sealring/Seal.b.h1.gds.gz", "TOP", vec!["Seal.b"; 6], vec!["Seal.l", "Seal.n"])]
+// Seal.b: a corner 4.893 from a 45° inner wall, a diamond's vertex 4.895 from a wall, gaps
+// across x = 20, from x = 100, at (1000, 1000).
+#[case::seal_b_h2("sealring/Seal.b.h2.gds.gz", "TOP", vec!["Seal.b"; 5], vec!["Seal.l", "Seal.n"])]
+// Seal.b: fifty frames with an Activ 4.895 inside, flat and as an array reference.
+#[case::seal_b_h3("sealring/Seal.b.h3.gds.gz", "TOP", vec!["Seal.b"; 50], vec!["Seal.l", "Seal.n"])]
+#[case::seal_b_h4("sealring/Seal.b.h4.gds.gz", "TOP", vec!["Seal.b"; 50], vec!["Seal.l", "Seal.n"])]
+// Seal.c-c3: via rings 0.005 under their width (8 walls each: Cont, Via1, TopVia1,
+// TopVia2, then Via2/3/4), and a Cont ring 0.2 and a Via1 ring 0.25 wide - "ring width
+// 0.16" is no minimum (8 each).  Tile 20 loses every ring cut through its middle.
+#[case::seal_c_h1("sealring/Seal.c.h1.gds.gz", "TOP",
+    { let mut v = vec!["Seal.c"; 16]; v.extend(vec!["Seal.c1"; 40]); v.extend(vec!["Seal.c2"; 8]); v.extend(vec!["Seal.c3"; 8]); v },
+    vec!["Seal.l", "Seal.n"])]
+// Seal.d: a Cont ring 1.295 from the outer edge, a Via1 ring 1.295 from the inner edge, a
+// Cont ring 1.0 from an Activ narrower than the marker, a Cont ring with no Activ at all.
+#[case::seal_d_h1("sealring/Seal.d.h1.gds.gz", "TOP", vec!["Seal.d"; 4], vec!["Seal.l", "Seal.n"])]
+// Seal.d: a Cont ring's four 45° walls 1.294 from the frame's (4), 1.295 rings across
+// x = 20, ending on x = 100, at (1000, 1000) (3).
+#[case::seal_d_h2("sealring/Seal.d.h2.gds.gz", "TOP", vec!["Seal.d"; 7], vec!["Seal.l", "Seal.n"])]
+// Seal.d: fifty frames with a 1.295 Cont ring, flat and as an array reference.
+#[case::seal_d_h3("sealring/Seal.d.h3.gds.gz", "TOP", vec!["Seal.d"; 50], vec!["Seal.l", "Seal.n"])]
+#[case::seal_d_h4("sealring/Seal.d.h4.gds.gz", "TOP", vec!["Seal.d"; 50], vec!["Seal.l", "Seal.n"])]
+// Seal.e: a Passiv ring 4.195 wide (8), one with a 1.0 nick (2); a 3 × 3 Passiv opening in
+// a seal's hole is no ring and stays clean.
+#[case::seal_e_h1("sealring/Seal.e.h1.gds.gz", "TOP", vec!["Seal.e"; 10], vec!["Seal.l"])]
+// Seal.f: Passiv rings 0.995 from Metal1, from TopMetal2, from Activ + Metal1 + TopMetal2
+// (3), and one touching the frame (0); 0.995 from a marker wider than its metal is clean.
+#[case::seal_f_h1("sealring/Seal.f.h1.gds.gz", "TOP", vec!["Seal.f"; 6], vec!["Seal.l", "Seal.n"])]
+// Seal.f: a Passiv ring's four 45° walls 0.9935 from a frame's (one pair), a chamfered
+// hole corner 0.9935 from a frame's corner.
+#[case::seal_f_h2("sealring/Seal.f.h2.gds.gz", "TOP", vec!["Seal.f"; 2], vec!["Seal.l", "Seal.n"])]
+// Seal.l: with the EdgeSeal.boundary drawn 10 outside the ring, a Metal1 beyond it, a
+// Metal2 across it and an Activ beyond it fire; a Metal1 between the ring and the
+// boundary, and Passiv beyond it, are allowed.
+#[case::seal_l_h1("sealring/Seal.l.h1.gds.gz", "TOP", vec!["Seal.l"; 3], vec![])]
+// Seal.l: no boundary drawn - nothing to be outside of.
+#[case::seal_l_h2("sealring/Seal.l.h2.gds.gz", "TOP", vec![], vec![])]
+// Seal.n: a Passiv ring with a 1.0 break, no Passiv, a Passiv ring inside the seal's hole;
+// a whole ring and one drawn as two abutting U's are unbroken.
+#[case::seal_n_h1("sealring/Seal.n.h1.gds.gz", "TOP", vec!["Seal.n"; 3], vec!["Seal.l"])]
 fn test_sealring(
     #[case] gds: &str,
     #[case] topcell: &str,
