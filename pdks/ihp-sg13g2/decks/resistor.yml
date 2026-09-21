@@ -15,7 +15,7 @@ rules:
       abutting: report
   - id: Rsil.c
     check: forbidden
-    layers: [RsilResProtrusionNoCont]
+    layers: [RsilResInset]
     value: 0.0
   - id: Rsil.d
     check: min_space

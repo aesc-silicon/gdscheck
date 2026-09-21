@@ -17,7 +17,7 @@ rules:
       abutting: report
   - id: nmosi.d
     check: min_width
-    layers: [NWellNBuLay]
+    layers: [NWellNBuLayIsoRing]
     value: 0.62
   - id: nmosi.f
     check: min_width

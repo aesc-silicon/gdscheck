@@ -5,11 +5,11 @@
 rules:
   - id: CntB.a
     check: min_dim
-    layers: [ContBar]
+    layers: [ContBarNoSchottky]
     value: 0.16
   - id: CntB.a
     check: max_dim
-    layers: [ContBar]
+    layers: [ContBarNoSchottky]
     value: 0.16
   - id: CntB.a1
     check: min_length

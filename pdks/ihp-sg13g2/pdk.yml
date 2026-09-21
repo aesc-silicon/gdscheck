@@ -180,9 +180,9 @@ connectivity:
   - connector: TopVia2
     layers: [TopMetal2]
   - connector: NActivInNWell
-    layers: [NWell, NWellMergedNoSRAM, Activ]
+    layers: [NWell, NWellMergedNoSRAM, NWellExt, Activ]
   - connector: NWellNBuLay
-    layers: [nBuLay, nBuLayMerged, nBuLayRegions, NWell]
+    layers: [nBuLay, nBuLayMerged, nBuLayRegions, nBuLayRegionsExt, NWell, NWellExt]
 
 virtual_layers:
   - name: Pad
@@ -880,18 +880,28 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [GatPolyRes, Rsil]
-  # Rsil.c, IHP's reading: RES outside the resistor's poly and under no Cont.  The
-  # manual's "RES extension over GatPoly 0.00" - the RES stopping short of the poly's
-  # long edge - wants the resistor's length direction, which no op here has (the
-  # heads run out of the RES at both ends by construction).
-  - name: RsilResProtrusion
+  # Rsil.c, "RES extension over GatPoly 0.00": the RES reaches the poly's long edges.
+  # The poly outside the RES is the two heads and, where the RES stops short of a long
+  # edge, a strip along it: the heads are the poly's full width (Rsil.a's 0.50 and up),
+  # the strip is thin, and an opening by just under a quarter micron keeps the one and
+  # not the other.
+  - name: RsilPolyOutsideRes
     op: difference
     mode: lazy
-    layers: [RES, GPRsilExtended]
-  - name: RsilResProtrusionNoCont
-    op: not_overlapping
+    layers: [GPRsilExtended, RES]
+  - name: RsilPolyHeads
+    op: open
     mode: lazy
-    layers: [RsilResProtrusion, Cont]
+    radius: 0.245
+    layers: [RsilPolyOutsideRes]
+  - name: RsilPolyStrips
+    op: difference
+    mode: lazy
+    layers: [RsilPolyOutsideRes, RsilPolyHeads]
+  - name: RsilResInset
+    op: interacting
+    mode: lazy
+    layers: [RsilPolyStrips, RES]
   - name: Rppd0
     op: intersection
     mode: lazy
@@ -1082,6 +1092,34 @@ virtual_layers:
     op: inside
     mode: lazy
     layers: [ContBar, SchottkyBlock]
+  # Section 6.7: NW.c1, NW.e1, PWB.f1, CntB.a and LU.d do not apply on the diode - the
+  # bar itself, and the device's rings out to the P+ tie (2.85 past the bar in the
+  # reference cell).
+  - name: SchottkyDevice
+    op: grow
+    mode: lazy
+    radius: 2.5
+    layers: [SchottkyBlock]
+  - name: ContBarNoSchottky
+    op: not_overlapping
+    mode: lazy
+    layers: [ContBar, SchottkyBlock]
+  - name: PWellBlockNoSchottky
+    op: not_overlapping
+    mode: lazy
+    layers: [PWell.block, SchottkyDevice]
+  - name: NWellTieTGOAnaNoSchottky
+    op: not_overlapping
+    mode: lazy
+    layers: [NWellTieTGOAna, SchottkyDevice]
+  - name: PsdActivInNWellTGOAnaNoSchottky
+    op: not_overlapping
+    mode: lazy
+    layers: [PsdActivInNWellTGOAna, SchottkyDevice]
+  - name: NWellTieStandaloneNoSchottky
+    op: not_overlapping
+    mode: lazy
+    layers: [NWellTieStandalone, SchottkyDevice]
 
   - name: NWellOrPWellBlk
     op: union
@@ -1091,7 +1129,7 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [Activ, nBuLay]
-  - name: IsoPWellAct
+  - name: IsoPWellActAll
     op: difference
     mode: lazy
     layers: [ActivInNBuLay, NWellOrPWellBlk]
@@ -1099,6 +1137,29 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [NWell, nBuLay]
+  # Section 6.5: "these rules will only be tested inside a closed ring of NWell AND
+  # nBuLay" - the Iso-PWell-Activ is the one lying in such a ring's hole, and nmosi.d's
+  # ring is the one whose hole holds an Iso-PWell-Activ.
+  - name: NWellNBuLayRings
+    op: with_holes
+    mode: lazy
+    layers: [NWellNBuLay]
+  - name: NWellNBuLayRingHoles
+    op: holes
+    mode: lazy
+    layers: [NWellNBuLayRings]
+  - name: IsoPWellAct
+    op: inside
+    mode: lazy
+    layers: [IsoPWellActAll, NWellNBuLayRingHoles]
+  - name: NWellNBuLayIsoHoles
+    op: covering
+    mode: lazy
+    layers: [NWellNBuLayRingHoles, IsoPWellAct]
+  - name: NWellNBuLayIsoRing
+    op: interacting
+    mode: lazy
+    layers: [NWellNBuLayRings, NWellNBuLayIsoHoles]
   - name: nSDBlockIso
     op: overlapping
     mode: lazy
@@ -1252,6 +1313,24 @@ virtual_layers:
     mode: lazy
     radius: 0.7475
     layers: [nBuLayDerived]
+  # NBL.c/d, figure 5.3: a PWell:block adjoining a region extends it - the PWell
+  # between runs from the block's far edge.
+  - name: PWellBlockAtNBuLay
+    op: interacting
+    mode: lazy
+    layers: [PWell.block, nBuLayRegions]
+  - name: nBuLayRegionsExt
+    op: union
+    mode: lazy
+    layers: [nBuLayRegions, PWellBlockAtNBuLay]
+  - name: PWellBlockAtNWell
+    op: interacting
+    mode: lazy
+    layers: [PWell.block, NWell]
+  - name: NWellExt
+    op: union
+    mode: lazy
+    layers: [NWell, PWellBlockAtNWell]
 
   - name: SealActiv
     op: intersection

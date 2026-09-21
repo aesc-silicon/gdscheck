@@ -17,7 +17,7 @@ rules:
     value: 1.50
   - id: NBL.c
     check: min_space
-    layers: [nBuLayRegions]
+    layers: [nBuLayRegionsExt]
     value: 3.20
     params:
       net: different
@@ -25,7 +25,7 @@ rules:
       gap_outside: PWell.block
   - id: NBL.d
     check: min_space
-    layers: [nBuLayRegions, NWell]
+    layers: [nBuLayRegionsExt, NWellExt]
     value: 2.20
     params:
       net: different
