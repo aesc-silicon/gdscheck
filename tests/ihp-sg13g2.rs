@@ -335,6 +335,93 @@ const DECK_TGO: &str = "tgo";
 #[case("tgo/TGO.d.gds.gz", "TOP", vec!["TGO.d"], vec![])]
 #[case("tgo/TGO.e.gds.gz", "TOP", vec!["TGO.e", "TGO.e"], vec![])]
 #[case("tgo/TGO.f.gds.gz", "TOP", vec!["TGO.f"; 4], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/implant.md.  An
+// enclosure counts one marker per enclosed shape, a space one per pair, a width one per
+// wall.
+// 0.265 left, 0.265 top, 0.265 all round, a right margin of 0 and the 0.265 one of two
+// Activs under one oxide fire; an Activ crossing the oxide's edge (figure 5.7) is nothing.
+#[case::tgo_a_h1("tgo/TGO.a.h1.gds.gz", "TOP", vec!["TGO.a"; 5], vec![])]
+// A chamfer 0.265 from the Activ's corner, a diamond Activ in a square 0.265 from its
+// corners and a square Activ in a diamond whose walls pass 0.265 from its corners fire.
+#[case::tgo_a_h2("tgo/TGO.a.h2.gds.gz", "TOP", vec!["TGO.a"; 3], vec![])]
+// An oxide drawn as two boxes and an Activ drawn as four quadrants, 0.265 each, fire; an
+// Activ in an oxide ring's hole and one crossing its inner edge are nothing.
+#[case::tgo_a_h3("tgo/TGO.a.h3.gds.gz", "TOP", vec!["TGO.a"; 2], vec![])]
+// 0.265 on and across x = 20/21/40/42; a 0.27 across x = 20 is clean.
+#[case::tgo_a_h4("tgo/TGO.a.h4.gds.gz", "TOP", vec!["TGO.a"; 5], vec![])]
+// Fifty 0.265 margins, flat and as a GdsArrayRef.
+#[case::tgo_a_h5("tgo/TGO.a.h5.gds.gz", "TOP", vec!["TGO.a"; 50], vec![])]
+#[case::tgo_a_h6("tgo/TGO.a.h6.gds.gz", "TOP", vec!["TGO.a"; 50], vec![])]
+// A 300 µm Activ 0.265 from its oxide's edge, and 0.265 at (1000, 1000).
+#[case::tgo_a_h7("tgo/TGO.a.h7.gds.gz", "TOP", vec!["TGO.a"; 2], vec![])]
+// 0.265 in x and y, 0.2687 corner to corner, an abutting Activ (a space of zero), an Activ
+// in a ring's hole, one beside a 300 µm oxide and one at (1000, 1000) fire.
+#[case::tgo_b_h1("tgo/TGO.b.h1.gds.gz", "TOP", vec!["TGO.b"; 7], vec![])]
+// A chamfer 0.266 from an Activ's corner, a diamond oxide's corner 0.265 from an Activ's
+// wall, a diamond Activ's corner 0.265 from an oxide's wall and a 45° oxide wall 0.265 from
+// an Activ's corner fire; the chamfer at 0.276 is clean.
+#[case::tgo_b_h2("tgo/TGO.b.h2.gds.gz", "TOP", vec!["TGO.b"; 4], vec![])]
+// 0.265 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
+#[case::tgo_b_h3("tgo/TGO.b.h3.gds.gz", "TOP", vec!["TGO.b"; 7], vec![])]
+// Fifty 0.265 gaps, flat and as a GdsArrayRef.
+#[case::tgo_b_h4("tgo/TGO.b.h4.gds.gz", "TOP", vec!["TGO.b"; 50], vec![])]
+#[case::tgo_b_h5("tgo/TGO.b.h5.gds.gz", "TOP", vec!["TGO.b"; 50], vec![])]
+// An Activ crossing both oxide edges: 0.335 left, right and both (two walls) fire; an Activ
+// ending 0.335 past the gate inside an oxide 0.27 past it (the oxide's edge 0.605 from
+// the gate) and a gate ending 0.335 inside such an Activ are clean (report, finding 1); a
+// gate the oxide's edge cuts through fires TGO.c (inside part) and TGO.d (outside part
+// abutting the oxide); a poly over field under the oxide is nothing.
+#[case::tgo_c_h1("tgo/TGO.c.h1.gds.gz", "TOP", vec!["TGO.c", "TGO.c", "TGO.c", "TGO.c", "TGO.c", "TGO.d"], vec![])]
+// A 45° oxide edge crossing the Activ 0.336 from the gate's corner (the perpendicular's
+// foot below the Activ) fires under the closest-approach reading; an oxide and an Activ
+// drawn as two boxes each, the union's oxide edge 0.335 from the gate, fire.
+#[case::tgo_c_h2("tgo/TGO.c.h2.gds.gz", "TOP", vec!["TGO.c"; 2], vec![])]
+// 0.335 with the Activ's end on x = 20, straddling 21, on 40 and straddling 42.
+#[case::tgo_c_h3("tgo/TGO.c.h3.gds.gz", "TOP", vec!["TGO.c"; 4], vec![])]
+// Fifty 0.335 transistors, flat and as a GdsArrayRef.
+#[case::tgo_c_h4("tgo/TGO.c.h4.gds.gz", "TOP", vec!["TGO.c"; 50], vec![])]
+#[case::tgo_c_h5("tgo/TGO.c.h5.gds.gz", "TOP", vec!["TGO.c"; 50], vec![])]
+// 0.335 in x, 0.335 with the Activ 0.1 from the oxide (its TGO.b set aside), 0.335 from
+// the gate's width edge, 0.339 corner to corner, an abutting gate (a space of zero, its
+// TGO.b set aside) and 0.335 at (1000, 1000) fire; 0.3465 corner to corner is clean.
+#[case::tgo_d_h1("tgo/TGO.d.h1.gds.gz", "TOP", vec!["TGO.d"; 6], vec!["TGO.b"])]
+// A diamond oxide's corner 0.335 from a gate's edge and a chamfered oxide corner 0.335 from
+// a gate's corner fire.
+#[case::tgo_d_h2("tgo/TGO.d.h2.gds.gz", "TOP", vec!["TGO.d"; 2], vec![])]
+// 0.335 gaps straddling and ending on x = 20, straddling 21, 40 and 42.
+#[case::tgo_d_h3("tgo/TGO.d.h3.gds.gz", "TOP", vec!["TGO.d"; 5], vec![])]
+// Fifty 0.335 gaps, flat and as a GdsArrayRef.
+#[case::tgo_d_h4("tgo/TGO.d.h4.gds.gz", "TOP", vec!["TGO.d"; 50], vec![])]
+#[case::tgo_d_h5("tgo/TGO.d.h5.gds.gz", "TOP", vec!["TGO.d"; 50], vec![])]
+// 0.855 in x and y, 0.854 corner to corner, 0.855 beside a 300 µm oxide and 0.855 at
+// (1000, 1000) fire; 0.8655 corner to corner and an x-gap of 0.855 whose corners are 0.906
+// apart are clean.
+#[case::tgo_e_h1("tgo/TGO.e.h1.gds.gz", "TOP", vec!["TGO.e"; 5], vec![])]
+// A U with a 0.855 slot, a comb with two, and a 0.855 slot into a plate fire: a notch is
+// the oxide's space to itself (report, finding 4); a U at 0.86 is clean.
+#[case::tgo_e_h2("tgo/TGO.e.h2.gds.gz", "TOP", vec!["TGO.e"; 4], vec![])]
+// Two 45° oxides 0.855 apart and a diamond's corner 0.855 from a wall fire; at 0.865 clean.
+#[case::tgo_e_h3("tgo/TGO.e.h3.gds.gz", "TOP", vec!["TGO.e"; 2], vec![])]
+// 0.855 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
+#[case::tgo_e_h4("tgo/TGO.e.h4.gds.gz", "TOP", vec!["TGO.e"; 7], vec![])]
+// Fifty 0.855 gaps, flat and as a GdsArrayRef.
+#[case::tgo_e_h5("tgo/TGO.e.h5.gds.gz", "TOP", vec!["TGO.e"; 50], vec![])]
+#[case::tgo_e_h6("tgo/TGO.e.h6.gds.gz", "TOP", vec!["TGO.e"; 50], vec![])]
+// 0.855 bars in x and y, a 0.005 sliver and a 0.855 × 300 bar fire, two walls each; 0.86 is
+// clean.
+#[case::tgo_f_h1("tgo/TGO.f.h1.gds.gz", "TOP", vec!["TGO.f"; 8], vec![])]
+// A 0.854 diamond (four walls) and a 0.854 45° strip (two) fire; 0.866 and a chamfered box
+// are clean.
+#[case::tgo_f_h2("tgo/TGO.f.h2.gds.gz", "TOP", vec!["TGO.f"; 6], vec![])]
+// Two overlapping boxes, two abutting slices and one ring side at 0.855 fire (two walls
+// each); a plate drawn as a 10 × 10 grid is clean.
+#[case::tgo_f_h3("tgo/TGO.f.h3.gds.gz", "TOP", vec!["TGO.f"; 6], vec![])]
+// 0.855 bars ending on, starting on and straddling x = 20/21/40/42 and one across x = 20.
+#[case::tgo_f_h4("tgo/TGO.f.h4.gds.gz", "TOP", vec!["TGO.f"; 12], vec![])]
+// Fifty 0.855 bars, flat and as a GdsArrayRef.
+#[case::tgo_f_h5("tgo/TGO.f.h5.gds.gz", "TOP", vec!["TGO.f"; 100], vec![])]
+#[case::tgo_f_h6("tgo/TGO.f.h6.gds.gz", "TOP", vec!["TGO.f"; 100], vec![])]
 fn test_tgo(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -906,6 +993,57 @@ const DECK_NSDB: &str = "nsdblock";
 #[case::nsdb_b_notch("nsdblock/nSDB.b.notch.gds.gz", "TOP", vec!["nSDB.b", "nSDB.b"], vec![])]
 #[case::nsdb_c("nsdblock/nSDB.c.gds.gz", "TOP", vec!["nSDB.c", "nSDB.c"], vec![])]
 #[case::nsdb_e("nsdblock/nSDB.e.gds.gz", "TOP", vec!["nSDB.e"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/implant.md.  A space
+// counts one marker per pair, a width one per wall.
+// 0.305 bars in x and y, a 0.005 sliver and a 0.305 × 300 bar fire, two walls each; 0.31 is
+// clean.
+#[case::nsdb_a_h1("nsdblock/nSDB.a.h1.gds.gz", "TOP", vec!["nSDB.a"; 8], vec![])]
+// A 0.304 diamond (four walls) and a 0.304 45° strip (two) fire; 0.315 and a chamfered box
+// are clean.
+#[case::nsdb_a_h2("nsdblock/nSDB.a.h2.gds.gz", "TOP", vec!["nSDB.a"; 6], vec![])]
+// Two overlapping boxes, two abutting slices and one ring side at 0.305 fire (two walls
+// each); a plate drawn as a 10 × 10 grid is clean.
+#[case::nsdb_a_h3("nsdblock/nSDB.a.h3.gds.gz", "TOP", vec!["nSDB.a"; 6], vec![])]
+// 0.305 bars ending on, starting on and straddling x = 20/21/40/42 and one across x = 20.
+#[case::nsdb_a_h4("nsdblock/nSDB.a.h4.gds.gz", "TOP", vec!["nSDB.a"; 12], vec![])]
+// Fifty 0.305 bars, flat and as a GdsArrayRef.
+#[case::nsdb_a_h5("nsdblock/nSDB.a.h5.gds.gz", "TOP", vec!["nSDB.a"; 100], vec![])]
+#[case::nsdb_a_h6("nsdblock/nSDB.a.h6.gds.gz", "TOP", vec!["nSDB.a"; 100], vec![])]
+// 0.305 in x and y, 0.304 corner to corner, 0.305 beside a 300 µm block and 0.305 at
+// (1000, 1000) fire; 0.3154 corner to corner and an x-gap of 0.305 whose corners are 0.428
+// apart are clean.
+#[case::nsdb_b_h1("nsdblock/nSDB.b.h1.gds.gz", "TOP", vec!["nSDB.b"; 5], vec![])]
+// A U with a 0.305 slot, a comb with two and a 0.305 slot into a plate fire; a U at 0.31 is
+// clean.
+#[case::nsdb_b_h2("nsdblock/nSDB.b.h2.gds.gz", "TOP", vec!["nSDB.b"; 4], vec![])]
+// Two 45° blocks 0.305 apart and a diamond's corner 0.305 from a wall fire; at 0.315 clean.
+#[case::nsdb_b_h3("nsdblock/nSDB.b.h3.gds.gz", "TOP", vec!["nSDB.b"; 2], vec![])]
+// 0.305 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
+#[case::nsdb_b_h4("nsdblock/nSDB.b.h4.gds.gz", "TOP", vec!["nSDB.b"; 7], vec![])]
+// Fifty 0.305 gaps, flat and as a GdsArrayRef.
+#[case::nsdb_b_h5("nsdblock/nSDB.b.h5.gds.gz", "TOP", vec!["nSDB.b"; 50], vec![])]
+#[case::nsdb_b_h6("nsdblock/nSDB.b.h6.gds.gz", "TOP", vec!["nSDB.b"; 50], vec![])]
+// 0.305 in x and y, 0.304 corner to corner, a pSD overlapping one arm of a U-shaped block
+// and 0.2 from its other arm (report, finding 13), a pSD in a block ring's hole 0.305 from
+// the wall and 0.305 at (1000, 1000) fire; 0.31, an abutting pSD and an overlapping one
+// (nSDB.d) are clean.
+#[case::nsdb_c_h1("nsdblock/nSDB.c.h1.gds.gz", "TOP", vec!["nSDB.c"; 6], vec![])]
+// A block's chamfered corner 0.305 from a pSD's corner and a diamond pSD's corner 0.305
+// from a block's wall fire.
+#[case::nsdb_c_h2("nsdblock/nSDB.c.h2.gds.gz", "TOP", vec!["nSDB.c"; 2], vec![])]
+// 0.305 gaps straddling, ending on and starting on x = 20, straddling 21, 40 and 42.
+#[case::nsdb_c_h3("nsdblock/nSDB.c.h3.gds.gz", "TOP", vec!["nSDB.c"; 6], vec![])]
+// Fifty 0.305 gaps, flat and as a GdsArrayRef.
+#[case::nsdb_c_h4("nsdblock/nSDB.c.h4.gds.gz", "TOP", vec!["nSDB.c"; 50], vec![])]
+#[case::nsdb_c_h5("nsdblock/nSDB.c.h5.gds.gz", "TOP", vec!["nSDB.c"; 50], vec![])]
+// A Cont inside a block, half over its edge, 0.005 over it, half over an edge on x = 20, in
+// a block straddling 21, at (1000, 1000), and a 0.16 × 0.5 bar in a block fire; a Cont
+// abutting the edge, touching at a corner and in a block ring's hole are no overlap.
+#[case::nsdb_e_h1("nsdblock/nSDB.e.h1.gds.gz", "TOP", vec!["nSDB.e"; 7], vec![])]
+// Fifty Conts in blocks, flat and as a GdsArrayRef.
+#[case::nsdb_e_h2("nsdblock/nSDB.e.h2.gds.gz", "TOP", vec!["nSDB.e"; 50], vec![])]
+#[case::nsdb_e_h3("nsdblock/nSDB.e.h3.gds.gz", "TOP", vec!["nSDB.e"; 50], vec![])]
 fn test_nsdblock(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2995,6 +3133,148 @@ const DECK_PSD: &str = "psd";
 // is clean (protruding part ignored) while a crossing tie with a 0.02 lateral margin
 // fires — all validated 1:1 against the FEOL driver (rule is not in the maximal deck).
 #[case::psd_c1("psd/pSD.c1.gds.gz", "TOP", vec!["pSD.c1"; 3], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/implant.md.  An
+// enclosure counts one marker per enclosed shape, a space one per pair, a width one per
+// wall, an area one per region.
+// 0.305 bars in x and y, a 0.005 sliver (a pSD.k, set aside) and a 0.305 × 300 bar fire,
+// two walls each; 0.31 is clean.
+#[case::psd_a_h1("psd/pSD.a.h1.gds.gz", "TOP", vec!["pSD.a"; 8], vec!["pSD.k"])]
+// A 0.304 diamond (four walls) and a 0.304 45° strip (two) fire; 0.315 and a chamfered box
+// are clean (the diamonds' pSD.k set aside).
+#[case::psd_a_h2("psd/pSD.a.h2.gds.gz", "TOP", vec!["pSD.a"; 6], vec!["pSD.k"])]
+// Two overlapping boxes, two abutting slices and one ring side at 0.305 fire (two walls
+// each); a plate drawn as a 10 × 10 grid is clean.
+#[case::psd_a_h3("psd/pSD.a.h3.gds.gz", "TOP", vec!["pSD.a"; 6], vec![])]
+// 0.305 bars ending on, starting on and straddling x = 20/21/40/42 and one across x = 20.
+#[case::psd_a_h4("psd/pSD.a.h4.gds.gz", "TOP", vec!["pSD.a"; 12], vec![])]
+// Fifty 0.305 bars, flat and as a GdsArrayRef.
+#[case::psd_a_h5("psd/pSD.a.h5.gds.gz", "TOP", vec!["pSD.a"; 100], vec![])]
+#[case::psd_a_h6("psd/pSD.a.h6.gds.gz", "TOP", vec!["pSD.a"; 100], vec![])]
+// 0.305 in x and y, 0.304 corner to corner, 0.305 beside a 300 µm pSD and 0.305 at
+// (1000, 1000) fire; 0.3154 corner to corner and an x-gap of 0.305 whose corners are 0.428
+// apart are clean.
+#[case::psd_b_h1("psd/pSD.b.h1.gds.gz", "TOP", vec!["pSD.b"; 5], vec![])]
+// "Min. pSD space or notch": a U with a 0.305 slot, a comb with two and a 0.305 slot into
+// a plate fire (report, finding 5); a U at 0.31 is clean.
+#[case::psd_b_h2("psd/pSD.b.h2.gds.gz", "TOP", vec!["pSD.b"; 4], vec![])]
+// Two 45° pSDs 0.305 apart and a diamond's corner 0.305 from a wall fire; at 0.315 clean.
+#[case::psd_b_h3("psd/pSD.b.h3.gds.gz", "TOP", vec!["pSD.b"; 2], vec![])]
+// 0.305 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
+#[case::psd_b_h4("psd/pSD.b.h4.gds.gz", "TOP", vec!["pSD.b"; 7], vec![])]
+// Fifty 0.305 gaps, flat and as a GdsArrayRef.
+#[case::psd_b_h5("psd/pSD.b.h5.gds.gz", "TOP", vec!["pSD.b"; 50], vec![])]
+#[case::psd_b_h6("psd/pSD.b.h6.gds.gz", "TOP", vec!["pSD.b"; 50], vec![])]
+// 0.175 left, 0.175 top and 0.175 all round fire; a flush edge (figure 5.10's "f not
+// required"), an Activ without pSD, one a pSD abuts and one 0.5 from a pSD are clean.
+#[case::psd_c_h1("psd/pSD.c.h1.gds.gz", "TOP", vec!["pSD.c"; 3], vec![])]
+// Abutted NWell ties: 0.175 on the P+ body's left, top and bottom fire; 0.18 is clean.
+#[case::psd_c_h2("psd/pSD.c.h2.gds.gz", "TOP", vec!["pSD.c"; 3], vec![])]
+// A chamfer 0.175 from the Activ's corner, a diamond Activ 0.175 from a square's walls and
+// a square Activ 0.175 from a diamond's walls fire; at 0.18 clean.
+#[case::psd_c_h3("psd/pSD.c.h3.gds.gz", "TOP", vec!["pSD.c"; 3], vec![])]
+// A pSD, an Activ and a well drawn as two boxes each with 0.175 fire; 0.175 on and across
+// x = 20/21/40/42.
+#[case::psd_c_h4("psd/pSD.c.h4.gds.gz", "TOP", vec!["pSD.c"; 8], vec![])]
+// Fifty 0.175 margins in one well, flat and as a GdsArrayRef.
+#[case::psd_c_h5("psd/pSD.c.h5.gds.gz", "TOP", vec!["pSD.c"; 50], vec![])]
+#[case::psd_c_h6("psd/pSD.c.h6.gds.gz", "TOP", vec!["pSD.c"; 50], vec![])]
+// A 300 µm P+Activ 0.175 from its pSD's edge, and 0.175 at (1000, 1000).
+#[case::psd_c_h7("psd/pSD.c.h7.gds.gz", "TOP", vec!["pSD.c"; 2], vec![])]
+// 0.025 left, a chamfer 0.025 from the corner, and 0.025 on and across x = 20/21/40 fire;
+// 0.03 and 0.01 under PWell:block (no PWell) are clean.
+#[case::psd_c1_h1("psd/pSD.c1.h1.gds.gz", "TOP", vec!["pSD.c1"; 5], vec![])]
+// Fifty 0.025 margins, flat and as a GdsArrayRef.
+#[case::psd_c1_h2("psd/pSD.c1.h2.gds.gz", "TOP", vec!["pSD.c1"; 50], vec![])]
+#[case::psd_c1_h3("psd/pSD.c1.h3.gds.gz", "TOP", vec!["pSD.c1"; 50], vec![])]
+// 0.175 in x and y, 0.1768 corner to corner, 0.175 to an Activ under drawn nSD and 0.175 at
+// (1000, 1000) fire; an abutting Activ and one touching at a corner are related (section
+// 4.1), an Activ under nSD:block, one under PWell:block and one in an NWell are no N+Activ
+// in PWell: clean (report, findings 6-8).
+#[case::psd_d_h1("psd/pSD.d.h1.gds.gz", "TOP", vec!["pSD.d"; 5], vec![])]
+// The PWell part of an Activ crossing the well's edge 0.175 from a pSD, and a tie's N+ part
+// 0.175 from a second pSD, fire; an L-shaped pSD abutting an Activ on one edge and 0.175
+// from the other is related and clean (report, finding 9: tile-dependent).
+#[case::psd_d_h2("psd/pSD.d.h2.gds.gz", "TOP", vec!["pSD.d"; 2], vec![])]
+// A chamfer 0.175 from an Activ's corner and a diamond Activ's corner 0.175 from a wall.
+#[case::psd_d_h3("psd/pSD.d.h3.gds.gz", "TOP", vec!["pSD.d"; 2], vec![])]
+// 0.175 gaps straddling, ending on and starting on x = 20, straddling 21, 40 and 42.
+#[case::psd_d_h4("psd/pSD.d.h4.gds.gz", "TOP", vec!["pSD.d"; 6], vec![])]
+// Fifty 0.175 gaps, flat and as a GdsArrayRef.
+#[case::psd_d_h5("psd/pSD.d.h5.gds.gz", "TOP", vec!["pSD.d"; 50], vec![])]
+#[case::psd_d_h6("psd/pSD.d.h6.gds.gz", "TOP", vec!["pSD.d"; 50], vec![])]
+// 0.025 in x and y and 0.0283 corner to corner fire; an abutting N+ tab, an Activ under
+// nSD:block (no N+) and an N+Activ under PWell:block outside the well (in neither well:
+// nothing under pSD.d nor pSD.d1) are clean (report, findings 6 and 7).
+#[case::psd_d1_h1("psd/pSD.d1.h1.gds.gz", "TOP", vec!["pSD.d1"; 3], vec![])]
+// 0.025 gaps straddling x = 20, 21 and 40, and a chamfer 0.025 from an Activ's corner.
+#[case::psd_d1_h2("psd/pSD.d1.h2.gds.gz", "TOP", vec!["pSD.d1"; 4], vec![])]
+// Fifty 0.025 gaps in one well, flat and as a GdsArrayRef.
+#[case::psd_d1_h3("psd/pSD.d1.h3.gds.gz", "TOP", vec!["pSD.d1"; 50], vec![])]
+#[case::psd_d1_h4("psd/pSD.d1.h4.gds.gz", "TOP", vec!["pSD.d1"; 50], vec![])]
+// Overlaps of 0.295, one on an Activ drawn as two boxes, one with the abutment line on
+// x = 20 and one straddling 21 fire; 0.30 and 0.305 are clean.
+#[case::psd_e_h1("psd/pSD.e.h1.gds.gz", "TOP", vec!["pSD.e"; 4], vec![])]
+// Fifty 0.295 overlaps, flat and as a GdsArrayRef.
+#[case::psd_e_h2("psd/pSD.e.h2.gds.gz", "TOP", vec!["pSD.e"; 50], vec![])]
+#[case::psd_e_h3("psd/pSD.e.h3.gds.gz", "TOP", vec!["pSD.e"; 50], vec![])]
+// Tabs 0.295 deep: plain, drawn as two boxes, under drawn nSD, with the abutment line on
+// x = 20, straddling 21 and on 40 fire; 0.30 is clean.
+#[case::psd_f_h1("psd/pSD.f.h1.gds.gz", "TOP", vec!["pSD.f"; 6], vec![])]
+// Fifty 0.295 tabs in one well, flat and as a GdsArrayRef.
+#[case::psd_f_h2("psd/pSD.f.h2.gds.gz", "TOP", vec!["pSD.f"; 50], vec![])]
+#[case::psd_f_h3("psd/pSD.f.h3.gds.gz", "TOP", vec!["pSD.f"; 50], vec![])]
+// A substrate tie's P+ part 0.30 × 0.295 and an NWell tie's N+ tab 0.295 × 0.30 fire, so do
+// two 0.0885 parts on x = 20 and across 21; 0.09 is clean; a standalone 0.06 N+ tap and a
+// standalone P+ tap form no abutted tie (report, finding 10); the 0.30 × 0.295 P+ parts
+// overlap by 0.30 and are no pSD.e (report, finding 11).
+#[case::psd_g_h1("psd/pSD.g.h1.gds.gz", "TOP", vec!["pSD.g"; 4], vec![])]
+// Fifty 0.0885 N+ tabs in one well, flat and as a GdsArrayRef.
+#[case::psd_g_h2("psd/pSD.g.h2.gds.gz", "TOP", vec!["pSD.g"; 50], vec![])]
+#[case::psd_g_h3("psd/pSD.g.h3.gds.gz", "TOP", vec!["pSD.g"; 50], vec![])]
+// PFETs with 0.295 left, right, both (two walls) and 0.295 in the width direction (two
+// walls) fire pSD.i; 0.30 all round is clean; 3.3 V PFETs with 0.395 left, 0.395 right
+// (the pSD reaching out of the oxide) and 0.395 in the width direction (two walls) fire
+// pSD.i1.
+#[case::psd_i_h1("psd/pSD.i.h1.gds.gz", "TOP", vec!["pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i1", "pSD.i1", "pSD.i1", "pSD.i1"], vec![])]
+// A chamfer 0.295 from the gate's corner, a pSD and an Activ drawn as two boxes with 0.295,
+// and 0.295 on and across x = 20/21/40/42 fire.
+#[case::psd_i_h2("psd/pSD.i.h2.gds.gz", "TOP", vec!["pSD.i"; 6], vec![])]
+// Fifty 0.295 PFETs in one well, flat and as a GdsArrayRef.
+#[case::psd_i_h3("psd/pSD.i.h3.gds.gz", "TOP", vec!["pSD.i"; 50], vec![])]
+#[case::psd_i_h4("psd/pSD.i.h4.gds.gz", "TOP", vec!["pSD.i"; 50], vec![])]
+// A pSD abutting the Activ's end 0.295 from the gate's side, one 0.295 below the Activ over
+// the poly's cap, one 0.295 below the Activ with the poly's end 0.115 away, and one 0.295
+// from an N-gate in an NWell fire pSD.j; a 3.3 V NFET with 0.395 fires pSD.j1; 0.30, an
+// Activ under nSD:block, and a pSD 0.295 below the poly's end but 0.475 below the Activ
+// (figure 5.10's vertical `j` starts at the poly's end, but IHP's inverter has 0.23 there:
+// report, note D) are clean.
+#[case::psd_j_h1("psd/pSD.j.h1.gds.gz", "TOP", vec!["pSD.j", "pSD.j", "pSD.j", "pSD.j", "pSD.j1"], vec![])]
+// A 45° pSD wall 0.295 from the gate's corner, a diamond pSD's corner 0.295 above the
+// gate, and 0.295 on and across x = 20/21/40/42 fire.
+#[case::psd_j_h2("psd/pSD.j.h2.gds.gz", "TOP", vec!["pSD.j"; 6], vec![])]
+// Fifty 0.295 NFETs, flat and as a GdsArrayRef.
+#[case::psd_j_h3("psd/pSD.j.h3.gds.gz", "TOP", vec!["pSD.j"; 50], vec![])]
+#[case::psd_j_h4("psd/pSD.j.h4.gds.gz", "TOP", vec!["pSD.j"; 50], vec![])]
+// 0.2475, a 0.245 diamond, a 0.24 union of two boxes, 0.2475 across x = 20/21/40, two 0.16
+// boxes touching at a corner (two; their pSD.a/b set aside), 0.16 at (1000, 1000) and a 0.2
+// sliver (a pSD.a) fire; 0.25, a 0.2592 diamond and two abutting boxes adding to 0.25 are
+// clean.
+#[case::psd_k_h1("psd/pSD.k.h1.gds.gz", "TOP", vec!["pSD.k"; 10], vec!["pSD.a", "pSD.b"])]
+// Fifty 0.16 boxes, flat and as a GdsArrayRef.
+#[case::psd_k_h2("psd/pSD.k.h2.gds.gz", "TOP", vec!["pSD.k"; 50], vec![])]
+#[case::psd_k_h3("psd/pSD.k.h3.gds.gz", "TOP", vec!["pSD.k"; 50], vec![])]
+// A 0.2475 hole, a 0.49 hole holding a 0.25 island (0.24 empty; the island's pSD.b set
+// aside; report, finding 12), an L-shaped hole of 0.24, and 0.2475 holes across x = 20, 21
+// and at (1000, 1000) fire; 0.25 is clean.
+#[case::psd_l_h1("psd/pSD.l.h1.gds.gz", "TOP", vec!["pSD.l"; 6], vec!["pSD.b"])]
+// Fifty 0.2475 holes, flat and as a GdsArrayRef.
+#[case::psd_l_h2("psd/pSD.l.h2.gds.gz", "TOP", vec!["pSD.l"; 50], vec![])]
+#[case::psd_l_h3("psd/pSD.l.h3.gds.gz", "TOP", vec!["pSD.l"; 50], vec![])]
+// A pSD 0.175 from an Rsil's poly fires; 0.18 is clean.
+#[case::psd_m_h1("psd/pSD.m.h1.gds.gz", "TOP", vec!["pSD.m"; 1], vec![])]
+// An Rppd's pSD 0.175 past the body fires; 0.18 is clean.
+#[case::psd_n_h1("psd/pSD.n.h1.gds.gz", "TOP", vec!["pSD.n"; 1], vec![])]
 fn test_psd(
     #[case] gds: &str,
     #[case] topcell: &str,
