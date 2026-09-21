@@ -85,7 +85,10 @@ Violation markers
 One edge marker for **each of the two facing walls** of any width below ``value`` (so two
 markers per violation location, one on each wall), at the actual wall geometry. A pair
 of walls is one violation along the whole stretch they face each other, however many
-other corners of the shape fall alongside it, and whatever the tiling.
+other corners of the shape fall alongside it, and whatever the tiling: the pair is
+reported by the tile holding the lowest (then leftmost) end of the stretch, a vertex
+every tile's copy of the shape has where it has it at all, where the stretch's far end
+depends on which drawn shapes reach the tile's zone.
 
 
 KLayout equivalent

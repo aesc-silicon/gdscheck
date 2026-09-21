@@ -1681,6 +1681,24 @@ impl Core {
     pub fn owns(&self, x: f64, y: f64) -> bool {
         x >= self.x0 as f64 && x <= self.x1 as f64 && y >= self.y0 as f64 && y <= self.y1 as f64
     }
+
+    /// Whether this tile owns a wall pair filed by the low end of the stretch it shares,
+    /// `(x, y)` in DBU: the stretch's lowest (then leftmost) end, on the line midway
+    /// between the walls.
+    ///
+    /// A copy is exact within the tile's zone and beyond it whatever drawn shapes reach
+    /// the zone happen to give, so a stretch's far end is not the same in every tile
+    /// that sees it: a U across a line is an L in each side's copy, each missing the
+    /// arm past its zone, and the stretch between the arms is longer by one arm's width
+    /// in each - its midpoint fell either side of the line, and neither tile owned the
+    /// wall.  A bar drawn as two boxes had the opposite fault, one midpoint on the line
+    /// and one past it, and both tiles reported.  The low end of a stretch is a vertex
+    /// the copy holds exactly wherever it lies in a core, and the stretch runs from it
+    /// into that core, so the tile is one that sees the pair: half-open, and a low end
+    /// exactly on a line goes to the tile the stretch runs into.
+    pub fn owns_from(&self, x: f64, y: f64) -> bool {
+        x >= self.x0 as f64 && x < self.x1 as f64 && y >= self.y0 as f64 && y < self.y1 as f64
+    }
 }
 
 /// Merged geometry of one layer, indexed by global tile `(tx, ty)`.

@@ -588,16 +588,14 @@ fn facing_pairs(
             return out;
         }
         let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
-        if core.owns(cx, cy) {
-            let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
-            if w > 0 && h > min_run && limit.broken_by(w) {
-                out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w as f64));
-                out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w as f64));
-            }
-            if h > 0 && w > min_run && limit.broken_by(h) {
-                out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h as f64));
-                out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h as f64));
-            }
+        let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
+        if w > 0 && h > min_run && limit.broken_by(w) && core.owns_from(cx, y0 as f64) {
+            out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w as f64));
+            out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w as f64));
+        }
+        if h > 0 && w > min_run && limit.broken_by(h) && core.owns_from(x0 as f64, cy) {
+            out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h as f64));
+            out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h as f64));
         }
         return out;
     }
@@ -650,6 +648,8 @@ fn facing_pairs(
                 }
             }
         }
+        // A pair is owned by the low end of its stretch (see `Core::owns_from`): the
+        // stretch's far end is not the same in every copy, its low end is.
         for ((lx, _, _, rx, _, _), stretches) in runs {
             let width = rx as i64 - lx as i64;
             let cx = (lx as f64 + rx as f64) * 0.5;
@@ -657,10 +657,10 @@ fn facing_pairs(
                 if walls.is_some() && s1 - s0 <= min_run {
                     continue;
                 }
-                let cy = (s0 as f64 + s1 as f64) * 0.5;
-                if !core.owns(cx, cy) {
+                if !core.owns_from(cx, s0 as f64) {
                     continue;
                 }
+                let cy = (s0 as f64 + s1 as f64) * 0.5;
                 if empty {
                     push_edge(lx as f64, cy, rx as f64, cy, width as f64);
                 } else {
@@ -712,10 +712,10 @@ fn facing_pairs(
                 if walls.is_some() && s1 - s0 <= min_run {
                     continue;
                 }
-                let cx = (s0 as f64 + s1 as f64) * 0.5;
-                if !core.owns(cx, cy) {
+                if !core.owns_from(s0 as f64, cy) {
                     continue;
                 }
+                let cx = (s0 as f64 + s1 as f64) * 0.5;
                 if empty {
                     push_edge(cx, by as f64, cx, ty as f64, height as f64);
                 } else {
@@ -1296,9 +1296,17 @@ fn oblique_widths(
                 }
                 let mid = (s0 + s1) * 0.5;
                 let side = sign as f64;
-                let mx = ei.ax as f64 + mid * ux + side * nx * dist * 0.5;
-                let my = ei.ay as f64 + mid * uy + side * ny * dist * 0.5;
-                if !core.owns(mx, my) {
+                // Owned by the stretch's lowest (then leftmost) end on the line midway
+                // between the walls, whichever of the two edges the pair was read from.
+                let at = |s: f64| {
+                    (
+                        ei.ax as f64 + s * ux + side * nx * dist * 0.5,
+                        ei.ay as f64 + s * uy + side * ny * dist * 0.5,
+                    )
+                };
+                let (p0, p1) = (at(s0), at(s1));
+                let (mx, my) = if (p0.1, p0.0) <= (p1.1, p1.0) { p0 } else { p1 };
+                if !core.owns_from(mx, my) {
                     continue;
                 }
                 if empty {
