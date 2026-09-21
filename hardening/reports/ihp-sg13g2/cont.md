@@ -43,7 +43,7 @@ runs of two and is no array of five to either tool) and 6 (two squares corner to
 merge into one non-square Cont, the contbar deck's; KLayout lets the pair through, the
 case expects one Cnt.b).
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 Enclosure is the closest approach (`metric: euclidian` on every IHP enclosure rule): the
 chamfers and 45° walls passing under the value from a Cont's corner (note B, `Cnt.c.h2`,
@@ -100,7 +100,7 @@ removed, 24 Conts in five rows and five columns.
 - Verdict: five rows and five columns of Conts 0.18 apart are "an array of more than 4
   rows and more than 4 columns" whichever site is empty; the rule's concern (a dense
   field of contacts) does not go away with one of 25.  I read it as a violation, and the
-  case says so; it is the least certain finding here, and if the PDK owner reads
+  case says so; it is the least certain finding here, and if the gdscheck owner reads
   "array" as "full array" the case should drop one Cnt.b1.
 
 ### 4. A touch is a space of zero: Cnt.e, Cnt.f and Cnt.g1 stay silent when the other layer abuts the Cont (false negative)
@@ -161,7 +161,7 @@ square 0.175 from a 0.16 × 0.40 bar (CntB.b2's, 0.22) and a 0.155 square 0.175 
   meet at a point.
 - Verdict: two square Conts 0 apart are Cnt.b; the case (`cnt_b_h5`) expects two Cnt.b.
   gdscheck's reading (the union is one malformed bar) flags the layout too, just under
-  other rules; KLayout lets it through.  If the PDK owner prefers the union reading the
+  other rules; KLayout lets it through.  If the gdscheck owner prefers the union reading the
   case should drop one Cnt.b.
 
 ## Notes that are not findings
@@ -178,7 +178,7 @@ square 0.175 from a 0.16 × 0.40 bar (CntB.b2's, 0.22) and a 0.155 square 0.175 
   driver deck runs these three rules as `enclosed(..., euclidian)`, not `ext_enclosed`,
   and reports the 0.064 chamfer (two edge pairs at (2.071, 2.08)-(2.08, 2.08) / (2.104,
   2.146)-(2.146, 2.104)), the 0.064 wall and the 0.085 pSD chamfer.  The cases follow the
-  settled reading; if the PDK owner wants Cont enclosure euclidian like IHP's deck,
+  settled reading; if the gdscheck owner wants Cont enclosure euclidian like IHP's deck,
   `cnt_c_h2`, `cnt_d_h2` gain two markers each and `cnt_g2_h2` one.
 - C. Crossing Conts.  A Cont partly outside its Activ, GatPoly or pSD is reported by
   gdscheck as the enclosure rule at 0.0000 (and Cnt.g where nothing else covers it);

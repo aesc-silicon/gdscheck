@@ -2457,7 +2457,7 @@ fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
 // MnFil.a2: a 5.005 × 5.005 square fires (four walls); 5.005 × 5.0, a 3 × 20 bar, an L with
 // 3-wide arms and a frame with 2.25 walls are under 5 wide (finding 6).
 // The metal-filler maximum is the bounding box's long side, as upstream's
-// `with_bbox_max` (OPEN, the PDK owner's call): all five shapes, one marker each.
+// `with_bbox_max` (OPEN, the gdscheck owner's call): all five shapes, one marker each.
 #[case::mnfil_a2_h1("Fil.a2.h1", vec!["Fil.a2"; 5], mn_dens(&[]))]
 // MnFil.b: 0.415 (x, y), 0.41 corner to corner and a tip at 0.415 fire; 0.42, 0.424 and a
 // U's 0.415 notch (note A) are clean.

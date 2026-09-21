@@ -62,7 +62,7 @@ wants the resistor's length direction - the heads run out of the RES at both end
 construction, so neither an enclosure nor a protrusion tells the long side from the
 ends without it; the deck keeps IHP's reading, RES outside the poly and under no Cont).
 
-Decided (2026-09-21, PDK owner): 7 - note 1 is the Rhigh's (figure 6.5 itself draws
+Decided (2026-09-21, gdscheck owner): 7 - note 1 is the Rhigh's (figure 6.5 itself draws
 nSD on a tie); the bare nSD:drawing stays clean.  1 - the manual's reading.  The long side is told from
 the ends without a direction: the poly outside the RES is the heads and, where the RES
 stops short of a long edge, a thin strip along it, and an opening by 0.245 keeps the

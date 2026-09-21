@@ -59,7 +59,7 @@ look of their own.  The case carries the parallel-walls reading.  On the way the
 good pattern turned out to be a PL.4 violator by KLayout's euclidian PL.4 (its 45°
 gate's wall passed 0.14 from the active's corner); the bar starts 0.15 further in now.
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 11: the extension rules read the closest approach like every other enclosure rule (the
 `metric` of the rule); the cap chamfered to 0.10 fires (`Gat.c.h3`, 7).  The 2560 Act.c
@@ -224,7 +224,7 @@ the same at 0.25; and one poly crossing two Activs 0.245 apart (gate regions 0.2
 - KLayout: the same (`GP_mosHV = Gate.not_outside(ThickGateOx)`, spaced 0.25).
 - Verdict: by the figure the rule is the poly-to-poly space of 3.3 V gates, 0.25 in place of
   Gat.b's 0.18, and the first pair fires.  Expected 2 in `gat_b1_h2`.  This reads the figure
-  against a rule text both tools read the other way; if the PDK owner prefers the region
+  against a rule text both tools read the other way; if the gdscheck owner prefers the region
   reading the case should drop to 1.
 
 ### 9. Gat.a2 and Gat.a4 take a pSD gate without an NWell for a PFET (false positive, pedantic)

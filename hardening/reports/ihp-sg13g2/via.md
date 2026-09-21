@@ -45,10 +45,10 @@ report found the same split, one commit covers both).
 
 Open, case carries the engine's answer: 2 - the chamfer through the via's corner is the
 metaln report's finding 4 (a corner touch pairs no wall under the projection reading),
-the PDK owner's call together with the angled-wall projection of the gatpoly report's
+the gdscheck owner's call together with the angled-wall projection of the gatpoly report's
 finding 11.
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 2: the chamfer through the via's corner fires - enclosure is the closest approach (`metric: euclidian`), decided 2026-09-21; the diamond and the 0.0035 chamfer of `V(n).c.h3` and the chamfers of `V(n).c1.h4` with it.
 

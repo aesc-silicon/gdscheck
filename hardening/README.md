@@ -17,7 +17,7 @@ seen the engine, and what came of it.
   decks in the elements container, one line per rule either side reported.
 - `reports/<process>/<deck>.md` - one report per round: the findings, the oracle's
   answers, the verdicts, and a *Resolution* section saying what was fixed in the engine
-  or the deck, what was kept and why, and what the PDK owner decided.
+  or the deck, what was kept and why, and what the gdscheck owner decided.
 
 The reports are kept because the decisions in them are the deck's rationale: where the
 manual, the foundry deck and this engine disagree, the report says who was believed and

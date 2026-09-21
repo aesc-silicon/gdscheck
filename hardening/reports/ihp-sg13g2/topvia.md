@@ -44,10 +44,10 @@ cmos5l's topvia1 - runs on `<Via>NoSealring`; TV.b and V.b/b1 had the drawn laye
 Open, cases carry the engine's answer: 2 - a 45° wall crossing over the via's wall
 is no pair under the parallel-walls projection reading, the gatpoly report's finding
 11 (a faithful reading of KLayout's angled projection was built and taken out again as
-tile-dependent on core-cut pieces); the PDK owner's call, with the GF180 counts it
+tile-dependent on core-cut pieces); the gdscheck owner's call, with the GF180 counts it
 would move.
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 2: the 45° wall over the via's wall fires, and the two controls cut under the value from the corner with it - enclosure is the closest approach (`metric: euclidian`), decided 2026-09-21.
 
@@ -132,7 +132,7 @@ the corner - both clean by the settled projection reading.
   `e − 0.005` euclidian from the corner with (e − 0.005)·√2 over the wall; the cut
   exactly `e` over the corner) are clean in gdscheck and reported by IHP's driver, which
   runs TV.c/TV.d as `enclosed(..., euclidian)`.  As in the cont report's note B; if the
-  PDK owner wants via enclosure euclidian like IHP's deck, `tv<n>_c_h2` and `tv<n>_d_h2`
+  gdscheck owner wants via enclosure euclidian like IHP's deck, `tv<n>_c_h2` and `tv<n>_d_h2`
   gain two markers each.
 - E. Counts.  TV.a: two per bar or per one-direction miss, four per short square, four
   for an L of three quarters, six for the notched square; KLayout one polygon per

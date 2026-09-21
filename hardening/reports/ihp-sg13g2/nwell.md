@@ -50,7 +50,7 @@ Layout `NW.b1.h1` had an unintended pair: the 1.28/1.28 "clean" well sat 1.469 f
 0.90/0.90 pair's well.  The latter moved to x = 15; the case's count of six was right
 by accident before (the 0.62 pair missing, the accident counted).
 
-## Decided (2026-09-21, PDK owner)
+## Decided (2026-09-21, gdscheck owner)
 
 10: enclosure is the closest approach (`metric: euclidian` on every IHP enclosure rule);
 the chamfers passing under the value from a corner fire, as the cases first expected.
@@ -117,7 +117,7 @@ Layout `NW.b1.h8`: two wells 1.00 apart with PWell:block over the whole gap, and
 - Verdict: with the gap fully blocked there is no PWell whose width NW.b1 could measure;
   the block-to-well space is PWB.c's.  Expected 1 (`nw_b1_h8`).  Debatable in that the
   punch-through the rule guards against does not care what the gap is called; if the
-  PDK owner prefers the physical reading the case should be flipped, not the engine.
+  gdscheck owner prefers the physical reading the case should be flipped, not the engine.
 
 ### 5. NW.d does not see an N+Activ that crosses the well edge (false negative)
 
@@ -247,7 +247,7 @@ well.
   5.1 applies and 0.45 fires (in `nw_c1_h1`, `nw_d_h7`, `nw_e_h7`, `nw_f_h7`).  The frame's
   hole is not DigiBnd either: gdscheck is right and KLayout wrong.  A DigiBnd over the
   Activ alone satisfies the wording, clean.  The cut-through reading is strict; if the
-  PDK owner prefers "touches DigiBnd" the four cases should drop one strict marker each.
+  gdscheck owner prefers "touches DigiBnd" the four cases should drop one strict marker each.
 
 ## Notes that are not findings
 
