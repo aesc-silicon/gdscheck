@@ -264,10 +264,11 @@ fn virtual_layers_ops() {
 
     // Pad = union of dfpad(0,100,200) and Passiv(300).
     assert_eq!(minxs("Pad"), vec![0, 100, 200, 300]);
-    // CuPillarPad = Passiv.pillar AND dfpad -> only at x=0.
-    assert_eq!(minxs("CuPillarPad"), vec![0]);
-    // SBumpPad = Passiv.sbump AND dfpad -> only at x=100.
-    assert_eq!(minxs("SBumpPad"), vec![100]);
+    // CuPillarPad and SBumpPad are lazy virtuals (an eager one keeps its result's
+    // outer ring only, and a pad with a hole must keep it): built per tile at check
+    // time, not inserted into the layout.
+    assert!(minxs("CuPillarPad").is_empty());
+    assert!(minxs("SBumpPad").is_empty());
 }
 
 // ---------------------------------------------------------------------------

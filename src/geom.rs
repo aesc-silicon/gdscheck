@@ -3140,6 +3140,8 @@ pub struct MarginPair {
     pub wall: Seg,
     /// Read against an outer wall at an angle - a closest approach, not a facing run.
     pub oblique: bool,
+    /// The outer wall the margin was read against.
+    pub outer: Seg,
 }
 
 impl MarginPair {
@@ -3147,6 +3149,13 @@ impl MarginPair {
     pub fn dbu(&self) -> f64 {
         (self.num as f64 / self.den as f64).sqrt()
     }
+}
+
+/// The closest approach of two segments: the squared distance as `num / den` and the
+/// point on each, in DBU.
+pub fn seg_closest(a: Seg, b: Seg) -> (i128, i128, (f64, f64), (f64, f64)) {
+    let c = seg_seg_closest_sq(a.0, a.1, b.0, b.1);
+    (c.num, c.den, c.on_a, c.on_b)
 }
 
 /// Whether every vertex of `inner` lies inside `outer` or on its boundary - a shape
@@ -3265,6 +3274,7 @@ pub fn margin_pairs(
                         probe: (c.on_a.0 + nx * 2.0, c.on_a.1 + ny * 2.0),
                         wall: (a0, a1),
                         oblique: true,
+                        outer: (b0, b1),
                     });
                     continue;
                 }
@@ -3283,6 +3293,7 @@ pub fn margin_pairs(
                     probe: (c.on_a.0 + wx * (dist + 2.0), c.on_a.1 + wy * (dist + 2.0)),
                     wall: (a0, a1),
                     oblique: true,
+                    outer: (b0, b1),
                 });
                 continue;
             }
@@ -3324,6 +3335,7 @@ pub fn margin_pairs(
                 probe: (mid.0 + nx * (dist + 2.0), mid.1 + ny * (dist + 2.0)),
                 wall: (a0, a1),
                 oblique: false,
+                outer: (b0, b1),
             });
         }
     }
