@@ -19,6 +19,12 @@ rules:
     check: min_space
     layers: [nSD.block, pSD]
     value: 0.31
+  - id: nSDB.c
+    check: min_space
+    layers: [nSD.block, pSD]
+    value: 0.31
+    params:
+      pairs: overlapping
   - id: nSDB.e
     check: forbidden
     layers: [nSD.block, Cont]

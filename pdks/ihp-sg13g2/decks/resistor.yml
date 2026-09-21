@@ -24,6 +24,7 @@ rules:
     layers: [EXTBlock, GPRsilExtended]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Rsil.f
     check: min_width
@@ -39,6 +40,7 @@ rules:
     layers: [pSD, RppdAll]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Rppd.c
     check: min_space
@@ -53,6 +55,7 @@ rules:
     layers: [EXTBlock, GPRppdExtended]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Rppd.e
     check: min_width
@@ -72,6 +75,7 @@ rules:
     layers: [pSDnSD, GPRhighExtended]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Rhi.d
     check: min_space
@@ -86,6 +90,7 @@ rules:
     layers: [EXTBlock, GPRhighExtended]
     value: 0.18
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Rhi.f
     check: min_width

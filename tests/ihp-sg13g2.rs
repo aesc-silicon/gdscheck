@@ -343,8 +343,9 @@ const DECK_TGO: &str = "tgo";
 // Activs under one oxide fire; an Activ crossing the oxide's edge (figure 5.7) is nothing.
 #[case::tgo_a_h1("tgo/TGO.a.h1.gds.gz", "TOP", vec!["TGO.a"; 5], vec![])]
 // A chamfer 0.265 from the Activ's corner, a diamond Activ in a square 0.265 from its
-// corners and a square Activ in a diamond whose walls pass 0.265 from its corners fire.
-#[case::tgo_a_h2("tgo/TGO.a.h2.gds.gz", "TOP", vec!["TGO.a"; 3], vec![])]
+// corners and a square Activ in a diamond whose walls pass 0.265 from its corners fire
+// (closest approach, one per corner: 1 + 4 + 4).
+#[case::tgo_a_h2("tgo/TGO.a.h2.gds.gz", "TOP", vec!["TGO.a"; 9], vec![])]
 // An oxide drawn as two boxes and an Activ drawn as four quadrants, 0.265 each, fire; an
 // Activ in an oxide ring's hole and one crossing its inner edge are nothing.
 #[case::tgo_a_h3("tgo/TGO.a.h3.gds.gz", "TOP", vec!["TGO.a"; 2], vec![])]
@@ -355,9 +356,12 @@ const DECK_TGO: &str = "tgo";
 #[case::tgo_a_h6("tgo/TGO.a.h6.gds.gz", "TOP", vec!["TGO.a"; 50], vec![])]
 // A 300 µm Activ 0.265 from its oxide's edge, and 0.265 at (1000, 1000).
 #[case::tgo_a_h7("tgo/TGO.a.h7.gds.gz", "TOP", vec!["TGO.a"; 2], vec![])]
-// 0.265 in x and y, 0.2687 corner to corner, an abutting Activ (a space of zero), an Activ
-// in a ring's hole, one beside a 300 µm oxide and one at (1000, 1000) fire.
-#[case::tgo_b_h1("tgo/TGO.b.h1.gds.gz", "TOP", vec!["TGO.b"; 7], vec![])]
+// 0.265 in x and y, 0.2687 corner to corner, an Activ in a ring's hole, one beside a
+// 300 µm oxide and one at (1000, 1000) fire; an abutting Activ is the limit of the
+// crossing Activ figure 5.7 draws as legal, and `ActivOutsideTGO` is the difference
+// layer, whose every crossing Activ abuts the oxide - no `abutting: report` (finding 3,
+// the weaker half).
+#[case::tgo_b_h1("tgo/TGO.b.h1.gds.gz", "TOP", vec!["TGO.b"; 6], vec![])]
 // A chamfer 0.266 from an Activ's corner, a diamond oxide's corner 0.265 from an Activ's
 // wall, a diamond Activ's corner 0.265 from an oxide's wall and a 45° oxide wall 0.265 from
 // an Activ's corner fire; the chamfer at 0.276 is clean.
@@ -369,14 +373,16 @@ const DECK_TGO: &str = "tgo";
 #[case::tgo_b_h5("tgo/TGO.b.h5.gds.gz", "TOP", vec!["TGO.b"; 50], vec![])]
 // An Activ crossing both oxide edges: 0.335 left, right and both (two walls) fire; an Activ
 // ending 0.335 past the gate inside an oxide 0.27 past it (the oxide's edge 0.605 from
-// the gate) and a gate ending 0.335 inside such an Activ are clean (report, finding 1); a
-// gate the oxide's edge cuts through fires TGO.c (inside part) and TGO.d (outside part
-// abutting the oxide); a poly over field under the oxide is nothing.
-#[case::tgo_c_h1("tgo/TGO.c.h1.gds.gz", "TOP", vec!["TGO.c", "TGO.c", "TGO.c", "TGO.c", "TGO.c", "TGO.d"], vec![])]
+// the gate) and a gate ending 0.335 inside such an Activ are clean (report, finding 1:
+// TGO.c reads the oxide's edge `over` the Activ); a gate the oxide's edge cuts through is
+// TGO.d (its outside part abuts the oxide; the oxide's edge crosses the gate's sides and
+// is no TGO.c pair); a poly over field under the oxide is nothing.
+#[case::tgo_c_h1("tgo/TGO.c.h1.gds.gz", "TOP", vec!["TGO.c", "TGO.c", "TGO.c", "TGO.c", "TGO.d"], vec![])]
 // A 45° oxide edge crossing the Activ 0.336 from the gate's corner (the perpendicular's
-// foot below the Activ) fires under the closest-approach reading; an oxide and an Activ
-// drawn as two boxes each, the union's oxide edge 0.335 from the gate, fire.
-#[case::tgo_c_h2("tgo/TGO.c.h2.gds.gz", "TOP", vec!["TGO.c"; 2], vec![])]
+// foot below the Activ) is not read: TGO.c is an extension on a poly crossing the oxide,
+// read by projection (OPEN with Gat.c's chamfered cap); an oxide and an Activ drawn as
+// two boxes each, the union's oxide edge 0.335 from the gate, fire.
+#[case::tgo_c_h2("tgo/TGO.c.h2.gds.gz", "TOP", vec!["TGO.c"; 1], vec![])]
 // 0.335 with the Activ's end on x = 20, straddling 21, on 40 and straddling 42.
 #[case::tgo_c_h3("tgo/TGO.c.h3.gds.gz", "TOP", vec!["TGO.c"; 4], vec![])]
 // Fifty 0.335 transistors, flat and as a GdsArrayRef.
@@ -3120,7 +3126,9 @@ const DECK_PSD: &str = "psd";
 // pSD.m/n reuse the resistor-recognition fixtures (pSD too close to / not enclosing a resistor).
 #[case::psd_m("resistor/RsilBody.gds.gz", "TOP", vec!["pSD.m"; 1], vec![])]
 #[case::psd_n("resistor/RppdBody.gds.gz", "TOP", vec!["pSD.n"; 1], vec![])]
-#[case::psd_g("psd/pSD.g.gds.gz", "TOP", vec!["pSD.g"; 2], vec![])]
+// The 0.06 N-tap abutting a P+ tap fires; the P+ corner sliver outside the NWell abuts no
+// N+ Activ and forms no tie.
+#[case::psd_g("psd/pSD.g.gds.gz", "TOP", vec!["pSD.g"; 1], vec![])]
 // Four abutted ties: exact-0.30 sliver (clean), uniform 0.20 (fires), 0.20 with a wide
 // pocket (clean — ≥0.30 at one position suffices), 0.2×0.5 tab (fires — width, not
 // length, is the metric).  Validated 2/2 exact-location match vs KLayout.
@@ -3172,7 +3180,8 @@ const DECK_PSD: &str = "psd";
 #[case::psd_c_h2("psd/pSD.c.h2.gds.gz", "TOP", vec!["pSD.c"; 3], vec![])]
 // A chamfer 0.175 from the Activ's corner, a diamond Activ 0.175 from a square's walls and
 // a square Activ 0.175 from a diamond's walls fire; at 0.18 clean.
-#[case::psd_c_h3("psd/pSD.c.h3.gds.gz", "TOP", vec!["pSD.c"; 3], vec![])]
+// (closest approach, one per corner: 1 + 4 + 4).
+#[case::psd_c_h3("psd/pSD.c.h3.gds.gz", "TOP", vec!["pSD.c"; 9], vec![])]
 // A pSD, an Activ and a well drawn as two boxes each with 0.175 fire; 0.175 on and across
 // x = 20/21/40/42.
 #[case::psd_c_h4("psd/pSD.c.h4.gds.gz", "TOP", vec!["pSD.c"; 8], vec![])]
@@ -3227,8 +3236,8 @@ const DECK_PSD: &str = "psd";
 // A substrate tie's P+ part 0.30 × 0.295 and an NWell tie's N+ tab 0.295 × 0.30 fire, so do
 // two 0.0885 parts on x = 20 and across 21; 0.09 is clean; a standalone 0.06 N+ tap and a
 // standalone P+ tap form no abutted tie (report, finding 10); the 0.30 × 0.295 P+ parts
-// overlap by 0.30 and are no pSD.e (report, finding 11).
-#[case::psd_g_h1("psd/pSD.g.h1.gds.gz", "TOP", vec!["pSD.g"; 4], vec![])]
+// are pSD.e as both tools read the overlap - the P+ part's width (report, finding 11).
+#[case::psd_g_h1("psd/pSD.g.h1.gds.gz", "TOP", [vec!["pSD.g"; 4], vec!["pSD.e"; 2]].concat(), vec![])]
 // Fifty 0.0885 N+ tabs in one well, flat and as a GdsArrayRef.
 #[case::psd_g_h2("psd/pSD.g.h2.gds.gz", "TOP", vec!["pSD.g"; 50], vec![])]
 #[case::psd_g_h3("psd/pSD.g.h3.gds.gz", "TOP", vec!["pSD.g"; 50], vec![])]

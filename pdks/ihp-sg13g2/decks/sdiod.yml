@@ -8,6 +8,7 @@ rules:
     layers: [PWell.block, SchottkyContBar]
     value: 0.25
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Sdiod.a
     check: max_enclosure
@@ -18,6 +19,7 @@ rules:
     layers: [nSD.block, SchottkyContBar]
     value: 0.40
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Sdiod.b
     check: max_enclosure
@@ -28,6 +30,7 @@ rules:
     layers: [SalBlock, SchottkyContBar]
     value: 0.45
     params:
+      metric: euclidian
       interacting_only: 1
   - id: Sdiod.c
     check: max_enclosure

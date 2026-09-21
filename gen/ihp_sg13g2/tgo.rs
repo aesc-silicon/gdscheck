@@ -71,11 +71,11 @@ fn transistor(
     ]
 }
 
-/// TGO.c — ThickGateOx∩Activ must extend ≥ 0.34 µm past the GatPoly sides (the gate's
-/// source/drain-facing edges); the cover is clipped to Activ, so gate caps and endcaps
-/// poking past the active are exempt.  Clean device: a centred gate with wide source/drain
-/// so the TGO-over-active reaches ≥ 0.34 past each side.  Fail device: a gate only 0.20 µm
-/// from the Activ's left edge, so the TGO-over-active extends just 0.20 µm past that side.
+/// TGO.c — the ThickGateOx must extend ≥ 0.34 µm past the GatPoly sides where its edge
+/// crosses the Activ (figure 5.7); an Activ ending inside the oxide has no oxide edge
+/// over it, and the oxide past the Activ's end is TGO.a's.  Clean device: a centred gate
+/// with wide source/drain under an oxide reaching ≥ 0.34 past each side.  Fail device:
+/// the oxide's left edge crossing the Activ 0.20 µm from the gate's left side.
 fn tgo_c(pdk: &PdkConfig) {
     let tgo = layer(pdk, "ThickGateOx");
     let activ = layer(pdk, "Activ");
@@ -84,13 +84,12 @@ fn tgo_c(pdk: &PdkConfig) {
     let mut elems = transistor(activ, gp, o, o, 2.0);
     elems.push(rect(tgo, o - 0.34, o - 0.34, o + 2.34, o + 1.34)); // 0.8 S/D each side → clean
 
-    // Fail device: Activ o+6.0..o+8.0, gate left side at o+6.20 (0.20 µm of source/drain).
-    // TGO covers the whole Activ + 0.34 (TGO.a clean), but TGO∩Activ extends only 0.20 µm
-    // past the gate's left side before the Activ ends → TGO.c violation on that side.
+    // Fail device: Activ o+6.0..o+8.0, gate at o+6.8..o+7.2; the oxide starts at o+6.6,
+    // 0.20 µm from the gate's left side, its edge crossing the Activ → TGO.c on that side.
     let (ax0, ax1) = (o + 6.0, o + 8.0);
     elems.push(rect(activ, ax0, o, ax1, o + 1.0));
-    elems.push(rect(gp, ax0 + 0.2, o - 0.5, ax0 + 0.6, o + 1.5)); // left side 0.20 from Activ edge
-    elems.push(rect(tgo, ax0 - 0.34, o - 0.34, ax1 + 0.34, o + 1.34)); // covers Activ + 0.34
+    elems.push(rect(gp, ax0 + 0.8, o - 0.5, ax0 + 1.2, o + 1.5));
+    elems.push(rect(tgo, ax0 + 0.6, o - 0.34, ax1 + 0.34, o + 1.34)); // left edge 0.20 from the gate
     write_gz(&format!("{DIR}/TGO.c.gds.gz"), library("TOP", elems));
 }
 
