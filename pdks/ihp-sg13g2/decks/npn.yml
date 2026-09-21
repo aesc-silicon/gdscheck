@@ -7,18 +7,22 @@ rules:
     check: forbidden
     layers: [NpnTieNoTrans]
     value: 0.0
+  - id: npnG2.b
+    check: forbidden
+    layers: [NpnTransOutsideTie]
+    value: 0.0
   - id: npnG2.c
     check: min_enclosure
     layers: [pSD, NpnTieRingActiv]
     value: 0.20
     params:
       metric: euclidian
-      interacting_only: 1
-      skip_coincident: 1
   - id: npnG2.d
     check: min_space
     layers: [NActiv, TransInTie]
     value: 1.21
+    params:
+      abutting: related
   - id: npnG2.d
     check: min_space
     layers: [NWell, TransInTie]
@@ -29,7 +33,7 @@ rules:
     value: 1.21
   - id: npnG2.d
     check: min_space
-    layers: [nBuLay, TransInTie]
+    layers: [nBuLayDerived, TransInTie]
     value: 1.21
   - id: npnG2.d
     check: min_space
