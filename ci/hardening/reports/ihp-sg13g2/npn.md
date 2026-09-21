@@ -46,6 +46,29 @@ finding 5, and every flat/array pair agreed.  `helpers::shift` (and so `flat_arr
 now moves text elements with the boundaries; it left them behind before, which no
 earlier generator noticed because none arrayed a labelled device.
 
+## Resolution (2026-09-21)
+
+Fixed, engine: 5 (a space report is one per pair of regions, whichever tiles read it:
+the reports of one pair - known by the kinship index's id, or by a point of a shape
+whole inside some core - keep the lowest, then leftmost; the SalBlock U is one at every
+tile, as the ring and the comb were).
+
+Fixed, deck: 1 (a second npnG2.b entry on `NpnTransOutsideTie`, the labelled TRANS
+not lying whole in a labelled pSD hole: the crossing TRANS, the TRANS with no tie and
+the broken ring fire; the pSD-only ring holds a hole and is left to the tie's own Activ
+rule), 2 (npnG2.c reads the P+Activ *ring* round the hole - `PsdActivRings`, the P+Activ
+with a hole, overlapping the grown hole - without `skip_coincident` or the extension
+reading: the flush Activ and the one sticking out of the pSD are enclosed by nothing,
+the island 0.45 away is not the tie's), 3 (`abutting: related` on npnG2.d's N+Activ
+entry: a corner touch is related like an edge), 4 (npnG2.d reads `nBuLayDerived`,
+section 4.2's nBuLay), 6 (the Schottky diode is a ContBar `inside` the four-layer stack,
+"enclosed by", with the nBuLay drawn or generated).  The older emitter fixtures'
+minimal devices - a labelled TRANS with no tie - are npnG2.b now and set it aside.
+
+Open: 7 (section 6.7's "do not apply" list - NW.c1, NW.e1, PWB.f1, CntB.a, LU.d on a
+recognised Schottky diode - lives in five other decks; an exemption layer subtracted
+from each of those rules' layers is the way, not done here).
+
 ## Findings
 
 ### 1. npnG2.b reads only the labelled holes without a TRANS

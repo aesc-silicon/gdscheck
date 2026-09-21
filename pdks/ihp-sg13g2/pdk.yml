@@ -974,6 +974,17 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [NpnTieHole, TRANS]
+  # npnG2.b the other way round: the labelled TRANS must lie whole in a tie's hole -
+  # the tie being the P+Activ ring, so a pSD-only ring holds nothing.
+  - name: NpnTrans
+    op: with_text
+    mode: lazy
+    layers: [TRANS, TEXT]
+    text: "npn*"
+  - name: NpnTransOutsideTie
+    op: not_inside
+    mode: lazy
+    layers: [NpnTrans, NpnTieHole]
   - name: TransInTie
     op: overlapping
     mode: lazy
@@ -984,10 +995,16 @@ virtual_layers:
     mode: lazy
     radius: 0.5
     layers: [NpnTieHole]
+  # npnG2.c: the tie's Activ is the ring round the hole - a P+Activ with a hole - not
+  # any P+Activ near it.
+  - name: PsdActivRings
+    op: with_holes
+    mode: lazy
+    layers: [PsdActiv]
   - name: NpnTieRingActiv
     op: overlapping
     mode: lazy
-    layers: [PsdActiv, NpnTieHoleGrown]
+    layers: [PsdActivRings, NpnTieHoleGrown]
   - name: GatPolyNoSRAM
     op: difference
     mode: lazy
@@ -1020,12 +1037,14 @@ virtual_layers:
     mode: lazy
     layers: [EmWind, TransG2V]
 
+  # Section 6.7: the diode is a ContBar *enclosed by* the stack - whole inside it - and
+  # the nBuLay is section 4.2's, drawn or generated.
   - name: SchottkyBlock
     op: intersection
     mode: lazy
-    layers: [SalBlock, nSD.block, PWell.block, nBuLay]
+    layers: [SalBlock, nSD.block, PWell.block, nBuLayDerived]
   - name: SchottkyContBar
-    op: overlapping
+    op: inside
     mode: lazy
     layers: [ContBar, SchottkyBlock]
 

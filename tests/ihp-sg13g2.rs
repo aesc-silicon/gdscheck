@@ -4003,9 +4003,10 @@ const DECK_NPN: &str = "npn";
 // One marker per emitter case: min/max for G2 (=0.90), L (1.00..2.50), V (1.00..5.00).
 // KLayout's shipped emitter rules are dead code (µm/dbu bug in ext_with_length's
 // ">" branch) — limits here follow the PDF; see the deck comment.
+// (Minimal devices - a labelled TRANS and its window, no tie: npnG2.b set aside.)
 #[case::npn_13g2("npn/npn13G2.gds.gz", "TOP",
     vec!["npn13G2.a", "npn13G2.a", "npn13G2L.a", "npn13G2L.b", "npn13G2V.a", "npn13G2V.b"],
-    vec![])]
+    vec!["npnG2.b"])]
 // Hardening (ci/hardening/reports/ihp-sg13g2/npn.md).  The devices are drawn as the
 // reference cells: a TRANS filling the hole of a pSD ring 0.9 wide with its Activ ring
 // 0.2 inside, or with the hole grown so a neighbour fits in it.
@@ -4013,9 +4014,10 @@ const DECK_NPN: &str = "npn";
 // a P+ island in its hole; an unlabelled empty ring and a ring with its TRANS are clean.
 #[case::npn_g2_b_h1("npn/npnG2.b.h1.gds.gz", "TOP", vec!["npnG2.b"; 4], vec![])]
 // Ties that do not enclose their TRANS: the TRANS crossing the ring, a labelled TRANS
-// with no tie, a TRANS in a ring with a 0.5 gap, a TRANS in a pSD-only ring (no Activ,
-// no tie by npnG2.a).  "Must enclose TRANS": four.
-#[case::npn_g2_b_h2("npn/npnG2.b.h2.gds.gz", "TOP", vec!["npnG2.b"; 4], vec![])]
+// with no tie, a TRANS in a ring with a 0.5 gap fire ("must enclose TRANS": the labelled
+// TRANS must lie whole in a labelled pSD hole); the TRANS in a pSD-only ring lies in
+// such a hole and is left to the tie's own Activ rule.
+#[case::npn_g2_b_h2("npn/npnG2.b.h2.gds.gz", "TOP", vec!["npnG2.b"; 3], vec![])]
 // Empty labelled rings straddling x = 20, on x = 21, 40, 42, straddling 100, at (1000, 1000).
 #[case::npn_g2_b_h3("npn/npnG2.b.h3.gds.gz", "TOP", vec!["npnG2.b"; 6], vec![])]
 // Fifty empty labelled rings, flat and as a GdsArrayRef.
@@ -4092,7 +4094,8 @@ const DECK_NPN: &str = "npn";
 #[case::npn_13g2_a_h1("npn/npn13G2.a.h1.gds.gz", "TOP", vec!["npn13G2.a"; 15], vec![])]
 // A labelled TRANS with no tie and a 0.895 window fires; an unlabelled TRANS, a label
 // outside the TRANS, "npn13G2C" and "npn13G2X" are no flavour.
-#[case::npn_13g2_a_h2("npn/npn13G2.a.h2.gds.gz", "TOP", vec!["npn13G2.a"], vec![])]
+// (Its labelled TRANS has no tie, npnG2.b's business here.)
+#[case::npn_13g2_a_h2("npn/npn13G2.a.h2.gds.gz", "TOP", vec!["npn13G2.a"], vec!["npnG2.b"])]
 // 0.895 windows straddling x = 20, crossing 21, ending on 40, starting on 42,
 // straddling 100, at (1000, 1000).
 #[case::npn_13g2_a_h3("npn/npn13G2.a.h3.gds.gz", "TOP", vec!["npn13G2.a"; 6], vec![])]
