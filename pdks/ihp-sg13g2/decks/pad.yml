@@ -19,7 +19,11 @@ rules:
     value: 0.0
 
   - id: Padb.a
-    check: exact_width
+    check: exact_dim
+    layers: [SBumpPad]
+    value: 60.0
+  - id: Padb.a
+    check: exact_length
     layers: [SBumpPad]
     value: 60.0
   - id: Padb.b
@@ -42,13 +46,21 @@ rules:
     value: 0.0
 
   - id: Padc.a
-    check: exact_width
-    layers: [CuPillarPad]
-    value: 35.0
+    check: forbidden
+    layers: [CuPillarPadOffSize]
+    value: 0.0
   - id: Padc.b
     check: min_space
     layers: [CuPillarPad]
     value: 40.0
+  - id: Padc.b
+    check: min_space
+    layers: [CuPillarPad45]
+    value: 50.0
+  - id: Padc.b
+    check: min_space
+    layers: [CuPillarPad45, CuPillarPadNot45]
+    value: 50.0
   - id: Padc.c
     check: min_enclosure
     layers: [TopMetal2, CuPillarPad]

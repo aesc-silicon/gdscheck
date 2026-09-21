@@ -19,14 +19,20 @@ rules:
       metric: euclidian
   - id: MIM.d
     check: min_enclosure
-    layers: [MIM, TopVia1]
+    layers: [MIM, TopVia1OnMIM]
     value: 0.36
     params:
-      interacting_only: 1
+      metric: euclidian
   - id: MIM.e
     check: min_space
     layers: [TopMetal1, MIM]
     value: 0.60
+  - id: MIM.e
+    check: min_space
+    layers: [TopMetal1, MIM]
+    value: 0.60
+    params:
+      pairs: overlapping
   - id: MIM.f
     check: min_area
     layers: [MIM]
@@ -47,7 +53,5 @@ rules:
       scope: chip
   - id: MIM.h
     check: forbidden
-    layers: [MIM, TopVia1, Vmim]
+    layers: [MIMNoVia]
     value: 0.0
-    params:
-      op: apart
