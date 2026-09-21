@@ -11,23 +11,35 @@ rules:
     check: min_space
     layers: [nBuLay]
     value: 1.50
+  - id: NBL.b
+    check: min_notch
+    layers: [nBuLay]
+    value: 1.50
   - id: NBL.c
     check: min_space
-    layers: [nBuLayMerged]
+    layers: [nBuLayRegions]
     value: 3.20
     params:
       net: different
+    layer_params:
+      gap_outside: PWell.block
   - id: NBL.d
     check: min_space
-    layers: [nBuLay, NWell]
+    layers: [nBuLayRegions, NWell]
     value: 2.20
     params:
       net: different
+    layer_params:
+      gap_outside: PWell.block
   - id: NBL.e
     check: min_space
     layers: [nBuLay, NActiv]
     value: 1.00
+    params:
+      abutting: related
   - id: NBL.f
     check: min_space
     layers: [nBuLay, PsdActiv]
     value: 0.50
+    params:
+      abutting: related

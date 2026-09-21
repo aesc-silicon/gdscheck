@@ -182,7 +182,7 @@ connectivity:
   - connector: NActivInNWell
     layers: [NWell, NWellMergedNoSRAM, Activ]
   - connector: NWellNBuLay
-    layers: [nBuLay, nBuLayMerged, NWell]
+    layers: [nBuLay, nBuLayMerged, nBuLayRegions, NWell]
 
 virtual_layers:
   - name: Pad
@@ -713,7 +713,7 @@ virtual_layers:
   - name: NsdActivInPWell
     op: difference
     mode: lazy
-    layers: [NActiv, NWell]
+    layers: [NActiv, NWell, PWell.block]
   - name: NsdActivInPWellTGO
     op: intersection
     mode: lazy
@@ -725,7 +725,7 @@ virtual_layers:
   - name: PsdActivInPWell
     op: difference
     mode: lazy
-    layers: [PsdActiv, NWell]
+    layers: [PsdActiv, NWell, PWell.block]
   - name: ContOnSubstrateTie
     op: intersection
     mode: lazy
@@ -1072,21 +1072,24 @@ virtual_layers:
     mode: lazy
     layers: [Activ.filler, NWell]
   # Section 4.2: nBuLay = (((NWell >= 3.0 µm) sized by 1.0 µm/side) OR nBuLay:drawing)
-  # AND NOT nBuLay:block - what the filler rules keep their distance from.
-  - name: NWellWide
-    op: open
+  # AND NOT nBuLay:block.  The sizing is inward - the generated nBuLay lies 1.0 inside
+  # the well's edge, IHP's `sized(-1.5).sized(0.5)`; grown outward, every N+Activ 0.62
+  # from a wide well (NW.d) would be an NBL.e - so: shrink by 1.5 (a well under 3.0
+  # vanishes), grow back by 0.5.
+  - name: NWellShrunk
+    op: shrink
     mode: lazy
     radius: 1.4975
     layers: [NWell]
-  - name: NWellWideSized
+  - name: NWellInset
     op: grow
     mode: lazy
-    radius: 1.0
-    layers: [NWellWide]
+    radius: 0.4975
+    layers: [NWellShrunk]
   - name: nBuLayAll
     op: union
     mode: lazy
-    layers: [NWellWideSized, nBuLay]
+    layers: [NWellInset, nBuLay]
   - name: nBuLayDerived
     op: difference
     mode: lazy
@@ -1166,11 +1169,18 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [PsdActivInNWellNoTGO, SRAM]
+  # NBL.b: "merge if less than 1.50" - two nBuLay exactly 1.50 apart stay two (NBL.c's).
   - name: nBuLayMerged
     op: close
     mode: lazy
-    radius: 0.75
+    radius: 0.7475
     layers: [nBuLay]
+  # NBL.c/d, note 1: drawn as well as generated nBuLay regions are considered.
+  - name: nBuLayRegions
+    op: close
+    mode: lazy
+    radius: 0.7475
+    layers: [nBuLayDerived]
 
   - name: SealActiv
     op: intersection

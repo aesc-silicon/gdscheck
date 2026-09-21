@@ -19,3 +19,5 @@ rules:
     check: min_space
     layers: [EXTBlock, pSD]
     value: 0.31
+    params:
+      abutting: report

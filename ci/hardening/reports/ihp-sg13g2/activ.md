@@ -55,9 +55,10 @@ density fixtures were laid out per 800 µm grid cell and are uniform stripes now
 ## Decided (2026-09-21, PDK owner)
 
 7: nBuLay for AFil.d (and GFil.e) is section 4.2's derivation, `nBuLayDerived` = the
-wells 3.0 µm and wider sized by 1.0, or the drawn nBuLay, less nBuLay:block.  Note: the
-reference designs' fillers, placed by gdsfill at 1.0 from wide wells, are 0.15-0.85
-from that nBuLay - 70 findings per design, which KLayout (drawn nBuLay) does not see.
+wells 3.0 µm and wider sized by 1.0 *inward* (IHP's `sized(-1.5).sized(0.5)`; the
+block report's finding 9 - grown outward, every N+Activ 0.62 from a wide well would be
+an NBL.e, and the reference designs' fillers gave 70 findings a design), or the drawn
+nBuLay, less nBuLay:block.  A filler inside a wide well lies on or in that nBuLay.
 Also: the chamfer 0.20 from a filler corner (AFil.j.h3) fires under the euclidian
 enclosure now.
 

@@ -26,7 +26,17 @@ rules:
     check: min_space
     layers: [SalBlock, ActivOrGatPoly]
     value: 0.20
+    params:
+      abutting: report
+  - id: Sal.d
+    check: min_space
+    layers: [SalBlock, ActivOrGatPoly]
+    value: 0.20
+    params:
+      pairs: overlapping
   - id: Sal.e
     check: min_space
     layers: [SalBlock, Cont]
     value: 0.20
+    params:
+      abutting: report
