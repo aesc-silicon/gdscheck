@@ -173,7 +173,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nwell(
     "nwell", "nwell.gds.gz", "7_4_NWELL",
-    &[("NW.1a_LV", 77), ("NW.1a_MV", 114), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 9), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 26), ("NW.3", 14), ("NW.4", 15), ("NW.5_LV", 17), ("NW.5_MV", 25), ("NW.6", 13)]
+    &[("NW.1a_LV", 77), ("NW.1a_MV", 114), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 9), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 26), ("NW.3", 14), ("NW.4", 15), ("NW.5_LV", 15), ("NW.5_MV", 25), ("NW.6", 13)]
 )]
 #[case::poly2(
     "poly2", "poly2.gds.gz", "7_7_Poly2",
