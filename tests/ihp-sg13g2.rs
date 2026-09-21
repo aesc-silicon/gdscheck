@@ -3796,6 +3796,150 @@ const DECK_RESISTOR: &str = "resistor";
 // identical coordinates; measured since run_enclosure's partial-overlap branch landed.
 #[case::rhi_b("resistor/Rhi.b.gds.gz", "TOP",
     vec!["Rhi.b", "Rhi.b", "Rhi.c", "Rhi.c", "Rhi.c", "Rhi.c"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): expected values are the manual's answer, not the
+// engine's; the reasoning is in ci/hardening/reports/ihp-sg13g2/resistor.md.  `min_width`
+// counts one marker per wall (two per narrow body, four per diamond); a space rule one
+// per pair; an enclosure rule one per under-enclosed side, or one for adjacent sides; a
+// forbidden region one per piece.  The width cases ignore the length rule of their
+// section and the length cases the width rule: gdscheck reads both as the block's
+// narrower dimension (finding 6), which `rsil_f_h1`, `rppd_e_h1` and `rhi_f_h1` carry.
+// Rsil.a: 0.495 body, 0.55 body with a 0.06 slot, a body of 0.25 + 0.245 boxes, the
+// body on PolyRes; 0.50, 0.25 + 0.25 and a 0.495 head neck outside the RES are clean.
+// The RES over the slot is not a protrusion by the manual (finding 1), so Rsil.c is not
+// this case's concern.
+#[case::rsil_a_h1("resistor/Rsil.a.h1.gds.gz", "TOP", vec!["Rsil.a"; 8], vec!["Rsil.f", "Rsil.c"])]
+// A 45° body 0.495 across and a 0.495 diamond; 0.502 of each is clean.
+#[case::rsil_a_h2("resistor/Rsil.a.h2.gds.gz", "TOP", vec!["Rsil.a"; 6], vec!["Rsil.f"])]
+// 0.495 bodies across x = 20, ending on x = 40, starting on x = 42, across y = 20, 300 µm long, at (1000, 1000).
+#[case::rsil_a_h3("resistor/Rsil.a.h3.gds.gz", "TOP", vec!["Rsil.a"; 12], vec!["Rsil.f"])]
+// Fifty 0.495 bodies, flat and as a GdsArrayRef.
+#[case::rsil_a_h4("resistor/Rsil.a.h4.gds.gz", "TOP", vec!["Rsil.a"; 100], vec!["Rsil.f"])]
+#[case::rsil_a_h5("resistor/Rsil.a.h5.gds.gz", "TOP", vec!["Rsil.a"; 100], vec!["Rsil.f"])]
+// Rsil.b: a Cont 0.115 from the RES, 0.08/0.08 corner to corner (0.113), abutting the RES
+// (finding 2), a bare Cont 0.115 below; 0.12, 0.115/0.06 (0.130), a Cont crossing the
+// RES's end (shares area, no pair) and a bare Cont at 0.12 are clean.
+#[case::rsil_b_h1("resistor/Rsil.b.h1.gds.gz", "TOP", vec!["Rsil.b"; 4], vec![])]
+// 0.115 across x = 20, RES starting on x = 42, a Cont ending on x = 60, 300 µm, (1000, 1000); a Cont ending on x = 40 at 0.12 is clean.
+#[case::rsil_b_h2("resistor/Rsil.b.h2.gds.gz", "TOP", vec!["Rsil.b"; 5], vec![])]
+// Fifty with 0.115 on the left, flat and as a GdsArrayRef.
+#[case::rsil_b_h3("resistor/Rsil.b.h3.gds.gz", "TOP", vec!["Rsil.b"; 50], vec![])]
+#[case::rsil_b_h4("resistor/Rsil.b.h4.gds.gz", "TOP", vec!["Rsil.b"; 50], vec![])]
+// Rsil.c: the RES ending 0.05 inside the poly's long edge, on one side and on both
+// (finding 1); coincident, 0.05 past the edge and 1.5 past it are clean.
+#[case::rsil_c_h1("resistor/Rsil.c.h1.gds.gz", "TOP", vec!["Rsil.c"; 3], vec![])]
+// The inset across x = 20 and at (1000, 1000); the outset across x = 40 is clean.
+#[case::rsil_c_h2("resistor/Rsil.c.h2.gds.gz", "TOP", vec!["Rsil.c"; 2], vec![])]
+// Rsil.d: pSD 0.175 below the body, 0.12/0.12 from the head's corner (0.170), abutting
+// the head (finding 2), an Rppd's pSD 0.175 from the head, and pSD 0.175 below a
+// resistor with no EXTBlock (finding 3); 0.18, 0.13/0.13 (0.184) and 0.175 from a plain
+// poly without RES are clean.  The RES of the EXTBlock-less resistor is no protrusion
+// (finding 3), so Rsil.c is not this case's concern.
+#[case::rsil_d_h1("resistor/Rsil.d.h1.gds.gz", "TOP", vec!["Rsil.d"; 5], vec!["Rsil.c"])]
+// 0.175 across x = 20, heads ending on x = 42 and x = 60, a head starting on x = 80, a
+// 300 µm body, the body's bottom edge on y = 1000 (finding 4: the pairs on a tile line
+// are lost at that tile size); pSD ending on x = 40 at 0.18 is clean.
+#[case::rsil_d_h2("resistor/Rsil.d.h2.gds.gz", "TOP", vec!["Rsil.d"; 6], vec![])]
+// Fifty with pSD 0.175 below, flat and as a GdsArrayRef.
+#[case::rsil_d_h3("resistor/Rsil.d.h3.gds.gz", "TOP", vec!["Rsil.d"; 50], vec![])]
+#[case::rsil_d_h4("resistor/Rsil.d.h4.gds.gz", "TOP", vec!["Rsil.d"; 50], vec![])]
+// Rsil.e: EXTBlock 0.175 on top, 0.175 all round, a chamfer 0.177 from the poly's
+// corner, the right head running 0.1 out of the EXTBlock, the EXTBlock over the body
+// only (both heads out), no EXTBlock at all (finding 3), 0.175 at the head's end; 0.18,
+// a 0.184 chamfer and two overlapping boxes enclosing by 0.18 are clean.  The
+// EXTBlock-less resistor's RES is no protrusion, so Rsil.c is ignored.
+#[case::rsil_e_h1("resistor/Rsil.e.h1.gds.gz", "TOP", vec!["Rsil.e"; 8], vec!["Rsil.c"])]
+// 0.175 on the right with the poly ending on x = 20, 0.175 on top across x = 42, on a 300 µm body, at (1000, 1000); 0.18 across x = 40 is clean.
+#[case::rsil_e_h2("resistor/Rsil.e.h2.gds.gz", "TOP", vec!["Rsil.e"; 4], vec![])]
+// Fifty with 0.175 on top, flat and as a GdsArrayRef.
+#[case::rsil_e_h3("resistor/Rsil.e.h3.gds.gz", "TOP", vec!["Rsil.e"; 50], vec![])]
+#[case::rsil_e_h4("resistor/Rsil.e.h4.gds.gz", "TOP", vec!["Rsil.e"; 50], vec![])]
+// Rsil.f: RES 0.495 long on a 0.5 body and on a 0.6 body (Rsil.f, two walls each), and a
+// 0.495 wide body with a 3.0 RES (Rsil.a only: the RES is 3.0 long); 0.50 is clean.
+// gdscheck reads both rules as the narrower dimension (finding 6).
+#[case::rsil_f_h1("resistor/Rsil.f.h1.gds.gz", "TOP", vec!["Rsil.a", "Rsil.a", "Rsil.f", "Rsil.f", "Rsil.f", "Rsil.f"], vec![])]
+// 0.495 RES ending on x = 20, across x = 40, starting on x = 42, at (1000, 1000).
+#[case::rsil_f_h2("resistor/Rsil.f.h2.gds.gz", "TOP", vec!["Rsil.f"; 8], vec!["Rsil.a"])]
+// Fifty 0.495 RES, flat and as a GdsArrayRef.
+#[case::rsil_f_h3("resistor/Rsil.f.h3.gds.gz", "TOP", vec!["Rsil.f"; 100], vec!["Rsil.a"])]
+#[case::rsil_f_h4("resistor/Rsil.f.h4.gds.gz", "TOP", vec!["Rsil.f"; 100], vec!["Rsil.a"])]
+// Rppd.a: the Rsil.a kit on an Rppd (SalBlock across the stripe, pSD round it).
+#[case::rppd_a_h1("resistor/Rppd.a.h1.gds.gz", "TOP", vec!["Rppd.a"; 8], vec!["Rppd.e"])]
+#[case::rppd_a_h2("resistor/Rppd.a.h2.gds.gz", "TOP", vec!["Rppd.a"; 6], vec!["Rppd.e"])]
+#[case::rppd_a_h3("resistor/Rppd.a.h3.gds.gz", "TOP", vec!["Rppd.a"; 12], vec!["Rppd.e"])]
+#[case::rppd_a_h4("resistor/Rppd.a.h4.gds.gz", "TOP", vec!["Rppd.a"; 100], vec!["Rppd.e"])]
+#[case::rppd_a_h5("resistor/Rppd.a.h5.gds.gz", "TOP", vec!["Rppd.a"; 100], vec!["Rppd.e"])]
+// Rppd.b: pSD 0.175 on top, 0.175 all round, a chamfer 0.177 from the head's corner, the
+// right head running 0.1 out of the pSD, pSD over the body only (both heads out), 0.175
+// at the head's end (finding 5: the head end is not read); 0.18, a 0.184 chamfer and two
+// overlapping pSD boxes are clean.
+#[case::rppd_b_h1("resistor/Rppd.b.h1.gds.gz", "TOP", vec!["Rppd.b"; 7], vec![])]
+// 0.175 at the head's end on x = 20, 0.175 on top across x = 42, on a 300 µm body, at (1000, 1000); 0.18 across x = 40 is clean.
+#[case::rppd_b_h2("resistor/Rppd.b.h2.gds.gz", "TOP", vec!["Rppd.b"; 4], vec![])]
+// Fifty with 0.175 on top, flat and as a GdsArrayRef.
+#[case::rppd_b_h3("resistor/Rppd.b.h3.gds.gz", "TOP", vec!["Rppd.b"; 50], vec![])]
+#[case::rppd_b_h4("resistor/Rppd.b.h4.gds.gz", "TOP", vec!["Rppd.b"; 50], vec![])]
+// Rppd.c: a Cont 0.195 from the SalBlock (min), 0.205 (max), a second Cont row at 0.54
+// (max), a Cont abutting the SalBlock (min, finding 2), a Cont at 1.0 (max), 0.195 on
+// both heads; 0.20, and a 1.5 wide head with a Cont 0.5 beside the body's line at 0.20
+// from the drawn SalBlock, are clean.
+#[case::rppd_c_h1("resistor/Rppd.c.h1.gds.gz", "TOP", vec!["Rppd.c"; 7], vec![])]
+// 0.195 across x = 20, the SalBlock starting on x = 42, a Cont ending on x = 60, 300 µm, (1000, 1000); a Cont ending on x = 40 at 0.20 is clean.
+#[case::rppd_c_h2("resistor/Rppd.c.h2.gds.gz", "TOP", vec!["Rppd.c"; 5], vec![])]
+// Fifty with 0.195 on the left, flat and as a GdsArrayRef.
+#[case::rppd_c_h3("resistor/Rppd.c.h3.gds.gz", "TOP", vec!["Rppd.c"; 50], vec![])]
+#[case::rppd_c_h4("resistor/Rppd.c.h4.gds.gz", "TOP", vec!["Rppd.c"; 50], vec![])]
+// Rppd.d: the Rsil.e kit on an Rppd (finding 3 for the crossing head, the body-only and
+// the absent EXTBlock).
+#[case::rppd_d_h1("resistor/Rppd.d.h1.gds.gz", "TOP", vec!["Rppd.d"; 8], vec![])]
+#[case::rppd_d_h2("resistor/Rppd.d.h2.gds.gz", "TOP", vec!["Rppd.d"; 4], vec![])]
+#[case::rppd_d_h3("resistor/Rppd.d.h3.gds.gz", "TOP", vec!["Rppd.d"; 50], vec![])]
+#[case::rppd_d_h4("resistor/Rppd.d.h4.gds.gz", "TOP", vec!["Rppd.d"; 50], vec![])]
+// Rppd.e: SalBlock 0.495 long on a 0.5 body and on a 0.6 body (Rppd.e, two walls each),
+// a 0.495 wide body under a 3.0 SalBlock (Rppd.a only); 0.50 is clean (finding 6).
+#[case::rppd_e_h1("resistor/Rppd.e.h1.gds.gz", "TOP", vec!["Rppd.a", "Rppd.a", "Rppd.e", "Rppd.e", "Rppd.e", "Rppd.e"], vec![])]
+#[case::rppd_e_h2("resistor/Rppd.e.h2.gds.gz", "TOP", vec!["Rppd.e"; 8], vec!["Rppd.a"])]
+#[case::rppd_e_h3("resistor/Rppd.e.h3.gds.gz", "TOP", vec!["Rppd.e"; 100], vec!["Rppd.a"])]
+#[case::rppd_e_h4("resistor/Rppd.e.h4.gds.gz", "TOP", vec!["Rppd.e"; 100], vec!["Rppd.a"])]
+// Rhi.a: the Rsil.a kit on an Rhigh (nSD drawn with the pSD).
+#[case::rhi_a_h1("resistor/Rhi.a.h1.gds.gz", "TOP", vec!["Rhi.a"; 8], vec!["Rhi.f"])]
+#[case::rhi_a_h2("resistor/Rhi.a.h2.gds.gz", "TOP", vec!["Rhi.a"; 6], vec!["Rhi.f"])]
+#[case::rhi_a_h3("resistor/Rhi.a.h3.gds.gz", "TOP", vec!["Rhi.a"; 12], vec!["Rhi.f"])]
+#[case::rhi_a_h4("resistor/Rhi.a.h4.gds.gz", "TOP", vec!["Rhi.a"; 100], vec!["Rhi.f"])]
+#[case::rhi_a_h5("resistor/Rhi.a.h5.gds.gz", "TOP", vec!["Rhi.a"; 100], vec!["Rhi.f"])]
+// Rhi.b: nSD 0.005 past the pSD on top, nSD 0.005 short of it (finding 7: only nSD past
+// pSD is read), nSD 0.1 past it all round, nSD ending in the body's middle (the right
+// half has pSD alone: Rhi.b, and Rhi.c for the poly running out of pSD-and-nSD), a bare
+// nSD:drawing on an Activ far from any resistor (note 1, finding 7); identical is clean.
+// The half-covered resistor's right Cont is 0.20 from the drawn SalBlock: no Rhi.d.
+#[case::rhi_b_h1("resistor/Rhi.b.h1.gds.gz", "TOP", vec!["Rhi.b", "Rhi.b", "Rhi.b", "Rhi.b", "Rhi.b", "Rhi.c"], vec![])]
+// nSD 0.005 past a pSD ending on x = 20, nSD 0.005 short of a pSD ending on x = 42 (and
+// Rhi.c: pSD-and-nSD encloses the head by 0.175), the overhang at (1000, 1000);
+// identical across x = 40 is clean.
+#[case::rhi_b_h2("resistor/Rhi.b.h2.gds.gz", "TOP", vec!["Rhi.b", "Rhi.b", "Rhi.b", "Rhi.c"], vec![])]
+// Fifty with nSD 0.005 past pSD on top, flat and as a GdsArrayRef.
+#[case::rhi_b_h3("resistor/Rhi.b.h3.gds.gz", "TOP", vec!["Rhi.b"; 50], vec![])]
+#[case::rhi_b_h4("resistor/Rhi.b.h4.gds.gz", "TOP", vec!["Rhi.b"; 50], vec![])]
+// Rhi.c: the Rppd.b kit with pSD and nSD drawn alike (finding 3 for the crossing head and
+// the body-only implant; the head's end is read here).
+#[case::rhi_c_h1("resistor/Rhi.c.h1.gds.gz", "TOP", vec!["Rhi.c"; 7], vec![])]
+#[case::rhi_c_h2("resistor/Rhi.c.h2.gds.gz", "TOP", vec!["Rhi.c"; 4], vec![])]
+#[case::rhi_c_h3("resistor/Rhi.c.h3.gds.gz", "TOP", vec!["Rhi.c"; 50], vec![])]
+#[case::rhi_c_h4("resistor/Rhi.c.h4.gds.gz", "TOP", vec!["Rhi.c"; 50], vec![])]
+// Rhi.d: the Rppd.c kit on an Rhigh.
+#[case::rhi_d_h1("resistor/Rhi.d.h1.gds.gz", "TOP", vec!["Rhi.d"; 7], vec![])]
+#[case::rhi_d_h2("resistor/Rhi.d.h2.gds.gz", "TOP", vec!["Rhi.d"; 5], vec![])]
+#[case::rhi_d_h3("resistor/Rhi.d.h3.gds.gz", "TOP", vec!["Rhi.d"; 50], vec![])]
+#[case::rhi_d_h4("resistor/Rhi.d.h4.gds.gz", "TOP", vec!["Rhi.d"; 50], vec![])]
+// Rhi.e: the Rsil.e kit on an Rhigh.
+#[case::rhi_e_h1("resistor/Rhi.e.h1.gds.gz", "TOP", vec!["Rhi.e"; 8], vec![])]
+#[case::rhi_e_h2("resistor/Rhi.e.h2.gds.gz", "TOP", vec!["Rhi.e"; 4], vec![])]
+#[case::rhi_e_h3("resistor/Rhi.e.h3.gds.gz", "TOP", vec!["Rhi.e"; 50], vec![])]
+#[case::rhi_e_h4("resistor/Rhi.e.h4.gds.gz", "TOP", vec!["Rhi.e"; 50], vec![])]
+// Rhi.f: the Rppd.e kit on an Rhigh (finding 6).
+#[case::rhi_f_h1("resistor/Rhi.f.h1.gds.gz", "TOP", vec!["Rhi.a", "Rhi.a", "Rhi.f", "Rhi.f", "Rhi.f", "Rhi.f"], vec![])]
+#[case::rhi_f_h2("resistor/Rhi.f.h2.gds.gz", "TOP", vec!["Rhi.f"; 8], vec!["Rhi.a"])]
+#[case::rhi_f_h3("resistor/Rhi.f.h3.gds.gz", "TOP", vec!["Rhi.f"; 100], vec!["Rhi.a"])]
+#[case::rhi_f_h4("resistor/Rhi.f.h4.gds.gz", "TOP", vec!["Rhi.f"; 100], vec!["Rhi.a"])]
 fn test_resistor(
     #[case] gds: &str,
     #[case] topcell: &str,
