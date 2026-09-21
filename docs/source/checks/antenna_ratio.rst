@@ -21,11 +21,14 @@ the gate-area denominator grows as higher layers merge separate gates onto one n
 the numerator is that level's own conductor area on the net. A gate's ratio is the sum
 over the levels of *(this level's conductor area on the net) / (this level's gate area
 on the net)*. The sum is monotonic as the stack is walked, so flagging the final sum is
-what KLayout flagging a violation at any level comes to. A ratio that reaches ``value``
-is a violation, as upstream reads it.
+what KLayout flagging a violation at any level comes to. A ratio over ``value`` is a
+violation; one at the value meets the maximum, as every rule of a manual is met at its
+value (IHP's own deck reads its cumulative rules as ``>=`` and its per-level ones as
+``>``).
 
 A gate's net optionally carries a **protection diode** — a diffusion diode tied to the
-same net, above the 0.16 µm² floor Ant.g sizes it at. ``diode: without`` checks the nets
+same net, of at least the size the diode rule asks for (``diode_area``, 0.16 µm² by
+default, Ant.g's floor; a diode that meets that rule is a protection diode). ``diode: without`` checks the nets
 without one against the strict limit, ``diode: with`` the nets with one against the
 relaxed limit; without the param every net is checked.
 
@@ -58,6 +61,9 @@ Parameters
 
 ``diode_factor``
    Optional. Add this many times the diode area on the net to the gate area.
+
+``diode_area``
+   Optional, µm². The least diode area that protects a net; 0.16 by default.
 
 Layer params:
 

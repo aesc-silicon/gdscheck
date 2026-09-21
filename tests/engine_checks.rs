@@ -554,15 +554,20 @@ fn area_rules_meet_the_bound_exactly_on_every_scope(
 /// sidewall, by population, and read at a level below the conductor; the nets under a
 /// marker.
 ///
-/// - `ratio_*`: a 1 µm² gate under a plate of exactly 10 and 9.995 µm².
+/// - `ratio_*`: a 1 µm² gate under a plate of exactly 10, 10.005 and 9.995 µm²: a
+///   ratio at the limit meets it, one over it fires.
 /// - `diode_small`, `diode_big`, `bare_big`: the 10 µm² plate with a diode, a 100 µm²
 ///   plate with one, and the 100 µm² plate alone.
-/// - `side_*`: a 4 by 6 plate, a sidewall of exactly 10 at 0.5 thick, and 4 by 5.995.
+/// - `side_*`: a 4 by 6 plate, a sidewall of exactly 10 at 0.5 thick, 4 by 6.005 and
+///   4 by 5.995.
 /// - `nets_*`: two Inner squares under one Outer marker, tied to it and not.
 #[rstest]
-#[case("ratio_exact", "N.ant", 1)]
+#[case("ratio_exact", "N.ant", 0)]
 #[case("ratio_exact", "N.level", 0)]
-#[case("ratio_exact", "N.bare", 1)]
+#[case("ratio_exact", "N.bare", 0)]
+#[case("ratio_over", "N.ant", 1)]
+#[case("ratio_over", "N.level", 0)]
+#[case("ratio_over", "N.bare", 1)]
 #[case("ratio_under", "N.ant", 0)]
 #[case("ratio_under", "N.bare", 0)]
 #[case("diode_small", "N.bare", 0)]
@@ -570,7 +575,8 @@ fn area_rules_meet_the_bound_exactly_on_every_scope(
 #[case("diode_big", "N.protected", 1)]
 #[case("diode_big", "N.bare", 0)]
 #[case("bare_big", "N.bare", 1)]
-#[case("side_exact", "N.side", 1)]
+#[case("side_exact", "N.side", 0)]
+#[case("side_over", "N.side", 1)]
 #[case("side_under", "N.side", 0)]
 #[case("nets_one", "N.nets", 0)]
 #[case("nets_two", "N.nets", 1)]

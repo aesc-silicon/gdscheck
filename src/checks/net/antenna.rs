@@ -173,6 +173,7 @@ pub fn run(
     };
     let thickness = rule.num("thickness").unwrap_or(1.0);
     let diode_factor = rule.num("diode_factor");
+    let diode_min = rule.num("diode_area").unwrap_or(0.16);
     let Ok(fixed_level) = level(rule, conn) else {
         return vec![];
     };
@@ -342,17 +343,24 @@ pub fn run(
         if *gate_a <= 0.0 {
             continue;
         }
-        let has_diode = diode_area.get(&full.net_of(*node)).copied().unwrap_or(0.0) > 0.16;
+        // A diode of the size the diode rule asks for (`diode_area`, Ant.g's 0.16)
+        // protects: the diode rule's floor is met at its value, and a diode that meets
+        // it is a protection diode.
+        let has_diode =
+            diode_area.get(&full.net_of(*node)).copied().unwrap_or(0.0) >= diode_min * (1.0 - 1e-9);
         if require_diode.is_some_and(|req| has_diode != req) {
             continue;
         }
-        if cum[i] >= limit {
+        // A maximum is met at its value, as every rule of a manual is; a ratio of
+        // exactly 200 is clean.  The sum of the levels is read a hair past the value,
+        // since 20.0 / 0.1 in floating point is not always 200.
+        if cum[i] > limit * (1.0 + 1e-9) {
             let (x, y) = (marker.0 * dbu_to_um, marker.1 * dbu_to_um);
             out.push(Violation::point(
                 &rule.id,
                 "Antenna ratio violation",
                 format!(
-                    "cumulative antenna ratio {:.1} ≥ {limit} (gate {gate_a:.4} µm²{}) at ({x:.4}, {y:.4}) µm",
+                    "cumulative antenna ratio {:.1} > {limit} (gate {gate_a:.4} µm²{}) at ({x:.4}, {y:.4}) µm",
                     cum[i],
                     if has_diode { ", with diode" } else { "" },
                 ),
