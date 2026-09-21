@@ -3364,6 +3364,25 @@ const DECK_PIN: &str = "pin";
 #[case::pin_f_m5("pin/Pin.f.m5.gds.gz", "TOP", vec!["Pin.f"; 4], vec![])]
 #[case::pin_g("pin/Pin.g.gds.gz", "TOP", vec!["Pin.g"; 4], vec![])]
 #[case::pin_h("pin/Pin.h.gds.gz", "TOP", vec!["Pin.h"; 4], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): the manual's answer, reasoning in
+// ci/hardening/reports/ihp-sg13g2/misc.md.  One marker per uncovered region.
+// The pin coincident with its metal and one 0.1 inside are clean; 0.005 past it on the
+// right, on top, 0.5 clear of it and a 0.005 sliver outside it fire.
+#[case::pin_e_h1("pin/Pin.e.h1.gds.gz", "TOP", vec!["Pin.e"; 4], vec![])]
+// Pins over abutting, overlapping and tiled boxes are clean; a pin across a ring's hole,
+// one 0.2 into the hole, three corners of a square out of a diamond and a diamond pin
+// 0.005 larger than its diamond metal (one frame-shaped region) fire.
+#[case::pin_e_h2("pin/Pin.e.h2.gds.gz", "TOP", vec!["Pin.e"; 6], vec![])]
+// Pin and metal ending on x = 20 and a 300 µm pin across every tile line are clean; the
+// metal 0.005 short of a pin ending on x = 20, a pin 1.005 past a metal ending at 41.995
+// and a bare pin at (1000, 1000) fire; texts on Metal1:pin and Metal1:label are not areas.
+#[case::pin_e_h3("pin/Pin.e.h3.gds.gz", "TOP", vec!["Pin.e"; 3], vec![])]
+// Fifty pins 0.005 past their metal, flat and as a GdsArrayRef.
+#[case::pin_e_h4("pin/Pin.e.h4.gds.gz", "TOP", vec!["Pin.e"; 50], vec![])]
+#[case::pin_e_h5("pin/Pin.e.h5.gds.gz", "TOP", vec!["Pin.e"; 50], vec![])]
+// Every layer of the table with a pin 0.005 past its drawing, plus a Metal1:pin over
+// Metal2 only; covered pins and pins on NWell:pin / Passiv:pin (no rule) stay clean.
+#[case::pin_all_h1("pin/Pin.all.h1.gds.gz", "TOP", vec!["Pin.a", "Pin.b", "Pin.e", "Pin.e", "Pin.f", "Pin.f", "Pin.f", "Pin.f", "Pin.g", "Pin.h"], vec![])]
 fn test_pin(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4028,6 +4047,88 @@ const DECK_NMOSI: &str = "nmosi";
 // exactly), 0.20 clean, flush-0.00 fires here only (PDF-first; KLayout's coincident-pair
 // marker is zero-area and vanishes under its .and(Activ) — see the deck comment).
 #[case::nmosi_g("nmosi/nmosi.g.gds.gz", "TOP", vec!["nmosi.g"; 2], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): the manual's answer, reasoning in
+// ci/hardening/reports/ihp-sg13g2/misc.md.  Every layout is an Activ in the hole of a
+// closed NWell ring on nBuLay unless said otherwise.  min_enclosure and min_space give one
+// marker per shape pair on axis-aligned walls (a box short on all four sides is one) and
+// the enclosure one per 45° wall (the diamond nBuLay four), min_width one per wall, the
+// forbidden nmosi.g one per uncovered region.
+// nmosi.b: nBuLay 1.235 past the Activ on the right, on top, all round; 1.24 is clean.
+#[case::nmosi_b_h1("nmosi/nmosi.b.h1.gds.gz", "TOP", vec!["nmosi.b"; 3], vec![])]
+// A chamfer 1.2374 from the Activ's corner and a diamond nBuLay 1.2374 from all four
+// corners fire (closest approach); 1.2445 is clean.
+#[case::nmosi_b_h2("nmosi/nmosi.b.h2.gds.gz", "TOP", vec!["nmosi.b"; 5], vec![])]
+// 1.235 with the nBuLay's edge on x = 20, across x = 40, 42, on x = 21, at (1000, 1000)
+// and on a 300 µm Activ; 1.24 on x = 60 is clean.
+#[case::nmosi_b_h3("nmosi/nmosi.b.h3.gds.gz", "TOP", vec!["nmosi.b"; 6], vec![])]
+// Fifty, flat and as a GdsArrayRef.
+#[case::nmosi_b_h4("nmosi/nmosi.b.h4.gds.gz", "TOP", vec!["nmosi.b"; 50], vec![])]
+#[case::nmosi_b_h5("nmosi/nmosi.b.h5.gds.gz", "TOP", vec!["nmosi.b"; 50], vec![])]
+// The nBuLay as two boxes whose union ends 1.235 away, the Activ as three slices, and a
+// cross of nBuLay boxes whose re-entrant corners lie 1.2304 from the Activ's corners
+// (four) fire; unions at 1.24 and a 4 × 3 grid of tiles are clean.
+#[case::nmosi_b_h6("nmosi/nmosi.b.h6.gds.gz", "TOP", vec!["nmosi.b"; 6], vec![])]
+// A ptap and an nmosiHV Activ 1.235 short fire; the Activ crossing into the ring is short
+// on the right (1.235) and on the left, where its edge is the ring's wall (1.0); the
+// Activ under PWell:block is not isolated.
+#[case::nmosi_b_h7("nmosi/nmosi.b.h7.gds.gz", "TOP", vec!["nmosi.b"; 4], vec![])]
+// nmosi.c: the ring 0.385 from the Activ on the right, on top, all round; 0.39 is clean.
+#[case::nmosi_c_h1("nmosi/nmosi.c.h1.gds.gz", "TOP", vec!["nmosi.c"; 3], vec![])]
+// A tab corner 0.3818 from the Activ's corner, a 45° wall 0.3889 from it and a diamond
+// hole 0.3889 from all four corners fire; 0.396 is clean.
+#[case::nmosi_c_h2("nmosi/nmosi.c.h2.gds.gz", "TOP", vec!["nmosi.c"; 3], vec![])]
+// The ring as a keyhole boundary, as eight boxes, with a tab, a step, two Activs in one
+// hole (two), the Activ as two boxes: 0.385.  The tab is an nmosi.d of its own.
+#[case::nmosi_c_h3("nmosi/nmosi.c.h3.gds.gz", "TOP", vec!["nmosi.c"; 7], vec!["nmosi.d"])]
+// 0.385 with the wall on x = 20, across x = 40, 42, 21, at (1000, 1000), on a 300 µm Activ.
+#[case::nmosi_c_h4("nmosi/nmosi.c.h4.gds.gz", "TOP", vec!["nmosi.c"; 6], vec![])]
+#[case::nmosi_c_h5("nmosi/nmosi.c.h5.gds.gz", "TOP", vec!["nmosi.c"; 50], vec![])]
+#[case::nmosi_c_h6("nmosi/nmosi.c.h6.gds.gz", "TOP", vec!["nmosi.c"; 50], vec![])]
+// An NWell island in the hole 0.35 from the Activ (the manual's "NWell space"), the Activ
+// crossing into the ring (space 0, and nmosi.b 1.0 on that side) and a ptap at 0.385
+// fire; a plain NWell with no ring, a ring with no nBuLay and an Activ under PWell:block
+// are not tested.
+#[case::nmosi_c_h7("nmosi/nmosi.c.h7.gds.gz", "TOP", vec!["nmosi.b", "nmosi.c", "nmosi.c", "nmosi.c"], vec![])]
+// nmosi.d: a 0.615 leg on the right (2), on top (2), the nBuLay cutting a 1.0 leg to 0.615
+// (2), all four legs (8); 0.62 is clean.
+#[case::nmosi_d_h1("nmosi/nmosi.d.h1.gds.gz", "TOP", vec!["nmosi.d"; 14], vec![])]
+// An octagonal ring's 45° legs 0.6152 apart (4), a two-box union 0.615 (2), a bite
+// leaving 0.615 (2), a hole in a leg 0.615 from its inner wall (2); 0.6223 and 0.62 clean.
+#[case::nmosi_d_h2("nmosi/nmosi.d.h2.gds.gz", "TOP", vec!["nmosi.d"; 10], vec![])]
+// 0.615 legs on x = 20, across 40, 42, on 21, at (1000, 1000), along a 300 µm Activ.
+#[case::nmosi_d_h3("nmosi/nmosi.d.h3.gds.gz", "TOP", vec!["nmosi.d"; 12], vec![])]
+#[case::nmosi_d_h4("nmosi/nmosi.d.h4.gds.gz", "TOP", vec!["nmosi.d"; 100], vec![])]
+#[case::nmosi_d_h5("nmosi/nmosi.d.h5.gds.gz", "TOP", vec!["nmosi.d"; 100], vec![])]
+// Narrow NWell AND nBuLay that is no unbroken ring round an Iso-PWell-Activ: a finger with
+// no Activ, a C round an Activ, a closed ring round nothing, a finger beside a good ring.
+#[case::nmosi_d_h6("nmosi/nmosi.d.h6.gds.gz", "TOP", vec![], vec![])]
+// nmosi.f: a 0.615 strip through the Activ (2), across it (2), a stub (2), an L (4); 0.62
+// is clean.  No SalBlock is drawn, so nmosi.g is set aside.
+#[case::nmosi_f_h1("nmosi/nmosi.f.h1.gds.gz", "TOP", vec!["nmosi.f"; 10], vec!["nmosi.g"])]
+// A two-box union 0.615 (2), a 45° strip 0.6152 wide (2), a bite leaving 0.615 (2).
+#[case::nmosi_f_h2("nmosi/nmosi.f.h2.gds.gz", "TOP", vec!["nmosi.f"; 6], vec!["nmosi.g"])]
+// 0.615 strips on x = 20, across 40, 42, on 21, at (1000, 1000), along a 300 µm Activ.
+#[case::nmosi_f_h3("nmosi/nmosi.f.h3.gds.gz", "TOP", vec!["nmosi.f"; 12], vec!["nmosi.g"])]
+#[case::nmosi_f_h4("nmosi/nmosi.f.h4.gds.gz", "TOP", vec!["nmosi.f"; 100], vec!["nmosi.g"])]
+#[case::nmosi_f_h5("nmosi/nmosi.f.h5.gds.gz", "TOP", vec!["nmosi.f"; 100], vec!["nmosi.g"])]
+// A 0.615 strip over the Activ by 0.005 fires; strips over an Activ with no nBuLay, under
+// PWell:block or abutting the Activ do not, nor does a 0.8 strip's 0.5 tab outside the
+// Activ (the block is 0.8 wide where it separates).
+#[case::nmosi_f_h6("nmosi/nmosi.f.h6.gds.gz", "TOP", vec!["nmosi.f"; 2], vec!["nmosi.g"])]
+// nmosi.g: SalBlock 0.145 past the block, no SalBlock, 0.145 on top of a block inside the
+// Activ, a chamfer 0.1414 from the block's corner, a two-box union 0.145 fire; 0.15, a
+// chamfer 0.1556 from the corner and a union at 0.15 are clean.
+#[case::nmosi_g_h1("nmosi/nmosi.g.h1.gds.gz", "TOP", vec!["nmosi.g"; 5], vec![])]
+// 0.145 on x = 20, across 40, 42, on 21, at (1000, 1000), along a 300 µm block.
+#[case::nmosi_g_h2("nmosi/nmosi.g.h2.gds.gz", "TOP", vec!["nmosi.g"; 6], vec![])]
+#[case::nmosi_g_h3("nmosi/nmosi.g.h3.gds.gz", "TOP", vec!["nmosi.g"; 50], vec![])]
+#[case::nmosi_g_h4("nmosi/nmosi.g.h4.gds.gz", "TOP", vec!["nmosi.g"; 50], vec![])]
+// The band under a block that ends flush with the Activ's edge fires; block and SalBlock
+// flush with the Activ, no nBuLay, and the Activ under PWell:block are clean.
+#[case::nmosi_g_h5("nmosi/nmosi.g.h5.gds.gz", "TOP", vec!["nmosi.g"], vec![])]
+// "These rules will only be tested inside a closed ring of NWell AND nBuLay": every
+// rule's violating pattern on a bare nBuLay and in a C.
+#[case::nmosi_ring_h1("nmosi/nmosi.ring.h1.gds.gz", "TOP", vec![], vec![])]
 fn test_nmosi(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -4360,6 +4461,51 @@ const DECK_ANTENNA: &str = "antenna";
 // A bare n-diode in an NWell trips Ant.h; an identical one inside a text-tagged `isolbox`
 // is exempt. Exercises text-label matching + region-interaction selectors.
 #[case("antenna/Ant.h.gds.gz", "TOP", vec!["Ant.h"], vec![])]
+// --- Hardening (ci/hardening/SPEC.md): the manual's answer, reasoning in
+// ci/hardening/reports/ihp-sg13g2/misc.md.  The gate is 0.1 µm² everywhere; a ratio is
+// one marker per gate.  "Max. ratio" is met at the value: 200.0 is clean, 200.2 fires.
+// Metal1 19.98, 20.0 and 20.02 µm² on one gate: 199.8, 200.0, 200.2.
+#[case::ant_b_h1("antenna/Ant.b.h1.gds.gz", "TOP", vec!["Ant.b"], vec![])]
+// Wires across x = 20 and 40 (200.2, 199.8), ending on x = 40 (210), an L across x = 20
+// and y = 40 (200.2).
+#[case::ant_b_h2("antenna/Ant.b.h2.gds.gz", "TOP", vec!["Ant.b"; 3], vec![])]
+// Two gates under 30 µm² (150, clean); one under 30 (300); figure 7.1's per-level sum:
+// G1 195 + 10 at Metal2 (205, fires), G2 10 + 10 (clean), 112.5 on the whole net; the
+// gate's Activ as two boxes (200.2); Metal1 as two overlapping boxes, 19.98 in union.
+#[case::ant_b_h3("antenna/Ant.b.h3.gds.gz", "TOP", vec!["Ant.b"; 3], vec![])]
+// 300 with a 0.25 diode, with a 0.16 diode (the minimum size protects) and with a
+// p-diode: clean; with a 0.158 diode: Ant.g and, unprotected, Ant.b.  Ant.e: 20000 exactly
+// clean, 20005 fires.
+#[case::ant_b_h4("antenna/Ant.b.h4.gds.gz", "TOP", vec!["Ant.b", "Ant.e", "Ant.g"], vec![])]
+// Metal1 50 + Metal2 80 + Metal3 80 = 210 fires; 190 and 200.0 are clean; a stack to
+// TopMetal2 summing to 222.5 fires there.
+#[case::ant_b_h5("antenna/Ant.b.h5.gds.gz", "TOP", vec!["Ant.b"; 2], vec![])]
+// A 300 Metal1 net whose diode joins only at Metal2: at the Metal1 level it is unprotected.
+#[case::ant_b_h6("antenna/Ant.b.h6.gds.gz", "TOP", vec!["Ant.b"], vec![])]
+// Via1 20.1 fires, 20.0 and 19.9 are clean; Via1 10 + Via2 10.1 fires; with a diode Via1
+// 20.1 is clean and 500.5 is an Ant.f; a 40.2 × 0.05 Via1 across x = 20 and 40 (20.1);
+// two gates on one net: 4.0 / 0.2 = 20.0 clean, 4.02 fires (one marker per gate).
+#[case::ant_d_h1("antenna/Ant.d.h1.gds.gz", "TOP", vec!["Ant.d", "Ant.d", "Ant.d", "Ant.d", "Ant.d", "Ant.f"], vec![])]
+// Ant.a: field poly 20.0 (200.0, clean) and 20.02 (200.2); one poly over two gates (151.6,
+// clean); two polys strapped by Metal1, 251.2 and 31.2 (one fires: poly connects poly).
+// Ant.c: Cont 2.0 (20.0, clean), 2.005 (20.05); two strapped gates 25.1 and 5.1 (one
+// fires); a Cont on the Activ beside the gate is not on its net.
+#[case::ant_ac_h1("antenna/Ant.ac.h1.gds.gz", "TOP", vec!["Ant.a", "Ant.a", "Ant.c", "Ant.c"], vec![])]
+// Diodes of 0.158 µm² on a gate's net: through Metal1, through Metal2, a p-diode, an
+// Activ under a larger marker, a marker on a larger Activ; 0.16, two abutting boxes of
+// 0.16 and an unconnected small diode are clean.
+#[case::ant_g_h1("antenna/Ant.g.h1.gds.gz", "TOP", vec!["Ant.g"; 5], vec![])]
+// Note 4: a 0.25 diode on a net with Vn_area / gate area = 40.1 must be 0.80 µm².
+#[case::ant_g_h2("antenna/Ant.g.h2.gds.gz", "TOP", vec!["Ant.g"], vec![])]
+// n-diodes in NWell: bare across x = 20, half in, under an nBuLay whose "isolbox" text is
+// outside it, on Metal1:label, or reads "isolbox2" fire; with Recog:esd, in a labelled
+// isolbox ("isolbox", "ISOLBOX"), under nSD:block, or under PWell:block are clean.
+#[case::ant_h_h1("antenna/Ant.h.h1.gds.gz", "TOP", vec!["Ant.h"; 5], vec![])]
+// p-diodes: on bare substrate across x = 20 and half out of an NWell fire; in NWell,
+// under PWell:block, with Recog:esd and a ptap without a marker are clean.
+#[case::ant_i_h1("antenna/Ant.i.h1.gds.gz", "TOP", vec!["Ant.i"; 2], vec![])]
+// A p-diode in an NWell under a drawn PWell is in PWell (section 4.2).
+#[case::ant_i_h2("antenna/Ant.i.h2.gds.gz", "TOP", vec!["Ant.i"], vec![])]
 fn test_antenna(
     #[case] gds: &str,
     #[case] topcell: &str,
