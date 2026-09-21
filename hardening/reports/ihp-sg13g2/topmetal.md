@@ -14,7 +14,7 @@ own values: 59 layouts per deck (`tests/data/ihp-sg13g2/topmetal<n>/TM<n>.*.h<k>
 `TM<n>Fil.*.h<k>.gds.gz`) plus 11 for TM2.bR, 129 in all, each with a `#[case]` in the
 `topmetal1`/`topmetal2` tables of `tests/ihp-sg13g2.rs`.  Every layout ran through
 gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`; the oracle runs the driver with `--no_density`, so the
+(`hardening/oracle-ihp.sh`; the oracle runs the driver with `--no_density`, so the
 density layouts have no KLayout column).
 
 `show-deck` lists every rule of the four sections; nothing is missing from either deck.

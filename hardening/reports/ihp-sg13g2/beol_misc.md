@@ -12,7 +12,7 @@ ties).  `gen/ihp_sg13g2/beol_misc_hardening.rs` draws 54 layouts
 (`tests/data/ihp-sg13g2/{sealring,slit,lbe,lu}/<RULE>.h<k>.gds.gz`: 19, 14, 15 and 6),
 each with a `#[case]` in the deck's table of `tests/ihp-sg13g2.rs`.  Every layout ran
 through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`); the density rules (Slt.i, LBE.i), which the oracle's
+(`hardening/oracle-ihp.sh`); the density rules (Slt.i, LBE.i), which the oracle's
 suite leaves out, ran through `gdscheck run --deck` at the three tile sizes, and the
 latch-up fixtures also through the maximal deck with `latchUpRules=true`, which the
 oracle switches off.  The seal frames are drawn as IHP's `sealring` pcell draws them: the

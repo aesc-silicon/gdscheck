@@ -10,7 +10,7 @@ Deck `nwell` against SG13G2 Layout Rules Rev. 0.4, section 5.1 (NW.a-NW.f1) and 
 8.1.1 (the DigiBnd variants).  69 layouts, `tests/data/ihp-sg13g2/nwell/NW.*.h<n>.gds.gz`,
 drawn by `gen/ihp_sg13g2/nwell.rs` (`hardening`), each with a `#[case]` in the `nwell`
 table of `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100
-and through IHP's KLayout decks (`ci/hardening/oracle-ihp.sh`).
+and through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 
 Reading the numbers below: gdscheck reports one marker per edge for `min_width` (two per
 narrow bar) and one per violating pair otherwise; KLayout's column in the oracle adds the

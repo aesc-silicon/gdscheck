@@ -12,7 +12,7 @@ Decks `pad`, `passiv` and `mim` against SG13G2 Layout Rules Rev. 0.4, sections 6
 (`tests/data/ihp-sg13g2/{pad,passiv,mim}/<RULE>.h<k>.gds.gz`: 30, 12 and 17), each with
 a `#[case]` in the deck's table of `tests/ihp-sg13g2.rs`.  Every layout ran through
 gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`).  A bump or pillar pad in these layouts carries Passiv,
+(`hardening/oracle-ihp.sh`).  A bump or pillar pad in these layouts carries Passiv,
 Passiv:sbump (or :pillar), dfpad and dfpad:sbump (or :pillar), because the manual
 recognises it by Passiv:sbump + dfpad and IHP's driver by dfpad:sbump ∩ Passiv:sbump
 ∩ TopMetal2; the octagons and circles are drawn as IHP's bond pad pcell draws them

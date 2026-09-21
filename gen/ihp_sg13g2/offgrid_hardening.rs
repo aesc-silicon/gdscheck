@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Hardening layouts for the `offgrid` and `forbidden` decks (ci/hardening/SPEC.md):
+//! Hardening layouts for the `offgrid` and `forbidden` decks (hardening/SPEC.md):
 //! vertices off the 0.005 µm grid by every amount, on tile lines, on 45° walls, far
 //! away, in arrays; forbidden shapes across tile lines, overlapping, in arrays.
 

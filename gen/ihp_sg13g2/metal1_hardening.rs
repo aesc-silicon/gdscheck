@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Hardening layouts (ci/hardening/SPEC.md) for the `metal1` deck, drawn from sections 5.16
+// Hardening layouts (hardening/SPEC.md) for the `metal1` deck, drawn from sections 5.16
 // (M1.a-M1.k) and 5.18 (M1Fil.*) of the SG13G2 rule manual alone, one fixture per theme,
 // `<rule>.h<n>`.  Each function's comment states the geometry and what the manual says
 // about it; the expected answers are in the `metal1` table of tests/ihp-sg13g2.rs and the
-// reasoning in ci/hardening/reports/ihp-sg13g2/metal1.md.
+// reasoning in hardening/reports/ihp-sg13g2/metal1.md.
 
 use crate::helpers::{
     chamfered_tr, cont_at, diamond, flat_array, layer, library, poly, rect, ref_array, strip45,

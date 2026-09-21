@@ -360,11 +360,11 @@ fn afil_g2_boundary_ring(pdk: &PdkConfig) {
 }
 
 // ---------------------------------------------------------------------------------------
-// Hardening patterns (ci/hardening/SPEC.md): layouts drawn from the manual's sections 5.5
+// Hardening patterns (hardening/SPEC.md): layouts drawn from the manual's sections 5.5
 // (Activ) and 5.6 (Activ:filler) alone, one fixture per theme, `<rule>.h<n>`.  Each
 // function's comment states the geometry and what the manual says about it; the expected
 // answers are in the `activ` table of tests/ihp-sg13g2.rs and the reasoning in
-// ci/hardening/reports/ihp-sg13g2/activ.md.
+// hardening/reports/ihp-sg13g2/activ.md.
 // ---------------------------------------------------------------------------------------
 
 /// Layers the hardening patterns draw on.

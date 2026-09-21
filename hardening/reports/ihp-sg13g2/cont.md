@@ -10,7 +10,7 @@ Deck `cont` against SG13G2 Layout Rules Rev. 0.4, section 5.14 (Cnt.a-Cnt.j) and
 8.1.2 (Cnt.c inside DigiBnd).  64 layouts, `tests/data/ihp-sg13g2/cont/Cnt.*.h<n>.gds.gz`,
 drawn by `gen/ihp_sg13g2/cont.rs` (`hardening`), each with a `#[case]` in the `cont` table
 of `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100 and
-through IHP's KLayout decks (`ci/hardening/oracle-ihp.sh`).
+through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 
 Reading the numbers below: gdscheck reports four markers per off-size square for Cnt.a
 (`exact_width`, one per wall), one marker per violating pair for the space rules, one

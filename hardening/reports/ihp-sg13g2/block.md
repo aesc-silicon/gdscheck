@@ -13,7 +13,7 @@ its deck (PWB.d, "overlap is allowed", is no check).  180 layouts,
 `tests/data/ihp-sg13g2/<deck>/<RULE>.h<n>.gds.gz`, drawn by
 `gen/ihp_sg13g2/block_hardening.rs`, each with a `#[case]` in its deck's table of
 `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100 and
-through IHP's KLayout decks (`ci/hardening/oracle-ihp.sh`).
+through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 
 Reading the numbers: gdscheck gives one `min_width` marker per wall (two per narrow bar,
 four per diamond or L), one space marker per pair, one enclosure marker per

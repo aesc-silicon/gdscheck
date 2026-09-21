@@ -11,7 +11,7 @@ Deck `activ` against SG13G2 Layout Rules Rev. 0.4, section 5.5 (Act.a-Act.e) and
 `tests/data/ihp-sg13g2/activ/<rule>.h<n>.gds.gz`, drawn by `gen/ihp_sg13g2/activ.rs`
 (`hardening`), each with a `#[case]` in the `activ` table of `tests/ihp-sg13g2.rs`.  Every
 layout ran through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
-(`ci/hardening/oracle-ihp.sh`; the oracle runs the driver with `--no_density`, so the
+(`hardening/oracle-ihp.sh`; the oracle runs the driver with `--no_density`, so the
 density layouts have no KLayout column).
 
 `show-deck` lists every rule of both sections; nothing is missing from the deck.

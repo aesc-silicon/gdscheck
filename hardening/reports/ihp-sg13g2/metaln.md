@@ -13,7 +13,7 @@ section 6.10's sentence on the sealring.  89 layouts per layer, 356 in all,
 `gen/ihp_sg13g2/metaln_hardening.rs` once per index (Via(n-1) and Metal(n-1) below the
 metal), each with a `#[case]` in `test_metaln_hardening` of `tests/ihp-sg13g2.rs`, a table
 whose second axis is the layer index 2-5.  Every Metal2 layout ran through gdscheck at
-tiles 20, 7 and 100 and through IHP's KLayout decks (`ci/hardening/oracle-ihp.sh`); the
+tiles 20, 7 and 100 and through IHP's KLayout decks (`hardening/oracle-ihp.sh`); the
 Metal3-5 copies ran through gdscheck via the test table.  `show-deck` lists every rule of
 both sections for each deck, and the four decks are identical but for the index.
 

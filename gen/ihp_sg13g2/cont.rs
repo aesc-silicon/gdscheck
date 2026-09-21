@@ -168,11 +168,11 @@ fn cnt_b(pdk: &PdkConfig) {
 }
 
 // ---------------------------------------------------------------------------------------
-// Hardening patterns (ci/hardening/SPEC.md): layouts drawn from the manual's section 5.14
+// Hardening patterns (hardening/SPEC.md): layouts drawn from the manual's section 5.14
 // and 8.1.2 alone, one fixture per theme, `Cnt.<rule>.h<n>`.  Each function's comment
 // states the geometry and what the manual says about it; the expected answers are in
 // the `cont` table of tests/ihp-sg13g2.rs and the reasoning in
-// ci/hardening/reports/ihp-sg13g2/cont.md.
+// hardening/reports/ihp-sg13g2/cont.md.
 // ---------------------------------------------------------------------------------------
 
 /// Layers the hardening patterns draw on.

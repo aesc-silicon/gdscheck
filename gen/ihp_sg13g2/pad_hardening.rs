@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Hardening patterns (ci/hardening/SPEC.md) for the `pad`, `passiv` and `mim` decks:
+// Hardening patterns (hardening/SPEC.md) for the `pad`, `passiv` and `mim` decks:
 // layouts drawn from the manual's sections 6.9 (Pad.a1, Pad.d, Pad.i, Padb.*, Padc.*),
 // 5.27 (Pas.a-Pas.c) and 6.11 (MIM.a-MIM.h) alone, one fixture per theme,
 // `<RULE>.h<k>`.  The recommended `*R` pad rules are deliberately not in the deck and
 // not drawn.  Each function's comment states the geometry and what the manual says
 // about it; the expected answers are in the `pad`/`passiv`/`mim` tables of
-// tests/ihp-sg13g2.rs and the reasoning in ci/hardening/reports/ihp-sg13g2/pad.md.
+// tests/ihp-sg13g2.rs and the reasoning in hardening/reports/ihp-sg13g2/pad.md.
 //
 // A pad here is what section 6.9 recognises: Passiv (or Passiv:sbump / Passiv:pillar)
 // over dfpad, with TopMetal2 under the dfpad (Pad.i).  IHP's driver recognises a bump

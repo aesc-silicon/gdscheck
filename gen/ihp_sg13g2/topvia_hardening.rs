@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// Hardening patterns (ci/hardening/SPEC.md) for the `topvia1` and `topvia2` decks:
+// Hardening patterns (hardening/SPEC.md) for the `topvia1` and `topvia2` decks:
 // layouts drawn from the manual's sections 5.21 (TV1.a-TV1.d) and 5.24 (TV2.a-TV2.d)
 // alone, one fixture per theme, `TV<n>.<rule>.h<k>`.  The two decks share every rule
 // with different values, so one function draws each theme for both.  Section 6.10
@@ -10,7 +10,7 @@
 // (section 3.1), so the 45° geometry is the enclosing metal's.  Each function's
 // comment states the geometry and what the manual says about it; the expected answers
 // are in the `topvia1`/`topvia2` tables of tests/ihp-sg13g2.rs and the reasoning in
-// ci/hardening/reports/ihp-sg13g2/topvia.md.
+// hardening/reports/ihp-sg13g2/topvia.md.
 
 use crate::helpers::{chamfered_tr, flat_array, layer, library, poly, rect, ref_array, write_gz};
 use gds21::{GdsElement, GdsLibrary};
