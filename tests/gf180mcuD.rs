@@ -2886,3 +2886,76 @@ fn hardening_sram_3p3(
     assert_eq!(hardening("sram_3p3", gds, topcell, &ignore), want, "{gds}");
 }
 
+// --- SRAM at 5 V (hardening/reports/gf180mcuD/sram_5p0.md).  Section 11.1 relaxes eight
+// rules for the cores that carry V5_XTOR.  Every fixture lies under a Dualgate, so the
+// half outside the core answers to the base `_MV` rule.
+#[rstest]
+// COMP over a contact by 0.04 (clean), 0.035, a 45° COMP corner at 0.0283 and at 0.046
+// (clean), and 0.035 outside the core, where CO.4's 0.07 speaks.
+#[case::s_co_4_mv_h1("sram_5p0/S.CO.4_MV.h1.gds.gz", "TOP", vec!["S.CO.4_MV"; 2], vec![])]
+// A contact the COMP's edge cuts, and one outside the COMP whose edge lies on the COMP's.
+#[case::s_co_4_mv_h2("sram_5p0/S.CO.4_MV.h2.gds.gz", "TOP", vec!["S.CO.4_MV"], vec![])]
+// N-well over P+ active by 0.45 (clean), 0.445, a 45° well corner at 0.318 and at 0.495
+// (clean), and the active running out of the well.
+#[case::s_df_4c_mv_h1("sram_5p0/S.DF.4c_MV.h1.gds.gz", "TOP", vec!["S.DF.4c_MV"; 3], vec![])]
+// Source/drain overhang 0.32 (clean) and 0.315, and 0.7 with the active's corner
+// chamfered to pass 0.354 (clean) and 0.212 from the gate's wall.
+#[case::s_df_6_mv_h1("sram_5p0/S.DF.6_MV.h1.gds.gz", "TOP", vec!["S.DF.6_MV"; 2], vec![])]
+// P+ active to LVPWELL inside the deep well at 0.45 (clean), 0.445, corner to corner at
+// 0.4525 (clean) and 0.4384, and an active whose wall lies on the well's.  Report
+// finding 1.
+#[case::s_df_7_mv_h1("sram_5p0/S.DF.7_MV.h1.gds.gz", "TOP", vec!["S.DF.7_MV"; 3], vec![])]
+// LVPWELL over N+ active by 0.45 (clean), 0.445, a 45° P-well corner at 0.318 and at
+// 0.495 (clean), and the active running out of the P-well.
+#[case::s_df_8_mv_h1("sram_5p0/S.DF.8_MV.h1.gds.gz", "TOP", vec!["S.DF.8_MV"; 3], vec![])]
+// The same arrangement at 0.44 and 0.46 in a core with neither V5_XTOR nor Dualgate: a
+// 3.3 V SRAM, whose DF.8 is chapter 7's 0.43.
+#[case::s_df_8_mv_h2("sram_5p0/S.DF.8_MV.h2.gds.gz", "TOP", vec![], vec![])]
+// N+ active to N-well at 0.45 (clean), 0.445, corner to corner at 0.4525 (clean) and
+// 0.4384, and an active whose wall lies on the well's.  Report finding 1.
+#[case::s_df_16_mv_h1("sram_5p0/S.DF.16_MV.h1.gds.gz", "TOP", vec!["S.DF.16_MV"; 3], vec![])]
+// Field poly to an active at 0.12 (clean), 0.115, corner to corner at 0.1216 (clean) and
+// 0.1131, a corner touch, and a wall lying on the active's.  Report finding 1.
+#[case::s_pl_5a_mv_h1("sram_5p0/S.PL.5a_MV.h1.gds.gz", "TOP", vec!["S.PL.5a_MV"; 4], vec![])]
+// A gate whose field stretch runs into its own active's slot at 0.115 (fires) and 0.12
+// (clean), and a gate over one active passing 0.115 from a second.  Report finding 2.
+#[case::s_pl_5b_mv_h1("sram_5p0/S.PL.5b_MV.h1.gds.gz", "TOP", vec!["S.PL.5b_MV"; 2], vec![])]
+// The same 0.035 contact margin in a core wholly under V5_XTOR, one half under it, one
+// V5_XTOR abuts, a bare core, and no core at all.
+#[case::s_co_4_mv_h3("sram_5p0/S.CO.4_MV.h3.gds.gz", "TOP", vec!["S.CO.4_MV"; 2], vec![])]
+// Three 0.035 contact margins straddling x = 20, x = 42 and y = 20, and a 0.445 N-well
+// gap straddling x = 40.
+#[case::s_co_4_mv_h4("sram_5p0/S.CO.4_MV.h4.gds.gz", "TOP", vec!["S.CO.4_MV", "S.CO.4_MV", "S.CO.4_MV", "S.DF.16_MV"], vec![])]
+fn hardening_sram_5p0(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("sram_5p0", gds, topcell, &ignore), want, "{gds}");
+}
+
+// --- The base rules under the SRAM marker.  Section 11 names the rules that are
+// "different from 3.3V/(5V)6V rules"; every other rule of chapter 7 still applies inside
+// an SRAM core.  The contact deck drops the whole of SRAMCORE, so the two class layouts
+// above are run through it as well.  Report sram_3p3 finding 3 and sram_5p0 finding 3.
+#[rstest]
+// Five 3.3 V-class cores: the two that carry V5_XTOR have no S.CO.3_MV to answer to, so
+// chapter 7's CO.3 of 0.07 is theirs and 0.035 fires.
+#[case::s_co_3_lv_h4_base("sram_3p3/S.CO.3_LV.h4.gds.gz", "TOP", vec!["CO.3"; 2], vec![])]
+// Five 5 V-class cores: the core V5_XTOR only abuts, the bare core and the contact with
+// no core at all are none of section 11.1's, so CO.4's 0.07 is theirs.
+#[case::s_co_4_mv_h3_base("sram_5p0/S.CO.4_MV.h3.gds.gz", "TOP", vec!["CO.4"; 3], vec!["CO.6"])]
+fn hardening_sram_base(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("contact", gds, topcell, &ignore), want, "{gds}");
+}
+
