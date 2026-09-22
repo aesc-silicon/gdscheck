@@ -122,6 +122,12 @@ rules:
     check: forbidden
     layers: [mdp9f_interconnect]
     value: 0.0
+  # The rule fixes the overlap at 0.4: the parts over it are forbidden, and the parts
+  # under it are a width, as the N side's MDN.11 reads it (report, finding 1).
+  - id: MDP.10
+    check: min_width
+    layers: [mdp10_uniform]
+    value: 0.4
   - id: MDP.10
     check: forbidden
     layers: [mdp10_wide]
@@ -136,10 +142,15 @@ rules:
     value: 2.0
     params:
       net: different
+  # The equi-potential half of the pair: a gap between two drifts on different nodes is
+  # MDP.10a's, at its own larger value, and was reported under both ids (report,
+  # finding 2).
   - id: MDP.10b
     check: min_space
     layers: [mvpsd]
     value: 1.0
+    params:
+      net: same
   - id: MDP.10b
     check: min_notch
     layers: [mvpsd]

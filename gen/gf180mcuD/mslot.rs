@@ -56,6 +56,8 @@ enum Bend {
     Cut(bool, f64),
     /// A region slotting is forbidden in, this far from the slot once grown.
     Forbidden(f64),
+    /// The plate drawn as a ring, with the mark in the hole rather than in the metal.
+    InHole,
 }
 
 fn plate(c: &Ctx, l: &Level, bend: &Bend) -> Vec<GdsElement> {
@@ -76,6 +78,22 @@ fn plate(c: &Ctx, l: &Level, bend: &Bend) -> Vec<GdsElement> {
             h = bh;
         }
         Bend::None => return v,
+        // A ring of the level's metal with the mark in its hole: the mark lies on no
+        // metal at all, which is rule .10.  The arms are 10 µm, so nothing here is wide.
+        Bend::InHole => {
+            v.clear();
+            let (x0, y0, x1, y1) = (o, o, o + PLATE, o + PLATE + 18.0);
+            v.push(rect(l.metal, x0, y0, x1, y0 + 10.0));
+            v.push(rect(l.metal, x0, y1 - 10.0, x1, y1));
+            v.push(rect(l.metal, x0, y0 + 10.0, x0 + 10.0, y1 - 10.0));
+            v.push(rect(l.metal, x1 - 10.0, y0 + 10.0, x1, y1 - 10.0));
+            let (mx, my) = (
+                (x0 + x1) * 0.5 - SLOT_W * 0.5,
+                (y0 + y1) * 0.5 - SLOT_L * 0.5,
+            );
+            v.push(rect(l.slot, mx, my, mx + SLOT_W, my + SLOT_L));
+            return v;
+        }
         _ => {}
     }
     v.push(rect(l.slot, sx, sy, sx + w, sy + h));
@@ -212,6 +230,10 @@ pub fn generate(pdk: &PdkConfig) {
         write("8", "bad", Bend::Cut(false, 0.195));
         // .9: a region slotting is forbidden in, closer than 5 µm once grown.
         write("9", "bad", Bend::Forbidden(4.995));
+        // .10: the mark in a hole of the metal rather than in the metal.  The good half
+        // is the plain plate, where the mark lies on metal.
+        write("10", "good", clean());
+        write("10", "bad", Bend::InHole);
     }
     hardening(pdk);
 }
