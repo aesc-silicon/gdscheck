@@ -26,6 +26,14 @@ include = [
 [dev-dependencies]
 rstest = "0.23"
 
+# The tests run optimized: the suite is geometry over two thousand layouts at three
+# tile sizes, and unoptimized it took the CI runner 170 minutes at the 7 µm tile
+# where the release build takes a minute.  No LTO and the default codegen units, so
+# the fifteen test binaries still build in parallel and incrementally; the debug
+# assertions stay on.
+[profile.test]
+opt-level = 3
+
 [profile.release]
 opt-level = 3        # maximum optimization
 lto = true           # link-time optimization across crates
