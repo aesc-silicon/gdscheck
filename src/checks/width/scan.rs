@@ -337,6 +337,9 @@ pub fn run_width(
     violations
 }
 
+/// The openings taken so far, by the copy's outline.
+type Openings = std::sync::Mutex<HashMap<Vec<(i32, i32)>, std::sync::Arc<Vec<MergedPoly>>>>;
+
 /// What a `span: narrowest` maximum reports: every region of the layer's opening by
 /// half the value - the parts a value x value square fits inside - as one violation
 /// at the region's marker.  The opening is taken per tile, where a copy is exact to
@@ -351,12 +354,45 @@ fn narrowest_over(
 ) -> Vec<Violation> {
     let tile = merged.tile_dbu() as i64;
     let radius = rule.value / dbu_to_um / 2.0;
+    // The opening of a copy is the copy's alone, and a copy reaches every tile within
+    // the rule's halo of it - at a 7 µm tile a 150 µm rule put a 128-point pad in four
+    // hundred tiles, each opening it afresh, 14 s for one layout.  A tile opens only
+    // the copies with area in its core (a shape with none there leaves nothing of its
+    // opening there either), and a copy opened once is opened for every tile that
+    // holds it: the openings are kept by the copy's outline.
+    let cache: Openings = std::sync::Mutex::new(HashMap::new());
     let opened: crate::merge::TileMap = merged
         .tiles(gl, gd)
         .par_iter()
         .filter_map(|(&(tx, ty), polys)| {
             let (x0, y0) = (tx as i64 * tile, ty as i64 * tile);
-            let wide = crate::merge::opening(polys, radius);
+            let (fx0, fy0, fx1, fy1) =
+                (x0 as f64, y0 as f64, (x0 + tile) as f64, (y0 + tile) as f64);
+            let mut wide: Vec<MergedPoly> = Vec::new();
+            for poly in polys {
+                if crate::merge::clipped_area_dbu(poly, fx0, fy0, fx1, fy1) <= 0.0 {
+                    continue;
+                }
+                let key: Vec<(i32, i32)> = poly
+                    .outer
+                    .iter()
+                    .chain(poly.holes.iter().flatten())
+                    .map(|p| (p.x, p.y))
+                    .collect();
+                let hit = cache.lock().expect("openings").get(&key).cloned();
+                let opened = match hit {
+                    Some(o) => o,
+                    None => {
+                        let o = std::sync::Arc::new(crate::merge::opening(
+                            std::slice::from_ref(poly),
+                            radius,
+                        ));
+                        cache.lock().expect("openings").insert(key, o.clone());
+                        o
+                    }
+                };
+                wide.extend(opened.iter().cloned());
+            }
             let pieces = crate::merge::clip_to_box(wide, x0, y0, x0 + tile, y0 + tile);
             (!pieces.is_empty()).then_some(((tx, ty), pieces))
         })
