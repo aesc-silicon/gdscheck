@@ -9,7 +9,7 @@
 //! The tile is 20 µm with lines at its multiples.  Every expected count is read off the
 //! drawing: a gate is both walls of one stretch, cut to it.
 
-use crate::helpers::{layer, library, rect, write_gz};
+use crate::helpers::{flat_array, layer, library, poly, rect, ref_array, write_gz};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/engine/generated/gate_length";
@@ -90,4 +90,128 @@ pub fn generate(pdk: &PdkConfig) {
             rect(via, 33.0, 29.0, 50.0, 32.0),
         ],
     );
+
+    // --- The hardening patterns: what a rule manual's gate length asks of any layer,
+    // drawn once here for every deck of every PDK (hardening/SPEC.md).  A gate is a
+    // stripe of Outer and a piece of Inner cut out of it, the piece's walls across the
+    // stripe lying on the stripe's own; a violation is both walls of one gate, two
+    // markers.  Every stripe is 10 µm long with a 2 µm piece at its middle, so G.len
+    // (a run over 3) is quiet and G.max_unshared (the ends, 10 apart) fires twice on
+    // each, which the cases do not read.
+
+    // A stripe `h` tall from (x, y), `len` long, with a piece `run` long at its middle.
+    let gate = |x: f64, y: f64, len: f64, h: f64, run: f64| {
+        vec![
+            rect(outer, x, y, x + len, y + h),
+            rect(
+                inner,
+                x + (len - run) * 0.5,
+                y,
+                x + (len + run) * 0.5,
+                y + h,
+            ),
+        ]
+    };
+    // The same standing up.
+    let gate_v = |x: f64, y: f64, len: f64, w: f64, run: f64| {
+        vec![
+            rect(outer, x, y, x + w, y + len),
+            rect(
+                inner,
+                x,
+                y + (len - run) * 0.5,
+                x + w,
+                y + (len + run) * 0.5,
+            ),
+        ]
+    };
+
+    // The bound.  Gates 1.0 tall and wide are not under G.min, 0.995 tall and wide are;
+    // 3.0 tall is not over G.max_shared, 3.005 is; a 0.995 gate 3.0 long is no run over
+    // G.len's 3, one 3.005 long is (and both are G.min's).  G.min: 8; G.max_shared: 2;
+    // G.len: 2.
+    let mut e = vec![];
+    e.extend(gate(2.0, 2.0, 10.0, 1.0, 2.0)); // clean
+    e.extend(gate_v(2.0, 4.0, 10.0, 1.0, 2.0)); // clean
+    e.extend(gate(2.0, 16.0, 10.0, 0.995, 2.0)); // G.min
+    e.extend(gate_v(14.0, 2.0, 10.0, 0.995, 2.0)); // G.min
+    e.extend(gate(2.0, 18.0, 10.0, 3.0, 2.0)); // clean
+    e.extend(gate(2.0, 23.0, 10.0, 3.005, 2.0)); // G.max_shared
+    e.extend(gate(2.0, 28.0, 10.0, 0.995, 3.0)); // G.min, not G.len
+    e.extend(gate(2.0, 30.0, 10.0, 0.995, 3.005)); // G.min, G.len
+    write("bound", e);
+
+    // 45° geometry.  A 45° stripe with a piece cut from it whose walls across lie on
+    // the stripe's: 0.99 across (d = 0.7) is under G.min, 1.004 (d = 0.71) is not.
+    // G.min: 2.
+    let gate45 = |x: f64, y: f64, d: f64| {
+        let len = 8.0;
+        vec![
+            poly(
+                outer,
+                &[
+                    (x, y),
+                    (x + len, y + len),
+                    (x + len - d, y + len + d),
+                    (x - d, y + d),
+                ],
+            ),
+            poly(
+                inner,
+                &[
+                    (x + 3.0, y + 3.0),
+                    (x + 5.0, y + 5.0),
+                    (x + 5.0 - d, y + 5.0 + d),
+                    (x + 3.0 - d, y + 3.0 + d),
+                ],
+            ),
+        ]
+    };
+    let mut e = gate45(2.0, 2.0, 0.7); // G.min
+    e.extend(gate45(14.0, 2.0, 0.71)); // clean
+    write("bound_45", e);
+
+    // Shapes that merge.  A piece drawn as two abutting halves is one gate, two
+    // markers, not four; a stripe drawn as two overlapping boxes with one piece; a
+    // stripe with two pieces 1 apart is two gates.  G.min: 8.
+    write(
+        "merge",
+        vec![
+            rect(outer, 2.0, 2.0, 12.0, 2.995),
+            rect(inner, 6.0, 2.0, 7.0, 2.995),
+            rect(inner, 7.0, 2.0, 8.0, 2.995), // one gate
+            rect(outer, 2.0, 6.0, 8.0, 6.995),
+            rect(outer, 6.0, 6.0, 12.0, 6.995),
+            rect(inner, 6.0, 6.0, 8.0, 6.995), // one gate
+            rect(outer, 2.0, 10.0, 12.0, 10.995),
+            rect(inner, 5.0, 10.0, 6.0, 10.995),
+            rect(inner, 7.0, 10.0, 8.0, 10.995), // two gates
+        ],
+    );
+
+    // Tile lines.  0.995 gates whose piece is across x = 20, ends on 20, starts on 20,
+    // is across 21, 40 and 42, well inside a tile at 10; a standing gate with its piece
+    // across y = 20; one at (1000, 1000).  G.min: 18.
+    let mut e = vec![];
+    for (i, px) in [9.0, 19.0, 18.0, 20.0, 20.0, 39.0, 41.0].iter().enumerate() {
+        let y = 2.0 + 2.0 * i as f64;
+        e.extend(gate(px - 4.0, y, 10.0, 0.995, 2.0)); // piece from px to px + 2
+    }
+    e.extend(gate_v(30.0, 15.0, 10.0, 0.995, 2.0)); // piece 19..21 across y = 20
+    e.extend(gate(996.0, 1000.0, 10.0, 0.995, 2.0)); // piece 1000..1002
+    write("tile_lines", e);
+
+    // Fifty 0.995 gates, flat and as an array reference.  G.min: 100 each.
+    let cell = gate(0.2, 0.2, 10.0, 0.995, 2.0);
+    write("array_flat", flat_array(&cell, 5, 10, 12.0));
+    write_gz(
+        &format!("{DIR}/array_ref.gds.gz"),
+        ref_array(cell, 5, 10, 12.0),
+    );
+
+    // Small and long.  A 0.005 gate; a 300 µm stripe with a 0.995 gate at its middle,
+    // its ends 300 apart.  G.min: 4.
+    let mut e = gate(2.0, 2.0, 10.0, 0.005, 2.0);
+    e.extend(gate(2.0, 6.0, 300.0, 0.995, 2.0));
+    write("extremes", e);
 }
