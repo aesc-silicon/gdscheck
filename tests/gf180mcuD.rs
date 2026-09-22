@@ -1615,6 +1615,18 @@ fn hardening_via(
 // up it, one step inside the 0.319 reach.
 #[case::np_12_h1("nplus/NP.12.h1.gds.gz", "TOP", vec!["NP.12"], vec![])]
 fn hardening_nplus(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("nplus", gds, topcell, &[]), want, "{gds}");
 }
 
 // --- Salicide block (hardening/reports/gf180mcuD/sab.md).  OTP_MK exempts a block from
@@ -1703,7 +1715,7 @@ fn hardening_sab(
         .map(ToString::to_string)
         .collect();
     want.sort();
-    assert_eq!(hardening("nplus", gds, topcell, &[]), want, "{gds}");
+    assert_eq!(hardening("sab", gds, topcell, &[]), want, "{gds}");
 }
 
 // --- P+ implant (hardening/reports/gf180mcuD/pplus.md).  The manual's section 7.9, the
@@ -1765,9 +1777,6 @@ fn hardening_pplus(
         .collect();
     want.sort();
     assert_eq!(hardening("pplus", gds, topcell, &[]), want, "{gds}");
-}
-
-    assert_eq!(hardening("sab", gds, topcell, &[]), want, "{gds}");
 }
 
 // --- ESD implant (hardening/reports/gf180mcuD/esd.md).  The implant is a 5 V/6 V option:
