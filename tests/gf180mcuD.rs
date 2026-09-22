@@ -2750,3 +2750,42 @@ fn hardening_dummy_poly2(
         "{gds}"
     );
 }
+
+// --- Dummy metal (hardening/reports/gf180mcuD/dummy_metal.md).  Section 13.3.  The five
+// levels are one template, so the battery is drawn on Metal1 and `DM.levels.h1` carries
+// the same two gaps on all five.
+#[rstest]
+#[case::dm1_2b_h1("dummy_metal/DM1.2b.h1.gds.gz", "TOP", vec!["DM1.2b", "DM1.2b"], vec![])]
+// The 0.975 gap on the tile lines, and a 0.98 one that must stay clean.
+#[case::dm1_2b_h2("dummy_metal/DM1.2b.h2.gds.gz", "TOP", vec!["DM1.2b", "DM1.2b", "DM1.2b"], vec![])]
+#[case::dm1_3_h1("dummy_metal/DM1.3.h1.gds.gz", "TOP", vec!["DM1.3", "DM1.3"], vec![])]
+// Fill abutting circuit Metal1 and half over it.  Report finding 1.
+#[case::dm1_3_h2("dummy_metal/DM1.3.h2.gds.gz", "TOP", vec!["DM1.3", "DM1.3"], vec![])]
+#[case::dm1_8_h1("dummy_metal/DM1.8.h1.gds.gz", "TOP", vec!["DM1.8", "DM1.8"], vec![])]
+// Abutting OTP_MK, half over it, and wholly under it - "There should not be any dummy
+// metal pattern fill in the following areas".  Report findings 1 and 2.
+#[case::dm1_8_h2("dummy_metal/DM1.8.h2.gds.gz", "TOP", vec!["DM1.8", "DM1.8", "DM1.8"], vec![])]
+// The other five layers DM.8 names, each 5.995 from a fill.
+#[case::dm1_8_h3("dummy_metal/DM1.8.h3.gds.gz", "TOP", vec!["DM1.8", "DM1.8", "DM1.8", "DM1.8", "DM1.8"], vec![])]
+// A 2.0 square (clean), a 1.995 one, a 2.005 one and a 2 x 4 bar: DM.1 fixes the dummy
+// metal's width and length at 2.0 both ways.  Report finding 3.
+#[case::dm_1_h1("dummy_metal/DM.1.h1.gds.gz", "TOP", vec!["DM1.1", "DM1.1", "DM1.1"], vec![])]
+// Dummy Metal1 to circuit Metal2 - the subsequent level - at 1.0 (clean), 0.995, and
+// overlapping.  DM.4 is the space and DM.6 the overlap.  Report finding 4.
+#[case::dm1_4_h1("dummy_metal/DM1.4.h1.gds.gz", "TOP", vec!["DM1.4", "DM1.6"], vec![])]
+// The same to Poly2, which is Metal1's previous level: DM.5 and DM.7.  Finding 4.
+#[case::dm1_5_h1("dummy_metal/DM1.5.h1.gds.gz", "TOP", vec!["DM1.5", "DM1.7"], vec![])]
+// A 0.975 dummy-to-dummy gap and a 1.995 dummy-to-drawn gap on each of the five levels.
+#[case::dm_levels_h1("dummy_metal/DM.levels.h1.gds.gz", "TOP", vec!["DM1.2b", "DM1.3", "DM2.2b", "DM2.3", "DM3.2b", "DM3.3", "DM4.2b", "DM4.3", "DM5.2b", "DM5.3"], vec![])]
+fn hardening_dummy_metal(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(
+        hardening("dummy_metal", gds, topcell, &ignore),
+        expected,
+        "{gds}"
+    );
+}
