@@ -2983,10 +2983,23 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [lres_poly_sab, res_mk]
-  - name: poly2_unrelated
+  # "Unrelated Poly2" is Poly2 that is not part of a resistor, and it takes both halves of
+  # the recognition to say so: a bar under no block is none, and so is a bar no marking
+  # names.  Reading it off `sab` alone exempted a bar with a block at its far end, five
+  # micron away and marked by nothing (reports, finding 3); reading it off `res_mk` alone
+  # would exempt every bar a marking happens to reach.
+  - name: poly2_no_sab
     op: not_interacting
     mode: lazy
     layers: [poly2_drawn, sab]
+  - name: poly2_no_res_mk
+    op: not_interacting
+    mode: lazy
+    layers: [poly2_drawn, res_mk]
+  - name: poly2_unrelated
+    op: union
+    mode: lazy
+    layers: [poly2_no_sab, poly2_no_res_mk]
   - name: comp_on_lres
     op: overlapping
     mode: lazy
@@ -3027,18 +3040,39 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [cont_pres, sab]
+  # What the marking has to coincide with: the block along the body and the Poly2 across
+  # it, which is what PRES.9 names.  The implant is not part of that outline - an implant
+  # that stops in the middle of the block is PRES.5's, and reading it here made the
+  # marking's edge, which lies on the block's, look like an edge of its own.
   - name: pres_outline
     op: intersection
     mode: lazy
-    layers: [poly2_drawn, pplus, sab]
+    layers: [poly2_drawn, sab]
   - name: res_mk_on_pres
     op: interacting
     mode: lazy
     layers: [res_mk, pres_poly]
-  - name: pres9a_viol
+  - name: pres9a_marking
     op: interacting
     mode: lazy
     layers: [res_mk_on_pres, res_mk_off_outline]
+  # The resistor's length is the block's, and the marking's length has to coincide with
+  # it - so a marking that reaches out over the salicided head is longer than the
+  # resistor, however far it then clears the bar.  Read as the head being covered rather
+  # than as an edge, because an edge that leaves the Poly2 altogether was the one the
+  # edge term could not see (reports, finding 5).
+  - name: pres_head
+    op: difference
+    mode: lazy
+    layers: [pres_poly, sab]
+  - name: pres9a_over_head
+    op: overlapping
+    mode: lazy
+    layers: [res_mk_on_pres, pres_head]
+  - name: pres9a_viol
+    op: union
+    mode: lazy
+    layers: [pres9a_marking, pres9a_over_head]
   - name: res_mk_big_area
     op: with_area
     min: 15000.001
@@ -3099,6 +3133,45 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [hres9_sab_mk, resistor]
+  # HRES.9 as an enclosure reads the resistor's walls where the block covers them, and
+  # says nothing where it covers nothing: a hole cut in the block over the body, or a
+  # bite out of its edge that stops inside the bar, leaves the resistor salicided there
+  # and was reported by neither half.  The block's own extent bounds the term, so the
+  # heads - Poly2 beyond the block's ends, which is meant to be salicided - are not it
+  # (reports, findings 6 and 7).
+  - name: hres9_sab_box
+    op: extents
+    mode: lazy
+    layers: [hres9_sab]
+  - name: hres9_under_box
+    op: intersection
+    mode: lazy
+    layers: [hres_poly, hres9_sab_box]
+  - name: hres9_uncovered
+    op: difference
+    mode: lazy
+    layers: [hres9_under_box, hres9_sab]
+  # HRES.10 from below: a head that does not reach the block at all overlaps it by
+  # nothing, and nothing is under the 0.1 the rule fixes - there is no strip for the
+  # width half to measure (report, finding 8).
+  - name: hres10_head
+    op: interacting
+    mode: lazy
+    layers: [pplus, hres_poly]
+  - name: hres10_short
+    op: not_overlapping
+    mode: lazy
+    layers: [hres10_head, hres9_sab]
+  # And from above, on the strip itself: the overlap is as wide as the implant reaches
+  # over the block, which on a PHRES is a strip in the length direction; an opening by
+  # half the value survives only where it is thicker than that, as MDN.11 reads its own
+  # fixed overlap.  `max_enclosure` asked instead how far the implant reaches past the
+  # block, which is the same number only when the implant contains it (report, finding 9).
+  - name: hres10_wide
+    op: open
+    radius: 0.05
+    mode: lazy
+    layers: [hres10_overlap]
 
   # ---- OTP marker (otp_mk deck) -------------------------------------------
   - name: comp_otp
@@ -4855,7 +4928,7 @@ virtual_layers:
   - name: lres_outline
     op: intersection
     mode: lazy
-    layers: [poly_nplus_lres, sab]
+    layers: [poly2_drawn, sab]
   - name: res_mk_on_hres
     op: interacting
     mode: lazy
@@ -4868,10 +4941,27 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [res_mk_on_hres, res_mk_off_hres]
-  - name: lres9a_viol
+  - name: lres9a_marking
     op: interacting
     mode: lazy
     layers: [res_mk_on_lres, res_mk_off_lres]
+  # The resistor's length is the block's, and the marking's length has to coincide with
+  # it - so a marking that reaches out over the salicided head is longer than the
+  # resistor, however far it then clears the bar.  Read as the head being covered rather
+  # than as an edge, because an edge that leaves the Poly2 altogether was the one the
+  # edge term could not see (reports, finding 5).
+  - name: lres_head
+    op: difference
+    mode: lazy
+    layers: [lres_poly, sab]
+  - name: lres9a_over_head
+    op: overlapping
+    mode: lazy
+    layers: [res_mk_on_lres, lres_head]
+  - name: lres9a_viol
+    op: union
+    mode: lazy
+    layers: [lres9a_marking, lres9a_over_head]
   # CO.9: a contact sitting on a butted N/P COMP boundary.
   - name: co9_viol
     op: interacting

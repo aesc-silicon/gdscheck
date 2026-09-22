@@ -82,7 +82,12 @@ const CONT_GAP: f64 = 0.5;
 enum Mk {
     /// No marking at all: without it the bar is not a resistor.
     None,
-    /// A box `d` clear of the body on every side, so no edge of it falls in the Poly2.
+    /// The marking of a drawn device: the block's own span along the body, which is the
+    /// resistor's length, and `d` clear of the Poly2 either side of its width.  That is
+    /// the shape the process's own `ppolyf_u` cell draws (`res_mk` on the block's span,
+    /// `sab` overhanging the width), and what PRES.9's "coincide with resistor length
+    /// (defined by SAB length)" asks for - a marking drawn out over the salicided heads
+    /// is longer than the resistor it marks.
     Clear(f64),
     /// An explicit box, for the rule that asks the marking to coincide with the body.
     Box([f64; 4]),
@@ -197,7 +202,10 @@ impl Dev {
         }
         match self.mk {
             Mk::None => {}
-            Mk::Clear(d) => v.push(rect(c.res_mk, x - d, y - d, x + len + d, y + w + d)),
+            Mk::Clear(d) => {
+                let (s0, s1) = self.sab_span();
+                v.push(rect(c.res_mk, s0, y - d, s1, y + w + d));
+            }
             Mk::Box([x0, y0, x1, y1]) => v.push(rect(c.res_mk, x0, y0, x1, y1)),
         }
         if let Some(d) = self.resistor {
@@ -231,7 +239,7 @@ fn u_context(c: &Ctx, x: f64, y: f64, g: f64) -> Vec<GdsElement> {
     vec![
         rect(c.implant, x - IMP, y - IMP, x + LEN + IMP, top + IMP),
         rect(c.sab, x + SAB_IN, y - SABW, x + LEN - SAB_IN, top + SABW),
-        rect(c.res_mk, x - MK, y - MK, x + LEN + MK, top + MK),
+        rect(c.res_mk, x + SAB_IN, y - MK, x + LEN - SAB_IN, top + MK),
     ]
 }
 
@@ -316,7 +324,7 @@ pub fn hardening(pdk: &PdkConfig, kind: Kind) {
             rect(c.poly, o + 4.6, o + 0.2, o + LEN, o + 0.8),
             rect(c.implant, o - IMP, o - IMP, o + LEN + IMP, o + W + IMP),
             rect(c.sab, o + SAB_IN, o - SABW, o + 4.4, o + W + SABW),
-            rect(c.res_mk, o - MK, o - MK, o + LEN + MK, o + W + MK),
+            rect(c.res_mk, o + SAB_IN, o - MK, o + 4.4, o + W + MK),
         ];
         for (cx, cy) in [(o + 0.68, o + 0.39), (o + 5.1, o + 0.39)] {
             v.push(rect(c.contact, cx, cy, cx + CONT, cy + CONT));
@@ -548,12 +556,13 @@ pub fn hardening(pdk: &PdkConfig, kind: Kind) {
 
     // .9a.h2: a 1 µm resistor under a 6.6 µm marking.  The block runs from x + 2.5 to
     // x + 3.5, so the resistor is 1 µm long, and the RES_MK clears the whole bar on every
-    // side - its length coincides with nothing.  Every edge of it falls outside the
-    // Poly2, which is the only place the coded rule looks.
+    // side - its length coincides with nothing, and every edge of it falls outside the
+    // Poly2, where an edge test cannot see it.  What gives it away is the salicided head:
+    // the marking lies over 2.5 µm of it at each end.
     write(format!("{r}.9a.h2"), {
         Dev::at(o, o)
             .sab(Sab::Box([o + 2.5, o - SABW, o + 3.5, o + W + SABW]))
-            .mk(Mk::Clear(MK))
+            .mk(Mk::Box([o - MK, o - MK, o + LEN + MK, o + W + MK]))
             .draw(&c)
     });
 

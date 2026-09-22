@@ -13,10 +13,19 @@ rules:
     check: min_space
     layers: [pres_poly]
     value: 0.4
+  - id: PRES.2
+    check: min_notch
+    layers: [pres_poly]
+    value: 0.4
+  # A COMP sharing an edge with the resistor has a space of nothing between them, and
+  # nothing is under 0.6; the overlap half wants area and never saw it (reports, finding
+  # 2).  Upstream's `comp.not_outside(pres_poly)` keeps the touch the same way.
   - id: PRES.3
     check: min_space
     layers: [pres_poly, comp]
     value: 0.6
+    params:
+      abutting: report
   - id: PRES.3
     check: forbidden
     layers: [comp_on_pres]
