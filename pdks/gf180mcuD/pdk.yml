@@ -3478,6 +3478,18 @@ virtual_layers:
     radius: 5.0
     mode: lazy
     layers: [top_metal_under_pad_raw]
+  # The fifth region the manual's `.9` names: the Metal3 that carries a MIM top plate's
+  # connection, where FuseTop encloses it (report, mslot finding 6).  The MIM bottom
+  # plate below is Metal4's own; upstream carries neither.
+  - name: metal3_under_fusetop_raw
+    op: intersection
+    mode: lazy
+    layers: [metal3_drawn, fusetop]
+  - name: metal3_under_fusetop
+    op: grow
+    radius: 5.0
+    mode: lazy
+    layers: [metal3_under_fusetop_raw]
   - name: mim_bottom_under_fusetop_raw
     op: intersection
     mode: lazy
@@ -3515,6 +3527,7 @@ virtual_layers:
     layers:
       - top_metal_under_pad
       - mim_bottom_under_fusetop
+      - metal3_under_fusetop
       - top_metal_under_fusewindow
       - top_metal_under_ubm
 
@@ -3554,6 +3567,109 @@ virtual_layers:
   # slot.  That chain is four virtual layers here because each directional size is its
   # own op.  It runs twice: once to pre-select wide metal before the vias and slots are
   # subtracted, and once afterwards, on the remainder, which is the rule proper.
+  # A slot mark lying *on* a via, a contact or a keep-out, and one on a hole in the
+  # metal: each is a space of nothing with no gap to measure, and the mark cuts the
+  # metal away where the via would land (report, mslot findings 2 and 4).
+  - name: metal1_slot_on_via
+    op: intersection
+    mode: lazy
+    layers: [metal1_slot_rect, via1]
+  - name: metal1_slot_on_contact
+    op: intersection
+    mode: lazy
+    layers: [metal1_slot_rect, contact]
+  - name: metal1_slot_on_keepout
+    op: intersection
+    mode: lazy
+    layers: [metal1_slot_rect, dont_slot]
+  - name: metal1_holes
+    op: holes
+    mode: lazy
+    layers: [metal1_drawn]
+  - name: metal1_slot_in_hole
+    op: intersection
+    mode: lazy
+    layers: [metal1_slot_rect, metal1_holes]
+  - name: metal2_slot_on_via
+    op: intersection
+    mode: lazy
+    layers: [metal2_slot_rect, via2]
+  - name: metal2_slot_on_contact
+    op: intersection
+    mode: lazy
+    layers: [metal2_slot_rect, contact]
+  - name: metal2_slot_on_keepout
+    op: intersection
+    mode: lazy
+    layers: [metal2_slot_rect, dont_slot]
+  - name: metal2_holes
+    op: holes
+    mode: lazy
+    layers: [metal2_drawn]
+  - name: metal2_slot_in_hole
+    op: intersection
+    mode: lazy
+    layers: [metal2_slot_rect, metal2_holes]
+  - name: metal3_slot_on_via
+    op: intersection
+    mode: lazy
+    layers: [metal3_slot_rect, via3]
+  - name: metal3_slot_on_contact
+    op: intersection
+    mode: lazy
+    layers: [metal3_slot_rect, contact]
+  - name: metal3_slot_on_keepout
+    op: intersection
+    mode: lazy
+    layers: [metal3_slot_rect, dont_slot]
+  - name: metal3_holes
+    op: holes
+    mode: lazy
+    layers: [metal3_drawn]
+  - name: metal3_slot_in_hole
+    op: intersection
+    mode: lazy
+    layers: [metal3_slot_rect, metal3_holes]
+  - name: metal4_slot_on_via
+    op: intersection
+    mode: lazy
+    layers: [metal4_slot_rect, via4]
+  - name: metal4_slot_on_contact
+    op: intersection
+    mode: lazy
+    layers: [metal4_slot_rect, contact]
+  - name: metal4_slot_on_keepout
+    op: intersection
+    mode: lazy
+    layers: [metal4_slot_rect, dont_slot]
+  - name: metal4_holes
+    op: holes
+    mode: lazy
+    layers: [metal4_drawn]
+  - name: metal4_slot_in_hole
+    op: intersection
+    mode: lazy
+    layers: [metal4_slot_rect, metal4_holes]
+  - name: metal5_slot_on_via
+    op: intersection
+    mode: lazy
+    layers: [metal5_slot_rect, via4]
+  - name: metal5_slot_on_contact
+    op: intersection
+    mode: lazy
+    layers: [metal5_slot_rect, contact]
+  - name: metal5_slot_on_keepout
+    op: intersection
+    mode: lazy
+    layers: [metal5_slot_rect, dont_slot]
+  - name: metal5_holes
+    op: holes
+    mode: lazy
+    layers: [metal5_drawn]
+  - name: metal5_slot_in_hole
+    op: intersection
+    mode: lazy
+    layers: [metal5_slot_rect, metal5_holes]
   - name: metal1_slot_rect
     op: rectangle
     mode: lazy

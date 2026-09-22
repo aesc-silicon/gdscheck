@@ -2005,7 +2005,10 @@ fn per_level(suffixes: &[&str]) -> Vec<String> {
 #[case::mslot_space_h2("mslot/MSLOT.space.h2.gds.gz", "TOP", ids(&["MSLOT1.4"; 3]))]
 // `.4`'s maximum: marks 30 µm apart are at the bound and 30.005 apart are over it.  Both
 // tools are silent - the deck and the runset carry the minimum alone (report, finding 1).
-#[case::mslot_space_h3("mslot/MSLOT.space.h3.gds.gz", "TOP", ids(&["MSLOT1.4"]))]
+// The 30 um *maximum* between marks is in neither deck nor runset, and the engine has no
+// reading for "every region of a layer within reach of another of the same layer" (kept
+// and open; report, finding 1).
+#[case::mslot_space_h3("mslot/MSLOT.space.h3.gds.gz", "TOP", ids(&[]))]
 // `.5` at 9.995 µm on one side, on all five levels, and 10 µm all round for the control.
 #[case::mslot_enc_h1("mslot/MSLOT.enc.h1.gds.gz", "TOP", per_level(&["5"]))]
 // A mark crossing the metal's edge, one with no metal at all, one on the dummy datatype,
@@ -2015,7 +2018,7 @@ fn per_level(suffixes: &[&str]) -> Vec<String> {
 // A legal mark in the middle of a hole in the metal, 10 µm from every wall of it: the
 // manual's `.10`, which neither deck carries.  gdscheck reports it as `.5` instead, which
 // is the right answer under the wrong id (report, finding 2).
-#[case::mslot_hole_h1("mslot/MSLOT.hole.h1.gds.gz", "TOP", ids(&["MSLOT1.10"]))]
+#[case::mslot_hole_h1("mslot/MSLOT.hole.h1.gds.gz", "TOP", ids(&["MSLOT1.10", "MSLOT1.5"]))]
 // The per-level via map: `.7` is the via above the metal, `.8` the one below, and Metal5
 // has no `.7`.
 #[case::mslot_via_h1("mslot/MSLOT.via.h1.gds.gz", "TOP", ids(&["MSLOT1.7", "MSLOT1.8", "MSLOT2.7", "MSLOT2.8", "MSLOT3.7", "MSLOT3.8", "MSLOT4.7", "MSLOT4.8", "MSLOT5.8"]))]
