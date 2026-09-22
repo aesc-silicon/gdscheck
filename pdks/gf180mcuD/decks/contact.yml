@@ -32,6 +32,7 @@ rules:
     value: 0.07
     params:
       interacting_only: 1
+      metric: euclidian
   - id: CO.3
     check: forbidden
     layers: [co_3_crossing]
@@ -41,6 +42,7 @@ rules:
     layers: [comp, contact_no_sram]
     value: 0.07
     params:
+      metric: euclidian
       interacting_only: 1
   - id: CO.4
     check: forbidden
@@ -52,6 +54,14 @@ rules:
     value: 0.1
     params:
       interacting_only: 1
+  - id: CO.5a
+    check: forbidden
+    layers: [co_5a_crossing]
+    value: 0.0
+  - id: CO.5b
+    check: forbidden
+    layers: [co_5b_crossing]
+    value: 0.0
   - id: CO.5b
     check: min_enclosure
     layers: [pcomp_butted_only, contact_on_pcomp_butted]
@@ -81,10 +91,14 @@ rules:
     check: min_space
     layers: [contact_on_comp_no_otp, tgate_no_otp]
     value: 0.15
+  # A contact whose edge lies on the COMP's is nothing away from it, which is under
+  # every value (the settled reading since IHP's NW.d).
   - id: CO.8
     check: min_space
     layers: [contact_on_poly, comp]
     value: 0.17
+    params:
+      abutting: report
   - id: CO.9
     check: forbidden
     layers: [co9_viol]

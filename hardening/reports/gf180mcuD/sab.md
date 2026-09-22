@@ -182,3 +182,24 @@ both tools; it does not need drawing again.
 - **The tile lines**: `SB.15a.h1`, `SB.15b.h1` and `SB.16.h1` each put a pattern across
   x = 20; at tiles 20, 7 and 100 every count is the same, in this deck's rules and in the
   runset's.
+
+## Resolution (2026-09-22)
+
+- **1 (a shared edge)**: fixed in the deck; SB.3, SB.4, SB.5a and SB.5b report an
+  abutting pair.
+- **2 ("unrelated")**: fixed in the deck.  SB.3 reads the plain COMP layer, so
+  relatedness is decided per pair: a pair that shares area is the block's own and is
+  skipped, every other pair is measured - and a COMP drawn edge to edge with a block
+  shares no area with it, which is finding 1's case.
+- **3 (a shape wholly inside the block)**: fixed in the deck; SB.7 and SB.10 get a
+  `forbidden` half on the contained COMP and the contained poly, which is the worst
+  case each rule has.  A block over a whole gate is SB.16 and SB.10 by one geometry,
+  which the isolation test now allows as twins.
+- **4 (`skip_coincident` on opposite members)**: left as it stands, as the report
+  proposes - which id a coincident wall earns is a labelling question.
+- **5 (the ESD marker)**: fixed in the deck; SB.12's `sab_out_esd` takes the marker
+  away geometrically, since the rule names the overlap *outside* it.
+
+Foundry case `sab.gds.gz`: SB.3 9 -> 11, SB.4 6 -> 7, SB.5a 9 -> 12, SB.5b 7 -> 8 (the
+touches), SB.7 17 -> 26 and SB.10 61 -> 97 (the contained shapes).  The first four move
+toward KLayout's counts; the last two are the half neither tool had.

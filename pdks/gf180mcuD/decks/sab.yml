@@ -18,14 +18,25 @@ rules:
     check: min_notch
     layers: [sab_out_otp]
     value: 0.42
+  # A shape drawn edge to edge with the block is nothing away from it, which is under
+  # every value of the section (the settled reading since IHP's NW.d).
+  # "Unrelated" is a property of the *pair*, not of the shape: a COMP that runs under
+  # one block is the block's own and is still unrelated to every other block near it
+  # (report, sab finding 2).  A plain two-layer space says exactly that - a pair that
+  # shares area is skipped, every other pair is measured - and `abutting: report` keeps
+  # a COMP drawn edge to edge with a block, which shares no area with it (finding 1).
   - id: SB.3
     check: min_space
-    layers: [sab_out_otp, comp_unrelated_sab]
+    layers: [sab_out_otp, comp]
     value: 0.22
+    params:
+      abutting: report
   - id: SB.4
     check: min_space
     layers: [sab_out_otp, contact]
     value: 0.15
+    params:
+      abutting: report
   - id: SB.4
     check: forbidden
     layers: [sab_on_contact]
@@ -34,10 +45,14 @@ rules:
     check: min_space
     layers: [sab_out_otp, poly_field_no_sab]
     value: 0.3
+    params:
+      abutting: report
   - id: SB.5b
     check: min_space
     layers: [sab_out_otp, poly_on_comp]
     value: 0.28
+    params:
+      abutting: report
   - id: SB.6
     check: min_enclosure
     layers: [sab, comp_sab]
@@ -51,6 +66,10 @@ rules:
     params:
       interacting_only: 1
       skip_coincident: 1
+  - id: SB.7
+    check: forbidden
+    layers: [comp_in_sab]
+    value: 0.0
   - id: SB.8
     check: forbidden
     layers: [contact_on_sab]
@@ -68,6 +87,10 @@ rules:
     value: 0.22
     params:
       interacting_only: 1
+  - id: SB.10
+    check: forbidden
+    layers: [poly_in_sab]
+    value: 0.0
   - id: SB.11
     check: min_overlap
     layers: [sab_out_otp, comp_sab]

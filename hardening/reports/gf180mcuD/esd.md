@@ -150,3 +150,15 @@ both tools.
   edge is an active the implant lies on and not one it stands off - clean in both.
 - **The tile lines**: `ESD.3a.h1`, `ESD.3b.h1`, `ESD.6.h1`, `ESD.8.h1` and `ESD.pl.h1` all
   straddle x = 20 (`ESD.6.h1` also x = 40); at tiles 20, 7 and 100 every count is the same.
+
+## Resolution (2026-09-22)
+
+- **1 (ESD.3a at a touch)**: fixed in the deck, `abutting: report`.  ESD.3b's blessing
+  of the butted P+ active is a rule of its own and is untouched.
+- **2 (a half-covered implant)**: fixed in the deck; `esd_no_dualgate` is the part of
+  the implant outside the marker, so an implant half on a 3.3 V device is reported.
+- **3 (a step corner)**: kept and open.  The edge-layer extensions read projection, and
+  no two walls face each other across a step; giving them a closest-approach reading is
+  an engine change of its own, and the same open class the IHP gatpoly round named.
+  ESD.4a and ESD.6 do carry `metric: euclidian` now, which the polygon path honours.
+- **4**: gdscheck was right; nothing to do.

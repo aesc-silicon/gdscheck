@@ -89,10 +89,14 @@ rules:
     params:
       interacting_only: 1
       skip_coincident: 1
+  # A marker wall drawn on the wall of an unsalicided poly is nothing away from it,
+  # which is under the value (the settled reading since IHP's NW.d).
   - id: NP.7
     check: min_space
     layers: [nplus, poly_sab_only]
     value: 0.18
+    params:
+      abutting: report
   - id: NP.8a
     check: min_area
     layers: [nplus]
@@ -103,22 +107,33 @@ rules:
     value: 0.35
     params:
       scope: hole
+  # As PP.9: a marked poly resistor has its heads implanted and its body bare under the
+  # block, and its implant edges are the device's, not the rule's - the same sentence in
+  # both sections, and the exemption was on the P+ side alone (report, nplus finding 4).
   - id: NP.9
     check: min_enclosure
-    layers: [nplus, poly_sab_only]
+    layers: [nplus, poly_sab_no_res]
     value: 0.18
     params:
       interacting_only: 1
+      metric: euclidian
   - id: NP.9
     check: forbidden
     layers: [np_9_crossing]
     value: 0.0
+  # NP.10's other half, as NP.9 has one: an unsalicided COMP the marker covers in part
+  # and stops inside is overlapped by nothing there (report, nplus finding 2).
   - id: NP.10
     check: min_enclosure
     layers: [nplus, comp_sab_only]
     value: 0.18
     params:
       interacting_only: 1
+      metric: euclidian
+  - id: NP.10
+    check: forbidden
+    layers: [np_10_crossing]
+    value: 0.0
   - id: NP.11
     check: forbidden
     layers: [np11_viol]

@@ -1753,8 +1753,12 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [nplus, pplus]
+  # ESD.9: the implant must be *overlapped by* Dualgate, which the parenthesis explains -
+  # the implant is the 5 V/6 V option, and Dualgate marks that area.  An implant half
+  # outside the window has half of itself on a 3.3 V device, so the part outside is the
+  # violation and not only an implant no marker touches (report, esd finding 2).
   - name: esd_no_dualgate
-    op: not_overlapping
+    op: difference
     mode: lazy
     layers: [esd, dualgate]
   - name: comp_esd
@@ -1789,6 +1793,24 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [pcomp_butted_all, ncomp]
+  # CO.5a/CO.5b's other half, as CO.3 and CO.4 have one: a contact that overlaps the
+  # implant and runs outside it has no margin there at all (report, contact finding 6).
+  - name: co_5a_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_on_ncomp_butted, ncomp_butted_only]
+  - name: co_5a_crossing
+    op: difference
+    mode: lazy
+    layers: [co_5a_crossing_all, ncomp_butted_only]
+  - name: co_5b_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [contact_on_pcomp_butted, pcomp_butted_only]
+  - name: co_5b_crossing
+    op: difference
+    mode: lazy
+    layers: [co_5b_crossing_all, pcomp_butted_only]
   - name: contact_on_ncomp_butted
     op: interacting
     mode: lazy
@@ -2076,8 +2098,22 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [sb15b_poly_all, sab_out_otp]
+  # SB.12 names the overlap *outside* ESD_MK, so the marker is taken away where it
+  # lies: dropping a whole block that the marker reaches into left an overlap wholly
+  # outside the marker unmeasured (report, sab finding 5).
+  # SB.7/SB.10's other half: a COMP or a poly lying wholly inside the block runs past it
+  # by nothing, which is the worst case the rule has, and an enclosure of the block by
+  # the shape has no wall to measure there (report, sab finding 3).
+  - name: comp_in_sab
+    op: inside
+    mode: lazy
+    layers: [comp_sab, sab]
+  - name: poly_in_sab
+    op: inside
+    mode: lazy
+    layers: [poly_sab, sab]
   - name: sab_out_esd
-    op: not_overlapping
+    op: difference
     mode: lazy
     layers: [sab_out_otp, esd_mk]
   - name: lvsio_or_esdmk
@@ -2267,6 +2303,11 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [pplus_no_guard_ring, dnwell]
+  # NP.3's zero-space exemptions (NP.3d/NP.3e) are the butting pair's own edge, and the
+  # marker is dropped whole as soon as it touches one - so an unrelated diffusion eight
+  # microns along the same island goes unmeasured (report, nplus finding 3, open).
+  # Cutting the pair out of the marker instead invents walls along the cut, which the
+  # other rules on this layer then measure; the exemption wants a per-pair reading.
   - name: np3_nplus
     op: not_interacting
     mode: lazy
@@ -4568,10 +4609,26 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [np_5a_crossing_all, nplus]
+  - name: np_10_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [comp_sab_only, nplus]
+  - name: np_10_crossing
+    op: difference
+    mode: lazy
+    layers: [np_10_crossing_all, nplus]
+  - name: pp_10_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [comp_sab_only, pplus]
+  - name: pp_10_crossing
+    op: difference
+    mode: lazy
+    layers: [pp_10_crossing_all, pplus]
   - name: np_9_crossing_all
     op: overlapping
     mode: lazy
-    layers: [poly_sab_only, nplus]
+    layers: [poly_sab_no_res, nplus]
   - name: np_9_crossing
     op: difference
     mode: lazy

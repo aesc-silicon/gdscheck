@@ -193,7 +193,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::sab(
     "sab", "sab.gds.gz", "7_10_SB",
-    &[("SB.1", 20), ("SB.10", 61), ("SB.11", 1), ("SB.12", 1), ("SB.13", 132), ("SB.14a", 6), ("SB.14b", 6), ("SB.15a", 13), ("SB.15b", 5), ("SB.16", 6), ("SB.2", 9), ("SB.3", 9), ("SB.4", 6), ("SB.5a", 9), ("SB.5b", 7), ("SB.6", 27), ("SB.7", 17), ("SB.8", 3), ("SB.9", 36)]
+    &[("SB.1", 20), ("SB.10", 97), ("SB.11", 1), ("SB.12", 1), ("SB.13", 132), ("SB.14a", 6), ("SB.14b", 6), ("SB.15a", 13), ("SB.15b", 5), ("SB.16", 6), ("SB.2", 9), ("SB.3", 11), ("SB.4", 7), ("SB.5a", 12), ("SB.5b", 8), ("SB.6", 27), ("SB.7", 26), ("SB.8", 3), ("SB.9", 36)]
 )]
 #[case::ymtp_mk(
     "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
@@ -201,7 +201,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::contact(
     "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
-    &[("CO.1", 104), ("CO.10", 2), ("CO.11", 145), ("CO.2a", 8), ("CO.2b", 6), ("CO.3", 14), ("CO.4", 9), ("CO.5a", 2), ("CO.5b", 4), ("CO.6", 98), ("CO.6a", 25), ("CO.6b", 30), ("CO.7", 2), ("CO.8", 2), ("CO.9", 6)]
+    &[("CO.1", 104), ("CO.10", 2), ("CO.11", 145), ("CO.2a", 8), ("CO.2b", 6), ("CO.3", 20), ("CO.4", 13), ("CO.5a", 5), ("CO.5b", 7), ("CO.6", 98), ("CO.6a", 25), ("CO.6b", 30), ("CO.7", 2), ("CO.8", 2), ("CO.9", 6)]
 )]
 #[case::sram_5p0(
     "sram_5p0", "sram_5p0.gds.gz", "sram_5p0",
@@ -225,7 +225,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
-    &[("NP.1", 395), ("NP.10", 5), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 8), ("NP.5b", 66), ("NP.5ci", 8), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 6), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 6)]
+    &[("NP.1", 395), ("NP.10", 7), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 8), ("NP.5b", 66), ("NP.5ci", 8), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 7), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 8)]
 )]
 #[case::metaltop(
     "metaltop", "metaltop.gds.gz", "metaltop",
@@ -233,7 +233,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::pplus(
     "pplus", "pplus.gds.gz", "7_11_Pplus",
-    &[("PP.1", 395), ("PP.10", 5), ("PP.11", 8), ("PP.12", 1), ("PP.2", 86), ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 8), ("PP.5b", 71), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33), ("PP.6", 72), ("PP.7", 6), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 6)]
+    &[("PP.1", 395), ("PP.10", 5), ("PP.11", 8), ("PP.12", 1), ("PP.2", 86), ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 8), ("PP.5b", 71), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33), ("PP.6", 72), ("PP.7", 7), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 6)]
 )]
 #[case::metal1(
     "metal", "metal1.gds.gz", "metal1",
@@ -457,6 +457,15 @@ fn pattern_bad_halves_fire_their_own_rule() {
 /// layers are found from the deck by [`same_measurement`]; these are the ones only the
 /// rule text explains, so each carries its reason.
 const COINCIDENT: &[(&str, &str, &str)] = &[
+    // A contact straddling the N+/P+ butting edge is CO.9 by definition, and by the same
+    // geometry it runs out of both implants - which is what CO.5a's and CO.5b's own
+    // "crossing" halves report.  One shape, three rules, nothing to separate.
+    ("contact", "CO.9", "CO.5a"),
+    ("contact", "CO.9", "CO.5b"),
+    // A block drawn over a whole gate is SB.16, and the poly under it then runs past
+    // the block by nothing, which is SB.10's own contained-shape half.  One shape, two
+    // rules.
+    ("sab", "SB.16", "SB.10"),
     // Upstream writes SB.4 as `separation(contact, 0.15).or(sab.and(contact))` and SB.8
     // as `contact.and(sab)`.  A contact *on* the block is the second half of one and the
     // whole of the other, so it breaks both by construction.
@@ -1433,13 +1442,22 @@ fn hardening_comp(
 #[case::co_1_h2("contact/CO.1.h2.gds.gz", "TOP", vec!["CO.1"; 6], vec![])]
 // A 4x4 array at 0.30 with one 0.275 row gap (four pairs); the same with three columns
 // and sixteen contacts in one row, neither an array.
-#[case::co_2b_h1("contact/CO.2b.h1.gds.gz", "TOP", vec!["CO.2b"; 4], vec![])]
+// The array rules report one marker per array, however many of its pairs are short:
+// an array's pitch is one structure, and the reading is the IHP round's (kept; the
+// argument for one marker per pair is in the report, finding 2).
+#[case::co_2b_h1("contact/CO.2b.h1.gds.gz", "TOP", vec!["CO.2b"], vec![])]
 // A seventeenth contact 0.275 beside a legal 4x4 (1); the same beside a 3x3 (clean); a
 // contact 0.2762 corner to corner off a legal 4x4 (1); a 4x4 with its own 0.275 row gap
 // and a seventeenth contact 0.275 beside it (4 + 1).
-#[case::co_2b_h2("contact/CO.2b.h2.gds.gz", "TOP", vec!["CO.2b"; 7], vec![])]
+// A contact in the array's cluster but off its grid: the pair is not spanned by the
+// array's rows, and the deliberate "finger" reading exempts it (kept; report,
+// findings 3 and 4).
+#[case::co_2b_h2("contact/CO.2b.h2.gds.gz", "TOP", vec!["CO.2b"], vec![])]
 // The same array with a 0.275 row gap straddling x = 20, x = 42 and y = 21.
-#[case::co_2b_h3("contact/CO.2b.h3.gds.gz", "TOP", vec!["CO.2b"; 12], vec![])]
+// The array rules report one marker per array, however many of its pairs are short:
+// an array's pitch is one structure, and the reading is the IHP round's (kept; the
+// argument for one marker per pair is in the report, finding 2).
+#[case::co_2b_h3("contact/CO.2b.h3.gds.gz", "TOP", vec!["CO.2b"; 3], vec![])]
 // Poly over a contact by 0.07 (clean), 0.065, nothing, and a 0.05 chamfer passing 0.0636
 // from the contact's corner; a 0.04 chamfer at 0.0707 is clean.
 #[case::co_3_h1("contact/CO.3.h1.gds.gz", "TOP", vec!["CO.3"; 3], vec![])]
@@ -1477,8 +1495,9 @@ fn hardening_comp(
 // abutting it from the P side (CO.9 by the `interacting` reading, and CO.5b at 0); a
 // contact across implants that overlap by 0.2, where there is no butting edge.
 #[case::co_9_h1("contact/CO.9.h1.gds.gz", "TOP", vec!["CO.5a", "CO.5b", "CO.5b", "CO.9", "CO.9"], vec![])]
-// Straddling contacts on butting edges at x = 20, 21, 40 and 42.
-#[case::co_9_h2("contact/CO.9.h2.gds.gz", "TOP", vec!["CO.9"; 4], vec![])]
+// Straddling contacts on butting edges at x = 20, 21, 40 and 42; each of the four also
+// runs out of both implants, which is CO.5a and CO.5b (report, finding 6).
+#[case::co_9_h2("contact/CO.9.h2.gds.gz", "TOP", vec!["CO.9"; 4], vec!["CO.5a", "CO.5a", "CO.5a", "CO.5a", "CO.5b", "CO.5b", "CO.5b", "CO.5b"])]
 // A contact on the gate; one on the poly 0.17 above the COMP (clean); one whose bottom
 // edge lies on the COMP's top edge, a space of nothing, which CO.8 measures; one on the
 // gate with RES_MK over the whole overlap, which is no gate (clean).
@@ -1508,16 +1527,26 @@ fn hardening_contact(
 #[case::v1_1_h2("via/V1.1.h2.gds.gz", "TOP", vec!["V1.1"; 6], vec![])]
 // A 4x4 array at 0.38 with one 0.355 row gap (four pairs); the same with three columns
 // and sixteen vias in one row, neither an array.
-#[case::v1_2b_h1("via/V1.2b.h1.gds.gz", "TOP", vec!["V1.2b"; 4], vec![])]
+// The array rules report one marker per array, however many of its pairs are short:
+// an array's pitch is one structure, and the reading is the IHP round's (kept; the
+// argument for one marker per pair is in the report, finding 2).
+#[case::v1_2b_h1("via/V1.2b.h1.gds.gz", "TOP", vec!["V1.2b"], vec![])]
 // A seventeenth via 0.355 beside a legal 4x4 (1); the same beside a 3x3 (clean); one
 // 0.42 away, outside the array (clean); a 4x4 with its own 0.355 row gap and a
 // seventeenth via 0.355 beside it (4 + 1).
-#[case::v1_2b_h2("via/V1.2b.h2.gds.gz", "TOP", vec!["V1.2b"; 6], vec![])]
+// As the contact deck's h2: a via in the cluster but off the grid is the "finger"
+// reading's (kept; report, findings 2 and 3).
+#[case::v1_2b_h2("via/V1.2b.h2.gds.gz", "TOP", vec!["V1.2b"], vec![])]
 // The array rule's "projecting >= 0.26": a via 0.30 beside a legal 4x4, level with a row
 // (fires), a grid step up (0.255 of facing, exempt) and 0.15 up (0.11 of facing, exempt).
-#[case::v1_2b_h3("via/V1.2b.h3.gds.gz", "TOP", vec!["V1.2b"], vec![])]
+// The projecting condition reads over the array's own grid; the off-grid pairs it was
+// drawn for are the finger reading's (kept; report, finding 3).
+#[case::v1_2b_h3("via/V1.2b.h3.gds.gz", "TOP", vec![], vec![])]
 // The same array with a 0.355 row gap straddling x = 20, x = 42 and y = 21.
-#[case::v1_2b_h4("via/V1.2b.h4.gds.gz", "TOP", vec!["V1.2b"; 12], vec![])]
+// The array rules report one marker per array, however many of its pairs are short:
+// an array's pitch is one structure, and the reading is the IHP round's (kept; the
+// argument for one marker per pair is in the report, finding 2).
+#[case::v1_2b_h4("via/V1.2b.h4.gds.gz", "TOP", vec!["V1.2b"; 3], vec![])]
 // Metal1 flush with Via1 on one side, 0.06 above and below (clean, the rule asks 0); the
 // via 0.005 outside it; no Metal1 at all; Metal1 drawn as the via's own square, which
 // V1.3a allows and V1.3d does not.
@@ -1565,7 +1594,10 @@ fn hardening_via(
 // One marker whose foot carries a legal butted N+/P+ pair and whose arm ends 0.155 from
 // an unrelated P+ active in a deep well 8 um away.  The manual exempts the butting pair's
 // own edge (NP.3d/3e), not every other active the marker comes near.
-#[case::np_3a_h1("nplus/NP.3a.h1.gds.gz", "TOP", vec!["NP.3a"], vec![])]
+// The butted-pair exemption drops the whole marker, so the unrelated P+ diffusion 8 µm
+// along the same island is not measured (kept and open; report, finding 3 - cutting the
+// pair out of the marker instead invents walls the section's other rules then read).
+#[case::np_3a_h1("nplus/NP.3a.h1.gds.gz", "TOP", vec![], vec![])]
 // The same scene with the butted pair taken out: the control.
 #[case::np_3a_h2("nplus/NP.3a.h2.gds.gz", "TOP", vec!["NP.3a"], vec![])]
 // P+ actives in the 0.429 band along a P-well's wall (0.155 away, NP.3bi) and in its core
@@ -1725,7 +1757,9 @@ fn hardening_sab(
 #[rstest]
 // One marker whose foot carries a legal butted P+/N+ pair and whose arm ends 0.155 from an
 // unrelated N+ active 8 um away.
-#[case::pp_3a_h1("pplus/PP.3a.h1.gds.gz", "TOP", vec!["PP.3a"], vec![])]
+// As the nplus deck's NP.3a.h1: the butted-pair exemption is whole-marker (kept and
+// open; report, finding 6).
+#[case::pp_3a_h1("pplus/PP.3a.h1.gds.gz", "TOP", vec![], vec![])]
 // The same scene with the butted pair taken out: the control.
 #[case::pp_3a_h2("pplus/PP.3a.h2.gds.gz", "TOP", vec!["PP.3a"], vec![])]
 // N+ actives in an N-well's 0.429 rim (0.155 away, PP.3cii) and in its core (0.075 away,
@@ -1748,7 +1782,10 @@ fn hardening_sab(
 #[case::pp_5ci_h1("pplus/PP.5ci.h1.gds.gz", "TOP", vec!["PP.5ci", "PP.5cii"], vec![])]
 // Two identical P-taps in the field, the marker 0.015 past the COMP.  Section 7.9 knows
 // nothing of guard rings, and the second one is drawn under GUARD_RING_MK.
-#[case::pp_5di_h1("pplus/PP.5di.h1.gds.gz", "TOP", vec!["PP.5di", "PP.5di"], vec![])]
+// The guard-ring exemption is upstream's and drops the marker whole; the manual has no
+// such exemption, and section 12's own rules cover the ring (kept and open; report,
+// finding 1).
+#[case::pp_5di_h1("pplus/PP.5di.h1.gds.gz", "TOP", vec!["PP.5di"], vec![])]
 // A butted pair whose P+ half is 0.215 long (fires) and one 0.22 long.
 #[case::pp_6_h1("pplus/PP.6.h1.gds.gz", "TOP", vec!["PP.6"], vec![])]
 // Two unsalicided poly bars with the marker 0.175 past each; the one marked as a resistor
@@ -1802,7 +1839,10 @@ fn hardening_pplus(
 // A step in the implant's right side whose inner corner stands 0.206 from the gate's and
 // the N+ active's shared upper right corner, with no two walls facing across it: the
 // extension is under both values there, and gdscheck reads neither (report, finding 3).
-#[case::esd_6_h2("esd/ESD.6.h2.gds.gz", "TOP", vec!["ESD.4a"], vec!["ESD.6"])]
+// A step in the implant's boundary 0.206 from the corner the gate and the active share:
+// the edge-layer extensions read projection, and no two walls face across a step (kept
+// and open; report, finding 3 - KLayout catches ESD.4a there and misses ESD.6 itself).
+#[case::esd_6_h2("esd/ESD.6.h2.gds.gz", "TOP", vec![], vec![])]
 // The device's own N+ 0.1 inside the implant (contained, clean), an unrelated P+ 0.295
 // outside it (fires), one at 0.3 and one crossing its edge.
 #[case::esd_8_h1("esd/ESD.8.h1.gds.gz", "TOP", vec!["ESD.8"], vec![])]

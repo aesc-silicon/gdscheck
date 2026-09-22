@@ -16,18 +16,26 @@ rules:
     check: min_notch
     layers: [esd]
     value: 0.6
+  # A butted N+ active is nothing away from the implant, which is under the value;
+  # ESD.3b blesses the butted *P+* one, and that is a rule of its own.
   - id: ESD.3a
     check: min_space
     layers: [esd, ncomp]
     value: 0.6
+    params:
+      abutting: report
   - id: ESD.3b
     check: forbidden
     layers: [esd_on_pcomp]
     value: 0.0
+  # The margin is the closest approach: a step in the implant's boundary can come under
+  # the value from the active's corner with no two walls facing (report, esd finding 3).
   - id: ESD.4a
     check: min_enclosure
     layers: [esd_edges_no_pcomp, ncomp.edges]
     value: 0.24
+    params:
+      metric: euclidian
   - id: ESD.4b
     check: min_overlap
     layers: [esd, comp]
@@ -46,6 +54,8 @@ rules:
     check: min_enclosure
     layers: [esd.edges, esd6_poly]
     value: 0.45
+    params:
+      metric: euclidian
   - id: ESD.7
     check: forbidden
     layers: [esd_on_pcomp]

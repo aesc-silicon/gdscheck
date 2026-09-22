@@ -153,3 +153,13 @@ Case `pp_10_h1`, expected `PP.10` twice plus `PP.5di` and `PP.7`.
 - Tile invariance: no count moved between tiles 20, 7 and 100 on any of the 14 layouts,
   including the butting edge at x = 20.2 (`PP.11.h1`) and the well and marker walls that
   land on x = 20 in the same layout.
+
+## Resolution (2026-09-22)
+
+- **1 (the guard-ring exemption)**: kept and open.  It is upstream's reading, the
+  manual has no such exemption, and section 12's own rules cover the ring; whether
+  PP.5d should reach into a guard ring is the gdscheck owner's call.
+- **2**: gdscheck was right; nothing to do.
+- **3 (the butted-pair exemption)** and **4 (PP.7, PP.10)**: see the nplus report's
+  resolution - PP.7 reports a touch now, PP.10 has its crossing half, and the butted
+  exemption is kept and open.
