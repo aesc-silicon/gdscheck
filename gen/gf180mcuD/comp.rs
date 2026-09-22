@@ -1171,6 +1171,9 @@ fn df8_h(l: &L) {
     dn(&mut v, 16.0, 16.0, 0.595); // DF.8_MV
     dn(&mut v, 30.0, 16.0, 0.3);
     v.push(rect(l.sramcore, 29.5, 15.5, 42.5, 28.5)); // clean: SRAM at 5 V
+    // Section 11.1 is for "5V SRAM cells with marking layer V5_XTOR", so a 5 V cell
+    // carries it; a core without it is section 11.2's, which has no DF.8 of its own.
+    v.push(rect(l.v5_xtor, 29.5, 15.5, 42.5, 28.5));
     dn(&mut v, 30.0, 2.0, 0.3);
     v.push(rect(l.sramcore, 29.5, 1.5, 42.5, 14.5)); // DF.8_LV: SRAM at 3.3 V
     write_h("DF.8.h1", v);

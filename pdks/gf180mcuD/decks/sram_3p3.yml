@@ -10,6 +10,7 @@ rules:
     value: 0.04
     params:
       interacting_only: 1
+      metric: euclidian
   - id: S.CO.3_LV
     check: forbidden
     layers: [s_co_3_lv_crossing]
@@ -20,6 +21,7 @@ rules:
     value: 0.03
     params:
       interacting_only: 1
+      metric: euclidian
   - id: S.CO.4_LV
     check: forbidden
     layers: [s_co_4_lv_crossing]
@@ -33,18 +35,21 @@ rules:
       sides: adjacent
   - id: S.DF.4c_LV
     check: min_enclosure
-    layers: [nwell_n_dn_sram, pcomp_out_dn_sram]
+    layers: [nwell_n_dn, pcomp_out_dn_sram]
     value: 0.4
     params:
       interacting_only: 1
+      metric: euclidian
   - id: S.DF.4c_LV
     check: forbidden
     layers: [s_df_4c_lv_crossing]
     value: 0.0
   - id: S.DF.16_LV
     check: min_space
-    layers: [ncomp_out_nw_dn_sram, nwell_n_dn_sram]
+    layers: [ncomp_out_nw_dn_sram, nwell_n_dn]
     value: 0.4
+    params:
+      abutting: report
   - id: S.M1.1_LV
     check: min_width
     layers: [metal1_sram]

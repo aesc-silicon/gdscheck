@@ -28,7 +28,7 @@ rules:
       count: 16
   - id: CO.3
     check: min_enclosure
-    layers: [poly2_drawn, contact_no_sram]
+    layers: [poly2_drawn, contact_no_sram_lv]
     value: 0.07
     params:
       interacting_only: 1
@@ -82,7 +82,7 @@ rules:
       sides: line_end
   - id: CO.6b
     check: min_enclosure
-    layers: [metal1, contact_no_sram]
+    layers: [metal1, contact_no_sram_lv]
     value: 0.06
     params:
       trigger: 0.04

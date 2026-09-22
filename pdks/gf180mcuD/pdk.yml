@@ -1055,9 +1055,10 @@ virtual_layers:
     mode: lazy
     layers: [pcomp, dnwell_56v]
   - name: pcomp_dn56v_no_sram
-    op: difference
+    op: not_overlapping
     mode: lazy
-    layers: [pcomp_dn56v, sramcore]
+    layers: [pcomp_dn56v, sram_mv]
+
   - name: ptap_lvpwell_dn3p3v
     op: intersection
     mode: lazy
@@ -1083,31 +1084,43 @@ virtual_layers:
     mode: lazy
     layers: [ncomp_dn56v, lvpwell_dn56v]
   - name: df8_ncomp56v
-    op: difference
-    mode: lazy
-    layers: [df8_ncomp56v_all, sramcore]
-
-  # ---- N-well overlap of COMP outside the deep N-well ---------------------
-  - name: nwell_n_dn_no_sram
-    op: difference
-    mode: lazy
-    layers: [nwell_n_dn, sramcore]
-  - name: nw_ndn_sram_3p3v
     op: not_overlapping
     mode: lazy
-    layers: [nwell_n_dn_no_sram, dualgate]
-  - name: nw_ndn_sram_56v
+    layers: [df8_ncomp56v_all, sram_mv]
+
+  # ---- N-well overlap of COMP outside the deep N-well ---------------------
+  - name: nw_ndn_3p3v
+    op: not_overlapping
+    mode: lazy
+    layers: [nwell_n_dn, dualgate]
+
+  - name: df4c_pcomp3p3v_all
+    op: intersection
+    mode: lazy
+    layers: [pcomp, nw_ndn_3p3v]
+
+  - name: nw_ndn_56v
     op: overlapping
     mode: lazy
-    layers: [nwell_n_dn_no_sram, dualgate]
+    layers: [nwell_n_dn, dualgate]
+
+  # DF.4c's well is read whole: the marker names cells, and an array's well runs across
+  # the whole array, so cutting it at the marker's edge invented a wall the enclosure was
+  # then measured to (report, sram_3p3 finding 5).  The exemption sits on the active.
   - name: df4c_pcomp3p3v
+    op: not_overlapping
+    mode: lazy
+    layers: [df4c_pcomp3p3v_all, sram_lv]
+
+  - name: df4c_pcomp56v_all
     op: intersection
     mode: lazy
-    layers: [pcomp, nw_ndn_sram_3p3v]
+    layers: [pcomp, nw_ndn_56v]
   - name: df4c_pcomp56v
-    op: intersection
+    op: not_overlapping
     mode: lazy
-    layers: [pcomp, nw_ndn_sram_56v]
+    layers: [df4c_pcomp56v_all, sram_mv]
+
   - name: df4d_nwell
     op: difference
     mode: lazy
@@ -1188,10 +1201,14 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [nwell_n_dn56v, ymtp_mk]
-  - name: ymtp_or_sram
+  - name: ymtp_or_sram_lv
     op: union
     mode: lazy
-    layers: [ymtp_mk, sramcore]
+    layers: [ymtp_mk, sram_lv]
+  - name: ymtp_or_sram_mv
+    op: union
+    mode: lazy
+    layers: [ymtp_mk, sram_mv]
   - name: df16_ncomp_lv_all
     op: interacting
     mode: lazy
@@ -1199,7 +1216,8 @@ virtual_layers:
   - name: df16_ncomp_lv
     op: difference
     mode: lazy
-    layers: [df16_ncomp_lv_all, ymtp_or_sram]
+    layers: [df16_ncomp_lv_all, ymtp_or_sram_lv]
+
   - name: df16_ncomp_mv_all
     op: interacting
     mode: lazy
@@ -1207,7 +1225,8 @@ virtual_layers:
   - name: df16_ncomp_mv
     op: not_inside
     mode: lazy
-    layers: [df16_ncomp_mv_all, ymtp_or_sram]
+    layers: [df16_ncomp_mv_all, ymtp_or_sram_mv]
+
   - name: df17_pcomp_lv
     op: intersection
     mode: lazy
@@ -1274,10 +1293,27 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [bjt_npn_eb, vnpn_c]
-  - name: bjt1_viol
+  # "Min. DRC_BJT overlap of DNWELL" and "of PCOM in Psub" read distributively: every such
+  # shape the marker meets has to be inside it.  A selection that asks the marker to cover
+  # *one* goes quiet as soon as it does, however many more hang out of it, so each rule
+  # takes the crossing half beside it - the part of a shape that lies outside the marker
+  # it interacts with (report, drc_bjt finding 1).
+  - name: bjt1_no_well
     op: not_covering
     mode: lazy
     layers: [bjt_npn, dnwell]
+  - name: bjt1_dnwell_on_mark
+    op: overlapping
+    mode: lazy
+    layers: [dnwell, bjt_npn]
+  - name: bjt1_crossing
+    op: difference
+    mode: lazy
+    layers: [bjt1_dnwell_on_mark, bjt_npn]
+  - name: bjt1_viol
+    op: union
+    mode: lazy
+    layers: [bjt1_no_well, bjt1_crossing]
   - name: pcomp_psub
     op: not_overlapping
     mode: lazy
@@ -1286,10 +1322,18 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [pcomp_psub, drc_bjt]
-  - name: bjt2_viol
+  - name: bjt2_no_tap
     op: not_covering
     mode: lazy
     layers: [drc_bjt, pcomp_psub_bjt]
+  - name: bjt2_crossing
+    op: difference
+    mode: lazy
+    layers: [pcomp_psub_bjt, drc_bjt]
+  - name: bjt2_viol
+    op: union
+    mode: lazy
+    layers: [bjt2_no_tap, bjt2_crossing]
   - name: comp_outside_bjt
     op: not_overlapping
     mode: lazy
@@ -1378,14 +1422,23 @@ virtual_layers:
 
   # ---- Metal, Cu pillar and guard ring -----------------------------------
   # M1.1 exempts the 3.3 V SRAM core, which has its own S.M1.1_LV rule.
+  # Section 11 splits its cells by V5_XTOR in its own prose - "cells with marking layer
+  # V5_XTOR", "cells without" - where chapter 7 splits by Dualgate.  Read on Dualgate the
+  # two classes were neither complementary nor exhaustive, and a core under Dualgate with
+  # no V5_XTOR answered to neither section (report, sram_3p3 finding 4).
   - name: sram_lv
     op: not_overlapping
     mode: lazy
-    layers: [sramcore, dualgate]
+    layers: [sramcore, v5_xtor]
+
+  # M1.1's scoping stays a cut on both sides: a width is measured across a shape, not to
+  # a wall, so the marker's edge invents nothing, and a wire that leaves the core is
+  # 0.23's outside it and 0.22's within.
   - name: metal1_no_sram
     op: difference
     mode: lazy
     layers: [metal1_drawn, sram_lv]
+
   - name: metal1_wide10_a
     op: shrink_x
     radius: 5.0
@@ -1972,10 +2025,18 @@ virtual_layers:
 
   # ---- Contact ------------------------------------------------------------
   # The SRAM core has its own contact rules (S.CO.*), so the main ones exclude it.
+  # SRAMCORE marks cells, so a rule section 11 replaces is off for the cells it replaces
+  # it in and for no others: CO.4 has a rule in both sections, CO.3 and CO.6b only in the
+  # 3.3 V one, so a 5 V core owes them chapter 7's value (report, sram_3p3 finding 3).
   - name: contact_no_sram
-    op: difference
+    op: not_overlapping
     mode: lazy
     layers: [contact, sramcore]
+  - name: contact_no_sram_lv
+    op: not_overlapping
+    mode: lazy
+    layers: [contact, sram_lv]
+
   # A butted COMP touches the opposite implant without overlapping it.
   - name: ncomp_butted_only
     op: not_overlapping
@@ -2046,33 +2107,39 @@ virtual_layers:
     mode: lazy
     layers: [pcomp, dnwell]
   - name: pcomp_out_dn_sram
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [pcomp_out_dnwell, sram_lv]
+
   - name: nwell_n_dn_sram
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [nwell_n_dn, sram_lv]
+
   - name: ncomp_out_nw_dn_sram
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [ncomp_out_nw_dn, sram_lv]
+
   - name: contact_sram
-    op: intersection
+    op: overlapping
     mode: lazy
-    layers: [contact, sramcore]
+    layers: [contact, sram_lv]
+
   - name: poly_sram
-    op: intersection
+    op: overlapping
     mode: lazy
-    layers: [poly2_drawn, sramcore]
+    layers: [poly2_drawn, sram_lv]
+
   - name: comp_sram
-    op: intersection
+    op: overlapping
     mode: lazy
-    layers: [comp, sramcore]
+    layers: [comp, sram_lv]
+
   - name: metal1_sram
     op: intersection
     mode: lazy
-    layers: [metal1_drawn, sramcore]
+    layers: [metal1_drawn, sram_lv]
 
   - name: comp_3p3v_no_poly
     op: difference
@@ -2146,7 +2213,8 @@ virtual_layers:
   - name: poly_pl_mv_no_sram
     op: not_overlapping
     mode: lazy
-    layers: [poly_pl_mv_all, sramcore]
+    layers: [poly_pl_mv_all, sram_mv]
+
   - name: comp_pl
     op: difference
     mode: lazy
@@ -3508,49 +3576,58 @@ virtual_layers:
     mode: lazy
     layers: [sramcore, v5_xtor]
   - name: nw_n_dn_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [nwell_n_dn, sram_mv]
+
   - name: poly_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [poly2_drawn, sram_mv]
+
   - name: comp_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [comp, sram_mv]
+
   - name: contact_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [contact, sram_mv]
+
   - name: lvpwell_dn_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [lvpwell_dn, sram_mv]
+
   - name: ncomp_in_dnwell
     op: inside
     mode: lazy
     layers: [ncomp, dnwell]
   - name: ncomp_dn_sram
-    op: intersection
+    op: overlapping
     mode: lazy
-    layers: [ncomp_in_dnwell, sramcore]
+    layers: [ncomp_in_dnwell, sram_mv]
+
   - name: pcomp_out_dn_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [pcomp_out_dnwell, sram_mv]
+
   - name: pcomp_in_dnwell
     op: inside
     mode: lazy
     layers: [pcomp, dnwell]
   - name: pcomp_dn_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [pcomp_in_dnwell, sram_mv]
+
   - name: ncomp_out_nw_dn_sram_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [ncomp_out_nw_dn, sram_mv]
+
   - name: poly_sram_field
     op: not_overlapping
     mode: lazy
