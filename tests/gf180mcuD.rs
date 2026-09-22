@@ -2833,3 +2833,56 @@ fn hardening_dummy_exclude(
         "{gds}"
     );
 }
+
+// --- SRAM at 3.3 V (hardening/reports/gf180mcuD/sram_3p3.md).  Section 11.2 relaxes six
+// of chapter 7's rules inside SRAMCORE, for the cells "without marking layer V5_XTOR".
+// One deficient margin is one violating structure and carries one id, however many of its
+// sides or walls are short; `min_width` keeps its two markers per narrow bar.
+#[rstest]
+// Poly over a contact by 0.04 (clean) and 0.035 inside the marker, and the same two
+// outside it, where chapter 7's CO.3 of 0.07 speaks instead.
+#[case::s_co_3_lv_h1("sram_3p3/S.CO.3_LV.h1.gds.gz", "TOP", vec!["S.CO.3_LV"], vec![])]
+// Both straight margins at 0.04 with the poly's corner chamfered: 0.0212 from the
+// contact's corner (fires) and 0.0424 (clean).  Report finding 1.
+#[case::s_co_3_lv_h2("sram_3p3/S.CO.3_LV.h2.gds.gz", "TOP", vec!["S.CO.3_LV"], vec![])]
+// COMP over a contact by 0.03 (clean), 0.025, and the same two chamfers at 0.0212 and
+// 0.0318.  Report finding 1.
+#[case::s_co_4_lv_h1("sram_3p3/S.CO.4_LV.h1.gds.gz", "TOP", vec!["S.CO.4_LV"; 2], vec![])]
+// A contact the poly's edge cuts and one the COMP's edge cuts, each with a twin outside
+// the layer whose edge it abuts - which is no enclosure at all.
+#[case::s_co_3_lv_h3("sram_3p3/S.CO.3_LV.h3.gds.gz", "TOP", vec!["S.CO.3_LV", "S.CO.4_LV"], vec![])]
+// Adjacent Metal1 margins: 0.035/0.02 (clean), 0.035/0.015, 0.04/0.015 (no trigger,
+// clean), 0.015/0.03.
+#[case::s_co_6_ii_lv_h1("sram_3p3/S.CO.6_ii_LV.h1.gds.gz", "TOP", vec!["S.CO.6_ii_LV"; 2], vec![])]
+// Metal1 tracks 0.22 (clean), 0.215, 0.225 (clean) inside the marker and 0.215 outside.
+#[case::s_m1_1_lv_h1("sram_3p3/S.M1.1_LV.h1.gds.gz", "TOP", vec!["S.M1.1_LV"; 2], vec![])]
+// N-well over P+ active by 0.4 (clean), 0.395, a 45° well corner at 0.2828 and at 0.4243
+// (clean), and the active running out of the well.  Report finding 1.
+#[case::s_df_4c_lv_h1("sram_3p3/S.DF.4c_LV.h1.gds.gz", "TOP", vec!["S.DF.4c_LV"; 3], vec![])]
+// N+ active to N-well at 0.4 (clean), 0.395, corner to corner at 0.4243 (clean) and
+// 0.396, and an active whose wall lies on the well's.  Report finding 2.
+#[case::s_df_16_lv_h1("sram_3p3/S.DF.16_LV.h1.gds.gz", "TOP", vec!["S.DF.16_LV"; 3], vec![])]
+// The same 0.035 poly margin in five cores: bare, under Dualgate, under Dualgate and
+// V5_XTOR, under V5_XTOR, and with Dualgate abutting.  The two that carry V5_XTOR are
+// section 11.1's.  Report finding 3.
+#[case::s_co_3_lv_h4("sram_3p3/S.CO.3_LV.h4.gds.gz", "TOP", vec!["S.CO.3_LV"; 3], vec![])]
+// The same five cores under a rule the deck derives from `sram_lv`: the Dualgate ones
+// hold their active at 0.395, the others at 0.4.  Report finding 4.
+#[case::s_df_4c_lv_h3("sram_3p3/S.DF.4c_LV.h3.gds.gz", "TOP", vec!["S.DF.4c_LV"; 2], vec![])]
+// A 6 µm well holding its active by 1.0 with the marker ending 0.2 past the active, and
+// the same well wholly under the marker.  Report finding 5.
+#[case::s_df_4c_lv_h2("sram_3p3/S.DF.4c_LV.h2.gds.gz", "TOP", vec![], vec![])]
+// Four 0.035 poly margins straddling x = 20, x = 40, x = 42 and y = 20, and a 0.395
+// N-well gap straddling x = 20.
+#[case::s_co_3_lv_h5("sram_3p3/S.CO.3_LV.h5.gds.gz", "TOP", vec!["S.CO.3_LV", "S.CO.3_LV", "S.CO.3_LV", "S.CO.3_LV", "S.DF.16_LV"], vec![])]
+fn hardening_sram_3p3(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("sram_3p3", gds, topcell, &ignore), want, "{gds}");
+}
+
