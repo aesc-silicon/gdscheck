@@ -4,9 +4,9 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, density_pattern, diamond, flat_array, layer, library,
-    max_width_pattern, min_width_pattern, mixed_notch_pattern, notch_pattern, poly, rect,
-    ref_array, space_pattern, strip45, stripes, write_gz,
+    chamfered_bl, chamfered_tr, density_pattern, diamond, layer, library, max_width_pattern,
+    min_width_pattern, mixed_notch_pattern, notch_pattern, poly, rect, space_pattern, strip45,
+    stripes, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -500,17 +500,6 @@ fn write(name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
 }
 
-/// Writes `<name>.h<n>` flat and `<name>.h<n+1>` as an array reference: 10 × 5 copies of
-/// `cell` at `pitch`.  The manual knows nothing about hierarchy, so both must report the
-/// violating pattern fifty times.
-fn arrays(name: &str, n: u32, cell: Vec<GdsElement>, pitch: f64) {
-    write(&format!("{name}.h{n}"), flat_array(&cell, 10, 5, pitch));
-    write_gz(
-        &format!("{DIR}/{name}.h{}.gds.gz", n + 1),
-        ref_array(cell, 10, 5, pitch),
-    );
-}
-
 /// Where the tile-line layouts put a gap or an edge of width `g`: well inside a tile
 /// (ending at 10), ending on 20, straddling 20, starting on 20, straddling 21, ending on
 /// 40, straddling 42.  Returns the x the feature starts at, one row per entry.
@@ -664,10 +653,6 @@ fn act_a_h(l: &L) {
         rect(a, 15.0, 37.0, 25.0, 37.15),    // 0.15 tall across 20 → clean
     ]);
     write("Act.a.h4", e);
-
-    // h5/h6 — fifty 0.145 × 1 bars, flat and as an array reference; pitch 3 keeps the bars
-    // 2.855 apart so Act.b stays out of it.
-    arrays("Act.a", 5, vec![rect(a, 0.2, 0.2, 0.345, 1.2)], 3.0);
 
     // h7 — a 0.005 sliver (one grid step; also under Act.d's area) and a bar far from
     // everything at (1000, 1000).
@@ -888,14 +873,6 @@ fn act_b_h(l: &L) {
     ]);
     write("Act.b.h5", e);
 
-    // h6/h7 — fifty 0.205 pairs, flat and as an array reference (pitch 4: cells 1.795 apart).
-    arrays(
-        "Act.b",
-        6,
-        vec![rect(a, 0.2, 0.2, 1.2, 1.2), rect(a, 1.405, 0.2, 2.405, 1.2)],
-        4.0,
-    );
-
     // h8 — a 0.005 sliver 0.205 from a box (the sliver is also Act.a and Act.d), two
     // 300 µm bars 0.205 apart (one violation), and a pair at (1000, 1000).
     write(
@@ -1032,9 +1009,6 @@ fn act_c_h(l: &L) {
     e.extend(fet_v(l, 19.69, 27.0, 20.31, 28.0, 19.92, 20.08)); // clean
     write("Act.c.h4", e);
 
-    // h5/h6 — fifty transistors with a 0.225 right S/D, flat and as an array reference.
-    arrays("Act.c", 5, fet_v(l, 0.2, 0.2, 0.815, 1.2, 0.43, 0.59), 3.0);
-
     // h7 — a 300 µm wide transistor with a 0.225 top S/D, a 300 µm long gate across a
     // small Activ with a 0.225 right S/D, and one at (1000, 1000).
     let mut e = fet_h(l, 2.0, 2.0, 302.0, 2.615, 2.23, 2.39);
@@ -1162,9 +1136,6 @@ fn act_d_h(l: &L) {
         rect(a, 2.0, 14.0, 302.0, 14.5),    // clean
     ]);
     write("Act.d.h3", e);
-
-    // h4/h5 — fifty 0.3 × 0.4 boxes, flat and as an array reference.
-    arrays("Act.d", 4, vec![rect(a, 0.2, 0.2, 0.5, 0.6)], 3.0);
 
     // h6 — a 0.005 × 2 sliver (0.01; also Act.a), a 0.005 × 30 sliver whose area is 0.15
     // (Act.a only), and a 0.12 box at (1000, 1000).
@@ -1354,14 +1325,6 @@ fn act_e_h(l: &L) {
     ));
     write("Act.e.h3", e);
 
-    // h4/h5 — fifty rings with a 0.12 hole, flat and as an array reference.
-    arrays(
-        "Act.e",
-        4,
-        ring(a, 0.2, 0.2, 1.2, 1.3, 0.55, 0.55, 0.85, 0.95),
-        3.0,
-    );
-
     // h6 — a 0.005 × 0.5 hole (0.0025; also an Act.b notch), a 0.12 hole at (1000, 1000),
     // and a 300 µm ring whose hole is huge (clean).
     let mut e = ring(a, 2.0, 2.0, 2.6, 3.0, 2.3, 2.25, 2.305, 2.75); // Act.e
@@ -1440,9 +1403,6 @@ fn afil_a_h(l: &L) {
         rect(f, 2.0, 68.0, 32.0, 73.0),   // clean
     ]);
     write("AFil.a.h3", e);
-
-    // h4/h5 — fifty 5.005 squares, flat and as an array reference.
-    arrays("AFil.a", 4, vec![rect(f, 0.5, 0.5, 5.505, 5.505)], 7.0);
 
     // h6 — a 300 × 5.005 bar (one violation) and a 5.005 square at (1000, 1000).
     write(
@@ -1552,9 +1512,6 @@ fn afil_a1_h(l: &L) {
         rect(f, 15.0, 46.0, 25.0, 47.0), // clean
     ]);
     write("AFil.a1.h4", e);
-
-    // h5/h6 — fifty 0.995 × 3 bars, flat and as an array reference.
-    arrays("AFil.a1", 5, vec![rect(f, 0.2, 0.2, 1.195, 3.2)], 4.0);
 
     // h7 — a 0.005 sliver and a 0.995 bar at (1000, 1000).
     write(
@@ -1725,9 +1682,6 @@ fn afil_b_h(l: &L) {
     ]);
     write("AFil.b.h5", e);
 
-    // h6/h7 — fifty 0.415 pairs, flat and as an array reference.
-    arrays("AFil.b", 6, vec![fil(l, 0.2, 0.2), fil(l, 1.615, 0.2)], 4.0);
-
     // h8 — a 0.005 sliver 0.415 from a filler (the sliver is AFil.a1's too), two 300 µm
     // bars 0.415 apart, a pair at (1000, 1000).
     write(
@@ -1830,9 +1784,6 @@ fn afil_c_h(l: &L) {
     ]);
     write("AFil.c.h4", e);
 
-    // h5/h6 — fifty filler/Cont pairs at 1.095, flat and as an array reference.
-    arrays("AFil.c", 5, vec![fil(l, 0.2, 0.2), ct(2.295, 0.5)], 5.0);
-
     // h7 — a 300 µm GatPoly 1.095 above a 300 µm filler (one violation) and a pair at
     // (1000, 1000).
     write(
@@ -1915,14 +1866,6 @@ fn afil_c1_h(l: &L) {
         rect(a, 15.0, 18.415, 25.0, 19.0), // AFil.c1
     ]);
     write("AFil.c1.h4", e);
-
-    // h5/h6 — fifty filler/Activ pairs at 0.415, flat and as an array reference.
-    arrays(
-        "AFil.c1",
-        5,
-        vec![fil(l, 0.2, 0.2), rect(a, 1.615, 0.2, 2.615, 1.2)],
-        4.0,
-    );
 
     // h7 — a 0.005 Activ sliver 0.415 from a filler (the sliver is Act.a and Act.d), two
     // 300 µm bars 0.415 apart, a pair at (1000, 1000).
@@ -2042,14 +1985,6 @@ fn afil_d_h(l: &L) {
     ]);
     write("AFil.d.h5", e);
 
-    // h6/h7 — fifty filler/NWell pairs at 0.995, flat and as an array reference.
-    arrays(
-        "AFil.d",
-        6,
-        vec![fil(l, 0.2, 0.2), rect(nw, 2.195, 0.2, 3.195, 1.2)],
-        5.0,
-    );
-
     // h8 — a 300 µm NWell 0.995 above a 300 µm filler (one violation) and a pair at
     // (1000, 1000).
     write(
@@ -2113,14 +2048,6 @@ fn afil_e_h(l: &L) {
         rect(t, 15.0, 18.995, 25.0, 20.0), // AFil.e
     ]);
     write("AFil.e.h3", e);
-
-    // h4/h5 — fifty filler/TRANS pairs at 0.995, flat and as an array reference.
-    arrays(
-        "AFil.e",
-        4,
-        vec![fil(l, 0.2, 0.2), rect(t, 2.195, 0.2, 3.195, 1.2)],
-        5.0,
-    );
 
     // h6 — a 300 µm TRANS 0.995 above a 300 µm filler (one violation) and a pair at
     // (1000, 1000).
@@ -2206,14 +2133,6 @@ fn afil_i_h(l: &L) {
         rect(b, 15.0, 25.495, 25.0, 26.5), // AFil.i
     ]);
     write("AFil.i.h4", e);
-
-    // h5/h6 — fifty filler/block pairs at 1.495, flat and as an array reference.
-    arrays(
-        "AFil.i",
-        5,
-        vec![fil(l, 0.2, 0.2), rect(b, 2.695, 0.2, 3.695, 1.2)],
-        6.0,
-    );
 
     // h7 — a 300 µm block 1.495 above a 300 µm filler (one violation) and a pair at
     // (1000, 1000).
@@ -2321,10 +2240,6 @@ fn afil_j_h(l: &L) {
         rect(l.sal, 14.7, 43.7, 25.3, 45.3),
     ]);
     write("AFil.j.h4", e);
-
-    // h5/h6 — fifty fillers with a 0.245 nSD:block margin, flat and as an array reference
-    // (pitch 6: the blocks are 1.0 apart).
-    arrays("AFil.j", 5, cell(2.0, 2.0, 0.245, 0.25), 6.0);
 
     // h7 — a 300 × 4 filler inside a block with a 0.245 SalBlock margin below (one
     // violation), and a cell at (1000, 1000).

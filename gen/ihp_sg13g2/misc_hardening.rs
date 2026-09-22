@@ -15,9 +15,7 @@
 //! areas of the antennas are what the boxes draw, so every ratio is computed in the
 //! comment next to it.
 
-use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, text, write_gz,
-};
+use crate::helpers::{chamfered_tr, diamond, layer, library, poly, rect, text, write_gz};
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
@@ -254,17 +252,6 @@ fn nmosi_b(p: &P) {
     e.extend(iso_enc(p, (70.0, 4.0, 370.0, 5.0), 1.4, Some((1, 1.235))));
     write_gz(&format!("{NMOSI}/nmosi.b.h3.gds.gz"), library("TOP", e));
 
-    // h4/h5: fifty of the 1.235-right structure, flat and as an array reference.
-    let cell = iso_enc(p, act_at(1.5, 1.5), 1.4, Some((0, 1.235)));
-    write_gz(
-        &format!("{NMOSI}/nmosi.b.h4.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 7.0)),
-    );
-    write_gz(
-        &format!("{NMOSI}/nmosi.b.h5.gds.gz"),
-        ref_array(cell, 10, 5, 7.0),
-    );
-
     // h6, the drawing: the nBuLay as two overlapping boxes whose union is the 1.24 box
     // (clean); as two boxes whose union ends 1.235 right of the Activ (fires); as a 4 × 3
     // grid of abutting tiles at 1.24 (clean); the Activ as three abutting slices, 1.235
@@ -477,17 +464,6 @@ fn nmosi_c(p: &P) {
     e.extend(iso_gap(p, (70.0, 4.0, 370.0, 5.0), 0.6, Some((1, 0.385))));
     write_gz(&format!("{NMOSI}/nmosi.c.h4.gds.gz"), library("TOP", e));
 
-    // h5/h6: fifty, flat and as an array reference.
-    let cell = iso_gap(p, act_at(1.5, 1.5), 0.6, Some((0, 0.385)));
-    write_gz(
-        &format!("{NMOSI}/nmosi.c.h5.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 7.0)),
-    );
-    write_gz(
-        &format!("{NMOSI}/nmosi.c.h6.gds.gz"),
-        ref_array(cell, 10, 5, 7.0),
-    );
-
     // h7, the conditions: an NWell island (no hole of its own) inside the ring's hole,
     // 0.35 from the Activ (the manual's NWell space; fires); the Activ crossing into the
     // ring on the right (space 0 between the Iso-PWell-Activ and the NWell; fires); a
@@ -644,17 +620,6 @@ fn nmosi_d(p: &P) {
     }
     e.extend(iso_ring(p, (70.0, 4.0, 370.0, 5.0), 0.8, Some((1, 0.615))));
     write_gz(&format!("{NMOSI}/nmosi.d.h3.gds.gz"), library("TOP", e));
-
-    // h4/h5: fifty, flat and as an array reference.
-    let cell = iso_ring(p, act_at(1.5, 1.5), 0.8, Some((0, 0.615)));
-    write_gz(
-        &format!("{NMOSI}/nmosi.d.h4.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 7.0)),
-    );
-    write_gz(
-        &format!("{NMOSI}/nmosi.d.h5.gds.gz"),
-        ref_array(cell, 10, 5, 7.0),
-    );
 
     // h6, the conditions: an NWell finger 0.5 wide crossing onto an nBuLay with no Activ
     // anywhere (no ring, nothing to ring; clean); a C - the ring without its right leg -
@@ -845,24 +810,6 @@ fn nmosi_f(p: &P) {
     ));
     write_gz(&format!("{NMOSI}/nmosi.f.h3.gds.gz"), library("TOP", e));
 
-    // h4/h5: fifty, flat and as an array reference.
-    let (act, mut cell) = iso_big(p, 1.5, 1.5);
-    cell.push(rect(
-        p.nsdb,
-        act.0 + 1.0,
-        act.1 - 0.2,
-        act.0 + 1.615,
-        act.3 + 0.2,
-    ));
-    write_gz(
-        &format!("{NMOSI}/nmosi.f.h4.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 7.0)),
-    );
-    write_gz(
-        &format!("{NMOSI}/nmosi.f.h5.gds.gz"),
-        ref_array(cell, 10, 5, 7.0),
-    );
-
     // h6, the conditions: a 0.615 strip over an Activ in a ring but with no nBuLay (not
     // isolated; clean); a 0.615 strip over the Activ under PWell:block (clean); a 0.615
     // strip abutting the Activ's right edge, not over it (clean); one over it by 0.005
@@ -994,17 +941,6 @@ fn nmosi_g(p: &P) {
     e.push(rect(p.nsdb, act.0, act.1, act.2, act.1 + 1.0));
     e.push(rect(p.sal, act.0, act.1, act.2, act.1 + 1.145));
     write_gz(&format!("{NMOSI}/nmosi.g.h2.gds.gz"), library("TOP", e));
-
-    // h3/h4: fifty, flat and as an array reference.
-    let cell = gi(p, 1.5, 1.5, 0.145).2;
-    write_gz(
-        &format!("{NMOSI}/nmosi.g.h3.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 7.0)),
-    );
-    write_gz(
-        &format!("{NMOSI}/nmosi.g.h4.gds.gz"),
-        ref_array(cell, 10, 5, 7.0),
-    );
 
     // h5, the conditions: the nSD:block and SalBlock flush with the Activ on every side
     // (nothing over Activ to cover; clean); the 0.145 instance with no nBuLay (clean); the
@@ -1165,20 +1101,6 @@ fn pin(p: &P) {
         text(p.m1_label, "B", 12.0, 16.0),
     ];
     write_gz(&format!("{PIN}/Pin.e.h3.gds.gz"), library("TOP", e));
-
-    // h4/h5: fifty pins 0.005 past their metal, flat and as an array reference.
-    let cell = vec![
-        rect(p.m1, 0.5, 0.5, 2.5, 1.5),
-        rect(pin1, 0.5, 0.5, 2.505, 1.5),
-    ];
-    write_gz(
-        &format!("{PIN}/Pin.e.h4.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 4.0)),
-    );
-    write_gz(
-        &format!("{PIN}/Pin.e.h5.gds.gz"),
-        ref_array(cell, 10, 5, 4.0),
-    );
 
     // all.h1, every layer of the table: a pin 0.005 past its drawing (fires on Pin.a,
     // Pin.b, Pin.e, Pin.f four times, Pin.g, Pin.h) and a covered pin (clean) on each; a

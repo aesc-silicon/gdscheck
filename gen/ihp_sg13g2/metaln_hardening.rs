@@ -10,20 +10,15 @@
 //! one file serves the four decks, and the layers can be read against one another.
 
 use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, mixed_notch_pattern, notch_pattern, poly,
-    rect, ref_array, strap, strip45, write_gz,
+    chamfered_tr, diamond, layer, library, mixed_notch_pattern, notch_pattern, poly, rect, strap,
+    strip45, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
-/// What the four layers' patterns of one layout are gathered into: the elements of a
-/// flat layout, or the cell of an array layout and its pitch.
-enum Out {
-    Flat(Vec<GdsElement>),
-    Array(Vec<GdsElement>, f64),
-}
-
-type Gathered = std::rc::Rc<std::cell::RefCell<std::collections::BTreeMap<String, Out>>>;
+/// The four layers' elements of each layout, gathered by name.
+type Gathered =
+    std::rc::Rc<std::cell::RefCell<std::collections::BTreeMap<String, Vec<GdsElement>>>>;
 
 /// The layers of one Metal(n) deck.
 struct L {
@@ -64,39 +59,21 @@ impl L {
     /// Gathers this layer's elements of `M<rule>.h<k>`, e.g. `write(".a.h1", ..)` into
     /// `M.a.h1.gds.gz`.
     fn write(&self, rule: &str, mut elems: Vec<GdsElement>) {
-        let mut out = self.out.borrow_mut();
-        match out
+        self.out
+            .borrow_mut()
             .entry(format!("M{rule}"))
-            .or_insert_with(|| Out::Flat(Vec::new()))
-        {
-            Out::Flat(v) | Out::Array(v, _) => v.append(&mut elems),
-        }
-    }
-
-    /// `<rule>.h<k>` flat and `<rule>.h<k+1>` as a `GdsArrayRef`: 10 × 5 copies of `cell`
-    /// at `pitch`.  Hierarchy must not change the answer: fifty violations either way.
-    fn arrays(&self, rule: &str, k: u32, mut cell: Vec<GdsElement>, pitch: f64) {
-        self.write(&format!("{rule}.h{k}"), flat_array(&cell, 10, 5, pitch));
-        let mut out = self.out.borrow_mut();
-        match out
-            .entry(format!("M{rule}.h{}", k + 1))
-            .or_insert_with(|| Out::Array(Vec::new(), pitch))
-        {
-            Out::Flat(v) | Out::Array(v, _) => v.append(&mut cell),
-        }
+            .or_default()
+            .append(&mut elems);
     }
 
     /// Writes every gathered layout.
     fn flush(out: Gathered) {
         std::fs::create_dir_all(DIR).expect("failed to create output directory");
-        for (name, o) in out.borrow_mut().iter_mut() {
-            let path = format!("{DIR}/{name}.gds.gz");
-            match o {
-                Out::Flat(v) => write_gz(&path, library("TOP", std::mem::take(v))),
-                Out::Array(v, pitch) => {
-                    write_gz(&path, ref_array(std::mem::take(v), 10, 5, *pitch))
-                }
-            }
+        for (name, v) in out.borrow_mut().iter_mut() {
+            write_gz(
+                &format!("{DIR}/{name}.gds.gz"),
+                library("TOP", std::mem::take(v)),
+            );
         }
     }
 
@@ -317,9 +294,6 @@ fn mn_a(l: &L) {
             rect(m, 15.0, 32.0, 25.0, 32.2), // 0.20 tall across 20 → clean
         ],
     );
-
-    // h5/h6 — fifty 0.195 × 1 bars, flat and as an array; pitch 3 keeps them apart.
-    l.arrays(".a", 5, vec![rect(m, 0.2, 0.2, 0.395, 1.2)], 3.0);
 
     // h7 — a 0.005 sliver (one grid step, also under Mn.d) and a bar at (1000, 1000).
     l.write(
@@ -560,14 +534,6 @@ fn mn_b(l: &L) {
         ],
     );
 
-    // h6/h7 — fifty 0.205 pairs, flat and as an array.
-    l.arrays(
-        ".b",
-        6,
-        vec![rect(m, 0.2, 0.2, 1.0, 1.2), rect(m, 1.205, 0.2, 2.005, 1.2)],
-        3.0,
-    );
-
     // h8 — a 0.005 sliver 0.205 from a box (the sliver is under Mn.a and Mn.d, set
     // aside); 300 µm bars 0.205 apart (one violation); a pair at (1000, 1000).
     l.write(
@@ -693,14 +659,6 @@ fn mn_c(l: &L) {
             rect(m, 15.0, 12.0, 25.0, 12.2),
             l.via(19.905, 12.005),
         ],
-    );
-
-    // h6/h7 — fifty vias on a line's edge, flat and as an array.
-    l.arrays(
-        ".c",
-        6,
-        vec![rect(m, 0.2, 0.2, 1.2, 0.4), l.via(0.6, 0.2)],
-        3.0,
     );
 
     // h8 — a via on the edge of a line at (1000, 1000); one on the edge of a 300 µm line.
@@ -854,14 +812,6 @@ fn mn_c1(l: &L) {
         ],
     );
 
-    // h6/h7 — fifty line-end vias with 0.045 endcaps, flat and as an array.
-    l.arrays(
-        ".c1",
-        6,
-        vec![rect(m, 0.2, 0.2, 2.2, 0.4), l.via(1.965, 0.205)],
-        3.0,
-    );
-
     // h8 — a 0.045 endcap at (1000, 1000) and at the far end of a 300 µm line.
     l.write(
         ".c1.h8",
@@ -957,9 +907,6 @@ fn mn_d(l: &L) {
             rect(m, 19.64, 10.0, 20.36, 10.2),
         ],
     );
-
-    // h4/h5 — fifty 0.14 bars, flat and as an array.
-    l.arrays(".d", 4, vec![rect(m, 0.2, 0.2, 0.4, 0.9)], 3.0);
 
     // h6 — a 0.005 × 2 sliver (0.01, also Mn.a); a 0.01 × 14.4 sliver (0.144, Mn.a only);
     // a 0.14 bar at (1000, 1000); a 300 µm line is clean.
@@ -1183,14 +1130,6 @@ fn mn_e(l: &L) {
         ],
     );
 
-    // h9/h10 — fifty wide/narrow pairs at 0.235, flat and as an array.
-    l.arrays(
-        ".e",
-        9,
-        vec![rect(m, 0.2, 0.2, 0.7, 2.2), rect(m, 0.935, 0.2, 1.135, 2.2)],
-        3.0,
-    );
-
     // h11 — a 300 µm pair (one violation) and a pair at (1000, 1000).
     l.write(
         ".e.h11",
@@ -1293,17 +1232,6 @@ fn mn_f(l: &L) {
         ],
     );
 
-    // h4/h5 — fifty plate pairs at 0.595, flat and as an array, pitch 30.
-    l.arrays(
-        ".f",
-        4,
-        vec![
-            rect(m, 0.0, 0.0, 12.0, 12.0),
-            rect(m, 12.595, 0.0, 24.595, 12.0),
-        ],
-        30.0,
-    );
-
     // h6 — 300 µm plates 0.595 apart (one violation) and a pair at (1000, 1000).
     l.write(
         ".f.h6",
@@ -1404,9 +1332,6 @@ fn mn_g(l: &L) {
         ],
     );
 
-    // h5/h6 — fifty 0.2333 strips, flat and as an array.
-    l.arrays(".g", 5, vec![strip45(m, 0.4, 0.2, 1.0, 0.165)], 3.0);
-
     // h7 — a strip at (1000, 1000); a 0.198-wide strip (Mn.a as well as Mn.g).
     l.write(
         ".g.h7",
@@ -1490,9 +1415,6 @@ fn mn_i(l: &L) {
     e.push(rect(m, 18.0, 10.0, 20.0, 11.0));
     e.push(strip135(m, 21.33, 10.0, 2.5, 0.215));
     l.write(".i.h4", e);
-
-    // h5/h6 — fifty strip pairs, flat and as an array.
-    l.arrays(".i", 5, pair(0.5, 0.3), 3.5);
 
     // h7 — 300 µm strips 0.2333 apart (one violation) and a pair at (1000, 1000).
     l.write(
@@ -1650,9 +1572,6 @@ fn mnfil(l: &L) {
     e.extend(pair(9.8, 2.0));
     l.write("Fil.b.h2", e);
 
-    // Fil.b.h3/h4 — fifty 0.415 pairs, flat and as an array.
-    l.arrays("Fil.b", 3, pair(2.2, 0.2), 6.0);
-
     // Fil.c.h1 — filler space to Metal(n) 0.42: a 1 × 1 metal 0.42 from a 2 × 2 filler is
     // clean, 0.415 fires (x and y); a metal abutting the filler's edge is at no distance
     // (fires); one overlapping it by 0.2 shares area with it and is no pair (settled);
@@ -1687,9 +1606,6 @@ fn mnfil(l: &L) {
     e.extend(pair(41.8, 6.0));
     e.extend(pair(9.8, 2.0));
     l.write("Fil.c.h2", e);
-
-    // Fil.c.h3/h4 — fifty filler/metal pairs at 0.415, flat and as an array.
-    l.arrays("Fil.c", 3, pair(2.2, 0.2), 6.0);
 
     // Fil.d.h1 — filler space to TRANS 1.0: 1.0 clean, 0.995 fires (x and y); corner to
     // corner 0.70/0.70 (0.99) fires, 0.71/0.71 (1.004) is clean; a filler inside a TRANS

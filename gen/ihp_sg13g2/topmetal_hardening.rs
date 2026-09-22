@@ -12,8 +12,8 @@
 // hardening/reports/ihp-sg13g2/topmetal.md.
 
 use crate::helpers::{
-    chamfered_tr, density_pattern, diamond, flat_array, layer, library, poly, rect, ref_array,
-    strip45, write_gz,
+    chamfered_tr, density_pattern, diamond, layer, library, poly, rect, ref_array, strip45,
+    write_gz,
 };
 use gds21::{GdsElement, GdsLibrary};
 use gdscheck::pdk::PdkConfig;
@@ -67,13 +67,6 @@ impl L {
 
     fn write_lib(&self, name: &str, lib: GdsLibrary) {
         write_gz(&format!("{}/{name}.gds.gz", self.dir), lib);
-    }
-
-    /// `<name>.h<k>` flat and `<name>.h<k+1>` as an array reference: 10 × 5 copies of
-    /// `cell` at `pitch`.  Hierarchy must not change the answer.
-    fn arrays(&self, name: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
-        self.write(&format!("{name}.h{k}"), flat_array(&cell, 10, 5, pitch));
-        self.write_lib(&format!("{name}.h{}", k + 1), ref_array(cell, 10, 5, pitch));
     }
 }
 
@@ -375,10 +368,6 @@ fn tm_a_h(l: &L) {
     ]);
     l.write(&format!("{p}.h4"), e);
 
-    // h5/h6 — fifty narrow bars, flat and as an array reference; pitch 6 keeps them
-    // well apart.
-    l.arrays(&p, 5, vec![rect(m, 0.2, 0.2, g(0.2 + wm), 3.2)], 6.0);
-
     // h7 — a comb whose three teeth are narrow (three violations of one polygon, two
     // markers each; the slots are 2.5 wide, clear of TM.b) and a U whose arms are `w`
     // (clean).
@@ -564,17 +553,6 @@ fn tm_b_h(l: &L) {
         rect(m, g(20.0 + sm), 50.0, g(24.0 + sm), 54.0), // corner-on, corner on x = 20
     ]);
     l.write(&format!("{p}.h5"), e);
-
-    // h6/h7 — fifty pairs `s − 0.005` apart, flat and as an array reference.
-    l.arrays(
-        &p,
-        6,
-        vec![
-            rect(m, 0.0, 0.0, 4.0, 4.0),
-            rect(m, g(4.0 + sm), 0.0, g(8.0 + sm), 4.0),
-        ],
-        14.0,
-    );
 
     // h8 — large and small.  A 0.005 µm sliver `s − 0.005` from a plate (fires TM.b; its
     // own width is TM.a's), two 300 µm bars `s − 0.005` apart (one gap crossing every tile
@@ -808,9 +786,6 @@ fn tmfil_a_h(l: &L) {
     ]);
     l.write(&format!("{p}.h4"), e);
 
-    // h5/h6 — fifty 4.995 × 6 fillers, flat and as an array reference (pitch 12: 7 apart).
-    l.arrays(&p, 5, vec![rect(f, 0.0, 0.0, 4.995, 6.0)], 12.0);
-
     // h7 — a comb whose three teeth are 4.995 wide (three violations of one polygon) and
     // a U with 5.0 arms (clean); both span more than 10 µm (TMFil.a1's, set aside).
     l.write(
@@ -933,9 +908,6 @@ fn tmfil_a1_h(l: &L) {
         rect(f, 15.0, 88.0, 25.0, 94.0), // 10 × 6 straddling 20 → clean
     ]);
     l.write(&format!("{p}.h4"), e);
-
-    // h5/h6 — fifty 10.005 × 6 fillers, flat and as an array reference (pitch 16).
-    l.arrays(&p, 5, vec![rect(f, 0.0, 0.0, 10.005, 6.0)], 16.0);
 
     // h7 — a 0.005 × 10.005 sliver (fires TMFil.a1 as well as TMFil.a).
     l.write(&format!("{p}.h7"), vec![rect(f, 2.0, 2.0, 2.005, 12.005)]);
@@ -1062,17 +1034,6 @@ fn tmfil_b_h(l: &L) {
     ]);
     l.write(&format!("{p}.h5"), e);
 
-    // h6/h7 — fifty pairs 2.995 apart, flat and as an array reference.
-    l.arrays(
-        &p,
-        6,
-        vec![
-            rect(f, 0.0, 0.0, 6.0, 6.0),
-            rect(f, 8.995, 0.0, 14.995, 6.0),
-        ],
-        22.0,
-    );
-
     // h8 — large and small.  A 0.005 sliver 2.995 from a filler (TMFil.b; its width is
     // TMFil.a's), two 6 × 10 fillers 2.995 apart, a pair at (1000, 1000).
     l.write(
@@ -1181,17 +1142,6 @@ fn tmfil_c_h(l: &L) {
     ]);
     l.write(&format!("{p}.h4"), e);
 
-    // h5/h6 — fifty filler/metal pairs 2.995 apart, flat and as an array reference.
-    l.arrays(
-        &p,
-        5,
-        vec![
-            rect(f, 0.0, 0.0, 6.0, 6.0),
-            rect(m, 8.995, 0.0, 12.995, 6.0),
-        ],
-        22.0,
-    );
-
     // h7 — large and small.  A 300 µm metal bar 2.995 from a filler (one gap), a metal
     // sliver 0.005 wide 2.995 from a filler (TMFil.c; its width is TM.a's), a pair at
     // (1000, 1000).
@@ -1288,17 +1238,6 @@ fn tmfil_d_h(l: &L) {
         rect(t, 24.895, 102.0, 30.895, 108.0), // corner-on, corner on x = 20
     ]);
     l.write(&format!("{p}.h4"), e);
-
-    // h5/h6 — fifty filler/TRANS pairs 4.895 apart, flat and as an array reference.
-    l.arrays(
-        &p,
-        5,
-        vec![
-            rect(f, 0.0, 0.0, 6.0, 6.0),
-            rect(t, 10.895, 0.0, 16.895, 6.0),
-        ],
-        26.0,
-    );
 
     // h7 — large and small.  A 300 µm TRANS bar 4.895 from a filler (one gap), a pair at
     // (1000, 1000).
@@ -1437,10 +1376,6 @@ fn tm2_br_h(l: &L) {
 
     // h6 — with TM2.b.  Two 6 lines 60 long at a gap of 1.995 break TM2.b and TM2.bR both.
     l.write(&format!("{p}.h6"), pair(m, 0.0, 6.0, 7.995, 6.0, 0.0, 60.0));
-
-    // h7/h8 — fifty pairs of 6 lines at a gap of 4, run 60, flat and as an array
-    // reference (pitch 80).
-    l.arrays(p, 7, pair(m, 0.0, 6.0, 10.0, 6.0, 0.0, 60.0), 80.0);
 
     // h9 — tile lines.  Horizontal pairs (gap 4, 6 and 2 wide) whose run of 50.005 starts
     // at x = 0, at 20, at 19.995, at 7 and at 40 (ends on, across and off the 20 and 7

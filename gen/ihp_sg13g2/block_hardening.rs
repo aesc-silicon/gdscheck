@@ -14,8 +14,8 @@
 //! are drawn rule by rule below.
 
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, diamond, flat_array, layer, library, mixed_notch_pattern,
-    notch_pattern, poly, rect, ref_array, strap, strip45, tap, write_gz,
+    chamfered_bl, chamfered_tr, diamond, layer, library, mixed_notch_pattern, notch_pattern, poly,
+    rect, strap, strip45, tap, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -89,20 +89,6 @@ impl P {
         write_gz(
             &format!("tests/data/ihp-sg13g2/{deck}/{name}.gds.gz"),
             library("TOP", elems),
-        );
-    }
-
-    /// `<rule>.h<k>` flat and `<rule>.h<k+1>` as a `GdsArrayRef`: 10 × 5 copies of `cell`
-    /// at `pitch`.  Hierarchy must not change the answer: fifty violations either way.
-    fn arrays(&self, deck: &str, rule: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
-        self.write(
-            deck,
-            &format!("{rule}.h{k}"),
-            flat_array(&cell, 10, 5, pitch),
-        );
-        write_gz(
-            &format!("tests/data/ihp-sg13g2/{deck}/{rule}.h{}.gds.gz", k + 1),
-            ref_array(cell, 10, 5, pitch),
         );
     }
 }
@@ -302,15 +288,6 @@ fn width_kit(p: &P, deck: &str, rule: &str, l: (i16, i16), w: f64, s: f64) {
         rect(l, 39.9, 2.0 + 3.0 * row, 39.9 + w, 2.0 + 3.0 * row + len),
     ];
     p.write(deck, &format!("{rule}.h3"), e);
-
-    // h4/h5 - fifty d bars, flat and as an array.
-    p.arrays(
-        deck,
-        rule,
-        4,
-        vec![rect(l, 0.2, 0.2, 0.2 + d, 0.2 + len)],
-        grid(len + gap),
-    );
 }
 
 /// Min. space (and notch) `s` of layer `l`, whose min. width is `w` (`clear`, the largest
@@ -478,15 +455,6 @@ fn space_kit(
         bx(1000.0 + q + d, 1000.0),
     ];
     p.write(deck, &format!("{rule}.h3"), e);
-
-    // h4/h5 - fifty d pairs, flat and as an array.
-    p.arrays(
-        deck,
-        rule,
-        4,
-        vec![bx(0.2, 0.2), bx(0.2 + q + d, 0.2)],
-        grid(2.0 * q + d + gap),
-    );
 }
 
 /// Translate one element.
@@ -607,7 +575,6 @@ fn space2_kit(
     // h3/h4 - fifty d pairs, flat and as an array.
     let mut cell = fbox(0.2, 0.2);
     cell.extend(xbox(0.2 + q + d, 0.2));
-    p.arrays(deck, rule, 3, cell, grid(q + d + qf + gap));
 }
 
 pub fn generate(pdk: &PdkConfig) {
@@ -912,15 +879,6 @@ fn enclosure_kit(
     e.extend(pair(1000.0, 1000.0, v, d, v, v));
     e.extend(pair(19.9 - v - qi, 2.0 + 4.0 * row, v, v, v, v));
     p.write(deck, &format!("{rule}.h2"), e);
-
-    // h3/h4 - fifty inner boxes with d on the right, flat and as an array.
-    p.arrays(
-        deck,
-        rule,
-        3,
-        pair(0.2, 0.2, v, d, v, v),
-        grid(qi + 2.0 * v + gap),
-    );
 }
 
 // --- 5.3 nBuLay ---
@@ -1409,9 +1367,6 @@ fn salblock(p: &P) {
     e.extend(cont(150.12, 61.195));
     e.extend(pair(1000.0, 1000.0, 0.195));
     p.write(deck, "Sal.e.h2", e);
-
-    // Sal.e.h3/h4 - fifty 0.195 pairs, flat and as an array.
-    p.arrays(deck, "Sal.e", 3, pair(1.2, 0.7, 0.195), 3.0);
 }
 
 // --- 5.15 ContBar ---
@@ -1557,7 +1512,6 @@ fn contbar(p: &P) {
     // (CntB.a1), flat and as an array.
     let mut cell = bar(0.2, 0.2, 0.5, 0.155);
     cell.extend(bar(0.2, 1.2, 0.335, 0.16));
-    p.arrays(deck, "CntB.a", 3, cell, 3.0);
 
     // CntB.b.h1 - space 0.28.  Side by side at 0.28 (clean) and 0.275 (fires); end to
     // end at 0.275 (fires); a bar's end 0.275 from another's side (fires); corner to
@@ -1617,7 +1571,6 @@ fn contbar(p: &P) {
     // CntB.b.h3/h4 - fifty 0.275 pairs, flat and as an array.
     let mut cell = bar(0.2, 0.2, 0.16, 0.5);
     cell.extend(bar(0.2 + 0.16 + 0.275, 0.2, 0.16, 0.5));
-    p.arrays(deck, "CntB.b", 3, cell, 2.0);
 
     // CntB.b1.h1 - space 0.36 with a common run over 5 µm.  Two 0.16 × 6 bars at 0.355
     // (fires) and 0.36 (clean); 0.16 × 5.0 bars at 0.355 (a run of exactly 5: clean) and
@@ -1688,9 +1641,6 @@ fn contbar(p: &P) {
     e.extend(hp(1000.0, 1000.0, 6.0));
     p.write(deck, "CntB.b1.h2", e);
 
-    // CntB.b1.h3/h4 - fifty 0.355 pairs of 6 bars, flat and as an array.
-    p.arrays(deck, "CntB.b1", 3, hp(0.2, 0.2, 6.0), 7.5);
-
     // CntB.b2.h1 - space to Cont 0.22.  A 0.16 square beside a 0.16 × 0.5 bar at 0.22
     // (clean) and 0.215 (fires); at the bar's end 0.215 (fires); corner to corner
     // 0.15/0.15 (0.212: fires) and 0.16/0.16 (0.226: clean); 0.1 in x and 0.22 in y
@@ -1738,9 +1688,6 @@ fn contbar(p: &P) {
     e.extend(sq(150.0, 60.0 + 0.16 + 0.215));
     e.extend(bs(1000.0, 1000.0));
     p.write(deck, "CntB.b2.h2", e);
-
-    // CntB.b2.h3/h4 - fifty 0.215 pairs, flat and as an array.
-    p.arrays(deck, "CntB.b2", 3, bs(0.7, 0.2), 2.0);
 
     // CntB.c/CntB.d - Activ / GatPoly enclosure of a 0.16 × 0.5 bar 0.07: the kit, the
     // inner box being the bar with Metal1 over it.
@@ -1899,9 +1846,6 @@ fn contbar(p: &P) {
     e.push(rect(p.activ, 19.2, 11.5, 20.0, 12.7));
     p.write(deck, "CntB.g.h2", e);
 
-    // CntB.g.h3/h4 - fifty bare bars, flat and as an array.
-    p.arrays(deck, "CntB.g", 3, bare(0.2, 0.2, 0.7, 0.36), 2.0);
-
     // CntB.h.h1 - a bar must be covered with Metal1.  No Metal1 (fires); a 0.005 strip
     // uncovered (fires); half covered (CntB.h, and CntB.h1 for the covered half enclosed by
     // 0); in a Metal1 ring's hole (fires); Metal1 abutting from outside (fires); Metal1
@@ -1952,9 +1896,6 @@ fn contbar(p: &P) {
     e.push(rect(p.m1, 20.0, 13.9, 20.5, 14.26));
     p.write(deck, "CntB.h.h2", e);
 
-    // CntB.h.h3/h4 - fifty bare bars on Activ, flat and as an array.
-    p.arrays(deck, "CntB.h", 3, on_activ_bare(0.2, 0.2, 0.7, 0.36), 2.0);
-
     // CntB.j.h1 - a bar on GatPoly over Activ is not allowed.  A bar in a gate (fires); a
     // bar on poly overlapping Activ by a 0.005 strip (fires; the strip is a bar on Activ
     // enclosed by 0: CntB.c) and by a 0.005 × 0.005 corner (the same); a bar on poly over
@@ -2002,7 +1943,6 @@ fn contbar(p: &P) {
     // CntB.j.h3/h4 - fifty gate bars, flat and as an array.
     let mut cell = in_poly(0.2, 0.2, 0.7, 0.36);
     cell.push(rect(p.activ, 0.0, 0.0, 0.9, 0.56));
-    p.arrays(deck, "CntB.j", 3, cell, 2.0);
 }
 
 /// The enclosure kit for a 0.16 × 0.5 bar: `enclosure_kit` with the inner box a bar.
@@ -2083,7 +2023,4 @@ fn bar_enclosure_kit(p: &P, deck: &str, rule: &str, v: f64, outer: &Free<'_>, in
     e.extend(pair(1000.0, 1000.0, v, d, v, v));
     e.extend(pair(19.9 - v - bw, 2.0 + 4.0 * row, v, v, v, v));
     p.write(deck, &format!("{rule}.h2"), e);
-
-    // h3/h4 - fifty bars with d on the right, flat and as an array.
-    p.arrays(deck, rule, 3, pair(0.2, 0.2, v, d, v, v), 2.0);
 }

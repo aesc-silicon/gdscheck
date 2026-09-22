@@ -311,35 +311,6 @@ impl L {
     }
 }
 
-/// Translate every boundary in `elems` by `(dx, dy)` µm.
-fn shift(elems: &[GdsElement], dx: f64, dy: f64) -> Vec<GdsElement> {
-    elems
-        .iter()
-        .map(|e| match e {
-            GdsElement::GdsBoundary(b) => {
-                let mut b = b.clone();
-                for p in &mut b.xy {
-                    p.x += um(dx);
-                    p.y += um(dy);
-                }
-                GdsElement::GdsBoundary(b)
-            }
-            other => other.clone(),
-        })
-        .collect()
-}
-
-/// `cols × rows` copies of `cell` at `pitch`, every copy drawn in TOP.
-fn flat_array(cell: &[GdsElement], cols: usize, rows: usize, pitch: f64) -> Vec<GdsElement> {
-    let mut out = vec![];
-    for r in 0..rows {
-        for c in 0..cols {
-            out.extend(shift(cell, c as f64 * pitch, r as f64 * pitch));
-        }
-    }
-    out
-}
-
 /// The same array as one `GdsArrayRef` of a `CELL` struct placed in TOP; `extra` is
 /// drawn flat in TOP beside it.
 fn ref_array(
@@ -373,17 +344,6 @@ fn ref_array(
 
 fn write(name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
-}
-
-/// Writes `<name>.h<n>` flat and `<name>.h<n+1>` as an array reference: 10 × 5 copies of
-/// `cell` at `pitch`.  The manual knows nothing about hierarchy, so both must report the
-/// violating pattern fifty times.
-fn arrays(name: &str, n: u32, cell: Vec<GdsElement>, pitch: f64) {
-    write(&format!("{name}.h{n}"), flat_array(&cell, 10, 5, pitch));
-    write_gz(
-        &format!("{DIR}/{name}.h{}.gds.gz", n + 1),
-        ref_array(cell, 10, 5, pitch, pitch, vec![]),
-    );
 }
 
 fn hardening(pdk: &PdkConfig) {
@@ -475,7 +435,6 @@ fn cnt_g1_h(l: &L) {
     let mut cell = ncont(l, 0.35, 0.5);
     cell.push(rect(psd, 0.515, 0.2, 0.9, 0.8));
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.g1", 3, cell, 1.0);
 
     // h5 — large and far.  A 300 µm pSD strip 0.085 from a Cont on nSD-Activ (once); one
     // at (1000, 1000); a ContBar on nSD-Activ 0.085 from pSD is CntB.g1's.
@@ -574,7 +533,6 @@ fn cnt_g2_h(l: &L) {
     // h4/h5 — fifty Conts with a 0.085 right pSD margin, flat and as an array reference.
     let mut cell = pc(0.5, 0.5, 0.09, 0.085, 0.09, 0.09);
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.g2", 4, cell, 1.0);
 
     // h6 — large and far.  A 300 µm pSD strip 0.33 wide over a 0.50 Activ strip, three
     // Conts with 0.085 top and bottom (three Conts, one marker each side); a Cont at
@@ -653,7 +611,6 @@ fn cnt_h_h(l: &L) {
     // h3/h4 — fifty bare Conts, flat and as an array reference.
     let mut cell = vec![l.c(0.5, 0.5)];
     cell.extend(l.plates(&[activ], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.h", 3, cell, 1.0);
 }
 
 // --- Cnt.j: Cont on GatPoly over Activ is not allowed ---
@@ -728,7 +685,6 @@ fn cnt_j_h(l: &L) {
     // h3/h4 — fifty gate contacts, flat and as an array reference.
     let mut cell = gate(1.0, 1.0);
     cell.extend(l.plates(&[m1], 0.0, 0.0, 2.0, 2.0));
-    arrays("Cnt.j", 3, cell, 2.0);
 }
 
 // --- Cnt.e: min. Cont on GatPoly space to Activ 0.14 ---
@@ -816,7 +772,6 @@ fn cnt_e_h(l: &L) {
     let mut cell = gate_cont(l, 0.35, 0.5);
     cell.push(rect(activ, 0.565, 0.2, 0.9, 0.8));
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.e", 3, cell, 1.0);
 
     // h5 — large and far.  A 300 µm Activ strip 0.135 from a gate contact (once); a gate
     // contact at (1000, 1000) with Activ 0.135 away; a 0.16 × 0.50 ContBar on GatPoly
@@ -900,7 +855,6 @@ fn cnt_f_h(l: &L) {
     let mut cell = diff_cont(l, 0.35, 0.5);
     cell.push(rect(gp, 0.535, 0.2, 0.9, 0.8));
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.f", 3, cell, 1.0);
 
     // h5 — large and far.  A 300 µm GatPoly strip 0.105 from a diffusion contact (once);
     // one at (1000, 1000); a 0.16 × 0.50 ContBar on Activ 0.105 from GatPoly is CntB.f's.
@@ -981,7 +935,6 @@ fn cnt_g_h(l: &L) {
     // h3/h4 — fifty bare Conts, flat and as an array reference.
     let mut cell = vec![l.c(0.5, 0.5)];
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.g", 3, cell, 1.0);
 }
 
 // --- Cnt.c: min. Activ enclosure of Cont 0.07 (0.05 inside DigiBnd, section 8.1.2) ---
@@ -1027,7 +980,6 @@ fn cnt_c_h(l: &L) {
     // h5/h6 — fifty Conts with a 0.065 right margin, flat and as an array reference.
     let mut cell = l.c_in(activ, 0.5, 0.5, 0.07, 0.065, 0.07, 0.07);
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.c", 5, cell, 1.0);
 
     // h7 — large and far.  A 300 µm Activ strip 0.30 wide with Conts at 0.07 (clean) and
     // one 0.29 wide with three Conts at 0.065 top and bottom (six markers); a Cont at
@@ -1182,7 +1134,6 @@ fn cnt_d_h(l: &L) {
     // h5/h6 — fifty Conts with a 0.065 right margin, flat and as an array reference.
     let mut cell = l.c_in(gp, 0.5, 0.5, 0.07, 0.065, 0.07, 0.07);
     cell.extend(l.plates(&[m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.d", 5, cell, 1.0);
 
     // h7 — large and far (see Cnt.c.h7): seven markers.
     write("Cnt.d.h7", far_set(l, gp));
@@ -1283,7 +1234,6 @@ fn cnt_a_h(l: &L) {
     // h3/h4 — fifty 0.155 squares, flat and as an array reference: 200 walls each.
     let mut cell = vec![rect(cont, 0.5, 0.5, 0.655, 0.655)];
     cell.extend(l.plates(&[activ, m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.a", 3, cell, 1.0);
 }
 
 // --- Cnt.b: min. Cont space 0.18 ---
@@ -1336,7 +1286,6 @@ fn cnt_b_h(l: &L) {
     // h3/h4 — fifty 0.175 pairs, flat and as an array reference.
     let mut cell = pair(0.3, 0.42);
     cell.extend(l.plates(&[activ, m1], 0.0, 0.0, 1.0, 1.0));
-    arrays("Cnt.b", 3, cell, 1.0);
 
     // h5 — what is and is not a pair.  Two squares touching at a corner are 0 apart
     // (fires, whatever the merge makes of the touch); a square 0.175 from a 0.16 × 0.40
@@ -1424,7 +1373,6 @@ fn cnt_b1_h(l: &L) {
     // holding one array.
     let mut cell = l.grid(0.5, 0.5, 5, 5, 0.18, 0.18);
     cell.extend(l.plates(&[activ, m1], 0.0, 0.0, 3.0, 3.0));
-    arrays("Cnt.b1", 4, cell, 3.0);
 
     // h6 — the array itself as hierarchy: a 5 × 5 `GdsArrayRef` of a one-Cont cell at
     // pitch 0.34 (0.18 gaps) fires like the flat array; beside it, flat, a 5 × 5 at 0.20

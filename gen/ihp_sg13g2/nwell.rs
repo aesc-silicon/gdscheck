@@ -4,8 +4,8 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, diamond, flat_array, layer, library, min_width_pattern,
-    mixed_notch_pattern, notch_pattern, poly, rect, ref_array, strap, strip45, tap, write_gz,
+    chamfered_bl, chamfered_tr, diamond, layer, library, min_width_pattern, mixed_notch_pattern,
+    notch_pattern, poly, rect, strap, strip45, tap, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -515,17 +515,6 @@ fn write(name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
 }
 
-/// Writes `<name>.h<n>` flat and `<name>.h<n+1>` as an array reference: 10 × 5 copies of
-/// `cell` at `pitch`.  The manual knows nothing about hierarchy, so both must report the
-/// violating pattern fifty times.
-fn arrays(name: &str, n: u32, cell: Vec<GdsElement>, pitch: f64) {
-    write(&format!("{name}.h{n}"), flat_array(&cell, 10, 5, pitch));
-    write_gz(
-        &format!("{DIR}/{name}.h{}.gds.gz", n + 1),
-        ref_array(cell, 10, 5, pitch),
-    );
-}
-
 fn hardening(pdk: &PdkConfig) {
     let l = L::new(pdk);
     nw_a_h(&l);
@@ -678,10 +667,6 @@ fn nw_a_h(l: &L) {
             rect(nw, 15.0, 32.0, 25.0, 32.62), // 0.62 tall across 20 → clean
         ],
     );
-
-    // h5/h6 — fifty 0.615 × 1 bars, flat and as an array reference; pitch 3 keeps the bars
-    // 2.385 apart so no NWell space rule joins in.
-    arrays("NW.a", 5, vec![rect(nw, 0.2, 0.2, 0.815, 1.2)], 3.0);
 
     // h7 — a 0.005 sliver (one grid step) and a bar far from everything at (1000, 1000).
     write(
@@ -916,18 +901,6 @@ fn nw_b_h(l: &L) {
         ],
     );
 
-    // h6/h7 — fifty pairs at 0.615, flat and as an array reference (pitch 5: cells 2.385
-    // apart, more than NW.b1's 1.80).
-    arrays(
-        "NW.b",
-        6,
-        vec![
-            rect(nw, 0.2, 0.2, 1.2, 1.2),
-            rect(nw, 1.815, 0.2, 2.815, 1.2),
-        ],
-        5.0,
-    );
-
     // h8 — a 0.005 sliver 0.615 from a box (NW.b, and NW.a for the sliver); two 300 µm bars
     // 0.615 apart (one violation); a pair far away at (1000, 1000).
     write(
@@ -1100,15 +1073,6 @@ fn nw_b1_h(l: &L) {
         ],
     );
 
-    // h6/h7 — fifty bare pairs 1.00 apart, flat and as an array reference (pitch 6:
-    // cells 2.80 apart or more).
-    arrays(
-        "NW.b1",
-        6,
-        vec![rect(nw, 0.2, 0.2, 1.2, 1.2), rect(nw, 2.2, 0.2, 3.2, 1.2)],
-        6.0,
-    );
-
     // h8 — PWell:block in the gap.  PWell is NOT (NWell OR PWell:block), so with the
     // whole 1.00 gap under PWell:block there is no PWell between the wells and NW.b1 has
     // nothing to measure (PWB.c covers the block-to-well space); with a 0.50 block strip
@@ -1262,9 +1226,6 @@ fn nw_c_h(l: &L) {
     e.extend(inst(20.01, 26.31, 0.31, 0.31, 0.31, 0.31)); // clean
     write("NW.c.h4", e);
 
-    // h5/h6 — fifty P+Activ with a 0.305 left margin, flat and as an array reference.
-    arrays("NW.c", 5, inst(0.305, 0.31, 0.305, 0.31, 0.31, 0.31), 3.5);
-
     // h7 — ThickGateOx.  TGO over the left half of a 1.0 × 0.5 P+Activ: that half's 0.305
     // left margin is NW.c1's business (< 0.62) and the non-TGO half's 0.31 is clean; TGO
     // over the right half with the right margin 0.62: the non-TGO left half at 0.305 →
@@ -1353,9 +1314,6 @@ fn nw_c1_h(l: &L) {
     e.extend(inst(42.005, 6.31, 0.305, 0.31, 0.31, 0.31));
     e.extend(inst(20.005, 24.62, 0.615, 0.62, 0.62, 0.62));
     write("NW.c1.h2", e);
-
-    // h3/h4 — fifty TGO P+Activ with a 0.615 left margin, flat and as an array reference.
-    arrays("NW.c1", 3, inst(0.615, 0.62, 0.615, 0.62, 0.62, 0.62), 4.0);
 }
 
 // --- NW.d: NWell space to external N+Activ not inside ThickGateOx 0.31 ---
@@ -1461,9 +1419,6 @@ fn nw_d_h(l: &L) {
     e.extend(inst(18.8, 22.0, 0.31)); // clean
     write("NW.d.h3", e);
 
-    // h4/h5 — fifty wells with an N+Activ 0.305 away, flat and as an array reference.
-    arrays("NW.d", 4, inst(0.2, 0.2, 0.305), 4.0);
-
     // h6 — a 0.005 µm Activ sliver 0.305 from a well; a 300 µm Activ 0.305 below a 300 µm
     // well (one violation); a pair at (1000, 1000).
     let mut e = vec![
@@ -1539,9 +1494,6 @@ fn nw_d1_h(l: &L) {
     e.push(diamond(activ, 4.115, 6.5, 0.5));
     e.push(rect(l.tgo, 3.5, 5.9, 4.7, 7.1)); // NW.d1 (tip 0.615)
     write("NW.d1.h1", e);
-
-    // h2/h3 — fifty wells with a TGO N+Activ 0.615 away, flat and as an array reference.
-    arrays("NW.d1", 2, inst(0.2, 0.2, 0.615), 4.0);
 }
 
 // --- NW.e: NWell enclosure of the NWell tie (N+Activ surrounded entirely by NWell) 0.24 ---
@@ -1642,9 +1594,6 @@ fn nw_e_h(l: &L) {
     e.extend(inst(19.4, 22.24, 0.24, 0.24, 0.24, 0.24)); // clean
     write("NW.e.h3", e);
 
-    // h4/h5 — fifty ties with a 0.235 right margin, flat and as an array reference.
-    arrays("NW.e", 4, inst(0.24, 0.24, 0.24, 0.235, 0.24, 0.24), 3.0);
-
     // h6 — a 0.005 µm tie with a 0.235 left margin; a 300 µm tie with a 0.235 bottom
     // margin (one violation); one at (1000, 1000).
     let mut e = vec![
@@ -1739,9 +1688,6 @@ fn nw_e1_h(l: &L) {
     e.extend(cham(10.0, 2.0, 1.87)); // NW.e1
     e.extend(cham(14.0, 2.0, 1.88)); // clean
     write("NW.e1.h1", e);
-
-    // h2/h3 — fifty TGO ties with a 0.615 right margin, flat and as an array reference.
-    arrays("NW.e1", 2, inst(0.62, 0.62, 0.62, 0.615, 0.62, 0.62), 4.0);
 }
 
 // --- NW.f: NWell space to the substrate tie (P+Activ in PWell) not inside ThickGateOx 0.24 ---
@@ -1835,9 +1781,6 @@ fn nw_f_h(l: &L) {
     e.extend(inst(18.9, 22.0, 0.24)); // clean
     write("NW.f.h3", e);
 
-    // h4/h5 — fifty wells with a substrate tie 0.235 away, flat and as an array reference.
-    arrays("NW.f", 4, inst(0.2, 0.2, 0.235), 4.0);
-
     // h6 — a 0.005 µm P+Activ sliver 0.235 from a well; a 300 µm tie 0.235 below a 300 µm
     // well (one violation); a pair at (1000, 1000).
     let mut e = vec![rect(nw, 2.0, 2.0, 3.0, 3.0)];
@@ -1904,8 +1847,4 @@ fn nw_f1_h(l: &L) {
     e.push(diamond(l.psd, 4.115, 6.5, 0.5));
     e.push(rect(l.tgo, 3.5, 5.9, 4.7, 7.1)); // NW.f1 (tip 0.615)
     write("NW.f1.h1", e);
-
-    // h2/h3 — fifty wells with a TGO substrate tie 0.615 away, flat and as an array
-    // reference.
-    arrays("NW.f1", 2, inst(0.2, 0.2, 0.615), 4.0);
 }

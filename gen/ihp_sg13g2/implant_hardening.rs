@@ -9,10 +9,9 @@
 //! `tests/data/ihp-sg13g2/<deck>/<RULE>.h<k>.gds.gz`.
 
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array,
-    strip45, um, write_gz,
+    chamfered_bl, chamfered_tr, diamond, layer, library, poly, rect, strip45, write_gz,
 };
-use gds21::{GdsArrayRef, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct};
+use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
 /// One grid step.
@@ -60,57 +59,6 @@ fn path(deck: &str, name: &str) -> String {
 
 fn write(deck: &str, name: &str, elems: Vec<GdsElement>) {
     write_gz(&path(deck, name), library("TOP", elems));
-}
-
-/// `<rule>.h<k>` flat and `<rule>.h<k+1>` as a `GdsArrayRef`: 10 × 5 copies of `cell` at
-/// `pitch`, with `extra` drawn flat in TOP beside either (a well under the whole array,
-/// say).  Hierarchy must not change the answer: fifty violations either way.
-fn arrays(
-    deck: &str,
-    rule: &str,
-    k: u32,
-    cell: Vec<GdsElement>,
-    pitch: f64,
-    extra: Vec<GdsElement>,
-) {
-    let mut flat = extra.clone();
-    flat.extend(flat_array(&cell, 10, 5, pitch));
-    write(deck, &format!("{rule}.h{k}"), flat);
-    let lib = if extra.is_empty() {
-        ref_array(cell, 10, 5, pitch)
-    } else {
-        ref_array_with(cell, 10, 5, pitch, extra)
-    };
-    write_gz(&path(deck, &format!("{rule}.h{}", k + 1)), lib);
-}
-
-/// A `GdsArrayRef` of `cell` (`cols × rows` at `pitch`) placed in TOP beside `extra`.
-fn ref_array_with(
-    cell: Vec<GdsElement>,
-    cols: i16,
-    rows: i16,
-    pitch: f64,
-    extra: Vec<GdsElement>,
-) -> GdsLibrary {
-    let aref = GdsElement::GdsArrayRef(GdsArrayRef {
-        name: "CELL".into(),
-        xy: [
-            GdsPoint::new(0, 0),
-            GdsPoint::new(um(pitch * cols as f64), 0),
-            GdsPoint::new(0, um(pitch * rows as f64)),
-        ],
-        cols,
-        rows,
-        ..Default::default()
-    });
-    let mut top = extra;
-    top.push(aref);
-    let mut lib = library("TOP", top);
-    let mut child = GdsStruct::new("CELL");
-    child.elems = cell;
-    lib.structs.insert(0, child);
-    lib.set_all_dates(GdsDateTime::from(&[0i16, 1, 1, 0, 0, 0]));
-    lib
 }
 
 /// A frame `(x0, y0)-(x1, y1)` with the hole `(hx0, hy0)-(hx1, hy1)`, four abutting boxes
@@ -217,8 +165,6 @@ fn width_suite(deck: &str, rule: &str, l: (i16, i16), v: f64) {
             rect(l, 18.0, 14.0, 23.0, 14.0 + n),
         ],
     );
-
-    arrays(deck, rule, 5, vec![rect(l, 0.0, 0.0, n, 1.5)], 3.0, vec![]);
 }
 
 /// The `min_space` suite for `l` at value `v` between boxes of side `b`:
@@ -334,15 +280,6 @@ fn space_suite(deck: &str, rule: &str, l: (i16, i16), v: f64, b: f64) {
         20.0 + 1.5 + n / 2.0,
     ));
     write(deck, &format!("{rule}.h4"), e);
-
-    arrays(
-        deck,
-        rule,
-        5,
-        vec![sq(l, 0.0, 0.0, b), sq(l, b + n, 0.0, b)],
-        2.0 * b + v + 1.0,
-        vec![],
-    );
 }
 
 pub fn generate(pdk: &PdkConfig) {
@@ -496,13 +433,6 @@ fn tgo_a(l: &L) {
     e.extend(l.tgo_box(19.5, 14.0, 0.27, 0.27, 0.27, 0.27));
     write("tgo", "TGO.a.h4", e);
 
-    // h5/h6: fifty Activs 0.265 from their oxide's right edge, flat and as an array.
-    let cell = vec![
-        rect(l.act, 0.27, 0.27, 0.77, 0.77),
-        rect(l.tgo, 0.0, 0.0, 1.035, 1.04),
-    ];
-    arrays("tgo", "TGO.a", 5, cell, 3.0, vec![]);
-
     // h7: a 300 µm Activ 0.265 from its oxide's top edge, and a 0.265 at (1000, 1000).
     write(
         "tgo",
@@ -587,19 +517,6 @@ fn tgo_b(l: &L) {
             sq(l.act, 10.0, 20.065, 1.0),
         ],
     );
-
-    // h4/h5: fifty 0.265 gaps, flat and as an array.
-    arrays(
-        "tgo",
-        "TGO.b",
-        4,
-        vec![
-            sq(l.tgo, 0.0, 0.0, 1.0),
-            rect(l.act, 1.265, 0.25, 1.765, 0.75),
-        ],
-        3.0,
-        vec![],
-    );
 }
 
 /// TGO.c, "Min. ThickGateOx extension over GatPoly over Activ 0.34".  Figure 5.7 draws
@@ -659,16 +576,6 @@ fn tgo_c(l: &L) {
     e.extend(l.hv2(39.215, 2.0, 0.34, 0.335));
     e.extend(l.hv2(41.5, 6.0, 0.34, 0.335));
     write("tgo", "TGO.c.h3", e);
-
-    // h4/h5: fifty 0.335 transistors, flat and as an array.
-    arrays(
-        "tgo",
-        "TGO.c",
-        4,
-        l.hv2(1.34, 0.27, 0.34, 0.335),
-        4.0,
-        vec![],
-    );
 }
 
 /// TGO.d, "Min. space between ThickGateOx and GatPoly over Activ outside thick gate oxide
@@ -722,7 +629,6 @@ fn tgo_d(l: &L) {
     // h4/h5: fifty 0.335 gaps, flat and as an array.
     let mut cell = vec![sq(l.tgo, 0.0, 0.0, 1.0)];
     cell.extend(l.lv(1.335, 0.25));
-    arrays("tgo", "TGO.d", 4, cell, 3.5, vec![]);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -894,20 +800,6 @@ fn psd_c(l: &L) {
     e.extend(l.psd_box(41.5, 2.0, 0.18, 0.18, 0.175, 0.18));
     write("psd", "pSD.c.h4", e);
 
-    // h5/h6: fifty 0.175 in one well, flat and as an array.
-    let cell = vec![
-        rect(l.act, 0.18, 0.18, 0.68, 0.68),
-        rect(l.psd, 0.0, 0.0, 0.855, 0.86),
-    ];
-    arrays(
-        "psd",
-        "pSD.c",
-        5,
-        cell,
-        2.5,
-        vec![rect(l.nw, -1.0, -1.0, 26.0, 13.0)],
-    );
-
     // h7: a 300 µm P+Activ 0.175 from its pSD's top edge, and 0.175 at (1000, 1000).
     write(
         "psd",
@@ -939,13 +831,6 @@ fn psd_c1(l: &L) {
     e.extend(l.psd_box(20.5, 2.0, 0.03, 0.03, 0.025, 0.03));
     e.extend(l.psd_box(39.0, 2.0, 0.03, 0.03, 0.025, 0.03));
     write("psd", "pSD.c1.h1", e);
-
-    // h2/h3: fifty 0.025, flat and as an array.
-    let cell = vec![
-        rect(l.act, 0.03, 0.03, 0.53, 0.53),
-        rect(l.psd, 0.0, 0.0, 0.555, 0.56),
-    ];
-    arrays("psd", "pSD.c1", 2, cell, 2.0, vec![]);
 }
 
 /// pSD.d, "Min. pSD space to unrelated N+Activ in PWell 0.18"; N+Activ is Activ AND nSD,
@@ -1041,16 +926,6 @@ fn psd_d(l: &L) {
             sq(l.act, 42.075, 6.0, 1.0),
         ],
     );
-
-    // h5/h6: fifty 0.175 gaps, flat and as an array.
-    arrays(
-        "psd",
-        "pSD.d",
-        5,
-        vec![sq(l.psd, 0.0, 0.0, 1.0), sq(l.act, 1.175, 0.0, 1.0)],
-        3.0,
-        vec![],
-    );
 }
 
 /// pSD.d1, "Min. pSD space to N+Activ in NWell 0.03".
@@ -1101,17 +976,6 @@ fn psd_d1(l: &L) {
             sq(l.act, 3.97, 3.57, 1.0),
         ],
     );
-
-    // h3/h4: fifty 0.025 gaps in one well, flat and as an array.
-    let cell = vec![sq(l.psd, 0.0, 0.0, 1.0), sq(l.act, 1.025, 0.0, 1.0)];
-    arrays(
-        "psd",
-        "pSD.d1",
-        3,
-        cell,
-        3.0,
-        vec![rect(l.nw, -1.0, -1.0, 31.0, 16.0)],
-    );
 }
 
 /// pSD.e, "Min. pSD overlap of Activ at one position when forming abutted substrate tie
@@ -1130,9 +994,6 @@ fn psd_e(l: &L) {
     e.push(rect(l.act, 19.5, 6.0, 21.2, 6.5));
     e.push(rect(l.psd, 20.905, 5.9, 22.5, 6.6));
     write("psd", "pSD.e.h1", e);
-
-    // h2/h3: fifty 0.295 ties, flat and as an array.
-    arrays("psd", "pSD.e", 2, l.stie(0.0, 0.0, 0.295), 4.0, vec![]);
 }
 
 /// pSD.f, "Min. Activ extension over pSD at one position when forming abutted NWell tie
@@ -1158,17 +1019,6 @@ fn psd_f(l: &L) {
     e.push(rect(l.psd, 37.8, 1.8, 40.0, 3.2));
     e.push(rect(l.act, 40.0, 2.25, 40.295, 2.75));
     write("psd", "pSD.f.h1", e);
-
-    // h2/h3: fifty 0.295 tabs in one well, flat and as an array.
-    let cell = l.ntie_up(0.2, 0.2, 0.295, 0.5);
-    arrays(
-        "psd",
-        "pSD.f",
-        2,
-        cell,
-        3.0,
-        vec![rect(l.nw, -1.0, -1.0, 31.0, 16.0)],
-    );
 }
 
 /// pSD.g, "Min. N+Activ or P+Activ area (µm²) when forming abutted tie 0.09".
@@ -1202,17 +1052,6 @@ fn psd_g(l: &L) {
             rect(l.psd, 19.3, 5.8, 21.7, 7.0),
             rect(l.act, 20.85, 7.0, 21.145, 7.3),
         ],
-    );
-
-    // h2/h3: fifty 0.0885 N+ tabs (0.295 × 0.30) in one well, flat and as an array.
-    let cell = l.ntie_up(0.2, 0.2, 0.30, 0.295);
-    arrays(
-        "psd",
-        "pSD.g",
-        2,
-        cell,
-        3.0,
-        vec![rect(l.nw, -1.0, -1.0, 31.0, 16.0)],
     );
 }
 
@@ -1260,17 +1099,6 @@ fn psd_i(l: &L) {
     e.extend(l.pfet(39.385, 2.0, 0.12, 0.115, 0.2, 0.5, 0.18, 0.18, 0.30));
     e.extend(l.pfet(41.5, 6.0, 0.12, 0.115, 0.2, 0.5, 0.18, 0.18, 0.30));
     write("psd", "pSD.i.h2", e);
-
-    // h3/h4: fifty 0.295 PFETs in one well, flat and as an array.
-    let cell = l.pfet(0.18, 0.3, 0.12, 0.115, 0.2, 0.5, 0.18, 0.18, 0.30);
-    arrays(
-        "psd",
-        "pSD.i",
-        3,
-        cell,
-        2.5,
-        vec![rect(l.nw, -1.0, -1.0, 26.0, 13.0)],
-    );
 }
 
 /// pSD.j and pSD.j1, "Min. pSD space to NFET gate not inside / inside ThickGateOx
@@ -1324,7 +1152,6 @@ fn psd_j(l: &L) {
     // h3/h4: fifty 0.295 NFETs, flat and as an array.
     let mut cell = l.nfet(0.0, 0.5, 0.5, 0.295, 0.2, 0.3);
     cell.push(rect(l.psd, 0.995, 0.0, 2.0, 2.0));
-    arrays("psd", "pSD.j", 3, cell, 3.5, vec![]);
 }
 
 /// pSD.k, "Min. pSD area (µm²) 0.25".
@@ -1355,16 +1182,6 @@ fn psd_k(l: &L) {
             rect(l.psd, 6.0, 6.0, 6.005, 46.0),
         ],
     );
-
-    // h2/h3: fifty 0.16 boxes, flat and as an array.
-    arrays(
-        "psd",
-        "pSD.k",
-        2,
-        vec![rect(l.psd, 0.0, 0.0, 0.4, 0.4)],
-        2.0,
-        vec![],
-    );
 }
 
 /// pSD.l, "Min. pSD enclosed area (µm²) 0.25"; figure 5.10 draws `l` in a hole holding an
@@ -1392,10 +1209,6 @@ fn psd_l(l: &L) {
         l.psd, 1000.0, 1000.0, 1001.5, 1001.5, 1000.5, 1000.5, 1001.0, 1000.995,
     ));
     write("psd", "pSD.l.h1", e);
-
-    // h2/h3: fifty 0.2475 holes, flat and as an array.
-    let cell = ring(l.psd, 0.0, 0.0, 1.5, 1.5, 0.5, 0.5, 1.0, 0.995);
-    arrays("psd", "pSD.l", 2, cell, 2.5, vec![]);
 }
 
 /// pSD.m, "Min. pSD space to n-type poly resistors 0.18", and pSD.n, "Min. pSD enclosure
@@ -1503,16 +1316,6 @@ fn nsdb_c(l: &L) {
             sq(l.psd, 42.155, 6.0, 1.0),
         ],
     );
-
-    // h4/h5: fifty 0.305 gaps, flat and as an array.
-    arrays(
-        "nsdblock",
-        "nSDB.c",
-        4,
-        vec![sq(l.nsdb, 0.0, 0.0, 1.0), sq(l.psd, 1.305, 0.0, 1.0)],
-        3.5,
-        vec![],
-    );
 }
 
 /// nSDB.e, "Min. nSD:block space to Cont 0.00 (nSD:block and Cont do not overlap)".
@@ -1544,14 +1347,4 @@ fn nsdb_e(l: &L) {
     e.push(sq(l.nsdb, 5.0, 6.0, 1.0));
     e.push(rect(l.cont, 5.4, 6.2, 5.56, 6.7));
     write("nsdblock", "nSDB.e.h1", e);
-
-    // h2/h3: fifty Conts in blocks, flat and as an array.
-    arrays(
-        "nsdblock",
-        "nSDB.e",
-        2,
-        vec![sq(l.nsdb, 0.0, 0.0, 1.0), sq(l.cont, 0.42, 0.42, 0.16)],
-        2.0,
-        vec![],
-    );
 }

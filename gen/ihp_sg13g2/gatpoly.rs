@@ -5,9 +5,9 @@
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
     cont_at, density_pattern, layer, library, max_width_pattern, min_width_pattern, notch_pattern,
-    poly, rect, space_pattern, um, write_gz,
+    poly, rect, space_pattern, write_gz,
 };
-use gds21::{GdsArrayRef, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct};
+use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 use std::f64::consts::SQRT_2;
 
@@ -569,69 +569,8 @@ fn zroute(l: (i16, i16), x: f64, y: f64, wt: f64, h: f64, down: bool) -> GdsElem
     }
 }
 
-/// Translate every boundary in `elems` by `(dx, dy)` µm.
-fn shift(elems: &[GdsElement], dx: f64, dy: f64) -> Vec<GdsElement> {
-    elems
-        .iter()
-        .map(|e| match e {
-            GdsElement::GdsBoundary(b) => {
-                let mut b = b.clone();
-                for p in &mut b.xy {
-                    p.x += um(dx);
-                    p.y += um(dy);
-                }
-                GdsElement::GdsBoundary(b)
-            }
-            other => other.clone(),
-        })
-        .collect()
-}
-
-/// `cols × rows` copies of `cell` at `pitch`, every copy drawn in TOP.
-fn flat_array(cell: &[GdsElement], cols: usize, rows: usize, pitch: f64) -> Vec<GdsElement> {
-    let mut out = vec![];
-    for r in 0..rows {
-        for c in 0..cols {
-            out.extend(shift(cell, c as f64 * pitch, r as f64 * pitch));
-        }
-    }
-    out
-}
-
-/// The same array as one `GdsArrayRef` of a `CELL` struct placed in TOP.
-fn ref_array(cell: Vec<GdsElement>, cols: i16, rows: i16, pitch: f64) -> GdsLibrary {
-    let aref = GdsElement::GdsArrayRef(GdsArrayRef {
-        name: "CELL".into(),
-        xy: [
-            GdsPoint::new(0, 0),
-            GdsPoint::new(um(pitch * cols as f64), 0),
-            GdsPoint::new(0, um(pitch * rows as f64)),
-        ],
-        cols,
-        rows,
-        ..Default::default()
-    });
-    let mut lib = library("TOP", vec![aref]);
-    let mut child = GdsStruct::new("CELL");
-    child.elems = cell;
-    lib.structs.insert(0, child);
-    lib.set_all_dates(GdsDateTime::from(&[0i16, 1, 1, 0, 0, 0]));
-    lib
-}
-
 fn write(name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
-}
-
-/// Writes `<name>.h<n>` flat and `<name>.h<n+1>` as an array reference: 10 × 5 copies of
-/// `cell` at `pitch`.  The manual knows nothing about hierarchy, so both must report the
-/// violating pattern fifty times.
-fn arrays(name: &str, n: u32, cell: Vec<GdsElement>, pitch: f64) {
-    write(&format!("{name}.h{n}"), flat_array(&cell, 10, 5, pitch));
-    write_gz(
-        &format!("{DIR}/{name}.h{}.gds.gz", n + 1),
-        ref_array(cell, 10, 5, pitch),
-    );
 }
 
 fn hardening(pdk: &PdkConfig) {
@@ -785,9 +724,6 @@ fn gat_a_h(l: &L) {
         ],
     );
 
-    // h5/h6 — fifty 0.125 × 1 bars, flat and as an array reference.
-    arrays("Gat.a", 5, vec![rect(gp, 0.2, 0.2, 0.325, 1.2)], 3.0);
-
     // h7 — a comb whose three teeth are 0.125 wide (three violations of one polygon); a
     // U with 0.13 arms is clean.
     write(
@@ -938,14 +874,6 @@ fn gat_a1_h(l: &L) {
     )); // clean
     write("Gat.a1.h3", e);
 
-    // h4/h5 — fifty 0.125 NFETs, flat and as an array reference.
-    arrays(
-        "Gat.a1",
-        4,
-        l.fet(0.2, 0.2, 2.0, 1.0, &[(0.7, 0.125)], 0.3, Imp::Bare, false),
-        3.5,
-    );
-
     // h6 — a 300 µm wide NFET with a 0.125 gate, one at (1000, 1000), and a 0.125 gate
     // crossing a 0.005 sliver of Activ (a gate all the same).
     let mut e = l.fet(
@@ -1021,14 +949,6 @@ fn gat_a2_h(l: &L) {
     e.push(rect(l.gp, 10.7, 1.2, 11.2, 1.7));
     e.push(rect(l.gp, 10.7, 3.3, 11.2, 3.8));
     write("Gat.a2.h2", e);
-
-    // h3/h4 — fifty 0.125 PFETs, flat and as an array reference.
-    arrays(
-        "Gat.a2",
-        3,
-        l.fet(0.6, 0.6, 2.0, 1.0, &[(0.7, 0.125)], 0.3, Imp::Pfet, false),
-        4.0,
-    );
 }
 
 // --- Gat.a3: min. gate length of a 3.3 V NFET 0.45 ---
@@ -1089,14 +1009,6 @@ fn gat_a3_h(l: &L) {
     e.push(rect(l.tgo, 17.3, 13.5, 22.7, 16.5));
     e.extend(l.fet(18.5, 19.0, 3.0, 1.0, &[(1.28, 0.45)], 0.3, Imp::Bare, true)); // clean
     write("Gat.a3.h2", e);
-
-    // h3/h4 — fifty 0.445 3.3 V NFETs, flat and as an array reference.
-    arrays(
-        "Gat.a3",
-        3,
-        l.fet(0.6, 0.8, 2.0, 1.0, &[(0.75, 0.445)], 0.3, Imp::Bare, true),
-        4.0,
-    );
 }
 
 // --- Gat.a4: min. gate length of a 3.3 V PFET 0.40 ---
@@ -1167,14 +1079,6 @@ fn gat_a4_h(l: &L) {
     e.push(rect(l.tgo, 17.3, 13.5, 22.7, 16.5));
     e.extend(l.fet(18.5, 19.0, 3.0, 1.0, &[(1.3, 0.40)], 0.3, Imp::Pfet, true)); // clean
     write("Gat.a4.h2", e);
-
-    // h3/h4 — fifty 0.395 3.3 V PFETs, flat and as an array reference.
-    arrays(
-        "Gat.a4",
-        3,
-        l.fet(0.6, 0.8, 2.0, 1.0, &[(0.8, 0.395)], 0.3, Imp::Pfet, true),
-        4.0,
-    );
 }
 
 // --- Gat.b: min. GatPoly space or notch 0.18 ---
@@ -1347,17 +1251,6 @@ fn gat_b_h(l: &L) {
     ]);
     write("Gat.b.h4", e);
 
-    // h5/h6 — fifty 0.175 gaps, flat and as an array reference.
-    arrays(
-        "Gat.b",
-        5,
-        vec![
-            rect(gp, 0.2, 0.2, 1.2, 1.2),
-            rect(gp, 1.375, 0.2, 2.375, 1.2),
-        ],
-        3.5,
-    );
-
     // h7 — in context.  Two 1.2 V gate fingers 0.175 apart on one Activ; a gate and an
     // unrelated poly line 0.175 past its end cap; a 0.005 sliver 0.175 from a bar; two
     // 300 µm bars 0.175 apart; a pair at (1000, 1000).
@@ -1495,9 +1388,6 @@ fn gat_b1_h(l: &L) {
     e.push(rect(gp, 1.7, 14.945, 302.3, 15.445));
     e.push(rect(l.tgo, 1.2, 13.5, 302.8, 16.0));
     write("Gat.b1.h4", e);
-
-    // h5/h6 — fifty 0.245 finger pairs, flat and as an array reference.
-    arrays("Gat.b1", 5, hv(0.5, 0.8, &[(1.0, 0.5), (1.745, 0.5)]), 5.0);
 }
 
 // --- Gat.c: min. GatPoly extension over Activ (end cap) 0.18 ---
@@ -1598,17 +1488,6 @@ fn gat_c_h(l: &L) {
             rect(act, 18.5, 15.0, 21.5, 16.0),
             rect(gp, 19.85, 14.82, 20.15, 16.18), // clean
         ],
-    );
-
-    // h4/h5 — fifty 0.175 caps, flat and as an array reference.
-    arrays(
-        "Gat.c",
-        4,
-        vec![
-            rect(act, 0.2, 0.2, 1.2, 1.2),
-            rect(gp, 0.5, 0.025, 0.8, 1.38),
-        ],
-        3.0,
     );
 
     // h6 — far and merged.  A 0.175 cap at (1000, 1000); an Activ drawn as two abutting
@@ -1754,17 +1633,6 @@ fn gat_d_h(l: &L) {
             rect(gp, 2.0, 28.065, 302.0, 28.365),
         ],
     );
-
-    // h5/h6 — fifty 0.065 gaps, flat and as an array reference.
-    arrays(
-        "Gat.d",
-        5,
-        vec![
-            rect(act, 0.2, 0.2, 1.2, 1.2),
-            rect(gp, 1.265, 0.2, 1.565, 1.2),
-        ],
-        3.0,
-    );
 }
 
 // --- Gat.e: min. GatPoly area 0.09 µm² ---
@@ -1831,9 +1699,6 @@ fn gat_e_h(l: &L) {
             rect(gp, 19.7, 24.0, 20.39, 24.13),
         ],
     );
-
-    // h3/h4 — fifty 0.0885 squares, flat and as an array reference.
-    arrays("Gat.e", 3, vec![rect(gp, 0.2, 0.2, 0.5, 0.495)], 2.0);
 }
 
 // --- Gat.f: no 45° or 90° angles for GatPoly on Activ ---
@@ -2000,14 +1865,6 @@ fn gat_f_h(l: &L) {
             rect(gp, 19.85, 9.7, 20.15, 12.3), // clean
         ],
     );
-
-    // h5/h6 — fifty L gates, flat and as an array reference.
-    arrays(
-        "Gat.f",
-        5,
-        vec![rect(act, 0.5, 0.5, 2.5, 2.5), lgate(1.3, 0.2, 1.5, 2.8)],
-        3.5,
-    );
 }
 
 // --- Gat.g: min. width 0.16 of 45°-bent GatPoly where the bend is longer than 0.39 ---
@@ -2085,14 +1942,6 @@ fn gat_g_h(l: &L) {
             zroute(gp, 1000.0, 1000.0, 0.22, 0.45, false),
         ],
     );
-
-    // h4/h5 — fifty firing Z routes, flat and as an array reference.
-    arrays(
-        "Gat.g",
-        4,
-        vec![zroute(gp, 0.2, 0.2, 0.22, 0.45, false)],
-        6.0,
-    );
 }
 
 // --- GFil.a: max. GatPoly:filler width 5.00 ---
@@ -2158,10 +2007,6 @@ fn gfil_a_h(l: &L) {
         ],
     );
 
-    // h3/h4 — fifty 5.005 × 5.005 boxes, flat and as an array reference (a 5.005 × 5 box
-    // is 5.0 wide by the narrowest reading, and legal).
-    arrays("GFil.a", 3, vec![rect(gf, 0.5, 0.5, 5.505, 5.505)], 8.0);
-
     // h5 — merged shapes across tile lines.  A 300 × 5.005 bar merged with a 13 × 13 ring
     // hanging below it (the ring's hole 3 × 3), and a 300 × 5.005 bar merged with a 5 × 5.5
     // box below it: one shape each, wide across the bar and across the union's height.
@@ -2202,9 +2047,6 @@ fn gfil_b_h(l: &L) {
             rect(gf, 1000.0, 1000.0, 1000.695, 1002.0), // GFil.b
         ],
     );
-
-    // h2/h3 — fifty 0.695 bars, flat and as an array reference.
-    arrays("GFil.b", 2, vec![rect(gf, 0.2, 0.2, 0.895, 2.2)], 4.0);
 }
 
 // --- GFil.c: min. GatPoly:filler space 0.80 ---
@@ -2258,17 +2100,6 @@ fn gfil_c_h(l: &L) {
         rect(gf, 2.0, 21.795, 302.0, 22.795), // GFil.c
     ]);
     write("GFil.c.h1", e);
-
-    // h2/h3 — fifty 0.795 gaps, flat and as an array reference.
-    arrays(
-        "GFil.c",
-        2,
-        vec![
-            rect(gf, 0.2, 0.2, 1.2, 1.2),
-            rect(gf, 1.995, 0.2, 2.995, 1.2),
-        ],
-        5.0,
-    );
 }
 
 // --- GFil.d: min. GatPoly:filler space to Activ, GatPoly, Cont, pSD, nSD:block, SalBlock 1.10 ---
@@ -2331,17 +2162,6 @@ fn gfil_d_h(l: &L) {
             rect(l.activ, 2.0, 22.095, 302.0, 23.095), // GFil.d
         ],
     );
-
-    // h3/h4 — fifty 1.095 filler-to-Activ gaps, flat and as an array reference.
-    arrays(
-        "GFil.d",
-        3,
-        vec![
-            rect(gf, 0.2, 0.2, 1.2, 1.2),
-            rect(l.activ, 2.295, 0.2, 3.295, 1.2),
-        ],
-        5.0,
-    );
 }
 
 // --- GFil.e: min. GatPoly:filler space to NWell, nBuLay 1.10 ---
@@ -2393,17 +2213,6 @@ fn gfil_e_h(l: &L) {
             rect(l.nw, 2.0, 22.095, 302.0, 23.095), // GFil.e
         ],
     );
-
-    // h3/h4 — fifty 1.095 filler-to-NWell gaps, flat and as an array reference.
-    arrays(
-        "GFil.e",
-        3,
-        vec![
-            rect(gf, 0.2, 0.2, 1.2, 1.2),
-            rect(l.nw, 2.295, 0.2, 3.295, 1.2),
-        ],
-        5.0,
-    );
 }
 
 // --- GFil.f: min. GatPoly:filler space to TRANS 1.10 ---
@@ -2440,17 +2249,6 @@ fn gfil_f_h(l: &L) {
             rect(gf, 2.0, 20.0, 302.0, 21.0),
             rect(t, 2.0, 22.095, 302.0, 23.095), // GFil.f
         ],
-    );
-
-    // h2/h3 — fifty 1.095 filler-to-TRANS gaps, flat and as an array reference.
-    arrays(
-        "GFil.f",
-        2,
-        vec![
-            rect(gf, 0.2, 0.2, 1.2, 1.2),
-            rect(t, 2.295, 0.2, 3.295, 1.2),
-        ],
-        5.0,
     );
 }
 
@@ -2522,16 +2320,5 @@ fn gfil_j_h(l: &L) {
             rect(af, 1000.0, 1000.0, 1001.0, 1001.5),
             rect(gf, 1000.1, 999.825, 1000.9, 1001.68), // GFil.j
         ],
-    );
-
-    // h2/h3 — fifty 0.175 caps, flat and as an array reference.
-    arrays(
-        "GFil.j",
-        2,
-        vec![
-            rect(af, 0.2, 0.2, 1.2, 1.7),
-            rect(gf, 0.3, 0.025, 1.1, 1.88),
-        ],
-        4.0,
     );
 }

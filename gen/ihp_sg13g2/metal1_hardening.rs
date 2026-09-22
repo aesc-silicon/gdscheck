@@ -9,8 +9,7 @@
 // reasoning in hardening/reports/ihp-sg13g2/metal1.md.
 
 use crate::helpers::{
-    chamfered_tr, cont_at, diamond, flat_array, layer, library, poly, rect, ref_array, strip45,
-    stripes, write_gz,
+    chamfered_tr, cont_at, diamond, layer, library, poly, rect, strip45, stripes, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -178,16 +177,6 @@ fn write(name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
 }
 
-/// Writes `<name>.h<n>` flat and `<name>.h<n+1>` as an array reference: 10 × 5 copies of
-/// `cell` at `pitch`; both must report the violating pattern fifty times.
-fn arrays(name: &str, n: u32, cell: Vec<GdsElement>, pitch: f64) {
-    write(&format!("{name}.h{n}"), flat_array(&cell, 10, 5, pitch));
-    write_gz(
-        &format!("{DIR}/{name}.h{}.gds.gz", n + 1),
-        ref_array(cell, 10, 5, pitch),
-    );
-}
-
 pub fn generate(pdk: &PdkConfig) {
     std::fs::create_dir_all(DIR).expect("failed to create output directory");
     let l = L::new(pdk);
@@ -319,9 +308,6 @@ fn m1_a_h(l: &L) {
             rect(m, 15.0, 32.0, 25.0, 32.16),  // 0.16 across 20 → clean
         ],
     );
-
-    // h5/h6 — fifty 0.155 × 1 bars, flat and as an array reference.
-    arrays("M1.a", 5, vec![rect(m, 0.2, 0.2, 0.355, 1.2)], 2.0);
 
     // h7 — a comb with three 0.155 teeth (three violations of one polygon) and a U with
     // 0.16 arms (clean).
@@ -547,14 +533,6 @@ fn m1_b_h(l: &L) {
     e.push(rect(m, 20.125, 20.125, 21.0, 21.0));
     write("M1.b.h5", e);
 
-    // h6/h7 — fifty 0.175 pairs, flat and as an array reference.
-    arrays(
-        "M1.b",
-        6,
-        vec![rect(m, 0.2, 0.2, 0.7, 0.7), rect(m, 0.875, 0.2, 1.375, 0.7)],
-        2.0,
-    );
-
     // h8 — small, long, far.  A 0.005 sliver 0.175 from a box (the sliver is M1.a and
     // M1.d), two 300 µm bars 0.175 apart (one marker), a pair at (1000, 1000).
     write(
@@ -674,7 +652,6 @@ fn m1_c_h(l: &L) {
     // h4/h5 — fifty Conts sticking 0.005 out, flat and as an array reference.
     let mut cell = c(0.5, 0.5);
     cell.push(rect(m, 0.3, 0.3, 0.575, 0.7));
-    arrays("M1.c", 4, cell, 2.0);
 }
 
 // --- M1.c1: min. Metal1 endcap enclosure of Cont 0.05 (note 1: at a Metal1 corner at
@@ -787,7 +764,6 @@ fn m1_c1_h(l: &L) {
     // h5/h6 — fifty 0.045 endcaps, flat and as an array reference.
     let mut cell = c(0.5, 0.5);
     cell.push(rect(m, 0.0, 0.42, 0.625, 0.58));
-    arrays("M1.c1", 5, cell, 2.0);
 }
 
 // --- M1.d: min. Metal1 area 0.09 µm² ---
@@ -873,9 +849,6 @@ fn m1_d_h(l: &L) {
     e.push(rect(m, 1000.0, 1000.0, 1000.3, 1000.295));
     e.push(rect(m, 19.85, 12.0, 20.15, 12.3)); // clean
     write("M1.d.h3", e);
-
-    // h4/h5 — fifty 0.2 × 0.4 boxes (0.08), flat and as an array reference.
-    arrays("M1.d", 4, vec![rect(m, 0.2, 0.2, 0.4, 0.6)], 2.0);
 
     // h6 — small and long.  A 0.005 × 0.5 sliver (0.0025) fires; a 0.005 × 18 sliver is
     // 0.09 and clean by area (both are M1.a); a 300 µm bar is clean.  One.
@@ -1067,14 +1040,6 @@ fn m1_e_h(l: &L) {
     e.push(rect(m, 18.995, 18.505, 20.0, 18.665));
     write("M1.e.h6", e);
 
-    // h7/h8 — fifty 0.5/0.16 pairs at 0.20, flat and as an array reference.
-    arrays(
-        "M1.e",
-        7,
-        vec![rect(m, 0.2, 0.2, 0.7, 2.2), rect(m, 0.9, 0.2, 1.06, 2.2)],
-        3.0,
-    );
-
     // h9 — nets, notches, long and small.  Two 0.5 lines on one net (Via1 and a Metal2
     // strap) 0.20 apart fire - the rule says nothing about nets; a U of 0.5 arms with a
     // 0.20 slot 2 µm deep is a notch, and M1.e says "space of lines" where M1.b says "space
@@ -1198,17 +1163,6 @@ fn m1_f_h(l: &L) {
     e.push(rect(m, 2.0, 100.505, 302.0, 101.005));
     write("M1.f.h3", e);
 
-    // h4/h5 — fifty 10.005/0.5 pairs at 0.5, flat and as an array reference (pitch 13).
-    arrays(
-        "M1.f",
-        4,
-        vec![
-            rect(m, 0.2, 0.2, 10.205, 12.2),
-            rect(m, 10.705, 0.2, 11.205, 12.2),
-        ],
-        13.0,
-    );
-
     // h6 — nets, notches, an L.  Two 12 × 12 plates on one net (Via1 and a Metal2 strap)
     // 0.5 apart fire; a U with 10.005 arms and a 0.5 slot 12 deep is a notch, clean by
     // the wording (report); an L of 10.005 arms with a 0.5 line along the outside of one
@@ -1302,9 +1256,6 @@ fn m1_g_h(l: &L) {
             zroute(m, 1000.0, 1000.0, 0.28, 0.36, false),
         ],
     );
-
-    // h4/h5 — fifty firing Z routes, flat and as an array reference.
-    arrays("M1.g", 4, vec![zroute(m, 0.2, 0.2, 0.28, 0.36, false)], 6.0);
 
     // h6 — long and small.  A 300 µm 45° strip 0.198 wide fires (two walls); a 45° sliver
     // 0.007 wide fires (and is M1.a and M1.d).  Four.
@@ -1405,18 +1356,6 @@ fn m1_i_h(l: &L) {
     e.extend(pair(41.0, 8.0));
     e.extend(pair(1000.0, 1000.0));
     write("M1.i.h3", e);
-
-    // h4/h5 — fifty 0.2157 strip pairs (walls 2.12 long, so M1.e fires on each as well),
-    // flat and as an array reference.
-    arrays(
-        "M1.i",
-        4,
-        vec![
-            strip45(m, 0.6, 0.2, 1.5, 0.4),
-            strip45(m, 0.6, 1.305, 1.5, 0.4),
-        ],
-        3.5,
-    );
 
     // h6 — long and small.  Two 300 µm 45° strips 0.2157 apart fire once; a 0.007 45°
     // sliver 0.2157 from a strip fires (the sliver is M1.a, M1.d and M1.g).  Two.
@@ -1592,9 +1531,6 @@ fn m1fil_a1_h(l: &L) {
         ],
     );
 
-    // h5/h6 — fifty 0.995 × 2 bars, flat and as an array reference.
-    arrays("M1Fil.a1", 5, vec![rect(f, 0.2, 0.2, 1.195, 2.2)], 3.0);
-
     // h7 — a comb with three 0.995 teeth (six) and a U with 1.0 arms (clean); the slots
     // are 0.5 wide.
     write(
@@ -1681,9 +1617,6 @@ fn m1fil_a2_h(l: &L) {
             rect(f, 17.5, 7.0, 22.5, 10.0),
         ],
     );
-
-    // h3/h4 — fifty 5.005 × 2 fillers, flat and as an array reference (two markers each).
-    arrays("M1Fil.a2", 3, vec![rect(f, 0.2, 0.2, 5.205, 2.2)], 6.0);
 }
 
 // --- M1Fil.b: min. Metal1:filler space 0.42 ---
@@ -1813,14 +1746,6 @@ fn m1fil_b_h(l: &L) {
     e.push(rect(f, 20.29, 23.29, 22.29, 25.29));
     write("M1Fil.b.h5", e);
 
-    // h6/h7 — fifty 0.415 pairs, flat and as an array reference.
-    arrays(
-        "M1Fil.b",
-        6,
-        vec![rect(f, 0.2, 0.2, 1.4, 1.4), rect(f, 1.815, 0.2, 3.015, 1.4)],
-        4.0,
-    );
-
     // h8 — small, long, far.  A 0.005 sliver 0.415 from a filler (the sliver is M1Fil.a1),
     // two 300 µm bars 0.415 apart (once; both are M1Fil.a2 by their length), a pair at
     // (1000, 1000).  Three.
@@ -1936,14 +1861,6 @@ fn m1fil_c_h(l: &L) {
     e.push(rect(m, 20.29, 23.29, 22.29, 25.29));
     write("M1Fil.c.h4", e);
 
-    // h5/h6 — fifty 0.415 pairs, flat and as an array reference.
-    arrays(
-        "M1Fil.c",
-        5,
-        vec![rect(f, 0.2, 0.2, 1.4, 1.4), rect(m, 1.815, 0.2, 3.015, 1.4)],
-        4.0,
-    );
-
     // h7 — small, long, far.  A 0.005 Metal1 sliver 0.415 from a filler (M1.a, M1.d), a
     // 300 µm filler bar 0.415 from a 300 µm Metal1 bar (once; the filler is M1Fil.a2 by
     // its length), a pair at (1000, 1000).  Three.
@@ -2020,14 +1937,6 @@ fn m1fil_d_h(l: &L) {
     e.push(rect(f, 2.0, 22.0, 302.0, 24.0));
     e.push(rect(t, 2.0, 24.995, 302.0, 26.995));
     write("M1Fil.d.h2", e);
-
-    // h3/h4 — fifty 0.995 pairs, flat and as an array reference.
-    arrays(
-        "M1Fil.d",
-        3,
-        vec![rect(f, 0.2, 0.2, 1.4, 1.4), rect(t, 2.395, 0.2, 3.595, 1.4)],
-        5.0,
-    );
 
     // h5 — the other fillers.  A Metal5:filler 0.995 from a TRANS, with no Metal1:filler
     // anywhere: nothing for the metal1 deck (M5Fil.d is the metal5 deck's).

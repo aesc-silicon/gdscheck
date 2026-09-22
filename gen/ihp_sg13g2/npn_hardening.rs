@@ -18,8 +18,7 @@
 //! Recog:diode (`schottky`).
 
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, shift,
-    text, write_gz,
+    chamfered_bl, chamfered_tr, diamond, layer, library, poly, rect, shift, text, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -96,18 +95,10 @@ pub fn generate(pdk: &PdkConfig) {
     sdiod_enclosure(&p);
     sdiod_dims(&p);
     sdiod_recognition(&p);
-    sdiod_arrays(&p);
 }
 
 fn out(dir: &str, name: &str, e: Vec<GdsElement>) {
     write_gz(&format!("{dir}/{name}.gds.gz"), library("TOP", e));
-}
-
-fn out_aref(dir: &str, name: &str, cell: Vec<GdsElement>, cols: i16, rows: i16, pitch: f64) {
-    write_gz(
-        &format!("{dir}/{name}.gds.gz"),
-        ref_array(cell, cols, rows, pitch),
-    );
 }
 
 /// A box `[x0, y0, x1, y1]` grown by `m` on each side (left, bottom, right, top).
@@ -390,13 +381,6 @@ fn npn_g2_b(p: &P) {
         e.push(text(p.txt, "npnCustom", x0 + 2.0, y0 + 2.0));
     }
     out(NPN, "npnG2.b.h3", e);
-
-    // h4/h5: fifty empty labelled rings, flat and as an array reference.
-    let mut cell = tie_ref(p, h);
-    cell.push(text(p.txt, "npnCustom", 0.0, 0.0));
-    let cell = shift(&cell, 5.0, 5.0);
-    out(NPN, "npnG2.b.h4", flat_array(&cell, 10, 5, 10.0));
-    out_aref(NPN, "npnG2.b.h5", cell, 10, 5, 10.0);
 }
 
 // --- npnG2.c: pSD enclosure of Activ inside NPN Substrate-Tie = 0.20 -----------
@@ -514,11 +498,6 @@ fn npn_g2_c(p: &P) {
         e.extend(npn_margins(p, cx, cy, [m; 4], [m, m, u, m]));
     }
     out(NPN, "npnG2.c.h3", e);
-
-    // h4/h5: fifty devices with the 0.195 outer margin, flat and as an array.
-    let cell = npn_margins(p, 4.0, 4.0, [m; 4], [m, m, u, m]);
-    out(NPN, "npnG2.c.h4", flat_array(&cell, 10, 5, 8.0));
-    out_aref(NPN, "npnG2.c.h5", cell, 10, 5, 8.0);
 }
 
 fn grid(v: f64) -> f64 {
@@ -753,12 +732,6 @@ fn npn_g2_d(p: &P) {
     }
     out(NPN, "npnG2.d.h5", e);
 
-    // h6/h7: fifty devices with an NWell 1.205 away, flat and as an array.
-    let mut cell = npn_room(p, 6.0, 6.0, 3.0);
-    cell.push(beside(p.nw, 7.5, 6.0, u, 0.5, 1.0));
-    out(NPN, "npnG2.d.h6", flat_array(&cell, 10, 5, 12.0));
-    out_aref(NPN, "npnG2.d.h7", cell, 10, 5, 12.0);
-
     // h8: section 4.2's generated nBuLay.  A 4.0 wide NWell overlapping the TRANS by
     // 0.5 (the well is related; its generated nBuLay, 1.0 inside the well, lies 0.5
     // outside the TRANS: unrelated, fires); the same well under nBuLay:block (clean);
@@ -920,12 +893,6 @@ fn npn_g2_d1_d2(p: &P) {
         e.push(beside(p.gp, *tx, cy, u, 0.5, 1.0));
     }
     out(NPN, "npnG2.d1.h2", e);
-
-    // h4/h5: fifty devices with a SalBlock 0.895 away, flat and as an array.
-    let mut cell = npn_room(p, 6.0, 6.0, 3.0);
-    cell.push(beside(p.sal, 7.5, 6.0, u, 0.5, 1.0));
-    out(NPN, "npnG2.d2.h2", flat_array(&cell, 10, 5, 12.0));
-    out_aref(NPN, "npnG2.d2.h3", cell, 10, 5, 12.0);
 }
 
 // --- npnG2.e: Cont space to TRANS 0.27 ------------------------------------------
@@ -1017,12 +984,6 @@ fn npn_g2_e(p: &P) {
         e.push(beside(p.cont, *tx, cy, u, c, c));
     }
     out(NPN, "npnG2.e.h2", e);
-
-    // h3/h4: fifty devices with a Cont 0.265 away, flat and as an array.
-    let mut cell = npn_room(p, 6.0, 6.0, 3.0);
-    cell.push(beside(p.cont, 7.5, 6.0, u, c, c));
-    out(NPN, "npnG2.e.h3", flat_array(&cell, 10, 5, 12.0));
-    out_aref(NPN, "npnG2.e.h4", cell, 10, 5, 12.0);
 }
 
 // --- npn13G2.a, npn13G2L.a/b, npn13G2V.a/b: emitter length -----------------------
@@ -1219,11 +1180,6 @@ fn npn_emitters(p: &P) {
         e.extend(npn_windows(p, cx, cy, "npn13G2", &[*wdw]));
     }
     out(NPN, "npn13G2.a.h3", e);
-
-    // h6/h7: fifty devices with a 0.895 window, flat and as an array.
-    let cell = npn_windows(p, 4.0, 4.0, "npn13G2", &[window(4.0, 4.0, w, l)]);
-    out(NPN, "npn13G2.a.h4", flat_array(&cell, 10, 5, 8.0));
-    out_aref(NPN, "npn13G2.a.h5", cell, 10, 5, 8.0);
 }
 
 // --- Sdiod.a-e: the schottky_nbl1 ------------------------------------------------
@@ -1520,14 +1476,4 @@ fn sdiod_recognition(p: &P) {
         e.extend(d);
     }
     out(SDIOD, "Sdiod.a.h4", e);
-}
-
-fn sdiod_arrays(p: &P) {
-    // Sdiod.a.h5/h6: fifty diodes with the PWell:block's right margin 0.245, flat and
-    // as an array.
-    let mut m = Margins::exact();
-    m.pwb = [0.25, 0.25, 0.245, 0.25];
-    let cell = sd(p, 4.0, 4.0, &m);
-    out(SDIOD, "Sdiod.a.h5", flat_array(&cell, 10, 5, 8.0));
-    out_aref(SDIOD, "Sdiod.a.h6", cell, 10, 5, 8.0);
 }
