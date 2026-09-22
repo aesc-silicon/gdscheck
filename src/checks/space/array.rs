@@ -269,20 +269,23 @@ pub fn run(
     // so a run meets only the runs filed near it.  Every pair used to be tried: a design
     // with 7.5 million vias has a few hundred thousand qualifying runs, and that was
     // sixteen seconds a rule on nothing.
-    let mut rgrid: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
     let cells = |r: &Run| {
         let (gx0, gx1) = (r.x0.div_euclid(cell), r.x1.div_euclid(cell));
         let (gy0, gy1) = (r.y0.div_euclid(cell), r.y1.div_euclid(cell));
         (gx0, gx1, gy0, gy1)
     };
-    for (i, r) in runs.iter().enumerate() {
-        let (gx0, gx1, gy0, gy1) = cells(r);
-        for gx in gx0..=gx1 {
-            for gy in gy0..=gy1 {
-                rgrid.entry((gx, gy)).or_default().push(i);
-            }
-        }
-    }
+    // Filed the way the vias are, sorted in parallel: a run spans a cell per via, and
+    // hashing the seven million entries of a design's runs one by one was most of
+    // the rule.
+    let rgrid = Grid::build(
+        runs.par_iter()
+            .enumerate()
+            .flat_map_iter(|(i, r)| {
+                let (gx0, gx1, gy0, gy1) = cells(r);
+                (gx0..=gx1).flat_map(move |gx| (gy0..=gy1).map(move |gy| ((gx, gy), i)))
+            })
+            .collect(),
+    );
     let r_edges: Vec<(usize, usize)> = (0..runs.len())
         .into_par_iter()
         .flat_map_iter(|i| {
@@ -292,10 +295,7 @@ pub fn run(
             let mut local = Vec::new();
             for gx in gx0 - 1..=gx1 + 1 {
                 for gy in gy0 - 1..=gy1 + 1 {
-                    let Some(bucket) = rgrid.get(&(gx, gy)) else {
-                        continue;
-                    };
-                    for &j in bucket {
+                    for &j in rgrid.get((gx, gy)) {
                         if j <= i || !seen.insert(j) {
                             continue;
                         }
