@@ -11,14 +11,23 @@ rules:
     value: 2.0
     params:
       interacting_only: 1
+      metric: euclidian
+  - id: NAT.1
+    check: forbidden
+    layers: [nat1_crossing]
+    value: 0.0
   - id: NAT.2
     check: min_space
     layers: [nat, comp_outside_nat]
     value: 0.3
+    params:
+      abutting: report
   - id: NAT.3
     check: min_space
     layers: [nat, nwell]
     value: 0.5
+    params:
+      abutting: report
   - id: NAT.4
     check: min_gate_length
     layers: [poly_nat_lv, ngate]
@@ -36,7 +45,7 @@ rules:
     layers: [nat, nat6_comp]
     value: 1.0
     layer_params:
-      net_of: comp
+      net_of: natcomp_con
   - id: NAT.7
     check: min_space
     layers: [nat]
@@ -57,6 +66,8 @@ rules:
     check: min_space
     layers: [nat, poly_off_nat]
     value: 0.3
+    params:
+      abutting: report
   - id: NAT.10
     check: forbidden
     layers: [nat10_viol]

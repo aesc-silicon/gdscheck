@@ -65,15 +65,28 @@ pub fn run(
     );
     merged.ensure(layout, mk, md);
     merged.ensure(layout, ck, cd);
+    merged.ensure(layout, net_key.0, net_key.1);
 
     let tile = merged.tile_dbu();
     let marks = stitch_labeled(merged.tiles(mk, md), tile);
     let conds = stitch_labeled(merged.tiles(ck, cd), tile);
+    let net_tiles = merged.tiles(net_key.0, net_key.1);
+    // The pieces of each counted region, tile by tile, for the net lookup below.
+    let mut pieces: Vec<Vec<((i32, i32), &crate::merge::MergedPoly)>> =
+        vec![Vec::new(); conds.regions.len()];
+    for (tkey, polys) in &conds.by_tile {
+        for (poly, rid) in polys {
+            pieces[*rid].push((*tkey, poly));
+        }
+    }
 
     // Each conductor region is placed under whichever marker region holds its own marker
-    // point, and contributes its net there.  An unresolved net is its own, which is what
-    // keeps the check from going quiet on geometry it cannot follow.
-    let mut nets: HashMap<usize, HashSet<i64>> = HashMap::new();
+    // point, and carries the nets of every conductor inside it - a COMP holds its source
+    // and its drain, which are two nets on one shape, and reading only the first found
+    // made the answer depend on which tile the lookup walked into first.  Two regions
+    // that share a net are at one potential; the rule counts potentials, not nets, so
+    // the regions under a marker are grouped by the nets they have in common.
+    let mut by_mark: HashMap<usize, Vec<HashSet<i64>>> = HashMap::new();
     for (rid, region) in conds.regions.iter().enumerate() {
         let (x, y) = region.marker;
         let tkey = (
@@ -86,35 +99,70 @@ pub fn run(
         let Some((_, mrid)) = under.iter().find(|(p, _)| point_in_merged(x, y, p)) else {
             continue;
         };
-        // An unresolved region counts as a net of its own: the check would rather report
-        // geometry it cannot follow than go quiet on it.
-        let net = conn
-            .net_at(net_key, x, y)
-            .map_or(-(rid as i64) - 1, |n| n as i64);
-        nets.entry(*mrid).or_default().insert(net);
+        let mut nets: HashSet<i64> = HashSet::new();
+        if let Some(n) = conn.net_at(net_key, x, y) {
+            nets.insert(n as i64);
+        }
+        // The conductor the nets are read on need not reach the region's marker point -
+        // NAT.6 counts whole actives and reads their net on the contacted active, which
+        // the gate cuts a hole in - so every conductor region inside this one is asked.
+        for (ptile, piece) in &pieces[rid] {
+            let Some(polys) = net_tiles.get(ptile) else {
+                continue;
+            };
+            for np in polys {
+                let (nx, ny) = crate::merge::inside_point(np);
+                if point_in_merged(nx, ny, piece)
+                    && let Some(n) = conn.net_at(net_key, nx, ny)
+                {
+                    nets.insert(n as i64);
+                }
+            }
+        }
+        // An unresolved region counts as a potential of its own: the check would rather
+        // report geometry it cannot follow than go quiet on it.
+        if nets.is_empty() {
+            nets.insert(-(rid as i64) - 1);
+        }
+        by_mark.entry(*mrid).or_default().push(nets);
     }
 
     let limit = rule.value as usize;
     let mut violations = Vec::new();
-    for (mrid, seen) in nets {
-        if seen.len() > limit {
-            // One violation per marker: the regions under it are all part of the same
-            // fault, and reporting each separately reads as several.
-            let (cx, cy) = marks.regions[mrid].marker;
-            violations.push(Violation::point(
-                &rule.id,
-                "Too many nets under one marker",
-                format!(
-                    "{} regions on {} different nets lie under this {}, at most {} allowed",
-                    cond.name,
-                    seen.len(),
-                    mark.name,
-                    limit
-                ),
-                cx * dbu_to_um,
-                cy * dbu_to_um,
-            ));
+    let mut found: Vec<(usize, usize)> = Vec::new();
+    for (mrid, regions) in by_mark {
+        let mut uf = crate::merge::UnionFind::new(regions.len());
+        let mut first: HashMap<i64, usize> = HashMap::new();
+        for (i, nets) in regions.iter().enumerate() {
+            for &n in nets {
+                match first.entry(n) {
+                    std::collections::hash_map::Entry::Occupied(e) => uf.union(i, *e.get()),
+                    std::collections::hash_map::Entry::Vacant(v) => {
+                        v.insert(i);
+                    }
+                }
+            }
         }
+        let groups: HashSet<usize> = (0..regions.len()).map(|i| uf.find(i)).collect();
+        if groups.len() > limit {
+            found.push((mrid, groups.len()));
+        }
+    }
+    // One violation per marker, in a fixed order: the regions under it are all part of
+    // the same fault, and reporting each separately reads as several.
+    found.sort_unstable();
+    for (mrid, n) in found {
+        let (cx, cy) = marks.regions[mrid].marker;
+        violations.push(Violation::point(
+            &rule.id,
+            "Too many nets under one marker",
+            format!(
+                "{} regions at {} different potentials lie under this {}, at most {} allowed",
+                cond.name, n, mark.name, limit
+            ),
+            cx * dbu_to_um,
+            cy * dbu_to_um,
+        ));
     }
     violations
 }

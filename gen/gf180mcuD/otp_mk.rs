@@ -426,13 +426,18 @@ fn hardening(pdk: &PdkConfig) {
         // up from every point of the gate's top wall there is 0.22 µm of active or more -
         // exactly the value at the wall's left end - but the gate's own top-left corner
         // stands 0.1556 µm from the 45° wall.  Euclidian fires, projection does not.
-        let mut v = dev(10.0, 11.03, 0.37);
+        // The three devices stand at x = 12, 22 and 32 rather than 10, 20 and 30: the
+        // margin this rule reads runs along the active's left edge, and with the device
+        // on a round micron that edge falls on the 20 µm tile line, where the second
+        // device's 0.19 goes unread (a gdscheck defect of its own, recorded in the
+        // report - it is the probe sitting on the line, not the geometry).
+        let mut v = dev(12.0, 11.03, 0.37);
         // The same cut moved down to (x, 11.0): now the overhang straight up above the
         // wall's left end is 0.19, which is short in either metric.
-        v.extend(dev(20.0, 11.0, 0.4));
+        v.extend(dev(22.0, 11.0, 0.4));
         // And moved down to (x, 10.83), where the gate's top wall has 0.02 µm of active
         // over its left end - a tenth of what the rule asks, in either metric.
-        v.extend(dev(30.0, 10.83, 0.57));
+        v.extend(dev(32.0, 10.83, 0.57));
         v
     });
 

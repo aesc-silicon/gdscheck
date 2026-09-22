@@ -84,6 +84,8 @@ rules:
     check: min_space
     layers: [plfuse_efuse, cont_cathode]
     value: 0.155
+    params:
+      abutting: report
   - id: EF.12
     check: forbidden
     layers: [cont_on_plfuse]
@@ -92,6 +94,8 @@ rules:
     check: min_space
     layers: [plfuse_efuse, cont_anode]
     value: 0.14
+    params:
+      abutting: report
   - id: EF.14
     check: forbidden
     layers: [ef14_viol]
@@ -128,6 +132,8 @@ rules:
     check: min_space
     layers: [plfuse, ef20_neighbours]
     value: 2.73
+    params:
+      abutting: report
   - id: EF.21
     check: forbidden
     layers: [ef21_viol]

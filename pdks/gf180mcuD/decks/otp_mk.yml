@@ -8,6 +8,8 @@ rules:
     check: min_space
     layers: [contact_in_comp_otp, tgate_otp]
     value: 0.13
+    params:
+      abutting: report
   - id: O.DF.3a
     check: min_space
     layers: [comp_otp]
@@ -22,6 +24,7 @@ rules:
     value: 0.22
     params:
       interacting_only: 1
+      metric: euclidian
   - id: O.DF.9
     check: min_area
     layers: [comp_otp]
@@ -60,10 +63,14 @@ rules:
     check: min_space
     layers: [sab_out_comp_otp, comp_out_sab]
     value: 0.09
+    params:
+      abutting: report
   - id: O.SB.4
     check: min_space
     layers: [sab_otp, contact]
     value: 0.03
+    params:
+      abutting: report
   - id: O.SB.4
     check: forbidden
     layers: [sab_otp_on_contact]
