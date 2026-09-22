@@ -2505,3 +2505,47 @@ fn hardening_hres(
 ) {
     assert_eq!(hardening("hres", gds, topcell, &ignore), expected, "{gds}");
 }
+
+// --- Density (hardening/reports/gf180mcuD/density.md).  Every rule is a coverage
+// fraction of the whole die: the drawn layer joined with its dummy fill over the area
+// inside PR_BNDRY.  Every fixture carries all seven measured layers, so a fixture about
+// one of them leaves the other eight rules clear.
+#[rstest]
+// Every floor exactly met: COMP 25%, Poly2 14%, each metal 30%.
+#[case::dcf_1b_h1("density/DCF.1b.h1.gds.gz", "TOP", vec![])]
+// The same die with every band 0.005 µm shorter: all eight floors missed.
+#[case::dcf_1b_h2("density/DCF.1b.h2.gds.gz", "TOP", vec!["DCF.1b", "M1.4", "M2.4", "M3.4", "M4.4", "M5.4", "MT.3", "PL.8"])]
+// The drawn layer and its dummy fill covering the same 40%: coverage is area covered,
+// so the overlap counts once and COMP reads 40%, not 80%.
+#[case::dcf_1b_h3("density/DCF.1b.h3.gds.gz", "TOP", vec![])]
+// COMP, Poly2 and Metal1 drawn nowhere and their dummy fill carrying 40% of the die.
+#[case::dcf_1b_h4("density/DCF.1b.h4.gds.gz", "TOP", vec![])]
+// No PR_BNDRY drawn at all: the die is what the layout covers, and it is 40% full.
+#[case::dcf_1b_h5("density/DCF.1b.h5.gds.gz", "TOP", vec![])]
+// An L-shaped die, 7500 µm² in a 10 000 µm² box, every layer covering 2600 µm² of it:
+// 34.67% of the die.  Report finding 1 - gdscheck measures 26%, over the box, and fires
+// the six metal floors.
+#[case::dcf_1b_h6("density/DCF.1b.h6.gds.gz", "TOP", vec![])]
+// Two dies with a 10 µm street between them, every layer at 30% of the 10 000 µm² of
+// boundary.  Report finding 1 - measured over the 11 000 µm² box it is 27.3%.
+#[case::dcf_1b_h7("density/DCF.1b.h7.gds.gz", "TOP", vec![])]
+// The exact bounds again as upright stripes across the tile lines at 20, 21, 40 and 42,
+// on a die whose edges sit at 3 and 103.
+#[case::dcf_1b_h8("density/DCF.1b.h8.gds.gz", "TOP", vec![])]
+// A 400 µm die 40% full, with a 200 µm square of it empty: the rules are die-wide, and
+// the 200 µm window of section 13.3 is a dummy-generation recipe, not a rule.
+#[case::dcf_1b_h9("density/DCF.1b.h9.gds.gz", "TOP", vec![])]
+// COMP exactly on DCF.1d's 70% ceiling.
+#[case::dcf_1d_h1("density/DCF.1d.h1.gds.gz", "TOP", vec![])]
+// COMP one grid step over the ceiling.
+#[case::dcf_1d_h2("density/DCF.1d.h2.gds.gz", "TOP", vec!["DCF.1d"])]
+// A 5000 µm² COMP block 100 µm outside the die, and one straddling its edge: what is
+// outside the die is not counted in it.
+#[case::dcf_1d_h3("density/DCF.1d.h3.gds.gz", "TOP", vec![])]
+// The L-shaped die two thirds full of COMP, with 2400 µm² more COMP in the notch - the
+// part of the bounding box that is not die.  Report finding 1: 66.67% of the die, but
+// gdscheck reads 74% of the box and fires the ceiling.
+#[case::dcf_1d_h4("density/DCF.1d.h4.gds.gz", "TOP", vec![])]
+fn hardening_density(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    assert_eq!(hardening("density", gds, topcell, &[]), expected, "{gds}");
+}
