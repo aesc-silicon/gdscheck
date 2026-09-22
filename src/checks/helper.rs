@@ -350,6 +350,16 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             } else {
                 ("Minimum space violation", "space")
             };
+            // The gap's two ends in a fixed order: one gap is one violation, and a rule
+            // whose layers overlap - "space to wide metal", where a wide plate lies on
+            // both - reads the gap between two such plates once from each side and
+            // named the same segment backwards the second time, which the run's own
+            // dedup then kept as two.
+            let ((ax, ay), (bx, by)) = if (ax, ay) <= (bx, by) {
+                ((ax, ay), (bx, by))
+            } else {
+                ((bx, by), (ax, ay))
+            };
             out.push((
                 pair,
                 Violation::edge(

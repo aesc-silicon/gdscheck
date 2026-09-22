@@ -16,10 +16,15 @@ rules:
     check: min_notch
     layers: [top_metal]
     value: 0.46
+  # `pairs: any`: a wide plate lies on both layers, so the pair that carries a slot cut
+  # into one plate shares area - and the gap meant is between the slot's two walls,
+  # which only the facing-gap reading of an overlapping pair sees (report, finding 1).
   - id: MT.2b
     check: min_space
     layers: [top_metal, top_metal_wide10]
     value: 0.6
+    params:
+      pairs: any
   - id: MT.4
     check: min_area
     layers: [top_metal]
