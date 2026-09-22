@@ -525,12 +525,20 @@ connectivity:
     layers: [metal4_drawn]
   - connector: via4              # 18
     layers: [metal4_drawn]
+  # And again at the Via4 phase, which is where a MIM-B cap is really contacted: the
+  # plate is the top plate of a Metal4/FuseTop capacitor and MIMTM.10 lets it be reached
+  # only through Via4, so the Via4 and Metal5 antenna rules - the two that can fire on a
+  # legal layout - need the plate on the net there.  Upstream says `connect(via4,
+  # fusetop)` in its own via4 and metal5 blocks, one statement per block (report,
+  # finding 1).
   - connector: via4              # 19
+    layers: [fusetop]
+  - connector: via4              # 20
     layers: [metal5_drawn]
   # Outside every antenna phase: the electrical bridge from the MIM plate to the top
   # metal, which the geometry decks' net-aware checks need but the antenna phases,
   # following upstream, do not have.
-  - connector: mimcap_top_tap    # 20
+  - connector: mimcap_top_tap    # 21
     layers: [fusetop, metal5_drawn]
 
 # The derived layer table every deck is written against (the design rules' generic

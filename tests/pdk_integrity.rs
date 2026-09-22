@@ -202,8 +202,9 @@ fn gf180_connect_order_is_pinned_for_the_antenna_levels() {
         ("via3", "fusetop"),           // 16
         ("via3", "metal4_drawn"),      // 17 -> ANT.16_*_ANT.11
         ("via4", "metal4_drawn"),      // 18 -> ANT.16_*_ANT.5
-        ("via4", "metal5_drawn"),      // 19 -> ANT.16_*_ANT.12
-        ("mimcap_top_tap", "fusetop"), // 20 -> ANT.16_*_ANT.6
+        ("via4", "fusetop"),           // 19 -> ANT.16_iii_ANT.15_V4_MIMB
+        ("via4", "metal5_drawn"),      // 20 -> ANT.16_*_ANT.12
+        ("mimcap_top_tap", "fusetop"), // 21 -> ANT.16_*_ANT.6
     ];
     let pdk = PdkConfig::for_process("gf180mcuD").expect("gf180mcuD loads");
     assert_eq!(
