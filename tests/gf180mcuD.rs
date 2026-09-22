@@ -1283,3 +1283,129 @@ fn hardening_dualgate(
     expected.sort();
     assert_eq!(hardening("dualgate", gds, topcell, &ignore), expected);
 }
+
+// --- comp: the hardening layouts ---
+//
+// Drawn in `gen/gf180mcuD/comp.rs` from section 7.5 of the manual; the reasoning, the
+// oracle's answers and the verdicts are in hardening/reports/gf180mcuD/comp.md.  The
+// expected ids are the manual's answer, so the cases that fail are the findings.
+//
+// Marker counts follow gdscheck's cut: `min_width` gives one marker per narrow wall (two
+// per bar), `min_space`, `min_notch` and `max_space` one per violating pair, `min_area`
+// and `forbidden` one per region, `min_enclosure` one per short edge.
+#[rstest]
+// The bound in both voltage columns: 0.215 and 0.25 bars at 3.3 V and 5 V, a bar Dualgate
+// covers half of, a bar touching a Dualgate edge, one under V5_XTOR alone, one whose top
+// MVSD takes.  The touching bar and the V5_XTOR bar are 0.215 wide and in no column of
+// the deck at all (report, finding 1).
+#[case::df1a_h1("comp/DF.1a.h1.gds.gz", "TOP", vec!["DF.1a_LV"; 6], vec!["DF.1a_MV"; 8])]
+// A 300 µm bar with Dualgate over its last 12 µm is a 5 V active from end to end.
+#[case::df1a_h2("comp/DF.1a.h2.gds.gz", "TOP", vec!["DF.1a_LV"; 2], vec!["DF.1a_MV"; 2])]
+// MOSCAP width: 0.995 under the marker, and a 2 µm active the marker covers 0.995 of.
+#[case::df1c_h1("comp/DF.1c.h1.gds.gz", "TOP", vec!["DF.1c"; 4], vec![])]
+// Channel width read on the gate's edge: a 0.215 poly island at 3.3 V, 0.295 and 0.25 at
+// 5 V, each edge of the island counting once.
+#[case::df2a_h1("comp/DF.2a.h1.gds.gz", "TOP", vec!["DF.2a_LV"; 2], vec!["DF.2a_MV"; 4])]
+// The channel of an active drawn as two boxes, a notch in the gate's side, and islands on
+// and across x = 20.
+#[case::df2a_h2("comp/DF.2a.h2.gds.gz", "TOP", vec!["DF.2a_LV"; 6], vec![])]
+// Over 100 µm: a 100.005 square, two 120 plates, a 150 plate with 110 left beside the
+// MOSCAP marker, a 120 diamond; 100, a 99 diamond and a 75 remainder are clean.
+#[case::df2b_h1("comp/DF.2b.h1.gds.gz", "TOP", vec!["DF.2b"; 5], vec![])]
+// Space at 0.275 and 0.355, a 0.275 notch, a tap 0.275 from an N+ active, and a 3.3 V
+// active 0.275 from a 5 V one - which is in no column of the deck (report, finding 1).
+#[case::df3a_h1("comp/DF.3a.h1.gds.gz", "TOP", vec!["DF.3a_LV"; 4], vec!["DF.3a_MV"; 2])]
+// Two 300 µm bars 0.30 apart with Dualgate over their last 12 µm, and a 0.275 pair.
+#[case::df3a_h2("comp/DF.3a.h2.gds.gz", "TOP", vec!["DF.3a_LV"], vec!["DF.3a_MV"])]
+// Butting: a 0.005 implant overlap in an N-well, in the substrate and in a deep well, and
+// three butted MOSCAPs - the marker over the whole, over the P+ half and over the N+ half
+// (the P+ one goes unseen, report, finding 6).  The 0.005 gap is DF.12.
+#[case::df3b_h1("comp/DF.3b.h1.gds.gz", "TOP", vec!["DF.3b"; 6], vec!["DF.12"])]
+// BJT area: 0.315 space and notch at 3.3 V; at 5 V a marker over two actives is forbidden,
+// one over a single active is not, and an active touching the marker's edge from outside
+// does not put a second active in the area (report, finding 7).
+#[case::df3c_h1("comp/DF.3c.h1.gds.gz", "TOP", vec!["DF.3c_LV"; 2], vec!["DF.3c_MV"; 2])]
+// An N+ tap 0.115 / 0.155 from the P-well in a deep well, and a 0.13 tap in a deep well
+// Dualgate only touches at one corner.
+#[case::df4a_h1("comp/DF.4a.h1.gds.gz", "TOP", vec!["DF.4a_LV"], vec!["DF.4a_MV"; 2])]
+// A 300 µm deep well with Dualgate over its last 12 µm; its tap is 0.13 from the P-well.
+#[case::df4a_h2("comp/DF.4a.h2.gds.gz", "TOP", vec!["DF.4a_MV"], vec![])]
+// Deep-well overlap of an N+ tap at 0.615 / 0.655, and a 45° corner cut passing 0.17 from
+// the tap's corner (report, finding 3).
+#[case::df4b_h1("comp/DF.4b.h1.gds.gz", "TOP", vec!["DF.4b_LV"; 2], vec!["DF.4b_MV"])]
+// N-well overlap of a P+ source/drain at 0.425 / 0.595, 0.3 under SRAMCORE (the SRAM
+// cell's rule), and 0.5 in a well Dualgate covers a corner of.
+#[case::df4c_h1("comp/DF.4c.h1.gds.gz", "TOP", vec!["DF.4c_LV"], vec!["DF.4c_MV"; 2])]
+// N-well overlap of an N+ tap at 0.115 / 0.155; a 3.3 V tap at 0.14 and a well under
+// YMTP_MK are clean.
+#[case::df4d_h1("comp/DF.4d.h1.gds.gz", "TOP", vec!["DF.4d_LV"], vec!["DF.4d_MV"])]
+// Deep-well overlap of a P+ active at 0.925 / 1.095, the second one a P-well's own tap.
+#[case::df4e_h1("comp/DF.4e.h1.gds.gz", "TOP", vec!["DF.4e_LV"; 2], vec!["DF.4e_MV"])]
+// P-well overlap of its P+ tap at 0.115 / 0.155; a P-well outside any deep well is clean.
+#[case::df5_h1("comp/DF.5.h1.gds.gz", "TOP", vec!["DF.5_LV"], vec!["DF.5_MV"])]
+// Source/drain overhang 0.235 / 0.395 / 0.3; the overhangs under MVSD and under RES_MK
+// belong to the LDMOS and to a resistor.
+#[case::df6_h1("comp/DF.6.h1.gds.gz", "TOP", vec!["DF.6_LV"], vec!["DF.6_MV"; 2])]
+// A gate running out over the active's end (no source/drain at all, report, finding 5),
+// a 0.235 overhang on a shared gate, and 0.235 overhangs on and across x = 20 and x = 42.
+#[case::df6_h2("comp/DF.6.h2.gds.gz", "TOP", vec!["DF.6_LV"; 5], vec![])]
+// A P+ source/drain in a deep well 0.425 / 0.595 from the P-well; the P-well's own tap,
+// 0.5 inside it, is no space.
+#[case::df7_h1("comp/DF.7.h1.gds.gz", "TOP", vec!["DF.7_LV"], vec!["DF.7_MV"])]
+// P-well overlap of an N+ source/drain at 0.425 / 0.595, and 0.3 under SRAMCORE - the
+// SRAM cell has a 5 V rule of its own and no 3.3 V one.
+#[case::df8_h1("comp/DF.8.h1.gds.gz", "TOP", vec!["DF.8_LV"; 2], vec!["DF.8_MV"])]
+// Area 0.2002 on its own and across x = 20; a union, an L and an OTP active are clean.
+#[case::df9_h1("comp/DF.9.h1.gds.gz", "TOP", vec!["DF.9"; 2], vec![])]
+// Field area: 0.25 holes as walls, as a keyhole, on and across the tile line, and a 0.7
+// hole with a 0.5 island leaving 0.24 of field (report, finding 4).  The island sits 0.1
+// from the ring, which is DF.3a.
+#[case::df10_h1("comp/DF.10.h1.gds.gz", "TOP", vec!["DF.10"; 5], vec!["DF.3a_LV"])]
+// Butting edge: 0.295 across a bar and across x = 20.  A 2.0 and a 1.0 long butting edge
+// on a 0.25 wide active are legal by the manual (report, finding 8).
+#[case::df11_h1("comp/DF.11.h1.gds.gz", "TOP", vec!["DF.11"; 4], vec![])]
+// Implant cover: N+ 0.005 short, N+ ending on x = 20, and an active SCHOTTKY_DIODE covers
+// half of (report, finding 9).  The N+/P+ overlap is DF.3b.
+#[case::df12_h1("comp/DF.12.h1.gds.gz", "TOP", vec!["DF.12"; 3], vec!["DF.3b"])]
+// The N-well tap's reach: 20.005 at 3.3 V (report, finding 2) and 15.005 at 5 V.
+#[case::df13_h1("comp/DF.13.h1.gds.gz", "TOP", vec!["DF.13_LV"], vec!["DF.13_MV"])]
+// The reach through the well: no tap in this well, 26 round an L, 20.005 across two tile
+// lines, 36, and 26.9 diagonally (report, finding 2).  A P+ source/drain and its N+ tap
+// 3 µm apart in a deep well have no N-well between them, and the rule names NWELL
+// (report, finding 10).
+#[case::df13_h2("comp/DF.13.h2.gds.gz", "TOP", vec!["DF.13_LV"; 5], vec![])]
+// The substrate tap's reach: 20.005, 20.004 and 26.9 diagonally (report, finding 2), and
+// 15.005 at 5 V.
+#[case::df14_h1("comp/DF.14.h1.gds.gz", "TOP", vec!["DF.14_LV"; 3], vec!["DF.14_MV"])]
+// 20.005 across two tile lines; an N+ source/drain in a deep well's P-well with its tap
+// 9.5 away outside the deep well is within reach.
+#[case::df14_h2("comp/DF.14.h2.gds.gz", "TOP", vec!["DF.14_LV"], vec![])]
+// N-well to N+ active at 0.425 / 0.595, and two mixed-voltage pairs at 0.425 that fall
+// between the columns (report, finding 1).  YMTP_MK and SRAMCORE pairs are the cells'.
+#[case::df16_h1("comp/DF.16.h1.gds.gz", "TOP", vec!["DF.16_LV"; 3], vec!["DF.16_MV"])]
+// A 300 µm N-well with Dualgate over its last 12 µm, 0.5 from a 5 V active; a 3.3 V well
+// of the same length 0.425 from a 3.3 V active.
+#[case::df16_h2("comp/DF.16.h2.gds.gz", "TOP", vec!["DF.16_LV"], vec!["DF.16_MV"])]
+// N-well to P+ tap at 0.115 / 0.155, a tap butted against the well's edge (report,
+// finding 11) and two mixed-voltage pairs at 0.115 (report, finding 1).
+#[case::df17_h1("comp/DF.17.h1.gds.gz", "TOP", vec!["DF.17_LV"; 4], vec!["DF.17_MV"])]
+// Deep well to P+ tap at 2.495 and at 2.496 diagonally; 2.5, 2.503 diagonally and a P+
+// source/drain inside an N-well are clean.
+#[case::df18_h1("comp/DF.18.h1.gds.gz", "TOP", vec!["DF.18"; 2], vec![])]
+// Deep well to N+ active at 3.195, 3.199 diagonally and 3.275 at 5 V; an N+ tap inside an
+// N-well 1.0 from the deep well is clean.
+#[case::df19_h1("comp/DF.19.h1.gds.gz", "TOP", vec!["DF.19_LV"; 2], vec!["DF.19_MV"])]
+fn hardening_comp(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("comp", gds, topcell, &[]), want, "{gds}");
+}
