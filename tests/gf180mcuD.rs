@@ -2616,3 +2616,71 @@ fn hardening_density(#[case] gds: &str, #[case] topcell: &str, #[case] expected:
 fn hardening_antenna(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
     assert_eq!(hardening("antenna", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- Dummy COMP (hardening/reports/gf180mcuD/dummy_comp.md).  Section 13.1.  Every
+// `h1` is four probes: the value (clean), a step past it, the same gap corner to corner
+// just under the value, and one step wider (clean) - so two violations.  Every `h2` puts
+// the fill on its partner: abutting, half over, and, where the manual keeps fill out of
+// the layer altogether, wholly inside it.  A shared edge is a space of nothing and an
+// overlap is less than nothing, so both are the rule's own violation.
+#[rstest]
+// Fill to fill at 1.9 / 1.895, and corner to corner at 1.9021 / 1.8950.
+#[case::dcf_2b_h1("dummy_comp/DCF.2b.h1.gds.gz", "TOP", vec!["DCF.2b", "DCF.2b"], vec![])]
+// The same 1.895 gap on the tile lines: a notch open across x = 20, a gap opening on
+// x = 40 whose right-hand square crosses x = 42, a gap opening on y = 20, and a 1.9 gap
+// on x = 42 that must stay clean.
+#[case::dcf_2b_h2("dummy_comp/DCF.2b.h2.gds.gz", "TOP", vec!["DCF.2b", "DCF.2b", "DCF.2b"], vec![])]
+// Fill to circuit COMP at 3.5 / 3.495 / 3.5002 / 3.4931.
+#[case::dcf_4_h1("dummy_comp/DCF.4.h1.gds.gz", "TOP", vec!["DCF.4", "DCF.4"], vec![])]
+// Fill abutting circuit COMP, and fill half over it.  Report finding 1.
+#[case::dcf_4_h2("dummy_comp/DCF.4.h2.gds.gz", "TOP", vec!["DCF.4", "DCF.4"], vec![])]
+#[case::dcf_5_h1("dummy_comp/DCF.5.h1.gds.gz", "TOP", vec!["DCF.5", "DCF.5"], vec![])]
+// Fill abutting circuit Poly2, and fill under it.  Report finding 1.
+#[case::dcf_5_h2("dummy_comp/DCF.5.h2.gds.gz", "TOP", vec!["DCF.5", "DCF.5"], vec![])]
+#[case::dcf_6a_h1("dummy_comp/DCF.6a.h1.gds.gz", "TOP", vec!["DCF.6a", "DCF.6a"], vec![])]
+// Three fills in one N-well: 1.295 inside the boundary, deep inside (clean), and
+// hanging over the far boundary.  The rule names the *boundary*, and DCF.1a calls what
+// it defines a region; a region set by a distance to a boundary is a band that straddles
+// it.  Report finding 2.
+#[case::dcf_6a_h2("dummy_comp/DCF.6a.h2.gds.gz", "TOP", vec!["DCF.6a", "DCF.6a"], vec![])]
+#[case::dcf_6b_h1("dummy_comp/DCF.6b.h1.gds.gz", "TOP", vec!["DCF.6b", "DCF.6b"], vec![])]
+// The same band in a DNWELL, at 3.995.  Report finding 2.
+#[case::dcf_6b_h2("dummy_comp/DCF.6b.h2.gds.gz", "TOP", vec!["DCF.6b", "DCF.6b"], vec![])]
+#[case::dcf_6c_h1("dummy_comp/DCF.6c.h1.gds.gz", "TOP", vec!["DCF.6c", "DCF.6c"], vec![])]
+// The same band in an LVPWELL, at 1.295.  Report finding 2.
+#[case::dcf_6c_h2("dummy_comp/DCF.6c.h2.gds.gz", "TOP", vec!["DCF.6c", "DCF.6c"], vec![])]
+#[case::dcf_6d_h1("dummy_comp/DCF.6d.h1.gds.gz", "TOP", vec!["DCF.6d", "DCF.6d"], vec![])]
+// The same band under a Dualgate, at 1.295.  Report finding 2.
+#[case::dcf_6d_h2("dummy_comp/DCF.6d.h2.gds.gz", "TOP", vec!["DCF.6d", "DCF.6d"], vec![])]
+#[case::dcf_8a_h1("dummy_comp/DCF.8a.h1.gds.gz", "TOP", vec!["DCF.8a", "DCF.8a"], vec![])]
+// Abutting RES_MK, half over it, and wholly under it - "Dummy COMP should not exit
+// under RES_MK".  Report findings 1 and 3.
+#[case::dcf_8a_h2("dummy_comp/DCF.8a.h2.gds.gz", "TOP", vec!["DCF.8a", "DCF.8a", "DCF.8a"], vec![])]
+#[case::dcf_11a_h1("dummy_comp/DCF.11a.h1.gds.gz", "TOP", vec!["DCF.11a", "DCF.11a"], vec![])]
+// The same three against NDMY - "Dummy COMP cannot exit under NDMY".  Findings 1 and 3.
+#[case::dcf_11a_h2("dummy_comp/DCF.11a.h2.gds.gz", "TOP", vec!["DCF.11a", "DCF.11a", "DCF.11a"], vec![])]
+#[case::dcf_12_h1("dummy_comp/DCF.12.h1.gds.gz", "TOP", vec!["DCF.12", "DCF.12"], vec![])]
+// Abutting IND_MK and half over it; fill wholly under IND_MK is DCF.13's own case.
+// Report finding 1.
+#[case::dcf_12_h2("dummy_comp/DCF.12.h2.gds.gz", "TOP", vec!["DCF.12", "DCF.12"], vec![])]
+// A 5 x 5 dummy COMP, half a square, and a square with a bite out of it: DCF.1c fixes
+// the size and DCF.10 says a truncated one shall not exist.  Report finding 5.
+#[case::dcf_10_h1("dummy_comp/DCF.10.h1.gds.gz", "TOP", vec!["DCF.10", "DCF.10"], vec![])]
+// A dummy COMP wholly inside IND_MK: "Dummy COMP should not exist under IND_MK layer".
+// Report finding 4.
+#[case::dcf_13_h1("dummy_comp/DCF.13.h1.gds.gz", "TOP", vec!["DCF.13"], vec![])]
+// Fill 26 µm inside the PR_BNDRY polygon (clean) and 25.995 inside it: DCF.7a's space
+// from dummy COMP in the prime die to the scribe line.  Report finding 6.
+#[case::dcf_7a_h1("dummy_comp/DCF.7a.h1.gds.gz", "TOP", vec!["DCF.7a"], vec![])]
+fn hardening_dummy_comp(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(
+        hardening("dummy_comp", gds, topcell, &ignore),
+        expected,
+        "{gds}"
+    );
+}
