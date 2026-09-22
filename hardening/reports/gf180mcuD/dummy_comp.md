@@ -197,3 +197,31 @@ a square crossing x = 42, and a 1.9 gap on x = 42 that stays clean - at tiles 20
 DCF.8a (3.5), DCF.11a (3.5) and DCF.12 (3.0), each at the value, one step under it, and
 both ways round corner to corner.  A fill 26 µm inside PR_BNDRY.  A 5 x 5 dummy COMP on
 its own.
+
+---
+
+## Resolution (2026-09-22)
+
+Findings 1, 2 and 3 were fixed in the PDK; findings 5 and 6 were withdrawn, and 4 coded.
+
+- **Finding 1.** Every space of the deck carries `params: abutting: report`, and DCF.4
+  and DCF.5 gained a `forbidden` half on the fill that lies over its partner. A shared
+  edge is a space of nothing and an overlap is less than nothing.
+- **Finding 2.** DCF.6a-d read the boundary from both sides: a `min_enclosure`
+  (euclidian, `interacting_only`) holds a fill inside the well the same distance from its
+  edge, and a `forbidden` half reports the fill that crosses it. `DCF.6a.h2` and its three
+  siblings report two each, and the fill deep inside stays clean.
+- **Finding 3.** DCF.8a and DCF.11a carry the prohibition their own text states, as a
+  `forbidden` on the fill overlapping the marker - which covers the fill wholly inside it
+  as well as the one half over it.
+- **Finding 4.** DCF.13 is in the deck now, as the prohibition beside DCF.12's space: a
+  fill *on* IND_MK is DCF.13's, a fill too close to it is DCF.12's, which is why
+  `DCF.12.h2` reports one of each.
+- **Findings 5 and 6 withdrawn.** DCF.10 and DCF.7a are in the manual's own Appendix B.
+  The report read the appendix as naming nothing from section 13; it names DE.1, DCF.2a,
+  DCF.3, DCF.7a-d, DCF.9, DCF.10, DPF.2a, DPF.3, DPF.7, DPF.10, DM.2a, DM.9 and DM.10
+  (`drm_16.txt`), and the asterisk on a rule number in the section's own table is what
+  puts it there - the same convention as PRES.8* in section 10.1. Both layouts stay, with
+  their cases expecting nothing, as the proof that the deck is silent by decision.
+
+The deck header now says which rules of the section it carries and why the rest are out.

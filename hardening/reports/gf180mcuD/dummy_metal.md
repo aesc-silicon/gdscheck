@@ -141,3 +141,27 @@ x = 20, and a 0.98 gap on x = 42 that stays clean - at tiles 20, 7 and 100.  DM<
 2.0 / 1.995 and both corner gaps.  DM<n>.8 at 6.0 / 5.995 and both corner gaps, against
 OTP_MK and against the other five layers of the union.  The five levels running the same
 template on the same geometry.
+
+---
+
+## Resolution (2026-09-22)
+
+- **The shared edge and the overlap** (findings 1 and 2): DM.3 and DM.8 carry
+  `abutting: report`, and each gained a `forbidden` half - for DM.8 that half is the
+  manual's own "There should not be any dummy metal pattern fill in the following areas",
+  which reports a fill wholly inside one of the six marked areas as well as one half over
+  it.
+- **DM.1** (finding 3) is in the deck: `min_width 2.0` and `max_length 2.0` fix the line
+  at 2 µm each way. It reports nothing on the reference design, whose fill is 2 µm square.
+  A shape with a notch in it is longer than that, so the notch probe left the metal
+  patterns - `min_notch` stays under DM.2b for a hand-drawn one - and `DM1.2b.h2`, the
+  tile-line fixture, reports DM.1 for its 6 µm U beside the two spacings it was drawn for.
+- **DM.4, DM.5, DM.6 and DM.7 are left uncoded** (finding 4), with the foundry's own
+  runset. Read as a space to the *circuit* metal of the level above and below, they cannot
+  hold beside section 7.13's 30 % metal density floor - fill that must keep a micron from
+  every wire on two neighbouring levels cannot make the coverage those rules demand. Read
+  as a space to that level's *dummy* metal, they cannot hold beside DM.9, which asks for a
+  0.5 µm offset between the fill patterns of consecutive layers and so has them
+  overlapping by design. Measured either way on the gf180mcuD reference design they report
+  474 000 and 1 055 000 markers respectively. `DM1.4.h1` and `DM1.5.h1` stay, with their
+  cases expecting nothing, and the question is flagged for the gdscheck owner.
