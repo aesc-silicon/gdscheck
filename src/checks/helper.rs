@@ -155,30 +155,43 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             .collect()
     };
 
+    // What each copy's pair is known by: a report is one per pair of regions, and two
+    // tiles seeing different pieces of the same pair name different gaps.  A region the
+    // kinship index files has its id; a shape whole inside some core - the same copy
+    // wherever it is seen - is known by a point of it.  Found once per copy: found per
+    // pair, before the boxes had said whether the pair is near at all, it was a
+    // representative point per pair of contacts in reach, ten times Cnt.b's time on a
+    // million contacts.
+    let key_of = |id: Option<usize>, m: &MergedPoly| match id {
+        Some(id) => RegionKey::Id(id),
+        None => {
+            let (x, y) = representative_point(m);
+            RegionKey::At(x.round() as i64, y.round() as i64)
+        }
+    };
+    let ka_all: Vec<RegionKey> = sa
+        .iter()
+        .zip(&ra)
+        .map(|(s, &id)| key_of(id, s.outline.poly()))
+        .collect();
+    let kb_all: Vec<RegionKey> = if same_layer {
+        Vec::new()
+    } else {
+        sb.iter()
+            .zip(&rb)
+            .map(|(s, &id)| key_of(id, s.outline.poly()))
+            .collect()
+    };
     let mut out = Vec::new();
     for (i, a) in sa.iter().enumerate() {
         for (j, b) in bs.iter().enumerate() {
             if same_layer && j <= i {
                 continue;
             }
+            if !a.outline.possibly_within(&b.outline, limit.dbu()) {
+                continue;
+            }
             let (ia, ib) = (ra[i], if same_layer { ra[j] } else { rb[j] });
-            // The pair's regions: a report is one per pair, and two tiles seeing
-            // different pieces of the same pair name different gaps.  A region the
-            // kinship index files has its id; a shape whole inside some core - the same
-            // copy wherever it is seen - is known by a point of it.
-            let key_of = |id: Option<usize>, m: &MergedPoly| match id {
-                Some(id) => RegionKey::Id(id),
-                None => {
-                    let (x, y) = representative_point(m);
-                    RegionKey::At(x.round() as i64, y.round() as i64)
-                }
-            };
-            let (ka, kb) = (key_of(ia, a.outline.poly()), key_of(ib, b.outline.poly()));
-            let pair = if same_layer {
-                (ka.min(kb), ka.max(kb))
-            } else {
-                (ka, kb)
-            };
             if let (Some(ia), Some(ib)) = (ia, ib) {
                 if same_layer && ia == ib {
                     continue;
@@ -187,9 +200,12 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                     continue;
                 }
             }
-            if !a.outline.possibly_within(&b.outline, limit.dbu()) {
-                continue;
-            }
+            let (ka, kb) = (ka_all[i], if same_layer { ka_all[j] } else { kb_all[j] });
+            let pair = if same_layer {
+                (ka.min(kb), ka.max(kb))
+            } else {
+                (ka, kb)
+            };
             // Two regions of one layer share no area: the merge made them one if they
             // did.  Asking anyway cast every vertex of each against the other's walls,
             // and was most of a same-layer spacing rule.

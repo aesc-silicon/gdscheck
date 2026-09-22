@@ -392,17 +392,21 @@ pub fn run(
         })
     };
 
-    let mut out = Vec::new();
-    for stack in stacks.values() {
+    // The stacks are read side by side: a million contacts are a few hundred thousand
+    // of them, and one core walking them was seven seconds a rule.
+    let stacks: Vec<Vec<usize>> = stacks.into_values().collect();
+    let out: Vec<Violation> = stacks
+        .par_iter()
+        .filter_map(|stack| {
         if stack.len() <= rows_thr {
-            continue;
+            return None;
         }
         let members: Vec<usize> = stack
             .iter()
             .flat_map(|&r| runs[r].members.iter().copied())
             .collect();
         if members.len() < min_count {
-            continue;
+            return None;
         }
         let pair = if axes >= 2 {
             tight_pair_in(stack, &members, None)
@@ -414,11 +418,11 @@ pub fn run(
                 tight_pair_in(stack, &members, Some(false)),
             ) {
                 (Some(_), Some(_)) => None,
-                _ => continue,
+                _ => return None,
             }
         };
         if axes >= 2 && pair.is_none() {
-            continue;
+            return None;
         }
         let (mut bx0, mut by0, mut bx1, mut by1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
         for &i in &members {
@@ -428,7 +432,7 @@ pub fn run(
             by1 = by1.max(vias[i].y1);
         }
         if (bx1 - bx0).min(by1 - by0) < min_extent {
-            continue;
+            return None;
         }
         let min_cols = stack
             .iter()
@@ -471,7 +475,7 @@ pub fn run(
                     (x, um(b.y1), x, um(a.y0), um(a.y0 - b.y1))
                 }
             };
-            out.push(Violation::edge(
+            Some(Violation::edge(
                 rule.id.as_str(),
                 "Via array spacing violation",
                 format!(
@@ -481,17 +485,18 @@ pub fn run(
                 y1,
                 x2,
                 y2,
-            ));
+            ))
         } else {
-            out.push(Violation::point(
+            Some(Violation::point(
                 rule.id.as_str(),
                 "Via array spacing violation",
                 format!("{what} below {value_um:.2} µm at ({cx:.4}, {cy:.4}) µm"),
                 cx,
                 cy,
-            ));
+            ))
         }
-    }
+        })
+        .collect();
     out
 }
 
