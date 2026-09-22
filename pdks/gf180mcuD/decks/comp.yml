@@ -92,11 +92,11 @@ rules:
       metric: euclidian
   - id: DF.4c_LV
     check: min_enclosure
-    layers: [nw_ndn_sram_3p3v, df4c_pcomp3p3v]
+    layers: [nw_ndn_3p3v, df4c_pcomp3p3v]
     value: 0.43
   - id: DF.4c_MV
     check: min_enclosure
-    layers: [nwell_n_dn_no_sram, df4c_pcomp56v]
+    layers: [nw_ndn_56v, df4c_pcomp56v]
     value: 0.6
   - id: DF.4d_LV
     check: min_enclosure

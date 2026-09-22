@@ -17,7 +17,7 @@ rules:
     value: 0.0
   - id: S.DF.4c_MV
     check: min_enclosure
-    layers: [nw_n_dn_sram_mv, pcomp_out_dn_sram_mv]
+    layers: [nwell_n_dn, pcomp_out_dn_sram_mv]
     value: 0.45
     params:
       interacting_only: 1
@@ -37,6 +37,8 @@ rules:
     check: min_space
     layers: [pcomp_dn_sram_mv, lvpwell_dn_sram_mv]
     value: 0.45
+    params:
+      abutting: report
   - id: S.DF.8_MV
     check: min_enclosure
     layers: [lvpwell_dn_sram_mv, ncomp_dn_sram]
@@ -50,15 +52,26 @@ rules:
     value: 0.0
   - id: S.DF.16_MV
     check: min_space
-    layers: [ncomp_out_nw_dn_sram_mv, nw_n_dn_sram_mv]
+    layers: [ncomp_out_nw_dn_sram_mv, nwell_n_dn]
     value: 0.45
+    params:
+      abutting: report
+  # 11.1 gives its two poly rules one value between them - field poly to unrelated COMP
+  # and field poly to related COMP are both 0.12 - so no gap under it may escape, and
+  # each gap carries both ids, as chapter 7's PL.5a_MV and PL.5b_MV do at 0.3.  Read on
+  # the poly that gates no active, a gate over one active passing 0.115 from a second
+  # fell between the two (report, sram_5p0 finding 2).
   - id: S.PL.5a_MV
     check: min_space
-    layers: [poly_sram_field, comp_sram_mv]
+    layers: [poly_sram_mv, comp_sram_mv]
     value: 0.12
+    params:
+      pairs: any
+      abutting: report
   - id: S.PL.5b_MV
     check: min_space
     layers: [poly_sram_mv, comp_sram_mv]
     value: 0.12
     params:
-      pairs: overlapping
+      pairs: any
+      abutting: report

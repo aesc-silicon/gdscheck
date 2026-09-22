@@ -165,11 +165,11 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::sram_3p3(
     "sram_3p3", "sram_3p3.gds.gz", "sram_3p3",
-    &[("S.CO.3_LV", 7), ("S.CO.4_LV", 7), ("S.CO.6_ii_LV", 8), ("S.DF.16_LV", 6), ("S.DF.4c_LV", 7), ("S.M1.1_LV", 32)]
+    &[("S.CO.3_LV", 9), ("S.CO.4_LV", 9), ("S.CO.6_ii_LV", 8), ("S.DF.16_LV", 7), ("S.DF.4c_LV", 9), ("S.M1.1_LV", 32)]
 )]
 #[case::drc_bjt(
     "drc_bjt", "drc_bjt.gds.gz", "DRC_BJT",
-    &[("BJT.1", 1), ("BJT.2", 2), ("BJT.3", 3)]
+    &[("BJT.1", 1), ("BJT.2", 3), ("BJT.3", 3)]
 )]
 #[case::nwell(
     "nwell", "nwell.gds.gz", "7_4_NWELL",
@@ -205,7 +205,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::sram_5p0(
     "sram_5p0", "sram_5p0.gds.gz", "sram_5p0",
-    &[("S.CO.4_MV", 9), ("S.DF.16_MV", 6), ("S.DF.4c_MV", 9), ("S.DF.6_MV", 16), ("S.DF.7_MV", 6), ("S.DF.8_MV", 9), ("S.PL.5a_MV", 6), ("S.PL.5b_MV", 4)]
+    &[("S.CO.4_MV", 9), ("S.DF.16_MV", 7), ("S.DF.4c_MV", 9), ("S.DF.6_MV", 16), ("S.DF.7_MV", 7), ("S.DF.8_MV", 9), ("S.PL.5a_MV", 10), ("S.PL.5b_MV", 10)]
 )]
 #[case::lres(
     "lres", "lres.gds.gz", "10_2_LRES",
@@ -1884,11 +1884,14 @@ fn hardening_esd(
 // level and read the drawn datatype alone; `min_width` reports one marker per wall, a
 // space or a notch one per pair.
 #[rstest]
-// Six 0.225 bars, each in a different relation to SRAMCORE and the markers that decide
-// whether the core is the 3.3 V kind: bare, in a bare core (exempt), in a core Dualgate
-// covers, in one Dualgate only abuts (exempt), in one under V5_XTOR alone (exempt), in
-// one Dualgate covers half of.
-#[case::m1_1_h1("metal/M1.1.h1.gds.gz", "TOP", vec!["M1.1"; 6], vec![])]
+// Six 0.225 bars, each in a different relation to SRAMCORE and the marker that decides
+// whether the core is the 3.3 V kind: bare, in a bare core, in a core Dualgate covers,
+// in one Dualgate only abuts, in one under V5_XTOR alone, in one Dualgate covers half
+// of.  Section 11.2 is for "3.3V SRAM cells without marking layer V5_XTOR" and gives
+// them M1.1 = 0.22, so every core but the V5_XTOR one is its cell and 0.225 clears it;
+// the V5_XTOR core is 11.1's, which has no M1.1, so chapter 7's 0.23 is its own.  Two
+// bars fire, one marker per wall.
+#[case::m1_1_h1("metal/M1.1.h1.gds.gz", "TOP", vec!["M1.1"; 4], vec![])]
 // A 0.225 bar half inside a bare core - the half outside is still 0.225 wide - and one
 // the core abuts without covering.
 #[case::m1_1_h2("metal/M1.1.h2.gds.gz", "TOP", vec!["M1.1"; 4], vec![])]
@@ -2915,11 +2918,14 @@ fn hardening_sram_3p3(
 // 0.4384, and an active whose wall lies on the well's.  Report finding 1.
 #[case::s_df_16_mv_h1("sram_5p0/S.DF.16_MV.h1.gds.gz", "TOP", vec!["S.DF.16_MV"; 3], vec![])]
 // Field poly to an active at 0.12 (clean), 0.115, corner to corner at 0.1216 (clean) and
-// 0.1131, a corner touch, and a wall lying on the active's.  Report finding 1.
-#[case::s_pl_5a_mv_h1("sram_5p0/S.PL.5a_MV.h1.gds.gz", "TOP", vec!["S.PL.5a_MV"; 4], vec![])]
+// 0.1131, a corner touch, and a wall lying on the active's.  Report finding 1, and
+// finding 2 beside it: 11.1's two poly rules carry one value between them, so each gap
+// is both of them, as chapter 7's PL.5a_MV and PL.5b_MV are at 0.3.
+#[case::s_pl_5a_mv_h1("sram_5p0/S.PL.5a_MV.h1.gds.gz", "TOP", vec!["S.PL.5a_MV"; 4].into_iter().chain(vec!["S.PL.5b_MV"; 4]).collect::<Vec<_>>(), vec![])]
 // A gate whose field stretch runs into its own active's slot at 0.115 (fires) and 0.12
-// (clean), and a gate over one active passing 0.115 from a second.  Report finding 2.
-#[case::s_pl_5b_mv_h1("sram_5p0/S.PL.5b_MV.h1.gds.gz", "TOP", vec!["S.PL.5b_MV"; 2], vec![])]
+// (clean), and a gate over one active passing 0.115 from a second.  Report finding 2 -
+// and both ids on each gap, as on `s_pl_5a_mv_h1`.
+#[case::s_pl_5b_mv_h1("sram_5p0/S.PL.5b_MV.h1.gds.gz", "TOP", vec!["S.PL.5a_MV", "S.PL.5a_MV", "S.PL.5b_MV", "S.PL.5b_MV"], vec![])]
 // The same 0.035 contact margin in a core wholly under V5_XTOR, one half under it, one
 // V5_XTOR abuts, a bare core, and no core at all.
 #[case::s_co_4_mv_h3("sram_5p0/S.CO.4_MV.h3.gds.gz", "TOP", vec!["S.CO.4_MV"; 2], vec![])]
@@ -2945,9 +2951,10 @@ fn hardening_sram_5p0(
 // Five 3.3 V-class cores: the two that carry V5_XTOR have no S.CO.3_MV to answer to, so
 // chapter 7's CO.3 of 0.07 is theirs and 0.035 fires.
 #[case::s_co_3_lv_h4_base("sram_3p3/S.CO.3_LV.h4.gds.gz", "TOP", vec!["CO.3"; 2], vec![])]
-// Five 5 V-class cores: the core V5_XTOR only abuts, the bare core and the contact with
-// no core at all are none of section 11.1's, so CO.4's 0.07 is theirs.
-#[case::s_co_4_mv_h3_base("sram_5p0/S.CO.4_MV.h3.gds.gz", "TOP", vec!["CO.4"; 3], vec!["CO.6"])]
+// Five 5 V-class cores.  CO.4 is the one rule section 11 replaces on both sides - 11.1
+// for the cells V5_XTOR marks, 11.2 for the cells it does not - so every core has a
+// CO.4 of its own and only the contact with no core at all owes chapter 7's 0.07.
+#[case::s_co_4_mv_h3_base("sram_5p0/S.CO.4_MV.h3.gds.gz", "TOP", vec!["CO.4"], vec!["CO.6"])]
 fn hardening_sram_base(
     #[case] gds: &str,
     #[case] topcell: &str,

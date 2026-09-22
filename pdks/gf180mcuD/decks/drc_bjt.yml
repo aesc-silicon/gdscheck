@@ -16,3 +16,5 @@ rules:
     check: min_space
     layers: [comp_outside_bjt, drc_bjt]
     value: 0.1
+    params:
+      abutting: report
