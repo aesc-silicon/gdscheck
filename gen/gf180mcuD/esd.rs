@@ -315,4 +315,361 @@ pub fn generate(pdk: &PdkConfig) {
         cell.gate = 0.795;
         cell.draw(&c)
     });
+
+    hardening(pdk);
+}
+
+// Hardening patterns (hardening/SPEC.md, the GF180MCU section): layouts drawn from the
+// manual's section 7.11 by someone who has not seen the engine.  Each is a
+// `tests/data/gf180mcuD/generated/esd/ESD.<rule>.h<n>.gds.gz` with a case in the
+// `hardening_esd` table of `tests/gf180mcuD.rs`; the findings are in
+// hardening/reports/gf180mcuD/esd.md.
+//
+// What these draw is the deck's own conditions - the implant's enclosure of the N+
+// active it protects, the butted P+ active the section allows against it, the gate poly
+// the extension is measured from, the Dualgate the implant may only live under and the
+// LVS_IO that has to cover the active - at the bound and one step past it.  The generic
+// classes (the bound on a bare layer, 45 degrees, unions, arrays) are the engine
+// family's.
+
+/// Layers the hardening patterns draw on.
+struct H {
+    esd: (i16, i16),
+    comp: (i16, i16),
+    nplus: (i16, i16),
+    pplus: (i16, i16),
+    poly: (i16, i16),
+    dg: (i16, i16),
+    lvsio: (i16, i16),
+    res: (i16, i16),
+}
+
+/// How the base cell is put together: a 6 x 3 N+ active at `(x, y)` with a poly gate
+/// across it, the ESD implant reaching `m` past the active on every side, and LVS_IO
+/// over the active.  The implant is flush with the active so that ncomp is the active
+/// itself and nothing of the implant leaves the marker.
+struct C {
+    x: f64,
+    y: f64,
+    /// The marker's reach past the active.
+    m: f64,
+    /// Gate length and where its left edge sits.
+    gate: f64,
+    gate_x: f64,
+    /// Whether LVS_IO is drawn, and how far it reaches over the active.
+    io: Option<f64>,
+}
+
+impl C {
+    fn at(x: f64, y: f64) -> Self {
+        C {
+            x,
+            y,
+            m: 0.8,
+            gate: 1.0,
+            gate_x: 2.5,
+            io: Some(6.0),
+        }
+    }
+
+    /// The marker's box.
+    fn esd_box(&self) -> (f64, f64, f64, f64) {
+        (
+            self.x - self.m,
+            self.y - self.m,
+            self.x + 6.0 + self.m,
+            self.y + 3.0 + self.m,
+        )
+    }
+
+    fn draw(&self, h: &H) -> Vec<GdsElement> {
+        let (x, y) = (self.x, self.y);
+        let (ex0, ey0, ex1, ey1) = self.esd_box();
+        let gx = x + self.gate_x;
+        let mut v = vec![
+            rect(h.comp, x, y, x + 6.0, y + 3.0),
+            rect(h.nplus, x, y, x + 6.0, y + 3.0),
+            rect(h.esd, ex0, ey0, ex1, ey1),
+            rect(h.poly, gx, y - 0.6, gx + self.gate, y + 3.6),
+        ];
+        if let Some(w) = self.io {
+            v.push(rect(h.lvsio, x - 0.2, y - 0.2, x + w + 0.2, y + 3.2));
+        }
+        v
+    }
+}
+
+/// Dualgate over everything the fixture draws: the marker must lie on it (ESD.9) and the
+/// gate poly must be a 5 V one (ESD.pl).
+fn dualgate(h: &H, x0: f64, y0: f64, x1: f64, y1: f64) -> GdsElement {
+    rect(h.dg, x0, y0, x1, y1)
+}
+
+fn hwrite(name: &str, elems: Vec<GdsElement>) {
+    write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
+}
+
+fn hardening(pdk: &PdkConfig) {
+    let h = H {
+        esd: layer(pdk, "esd"),
+        comp: layer(pdk, "comp"),
+        nplus: layer(pdk, "nplus"),
+        pplus: layer(pdk, "pplus"),
+        poly: layer(pdk, "poly2_drawn"),
+        dg: layer(pdk, "dualgate"),
+        lvsio: layer(pdk, "lvs_io"),
+        res: layer(pdk, "res_mk"),
+    };
+    esd_3a_h(&h);
+    esd_3b_h(&h);
+    esd_4a_h(&h);
+    esd_6_h(&h);
+    esd_8_h(&h);
+    esd_9_h(&h);
+    esd_10_h(&h);
+    esd_pl_h(&h);
+}
+
+// --- ESD.3a: minimum space to NCOMP 0.6 ---
+
+fn esd_3a_h(h: &H) {
+    // h1 - the active the implant does not protect.  Four ESD devices, each with a bare
+    // N+ active off its right: (a) 0.595 from the marker, one step under the 0.6: ESD.3a;
+    // (b) 0.6: clean; (c) butted against the marker's edge, a space of nothing - ESD.3a,
+    // and ESD.8 with it, the 0.3 to an implant being the stricter of the two; (d) an N+
+    // active crossing the marker's right edge, half in and half out, which is an active
+    // the implant lies on rather than one it stands off.
+    let ncomp = |x: f64, y: f64, w: f64| {
+        vec![
+            rect(h.comp, x, y, x + w, y + 2.0),
+            rect(h.nplus, x, y, x + w, y + 2.0),
+        ]
+    };
+    let mut v = C::at(2.0, 2.0).draw(h); // (a) esd right edge 8.8
+    v.extend(ncomp(9.395, 2.0, 1.6));
+    v.extend(C::at(16.0, 2.0).draw(h)); // (b) esd right edge 22.8
+    v.extend(ncomp(23.4, 2.0, 1.6));
+    v.extend(C::at(2.0, 10.0).draw(h)); // (c) esd right edge 8.8
+    v.extend(ncomp(8.8, 10.0, 2.0));
+    let mut d = C::at(16.0, 10.0); // (d) esd right edge 22.8
+    d.io = Some(9.0); // LVS_IO over the crossing active too, or ESD.10 speaks as well
+    v.extend(d.draw(h));
+    v.extend(ncomp(22.0, 10.0, 3.0));
+    v.push(dualgate(h, 0.0, 0.0, 27.0, 16.0));
+    hwrite("ESD.3a.h1", v);
+}
+
+// --- ESD.3b / ESD.7: the butted P+ active ---
+
+fn esd_3b_h(h: &H) {
+    // h1 - what "min/max space to a butted PCOMP = 0" allows.  (a) a P+ active butted
+    // against the marker's right edge: the space is exactly the 0 the rule asks for, so
+    // the butted active is the legal drawing and neither ESD.3b nor ESD.7 - "no ESD
+    // implant inside PCOMP" - has anything to say about it.  ESD.8's 0.3 to an implant
+    // does, which is the section stating two things about one edge.  (b) the same active
+    // moved 0.005 under the marker: the implant is now inside a P+ active, ESD.3b and
+    // ESD.7.  (c) the same active 0.005 clear of the marker: a space that is neither 0
+    // nor anything the rule names.
+    let pcomp = |x: f64, y: f64| {
+        vec![
+            rect(h.comp, x, y, x + 2.0, y + 2.0),
+            rect(h.pplus, x, y, x + 2.0, y + 2.0),
+        ]
+    };
+    let mut v = C::at(2.0, 2.0).draw(h); // (a) butted at 8.8
+    v.extend(pcomp(8.8, 2.0));
+    v.extend(C::at(16.0, 2.0).draw(h)); // (b) 0.005 under the marker's edge 22.8
+    v.extend(pcomp(22.795, 2.0));
+    v.extend(C::at(2.0, 10.0).draw(h)); // (c) 0.005 clear of 8.8
+    v.extend(pcomp(8.805, 10.0));
+    v.push(dualgate(h, 0.0, 0.0, 26.0, 16.0));
+    hwrite("ESD.3b.h1", v);
+}
+
+// --- ESD.4a: extension beyond NCOMP 0.24 ---
+
+fn esd_4a_h(h: &H) {
+    // h1 - the edge a butted P+ active lets off.  Both devices have the marker 0.8 past
+    // the active on three sides and 0.235 past it on the right, one step under the 0.24.
+    // (a) nothing beside it: ESD.4a on that wall.  (b) a P+ active butted against that
+    // same right edge - the edge the implant shares with a P+ active is the one ESD.3b
+    // sets to zero space, and an extension is not asked of it, so the wall is clean.
+    // ESD.8 speaks for the butted implant in (b), as it does in ESD.3b.h1.
+    let narrow = |x: f64, y: f64| {
+        let mut c = C::at(x, y);
+        c.m = 0.8;
+        let mut v = c.draw(h);
+        // redraw the marker with a 0.235 right margin
+        v.retain(|e| !matches!(e, GdsElement::GdsBoundary(b) if (b.layer, b.datatype) == h.esd));
+        v.push(rect(h.esd, x - 0.8, y - 0.8, x + 6.235, y + 3.8));
+        v
+    };
+    let mut v = narrow(2.0, 2.0); // (a) ESD.4a
+    v.extend(narrow(16.0, 2.0)); // (b) the butted P+ active at 22.235
+    v.push(rect(h.comp, 22.235, 2.0, 24.235, 4.0));
+    v.push(rect(h.pplus, 22.235, 2.0, 24.235, 4.0));
+    v.push(dualgate(h, 0.0, 0.0, 26.0, 8.0));
+    hwrite("ESD.4a.h1", v);
+}
+
+// --- ESD.6: extension perpendicular to the Poly2 gate 0.45 ---
+
+fn esd_6_h(h: &H) {
+    // h1 - which poly the extension is measured from.  Four devices, each with a second
+    // poly at the active's right end so that its right wall sits on the active's right
+    // edge, and the marker reaching `d` past that wall: (a) the second poly lifted off
+    // the active into the marker's top margin, so it touches no active and is not a gate
+    // - clean at d = 0.445; (b) the second poly crossing the active under RES_MK, which
+    // takes it out of the transistor layer - clean at 0.445; (c) the second poly
+    // crossing the active bare, a gate: ESD.6 at 0.445; (d) the same gate at 0.45: clean
+    // at the bound.  Every device's own gate stands 2.945 or more from the marker.
+    let cell = |x: f64, kind: u8| {
+        let d = if kind == 3 { 0.45 } else { 0.445 };
+        let mut v = vec![
+            rect(h.comp, x, 2.0, x + 6.0, 5.0),
+            rect(h.nplus, x, 2.0, x + 6.0, 5.0),
+            rect(h.esd, x - 0.8, 1.2, x + 6.0 + d, 5.8),
+            rect(h.poly, x + 2.5, 1.4, x + 3.5, 5.6), // the device's own gate
+            rect(h.lvsio, x - 0.2, 1.8, x + 6.2, 5.2),
+        ];
+        match kind {
+            // in the marker's top margin, clear of the active: not a gate
+            0 => v.push(rect(h.poly, x + 5.5, 5.05, x + 6.0, 5.35)),
+            // across the active's end under RES_MK: not a transistor
+            1 => {
+                v.push(rect(h.poly, x + 5.0, 1.4, x + 6.0, 5.6));
+                v.push(rect(h.res, x + 4.8, 1.2, x + 6.2, 5.8));
+            }
+            // across the active's end, bare: a gate
+            _ => v.push(rect(h.poly, x + 5.0, 1.4, x + 6.0, 5.6)),
+        }
+        v
+    };
+    let mut v = cell(2.0, 0); // (a) clean
+    v.extend(cell(14.0, 1)); // (b) clean
+    v.extend(cell(26.0, 2)); // (c) ESD.6
+    v.extend(cell(38.0, 3)); // (d) clean
+    v.push(dualgate(h, 0.0, 0.0, 47.0, 8.0));
+    hwrite("ESD.6.h1", v);
+
+    // h2 - the step in the marker.  The gate sits at the active's right end and stops on
+    // the active's top edge; the marker's right side steps back from 6.85 to 6.2 above
+    // it.  The step's inner corner stands 0.2 in x and 0.05 in y from the gate's upper
+    // right corner, so the marker's boundary comes within 0.206 of the gate while no two
+    // walls face each other across the step.  The manual asks 0.45 of extension from the
+    // gate and this corner gives 0.206, wherever one stands.
+    let x = 2.0;
+    hwrite(
+        "ESD.6.h2",
+        vec![
+            rect(h.comp, x, 2.0, x + 6.0, 5.0),
+            rect(h.nplus, x, 2.0, x + 6.0, 5.0),
+            // the marker as an L: the full box up to y = 5.05, then only to x + 6.2
+            rect(h.esd, x - 0.8, 1.2, x + 6.85, 5.05),
+            rect(h.esd, x - 0.8, 5.05, x + 6.2, 5.8),
+            rect(h.poly, x + 2.5, 1.4, x + 3.5, 5.6), // the device's own gate
+            rect(h.poly, x + 5.0, 1.4, x + 6.0, 5.0), // the gate at the active's end
+            rect(h.lvsio, x - 0.2, 1.8, x + 6.2, 5.2),
+            dualgate(h, 0.0, 0.0, 10.0, 7.0),
+        ],
+    );
+}
+
+// --- ESD.8: minimum space to Nplus/Pplus 0.3 ---
+
+fn esd_8_h(h: &H) {
+    // h1 - the implant the marker is on, and the one beside it.  (a) the device's own N+
+    // drawn 0.1 inside the marker's edge: an implant the marker covers is not an implant
+    // it stands off, clean.  (b) an unrelated P+ 0.295 from the marker: ESD.8.  (c) the
+    // same at 0.3: clean.  (d) an unrelated N+ crossing the marker's right edge.
+    let mut c = C::at(2.0, 2.0); // (a) marker 0.8 past the active
+    let mut v = c.draw(h);
+    v.push(rect(h.nplus, 1.3, 1.3, 8.7, 5.7)); // 0.1 inside the marker
+    c = C::at(16.0, 2.0);
+    v.extend(c.draw(h)); // (b) esd right edge 22.8
+    v.push(rect(h.pplus, 23.095, 2.0, 25.0, 4.0));
+    c = C::at(2.0, 10.0);
+    v.extend(c.draw(h)); // (c) esd right edge 8.8
+    v.push(rect(h.pplus, 9.1, 10.0, 11.0, 12.0));
+    c = C::at(16.0, 10.0);
+    v.extend(c.draw(h)); // (d) crossing 22.8
+    v.push(rect(h.nplus, 22.0, 10.0, 25.0, 12.0));
+    v.push(dualgate(h, 0.0, 0.0, 27.0, 16.0));
+    hwrite("ESD.8.h1", v);
+}
+
+// --- ESD.9: the implant must be overlapped by Dualgate ---
+
+fn esd_9_h(h: &H) {
+    // h1 - how much Dualgate is enough.  (a) Dualgate over the whole marker: clean.
+    // (b) Dualgate over the marker's left half - the manual says the implant "must be
+    // overlapped by Dualgate", the implant option existing only for the 5 V devices, and
+    // the right half of this one is a 3.3 V implant; both decks are content with any
+    // overlap at all.  (c) Dualgate abutting the marker's left edge and over none of it:
+    // ESD.9.  The gate in (c) is not a 5 V gate, so ESD.pl has nothing to measure.
+    let mut v = C::at(2.0, 2.0).draw(h); // (a) esd 1.2..8.8, 1.2..5.8
+    v.push(dualgate(h, 0.7, 0.7, 9.3, 6.3));
+    v.extend(C::at(16.0, 2.0).draw(h)); // (b) esd 15.2..22.8
+    v.push(dualgate(h, 14.7, 0.7, 19.0, 6.3));
+    v.extend(C::at(2.0, 10.0).draw(h)); // (c) esd 1.2..8.8, 9.2..13.8
+    v.push(dualgate(h, 8.8, 8.7, 12.0, 14.3));
+    hwrite("ESD.9.h1", v);
+}
+
+// --- ESD.10: LVS_IO shall cover the I/O MOS active area ---
+
+fn esd_10_h(h: &H) {
+    // h1 - the marker that has to cover what it touches.  (a) no LVS_IO at all: the rule
+    // is about a marker that covers part of an ESD active, not about its absence, clean.
+    // (b) LVS_IO over the active's left half: the uncovered half is ESD.10.  (c) LVS_IO
+    // abutting the active's right edge and over none of it: nothing of the active is
+    // left uncovered by a marker that covers nothing, clean.  (d) LVS_IO over the whole
+    // active: clean.
+    let mut c = C::at(2.0, 2.0);
+    c.io = None;
+    let mut v = c.draw(h); // (a)
+    c = C::at(16.0, 2.0);
+    c.io = Some(3.0);
+    v.extend(c.draw(h)); // (b) ESD.10
+    c = C::at(2.0, 10.0);
+    c.io = None;
+    v.extend(c.draw(h)); // (c)
+    v.push(rect(h.lvsio, 8.0, 10.0, 10.0, 13.0)); // abutting the active's right edge
+    c = C::at(16.0, 10.0);
+    v.extend(c.draw(h)); // (d) clean
+    v.push(dualgate(h, 0.0, 0.0, 26.0, 16.0));
+    hwrite("ESD.10.h1", v);
+}
+
+// --- ESD.pl: minimum gate length of a 5 V/6 V NMOS 0.8 ---
+
+fn esd_pl_h(h: &H) {
+    // h1 - which gate the rule reaches.  Four 0.795 gates, one step under the 0.8:
+    // (a) on an ESD device, under Dualgate: ESD.pl.  (b) on a transistor 2 um clear of
+    // the marker: the rule is stated of the 5 V NMOS the implant is on, clean.  (c) on a
+    // transistor whose poly touches the marker's edge: the implant reaches it, ESD.pl.
+    // (d) on an ESD device with no Dualgate over it: not a 5 V gate, so ESD.pl is
+    // silent, and the marker off Dualgate is ESD.9.
+    let mut c = C::at(2.0, 2.0);
+    c.gate = 0.795;
+    let mut v = c.draw(h); // (a) ESD.pl
+    v.push(dualgate(h, 0.7, 0.7, 9.3, 6.3));
+    // (b) a bare transistor 2 um right of a clean ESD device
+    v.extend(C::at(16.0, 2.0).draw(h)); // esd 15.2..22.8
+    v.push(rect(h.comp, 24.8, 2.0, 30.8, 5.0));
+    v.push(rect(h.nplus, 24.8, 2.0, 30.8, 5.0));
+    v.push(rect(h.poly, 27.0, 1.4, 27.795, 5.6));
+    v.push(dualgate(h, 14.7, 0.7, 31.5, 6.3));
+    // (c) the gate's poly touching the marker's right edge at x = 14.6
+    v.push(rect(h.comp, 12.0, 10.0, 18.0, 13.0));
+    v.push(rect(h.nplus, 12.0, 10.0, 18.0, 13.0));
+    v.push(rect(h.esd, 8.0, 9.0, 14.6, 14.0));
+    v.push(rect(h.poly, 14.6, 9.4, 15.395, 13.6));
+    v.push(rect(h.lvsio, 11.8, 9.8, 18.2, 13.2));
+    v.push(dualgate(h, 7.5, 8.5, 18.5, 14.5));
+    // (d) an ESD device with no Dualgate: ESD.9, and no ESD.pl
+    let mut d = C::at(24.0, 10.0);
+    d.gate = 0.795;
+    v.extend(d.draw(h));
+    hwrite("ESD.pl.h1", v);
 }

@@ -1769,3 +1769,57 @@ fn hardening_pplus(
 
     assert_eq!(hardening("sab", gds, topcell, &[]), want, "{gds}");
 }
+
+// --- ESD implant (hardening/reports/gf180mcuD/esd.md).  The implant is a 5 V/6 V option:
+// it lives on Dualgate, encloses the N+ active it protects, butts against a P+ one and
+// never lies on it.  `min_gate_length` reports one marker per wall.
+#[rstest]
+// An unrelated N+ active 0.595 from the implant (fires), 0.6 (clean), butted against it
+// (a space of nothing, report, finding 1) and crossing its edge (an active the implant
+// lies on, not one it stands off).
+#[case::esd_3a_h1("esd/ESD.3a.h1.gds.gz", "TOP", vec!["ESD.3a"; 2], vec![])]
+// A P+ active butted against the implant (the zero space ESD.3b asks for, clean), one
+// 0.005 under it (ESD.3b, ESD.7, and ESD.4b for an overlap of 0.005) and one 0.005 clear
+// of it (ESD.8).
+#[case::esd_3b_h1("esd/ESD.3b.h1.gds.gz", "TOP", vec!["ESD.3b", "ESD.7"], vec!["ESD.4b", "ESD.8"])]
+// The implant 0.235 past the N+ active's right edge (fires), and the same wall shared
+// with a butted P+ active, which is the edge ESD.3b sets to zero space and owes no
+// extension (clean).
+#[case::esd_4a_h1("esd/ESD.4a.h1.gds.gz", "TOP", vec!["ESD.4a"], vec![])]
+// A second poly 0.445 from the implant's edge: lifted off the active (not a gate, clean),
+// across the active under RES_MK (not a transistor, clean), across it bare (fires) and
+// bare at 0.45 (clean).
+#[case::esd_6_h1("esd/ESD.6.h1.gds.gz", "TOP", vec!["ESD.6"], vec![])]
+// A step in the implant's right side whose inner corner stands 0.206 from the gate's and
+// the N+ active's shared upper right corner, with no two walls facing across it: the
+// extension is under both values there, and gdscheck reads neither (report, finding 3).
+#[case::esd_6_h2("esd/ESD.6.h2.gds.gz", "TOP", vec!["ESD.4a"], vec!["ESD.6"])]
+// The device's own N+ 0.1 inside the implant (contained, clean), an unrelated P+ 0.295
+// outside it (fires), one at 0.3 and one crossing its edge.
+#[case::esd_8_h1("esd/ESD.8.h1.gds.gz", "TOP", vec!["ESD.8"], vec![])]
+// Dualgate over the whole implant (clean), over its left half (a 3.3 V half of a 5 V
+// implant, which the manual forbids and both decks allow - report, finding 2) and
+// abutting it (fires).
+#[case::esd_9_h1("esd/ESD.9.h1.gds.gz", "TOP", vec!["ESD.9"; 2], vec![])]
+// LVS_IO absent (clean - the rule is about a marker that covers part of an ESD active),
+// over the active's left half (fires), abutting its edge (covering nothing, clean) and
+// over the whole active.
+#[case::esd_10_h1("esd/ESD.10.h1.gds.gz", "TOP", vec!["ESD.10"], vec![])]
+// 0.795 gates: on an ESD device under Dualgate (fires, one marker per wall), on a
+// transistor 2 µm clear of the implant (clean), on one whose poly touches the implant's
+// edge (fires) and on an ESD device with no Dualgate (no ESD.pl, and ESD.9).
+#[case::esd_pl_h1("esd/ESD.pl.h1.gds.gz", "TOP", vec!["ESD.pl"; 4], vec!["ESD.9"])]
+fn hardening_esd(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("esd", gds, topcell, &[]), want, "{gds}");
+}
