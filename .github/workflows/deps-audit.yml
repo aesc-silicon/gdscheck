@@ -6,7 +6,7 @@ name: Dependency Audit
 
 on:
   pull_request:
-    paths: [Cargo.toml, Cargo.lock]
+    paths: [Cargo.toml, Cargo.lock, deny.toml]
   schedule:
     - cron: "0 6 * * 1"
 

@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+[advisories]
+ignore = [
+    # yaml-rust reaches the tree through gds21 -> layout21utils -> serde_yaml 0.8,
+    # for layout21's own YAML export, which gdscheck never calls: nothing here reads
+    # or writes YAML through gds21.  layout21 has no release past 3.0.0-pre.2 and its
+    # main branch still pins serde_yaml 0.8, so there is no version to move to; the
+    # way out is to stop depending on gds21, which is more than an audit fix.
+    { id = "RUSTSEC-2024-0320", reason = "unmaintained yaml-rust behind gds21's unused YAML export" },
+]
