@@ -213,7 +213,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::mim_b(
     "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
-    &[("MIMTM.1", 4), ("MIMTM.10", 3), ("MIMTM.11", 2), ("MIMTM.2", 9), ("MIMTM.3", 62), ("MIMTM.4", 12), ("MIMTM.5", 8), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6)]
+    &[("MIMTM.1", 3), ("MIMTM.10", 3), ("MIMTM.11", 2), ("MIMTM.2", 9), ("MIMTM.3", 62), ("MIMTM.4", 12), ("MIMTM.5", 8), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6)]
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
@@ -1871,4 +1871,101 @@ fn hardening_esd(
         .collect();
     want.sort();
     assert_eq!(hardening("esd", gds, topcell, &[]), want, "{gds}");
+}
+
+// --- Metal 1 to 4 (hardening/reports/gf180mcuD/metal.md).  Section 7.13's rules are per
+// level and read the drawn datatype alone; `min_width` reports one marker per wall, a
+// space or a notch one per pair.
+#[rstest]
+// Six 0.225 bars, each in a different relation to SRAMCORE and the markers that decide
+// whether the core is the 3.3 V kind: bare, in a bare core (exempt), in a core Dualgate
+// covers, in one Dualgate only abuts (exempt), in one under V5_XTOR alone (exempt), in
+// one Dualgate covers half of.
+#[case::m1_1_h1("metal/M1.1.h1.gds.gz", "TOP", vec!["M1.1"; 6], vec![])]
+// A 0.225 bar half inside a bare core - the half outside is still 0.225 wide - and one
+// the core abuts without covering.
+#[case::m1_1_h2("metal/M1.1.h2.gds.gz", "TOP", vec!["M1.1"; 4], vec![])]
+// 0.1 squares on every datatype the section does not read (slot, dummy, blocked, label,
+// resistor) and a dummy shape 0.2 from a drawn one, on all four levels: nothing here is
+// this deck's.
+#[case::m1_1_h3("metal/M1.1.h3.gds.gz", "TOP", vec![], vec![])]
+// What "wide" is, on all four levels: a 10.0 square and a 30 x 9.995 bar are not over 10
+// either way; a 10.005 square and a 30 x 10.005 bar are.  Each has a neighbour 0.295 off.
+#[case::m1_2b_h1("metal/M1.2b.h1.gds.gz", "TOP", each(&[("M1.2b", 2), ("M2.2b", 2), ("M3.2b", 2), ("M4.2b", 2)]), vec![])]
+// A narrow stub on a wide plate: the stub is not wide, and a neighbour facing it owes
+// M1.2a's 0.23, not M1.2b's 0.3.  Only the plate whose own wall faces a neighbour fires.
+#[case::m1_2b_h2("metal/M1.2b.h2.gds.gz", "TOP", vec!["M1.2b"], vec![])]
+// A 0.295 slot cut into a wide plate - a space between two wide regions of one drawn
+// shape (report, finding 1) - and the same slot in a 9 µm plate, which is wide nowhere.
+#[case::m1_2b_h3("metal/M1.2b.h3.gds.gz", "TOP", vec!["M1.2b"], vec![])]
+// The same plate and neighbour four times, the gap opening on x = 20, 21, 40 and 42.
+#[case::m1_2b_h4("metal/M1.2b.h4.gds.gz", "TOP", vec!["M1.2b"; 4], vec![])]
+// Two wide plates 0.295 apart: one gap, one violation, whichever plate it is read from
+// (report, finding 2).
+#[case::m1_2b_h5("metal/M1.2b.h5.gds.gz", "TOP", vec!["M1.2b"], vec![])]
+// 0.38 x 0.38 is exactly the 0.1444 µm² and 0.38 x 0.375 one grid step under, per level.
+#[case::m1_3_h1("metal/M1.3.h1.gds.gz", "TOP", each(&[("M1.3", 1), ("M2.3", 1), ("M3.3", 1), ("M4.3", 1)]), vec![])]
+// A ring drawn as four bars holds 0.12 µm² of metal where its outline covers 0.16: the
+// area is the metal, not the ground.  The solid 0.4 square beside it is clean.
+#[case::m1_3_h2("metal/M1.3.h2.gds.gz", "TOP", vec!["M1.3"], each(&[("M1.1", 8), ("M1.2a", 2)]))]
+// A 0.25 bar: legal on Metal1 (0.23) and too narrow on every level above it (0.28).
+#[case::m2_1_h1("metal/M2.1.h1.gds.gz", "TOP", each(&[("M2.1", 2), ("M3.1", 2), ("M4.1", 2)]), vec![])]
+// The same split in space: a 0.25 gap and a 0.25 notch, legal on Metal1 only.
+#[case::m2_2a_h1("metal/M2.2a.h1.gds.gz", "TOP", each(&[("M2.2a", 2), ("M3.2a", 2), ("M4.2a", 2)]), vec![])]
+fn hardening_metal(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("metal", gds, topcell, &[]), want, "{gds}");
+}
+
+// --- MetalTop (hardening/reports/gf180mcuD/metaltop.md).  Variant D is the 11K stack and
+// its top metal is Metal5, so section 7.13 stops at Metal4 and these four rules take over.
+#[rstest]
+// 0.435 bars on the drawn and the dummy datatype (both metal), on the slot, blocked,
+// label and resistor datatypes (none of them metal), and a 0.3 drawn bar abutting a 0.3
+// dummy one, which is one 0.6 conductor.
+#[case::mt_1_h1("metaltop/MT.1.h1.gds.gz", "TOP", vec!["MT.1"; 4], vec![])]
+// A 0.3 and a 0.45 bar: the first is under MT.1's 0.44, the second over it.  The `metal`
+// deck says nothing about either - Metal5 is not one of its levels.
+#[case::mt_1_h2("metaltop/MT.1.h2.gds.gz", "TOP", vec!["MT.1"; 2], vec![])]
+// Drawn to dummy at 0.455 is a space; drawn to a blocked-fill marker at the same gap is
+// not; drawn to dummy at 0.46 is the bound.
+#[case::mt_2a_h1("metaltop/MT.2a.h1.gds.gz", "TOP", vec!["MT.2a"], vec![])]
+// What "wide" is: 10.0 and 30 x 9.995 are not, 10.005 and 30 x 10.005 are, each with a
+// neighbour 0.595 off.
+#[case::mt_2b_h1("metaltop/MT.2b.h1.gds.gz", "TOP", vec!["MT.2b"; 2], vec![])]
+// A chamfered plate and a stubbed one, both wide by their dimensions: the neighbour
+// facing the stub owes MT.2a's 0.46, not MT.2b's 0.6.
+#[case::mt_2b_h2("metaltop/MT.2b.h2.gds.gz", "TOP", vec!["MT.2b"; 2], vec![])]
+// A 0.595 slot in a wide plate (report, finding 1), and the same slot in a 9 µm plate.
+#[case::mt_2b_h3("metaltop/MT.2b.h3.gds.gz", "TOP", vec!["MT.2b"], vec![])]
+// The same plate and neighbour four times, the gap opening on x = 20, 21, 40 and 42.
+#[case::mt_2b_h4("metaltop/MT.2b.h4.gds.gz", "TOP", vec!["MT.2b"; 4], vec![])]
+// 0.75² clears the 0.5625 µm² and 0.7² does not.
+#[case::mt_4_h1("metaltop/MT.4.h1.gds.gz", "TOP", vec!["MT.4"], vec![])]
+// A ring drawn as four bars: the area is the metal it holds, not the ground its outline
+// covers.
+#[case::mt_4_h2("metaltop/MT.4.h2.gds.gz", "TOP", vec!["MT.4"], each(&[("MT.1", 8), ("MT.2a", 2)]))]
+fn hardening_metaltop(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("metaltop", gds, topcell, &[]), want, "{gds}");
 }

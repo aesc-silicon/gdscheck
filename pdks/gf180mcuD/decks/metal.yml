@@ -16,10 +16,15 @@ rules:
     check: min_notch
     layers: [metal1_drawn]
     value: 0.23
+  # `pairs: any`: a wide plate lies on both layers, so the pair that carries a slot cut
+  # into one plate shares area - and the gap meant is between the slot's two walls,
+  # which only the facing-gap reading of an overlapping pair sees (report, finding 1).
   - id: M1.2b
     check: min_space
     layers: [metal1_drawn, metal1_wide10]
     value: 0.3
+    params:
+      pairs: any
   - id: M1.3
     check: min_area
     layers: [metal1_drawn]
@@ -36,10 +41,15 @@ rules:
     check: min_notch
     layers: [metal2_drawn]
     value: 0.28
+  # `pairs: any`: a wide plate lies on both layers, so the pair that carries a slot cut
+  # into one plate shares area - and the gap meant is between the slot's two walls,
+  # which only the facing-gap reading of an overlapping pair sees (report, finding 1).
   - id: M2.2b
     check: min_space
     layers: [metal2_drawn, metal2_wide10]
     value: 0.3
+    params:
+      pairs: any
   - id: M2.3
     check: min_area
     layers: [metal2_drawn]
@@ -56,10 +66,15 @@ rules:
     check: min_notch
     layers: [metal3_drawn]
     value: 0.28
+  # `pairs: any`: a wide plate lies on both layers, so the pair that carries a slot cut
+  # into one plate shares area - and the gap meant is between the slot's two walls,
+  # which only the facing-gap reading of an overlapping pair sees (report, finding 1).
   - id: M3.2b
     check: min_space
     layers: [metal3_drawn, metal3_wide10]
     value: 0.3
+    params:
+      pairs: any
   - id: M3.3
     check: min_area
     layers: [metal3_drawn]
@@ -76,10 +91,15 @@ rules:
     check: min_notch
     layers: [metal4_drawn]
     value: 0.28
+  # `pairs: any`: a wide plate lies on both layers, so the pair that carries a slot cut
+  # into one plate shares area - and the gap meant is between the slot's two walls,
+  # which only the facing-gap reading of an overlapping pair sees (report, finding 1).
   - id: M4.2b
     check: min_space
     layers: [metal4_drawn, metal4_wide10]
     value: 0.3
+    params:
+      pairs: any
   - id: M4.3
     check: min_area
     layers: [metal4_drawn]
