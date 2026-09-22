@@ -373,7 +373,21 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 ///   a chamfer, a tip 0.795 above a wall and one 0.795 from a wall, a corner 0.792 from
 ///   a strip's wall, across the tile lines, fifty at once, 300 µm strips and a sliver;
 ///   0.806 and 0.8 are clean.
+/// - `gated_*`: the gated rule (S.both on Via: 0.6 where a line is wider than 0.3 and
+///   the run over 2.0) - the width bound, the run bound (aligned, offset, stubs, a line
+///   broken in two), the wide part of a padded line and an L's arm, both metrics and the
+///   ends, unions, the tile lines, fifty at once, a 300 µm pair and a sliver; a U's slot
+///   is a notch, not a space of lines.
 #[rstest]
+#[case("gated_bound", "S.both", 3)]
+#[case("gated_run", "S.both", 4)]
+#[case("gated_wide", "S.both", 2)]
+#[case("gated_ends", "S.both", 1)]
+#[case("gated_merge", "S.both", 4)]
+#[case("gated_tile_lines", "S.both", 11)]
+#[case("gated_array_flat", "S.both", 50)]
+#[case("gated_array_ref", "S.both", 50)]
+#[case("gated_extremes", "S.both", 2)]
 #[case("bent_bound", "S.bent", 5)]
 #[case("bent_tile_lines", "S.bent", 5)]
 #[case("bent_array_flat", "S.bent", 50)]

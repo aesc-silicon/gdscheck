@@ -359,4 +359,209 @@ pub fn generate(pdk: &PdkConfig) {
             strip45(outer, 2.0, 232.32, 2.0, 0.005),
         ],
     );
+
+    // --- The hardening patterns of the gated rule (S.both on Via: 0.6 between lines
+    // where one is wider than 0.3 and the two run alongside for more than 2.0).
+
+    // The width bound.  A 0.305 line 3 µm long beside a 0.2 line at 0.55 fires; a 0.30
+    // line (not wider than 0.3) beside one at 0.55 is clean; two 0.2 lines at 0.55 are
+    // clean; two 0.5 lines at 0.595 fire, at 0.6 they are clean; a 3 × 3 plate with a 0.2
+    // line along it at 0.55 fires.  S.both: 3.
+    write(
+        "gated_bound",
+        vec![
+            rect(via, 2.0, 2.0, 2.305, 5.0),
+            rect(via, 2.855, 2.0, 3.055, 5.0), // S.both
+            rect(via, 5.0, 2.0, 5.3, 5.0),
+            rect(via, 5.85, 2.0, 6.05, 5.0), // clean
+            rect(via, 8.0, 2.0, 8.2, 5.0),
+            rect(via, 8.75, 2.0, 8.95, 5.0), // clean
+            rect(via, 11.0, 2.0, 11.5, 5.0),
+            rect(via, 12.095, 2.0, 12.595, 5.0), // S.both
+            rect(via, 14.0, 2.0, 14.5, 5.0),
+            rect(via, 15.1, 2.0, 15.6, 5.0), // clean
+            rect(via, 17.0, 2.0, 20.0, 5.0),
+            rect(via, 20.55, 2.0, 20.75, 5.0), // S.both
+        ],
+    );
+
+    // The run bound, at 0.55 with a 0.5 line.  Aligned lines 2.0 long are clean, 2.005
+    // long fire; a 5 µm pair offset so the facing walls share 2.0 is clean, 2.005 fires;
+    // a 1.5 stub beside a 7 µm wide line is clean, and so are two 1.2 stubs 0.5 apart
+    // (their stretches are not joined across the gap); a 7 µm 0.2 line broken by a 0.3
+    // gap into two 3.35 pieces fires twice.  S.both: 4.
+    write(
+        "gated_run",
+        vec![
+            rect(via, 2.0, 2.0, 2.5, 4.0),
+            rect(via, 3.05, 2.0, 3.25, 4.0), // clean, run 2.0
+            rect(via, 5.0, 2.0, 5.5, 4.005),
+            rect(via, 6.05, 2.0, 6.25, 4.005), // S.both, run 2.005
+            rect(via, 8.0, 2.0, 8.5, 7.0),
+            rect(via, 9.05, 5.0, 9.25, 10.0), // clean, shared 2.0
+            rect(via, 11.0, 2.0, 11.5, 7.0),
+            rect(via, 12.05, 4.995, 12.25, 10.0), // S.both, shared 2.005
+            rect(via, 14.0, 2.0, 14.5, 9.0),
+            rect(via, 15.05, 3.0, 15.25, 4.5), // clean, stub 1.5
+            rect(via, 17.0, 2.0, 17.5, 9.0),
+            rect(via, 18.05, 3.0, 18.25, 4.2),
+            rect(via, 18.05, 4.7, 18.25, 5.9), // clean, stubs 1.2
+            rect(via, 20.0, 2.0, 20.5, 9.0),
+            rect(via, 21.05, 2.0, 21.25, 5.35),
+            rect(via, 21.05, 5.65, 21.25, 9.0), // S.both × 2, pieces 3.35
+        ],
+    );
+
+    // Where the line is wide.  A 0.2 line 6 µm long carrying a 0.5 pad 2.5 long, with a
+    // straight 0.2 line 0.55 from the pad: the wide part runs 2.5 beside the neighbour,
+    // fires; the same pad 1.5 long is clean (the lines run parallel for 6 µm, the wide
+    // part for 1.5), and a pad exactly 2.0 long is clean; an L of 0.5 arms with a 0.2
+    // line along the outside of one arm for 2.5 fires.  S.both: 2.
+    let padded = |x: f64, plen: f64| {
+        poly(
+            via,
+            &[
+                (x, 2.0),
+                (x + 0.2, 2.0),
+                (x + 0.2, 3.0),
+                (x + 0.5, 3.0),
+                (x + 0.5, 3.0 + plen),
+                (x + 0.2, 3.0 + plen),
+                (x + 0.2, 8.0),
+                (x, 8.0),
+            ],
+        )
+    };
+    write(
+        "gated_wide",
+        vec![
+            padded(2.0, 2.5),
+            rect(via, 3.05, 2.0, 3.25, 8.0), // S.both
+            padded(5.0, 1.5),
+            rect(via, 6.05, 2.0, 6.25, 8.0), // clean
+            padded(8.0, 2.0),
+            rect(via, 9.05, 2.0, 9.25, 8.0), // clean
+            poly(
+                via,
+                &[
+                    (11.0, 2.0),
+                    (14.0, 2.0),
+                    (14.0, 2.5),
+                    (11.5, 2.5),
+                    (11.5, 5.0),
+                    (11.0, 5.0),
+                ],
+            ),
+            rect(via, 11.0, 1.25, 13.5, 1.45), // S.both: along the arm's outside for 2.5
+        ],
+    );
+
+    // Both metrics and the ends.  Two 3 × 3 plates corner to corner at 0.4/0.4 (0.566, no
+    // parallel run) are clean; a 0.2 line ending 0.55 short of a plate, end-on, is clean;
+    // two plates stepped so their facing walls share 2.0 are clean, sharing 2.005 they
+    // fire.  S.both: 1.
+    write(
+        "gated_ends",
+        vec![
+            rect(via, 2.0, 2.0, 5.0, 5.0),
+            rect(via, 5.4, 5.4, 8.4, 8.4), // clean
+            rect(via, 10.0, 2.0, 13.0, 5.0),
+            rect(via, 11.4, 5.55, 11.6, 8.0), // clean, end-on
+            rect(via, 15.0, 2.0, 18.0, 5.0),
+            rect(via, 18.55, 3.0, 21.55, 6.0), // clean, shared 2.0
+            rect(via, 23.0, 2.0, 26.0, 5.0),
+            rect(via, 26.55, 2.995, 29.55, 6.0), // S.both, shared 2.005
+        ],
+    );
+
+    // Unions.  A wide line drawn as two overlapping 0.2 boxes (0.305) beside a 0.2 line
+    // at 0.55 fires; as two abutting slices 0.2 + 0.105 it fires; 0.2 + 0.1 (0.30) is
+    // clean; a 0.5 line beside a 0.2 neighbour drawn as two abutting 0.1 halves fires
+    // once; beside a neighbour drawn as three collinear 1 µm boxes it fires once.
+    // S.both: 4.
+    write(
+        "gated_merge",
+        vec![
+            rect(via, 2.0, 2.0, 2.2, 5.0),
+            rect(via, 2.105, 2.0, 2.305, 5.0),
+            rect(via, 2.855, 2.0, 3.055, 5.0), // S.both
+            rect(via, 5.0, 2.0, 5.2, 5.0),
+            rect(via, 5.2, 2.0, 5.305, 5.0),
+            rect(via, 5.855, 2.0, 6.055, 5.0), // S.both
+            rect(via, 8.0, 2.0, 8.2, 5.0),
+            rect(via, 8.2, 2.0, 8.3, 5.0),
+            rect(via, 8.85, 2.0, 9.05, 5.0), // clean
+            rect(via, 11.0, 2.0, 11.5, 5.0),
+            rect(via, 12.05, 2.0, 12.15, 5.0),
+            rect(via, 12.15, 2.0, 12.25, 5.0), // S.both, once
+            rect(via, 14.0, 2.0, 14.5, 5.0),
+            rect(via, 15.05, 2.0, 15.25, 3.0),
+            rect(via, 15.05, 3.0, 15.25, 4.0),
+            rect(via, 15.05, 4.0, 15.25, 5.0), // S.both, once
+        ],
+    );
+
+    // Tile lines.  The 0.305/0.2 pair at 0.55, 3 µm long, with the gap straddling x = 20,
+    // ending on 20, starting on 20, straddling 21, on 40, straddling 42, inside a tile at
+    // 10; horizontal pairs running across x = 20 and x = 40; a horizontal pair 2.005 long
+    // ending on x = 20; a pair at (1000, 1000).  S.both: 11.
+    let pair = |x: f64, y: f64| {
+        vec![
+            rect(via, x - 0.305, y, x, y + 3.0),
+            rect(via, x + 0.55, y, x + 0.75, y + 3.0),
+        ]
+    };
+    let mut e = vec![];
+    e.extend(pair(19.7, 2.0));
+    e.extend(pair(19.45, 6.0));
+    e.extend(pair(20.0, 10.0));
+    e.extend(pair(20.7, 14.0));
+    e.extend(pair(39.45, 2.0));
+    e.extend(pair(41.7, 6.0));
+    e.extend(pair(10.0, 2.0));
+    e.extend(pair(1000.0, 1000.0));
+    e.push(rect(via, 15.0, 18.0, 25.0, 18.305));
+    e.push(rect(via, 15.0, 18.855, 25.0, 19.055));
+    e.push(rect(via, 35.0, 18.0, 45.0, 18.305));
+    e.push(rect(via, 35.0, 18.855, 45.0, 19.055));
+    e.push(rect(via, 17.995, 22.0, 20.0, 22.305));
+    e.push(rect(via, 17.995, 22.855, 20.0, 23.055));
+    write("gated_tile_lines", e);
+
+    // Fifty 0.5/0.2 pairs at 0.55, flat and as an array reference.  S.both: 50 each.
+    let cell = vec![
+        rect(via, 0.2, 0.2, 0.7, 3.2),
+        rect(via, 1.25, 0.2, 1.45, 3.2),
+    ];
+    write("gated_array_flat", flat_array(&cell, 10, 5, 4.0));
+    write_gz(
+        &format!("{DIR}/gated_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 4.0),
+    );
+
+    // Notches, long and small.  A U of 0.5 arms with a 0.55 slot 3 µm deep is a notch,
+    // not a space of lines: clean; a 0.5 × 300 line beside a 0.2 × 300 line at 0.55 fires
+    // once; a 0.005 sliver 3 µm long 0.55 from a 0.5 line fires.  S.both: 2.
+    write(
+        "gated_extremes",
+        vec![
+            poly(
+                via,
+                &[
+                    (2.0, 2.0),
+                    (3.55, 2.0),
+                    (3.55, 5.5),
+                    (3.05, 5.5),
+                    (3.05, 2.5),
+                    (2.5, 2.5),
+                    (2.5, 5.5),
+                    (2.0, 5.5),
+                ],
+            ), // notch: clean
+            rect(via, 2.0, 8.0, 302.0, 8.5),
+            rect(via, 2.0, 9.05, 302.0, 9.25), // S.both, 300 µm
+            rect(via, 6.0, 2.0, 6.5, 5.0),
+            rect(via, 7.05, 2.0, 7.055, 5.0), // S.both, sliver
+        ],
+    );
 }
