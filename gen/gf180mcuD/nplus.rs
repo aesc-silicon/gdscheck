@@ -332,4 +332,393 @@ pub fn generate(pdk: &PdkConfig) {
     };
     write("NP.12", "good", np12(false));
     write("NP.12", "bad", np12(true));
+
+    hardening(pdk);
+}
+
+// Hardening patterns (hardening/SPEC.md, the GF180MCU section): layouts drawn from the
+// manual's section 7.8 by someone who has not seen the engine.  Each is a
+// `tests/data/gf180mcuD/generated/nplus/NP.<rule>.h<n>.gds.gz` with a case in the
+// `hardening_nplus` table of `tests/gf180mcuD.rs`; the findings are in
+// hardening/reports/gf180mcuD/nplus.md.
+//
+// What these draw is the deck's own conditions - which PCOMP a spacing rule measures to
+// and which well decides its value, the butted N+/P+ pair that exempts a marker, the
+// band either side of a well edge, the gate the implant must cover, the poly the implant
+// may not touch - at the bound and one grid step past it.  The generic classes (the
+// bound on a bare layer, 45 degrees, unions, notches, arrays) are the engine family's.
+
+/// Layers the hardening patterns draw on.
+struct H {
+    np: (i16, i16),
+    pp: (i16, i16),
+    comp: (i16, i16),
+    poly: (i16, i16),
+    sab: (i16, i16),
+    nw: (i16, i16),
+    dn: (i16, i16),
+    res: (i16, i16),
+}
+
+fn hardening(pdk: &PdkConfig) {
+    let h = H {
+        np: layer(pdk, "nplus"),
+        pp: layer(pdk, "pplus"),
+        comp: layer(pdk, "comp"),
+        poly: layer(pdk, "poly2_drawn"),
+        sab: layer(pdk, "sab"),
+        nw: layer(pdk, "nwell"),
+        dn: layer(pdk, "dnwell"),
+        res: layer(pdk, "resistor"),
+    };
+    let write = |id: &str, elems: Vec<GdsElement>| {
+        write_gz(&format!("{DIR}/{id}.gds.gz"), library("TOP", elems));
+    };
+
+    // --- NP.2: "Space 0.4".  One rule for a gap and for a notch; the deck runs
+    // `min_space` and `min_notch` on the same layer, so a notch must be counted once.
+    // h1 - (a) a U whose 0.395 notch straddles the tile line x = 20; (b) a U whose notch
+    // is 0.4, clean, straddling x = 40; (c) a 0.395 gap between two markers straddling
+    // x = 21.  Two violations.
+    write(
+        "NP.2.h1",
+        vec![
+            rect(h.np, 18.0, 5.0, 19.8025, 8.0),
+            rect(h.np, 20.1975, 5.0, 22.0, 8.0),
+            rect(h.np, 18.0, 5.0, 22.0, 6.0),
+            rect(h.np, 38.0, 5.0, 39.8, 8.0),
+            rect(h.np, 40.2, 5.0, 42.0, 8.0),
+            rect(h.np, 38.0, 5.0, 42.0, 6.0),
+            rect(h.np, 18.0, 12.0, 20.8025, 14.0),
+            rect(h.np, 21.1975, 12.0, 24.0, 14.0),
+        ],
+    );
+
+    // --- NP.3a: "Space to PCOMP for PCOMP: (1) Inside Nwell (2) Outside LVPWELL but
+    // inside DNWELL - 0.16".  The deck drops the rule for any marker that touches an
+    // NCOMP butted to a PCOMP anywhere in the layout, not only the related one.
+    //
+    // h1 - one L-shaped marker.  Its foot carries an NCOMP butted to a PCOMP at x = 12
+    // (a legal butted pair); its arm ends at x = 20, 0.155 from an unrelated PCOMP in a
+    // deep well 8 um away.  The manual's exemption is the butting pair's own edge, so
+    // the unrelated PCOMP is still 0.155 from the marker: NP.3a.
+    let np3a_scene = |with_pair: bool| {
+        let mut v = vec![
+            // The marker: foot x 10..12 y 10..11, arm x 10..20 y 11..12.
+            rect(h.np, 10.0, 10.0, 12.0, 11.0),
+            rect(h.np, 10.0, 11.0, 20.0, 12.0),
+            // The unrelated PCOMP, in a deep well and outside every P-well.
+            rect(h.dn, 20.155, 9.0, 24.0, 13.0),
+            rect(h.comp, 20.155, 10.5, 21.155, 11.5),
+            rect(h.pp, 20.155, 10.3, 21.4, 11.7),
+        ];
+        if with_pair {
+            v.push(rect(h.comp, 10.3, 10.2, 13.5, 10.8));
+            v.push(rect(h.pp, 12.0, 9.8, 13.8, 10.95));
+        }
+        v
+    };
+    write("NP.3a.h1", np3a_scene(true));
+    // h2 - the same scene without the butted pair: the control, NP.3a fires.
+    write("NP.3a.h2", np3a_scene(false));
+
+    // --- NP.3ci/cii: "Space to PCOMP: For Outside DNWELL: (i) For PCOMP space to Nwell
+    // < 0.43 - 0.16; (ii) >= 0.43 - 0.08".  The deck classifies by where the PCOMP lies
+    // in a 0.429 collar grown from the well.
+    //
+    // h1 - four scenes against a 2 um well.  (a) a PCOMP wholly inside the collar with
+    // the marker 0.155 away: NP.3ci; (b) the same at 0.16: clean; (c) a PCOMP wholly
+    // outside it (its near edge 0.43 from the well) with the marker 0.075 away:
+    // NP.3cii; (d) the same at 0.08: clean.
+    let np3c_near = |y: f64, gap: f64| {
+        vec![
+            rect(h.nw, 10.0, y - 0.5, 12.0, y + 1.5),
+            rect(h.comp, 12.02, y, 12.42, y + 1.0),
+            rect(h.pp, 11.95, y - 0.1, 12.5, y + 1.1),
+            rect(h.np, 12.42 + gap, y, 13.42 + gap, y + 1.0),
+        ]
+    };
+    let np3c_far = |y: f64, gap: f64| {
+        vec![
+            rect(h.nw, 10.0, y - 0.5, 12.0, y + 1.5),
+            rect(h.comp, 12.43, y, 13.43, y + 1.0),
+            rect(h.pp, 12.43, y - 0.1, 13.5, y + 1.1),
+            rect(h.np, 13.43 + gap, y, 14.43 + gap, y + 1.0),
+        ]
+    };
+    let mut v = np3c_near(10.0, 0.155);
+    v.extend(np3c_near(14.0, 0.16));
+    v.extend(np3c_far(18.0, 0.075));
+    v.extend(np3c_far(22.0, 0.08));
+    write("NP.3ci.h1", v);
+
+    // h2 - one PCOMP straddling the collar's edge, which the deck puts at x = 20.429,
+    // just past the tile line x = 20: a 2 um PCOMP running out of a well that ends at
+    // x = 20, with the marker 0.075 above it along its whole length.  The near part is
+    // inside the collar (0.16) and the far part outside it (0.08): both rules.
+    write(
+        "NP.3ci.h2",
+        vec![
+            rect(h.nw, 18.0, 9.0, 20.0, 13.0),
+            rect(h.comp, 20.1, 10.0, 22.1, 11.0),
+            rect(h.pp, 20.0, 9.9, 22.2, 11.0),
+            rect(h.np, 18.0, 11.075, 22.1, 12.075),
+        ],
+    );
+
+    // --- NP.3bi/bii: "Space to PCOMP: For Inside DNWELL, inside LVPWELL: (i) For PCOMP
+    // overlap by LVPWELL < 0.43 - 0.16; (ii) >= 0.43 - 0.08".  The mirror of NP.3c, read
+    // on a band 0.429 wide inside the P-well instead of a collar outside the N-well.
+    //
+    // h1 - one P-well in a deep well holding four scenes.  (a) a PCOMP wholly in the band
+    // along the well's right wall with the marker 0.155 away: NP.3bi; (b) the same at
+    // 0.16: clean; (c) a PCOMP in the well's core with the marker 0.075 away: NP.3bii;
+    // (d) the same at 0.08: clean.
+    let np3b_band = |y: f64, gap: f64| {
+        vec![
+            rect(h.comp, 27.58, y, 27.98, y + 1.0),
+            rect(h.pp, 27.5, y - 0.1, 28.05, y + 1.1),
+            rect(h.np, 26.2, y, 27.58 - gap, y + 1.0),
+        ]
+    };
+    let np3b_core = |y: f64, gap: f64| {
+        vec![
+            rect(h.comp, 20.0, y, 21.0, y + 1.0),
+            rect(h.pp, 19.9, y - 0.1, 21.1, y + 1.1),
+            rect(h.np, 18.9, y, 20.0 - gap, y + 1.0),
+        ]
+    };
+    let mut v = vec![
+        rect(h.dn, 10.0, 8.0, 30.0, 30.0),
+        rect(layer(pdk, "lvpwell"), 11.0, 9.0, 28.0, 29.0),
+    ];
+    v.extend(np3b_band(11.0, 0.155));
+    v.extend(np3b_band(15.0, 0.16));
+    v.extend(np3b_core(19.0, 0.075));
+    v.extend(np3b_core(23.0, 0.08));
+    write("NP.3bi.h1", v);
+
+    // --- NP.8b: "Minimum area enclosed by Nplus - 0.35 um2".  The hole, not the shape.
+    // h1 - (a) a ring round a 0.7 x 0.5 hole, exactly 0.35: clean; (b) the same hole
+    // 0.495 tall, 0.3465: NP.8b; (c) a 0.6 x 0.58 hole (0.348) straddling the tile
+    // line x = 20, drawn as four boxes that merge into the ring: NP.8b.
+    let ring = |x: f64, y: f64, hw: f64, hh: f64| {
+        vec![
+            rect(h.np, x, y, x + hw + 1.6, y + 0.8),
+            rect(h.np, x, y + 0.8 + hh, x + hw + 1.6, y + hh + 1.6),
+            rect(h.np, x, y + 0.8, x + 0.8, y + 0.8 + hh),
+            rect(h.np, x + 0.8 + hw, y + 0.8, x + hw + 1.6, y + 0.8 + hh),
+        ]
+    };
+    let mut v = ring(10.0, 10.0, 0.7, 0.5);
+    v.extend(ring(14.0, 10.0, 0.7, 0.495));
+    v.extend(ring(19.1, 10.0, 0.6, 0.58));
+    write("NP.8b.h1", v);
+
+    // --- NP.7 and NP.10: the salicide block's neighbours.  NP.7 is a space of 0.18 to an
+    // unsalicided poly, NP.10 an overlap of 0.18 of an unsalicided COMP.
+    //
+    // h1 - (a) a COMP under a block, the marker 0.175 past its left wall and 0.2 past the
+    // rest: NP.10; (b) a COMP under a block that the marker's right wall cuts in half -
+    // an overlap of nothing on that side; (c) a poly bar under a block whose left wall
+    // the marker's right wall touches: a space of nothing, NP.7.
+    write(
+        "NP.10.h1",
+        vec![
+            rect(h.comp, 10.0, 10.0, 11.0, 11.0),
+            rect(h.sab, 9.9, 9.9, 11.1, 11.1),
+            rect(h.np, 9.825, 9.8, 11.2, 11.2),
+            rect(h.comp, 15.0, 10.0, 16.0, 11.0),
+            rect(h.sab, 14.9, 9.9, 16.1, 11.1),
+            rect(h.np, 14.6, 9.8, 15.5, 11.2),
+            rect(h.poly, 20.0, 10.0, 21.0, 11.0),
+            rect(h.sab, 19.9, 9.9, 21.1, 11.1),
+            rect(h.np, 18.6, 9.8, 20.0, 11.2),
+        ],
+    );
+
+    // --- NP.4a: "Space to related P-channel gate at a butting edge parallel to gate -
+    // 0.32".  The manual measures a butting edge that faces the gate; a butting edge
+    // round the corner from it has no facing gate edge at all.
+    //
+    // h1 - a PMOS whose COMP has an arm going up on the far side of the gate.  The
+    // butted N+/P+ edge is horizontal, at y = 12.7, x 11.2..12.28; the nearest gate edge
+    // is the gate's left wall, x = 12.5, y 11.5..12.5.  The two do not face each other
+    // (nothing projects), and the corner-to-corner distance is 0.297.
+    write(
+        "NP.4a.h1",
+        vec![
+            rect(h.nw, 10.7, 11.0, 15.5, 14.0),
+            rect(h.comp, 11.0, 11.5, 15.0, 12.5),
+            rect(h.comp, 11.2, 12.5, 12.28, 13.5),
+            rect(h.poly, 12.5, 11.5, 12.78, 12.5),
+            rect(h.pp, 10.7, 11.2, 15.3, 12.7),
+            rect(h.np, 11.0, 12.7, 12.32, 13.8),
+        ],
+    );
+
+    // h2 - the butting edge facing the gate, the bound.  (a) a vertical butted edge
+    // 0.315 from the gate's right wall, the two fully overlapping: NP.4a; (b) the same
+    // at 0.32: clean.
+    let np4a_face = |y: f64, gap: f64| {
+        let xb = 12.28 + gap;
+        vec![
+            rect(h.nw, 10.7, y, 16.5, y + 2.5),
+            rect(h.comp, 11.0, y + 0.5, 16.0, y + 1.5),
+            rect(h.poly, 12.0, y + 0.5, 12.28, y + 1.5),
+            rect(h.pp, 10.7, y + 0.2, xb, y + 1.8),
+            rect(h.np, xb, y + 0.2, 16.3, y + 1.8),
+        ]
+    };
+    let mut v = np4a_face(11.0, 0.315);
+    v.extend(np4a_face(16.0, 0.32));
+    write("NP.4a.h2", v);
+
+    // --- NP.5a: "Overlap of N-channel gate - 0.23".  An N-channel gate is derived from
+    // the NCOMP, which is COMP under the marker, so a gate lies inside the marker by
+    // construction: a marker edge that cuts a poly bar re-cuts the gate with it.
+    //
+    // h1 - (a) a gate the marker holds by 0.225 above and below: NP.5a; (b) a gate whose
+    // poly bar the marker's right edge cuts in half - the overlap there is nothing, and
+    // the COMP is not covered either.
+    write(
+        "NP.5a.h1",
+        vec![
+            rect(h.comp, 10.0, 10.0, 13.0, 11.0),
+            rect(h.poly, 11.0, 9.7, 11.28, 11.3),
+            rect(h.np, 9.7, 9.775, 13.3, 11.225),
+            rect(h.comp, 20.0, 10.0, 23.0, 11.0),
+            rect(h.poly, 21.0, 9.7, 21.28, 11.3),
+            rect(h.np, 19.7, 9.7, 21.14, 11.3),
+        ],
+    );
+
+    // --- NP.6: "Overlap with NCOMP butted to PCOMP - 0.22".  The COMP has to reach
+    // 0.22 past the butting edge, which is the N+ half's length; the three walls the
+    // PCOMP shares with the COMP are an overlap of nothing and are not the rule's.
+    //
+    // h1 - (a) an N+ half 0.215 long: NP.6; (b) 0.22: clean.
+    let np6 = |x: f64, n_len: f64| {
+        vec![
+            rect(h.comp, x, 10.0, x + 1.2 + n_len, 11.0),
+            rect(h.pp, x - 0.3, 9.7, x + 1.2, 11.3),
+            rect(h.np, x + 1.2, 9.7, x + 1.5 + n_len, 11.3),
+        ]
+    };
+    let mut v = np6(10.0, 0.215);
+    v.extend(np6(15.0, 0.22));
+    write("NP.6.h1", v);
+
+    // --- NP.11: "Butting Nplus and PCOMP is forbidden within 0.43um of Nwell edge (for
+    // outside DNWELL)".  The manual says within 0.43 of the edge; the deck bands only
+    // the collar outside the well.
+    //
+    // h1 - three butted N+/P+ edges against a well, all vertical and all at the well's
+    // right wall.  (a) 0.2 outside it, at the tile line x = 20; (b) 0.2 inside it;
+    // (c) 0.5 outside it, clear of the 0.43 band, clean.
+    write(
+        "NP.11.h1",
+        vec![
+            rect(h.nw, 17.0, 10.0, 20.0, 14.0),
+            rect(h.comp, 19.5, 11.0, 22.2, 12.0),
+            rect(h.pp, 19.2, 10.8, 20.2, 12.2),
+            rect(h.np, 20.2, 10.8, 22.5, 12.2),
+            rect(h.nw, 25.0, 10.0, 30.0, 14.0),
+            rect(h.comp, 27.0, 11.0, 31.0, 12.0),
+            rect(h.pp, 26.0, 10.8, 29.8, 12.2),
+            rect(h.np, 29.8, 10.8, 31.3, 12.2),
+            rect(h.nw, 35.0, 10.0, 38.0, 14.0),
+            rect(h.comp, 38.2, 11.0, 40.8, 12.0),
+            rect(h.pp, 37.9, 10.8, 38.5, 12.2),
+            rect(h.np, 38.5, 10.8, 41.1, 12.2),
+        ],
+    );
+
+    // --- NP.12: "Overlap with P-channel poly2 gate extension is forbidden within 0.32um
+    // of P-channel gate".  The reach runs along the poly, not across the air: a marker
+    // on a poly leg 0.22 away as the crow flies but 4 um away along the poly is clear.
+    //
+    // h1 - (a) a U of poly whose left leg carries a P-channel gate and whose right leg is
+    // 0.22 of air away from that gate but 5 um away along the poly; the marker covers the
+    // right leg and reaches into the plain 0.32 disc around the gate.  A reach measured
+    // across the air fires; one measured along the poly does not, and the manual's
+    // "gate extension" is poly.  (b) a straight poly bar above a gate with the marker
+    // starting 0.315 up it, one step inside the reach: NP.12.
+    write(
+        "NP.12.h1",
+        vec![
+            // (a) the U.
+            rect(h.nw, 10.0, 10.0, 15.0, 14.5),
+            rect(h.comp, 11.0, 11.2, 12.35, 11.8),
+            rect(h.pp, 10.7, 10.9, 12.39, 12.1),
+            rect(h.poly, 12.0, 11.0, 12.28, 14.0),
+            rect(h.poly, 12.0, 13.72, 12.78, 14.0),
+            rect(h.poly, 12.5, 11.0, 12.78, 14.0),
+            rect(h.np, 12.55, 10.6, 14.0, 11.3),
+            // (b) the straight bar: the gate's top is y = 11.8, the reach ends at 12.119.
+            rect(h.nw, 24.0, 10.5, 28.0, 12.5),
+            rect(h.comp, 25.0, 11.2, 27.0, 11.8),
+            rect(h.pp, 24.7, 10.9, 27.3, 12.1),
+            rect(h.poly, 26.0, 11.0, 26.28, 14.0),
+            rect(h.np, 25.5, 12.115, 27.0, 13.0),
+        ],
+    );
+
+    // --- NP.5b/NP.5d: "Extension beyond COMP" - 0.16 for a COMP outside the wells,
+    // 0.02 for one deep inside an N-well.  The value is chosen by where the COMP and the
+    // marker sit, and nothing else about them changes.
+    //
+    // h1 - two identical taps with the marker 0.1 past the COMP's left wall.  (a) in the
+    // field: NP.5b wants 0.16, fires; (b) 2 um inside an N-well: NP.5dii wants 0.02,
+    // clean.
+    write(
+        "NP.5b.h1",
+        vec![
+            rect(h.comp, 10.0, 10.0, 11.0, 11.0),
+            rect(h.np, 9.9, 9.7, 11.3, 11.3),
+            rect(h.nw, 15.0, 9.0, 20.0, 13.0),
+            rect(h.comp, 17.0, 10.0, 18.0, 11.0),
+            rect(h.np, 16.9, 9.7, 18.3, 11.3),
+        ],
+    );
+
+    // h2 - the 0.429 band inside an N-well, which splits NP.5di (0.16) from NP.5dii
+    // (0.02).  One 10 um well holding four taps: (a) 3 um in from every wall with the
+    // marker 0.015 past the COMP: NP.5dii; (b) the same at 0.02: clean; (c) a tap whose
+    // left wall is 0.2 inside the well - in the band - with the marker 0.155 past it:
+    // NP.5di; (d) the same at 0.16: clean.
+    write(
+        "NP.5b.h2",
+        vec![
+            rect(h.nw, 10.0, 10.0, 20.0, 20.0),
+            rect(h.comp, 13.0, 13.0, 14.0, 14.0),
+            rect(h.np, 12.985, 12.7, 14.3, 14.3),
+            rect(h.comp, 16.0, 13.0, 17.0, 14.0),
+            rect(h.np, 15.98, 12.7, 17.3, 14.3),
+            rect(h.comp, 10.2, 16.0, 11.2, 17.0),
+            rect(h.np, 10.045, 15.7, 11.5, 17.3),
+            rect(h.comp, 10.2, 18.0, 11.2, 19.0),
+            rect(h.np, 10.04, 17.7, 11.5, 19.3),
+        ],
+    );
+
+    // --- NP.9: "Overlap of unsalicided Poly2 - 0.18".  The deck exempts a marked poly
+    // resistor from PP.9 and not from NP.9; the manual's two sections carry the same
+    // sentence.
+    //
+    // h1 - two poly bars under a salicide block with the marker 0.175 past the left wall
+    // of each.  (a) marked as a resistor - a resistor's body is meant to be bare, so the
+    // implant's edges there are the device's, not the rule's; (b) bare: NP.9.
+    write(
+        "NP.9.h1",
+        vec![
+            rect(h.poly, 10.0, 10.0, 12.0, 10.5),
+            rect(h.sab, 9.8, 9.8, 12.2, 10.7),
+            rect(h.res, 9.9, 9.9, 12.1, 10.6),
+            rect(h.np, 9.825, 9.8, 12.2, 10.7),
+            rect(h.poly, 20.0, 10.0, 22.0, 10.5),
+            rect(h.sab, 19.8, 9.8, 22.2, 10.7),
+            rect(h.np, 19.825, 9.8, 22.2, 10.7),
+        ],
+    );
 }

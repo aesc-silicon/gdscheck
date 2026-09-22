@@ -1552,3 +1552,79 @@ fn hardening_via(
     want.sort();
     assert_eq!(hardening("via", gds, topcell, &ignore), want, "{gds}");
 }
+
+// --- N+ implant (hardening/reports/gf180mcuD/nplus.md).  The manual's section 7.8.  A
+// spacing rule's value is chosen by which well the P+ active sits in and how far it is
+// from that well's edge; an extension rule's value the same way round the N+ one.  The
+// classifier is a 0.429 um band, read per region, so an active straddling it is measured
+// by both halves.
+#[rstest]
+// A 0.395 notch across the tile line x = 20, a 0.4 notch across x = 40 (clean) and a
+// 0.395 gap across x = 21: one violation each for the notch and the gap, not two.
+#[case::np_2_h1("nplus/NP.2.h1.gds.gz", "TOP", vec!["NP.2", "NP.2"], vec![])]
+// One marker whose foot carries a legal butted N+/P+ pair and whose arm ends 0.155 from
+// an unrelated P+ active in a deep well 8 um away.  The manual exempts the butting pair's
+// own edge (NP.3d/3e), not every other active the marker comes near.
+#[case::np_3a_h1("nplus/NP.3a.h1.gds.gz", "TOP", vec!["NP.3a"], vec![])]
+// The same scene with the butted pair taken out: the control.
+#[case::np_3a_h2("nplus/NP.3a.h2.gds.gz", "TOP", vec!["NP.3a"], vec![])]
+// P+ actives in the 0.429 band along a P-well's wall (0.155 away, NP.3bi) and in its core
+// (0.075 away, NP.3bii); the same two at 0.16 and 0.08 are clean.
+#[case::np_3bi_h1("nplus/NP.3bi.h1.gds.gz", "TOP", vec!["NP.3bi", "NP.3bii"], vec![])]
+// P+ actives wholly inside an N-well's 0.429 collar (0.155 away, NP.3ci) and wholly
+// outside it (0.075 away, NP.3cii); the same two at 0.16 and 0.08 are clean.
+#[case::np_3ci_h1("nplus/NP.3ci.h1.gds.gz", "TOP", vec!["NP.3ci", "NP.3cii"], vec![])]
+// One 2 um P+ active straddling the collar's edge at x = 20.429, the marker 0.075 above
+// it all along: the near half is NP.3ci's and the far half NP.3cii's.
+#[case::np_3ci_h2("nplus/NP.3ci.h2.gds.gz", "TOP", vec!["NP.3ci", "NP.3cii"], vec![])]
+// A butted N+/P+ edge round the corner from a P-channel gate, 0.297 corner to corner and
+// facing none of the gate's walls: the manual's "parallel to gate" has nothing to measure.
+#[case::np_4a_h1("nplus/NP.4a.h1.gds.gz", "TOP", vec![], vec![])]
+// The same edge facing the gate's wall at 0.315 (fires) and at 0.32 (clean).
+#[case::np_4a_h2("nplus/NP.4a.h2.gds.gz", "TOP", vec!["NP.4a"], vec![])]
+// A gate the marker holds by 0.225 (two walls) and a gate whose poly bar the marker's
+// right wall cuts: the overlap there is nothing, and so is the extension past the COMP.
+#[case::np_5a_h1("nplus/NP.5a.h1.gds.gz", "TOP", vec!["NP.5a"; 3], vec!["NP.5b"])]
+// Two identical taps with the marker 0.1 past the COMP: in the field NP.5b wants 0.16 and
+// fires; 2 um inside an N-well NP.5dii wants 0.02 and is clean.
+#[case::np_5b_h1("nplus/NP.5b.h1.gds.gz", "TOP", vec!["NP.5b"], vec![])]
+// Four taps in one N-well: 0.015 past the COMP in the core (NP.5dii), 0.02 there (clean),
+// 0.155 past a COMP in the 0.429 band (NP.5di), 0.16 there (clean).
+#[case::np_5b_h2("nplus/NP.5b.h2.gds.gz", "TOP", vec!["NP.5di", "NP.5dii"], vec![])]
+// A butted pair whose N+ half is 0.215 long (fires) and one 0.22 long; the three walls the
+// P+ active shares with the COMP are an overlap of nothing and are not the rule's.
+#[case::np_6_h1("nplus/NP.6.h1.gds.gz", "TOP", vec!["NP.6"], vec![])]
+// Holes of 0.35 um2 (clean), 0.3465 and 0.348 across the tile line x = 20, the last drawn
+// as four boxes that merge.
+#[case::np_8b_h1("nplus/NP.8b.h1.gds.gz", "TOP", vec!["NP.8b", "NP.8b"], vec![])]
+// Two unsalicided poly bars with the marker 0.175 past each.  The bare one is NP.9; the
+// one marked as a resistor is a device whose body is meant to be bare, and PP.9 exempts
+// its twin.
+#[case::np_9_h1("nplus/NP.9.h1.gds.gz", "TOP", vec!["NP.9"], vec![])]
+// (a) an unsalicided COMP the marker holds by 0.175: NP.10; (b) one the marker's wall cuts
+// in half - an overlap of nothing, and the COMP's own edge is NP.5b's; (c) an unsalicided
+// poly whose wall the marker's wall touches - a space of nothing, NP.7.
+#[case::np_10_h1("nplus/NP.10.h1.gds.gz", "TOP", vec!["NP.10", "NP.10"], vec!["NP.5b", "NP.7"])]
+// Butted N+/P+ edges 0.2 outside an N-well's wall (at the tile line x = 20), 0.2 inside it
+// and 0.5 outside it.  NP.11 takes the collar outside the well, PP.11 the band inside it;
+// between them the manual's "within 0.43 of the Nwell edge" is covered, and only the deck
+// under test reports here.
+#[case::np_11_h1("nplus/NP.11.h1.gds.gz", "TOP", vec!["NP.11"], vec![])]
+// (a) a U of poly whose right leg the marker covers: 0.22 of air from the gate but 5 um
+// along the poly, so the reach does not arrive; (b) a straight bar with the marker 0.315
+// up it, one step inside the 0.319 reach.
+#[case::np_12_h1("nplus/NP.12.h1.gds.gz", "TOP", vec!["NP.12"], vec![])]
+fn hardening_nplus(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("nplus", gds, topcell, &[]), want, "{gds}");
+}
