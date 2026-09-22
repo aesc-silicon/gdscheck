@@ -136,3 +136,30 @@ finding 1's fix must not break, and it is why the fix is "use the boundary polyg
   Pad keep-outs in sections 13.1-13.3 govern where dummy fill may be placed (DCF.1a,
   DCF.8a, DCF.11a, DPF.18, DM.8); DCF.1b, DCF.1d, PL.8 and Mn.4 have no exclusion and
   upstream applies none.
+
+## Resolution (2026-09-22)
+
+Finding 1 was fixed in the engine (`src/checks/density/mod.rs`): the die is the
+`boundary` layer's own polygons, not their bounding box, on both sides of the fraction.
+The coverage counted is what lies inside them and the area divided by is theirs, so
+`DCF.1b.h6` reads 34.67%, `DCF.1b.h7` 30.00% and `DCF.1d.h4` 66.67%, and all three
+layouts are clean at tiles 20, 7 and 100 - which is what the three cases expect.
+
+The windowed scope still lays its grid over the boundary's box, so the windows fall the
+same way whatever the die's shape; what each window is measured against is the die area
+inside it, and a window with no die in it is skipped rather than failed.
+
+A boundary drawn as a *ring* is read as what it rings: its holes are filled first, off
+the stitched layer, so a seal ring cut by tile lines is one ring. That keeps IHP's
+`AFil.g2.boundary_ring` and the five metal fixtures like it reading the die they enclose,
+which was the reason the box was used in the first place.
+
+Finding 2 is the case the fix had to keep, and does: `DCF.1d.h3`'s block 100 µm outside
+the boundary is still not counted, and the die is still the boundary rather than the
+layout's extent. The reference designs are unchanged - both PDKs draw their boundary as
+one filled rectangle, where box and polygon are the same thing.
+
+The oracle note stands: `hardening/oracle-gf180.sh` shows gdscheck's density markers as
+zero because its filter keeps only marker lines carrying `µm`, and a density marker
+carries a percentage. Reading this deck's fixtures needs `gdscheck run --deck density -v`
+beside the oracle's KLayout column.

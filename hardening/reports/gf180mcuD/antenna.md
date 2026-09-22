@@ -153,3 +153,17 @@ runset rule for rule.
 - **The tile lines.**  `ANT.16_i_ANT.2.h7` is the 408 antenna with the gate sitting on the
   tile line at x = 20 and the bar running across the lines at 21, 40 and 42: one
   violation at 20, 7 and 100 µm tiles.  No fixture in this deck moved with the tile size.
+
+## Resolution (2026-09-22)
+
+Fixed in the PDK. FuseTop gets a second connect entry, at the Via4 phase (step 19, between
+Via4's own metal and Metal5's), and `ANT.16_iii_ANT.15_V4_MIMB` reads the net one step
+further up - `level_before: metal5_drawn`, as `V3_MIMB` already reads
+`level_before: metal4_drawn` - because `level: via4` stops at the first Via4 step, which
+is the one that bridges Metal4. With both, a cap contacted the way section 10.4.2 draws it
+is on the same net as the Via4 on it: `ANT.16_iii_ANT.14_M5_MIMB.h1` reports its rule and
+`ANT.16_iii_ANT.15_V4_MIMB.h1` reports its, at tiles 20, 7 and 100, as the runset does.
+
+The V3/M4 pair keeps the Via3 entry and stays as unreachable on a legal layout as it is
+upstream. `tests/pdk_integrity.rs` pins the new connect order, so the levels cannot drift
+without a test saying so.
