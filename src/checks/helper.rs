@@ -304,6 +304,15 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             let Some((min_dist, (ax, ay), (bx, by))) = found else {
                 continue;
             };
+            // Own the violation by the gap midpoint; mark the gap itself.  Owned
+            // before the gate is asked: a run-gated rule assembles the pair's regions
+            // across tiles to read a run the zone cut short, and every tile along a
+            // long pair was assembling it for a gap only one of them names.
+            let mx = (ax + bx) * 0.5;
+            let my = (ay + by) * 0.5;
+            if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
+                continue;
+            }
             let ctx = RunCtx {
                 zone,
                 kin,
@@ -326,12 +335,6 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                     polys,
                 )
             {
-                continue;
-            }
-            // Own the violation by the gap midpoint; mark the gap itself.
-            let mx = (ax + bx) * 0.5;
-            let my = (ay + by) * 0.5;
-            if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
                 continue;
             }
             let (title, what) = if mode.inward {
