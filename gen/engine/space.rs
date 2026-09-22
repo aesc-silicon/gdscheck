@@ -286,4 +286,77 @@ pub fn generate(pdk: &PdkConfig) {
             rect(outer, 1001.495, 1000.0, 1002.0, 1001.0),
         ],
     );
+
+    // --- The hardening patterns of the bent rule (S.bent: a pair with a 45° wall closer
+    // than 0.8; S.min is 0.5, so a gap between 0.5 and 0.8 is S.bent's alone).
+
+    // The bound, in every direction the value can be taken.  Two parallel 45° strips
+    // (0.849 wide, d = 0.6) dy higher are (dy − 1.2)/√2 apart: dy = 2.32 → 0.792 fires,
+    // dy = 2.34 → 0.806 is clean; a box corner 0.792 from a chamfer (x + y = k, the
+    // corner (cx, cy): (k − cx − cy)/√2) fires, 0.806 is clean; a diamond tip 0.795 above
+    // a wall fires, 0.8 is clean; a 45° strip's tip 0.795 from a vertical wall fires; a
+    // box corner 0.792 from a strip's 45° wall (its foot on the wall) fires, 0.806 is
+    // clean.  S.bent: 5.
+    write(
+        "bent_bound",
+        vec![
+            strip45(outer, 2.0, 2.0, 2.0, 0.6),
+            strip45(outer, 2.0, 4.32, 2.0, 0.6), // S.bent: 0.792
+            strip45(outer, 6.0, 2.0, 2.0, 0.6),
+            strip45(outer, 6.0, 4.34, 2.0, 0.6), // clean: 0.806
+            chamfered_tr(outer, 10.0, 2.0, 12.0, 4.0, 15.0),
+            rect(outer, 12.12, 4.0, 13.5, 5.0), // S.bent: corner (12.12, 4.0) 0.792 off x + y = 15
+            chamfered_tr(outer, 14.0, 2.0, 16.0, 4.0, 19.0),
+            rect(outer, 16.14, 4.0, 17.5, 5.0), // clean: 0.806
+            rect(outer, 18.0, 2.0, 21.0, 3.0),
+            diamond(outer, 19.5, 4.295, 0.5), // S.bent: tip 0.795 above the wall
+            rect(outer, 22.0, 2.0, 25.0, 3.0),
+            diamond(outer, 23.5, 4.3, 0.5), // clean: 0.8
+            strip45(outer, 27.0, 2.0, 1.0, 0.6),
+            rect(outer, 28.795, 2.0, 29.5, 4.0), // S.bent: tip (28, 3) 0.795 from the wall
+            strip45(outer, 2.0, 8.0, 2.0, 0.6),
+            rect(outer, 1.0, 10.32, 2.0, 11.32), // S.bent: corner (2, 10.32) 0.792 from y = x + 7.2
+            strip45(outer, 6.0, 8.0, 2.0, 0.6),
+            rect(outer, 5.0, 10.34, 6.0, 11.34), // clean: 0.806
+        ],
+    );
+
+    // Tile lines and far.  The 0.792 strip pair with its gap straddling x = 20, a pair
+    // whose tips end on x = 20, pairs across 40 and 42, one at (1000, 1000).  S.bent: 5.
+    let pair = |x: f64, y: f64| {
+        vec![
+            strip45(outer, x, y, 2.0, 0.6),
+            strip45(outer, x, y + 2.32, 2.0, 0.6),
+        ]
+    };
+    let mut e = vec![];
+    e.extend(pair(19.0, 2.0));
+    e.extend(pair(18.0, 8.0));
+    e.extend(pair(39.0, 2.0));
+    e.extend(pair(41.0, 8.0));
+    e.extend(pair(1000.0, 1000.0));
+    write("bent_tile_lines", e);
+
+    // Fifty 0.792 strip pairs, flat and as an array reference.  S.bent: 50 each.
+    let cell = vec![
+        strip45(outer, 0.6, 0.2, 1.5, 0.6),
+        strip45(outer, 0.6, 2.52, 1.5, 0.6),
+    ];
+    write("bent_array_flat", flat_array(&cell, 10, 5, 5.0));
+    write_gz(
+        &format!("{DIR}/bent_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 5.0),
+    );
+
+    // Long and small.  Two 300 µm 45° strips 0.792 apart fire once; a 0.007 45° sliver
+    // 0.792 from a strip fires.  S.bent: 2.
+    write(
+        "bent_extremes",
+        vec![
+            strip45(outer, 2.0, 2.0, 212.0, 0.6),
+            strip45(outer, 2.0, 4.32, 212.0, 0.6),
+            strip45(outer, 2.0, 230.0, 2.0, 0.6),
+            strip45(outer, 2.0, 232.32, 2.0, 0.005),
+        ],
+    );
 }

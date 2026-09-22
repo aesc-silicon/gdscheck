@@ -17,6 +17,52 @@ use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/engine/generated/width";
 
+/// A line of width `w` running right from `(x, y)` for 2 µm, jogging up-right at 45°
+/// by `h`, then on for 2 µm: the jog's walls are `wt/√2` apart and each `h·√2` long.
+fn zroute(l: (i16, i16), x: f64, y: f64, w: f64, wt: f64, h: f64) -> gds21::GdsElement {
+    poly(
+        l,
+        &[
+            (x, y),
+            (x + 2.0, y),
+            (x + 2.0 + h, y + h),
+            (x + 4.0 + h, y + h),
+            (x + 4.0 + h, y + h + w),
+            (x + 2.0 - wt + w + h, y + h + w),
+            (x + 2.0 - wt + w, y + w),
+            (x, y + w),
+        ],
+    )
+}
+
+/// An L of lines `w` wide, arms `len` long from the outer corner `(x, y)`, that corner
+/// cut along `X + Y = x + y + k` and the inner corner along `X + Y = x + y + kin`.  The
+/// two 45° walls are `(kin − k)/√2` apart; the outer one is `k·√2` long, the inner
+/// `(kin − 2w)·√2`.
+fn chamfered_l(
+    l: (i16, i16),
+    x: f64,
+    y: f64,
+    w: f64,
+    len: f64,
+    k: f64,
+    kin: f64,
+) -> gds21::GdsElement {
+    poly(
+        l,
+        &[
+            (x + k, y),
+            (x + len, y),
+            (x + len, y + w),
+            (x + kin - w, y + w),
+            (x + w, y + kin - w),
+            (x + w, y + len),
+            (x, y + len),
+            (x, y + k),
+        ],
+    )
+}
+
 /// A 45° bar of width `w` and run `len`, starting at `(x, y)` and rising to the right,
 /// its ends square to the trace.
 fn diagonal(l: (i16, i16), x: f64, y: f64, w: f64, len: f64) -> gds21::GdsElement {
@@ -262,6 +308,74 @@ pub fn generate(pdk: &PdkConfig) {
                     (8.0, 5.0),
                 ],
             ),
+        ],
+    );
+
+    // --- The hardening patterns of the bent rule (W.bent: 45° runs longer than 1.0
+    // narrower than 0.7; W.min is 0.5).
+
+    // The bound.  45° strips (`strip45`: width d·√2, walls len·√2): 0.707 wide with 4.24
+    // walls is clean; 0.693 wide with 4.24 walls fires (two walls); 0.693 with 1.018
+    // walls fires, with 0.99 walls (not over 1.0) is clean; a 0.495 strip 4.24 long is
+    // W.min and W.bent (two each); a 0.693 diamond has 0.693 edges and is clean.
+    // W.bent: 6, W.min: 2.
+    write(
+        "bent_bound",
+        vec![
+            strip45(outer, 2.0, 2.0, 3.0, 0.5),    // clean
+            strip45(outer, 6.0, 2.0, 3.0, 0.49),   // W.bent
+            strip45(outer, 10.0, 2.0, 0.72, 0.49), // W.bent, walls 1.018
+            strip45(outer, 12.0, 2.0, 0.7, 0.49),  // clean, walls 0.99
+            strip45(outer, 14.0, 2.0, 3.0, 0.35),  // W.min + W.bent
+            diamond(outer, 19.0, 3.0, 0.49),       // clean
+        ],
+    );
+
+    // Real routes.  A 0.6 Z route whose 45° jog is 0.693 wide with 1.018 walls fires;
+    // the same jog with 0.99 walls is clean; a 0.707 jog is clean.  An L with a
+    // chamfered corner: the 45° walls 0.693 apart, the outer 1.33 and the inner 1.018
+    // long, fires; with the inner 0.99 long it is clean (a bend is as long as each of
+    // its walls); 0.707 apart it is clean.  W.bent: 4.
+    write(
+        "bent_routes",
+        vec![
+            zroute(outer, 2.0, 2.0, 0.6, 0.98, 0.72), // W.bent
+            zroute(outer, 2.0, 5.0, 0.6, 0.98, 0.7),  // clean
+            zroute(outer, 2.0, 8.0, 0.6, 1.0, 0.72),  // clean
+            chamfered_l(outer, 10.0, 2.0, 0.6, 4.0, 0.94, 1.92), // W.bent
+            chamfered_l(outer, 15.0, 2.0, 0.6, 4.0, 0.92, 1.9), // clean, inner 0.99
+            chamfered_l(outer, 20.0, 2.0, 0.6, 4.0, 0.92, 1.92), // clean, 0.707
+        ],
+    );
+
+    // Tile lines and far.  The firing Z route with its jog straddling x = 20 (19.8..21),
+    // starting on 20, straddling 40 and 42, and at (1000, 1000).  W.bent: 10.
+    write(
+        "bent_tile_lines",
+        vec![
+            zroute(outer, 17.8, 2.0, 0.6, 0.98, 0.72),
+            zroute(outer, 18.0, 5.0, 0.6, 0.98, 0.72),
+            zroute(outer, 37.8, 2.0, 0.6, 0.98, 0.72),
+            zroute(outer, 39.8, 5.0, 0.6, 0.98, 0.72),
+            zroute(outer, 1000.0, 1000.0, 0.6, 0.98, 0.72),
+        ],
+    );
+
+    // Fifty firing Z routes, flat and as an array reference.  W.bent: 100 each.
+    let cell = vec![zroute(outer, 0.2, 0.2, 0.6, 0.98, 0.72)];
+    write("bent_array_flat", flat_array(&cell, 10, 5, 6.0));
+    write_gz(
+        &format!("{DIR}/bent_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 6.0),
+    );
+
+    // Long and small.  A 300 µm 45° strip 0.693 wide fires (two walls); a 45° sliver
+    // 0.007 wide fires (and is W.min's).  W.bent: 4.
+    write(
+        "bent_extremes",
+        vec![
+            strip45(outer, 2.0, 2.0, 212.0, 0.49),
+            strip45(outer, 2.0, 220.0, 2.0, 0.005),
         ],
     );
 }
