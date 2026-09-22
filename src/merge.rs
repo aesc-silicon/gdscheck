@@ -488,9 +488,6 @@ pub fn shrink_y(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
 /// after a handful of batches, and unioning every grown rectangle in reach at once is
 /// what made i_overlay's `simplify` blow up.  What is left is stitched across the tile
 /// lines and reported once per gap.
-/// A reference rectangle grown by the value, in DBU: `(x0, y0, x1, y1)`.
-type GrownRect = (f64, f64, f64, f64);
-
 fn core_box(tx: i32, ty: i32, tile_dbu: i32) -> (i64, i64, i64, i64) {
     let t = tile_dbu as i64;
     (
@@ -501,38 +498,143 @@ fn core_box(tx: i32, ty: i32, tile_dbu: i32) -> (i64, i64, i64, i64) {
     )
 }
 
-/// The reference as grown rectangles, filed under the tile whose core the piece lies
-/// in; every rectangle lies within `value` of that core.
-fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32), Vec<GrownRect>> {
-    b.par_iter()
-        .filter_map(|(&(tx, ty), polys)| {
-            let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
-            let rects: Vec<GrownRect> = clip_to_box(polys.clone(), x0, y0, x1, y1)
-                .iter()
-                .flat_map(rectangles_of)
-                .map(|(rx0, ry0, rx1, ry1)| {
-                    (
-                        rx0 as f64 - value,
-                        ry0 as f64 - value,
-                        rx1 as f64 + value,
-                        ry1 as f64 + value,
-                    )
-                })
-                .collect();
-            (!rects.is_empty()).then_some(((tx, ty), rects))
-        })
-        .collect()
+/// Whether every edge of the polygon runs along an axis.
+fn is_rectilinear(m: &MergedPoly) -> bool {
+    poly_edges(m).all(|(a, b)| a.x == b.x || a.y == b.y)
 }
 
-/// The grown rectangles that can meet a piece with box `(bx0, by0, bx1, by1)`: one
-/// meets the piece only if it meets the box, and it lies within `value` of its own
+/// The reference grown by the value, filed under the tile whose core the piece lies
+/// in; every shape lies within `value` of that core.  A rectilinear piece is grown as
+/// its rectangles, each by the value in both axes, which is the square structuring
+/// element exactly and cheap.  A region with a wall off the axes is grown as a
+/// polygon, its walls offset by the value and its corners mitered (KLayout's
+/// `sized`), and grown *whole*, assembled from its pieces: a piece grown on its own
+/// has a corner at every tile cut, and the miter there reaches along the wall past
+/// the cut, so a 45° strip cut by the 7 µm tiles covered a target the whole strip
+/// does not.  The grown region is filed under every tile it overlaps, cut to that
+/// tile's core grown by the value, which is all a target in that core can meet.
+fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32), Vec<MergedPoly>> {
+    let t = tile_dbu as i64;
+    let rects_of = |tx: i32, ty: i32, polys: &[MergedPoly]| -> Vec<MergedPoly> {
+        let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
+        clip_to_box(polys.to_vec(), x0, y0, x1, y1)
+            .iter()
+            .flat_map(rectangles_of)
+            .map(|(rx0, ry0, rx1, ry1)| {
+                let (gx0, gy0) = (rx0 as f64 - value, ry0 as f64 - value);
+                let (gx1, gy1) = (rx1 as f64 + value, ry1 as f64 + value);
+                MergedPoly {
+                    outer: vec![
+                        IntPoint::new(gx0 as i32, gy0 as i32),
+                        IntPoint::new(gx1 as i32, gy0 as i32),
+                        IntPoint::new(gx1 as i32, gy1 as i32),
+                        IntPoint::new(gx0 as i32, gy1 as i32),
+                    ],
+                    holes: Vec::new(),
+                }
+            })
+            .collect()
+    };
+    // Every wall along an axis, which is nearly every reference: the rectangles alone.
+    if b.par_iter()
+        .all(|(_, polys)| polys.iter().all(is_rectilinear))
+    {
+        return b
+            .par_iter()
+            .filter_map(|(&(tx, ty), polys)| {
+                let rects = rects_of(tx, ty, polys);
+                (!rects.is_empty()).then_some(((tx, ty), rects))
+            })
+            .collect();
+    }
+    let labeled = stitch_labeled(b, tile_dbu);
+    let mut pieces: Vec<Vec<((i32, i32), &MergedPoly)>> = vec![Vec::new(); labeled.regions.len()];
+    for (tile, polys) in &labeled.by_tile {
+        for (poly, rid) in polys {
+            pieces[*rid].push((*tile, poly));
+        }
+    }
+    let filed: Vec<((i32, i32), Vec<MergedPoly>)> = pieces
+        .into_par_iter()
+        .flat_map_iter(|ps| {
+            if ps.iter().all(|(_, m)| is_rectilinear(m)) {
+                return ps
+                    .iter()
+                    .map(|&((tx, ty), m)| ((tx, ty), rects_of(tx, ty, std::slice::from_ref(m))))
+                    .collect::<Vec<_>>();
+            }
+            let block: Vec<MergedPoly> = ps
+                .iter()
+                .flat_map(|&((tx, ty), m)| {
+                    let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+                    clip_to_box(vec![m.clone()], x0, y0, x0 + t, y0 + t)
+                })
+                .collect();
+            let grown = grow_by(&union_pieces(block), value, 0.0);
+            let v = value.ceil() as i64;
+            let mut out = Vec::new();
+            for g in &grown {
+                let (gx0, gy0, gx1, gy1) = poly_bbox(g);
+                for ty in (gy0 as i64).div_euclid(t)..=(gy1 as i64 - 1).div_euclid(t) {
+                    for tx in (gx0 as i64).div_euclid(t)..=(gx1 as i64 - 1).div_euclid(t) {
+                        let (x0, y0) = (tx * t, ty * t);
+                        let part =
+                            clip_to_box(vec![g.clone()], x0 - v, y0 - v, x0 + t + v, y0 + t + v);
+                        if !part.is_empty() {
+                            out.push(((tx as i32, ty as i32), part));
+                        }
+                    }
+                }
+            }
+            out
+        })
+        .collect();
+    let mut grown: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
+    for (k, v) in filed {
+        if !v.is_empty() {
+            grown.entry(k).or_default().extend(v);
+        }
+    }
+    grown
+}
+
+/// Whether the grown reference `r` takes any area of the piece `p`: cut to the box
+/// where `r` is one, met by the overlay otherwise.  Any area at all: the reach is
+/// grown a DBU past the value so a touch at the value has area to share, and a 45°
+/// tip touching it shares half a square DBU once a tile line has cut the tip in two.
+fn reach_takes(p: &MergedPoly, r: &MergedPoly) -> bool {
+    let (rx0, ry0, rx1, ry1) = poly_bbox(r);
+    let filled =
+        r.holes.is_empty() && merged_area_dbu(r) >= (rx1 - rx0) as f64 * (ry1 - ry0) as f64 - 0.5;
+    if filled {
+        clip_to_box(
+            vec![p.clone()],
+            rx0 as i64,
+            ry0 as i64,
+            rx1 as i64,
+            ry1 as i64,
+        )
+        .iter()
+        .any(|q| merged_area_dbu(q) > 0.0)
+    } else {
+        compose_tile(
+            VirtualOp::Intersection,
+            &[std::slice::from_ref(p), std::slice::from_ref(r)],
+        )
+        .iter()
+        .any(|q| merged_area_dbu(q) > 0.0)
+    }
+}
+
+/// The grown reference shapes that can meet a piece with box `(bx0, by0, bx1, by1)`:
+/// one meets the piece only if it meets the box, and it lies within `value` of its own
 /// tile's core, so only the tiles the box grown by `value` touches can hold one.
 fn grown_in_reach<'a>(
-    grown: &'a HashMap<(i32, i32), Vec<GrownRect>>,
+    grown: &'a HashMap<(i32, i32), Vec<MergedPoly>>,
     (bx0, by0, bx1, by1): (f64, f64, f64, f64),
     value: f64,
     tile_dbu: i32,
-) -> impl Iterator<Item = &'a GrownRect> + 'a {
+) -> impl Iterator<Item = &'a MergedPoly> + 'a {
     let t = tile_dbu as f64;
     let (qx0, qy0, qx1, qy1) = (bx0 - value, by0 - value, bx1 + value, by1 + value);
     let tiles_x = (qx0 / t).floor() as i32..=(qx1 / t).floor() as i32;
@@ -541,7 +643,10 @@ fn grown_in_reach<'a>(
         .flat_map(move |qy| tiles_x.clone().map(move |qx| (qx, qy)))
         .filter_map(move |k| grown.get(&k))
         .flatten()
-        .filter(move |&&(gx0, gy0, gx1, gy1)| gx1 > bx0 && gx0 < bx1 && gy1 > by0 && gy0 < by1)
+        .filter(move |r| {
+            let (gx0, gy0, gx1, gy1) = f64_bbox(r);
+            gx1 > bx0 && gx0 < bx1 && gy1 > by0 && gy0 < by1
+        })
 }
 
 fn f64_bbox(p: &MergedPoly) -> (f64, f64, f64, f64) {
@@ -584,19 +689,14 @@ pub fn max_space_gaps(
     // one rectangle before it meets the next row.
     let blobs: HashMap<(i32, i32), Vec<MergedPoly>> = grown
         .par_iter()
-        .map(|(&k, rects)| {
-            let mut rects = rects.clone();
-            rects.sort_by(|a, b| {
-                (a.1, a.0)
-                    .partial_cmp(&(b.1, b.0))
-                    .unwrap_or(std::cmp::Ordering::Equal)
+        .map(|(&k, shapes)| {
+            let mut shapes: Vec<&MergedPoly> = shapes.iter().collect();
+            shapes.sort_by_key(|m| {
+                let (x0, y0, _, _) = poly_bbox(m);
+                (y0, x0)
             });
-            let mut level: Vec<Vec<Vec<[f64; 2]>>> = rects
-                .iter()
-                .map(|&(gx0, gy0, gx1, gy1)| {
-                    vec![vec![[gx0, gy0], [gx1, gy0], [gx1, gy1], [gx0, gy1]]]
-                })
-                .collect();
+            let mut level: Vec<Vec<Vec<[f64; 2]>>> =
+                shapes.iter().map(|m| merged_to_shape(m)).collect();
             while level.len() > 1 {
                 let next: Vec<Vec<Vec<[f64; 2]>>> = level
                     .chunks(32)
@@ -761,17 +861,7 @@ pub fn max_space_unreached(
                 let bb = f64_bbox(&p);
                 let hit = match (&grown, &confined) {
                     (Some(grown), _) => {
-                        grown_in_reach(grown, bb, value, tile_dbu).any(|&(gx0, gy0, gx1, gy1)| {
-                            clip_to_box(
-                                vec![p.clone()],
-                                gx0 as i64,
-                                gy0 as i64,
-                                gx1 as i64,
-                                gy1 as i64,
-                            )
-                            .iter()
-                            .any(|q| merged_area_dbu(q) > 0.5)
-                        })
+                        grown_in_reach(grown, bb, value, tile_dbu).any(|r| reach_takes(&p, r))
                     }
                     (None, Some(confined)) => {
                         // A tile's reach lies within `value` of its core, so only the
