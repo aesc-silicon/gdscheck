@@ -2959,3 +2959,60 @@ fn hardening_sram_base(
     assert_eq!(hardening("contact", gds, topcell, &ignore), want, "{gds}");
 }
 
+// --- DRC_BJT (hardening/reports/gf180mcuD/drc_bjt.md).  Section 10.7 is three rules over
+// a marker that has to recognise a vertical NPN from its three terminals.
+#[rstest]
+// A complete NPN whose deep well runs 1 µm past the marker, then the same less the
+// LVS_BJT, less the base and less the collector - none of them a transistor - and a
+// complete NPN with its well inside.
+#[case::bjt_1_h1("drc_bjt/BJT.1.h1.gds.gz", "TOP", vec!["BJT.1"], vec![])]
+// The deep well flush with the marker on every side (an overlap of exactly 0, clean),
+// 0.005 past it, and wholly inside.
+#[case::bjt_1_h2("drc_bjt/BJT.1.h2.gds.gz", "TOP", vec!["BJT.1"], vec![])]
+// Two deep wells under one marker: the NPN's, inside, and a second that runs out of it.
+// Report finding 1.
+#[case::bjt_1_h3("drc_bjt/BJT.1.h3.gds.gz", "TOP", vec!["BJT.1"], vec![])]
+// A substrate tap inside the marker (clean), one the marker's edge cuts, a marker whose
+// only P+ is in an N-well, one tap inside with a second crossing out, and a tap whose
+// edge lies on the marker's (clean).  Report finding 1.
+#[case::bjt_2_h1("drc_bjt/BJT.2.h1.gds.gz", "TOP", vec!["BJT.2"; 3], vec![])]
+// An unrelated active 0.1 from the marker (clean), 0.095, corner to corner at 0.1018
+// (clean) and 0.0990, one whose wall lies on the marker's, and one that overlaps the
+// marker (related, exempt).  Report finding 2.
+#[case::bjt_3_h1("drc_bjt/BJT.3.h1.gds.gz", "TOP", vec!["BJT.3"; 3], vec![])]
+// The same 0.095 gap straddling x = 20, x = 42 and y = 20.
+#[case::bjt_3_h2("drc_bjt/BJT.3.h2.gds.gz", "TOP", vec!["BJT.3"; 3], vec![])]
+fn hardening_drc_bjt(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("drc_bjt", gds, topcell, &ignore), want, "{gds}");
+}
+
+// --- LVS_BJT (hardening/reports/gf180mcuD/lvs_bjt.md).  One rule, and all of its work is
+// deciding which COMP is an emitter.
+#[rstest]
+// An N+ active in the deep well with the marker over all of it (clean), over half of it,
+// only abutting it, an active the well's edge cuts (no emitter), one outside every well,
+// and one the marker leaves a 0.005 µm sliver of.
+#[case::lvs_bjt_1_h1("lvs_bjt/LVS_BJT.1.h1.gds.gz", "TOP", vec!["LVS_BJT.1"; 3], vec![])]
+// A P+ active in an N-well with the marker over all of it (clean) and over half; the same
+// active in a deep well instead, an N+ active in the N-well, and a P+ active the N-well's
+// edge cuts - none of them a PNP emitter.
+#[case::lvs_bjt_1_h2("lvs_bjt/LVS_BJT.1.h2.gds.gz", "TOP", vec!["LVS_BJT.1"], vec![])]
+// The same half-covered emitter straddling x = 20, x = 42 and y = 20.
+#[case::lvs_bjt_1_h3("lvs_bjt/LVS_BJT.1.h3.gds.gz", "TOP", vec!["LVS_BJT.1"; 3], vec![])]
+fn hardening_lvs_bjt(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("lvs_bjt", gds, topcell, &ignore), want, "{gds}");
+}
