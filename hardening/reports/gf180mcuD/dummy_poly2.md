@@ -163,3 +163,19 @@ and a 1.1 gap on x = 42 that stays clean - at tiles 20, 7 and 100.  DPF.4 (3.2),
 DPF.11 (29.7), DPF.12 (2.0), DPF.13 (2.0), DPF.14 (3.0), DPF.16 (3.0) and DPF.19 (8.0),
 each at the value, one step under it, and both ways round corner to corner.  DPF.1's four
 covering relations.  A fill 25.7 µm inside PR_BNDRY.  A 5.6 µm square on its own.
+
+---
+
+## Resolution (2026-09-22)
+
+Section 13.2 is 13.1 on Poly2, and the fixes landed together; see the resolution of
+`hardening/reports/gf180mcuD/dummy_comp.md` for the reasoning of each.
+
+- Every space carries `abutting: report`, and DPF.4, 5, 8, 9, 11, 12 and 13 gained the
+  `forbidden` half for the fill that lies on its partner.
+- DPF.6a-d read the well's boundary from both sides (enclosure plus crossing half).
+- DPF.15, DPF.17 and DPF.18 are in the deck now, as the prohibitions beside DPF.14's,
+  DPF.16's and DPF.19's spaces - which is why the `h2` of each of those three reports one
+  of each id.
+- DPF.7 and DPF.10 are Appendix B's, with DCF.7a and DCF.10; their layouts stay with the
+  cases expecting nothing.

@@ -93,3 +93,21 @@ DE.2 at 0.8 / 0.795 on NDMY and on PMNDMY separately.  DE.3 at exactly 15000 µm
 at 20 / 19.995 wall to wall and 20.004 / 19.997 corner to corner; the same 19.995 gap
 opening on x = 40, a notch open across x = 140, a gap opening on y = 20 and a 20 µm gap
 on x = 40 that stays clean - at tiles 20, 7 and 100.
+
+---
+
+## Resolution (2026-09-22)
+
+Both findings were fixed in the deck.
+
+- **Finding 1.** DE.2 is two entries, one on NDMY and one on PMNDMY, because the rule is
+  the size of an NDMY *or* of a PMNDMY and each answers for itself. `DE.2.h2` reports the
+  narrow strip of each layer where the union hid it.
+- **Finding 2.** DE.3 is a `forbidden` on the marking that is both over 15000 µm² and over
+  80 µm on *both* sides, built the way PRES.9b's big marking is (`with_area` then
+  `with_bbox_min`). The cap alone made the rule's second sentence dead text; this is the
+  reading under which it has work to do, and `DE.3.h1` reports the two markings that break
+  it and passes the 80 x 200 one.
+
+DE.1 is in Appendix B, with the starred rules of section 13 - it is prose about when to
+draw the markers at all, and there is nothing to measure.
