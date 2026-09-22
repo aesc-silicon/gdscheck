@@ -2133,8 +2133,8 @@ fn gfil_d_h(l: &L) {
     write("GFil.d.h1", e);
 
     // h2 — touching, overlapping, tile lines, far, long.  A filler abutting an Activ
-    // (space 0.00) fires; a filler overlapping a pSD by 0.2 fires; a filler wholly under
-    // a pSD fires; a filler overlapping a GatPoly fires; 1.095 gaps straddling x = 20 (to
+    // (space 0.00) fires; a filler overlapping a pSD by 0.2, one wholly under a pSD and
+    // one overlapping a GatPoly share area and are no pair; 1.095 gaps straddling x = 20 (to
     // Activ) and 40 (to GatPoly), a gap ending on 20 (to SalBlock), a 0.77/0.77 corner
     // pair to nSD:block near (20, 14); a pair at (1000, 1000); a 300 µm pair.
     write(
@@ -2143,11 +2143,11 @@ fn gfil_d_h(l: &L) {
             rect(gf, 2.0, 2.0, 3.0, 3.0),
             rect(l.activ, 3.0, 2.0, 4.0, 3.0), // GFil.d, abutting
             rect(gf, 6.0, 2.0, 7.0, 3.0),
-            rect(l.psd, 6.8, 2.0, 8.0, 3.0), // GFil.d, overlap
+            rect(l.psd, 6.8, 2.0, 8.0, 3.0), // no pair: overlap
             rect(l.psd, 10.0, 1.0, 13.0, 4.0),
-            rect(gf, 11.0, 2.0, 12.0, 3.0), // GFil.d, inside
+            rect(gf, 11.0, 2.0, 12.0, 3.0), // no pair: inside
             rect(gf, 15.0, 2.0, 16.0, 3.0),
-            rect(l.gp, 15.5, 2.2, 17.0, 2.5), // GFil.d, overlap
+            rect(l.gp, 15.5, 2.2, 17.0, 2.5), // no pair: overlap
             rect(gf, 18.9, 6.0, 19.9, 7.0),
             rect(l.activ, 20.995, 6.0, 21.995, 7.0), // GFil.d
             rect(gf, 38.9, 6.0, 39.9, 7.0),

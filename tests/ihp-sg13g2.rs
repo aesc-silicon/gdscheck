@@ -212,9 +212,10 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // inside an nBuLay fire (an enclosure entry on the fillers inside), 1.0 inside is clean;
 // a filler crossing the edge is in neither reading, as KLayout has it (report, finding 6)
 // - but section 4.2's generated nBuLay lies 1.0 inside every wide well: the filler 0.5
-// inside the 3 µm well touches its corner (a space of nothing), the one 1.0 inside the
-// 4 µm well lies on its edge (enclosed by nothing), two more.
-#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 5], dens(&[]))]
+// inside the 3 µm well overlaps the nBuLay by 0.5 and is no pair (it read as a corner
+// touch, a space of nothing, until the overlap of two boxes of one height was seen),
+// the one 1.0 inside the 4 µm well lies on its edge (enclosed by nothing), two more.
+#[case::afil_d_h2("activ/AFil.d.h2.gds.gz", "TOP", vec!["AFil.d"; 4], dens(&[]))]
 // nBuLay as section 4.2 derives it (report, finding 7, decided 2026-09-21), inward - the
 // generated nBuLay lies 1.0 inside a wide well: a filler 1.5 from a 3.0 µm NWell is 2.5
 // from it (clean), a drawn nBuLay under nBuLay:block is none (clean), the half-blocked
@@ -587,8 +588,10 @@ const DECK_GAT: &str = "gatpoly";
 // A filler abutting an Activ (space 0.00, `abutting: report`), 1.095 across x = 20 and
 // 40, a gap ending on 20, a corner pair near (20, 14), one at (1000, 1000), a 300 µm pair;
 // a filler overlapping a pSD, under a pSD or overlapping a GatPoly shares area and is no
-// pair, as KLayout has it (report, finding 5).
-#[case::gfil_d_h2("gatpoly/GFil.d.h2.gds.gz", "TOP", vec!["GFil.d"; 8], vec!["GFil.g", "GFil.a"])]
+// pair, as KLayout has it (report, finding 5) - the pSD one, two boxes of one height
+// overlapping by 0.2, read as a corner touch and a space of nothing until that overlap
+// was seen.
+#[case::gfil_d_h2("gatpoly/GFil.d.h2.gds.gz", "TOP", vec!["GFil.d"; 7], vec!["GFil.g", "GFil.a"])]
 // To NWell and to nBuLay: 1.095 and 1.089 fire, 1.10 and 1.103 are clean; a filler 1.6
 // from a 5 × 5 well is 2.6 from the nBuLay section 4.2 generates 1.0 inside it (clean),
 // one 1.5 from a 2-wide well has no nBuLay near it (clean).
