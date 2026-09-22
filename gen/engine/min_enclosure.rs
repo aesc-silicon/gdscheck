@@ -13,7 +13,9 @@
 //! the euclidian one reaches the wall.  A 45° notch is that same divergence away from a
 //! corner, in the middle of a wall.
 
-use crate::helpers::{layer, library, poly, rect, write_gz};
+use crate::helpers::{
+    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/engine/generated/min_enclosure";
@@ -238,4 +240,141 @@ pub fn generate(pdk: &PdkConfig) {
             ],
         );
     }
+
+    // --- The hardening patterns: what a rule manual's enclosure asks of any pair of
+    // layers, drawn once here for every deck of every PDK (hardening/SPEC.md).  A 0.4
+    // square of Inner in Outer under ENC.proj / ENC.eucl (0.5) and ENC.adj (`sides:
+    // adjacent`, trigger 0.1); a violation is one wall's margin, the runs of a shape
+    // joined at their corners.
+    let sq = |cx: f64, cy: f64| rect(inner, cx - 0.2, cy - 0.2, cx + 0.2, cy + 0.2);
+    // The Outer round a square with the given margins on the left, bottom, right, top.
+    let enc = |cx: f64, cy: f64, l: f64, b: f64, r: f64, t: f64| {
+        rect(
+            outer,
+            cx - 0.2 - l,
+            cy - 0.2 - b,
+            cx + 0.2 + r,
+            cy + 0.2 + t,
+        )
+    };
+
+    // The bound.  A square with 0.5 all round is clean; 0.495 on the left, right, bottom
+    // or top fires once each; a square half out fires; a square with no Outer at all is
+    // enclosed by nothing.  ENC.proj: 6, ENC.eucl: 6.
+    write(
+        "bound".into(),
+        vec![
+            sq(2.5, 2.5),
+            enc(2.5, 2.5, 0.5, 0.5, 0.5, 0.5), // clean
+            sq(5.0, 2.5),
+            enc(5.0, 2.5, 0.495, 0.5, 0.5, 0.5), // 0.495 left
+            sq(7.5, 2.5),
+            enc(7.5, 2.5, 0.5, 0.5, 0.495, 0.5), // 0.495 right
+            sq(10.0, 2.5),
+            enc(10.0, 2.5, 0.5, 0.495, 0.5, 0.5), // 0.495 bottom
+            sq(12.5, 2.5),
+            enc(12.5, 2.5, 0.5, 0.5, 0.5, 0.495), // 0.495 top
+            sq(2.5, 5.0),
+            rect(outer, 2.5, 4.3, 3.9, 5.7), // half out
+            sq(5.0, 5.0),                    // no Outer
+        ],
+    );
+
+    // Shapes and corners.  A square over the seam of two abutting boxes and one over two
+    // overlapping boxes are enclosed by the union (clean); a square across a 0.005 gap
+    // between two boxes has a strip uncovered (fires, either metric); a square under a
+    // grid of boxes that cover it is clean; a chamfer 0.495 from the square's corner
+    // (both walls 0.5 off) is the closest approach's (ENC.eucl) and no parallel pair
+    // (ENC.proj); a chamfer 0.502 off is clean; a square in a diamond whose four walls
+    // pass 0.495 from its corners is four corners under ENC.eucl.  ENC.proj: 1,
+    // ENC.eucl: 6.
+    let mut e = vec![
+        sq(2.5, 2.5),
+        rect(outer, 1.8, 1.8, 2.5, 3.2),
+        rect(outer, 2.5, 1.8, 3.2, 3.2), // seam, clean
+        sq(5.0, 2.5),
+        rect(outer, 4.3, 1.8, 5.1, 3.2),
+        rect(outer, 4.9, 1.8, 5.7, 3.2), // overlap, clean
+        sq(7.5, 2.5),
+        rect(outer, 6.8, 1.8, 7.5, 3.2),
+        rect(outer, 7.505, 1.8, 8.2, 3.2), // gap: a 0.005 strip uncovered
+    ];
+    for i in 0..7 {
+        for j in 0..7 {
+            let (x, y) = (9.3 + 0.2 * i as f64, 1.8 + 0.2 * j as f64);
+            e.push(rect(outer, x, y, x + 0.2, y + 0.2)); // grid covers 9.3..10.7, clean
+        }
+    }
+    e.push(sq(10.0, 2.5));
+    // The chamfer x + y = k passes (k − 7.9)/√2 from the corner (2.7, 5.2): k = 8.6 →
+    // 0.495, k = 8.61 → 0.502.
+    e.push(sq(2.5, 5.0));
+    e.push(chamfered_tr(outer, 1.8, 4.3, 3.2, 5.7, 8.6)); // 0.495 from the corner: ENC.eucl
+    e.push(sq(5.0, 5.0));
+    e.push(chamfered_tr(outer, 4.3, 4.3, 5.7, 5.7, 13.61)); // 0.502: clean
+    // A diamond of half-diagonal a round the square's centre: its walls are
+    // (a − 0.4)/√2 from the corners; a = 1.1 → 0.495.
+    e.push(sq(8.0, 5.0));
+    e.push(diamond(outer, 8.0, 5.0, 1.1)); // four corners: ENC.eucl
+    write("shapes".into(), e);
+
+    // Tile lines.  Squares sticking 0.005 out to the right of an Outer ending on x = 20,
+    // 21, 40, 42 and at 10, one at (1000, 1000); squares straddling x = 20 and 40 with
+    // 0.5 all round are clean.  ENC.proj: 6, ENC.eucl: 6.
+    let mut e = vec![];
+    for x in [10.0, 20.0, 21.0, 40.0, 42.0, 1000.0] {
+        e.push(sq(x - 0.195, 2.5)); // x − 0.395 .. x + 0.005
+        e.push(rect(outer, x - 0.9, 1.8, x, 3.2)); // 0.005 out
+    }
+    e.push(sq(20.0, 5.0));
+    e.push(enc(20.0, 5.0, 0.5, 0.5, 0.5, 0.5)); // clean
+    e.push(sq(40.0, 5.0));
+    e.push(enc(40.0, 5.0, 0.5, 0.5, 0.5, 0.5)); // clean
+    write("tile_lines".into(), e);
+
+    // Fifty squares sticking 0.005 out, flat and as an array reference.  ENC.proj: 50.
+    let cell = vec![sq(0.7, 0.7), rect(outer, 0.0, 0.0, 0.895, 1.4)];
+    write("array_flat".into(), flat_array(&cell, 10, 5, 2.0));
+    write_gz(
+        &format!("{DIR}/array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 2.0),
+    );
+
+    // Bordering sides (ENC.adj: a side under the 0.1 trigger is a line running past, and
+    // a line has one such side or two opposite ones; two adjacent short sides, or
+    // three, or four, leave a corner with no cap).  Line ends: a square in a 0.4 line
+    // with a 0.5 cap is clean, 0.495 fires, 0.0 fires, mid-line is clean.  Corners of a
+    // plate: flush on two sides fires, 0.5 left and flush bottom is clean, 0.05/0.05
+    // fires, 0.05 left and 0.5 bottom is clean.  Pads: 0.05 all round fires; 0.5 left
+    // and 0.05 elsewhere fires; 0.5 left and right with 0.05 top and bottom is clean, and
+    // so is 0.05 left and right with 0.5 top and bottom.  ENC.adj: 6.
+    write(
+        "adjacent".into(),
+        vec![
+            sq(2.5, 2.5),
+            enc(2.5, 2.5, 1.5, 0.0, 0.5, 0.0), // clean: cap 0.5
+            sq(5.0, 2.5),
+            enc(5.0, 2.5, 1.5, 0.0, 0.495, 0.0), // ENC.adj: cap 0.495
+            sq(7.5, 2.5),
+            enc(7.5, 2.5, 1.5, 0.0, 0.0, 0.0), // ENC.adj: cap 0.0
+            sq(10.0, 2.5),
+            enc(10.0, 2.5, 1.5, 0.0, 1.5, 0.0), // clean: mid-line
+            sq(2.5, 5.0),
+            enc(2.5, 5.0, 0.0, 0.0, 1.5, 1.5), // ENC.adj: flush left and bottom
+            sq(5.0, 5.0),
+            enc(5.0, 5.0, 0.5, 0.0, 1.5, 1.5), // clean: 0.5 left, flush bottom
+            sq(7.5, 5.0),
+            enc(7.5, 5.0, 0.05, 0.05, 1.5, 1.5), // ENC.adj: 0.05/0.05
+            sq(10.0, 5.0),
+            enc(10.0, 5.0, 0.05, 0.5, 1.5, 1.5), // clean: 0.05 left, 0.5 bottom
+            sq(2.5, 9.0),
+            enc(2.5, 9.0, 0.05, 0.05, 0.05, 0.05), // ENC.adj: 0.05 all round
+            sq(5.0, 9.0),
+            enc(5.0, 9.0, 0.5, 0.05, 0.05, 0.05), // ENC.adj: 0.5 left, 0.05 elsewhere
+            sq(7.5, 9.0),
+            enc(7.5, 9.0, 0.5, 0.05, 0.5, 0.05), // clean: 0.5 left/right, 0.05 top/bottom
+            sq(10.0, 9.0),
+            enc(10.0, 9.0, 0.05, 0.5, 0.05, 0.5), // clean: 0.05 left/right, 0.5 top/bottom
+        ],
+    );
 }

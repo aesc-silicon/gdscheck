@@ -201,7 +201,33 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 /// - `pinch` is two squares corner to corner, `acute` a right isosceles triangle, and
 ///   `corner` two squares overlapping 0.2 µm diagonally, whose neck is 0.28 µm from the
 ///   upper square's left wall to the lower square's right wall.
+///
+/// The hardening patterns, what a rule manual's width asks of any layer, drawn once for
+/// every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/width.rs`:
+///
+/// - `bound`: 0.5 clean, 0.495 in x and y, a 300 µm bar once, a 0.005 sliver, a bar at
+///   (1000, 1000) - five spans; the two 300 µm bars are over W.max as well.
+/// - `bound_45`: a diamond 0.495 across (four walls) and a 45° strip (two); the 0.502
+///   ones, a chamfered box and an L with a chamfered inner corner are clean; the strips
+///   are under W.bent's 0.7.
+/// - `merge`: unions reading 0.495 - two overlapping boxes, five slices, a ring's wall,
+///   an island in a ring - one span each; the 0.5 unions and a bar drawn as a grid clean.
+/// - `tile_lines`: 0.495 bars ending on, straddling and starting on the tile lines at
+///   20, 21, 40 and 42, tall bars across them, an L cornered on a line: ten spans
+///   whatever the tile.
+/// - `array_flat` / `array_ref`: fifty 0.495 bars flat and as an array reference.
+/// - `comb`: three 0.495 teeth of one polygon; a U with 0.5 arms is clean.
 #[rstest]
+#[case("bound", "W.min", 10)]
+#[case("bound", "W.max", 4)]
+#[case("bound_45", "W.min", 6)]
+#[case("bound_45", "W.bent", 4)]
+#[case("merge", "W.min", 8)]
+#[case("tile_lines", "W.min", 20)]
+#[case("array_flat", "W.min", 100)]
+#[case("array_ref", "W.min", 100)]
+#[case("comb", "W.min", 6)]
 #[case("straddle_min", "W.min", 2)]
 #[case("straddle_min", "W.max", 0)]
 #[case("straddle_max", "W.max", 2)]
@@ -314,7 +340,33 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 ///   long, wide and short, narrow and long.
 /// - `net_bridged` is two squares 0.25 apart joined through Via and Inner, `net_apart`
 ///   the same two alone.
+///
+/// The hardening patterns, what a rule manual's space asks of any layer, drawn once for
+/// every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/space.rs`:
+///
+/// - `bound`: a 0.495 gap, a 0.495 corner-to-corner offset, a 0.495 gap between boxes
+///   meeting corner-on; 0.5 and 0.502 corner to corner are clean.
+/// - `bound_45`: a diamond's tip 0.495 above a wall, two 45° strips 0.495 apart, a box
+///   corner 0.495 from a chamfer, two tips 0.495 apart - every one has a 45° wall, so
+///   S.bent (0.8) reads them all.
+/// - `merge`: a third box 0.495 from two overlapping boxes, two abutting ones and a grid,
+///   and an island 0.495 from a ring's inner wall - one pair each.
+/// - `tile_lines`: 0.495 gaps ending on, straddling and starting on the tile lines at 20,
+///   21, 40 and 42, two gaps running across them, a corner-to-corner pair across (20,
+///   20): ten whatever the tile.
+/// - `array_flat` / `array_ref`: fifty 0.495 pairs flat and as an array reference.
+/// - `extremes`: a 0.005 sliver 0.495 from a box, two 300 µm bars 0.495 apart (one
+///   pair), a pair at (1000, 1000).
 #[rstest]
+#[case("bound", "S.min", 3)]
+#[case("bound_45", "S.min", 4)]
+#[case("bound_45", "S.bent", 4)]
+#[case("merge", "S.min", 4)]
+#[case("tile_lines", "S.min", 10)]
+#[case("array_flat", "S.min", 50)]
+#[case("array_ref", "S.min", 50)]
+#[case("extremes", "S.min", 3)]
 #[case("axis_exact", "S.min", 0)]
 #[case("axis_under", "S.min", 1)]
 #[case("corner_exact", "S.min", 0)]
@@ -359,7 +411,24 @@ fn space_rules_meet_the_bound_exactly_and_read_their_gates(
 /// - `bent_slot` is a 45° slot 0.601 across running 2.83 µm, `bent_short` the same
 ///   0.71 µm deep, short of N.bent's 1 µm.
 /// - `len_*` are 0.4 µm slots in Inner 2 and 2.005 µm deep.
+///
+/// The hardening patterns, what a rule manual's "space or notch" asks of one shape,
+/// drawn once for every deck (hardening/SPEC.md); the counts are read off the drawings
+/// in `gen/engine/notch.rs`:
+///
+/// - `shapes`: a U notch, a straight-vs-45° notch, a comb's three slots, a slot into a
+///   plate, a keyhole's hole, a U's arms, a channel through a ring's wall - all 0.495;
+///   the 0.5 controls are clean.
+/// - `tile_lines`: 0.495 slots ending on, straddling and starting on the tile lines at
+///   20, 21, 40 and 42, and ring channels straddling 20 and 40: nine whatever the tile.
+/// - `array_flat` / `array_ref`: fifty 0.495 slots flat and as an array reference.
+/// - `extremes`: a 300 µm slot (one notch) and a slot at (1000, 1000).
 #[rstest]
+#[case("shapes", "N.min", 8)]
+#[case("tile_lines", "N.min", 9)]
+#[case("array_flat", "N.min", 50)]
+#[case("array_ref", "N.min", 50)]
+#[case("extremes", "N.min", 2)]
 #[case("slot_exact", "N.min", 0)]
 #[case("slot_under", "N.min", 1)]
 #[case("hole_thin", "N.min", 1)]
@@ -423,7 +492,35 @@ fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
 /// - `cap_*`: a 0.3 µm track with a via 0.3 and 0.295 from its tip, and a 0.34 track,
 ///   which is not narrow.
 /// - `ext_*`: a cover crossing a bar, reaching 0.5, 0.495 and 0.505 past its long walls.
+///
+/// The hardening patterns, what a rule manual's enclosure asks of any pair of layers,
+/// drawn once for every deck (hardening/SPEC.md); the counts are read off the drawings
+/// in `gen/engine/min_enclosure.rs`, a 0.4 square in the Outer:
+///
+/// - `bound`: 0.495 on the left, right, bottom and top of a square (one each), a square
+///   half out and one with no Outer at all; 0.5 all round is clean.
+/// - `shapes`: a square across a 0.005 gap between two boxes (both metrics), a chamfer
+///   0.495 from its corner and a diamond's four walls 0.495 from its corners (the
+///   closest approach's, ENC.eucl); over a seam, over an overlap, under a grid, and a
+///   chamfer 0.502 off are clean.
+/// - `tile_lines`: squares sticking 0.005 out of an Outer ending on the tile lines at
+///   20, 21, 40 and 42, at 10 and at (1000, 1000); squares straddling 20 and 40 with 0.5
+///   all round are clean.
+/// - `array_flat` / `array_ref`: fifty squares sticking 0.005 out, flat and as an array
+///   reference.
+/// - `adjacent`: a line's cap 0.495 and 0.0, a plate corner flush on two sides, 0.05 on
+///   two adjacent sides, on all four, and on three (ENC.adj); a 0.5 cap, mid-line, 0.5
+///   beside a flush or a 0.05 side, and 0.05 on two opposite sides are clean.
 #[rstest]
+#[case("bound", "ENC.proj", 6)]
+#[case("bound", "ENC.eucl", 6)]
+#[case("shapes", "ENC.proj", 1)]
+#[case("shapes", "ENC.eucl", 6)]
+#[case("tile_lines", "ENC.proj", 6)]
+#[case("tile_lines", "ENC.eucl", 6)]
+#[case("array_flat", "ENC.proj", 50)]
+#[case("array_ref", "ENC.proj", 50)]
+#[case("adjacent", "ENC.adj", 6)]
 #[case("max_exact", "ENC.max", 0)]
 #[case("max_exact", "ENC.proj", 0)]
 #[case("max_over", "ENC.max", 1)]
