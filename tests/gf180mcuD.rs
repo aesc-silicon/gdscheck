@@ -141,7 +141,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nat(
     "nat", "nat.gds.gz", "10_5_NAT",
-    &[("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2), ("NAT.2", 4), ("NAT.3", 3), ("NAT.4", 24), ("NAT.5", 12), ("NAT.6", 7), ("NAT.7", 2), ("NAT.8", 5), ("NAT.9", 4)]
+    &[("NAT.1", 2), ("NAT.10", 1), ("NAT.11", 1), ("NAT.12", 2), ("NAT.2", 4), ("NAT.3", 3), ("NAT.4", 24), ("NAT.5", 12), ("NAT.6", 2), ("NAT.7", 2), ("NAT.8", 5), ("NAT.9", 6)]
 )]
 #[case::ldnmos(
     "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
@@ -153,7 +153,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::efuse(
     "efuse", "efuse.gds.gz", "10_11_EFUSE",
-    &[("EF.01", 38), ("EF.02", 180), ("EF.03", 159), ("EF.04a", 41), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.06", 366), ("EF.07", 37), ("EF.08", 172), ("EF.09", 30), ("EF.10", 33), ("EF.11", 5), ("EF.12", 21), ("EF.13", 5), ("EF.14", 6), ("EF.15", 12), ("EF.16a", 74), ("EF.16b", 52), ("EF.17", 6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 55), ("EF.21", 122), ("EF.22a", 62), ("EF.22b", 33)]
+    &[("EF.01", 38), ("EF.02", 180), ("EF.03", 159), ("EF.04a", 41), ("EF.04b", 75), ("EF.04c", 23), ("EF.04d", 16), ("EF.05", 38), ("EF.06", 366), ("EF.07", 37), ("EF.08", 172), ("EF.09", 30), ("EF.10", 33), ("EF.11", 5), ("EF.12", 29), ("EF.13", 8), ("EF.14", 6), ("EF.15", 12), ("EF.16a", 74), ("EF.16b", 52), ("EF.17", 6), ("EF.18", 46), ("EF.19", 21), ("EF.20", 65), ("EF.21", 122), ("EF.22a", 62), ("EF.22b", 33)]
 )]
 #[case::hres(
     "hres", "hres.gds.gz", "10_3_HRES",
@@ -197,7 +197,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ymtp_mk(
     "ymtp_mk", "ymtp_mk.gds.gz", "10_13_YMTP",
-    &[("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 16), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 100), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 7), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 6), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 6)]
+    &[("Y.DF.16_LV", 6), ("Y.DF.16_MV", 6), ("Y.DF.6_MV", 16), ("Y.NW.2b_LV", 14), ("Y.NW.2b_MV", 28), ("Y.PL.1_LV", 100), ("Y.PL.1_MV", 119), ("Y.PL.2_LV", 68), ("Y.PL.2_MV", 164), ("Y.PL.4_MV", 7), ("Y.PL.5a_LV", 8), ("Y.PL.5a_MV", 7), ("Y.PL.5b_LV", 8), ("Y.PL.5b_MV", 7)]
 )]
 #[case::contact(
     "contact", "contact.gds.gz", "7_12_CO_Rev13_1P6M_11kA_MIMA_Gold_Bump",
@@ -217,7 +217,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
-    &[("O.CO.7", 2), ("O.DF.3a", 9), ("O.DF.6", 24), ("O.DF.9", 4), ("O.PL.2", 74), ("O.PL.3a", 14), ("O.PL.4", 14), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 6), ("O.SB.4", 3), ("O.SB.5b_LV", 6), ("O.SB.9", 2)]
+    &[("O.CO.7", 4), ("O.DF.3a", 9), ("O.DF.6", 30), ("O.DF.9", 4), ("O.PL.2", 74), ("O.PL.3a", 14), ("O.PL.4", 14), ("O.PL.ORT", 367), ("O.SB.11", 1), ("O.SB.13_LV", 53), ("O.SB.13_MV", 1), ("O.SB.2", 7), ("O.SB.3", 7), ("O.SB.4", 4), ("O.SB.5b_LV", 6), ("O.SB.9", 2)]
 )]
 #[case::mcell(
     "mcell", "mcell.gds.gz", "7_17_Mcell",
@@ -3103,9 +3103,11 @@ fn hardening_nat(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec
 // The source/drain overhang at 0.22 (clean) and 0.215, on both walls of the second gate.
 #[case::o_df_6_h1("otp_mk/O.DF.6.h1.gds.gz", "TOP", vec!["O.DF.6", "O.DF.6"])]
 // The same overhang over a 45° source edge: straight up from the gate's top wall there is
-// exactly 0.22 but only 0.1556 to the chamfer; then 0.19 straight up; then 0.02.  Report
-// finding 1: gdscheck reads none of the three, KLayout reads the last.
-#[case::o_df_6_h2("otp_mk/O.DF.6.h2.gds.gz", "TOP", vec!["O.DF.6"; 3])]
+// exactly 0.22 but only 0.1556 to the chamfer; then 0.19 straight up; then 0.02.  Read
+// euclidian the second and the third fire, where both tools were blind to them; the
+// first is the open half of report finding 1 - a 45° wall that comes under the value
+// from a corner while every straight margin clears it is read by neither tool (kept).
+#[case::o_df_6_h2("otp_mk/O.DF.6.h2.gds.gz", "TOP", vec!["O.DF.6", "O.DF.6"])]
 // An active of 0.1444 µm² (clean) and one of 0.1425, then a 1 µm² active with the marker
 // over a 0.3 µm corner of it.  Report finding 2: the cut leaves 0.09 µm² and both tools
 // report a COMP seven times the minimum.
@@ -3124,9 +3126,9 @@ fn hardening_nat(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec
 // The block covering the active by 0.04 (clean) and by 0.035.
 #[case::o_sb_11_h1("otp_mk/O.SB.11.h1.gds.gz", "TOP", vec!["O.SB.11"])]
 // Blocks of 1.488 µm² (clean) and 1.482 at 3.3 V, 2.0 (clean) and 1.99375 under V5_XTOR,
-// and a 1 µm² block under Dualgate alone.  Report finding 4: a Dualgate OTP cell is in
-// neither class, so its area is never checked.
-#[case::o_sb_13_h1("otp_mk/O.SB.13.h1.gds.gz", "TOP", vec!["O.SB.13_LV", "O.SB.13_MV", "O.SB.13_MV"])]
+// and a 1 µm² block under Dualgate alone.  Report finding 4: the section's note 1 sets
+// the 5 V rule by V5_XTOR, so that last block is a 3.3 V cell's and owes 1.488.
+#[case::o_sb_13_h1("otp_mk/O.SB.13.h1.gds.gz", "TOP", vec!["O.SB.13_LV", "O.SB.13_LV", "O.SB.13_MV"])]
 // Blocks 0.28 apart (clean) and 0.275 apart across x = 42, a 0.275 slot crossing x = 21,
 // and two blocks drawn edge to edge, which merge.
 #[case::o_sb_2_h1("otp_mk/O.SB.2.h1.gds.gz", "TOP", vec!["O.SB.2", "O.SB.2"])]

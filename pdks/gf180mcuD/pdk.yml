@@ -1861,6 +1861,17 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [ncomp, nwell]
+  # NAT.1's crossing half: an active that runs out through the marker's edge is held by
+  # it by nothing, and an enclosure reads only where the marker does hold it (report,
+  # nat finding 1).
+  - name: nat1_on_mark
+    op: overlapping
+    mode: lazy
+    layers: [nat_ncomp, nat]
+  - name: nat1_crossing
+    op: difference
+    mode: lazy
+    layers: [nat1_on_mark, nat]
   - name: nat_ncomp
     op: interacting
     mode: lazy
@@ -1925,8 +1936,10 @@ virtual_layers:
     min: 2
     mode: lazy
     layers: [poly_nat, nat9_gate]
+  # "Unrelated poly" is poly that is not on the marker; one that shares the marker's edge
+  # is not on it, and the space between them is nothing (report, nat finding 3).
   - name: poly_off_nat
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [poly2_drawn, nat]
   - name: nat12_viol
@@ -3438,14 +3451,20 @@ virtual_layers:
     layers: [hres10_overlap]
 
   # ---- OTP marker (otp_mk deck) -------------------------------------------
+  # OTP_MK and YMTP_MK mark cells - "This layer is used to mark 3.3V OTP cells" - and a
+  # marker naming a cell selects whole regions.  Cut into the layers instead, the marker
+  # gave a 1 um^2 active the area of the corner it covered and a solid plate the notch of
+  # a U-shaped marker (reports, otp_mk finding 2 and ymtp_mk finding 1).
   - name: comp_otp
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [comp, otp_mk]
+
   - name: poly_otp
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [poly2_drawn, otp_mk]
+
   - name: comp_otp_no_poly
     op: difference
     mode: lazy
@@ -3455,9 +3474,10 @@ virtual_layers:
     mode: lazy
     layers: [sab_otp, contact]
   - name: sab_otp
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [sab, otp_mk]
+
   - name: poly_unsalicided_otp
     op: intersection
     mode: lazy
@@ -3490,14 +3510,20 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [comp, sab]
+  # Note 1 of section 10.10: "Rule of 5V OTP is set by utilizing 'V5_XTOR' and 'OTP_MK'
+  # marking layer", so V5_XTOR is what tells the section's two classes apart, and the pair
+  # is complementary.  Split on Dualgate against V5_XTOR, a block in a Dualgate OTP cell
+  # was in neither class and its area was never measured (report, otp_mk finding 4).
   - name: sab_otp_lv
     op: not_overlapping
     mode: lazy
-    layers: [sab_otp, dualgate]
+    layers: [sab_otp, v5_xtor]
+
   - name: sab_otp_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [sab_otp, v5_xtor]
+
   - name: tgate_out_sab
     op: not_overlapping
     mode: lazy
@@ -3518,45 +3544,54 @@ virtual_layers:
     mode: lazy
     layers: [ymtp_mk, dualgate]
   - name: comp_ymtp_lv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [comp, ymtp_mk_lv]
+
   - name: comp_ymtp_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [comp, ymtp_mk_mv]
+
   - name: poly_ymtp_lv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [poly2_drawn, ymtp_mk_lv]
+
   - name: poly_ymtp_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [poly2_drawn, ymtp_mk_mv]
+
   - name: nwell_ymtp_lv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [nwell_n_dn, ymtp_mk_lv]
+
   - name: nwell_ymtp_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [nwell_n_dn, ymtp_mk_mv]
+
   - name: comp_no_otp_ymtp_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [comp_no_otp, ymtp_mk_mv]
+
   - name: ncomp_ymtp_lv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [ncomp, ymtp_mk_lv]
+
   - name: ncomp_ymtp_lv_out
     op: not_overlapping
     mode: lazy
     layers: [ncomp_ymtp_lv, all_nwell]
   - name: ncomp_ymtp_mv
-    op: intersection
+    op: overlapping
     mode: lazy
     layers: [ncomp, ymtp_mk_mv]
+
   - name: ncomp_ymtp_mv_out
     op: not_overlapping
     mode: lazy

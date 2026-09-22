@@ -14,10 +14,14 @@ rules:
     check: min_space
     layers: [ncomp_ymtp_lv_out, nwell_n_dn]
     value: 0.27
+    params:
+      abutting: report
   - id: Y.DF.16_MV
     check: min_space
     layers: [ncomp_ymtp_mv_out, nwell_n_dn]
     value: 0.23
+    params:
+      abutting: report
   - id: Y.NW.2b_LV
     check: min_space
     layers: [nwell_ymtp_lv]
@@ -64,15 +68,23 @@ rules:
     check: min_space
     layers: [poly_ymtp_lv, comp_ymtp_lv]
     value: 0.04
+    params:
+      abutting: report
   - id: Y.PL.5a_MV
     check: min_space
     layers: [poly_ymtp_mv, comp_ymtp_mv]
     value: 0.2
+    params:
+      abutting: report
   - id: Y.PL.5b_LV
     check: min_space
     layers: [poly_ymtp_lv, comp_ymtp_lv]
     value: 0.04
+    params:
+      abutting: report
   - id: Y.PL.5b_MV
     check: min_space
     layers: [poly_ymtp_mv, comp_ymtp_mv]
     value: 0.2
+    params:
+      abutting: report
