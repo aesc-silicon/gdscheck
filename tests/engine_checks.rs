@@ -662,7 +662,18 @@ fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
 /// - `adjacent`: a line's cap 0.495 and 0.0, a plate corner flush on two sides, 0.05 on
 ///   two adjacent sides, on all four, and on three (ENC.adj); a 0.5 cap, mid-line, 0.5
 ///   beside a flush or a 0.05 side, and 0.05 on two opposite sides are clean.
+/// - `max_tile_lines`: the maximum read across the lines, one violation per shape - a
+///   square in the middle of a 45 µm plate over three tiles reads its margin once.
+/// - `ext_tile_lines`: covers across the lines reaching 0.495 and 0.505 past a bar.
+/// - `extremes`: a 0.005 sliver with 0.495 on one side, a 300 µm bar with 0.495 at its
+///   far end; one with 0.5 all round is clean.
 #[rstest]
+#[case("max_tile_lines", "ENC.max", 7)]
+#[case("max_tile_lines", "ENC.proj", 0)]
+#[case("ext_tile_lines", "ENC.ext", 3)]
+#[case("ext_tile_lines", "ENC.max_ext", 2)]
+#[case("extremes", "ENC.proj", 2)]
+#[case("extremes", "ENC.eucl", 2)]
 #[case("bound", "ENC.proj", 6)]
 #[case("bound", "ENC.eucl", 6)]
 #[case("shapes", "ENC.proj", 1)]

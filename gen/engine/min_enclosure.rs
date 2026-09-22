@@ -377,4 +377,70 @@ pub fn generate(pdk: &PdkConfig) {
             enc(10.0, 9.0, 0.05, 0.5, 0.05, 0.5), // clean: 0.05 left/right, 0.5 top/bottom
         ],
     );
+
+    // The maximum across the tile lines (ENC.max, 0.5, one violation per shape read
+    // whole): squares whose Outer's left margin is 0.505 with the Outer across x = 20,
+    // the square across 20, the Outer ending on 20, the square's wall on 21, across y
+    // = 40, at (1000, 1000); a square in the middle of a 45 µm plate over three tiles,
+    // whose margin is 22 and read once, not at every line it crosses; a square with
+    // 0.5 all round straddling 20 is clean.  ENC.max: 7.
+    write(
+        "max_tile_lines".into(),
+        vec![
+            sq(20.8, 2.5),
+            enc(20.8, 2.5, 1.105, 0.5, 0.5, 0.5), // Outer from 19.495 across 20
+            sq(20.0, 5.0),
+            enc(20.0, 5.0, 0.505, 0.5, 0.5, 0.5), // square 19.8..20.2 across 20
+            sq(19.3, 7.5),
+            enc(19.3, 7.5, 0.505, 0.5, 0.5, 0.5), // Outer ending on 20
+            sq(21.2, 10.0),
+            enc(21.2, 10.0, 0.505, 0.5, 0.5, 0.5), // square's left wall on 21
+            sq(5.0, 40.0),
+            enc(5.0, 40.0, 0.505, 0.5, 0.5, 0.5), // across y = 40
+            sq(1000.2, 1000.2),
+            enc(1000.2, 1000.2, 0.505, 0.5, 0.5, 0.5),
+            sq(30.0, 60.0),
+            enc(30.0, 60.0, 22.3, 22.3, 22.3, 22.3), // a 45 µm plate, 7.5..52.5
+            sq(20.0, 15.0),
+            enc(20.0, 15.0, 0.5, 0.5, 0.5, 0.5), // clean
+        ],
+    );
+
+    // The extension across the tile lines (ENC.ext / ENC.max_ext, 0.5): a 10 µm bar
+    // of Inner across x = 20 with a 2 µm cover across the line reaching 0.495 past
+    // the bar's lower wall, and one reaching 0.505; the same across y = 40; a bar at
+    // (1000, 1000) with a 0.495 cover.  ENC.ext: 3; ENC.max_ext: 2.
+    let ext = |x: f64, y: f64, past: f64| {
+        vec![
+            rect(inner, x - 5.0, y, x + 5.0, y + 2.0),
+            rect(outer, x - 1.0, y - past, x + 1.0, y + 2.5),
+        ]
+    };
+    let ext_v = |x: f64, y: f64, past: f64| {
+        vec![
+            rect(inner, x, y - 5.0, x + 2.0, y + 5.0),
+            rect(outer, x - past, y - 1.0, x + 2.5, y + 1.0),
+        ]
+    };
+    let mut e = ext(20.0, 2.0, 0.495);
+    e.extend(ext(20.0, 8.0, 0.505));
+    e.extend(ext_v(2.0, 40.0, 0.495));
+    e.extend(ext_v(12.0, 40.0, 0.505));
+    e.extend(ext(1000.0, 1000.0, 0.495));
+    write("ext_tile_lines".into(), e);
+
+    // Small and long.  A 0.005 × 0.4 sliver of Inner with 0.495 on its left; a 300 µm
+    // bar of Inner in an Outer with 0.5 all round but 0.495 at its far end; one with
+    // 0.5 all round is clean.  ENC.proj: 2; ENC.eucl: 2.
+    write(
+        "extremes".into(),
+        vec![
+            rect(inner, 2.0, 2.0, 2.005, 2.4),
+            rect(outer, 1.505, 1.5, 2.505, 2.9),
+            rect(inner, 2.0, 6.0, 302.0, 6.4),
+            rect(outer, 1.5, 5.5, 302.495, 6.9),
+            rect(inner, 2.0, 10.0, 302.0, 10.4),
+            rect(outer, 1.5, 9.5, 302.5, 10.9), // clean
+        ],
+    );
 }
