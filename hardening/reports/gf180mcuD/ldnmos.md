@@ -182,3 +182,35 @@ at all three tile sizes and in agreement with the runset:
 
 MDN.6, MDN.7, MDN.7a, MDN.10f, MDN.13a-d and MDN.17 keep the good/bad pairs the deck
 already had; nothing this round drew moved them.
+
+## Resolution (2026-09-22)
+
+Findings 1 and 2 were fixed in the PDK; findings 3 and 4 were read again and kept, with
+the reason written where it can be seen.
+
+- **Finding 1 (MDN.12).** `mdn12_viol` gains a crossing half: `mdn12_crossing`, the part
+  of a bare N+ that overlaps the drift and lies outside it. An enclosure reads only where
+  the enclosing layer holds the shape, so `mdn12_short` had nothing to measure on a shape
+  that runs out through the edge, and the other half - a drift covering no bare active at
+  all - went quiet as soon as a second drain sat inside. `MDN.12.h1`'s fourth device
+  fires now, and the case expects MDN.12 four times and MDN.11 once. On the foundry
+  layout the union drops one marker (19 -> 18): a crossing piece that joins two regions
+  the deck already reported, which is granularity, not a lost violation.
+- **Finding 2 (MDN.2a).** The entry carries `params: net: same`. A gap between two drifts
+  on different nodes is MDN.2b's and is measured at its 2 µm, and the layout's fifth pair
+  reports MDN.2b alone. The foundry layout goes 24 -> 23.
+- **Finding 3 (the corner touch).** Kept as both tools read it: `interacting` is satisfied
+  by a point, so the pair takes MDN.5aii's 0.92 and 0.95 passes. `MDN.5aii.h2` expects
+  nothing, with the reading written above the case. Telling a corner from a shared edge
+  would need a separate layer op on both sides of the split, and the gap it changes is
+  0.08 µm.
+- **Finding 4 (MDN.17 on an LDPMOS).** Left as it is: the fixtures of each deck run under
+  that deck, so nothing reads an LDPMOS layout through `ldnmos`. The note stays because
+  it explains why a combined run would be noisy.
+
+The patterns of this deck drew three actives straddling their drift's edge, so the drift
+would *meet* them without enclosing them; with MDN.12 now reading that edge they are drawn
+inside the drift, and `device_bar`'s plain drift takes two islands rather than one, so it
+still meets four actives and is neither MDN.13d's drain nor its multi-finger device.
+`MDN.5aii`'s butted N+ moved to the far side of a wide tap, 4 µm clear of every drift,
+where MDN.9 has nothing to say about it either.

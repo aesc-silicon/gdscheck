@@ -131,3 +131,20 @@ at all three tile sizes and in agreement with the runset:
 
 MDP.3d, MDP.4, MDP.4b, MDP.5, MDP.6, MDP.6a, MDP.9d, MDP.9f, MDP.13b, MDP.13c, MDP.17a and
 MDP.17c keep the good/bad pairs the deck already had; nothing this round drew moved them.
+
+## Resolution (2026-09-22)
+
+Both findings were fixed in the PDK.
+
+- **Finding 1 (MDP.10).** The rule fixes the drift's overlap of the channel at 0.4, and
+  the deck read only the parts over it (`mdp10_wide`). The parts under it are a width now:
+  `mdp10_uniform` - the overlap regions that are not the wide ones - carries a
+  `min_width 0.4` entry, mirroring MDN.11, which the N side already read that way.
+  `MDP.10.h1` reports three markers instead of two.
+  The foundry layout goes 16 -> 30. The upstream rule exempts a whole drift that overlaps
+  its channel by 0.4 *anywhere* (`mvpsd_mv.not_interacting(mdp10_exclude)`), so the laps of
+  0.01 and 0.03 µm elsewhere on such a drift are reported by gdscheck alone; each of them
+  is an overlap that is not the fixed 0.4, which is what the rule asks.
+- **Finding 2 (MDP.10b).** The entry carries `params: net: same`, as MDN.2a does on the N
+  side. A gap between two drifts on different nodes is MDP.10a's 2 µm, and it was reported
+  under both ids. The foundry layout goes 4 -> 2, which is the runset's count there.
