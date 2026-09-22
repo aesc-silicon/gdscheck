@@ -17,7 +17,7 @@
 //! fixture inherits that spacing.
 
 use super::OFFSET;
-use crate::helpers::{layer, library, rect, write_gz};
+use crate::helpers::{layer, library, rect, shift, write_gz};
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
@@ -216,6 +216,7 @@ fn device(c: &Ctx, d: Dev) -> Vec<GdsElement> {
 
 pub fn generate(pdk: &PdkConfig) {
     std::fs::create_dir_all(DIR).expect("pattern dir");
+    hardening(pdk);
     let c = Ctx {
         comp: layer(pdk, "comp"),
         nplus: layer(pdk, "nplus"),
@@ -795,4 +796,576 @@ pub fn generate(pdk: &PdkConfig) {
 
     write("MDP.4b", "good", reach(20.0));
     write("MDP.4b", "bad", reach(40.0));
+}
+
+// --- Hardening (hardening/SPEC.md, the GF180MCU section) -------------------
+//
+// Layouts drawn from section 10.12.2 of the manual, at the bound each rule names and one
+// 0.005 µm step past it, with a case in the `hardening_ldpmos` table of
+// `tests/gf180mcuD.rs` and the findings in hardening/reports/gf180mcuD/ldpmos.md.
+//
+// The P side's own conditions are the deep well the device lives in, the N+ guard ring
+// inside it, the two markers over both, and the drift that has to hold its drain and
+// overlap its channel by a fixed amount - so the fixtures bend the well's hold on the
+// ring, the marker's hold on the well, the drift's hold on the drain, and the two body
+// taps (butted to the source and standing apart) the section keeps two numbers for.  The
+// generic classes (a bound on a bare layer, 45°, unions, notches, arrays) belong to the
+// engine family and are not redrawn here.
+//
+// Each fixture is a row of whole devices `H_PITCH` apart, each bent one way.  The widest
+// reach between two devices is MDP.15's 6 µm between deep wells and MDP.17a's 40 µm from
+// a drift to an active outside the wells; the wells stand 32 µm apart and every active in
+// the row is inside one, so no device answers for its neighbour.
+
+/// How far apart the devices of one hardening row stand.
+const H_PITCH: f64 = 60.0;
+
+/// The right-hand edges of the default device: its LDMOS marker, and the deep well inside
+/// it, which the probes that measure something from outside are placed off.
+const MARKER_R: f64 = OFFSET + 27.0;
+const WELL_R: f64 = OFFSET + 25.5;
+
+fn hwrite(name: &str, elems: Vec<GdsElement>) {
+    write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
+}
+
+/// A row of devices, each with whatever extra shapes its own probe needs, drawn in the
+/// device's own frame and shifted with it.
+fn row(c: &Ctx, items: Vec<(Dev, Vec<GdsElement>)>) -> Vec<GdsElement> {
+    let mut v = Vec::new();
+    for (i, (d, extra)) in items.into_iter().enumerate() {
+        let dx = i as f64 * H_PITCH;
+        v.extend(shift(&device(c, d), dx, 0.0));
+        v.extend(shift(&extra, dx, 0.0));
+    }
+    v
+}
+
+fn hardening(pdk: &PdkConfig) {
+    let c = Ctx {
+        comp: layer(pdk, "comp"),
+        nplus: layer(pdk, "nplus"),
+        pplus: layer(pdk, "pplus"),
+        poly2: layer(pdk, "poly2_drawn"),
+        mvpsd: layer(pdk, "mvpsd"),
+        dualgate: layer(pdk, "dualgate"),
+        ldmos: layer(pdk, "ldmos_xtor"),
+        contact: layer(pdk, "contact"),
+        metal1: layer(pdk, "metal1_drawn"),
+        nwell: layer(pdk, "nwell"),
+        dnwell: layer(pdk, "dnwell"),
+    };
+    let o = OFFSET;
+    let good = Dev::default();
+    // Actives whose implant covers exactly their own shape, so two drawn edge to edge
+    // butt without either implant running over the other.
+    let ncomp = |x0: f64, y0: f64, x1: f64, y1: f64| {
+        vec![rect(c.comp, x0, y0, x1, y1), rect(c.nplus, x0, y0, x1, y1)]
+    };
+    let pcomp = |x0: f64, y0: f64, x1: f64, y1: f64| {
+        vec![rect(c.comp, x0, y0, x1, y1), rect(c.pplus, x0, y0, x1, y1)]
+    };
+    // The device's drift runs x = o+12 to o+15.76 and its top edge is at y = o+11.
+    let drift_top = o + 11.0;
+
+    // --- MDP.1/MDP.1a: the channel.  0.6 µm of it at least, 20 at most.  A channel under
+    // 0.6 leaves the gate under MDP.9a's 1.2 by the same arithmetic as on the N side.
+    hwrite(
+        "MDP.1.h1",
+        row(
+            &c,
+            vec![
+                // 0.6 exactly: clean.
+                (
+                    Dev {
+                        channel: 0.6,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.595: MDP.1, and MDP.9a with it.
+                (
+                    Dev {
+                        channel: 0.595,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 20.0 exactly: clean.
+                (
+                    Dev {
+                        channel: 20.0,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 20.005: MDP.1a.
+                (
+                    Dev {
+                        channel: 20.005,
+                        ..good
+                    },
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.2/MDP.13a: the transistor's width, floored at 4 µm and capped - as the
+    // finger that carries it - at 50.
+    hwrite(
+        "MDP.2.h1",
+        row(
+            &c,
+            vec![
+                // 4.0 exactly, with a drain that leaves the drift its 0.8: clean.
+                (
+                    Dev {
+                        width: 4.0,
+                        drain_h: 3.0,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 3.995: MDP.2.
+                (
+                    Dev {
+                        width: 3.995,
+                        drain_h: 3.0,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 50.0 exactly: clean.
+                (
+                    Dev {
+                        width: 50.0,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 50.005: MDP.13a.
+                (
+                    Dev {
+                        width: 50.005,
+                        ..good
+                    },
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.10: the drift must overlap the channel by 0.4 µm, neither less nor more.
+    hwrite(
+        "MDP.10.h1",
+        row(
+            &c,
+            vec![
+                // 0.4 exactly: clean.
+                (
+                    Dev {
+                        comp_into_drift: 0.4,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.395 - under the fixed overlap.
+                (
+                    Dev {
+                        comp_into_drift: 0.395,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.405 - over it.  Both are MDP.10.
+                (
+                    Dev {
+                        comp_into_drift: 0.405,
+                        ..good
+                    },
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.9b: the gate must run 0.4 µm past the active in the width direction.
+    hwrite(
+        "MDP.9b.h1",
+        row(
+            &c,
+            vec![
+                // 0.4 exactly: clean.
+                (
+                    Dev {
+                        poly_past_width: 0.4,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.395: MDP.9b.
+                (
+                    Dev {
+                        poly_past_width: 0.395,
+                        ..good
+                    },
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.11: the drift must enclose the drain active by 0.8 µm, in the drain
+    // direction and along the transistor's width - so the fixture bends each in turn.
+    hwrite(
+        "MDP.11.h1",
+        row(
+            &c,
+            vec![
+                // 0.8 past the drain: clean.
+                (
+                    Dev {
+                        drain_hold: 0.8,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.795: MDP.11.
+                (
+                    Dev {
+                        drain_hold: 0.795,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.8 past the active in the width direction: clean.
+                (
+                    Dev {
+                        drift_past_width: 0.8,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.795: MDP.11 again.
+                (
+                    Dev {
+                        drift_past_width: 0.795,
+                        ..good
+                    },
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.3ai/MDP.3aii: the N+ guard ring's tap against the drift.  One gap, two
+    // numbers, picked by whether the tap is butted to the source: 1 µm standing apart,
+    // 0.92 butted.  The probes sit above the drift, inside the ring's hole; the butted
+    // ones carry a P+ of their own on the far side, away from the drift.
+    let ntap = |g: f64| ncomp(o + 13.0, drift_top + g, o + 14.5, drift_top + g + 1.5);
+    let nbutt = |g: f64| {
+        let mut v = ncomp(o + 13.0, drift_top + g, o + 14.5, o + 13.5);
+        v.extend(pcomp(o + 13.0, o + 13.5, o + 14.5, o + 15.0));
+        v
+    };
+    hwrite(
+        "MDP.3ai.h1",
+        row(
+            &c,
+            vec![
+                // A tap touching nothing, 1.0 off the drift: clean.
+                (good, ntap(1.0)),
+                // The same at 0.995: MDP.3ai.
+                (good, ntap(0.995)),
+                // A tap butted to a P+, 0.92 off the drift: clean.
+                (good, nbutt(0.92)),
+                // The same at 0.915: MDP.3aii.
+                (good, nbutt(0.915)),
+            ],
+        ),
+    );
+
+    // --- MDP.9ei/MDP.9eii: the same split against the gate, 0.4 standing apart and 0.32
+    // butted.  The probes sit above the gate, whose top edge is at y = o+10.5.
+    let gate_tap = |g: f64| ncomp(o + 6.0, o + 10.5 + g, o + 8.0, o + 12.0);
+    let gate_tap_butted = |g: f64| {
+        let mut v = gate_tap(g);
+        v.extend(pcomp(o + 6.0, o + 12.0, o + 8.0, o + 13.5));
+        v
+    };
+    hwrite(
+        "MDP.9ei.h1",
+        row(
+            &c,
+            vec![
+                // 0.4 off the gate, touching no P+: clean.
+                (good, gate_tap(0.4)),
+                // 0.395: MDP.9ei.
+                (good, gate_tap(0.395)),
+                // Butted, 0.32 off the gate: clean.
+                (good, gate_tap_butted(0.32)),
+                // 0.315: MDP.9eii.
+                (good, gate_tap_butted(0.315)),
+            ],
+        ),
+    );
+
+    // --- MDP.3b: an N+ and a P+ active in the deep well, 0.4 µm apart.
+    let pair = |g: f64| {
+        let mut v = pcomp(o + 5.0, o + 13.0, o + 7.0, o + 15.0);
+        v.extend(ncomp(o + 7.0 + g, o + 13.0, o + 9.0 + g, o + 15.0));
+        v
+    };
+    hwrite(
+        "MDP.3b.h1",
+        row(
+            &c,
+            vec![
+                // 0.4 exactly: clean.
+                (good, pair(0.4)),
+                // 0.395: MDP.3b.
+                (good, pair(0.395)),
+            ],
+        ),
+    );
+
+    // --- MDP.12: the deep well must hold the N+ guard ring by 0.66 µm.
+    hwrite(
+        "MDP.12.h1",
+        row(
+            &c,
+            vec![
+                // 0.66 exactly: clean.
+                (
+                    Dev {
+                        well_hold: 0.66,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.655: MDP.12.
+                (
+                    Dev {
+                        well_hold: 0.655,
+                        ..good
+                    },
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.16a/MDP.16b: the drain's own active, and the contact on it.  0.22 µm of
+    // width, and an active that encloses the contact by 0 - which a contact flush with
+    // the active's edge satisfies and one hanging over it does not.  The drain's right
+    // edge is at o+14.76.
+    let cont = |dx: f64| {
+        vec![rect(
+            c.contact,
+            o + 14.54 + dx,
+            o + 6.89,
+            o + 14.76 + dx,
+            o + 7.11,
+        )]
+    };
+    hwrite(
+        "MDP.16a.h1",
+        row(
+            &c,
+            vec![
+                // A drain exactly 0.22 tall: clean.
+                (
+                    Dev {
+                        drain_h: 0.22,
+                        drain_contact: false,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // 0.215: MDP.16a.
+                (
+                    Dev {
+                        drain_h: 0.215,
+                        drain_contact: false,
+                        ..good
+                    },
+                    vec![],
+                ),
+                // A contact flush with the drain's right edge: enclosed by 0, clean.
+                (
+                    Dev {
+                        drain_contact: false,
+                        ..good
+                    },
+                    cont(0.0),
+                ),
+                // The same contact 0.005 past that edge: MDP.16b.
+                (
+                    Dev {
+                        drain_contact: false,
+                        ..good
+                    },
+                    cont(0.005),
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.5a: Dualgate must hold the P+ guard ring by 0.5 µm.  The probe is a P+ tab
+    // against the deep well's right edge, and the margin is how far Dualgate reaches past
+    // the well.
+    let tab = || pcomp(WELL_R - 1.0, o + 5.0, WELL_R, o + 8.0);
+    hwrite(
+        "MDP.5a.h1",
+        row(
+            &c,
+            vec![
+                // 0.5 exactly: clean.
+                (
+                    Dev {
+                        outer_margin: 0.5,
+                        ..good
+                    },
+                    tab(),
+                ),
+                // 0.495: MDP.5a.
+                (
+                    Dev {
+                        outer_margin: 0.495,
+                        ..good
+                    },
+                    tab(),
+                ),
+            ],
+        ),
+    );
+
+    // --- MDP.4a: a P+ active outside the deep well must keep 2.5 µm from it.  The device
+    // carries a wide Dualgate so the probe is still inside the markers that make it the
+    // device's business.
+    let wide = Dev {
+        outer_margin: 8.0,
+        ..good
+    };
+    let outside_well = |g: f64| pcomp(WELL_R + g, o + 4.0, WELL_R + g + 3.0, o + 10.0);
+    hwrite(
+        "MDP.4a.h1",
+        row(
+            &c,
+            vec![
+                // 2.5 exactly: clean.
+                (wide, outside_well(2.5)),
+                // 2.495: MDP.4a.
+                (wide, outside_well(2.495)),
+            ],
+        ),
+    );
+
+    // --- MDP.7/MDP.8: what the LDMOS marker must keep clear of outside itself - an
+    // N-well by 2 µm, an N+ active by 1.5.  The marker's right edge is at o+27.
+    let out_well = |g: f64| {
+        vec![rect(
+            c.nwell,
+            MARKER_R + g,
+            o + 4.0,
+            MARKER_R + g + 4.0,
+            o + 10.0,
+        )]
+    };
+    let out_comp = |g: f64| ncomp(MARKER_R + g, o + 4.0, MARKER_R + g + 4.0, o + 10.0);
+    hwrite(
+        "MDP.7.h1",
+        row(
+            &c,
+            vec![
+                // A well 2.0 off the marker: clean.
+                (good, out_well(2.0)),
+                // 1.995: MDP.7.
+                (good, out_well(1.995)),
+                // An active 1.5 off the marker: clean.
+                (good, out_comp(1.5)),
+                // 1.495: MDP.8.
+                (good, out_comp(1.495)),
+            ],
+        ),
+    );
+
+    // --- MDP.15: the deep well that holds a drift must keep 6 µm from any other deep
+    // well.  The device's own well ends at o+25.5.
+    let other_well = |g: f64| {
+        vec![rect(
+            c.dnwell,
+            WELL_R + g,
+            o + 2.0,
+            WELL_R + g + 6.0,
+            o + 12.0,
+        )]
+    };
+    hwrite(
+        "MDP.15.h1",
+        row(
+            &c,
+            vec![
+                // 6.0 exactly: clean.
+                (good, other_well(6.0)),
+                // 5.995: MDP.15.
+                (good, other_well(5.995)),
+            ],
+        ),
+    );
+
+    // --- MDP.10a/MDP.10b: one gap between two drifts, read as same potential (1 µm) or
+    // different (2 µm).  Each pair is a mirrored pair of real drifts - a drift with no
+    // channel under it answers to MDP.10 instead - parked in the device's ring hole; the
+    // same-potential pairs share one drain active, which is what puts them on one node.
+    let drift = |x: f64, y: f64, w: f64, h: f64, flip: bool| {
+        let (cy0, cy1) = (y + 1.0, y + h - 1.0);
+        let s = if flip { -1.0 } else { 1.0 };
+        let e = if flip { x + w } else { x };
+        let at = |a: f64, b: f64| {
+            let (p, q) = (e + s * a, e + s * b);
+            (p.min(q), p.max(q))
+        };
+        let (gx0, gx1) = at(-1.0, 0.6);
+        let (sx0, sx1) = at(-2.0, 0.4);
+        let (dx0, dx1) = at(0.76, 2.0);
+        let (px0, px1) = at(-2.1, 2.1);
+        vec![
+            rect(c.mvpsd, x, y, x + w, y + h),
+            rect(c.comp, sx0, cy0, sx1, cy1),
+            rect(c.poly2, gx0, cy0 - 0.4, gx1, cy1 + 0.4),
+            rect(c.comp, dx0, cy0, dx1, cy1),
+            rect(c.pplus, px0, cy0 - 0.1, px1, cy1 + 0.1),
+        ]
+    };
+    let pair_at = |gap: f64, tied: bool| {
+        let y = o + 13.0;
+        let mut v = drift(o + 4.0, y, 4.0, 6.5, false);
+        v.extend(drift(o + 8.0 + gap, y, 4.0, 6.5, true));
+        if tied {
+            // One drain active over both drifts, which is what puts them on one node.
+            v.extend(pcomp(o + 6.0, y + 1.0, o + 10.0 + gap, y + 5.5));
+        }
+        v
+    };
+    hwrite(
+        "MDP.10b.h1",
+        row(
+            &c,
+            vec![
+                // One potential, 1.0 apart: clean.
+                (good, pair_at(1.0, true)),
+                // 0.995: MDP.10b.
+                (good, pair_at(0.995, true)),
+                // Two potentials, 2.0 apart: clean.
+                (good, pair_at(2.0, false)),
+                // 1.995: MDP.10a.
+                (good, pair_at(1.995, false)),
+                // Two potentials 0.995 apart - under the same-potential number too, which
+                // is the reading the split is there to prevent: MDP.10a and nothing else.
+                (good, pair_at(0.995, false)),
+            ],
+        ),
+    );
 }

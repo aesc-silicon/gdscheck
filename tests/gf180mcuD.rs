@@ -2274,3 +2274,55 @@ fn hardening_cup(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec
 fn hardening_ldnmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
     assert_eq!(hardening("ldnmos", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- LDMOS PFET (hardening/reports/gf180mcuD/ldpmos.md).  The same rows of whole devices
+// as the N side, over the device built the other way up: a deep well, an N+ guard ring
+// inside it, two markers over both, and a drift that holds its drain and overlaps its
+// channel by a fixed amount.
+#[rstest]
+// The channel at 0.6 (clean), 0.595 - which leaves the gate 1.195 wide, so MDP.9a comes
+// with it - 20.0 (clean) and 20.005.
+#[case::mdp_1_h1("ldpmos/MDP.1.h1.gds.gz", "TOP", vec!["MDP.1", "MDP.1a", "MDP.1a", "MDP.9a", "MDP.9a"])]
+// The drift's overlap of the channel, which the manual fixes at 0.4: 0.4 (clean), 0.395
+// and 0.405.  Report finding 1: gdscheck reports the long one only - an overlap under the
+// fixed 0.4 goes unreported.
+#[case::mdp_10_h1("ldpmos/MDP.10.h1.gds.gz", "TOP", vec!["MDP.10"; 2])]
+// One gap between two drifts under two readings: sharing a drain, so one potential, at
+// 1.0 (clean) and 0.995 (MDP.10b); mirrored and untied at 2.0 (clean), 1.995 (MDP.10a)
+// and 0.995.  Report finding 2: the last is MDP.10a's gap alone, and gdscheck reports
+// MDP.10b - the equal-potential rule - on it as well.
+#[case::mdp_10b_h1("ldpmos/MDP.10b.h1.gds.gz", "TOP", vec!["MDP.10a", "MDP.10a", "MDP.10b"])]
+// The drift's hold on the drain, 0.8 in each direction: 0.8 past the drain (clean), 0.795,
+// 0.8 past the active in the width direction (clean) and 0.795, which is both walls.
+#[case::mdp_11_h1("ldpmos/MDP.11.h1.gds.gz", "TOP", vec!["MDP.11"; 3])]
+// The deep well's hold on the N+ guard ring at 0.66 (clean) and 0.655.
+#[case::mdp_12_h1("ldpmos/MDP.12.h1.gds.gz", "TOP", vec!["MDP.12"])]
+// A second deep well 6.0 from the one that carries the drift (clean) and one 5.995 from
+// it.
+#[case::mdp_15_h1("ldpmos/MDP.15.h1.gds.gz", "TOP", vec!["MDP.15"])]
+// The drain active at 0.22 (clean) and 0.215, then a contact flush with the drain's edge
+// - enclosed by the 0 µm MDP.16b asks - and one 0.005 past it.
+#[case::mdp_16a_h1("ldpmos/MDP.16a.h1.gds.gz", "TOP", vec!["MDP.16a", "MDP.16a", "MDP.16b"])]
+// The transistor's width at 4.0 (clean), 3.995, 50.0 (clean) and 50.005.  The section
+// caps the finger (MDP.13a) and floors the width (MDP.2), and names no maximum width.
+#[case::mdp_2_h1("ldpmos/MDP.2.h1.gds.gz", "TOP", vec!["MDP.13a", "MDP.2", "MDP.2"])]
+// The guard ring's tap against the drift, one gap under two numbers: unbutted at 1.0
+// (clean) and 0.995, butted to a P+ at 0.92 (clean) and 0.915.
+#[case::mdp_3ai_h1("ldpmos/MDP.3ai.h1.gds.gz", "TOP", vec!["MDP.3ai", "MDP.3aii"])]
+// An N+ and a P+ active in the deep well, 0.4 apart (clean) and 0.395 apart.
+#[case::mdp_3b_h1("ldpmos/MDP.3b.h1.gds.gz", "TOP", vec!["MDP.3b"])]
+// A P+ active outside the deep well, 2.5 from it (clean) and 2.495 from it.
+#[case::mdp_4a_h1("ldpmos/MDP.4a.h1.gds.gz", "TOP", vec!["MDP.4a"])]
+// A P+ tab against the deep well's edge with Dualgate 0.5 past it (clean) and 0.495.
+#[case::mdp_5a_h1("ldpmos/MDP.5a.h1.gds.gz", "TOP", vec!["MDP.5a"])]
+// What the LDMOS marker keeps clear of outside itself: an N-well at 2.0 (clean) and 1.995,
+// an N+ active at 1.5 (clean) and 1.495.
+#[case::mdp_7_h1("ldpmos/MDP.7.h1.gds.gz", "TOP", vec!["MDP.7", "MDP.8"])]
+// The gate's end cap at 0.4 (clean) and 0.395, which is both its ends.
+#[case::mdp_9b_h1("ldpmos/MDP.9b.h1.gds.gz", "TOP", vec!["MDP.9b"; 2])]
+// The gate against the guard ring's tap, the butted/unbutted split again: 0.4 (clean) and
+// 0.395 unbutted, 0.32 (clean) and 0.315 butted.
+#[case::mdp_9ei_h1("ldpmos/MDP.9ei.h1.gds.gz", "TOP", vec!["MDP.9ei", "MDP.9eii"])]
+fn hardening_ldpmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    assert_eq!(hardening("ldpmos", gds, topcell, &[]), expected, "{gds}");
+}
