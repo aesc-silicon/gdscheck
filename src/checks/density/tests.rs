@@ -106,19 +106,49 @@ fn chip_density_is_the_layers_coverage_over_the_box() {
     assert_eq!(density_of(&v[0]), 50.0);
 }
 
-/// Without a boundary the box of every shape is the die; with one, the boundary's box
-/// is, even where the frame is a hollow ring whose own material is a sliver.
+/// The die is the boundary's own polygons, not their box: an L-shaped die of 7500 µm²
+/// in a 10 000 µm² box reads 2600 µm² of A as 34.67 % of the die, and A drawn on the
+/// corner of the box that is not die counts for nothing.  Without a boundary the box of
+/// every shape in the design is the die.
 #[test]
-fn the_denominator_is_a_box_not_material() {
-    let ring = vec![
-        brect(FRAME, 0, 0, 100_000, 1_000),
-        brect(FRAME, 0, 99_000, 100_000, 100_000),
-        brect(FRAME, 0, 0, 1_000, 100_000),
-        brect(FRAME, 99_000, 0, 100_000, 100_000),
-        brect(A, 0, 0, 100_000, 25_000),
-    ];
-    let lay = layout(ring);
+fn the_denominator_is_the_boundary_not_its_box() {
+    let ell = |extra: Vec<((i16, i16), GdsBoundary)>| {
+        let mut v = vec![
+            brect(FRAME, 0, 0, 100_000, 50_000),
+            brect(FRAME, 0, 50_000, 50_000, 100_000),
+            brect(A, 0, 0, 52_000, 50_000),
+        ];
+        v.extend(extra);
+        layout(v)
+    };
     let mut m = cache();
+    let lay = ell(vec![]);
+    let v = run(
+        Kind::Min,
+        &rule(&[A], 100.0, &boundary(FRAME)),
+        &lay,
+        DBU,
+        &mut m,
+    );
+    assert_eq!(density_of(&v[0]), 34.67, "2600 of 7500 µm², not of 10 000");
+    // The same layout with 2400 µm² of A in the notch - the part of the box that is no
+    // die.  It is not the die's coverage and does not raise it.
+    let mut m = cache();
+    let lay = ell(vec![brect(A, 60_000, 60_000, 100_000, 120_000)]);
+    let v = run(
+        Kind::Min,
+        &rule(&[A], 100.0, &boundary(FRAME)),
+        &lay,
+        DBU,
+        &mut m,
+    );
+    assert_eq!(density_of(&v[0]), 34.67);
+    // A die drawn as one box reads as its box, which is what it is.
+    let mut m = cache();
+    let lay = layout(vec![
+        brect(FRAME, 0, 0, 100_000, 100_000),
+        brect(A, 0, 0, 100_000, 25_000),
+    ]);
     let v = run(
         Kind::Min,
         &rule(&[A], 100.0, &boundary(FRAME)),
@@ -133,7 +163,7 @@ fn the_denominator_is_a_box_not_material() {
         25.0,
         "the shapes' own box is the same die here"
     );
-    // A narrower design without the ring: A alone is the die, so it covers all of it.
+    // A narrower design without a boundary: A alone is the die, so it covers all of it.
     let lay = layout(vec![brect(A, 0, 0, 100_000, 25_000)]);
     let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &mut m);
     assert!(v.is_empty());
