@@ -901,7 +901,31 @@ fn area_rules_meet_the_bound_exactly_on_every_scope(
 /// - `side_*`: a 4 by 6 plate, a sidewall of exactly 10 at 0.5 thick, 4 by 6.005 and
 ///   4 by 5.995.
 /// - `nets_*`: two Inner squares under one Outer marker, tied to it and not.
+///
+/// The hardening patterns, what a rule manual's antenna ratio asks of any layer, drawn
+/// once for every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/net.rs`, one violation per gate:
+///
+/// - `bound_45`: a plate with a triangle on a corner at 10.005 and one cut off at 9.995.
+/// - `merge`: a plate as two overlapping boxes (10 as a union, 12 as a sum), a gate as
+///   two halves under a 10.005 plate.
+/// - `tile_lines`: plates and gates across the lines, one ending on 42, one at (1000,
+///   1000); a 10 plate across 40 is clean.
+/// - `array_flat` / `array_ref`: fifty antennas.
+/// - `extremes`: a 300 µm plate, a 0.005 sliver.
+/// - `nets_tile_line_*`, `nets_array_*`: a marker across a line over a square each
+///   side, tied and not; fifty untied markers.
 #[rstest]
+#[case("bound_45", "N.ant", 1)]
+#[case("merge", "N.ant", 1)]
+#[case("tile_lines", "N.ant", 5)]
+#[case("array_flat", "N.ant", 50)]
+#[case("array_ref", "N.ant", 50)]
+#[case("extremes", "N.ant", 1)]
+#[case("nets_tile_line_one", "N.nets", 0)]
+#[case("nets_tile_line_two", "N.nets", 1)]
+#[case("nets_array_flat", "N.nets", 50)]
+#[case("nets_array_ref", "N.nets", 50)]
 #[case("ratio_exact", "N.ant", 0)]
 #[case("ratio_exact", "N.level", 0)]
 #[case("ratio_exact", "N.bare", 0)]
