@@ -162,3 +162,19 @@ left wall of each; the first (x 10..12) also lies under RES_MK (layer 62/0), the
   an N+ half 0.215 long (fires) and one 0.22 long.  The shared walls are an overlap of
   nothing and neither tool counts them.
 - NP.10 at the bound: `NP.10.h1` (a), 0.175 past an unsalicided COMP.
+
+## Resolution (2026-09-22)
+
+- **1 (NP.7 at a touch)**: fixed in the deck, `abutting: report`.
+- **2 (NP.10 crossing)**: fixed in the deck; NP.10 gets the `forbidden` half NP.9 has,
+  and both read the closest approach now.  The same on the P+ side (PP.10).
+- **3 (the butted-pair exemption)**: kept and open.  Cutting the pair out of the marker
+  invents walls along the cut, which the section's other rules on that layer then
+  measure - four of this deck's own cases broke on it.  The exemption wants a per-pair
+  reading, which the space check has no vocabulary for yet.
+- **4 (NP.9 and a marked poly resistor)**: fixed in the deck; NP.9 reads
+  `poly_sab_no_res`, the layer PP.9 already used, and the same sentence now means the
+  same thing in both sections.
+
+Foundry case `nplus.gds.gz`: NP.7 6 -> 7 (the touch), NP.9 6 -> 8, NP.10 5 -> 7 (the
+crossing halves).  `pplus.gds.gz`: PP.7 6 -> 7.

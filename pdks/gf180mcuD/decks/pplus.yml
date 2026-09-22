@@ -89,10 +89,14 @@ rules:
     params:
       interacting_only: 1
       skip_coincident: 1
+  # A marker wall drawn on the wall of an unsalicided poly is nothing away from it,
+  # which is under the value (the settled reading since IHP's NW.d).
   - id: PP.7
     check: min_space
     layers: [pplus, poly_sab_only]
     value: 0.18
+    params:
+      abutting: report
   - id: PP.8a
     check: min_area
     layers: [pplus]
@@ -112,6 +116,11 @@ rules:
   - id: PP.9
     check: forbidden
     layers: [pp_9_crossing]
+    value: 0.0
+  # PP.10's other half, as PP.9 has one (report, pplus finding 2/6).
+  - id: PP.10
+    check: forbidden
+    layers: [pp_10_crossing]
     value: 0.0
   - id: PP.10
     check: min_enclosure

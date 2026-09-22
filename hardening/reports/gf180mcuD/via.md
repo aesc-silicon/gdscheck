@@ -171,3 +171,10 @@ gave the answer the manual asks for.  No need to redo it.
 - **V1.5**, the permitted stack: a contact with Via1, Via2 and Via3 on one centre, every
   metal over them, and the deck silent (`V1.5.h1`).
 - **Tile invariance**: 15 layouts × tiles 20, 7 and 100, no rule's count moved.
+
+## Resolution (2026-09-22)
+
+All three findings are the array reading of the contact report's findings 2 and 3, and
+are kept for the same reason: one marker per array, and a cluster member the array's
+rows do not span is the settled "finger" exemption.  The cases carry that reading and
+name the report.

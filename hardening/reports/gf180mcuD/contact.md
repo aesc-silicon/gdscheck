@@ -248,3 +248,22 @@ gave the answer the manual asks for.  No need to redo it.
   shared by an abutting COMP and poly has no field oxide under it and CO.11 is silent
   (`CO.11.h1`).
 - **Tile invariance**: 21 layouts × tiles 20, 7 and 100, no rule's count moved.
+
+## Resolution (2026-09-22)
+
+- **1 (CO.3 / CO.4 on a 45° wall)**: fixed in the deck, `metric: euclidian`.  The
+  foundry case now reads CO.3 20 and CO.4 13, which is KLayout's count exactly (14 and
+  9 before).
+- **2, 3, 4 (the array)**: kept, and the cases flipped.  An array's pitch is one
+  structure and carries one marker, however many of its pairs are short; a member of
+  the cluster that the array's rows do not span is the "finger" reading the IHP round
+  settled (a 12x3 finger at the tight space hanging off a legal block is no part of any
+  4x4 and is exempt).  Reporting every pair, and every cluster member, would reverse
+  both decisions and the engine family's own cases with them; it is the gdscheck
+  owner's call, and the evidence is here.
+- **5 (CO.8 at a touch)**: fixed in the deck, `abutting: report`.
+- **6 (CO.5a / CO.5b crossing)**: fixed in the deck; both rules get the `forbidden`
+  half CO.3 and CO.4 have, on the contact that overlaps the implant and runs outside
+  it.  A straddling contact is CO.9 and CO.5a and CO.5b by one geometry, which the
+  isolation test now allows as twins.
+- **7 (CO.9 `interacting`)**: kept, as the report proposes.
