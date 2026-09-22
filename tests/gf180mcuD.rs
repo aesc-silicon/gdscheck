@@ -2684,3 +2684,69 @@ fn hardening_dummy_comp(
         "{gds}"
     );
 }
+
+// --- Dummy Poly2 (hardening/reports/gf180mcuD/dummy_poly2.md).  Section 13.2, read the
+// same way as 13.1: `h1` walks the distance, `h2` puts the two shapes together.  Every
+// dummy poly here carries the dummy COMP core DPF.1 asks for.
+#[rstest]
+// A 5.6 square over its 5.0 core (clean), the core slid half out, no core at all, and a
+// core drawn to the same outline (poly on COMP still, clean).
+#[case::dpf_1_h1("dummy_poly2/DPF.1.h1.gds.gz", "TOP", vec!["DPF.1", "DPF.1"], vec![])]
+#[case::dpf_2b_h1("dummy_poly2/DPF.2b.h1.gds.gz", "TOP", vec!["DPF.2b", "DPF.2b"], vec![])]
+// The 1.095 gap on the tile lines, and a 1.1 one that must stay clean.
+#[case::dpf_2b_h2("dummy_poly2/DPF.2b.h2.gds.gz", "TOP", vec!["DPF.2b", "DPF.2b", "DPF.2b"], vec![])]
+#[case::dpf_4_h1("dummy_poly2/DPF.4.h1.gds.gz", "TOP", vec!["DPF.4", "DPF.4"], vec![])]
+// Abutting COMP and half over it.  Report finding 1.
+#[case::dpf_4_h2("dummy_poly2/DPF.4.h2.gds.gz", "TOP", vec!["DPF.4", "DPF.4"], vec![])]
+#[case::dpf_5_h1("dummy_poly2/DPF.5.h1.gds.gz", "TOP", vec!["DPF.5", "DPF.5"], vec![])]
+#[case::dpf_5_h2("dummy_poly2/DPF.5.h2.gds.gz", "TOP", vec!["DPF.5", "DPF.5"], vec![])]
+#[case::dpf_6a_h1("dummy_poly2/DPF.6a.h1.gds.gz", "TOP", vec!["DPF.6a", "DPF.6a"], vec![])]
+// The band round an N-well boundary, at 0.995.  Report finding 2.
+#[case::dpf_6a_h2("dummy_poly2/DPF.6a.h2.gds.gz", "TOP", vec!["DPF.6a", "DPF.6a"], vec![])]
+#[case::dpf_6b_h1("dummy_poly2/DPF.6b.h1.gds.gz", "TOP", vec!["DPF.6b", "DPF.6b"], vec![])]
+#[case::dpf_6b_h2("dummy_poly2/DPF.6b.h2.gds.gz", "TOP", vec!["DPF.6b", "DPF.6b"], vec![])]
+#[case::dpf_6c_h1("dummy_poly2/DPF.6c.h1.gds.gz", "TOP", vec!["DPF.6c", "DPF.6c"], vec![])]
+#[case::dpf_6c_h2("dummy_poly2/DPF.6c.h2.gds.gz", "TOP", vec!["DPF.6c", "DPF.6c"], vec![])]
+#[case::dpf_6d_h1("dummy_poly2/DPF.6d.h1.gds.gz", "TOP", vec!["DPF.6d", "DPF.6d"], vec![])]
+#[case::dpf_6d_h2("dummy_poly2/DPF.6d.h2.gds.gz", "TOP", vec!["DPF.6d", "DPF.6d"], vec![])]
+#[case::dpf_8_h1("dummy_poly2/DPF.8.h1.gds.gz", "TOP", vec!["DPF.8", "DPF.8"], vec![])]
+#[case::dpf_8_h2("dummy_poly2/DPF.8.h2.gds.gz", "TOP", vec!["DPF.8", "DPF.8"], vec![])]
+#[case::dpf_9_h1("dummy_poly2/DPF.9.h1.gds.gz", "TOP", vec!["DPF.9", "DPF.9"], vec![])]
+#[case::dpf_9_h2("dummy_poly2/DPF.9.h2.gds.gz", "TOP", vec!["DPF.9", "DPF.9"], vec![])]
+#[case::dpf_11_h1("dummy_poly2/DPF.11.h1.gds.gz", "TOP", vec!["DPF.11", "DPF.11"], vec![])]
+#[case::dpf_11_h2("dummy_poly2/DPF.11.h2.gds.gz", "TOP", vec!["DPF.11", "DPF.11"], vec![])]
+#[case::dpf_12_h1("dummy_poly2/DPF.12.h1.gds.gz", "TOP", vec!["DPF.12", "DPF.12"], vec![])]
+// Dummy poly abutting circuit Metal1 and running under it: the rule is a lateral space,
+// and a fill with metal over it has none of it.  Report finding 1.
+#[case::dpf_12_h2("dummy_poly2/DPF.12.h2.gds.gz", "TOP", vec!["DPF.12", "DPF.12"], vec![])]
+#[case::dpf_13_h1("dummy_poly2/DPF.13.h1.gds.gz", "TOP", vec!["DPF.13", "DPF.13"], vec![])]
+#[case::dpf_13_h2("dummy_poly2/DPF.13.h2.gds.gz", "TOP", vec!["DPF.13", "DPF.13"], vec![])]
+#[case::dpf_14_h1("dummy_poly2/DPF.14.h1.gds.gz", "TOP", vec!["DPF.14", "DPF.14"], vec![])]
+#[case::dpf_14_h2("dummy_poly2/DPF.14.h2.gds.gz", "TOP", vec!["DPF.14", "DPF.14"], vec![])]
+#[case::dpf_16_h1("dummy_poly2/DPF.16.h1.gds.gz", "TOP", vec!["DPF.16", "DPF.16"], vec![])]
+#[case::dpf_16_h2("dummy_poly2/DPF.16.h2.gds.gz", "TOP", vec!["DPF.16", "DPF.16"], vec![])]
+#[case::dpf_19_h1("dummy_poly2/DPF.19.h1.gds.gz", "TOP", vec!["DPF.19", "DPF.19"], vec![])]
+#[case::dpf_19_h2("dummy_poly2/DPF.19.h2.gds.gz", "TOP", vec!["DPF.19", "DPF.19"], vec![])]
+// The 5.6 square DPF.1 asks for, and a truncated one: DPF.10, the poly twin of DCF.10.
+// Report finding 4.
+#[case::dpf_10_h1("dummy_poly2/DPF.10.h1.gds.gz", "TOP", vec!["DPF.10"], vec![])]
+// Dummy poly2 wholly under IND_MK (DPF.15), MTPMARK (DPF.17) and PMNDMY (DPF.18), each
+// of which the manual states as its own rule.  Report finding 3.
+// Fill 25.7 µm inside the PR_BNDRY polygon (clean) and 25.695 inside it: DPF.7's space
+// from dummy poly2 in the prime die to the scribe line.  Report finding 5.
+#[case::dpf_7_h1("dummy_poly2/DPF.7.h1.gds.gz", "TOP", vec!["DPF.7"], vec![])]
+#[case::dpf_15_h1("dummy_poly2/DPF.15.h1.gds.gz", "TOP", vec!["DPF.15"], vec![])]
+#[case::dpf_17_h1("dummy_poly2/DPF.17.h1.gds.gz", "TOP", vec!["DPF.17"], vec![])]
+#[case::dpf_18_h1("dummy_poly2/DPF.18.h1.gds.gz", "TOP", vec!["DPF.18"], vec![])]
+fn hardening_dummy_poly2(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(
+        hardening("dummy_poly2", gds, topcell, &ignore),
+        expected,
+        "{gds}"
+    );
+}
