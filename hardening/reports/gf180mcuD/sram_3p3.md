@@ -226,3 +226,38 @@ gave the answer the manual asks for.
 - **Tile invariance**: twelve layouts x tiles 20, 7 and 100, no rule's count moved; four
   contacts and an N-well gap deliberately laid across x = 20, x = 40, x = 42 and y = 20 in
   `S.CO.3_LV.h5` give 4 + 1 at every tile.
+
+---
+
+## Resolution (2026-09-22)
+
+All five findings were fixed in the PDK; finding 4 was decided for V5_XTOR.
+
+- **Finding 4 first, because the rest rests on it.** `sram_lv` is `sramcore
+  not_overlapping v5_xtor`. Section 11 names V5_XTOR in its own prose - 11.1 is for "5V
+  SRAM cells with marking layer V5_XTOR", 11.2 for the cells "without" it - so that is the
+  split the section itself defines, and read on it the two classes are complementary and
+  exhaustive. The settled Dualgate reading stays chapter 7's, where the manual's tables
+  use it. `S.CO.3_LV.h4` and `S.DF.4c_LV.h3` report the three and the two the manual
+  names. The `comp` round's DF.8 fixture drew its "SRAM at 5 V" core without the marker
+  11.1 names; it carries it now.
+- **Finding 3.** Each base rule's exemption names the class that replaces it:
+  `contact_no_sram_lv` for CO.3 and CO.6b (a 3.3 V replacement only, so a 5 V core owes
+  chapter 7's 0.07), `contact_no_sram` for CO.4 (replaced in both sections), and the same
+  per class for DF.4c, DF.16, DF.7_MV, DF.8_MV, PL.5a/5b_MV and M1.1. The LV layers the
+  deck measures - `poly_sram`, `comp_sram`, `contact_sram`, `metal1_sram` - come from
+  `sram_lv` rather than the bare marker, so the four LV rules no longer fire in a 5 V core.
+  `hardening_sram_base::case_1` reports the two CO.3 the manual gives the V5_XTOR cores;
+  `case_2` reports one CO.4, for the contact that is in no core at all - every core has a
+  CO.4 of its own, in one section or the other.
+- **Finding 5.** The marker selects whole regions: `nwell_n_dn_sram` and its siblings are
+  `overlapping` selections, and S.DF.4c_LV reads the well itself whole (`nwell_n_dn`) with
+  only the active picked out by the marker. `S.DF.4c_LV.h2` is clean. The base DF.4c is
+  built the same way - `nw_ndn_3p3v` / `nw_ndn_56v` are the well by voltage class, uncut,
+  and the exemption sits on the active. M1.1 keeps its cut on both sides: a width is
+  measured across a shape, not to a wall.
+- **Finding 1.** S.CO.3_LV, S.CO.4_LV and S.DF.4c_LV carry `metric: euclidian`. On the
+  foundry layout each goes from 7 markers to 9, which is the runset's count for all three.
+- **Finding 2.** S.DF.16_LV carries `abutting: report`.
+
+The reading recorded as settled - S.CO.6_ii_LV's value and trigger - was left alone.

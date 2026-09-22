@@ -180,3 +180,23 @@ must not delete the rest: the base rules should drop only the shapes a replaceme
 - **The voltage class**: a core V5_XTOR covers in part is wholly 11.1's (the marker selects
   the region, it does not cut it); a core V5_XTOR only abuts is not (`S.CO.4_MV.h3`).
 - **Tile invariance**: twelve layouts x tiles 20, 7 and 100, no rule's count moved.
+
+---
+
+## Resolution (2026-09-22)
+
+- **Finding 1.** S.DF.7_MV, S.DF.16_MV and S.PL.5a_MV carry `abutting: report`.
+- **Finding 2.** S.PL.5a_MV and S.PL.5b_MV are one measurement under two names now, both
+  on `poly_sram_mv` with `pairs: any` - which is how chapter 7's PL.5a_MV and PL.5b_MV are
+  written, for the same reason: 11.1 gives the two rules one value between them, so no gap
+  under 0.12 may escape and each gap carries both ids. Read on the poly that gates no
+  active, a gate over one active passing 0.115 µm from a second fell between them.
+  `S.PL.5a_MV.h1` and `S.PL.5b_MV.h1` report both ids on every gap; the foundry layout goes
+  6 -> 10 and 4 -> 10.
+- **Finding 3** is the twin of `sram_3p3.md`'s finding 3 and was fixed with it: the base
+  rules' exemptions name the class that replaces them, and the 5 V class is now SRAMCORE
+  *with* V5_XTOR, as 11.1's own prose has it.
+
+The MV layers already read euclidian and already selected by `sram_mv`; what changed for
+them is that the marker selects whole regions rather than cutting them, and that
+`ncomp_dn_sram` (S.DF.8_MV's active) comes from `sram_mv` rather than the bare marker.

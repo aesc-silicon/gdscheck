@@ -79,3 +79,11 @@ with both.
 - **Tile invariance**: three layouts x tiles 20, 7 and 100, no count moved; the three
   half-covered emitters of `LVS_BJT.1.h3` straddle x = 20, x = 42 and y = 20 and give 3 at
   every tile in both tools.
+
+---
+
+## Resolution (2026-09-22)
+
+No findings, and nothing changed in the deck. The two readings the report records - a
+marker that only abuts an active still names it an emitter, and an active the well's edge
+cuts is not one - stand as they are.
