@@ -36,15 +36,30 @@ rules:
     check: min_notch
     layers: [nw_mv_no_ymtp]
     value: 0.74
+  # "Outside DNWELL": wells inside a deep well are shorted through it (section 7.4),
+  # so a gap between two of them is never one of different potential, whether or not
+  # each carries a tap of its own.
   - id: NW.2b_LV
     check: min_space
-    layers: [nw_lv]
+    layers: [nw_lv_out_dnwell]
     value: 1.4
     params:
       net: different
   - id: NW.2b_MV
     check: min_space
-    layers: [nw_mv]
+    layers: [nw_mv_out_dnwell]
+    value: 1.7
+    params:
+      net: different
+  # A gap between a 5 V well and a 3.3 V one is the 5 V well's: the stricter value
+  # applies, and neither voltage layer holds the pair.
+  - id: NW.2a_MV
+    check: min_space
+    layers: [nw_mv, nw_lv]
+    value: 0.74
+  - id: NW.2b_MV
+    check: min_space
+    layers: [nw_mv_out_dnwell, nw_lv_out_dnwell]
     value: 1.7
     params:
       net: different
@@ -52,6 +67,8 @@ rules:
     check: min_space
     layers: [nwell, dnwell]
     value: 3.1
+    params:
+      abutting: report
   - id: NW.4
     check: forbidden
     layers: [nwell_on_lvpwell]

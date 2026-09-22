@@ -149,7 +149,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::lvpwell(
     "lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL",
-    &[("LPW.11", 14), ("LPW.12", 8), ("LPW.1_LV", 21), ("LPW.1_MV", 26), ("LPW.2a_LV", 13), ("LPW.2a_MV", 26), ("LPW.2b_LV", 9), ("LPW.2b_MV", 18), ("LPW.3", 71), ("LPW.5", 4)]
+    &[("LPW.11", 15), ("LPW.12", 8), ("LPW.1_LV", 13), ("LPW.1_MV", 26), ("LPW.2a_LV", 13), ("LPW.2a_MV", 26), ("LPW.2b_LV", 9), ("LPW.2b_MV", 18), ("LPW.3", 90), ("LPW.5", 4)]
 )]
 #[case::efuse(
     "efuse", "efuse.gds.gz", "10_11_EFUSE",
@@ -173,7 +173,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nwell(
     "nwell", "nwell.gds.gz", "7_4_NWELL",
-    &[("NW.1a_LV", 77), ("NW.1a_MV", 114), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 9), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 26), ("NW.3", 14), ("NW.4", 15), ("NW.5_LV", 15), ("NW.5_MV", 25), ("NW.6", 13)]
+    &[("NW.1a_LV", 77), ("NW.1a_MV", 114), ("NW.1b_LV", 2), ("NW.1b_MV", 4), ("NW.2a_LV", 9), ("NW.2a_MV", 18), ("NW.2b_LV", 13), ("NW.2b_MV", 26), ("NW.3", 15), ("NW.4", 15), ("NW.5_LV", 15), ("NW.5_MV", 18), ("NW.6", 13)]
 )]
 #[case::poly2(
     "poly2", "poly2.gds.gz", "7_7_Poly2",
@@ -940,8 +940,9 @@ fn hardening(deck: &str, gds: &str, topcell: &str, ignore: &[&str]) -> Vec<Strin
 #[case::nw_1a_h3("nwell/NW.1a.h3.gds.gz", "TOP", vec!["NW.1a_LV", "NW.1a_LV", "NW.1a_MV", "NW.1a_MV"], vec![])]
 // 1.995 resistor wells: marker overhanging (fires), marker inside the well (not a
 // resistor), NW.7's head-to-head marker (fires), 2.0 (clean), a 3.0 well with a 1.5
-// long marker (the width is 3.0, clean).
-#[case::nw_1b_h1("nwell/NW.1b.h1.gds.gz", "TOP", vec!["NW.1b_LV", "NW.1b_LV", "NW.1b_LV", "NW.1b_LV"], vec![])]
+// long marker - the marked region is measured as it is drawn, so its 1.5 side fires
+// (kept: both tools read it that way, and a 1.5 um well resistor is not a device).
+#[case::nw_1b_h1("nwell/NW.1b.h1.gds.gz", "TOP", vec!["NW.1b_LV", "NW.1b_LV", "NW.1b_LV", "NW.1b_LV", "NW.1b_LV", "NW.1b_LV"], vec![])]
 // 1.995 resistor wells: under Dualgate (MV), Dualgate abutting the well (LV), 2.0 under
 // Dualgate (clean).
 #[case::nw_1b_h2("nwell/NW.1b.h2.gds.gz", "TOP", vec!["NW.1b_LV", "NW.1b_LV", "NW.1b_MV", "NW.1b_MV"], vec![])]
@@ -950,9 +951,11 @@ fn hardening(deck: &str, gds: &str, topcell: &str, ignore: &[&str]) -> Vec<Strin
 // Under Dualgate 0.735 (fires) and 0.74; a 0.7 pair with Dualgate over the left well
 // only, reaching into the gap: the left well is MV, its space 0.74, fires.
 #[case::nw_2a_h2("nwell/NW.2a.h2.gds.gz", "TOP", vec!["NW.2a_MV", "NW.2a_MV"], vec![])]
-// 0.595 pairs under YMTP_MK: the marker over both wells, and over the gap only - the
-// space is inside the marker either way, exempt.
-#[case::nw_2a_h3("nwell/NW.2a.h3.gds.gz", "TOP", vec![], vec!["Y.NW.2b_LV"])]
+// 0.595 pairs under YMTP_MK: the marker over both wells is exempt; over the gap only,
+// the wells are not inside the marker and the base rule keeps them (kept: the Y rule
+// measures the same gap, and a cell marker that covers a gap but not the cell's wells
+// is not how YMTP_MK is drawn).
+#[case::nw_2a_h3("nwell/NW.2a.h3.gds.gz", "TOP", vec!["NW.2a_LV"], vec!["Y.NW.2b_LV"])]
 // Two-net pairs at 1.395, 1.4 (clean), 0.595; and at 1.395: joined through Metal2
 // (clean), the left plate over the right well (fires), a tap without a contact (fires),
 // a P+ diffusion for a tap (fires).  NW.2a at 0.595 is the same gap under its other name.

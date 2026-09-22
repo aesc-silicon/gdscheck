@@ -72,3 +72,10 @@ diffusion in it, one Metal1 plate over both contacts.
 - DN.3: the five rings that fail and the five that hold, above (`DN.3.h1`, `DN.3.h2`);
   a 30 µm ring across the tile lines holds, the same with a 0.5 gap fails, at every
   tile size (`DN.3.h3`).
+
+## Resolution (2026-09-22)
+
+No finding against gdscheck, and none against the deck: every case passed as drawn and
+still does.  The KLayout bug recorded here (a DNWELL tied to an N+ diffusion inside the
+LVPWELL it holds, so DN.2b goes silent there) needs nothing from this engine; the note
+stays for the next round.
