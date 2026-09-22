@@ -997,3 +997,43 @@ fn hardening_nwell(
 ) {
     assert_eq!(hardening("nwell", gds, topcell, &ignore), expected, "{gds}");
 }
+
+// --- Deep N-well (hardening/reports/gf180mcuD/dnwell.md).  Two wells are one potential
+// when an N+ tap in each reaches one Metal1 plate; a diffusion in a P-well inside the
+// deep well, or a P+ one, is not a tap.
+#[rstest]
+// 1.695 × 6 (fires, one marker per wall) and 1.7 × 6, each in a ring.
+#[case::dn_1_h1("dnwell/DN.1.h1.gds.gz", "TOP", vec!["DN.1", "DN.1"], vec![])]
+// One-net pairs at 2.495 (fires) and 2.5; a 2.495 slot (fires) and a 2.5 one.
+#[case::dn_2a_h1("dnwell/DN.2a.h1.gds.gz", "TOP", vec!["DN.2a", "DN.2a"], vec![])]
+// Two wells 2.495 apart tapped only through the N-wells they hold, one plate: one net.
+#[case::dn_2a_h2("dnwell/DN.2a.h2.gds.gz", "TOP", vec!["DN.2a"], vec![])]
+// One-net 2.495 gaps straddling x = 20 and 42; two-net 5.415 gaps straddling 40 and 21.
+#[case::dn_2a_h3("dnwell/DN.2a.h3.gds.gz", "TOP", vec!["DN.2a", "DN.2a", "DN.2b", "DN.2b"], vec![])]
+// Two-net pairs at 5.415 (fires), 5.42, 2.495 (fires - two potentials, DN.2b's).
+#[case::dn_2b_h1("dnwell/DN.2b.h1.gds.gz", "TOP", vec!["DN.2b", "DN.2b"], vec![])]
+// 5.415 pairs strapped through an N+ in the right well's P-well, over the right well
+// without a contact, and through a P+ diffusion: two potentials each.
+#[case::dn_2b_h2("dnwell/DN.2b.h2.gds.gz", "TOP", vec!["DN.2b", "DN.2b", "DN.2b"], vec![])]
+// Two untapped wells 2.495 apart: nothing ties them, DN.2b.
+#[case::dn_2b_h3("dnwell/DN.2b.h3.gds.gz", "TOP", vec!["DN.2b"], vec![])]
+// A C for a ring, an N+ wall, one ring round two wells (twice), an N-well and an N+
+// diffusion beside the well inside its ring.
+#[case::dn_3_h1("dnwell/DN.3.h1.gds.gz", "TOP", vec!["DN.3", "DN.3", "DN.3", "DN.3", "DN.3", "DN.3"], vec![])]
+// A P+ diffusion and an N-well inside the well in the ring, a ring abutting the well,
+// an octagonal ring, a ring of sixteen boxes, a ring in a ring.
+#[case::dn_3_h2("dnwell/DN.3.h2.gds.gz", "TOP", vec![], vec![])]
+// A 30 µm ring round a 20 µm well across the tile lines (clean); the same with a gap.
+#[case::dn_3_h3("dnwell/DN.3.h3.gds.gz", "TOP", vec!["DN.3"], vec![])]
+fn hardening_dnwell(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(
+        hardening("dnwell", gds, topcell, &ignore),
+        expected,
+        "{gds}"
+    );
+}
