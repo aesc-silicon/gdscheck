@@ -4813,7 +4813,7 @@ fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> 
 /// True if the segment `e` meets the region `poly` — either endpoint inside or on it, or
 /// the segment crossing its boundary.  A segment running clear past a region touches
 /// neither, which is what makes this a selection rather than a proximity test.
-fn poly_meets_edge(poly: &MergedPoly, e: &Edge) -> bool {
+pub(crate) fn poly_meets_edge(poly: &MergedPoly, e: &Edge) -> bool {
     let (px, py) = (e.a.x as f64, e.a.y as f64);
     let (qx, qy) = (e.b.x as f64, e.b.y as f64);
     if point_in_merged(px, py, poly) || point_in_merged(qx, qy, poly) {

@@ -321,13 +321,11 @@ rules:
   # A via, a contact or a keep-out that lies *on* the mark is nothing away from it and
   # has no gap to measure: the slot is cut out of the metal, so the via would land on
   # nothing and no other rule sees it (report, mslot finding 4).
-  - id: MSLOT5.7
-    check: forbidden
-    layers: [metal5_slot_on_via]
-    value: 0.0
+  # On the top level the via below is Via4 and the deck's own id for it is `.8`; there
+  # is no contact at this level and no `.7`.
   - id: MSLOT5.8
     check: forbidden
-    layers: [metal5_slot_on_contact]
+    layers: [metal5_slot_on_via]
     value: 0.0
   - id: MSLOT5.9
     check: forbidden

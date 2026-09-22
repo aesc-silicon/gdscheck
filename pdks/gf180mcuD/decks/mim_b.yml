@@ -33,10 +33,14 @@ rules:
     check: forbidden
     layers: [mimtm_4_crossing]
     value: 0.0
+  # A via drawn edge to edge with the plate is nothing away from it (the settled
+  # reading since IHP's NW.d; only the corner touch was read before).
   - id: MIMTM.5
     check: min_space
     layers: [fusetop, top_via_on_topmin1_metal]
     value: 0.4
+    params:
+      abutting: report
   - id: MIMTM.6
     check: min_space
     layers: [fusetop]

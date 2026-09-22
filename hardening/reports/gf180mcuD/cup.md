@@ -157,3 +157,18 @@ narrow line with the pad over the whole of it and with the pad on its middle, bo
 the tile lines at 20 and 42; five line lengths under one pad position.  CUP.3 at
 0.995/1.000 with the pad over the slot, with the pad short of it, and with a guard ring on
 the polygon.  No count in the deck moved with the tile size.
+
+## Resolution (2026-09-22)
+
+- **1 (a narrow line dropped past the pad)**: fixed in the engine.  The
+  `interacting` layer param kept a violation by sampling its marker at five points, so a
+  six-micron pad on a thirty-five micron line fell between them; the marker's segment is
+  tested against the layer exactly now, tile by tile over its own box.  `CUP.2.h3`,
+  `h10` and `h12` report what the manual asks.
+- **2 (a measurement whose walls do not meet the pad)**: kept and open.  The filter
+  keeps a violation by its *marker*, and a width marker is the wall - upstream keeps it
+  by the measurement between the two walls, which no marker carries.  `CUP.2.h5` and
+  `h8` hold the engine's reading and name this note.
+- **3 (eight rules of section 9.3 in neither deck)**: recorded for the gdscheck owner.
+  They are geometric rules with values on layers this PDK has, and upstream codes none
+  of them either, so it is a porting decision rather than a regression.
