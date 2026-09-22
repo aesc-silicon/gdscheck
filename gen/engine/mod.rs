@@ -23,6 +23,7 @@ mod max_space;
 mod min_enclosure;
 mod net;
 mod notch;
+mod overlap;
 mod residual;
 mod shape;
 mod space;
@@ -39,6 +40,7 @@ pub fn generate(pdk: &PdkConfig) {
     min_enclosure::generate(pdk);
     net::generate(pdk);
     notch::generate(pdk);
+    overlap::generate(pdk);
     residual::generate(pdk);
     shape::generate(pdk);
     space::generate(pdk);

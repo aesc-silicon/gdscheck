@@ -353,4 +353,34 @@ pub fn generate(pdk: &PdkConfig) {
             rect(via, 20.5, 42.005, 21.0, 42.505), // R.array, two rows 1.005 apart
         ],
     );
+
+    // Wide and uncovered (R.wide: Inner more than 5 µm across with no Via on it).  A
+    // 5.005 square with no Via, a 5 square with none (not wide, the bound is strict),
+    // a 5.005 square with a Via; a 10 µm plate across (20, 20) with none, one drawn as
+    // four overlapping boxes with none, a 10 × 300 bar with none over fifteen tiles,
+    // one at (1000, 1000).  R.wide: 5.
+    write(
+        "wide",
+        vec![
+            rect(inner, 2.0, 2.0, 7.005, 7.005), // R.wide
+            rect(inner, 9.0, 2.0, 14.0, 7.0),
+            rect(inner, 2.0, 9.0, 7.005, 14.005),
+            rect(via, 4.0, 11.0, 5.0, 12.0),
+            rect(inner, 15.0, 15.0, 25.0, 25.0), // R.wide
+            rect(inner, 30.0, 2.0, 37.0, 9.0),
+            rect(inner, 33.0, 2.0, 40.0, 9.0),
+            rect(inner, 30.0, 5.0, 37.0, 12.0),
+            rect(inner, 33.0, 5.0, 40.0, 12.0), // R.wide, one plate
+            rect(inner, 2.0, 30.0, 302.0, 40.0), // R.wide
+            rect(inner, 1000.0, 1000.0, 1010.0, 1010.0), // R.wide
+        ],
+    );
+
+    // Fifty 6 µm plates with no Via, flat and as an array reference.  R.wide: 50 each.
+    let cell = vec![rect(inner, 0.2, 0.2, 6.2, 6.2)];
+    write("wide_array_flat", flat_array(&cell, 10, 5, 8.0));
+    write_gz(
+        &format!("{DIR}/wide_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 8.0),
+    );
 }

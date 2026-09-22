@@ -299,6 +299,7 @@ fn width_rules_read_tiles_parameters_and_the_shapes_without_a_run(
 ///   a standing gate across y = 20, one at (1000, 1000).
 /// - `array_flat` / `array_ref`: fifty gates.
 /// - `extremes`: a 0.005 gate, a 300 µm stripe with a gate at its middle.
+/// - `exact_*` (G.exact 1.0): gates 0.995 and 1.005, a 1.005 gate across a line, fifty.
 #[rstest]
 #[case("stripe_far", "G.min", 2)]
 #[case("stripe_far", "G.len", 0)]
@@ -308,6 +309,10 @@ fn width_rules_read_tiles_parameters_and_the_shapes_without_a_run(
 #[case("stripe_long_run", "G.len", 2)]
 #[case("ends_on_reference", "G.max_shared", 2)]
 #[case("ends_on_reference", "G.max_unshared", 0)]
+#[case("exact_bound", "G.exact", 4)]
+#[case("exact_tile_lines", "G.exact", 2)]
+#[case("exact_array_flat", "G.exact", 100)]
+#[case("exact_array_ref", "G.exact", 100)]
 #[case("bound", "G.min", 8)]
 #[case("bound", "G.max_shared", 2)]
 #[case("bound", "G.len", 2)]
@@ -757,7 +762,29 @@ fn enclosure_bounds_and_sides_meet_the_bound_exactly(
 ///   `hole_array_*`: fifty rings.
 /// - `vert_*` (V.max 8 on Outer, on the drawn polygon): 9-gons across a line and far
 ///   off, an octagon across a line whose pieces have more vertices than it; fifty.
+/// - `edge_exact_*` (L.exact 1.0 / L.max 20 on Via): edges 0.995, 1.005 and 20.005,
+///   a square across a line whose pieces have cut edges of 0.5 staying right; fifty.
+/// - `grid_*` (O.grid 0.005 on Outer): vertices a nanometre off the grid, one a
+///   nanometre past a tile line, one far off; fifty boxes placed by an array on it.
+/// - `ring_*` (H.ring on Via): rings across the lines, nested rings enclosing two
+///   grounds, a ring with a gap enclosing none; fifty.
+/// - `cover_*` (S.cover, Outer round Inner): a ring over three tiles round a box, and
+///   the same with a gap, reported once per boundary region.
 #[rstest]
+#[case("edge_exact_bound", "L.exact", 8)]
+#[case("edge_exact_bound", "L.max", 2)]
+#[case("edge_exact_tile_lines", "L.exact", 8)]
+#[case("edge_exact_tile_lines", "L.max", 2)]
+#[case("edge_exact_array_flat", "L.exact", 100)]
+#[case("edge_exact_array_ref", "L.exact", 100)]
+#[case("grid_bound", "O.grid", 6)]
+#[case("grid_array_flat", "O.grid", 100)]
+#[case("grid_array_ref", "O.grid", 100)]
+#[case("ring_tile_lines", "H.ring", 6)]
+#[case("ring_array_flat", "H.ring", 50)]
+#[case("ring_array_ref", "H.ring", 50)]
+#[case("cover_closed", "S.cover", 0)]
+#[case("cover_gap", "S.cover", 1)]
 #[case("dim_bound", "E.min_dim", 3)]
 #[case("dim_bound", "E.max_dim", 2)]
 #[case("dim_merge", "E.min_dim", 3)]
@@ -974,6 +1001,39 @@ fn net_rules_meet_the_bound_exactly_and_read_their_levels(
     assert_eq!(count("net", pattern, rule), expected, "{pattern}: {rule}");
 }
 
+/// The overlap check: the space measured the other way round, the shallowest facing
+/// penetration of two regions that share area, met exactly and missed by five
+/// nanometres, and the hardening patterns (hardening/SPEC.md) read off the drawings in
+/// `gen/engine/overlap.rs`:
+///
+/// - `bound`: squares overlapping by 0.5 and 0.495 sideways, upwards and corner to
+///   corner; a square wholly inside another has no walls facing across it.
+/// - `merge`: an Inner as two abutting boxes (one pair), an Outer as two overlapping
+///   boxes (one pair), two squares into one bar (two).
+/// - `tile_lines`: 0.495 overlaps across, ending on and starting on the tile lines,
+///   one across y = 20, one far off; a 0.5 across 20 is clean.
+/// - `array_flat` / `array_ref`: fifty pairs.
+/// - `extremes`: a 0.005 sliver reaching 0.005 in, two 300 µm bars overlapping by
+///   0.495 along their length; by 0.5 they are clean.
+#[rstest]
+#[case("bound", "OV.min", 3)]
+#[case("merge", "OV.min", 4)]
+#[case("tile_lines", "OV.min", 9)]
+#[case("array_flat", "OV.min", 50)]
+#[case("array_ref", "OV.min", 50)]
+#[case("extremes", "OV.min", 2)]
+fn overlap_meets_the_bound_exactly_and_reads_the_pair(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("overlap", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}
+
 /// The residual family: no bound to meet, so the exact case is the coincident edge.
 ///
 /// - `bare` has three Diode squares, one across a tile line, and an Outer square with
@@ -1012,7 +1072,13 @@ fn net_rules_meet_the_bound_exactly_and_read_their_levels(
 /// - `extremes`: a 0.005 sliver, a 300 µm bar bare at its far end, a 300 µm overlap.
 /// - `array_tile_lines`: a 2×2 via grid across a tile line, and one whose rows are
 ///   1.005 apart.
+/// - `wide*` (R.wide, Inner more than 5 µm across with no Via): 5.005 with none, 5 with
+///   none (not wide), 5.005 with one, a plate across (20, 20), one drawn as four
+///   overlapping boxes, a 10 × 300 bar, one far off; fifty plates.
 #[rstest]
+#[case("wide", "R.wide", 5)]
+#[case("wide_array_flat", "R.wide", 50)]
+#[case("wide_array_ref", "R.wide", 50)]
 #[case("bound_45", "R.uncovered", 1)]
 #[case("bound_45", "R.polygon", 1)]
 #[case("bound_45", "R.overlap", 1)]

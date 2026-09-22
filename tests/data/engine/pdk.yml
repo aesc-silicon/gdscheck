@@ -34,6 +34,8 @@ decks:
     path: decks/net.yml
   - name: residual
     path: decks/residual.yml
+  - name: overlap
+    path: decks/overlap.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.

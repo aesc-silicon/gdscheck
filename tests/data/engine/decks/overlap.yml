@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The overlap check: the space measured the other way round, on its own deck so that
+# nothing else reads the pairs it draws.
+rules:
+  - id: OV.min
+    check: min_overlap
+    layers: [Outer, Inner]
+    value: 0.5
