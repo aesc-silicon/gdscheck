@@ -125,7 +125,18 @@ fn skip_coincident_drops_the_zero_and_nothing_else(
 /// `finger` is the other side of that: a 12x3 finger at the tight space hanging off a
 /// legal block is in the blob and no part of any 4x4, so its pairs do not count - which
 /// the foundry deck also gets right, by dropping the blob.  Four rows deep it is a 4x4.
+///
+/// The hardening patterns (hardening/SPEC.md), read off the drawings in
+/// `gen/engine/array.rs`: `bound` is a block at 0.36 and one at 0.355, a grid step
+/// under; `tile_lines` puts 0.355 blocks across, ending on and starting on the tile
+/// lines; `array_flat` / `array_ref` are fifty blocks; `extremes` a block at (1000,
+/// 1000) and a 300 µm one.
 #[rstest]
+#[case("bound", 1, 1)]
+#[case("tile_lines", 7, 7)]
+#[case("array_flat", 50, 50)]
+#[case("array_ref", 50, 50)]
+#[case("extremes", 2, 2)]
 #[case("block_0360", 0, 0)]
 #[case("block_0350", 1, 1)]
 #[case("block_x_0350", 1, 0)]
