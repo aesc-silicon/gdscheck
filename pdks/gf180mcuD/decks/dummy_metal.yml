@@ -2,8 +2,19 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Metal dummy fill.
+# Metal dummy fill.  Every rule of section 13.3 that is not in Appendix B's "rules not
+# coded" list (DM.2a, DM.9, DM.10), per metal level, and that a layout can be measured
+# against: DM.2c is the 3 um top metal of the 30K option, which variant D does not have,
+# and DM.4-DM.7 are the open question of the round (see the report).
 rules:
+  - id: DM1.1
+    check: min_width
+    layers: [metal1_dummy]
+    value: 2.0
+  - id: DM1.1
+    check: max_length
+    layers: [metal1_dummy]
+    value: 2.0
   - id: DM1.2b
     check: min_space
     layers: [metal1_dummy]
@@ -16,10 +27,30 @@ rules:
     check: min_space
     layers: [metal1_dummy, metal1_drawn]
     value: 2.0
+    params:
+      abutting: report
+  - id: DM1.3
+    check: forbidden
+    layers: [dm13_on_metal]
+    value: 0.0
   - id: DM1.8
     check: min_space
     layers: [metal1_dummy, dm8_sensitive]
     value: 6.0
+    params:
+      abutting: report
+  - id: DM1.8
+    check: forbidden
+    layers: [dm18_under_mark]
+    value: 0.0
+  - id: DM2.1
+    check: min_width
+    layers: [metal2_dummy]
+    value: 2.0
+  - id: DM2.1
+    check: max_length
+    layers: [metal2_dummy]
+    value: 2.0
   - id: DM2.2b
     check: min_space
     layers: [metal2_dummy]
@@ -32,10 +63,30 @@ rules:
     check: min_space
     layers: [metal2_dummy, metal2_drawn]
     value: 2.0
+    params:
+      abutting: report
+  - id: DM2.3
+    check: forbidden
+    layers: [dm23_on_metal]
+    value: 0.0
   - id: DM2.8
     check: min_space
     layers: [metal2_dummy, dm8_sensitive]
     value: 6.0
+    params:
+      abutting: report
+  - id: DM2.8
+    check: forbidden
+    layers: [dm28_under_mark]
+    value: 0.0
+  - id: DM3.1
+    check: min_width
+    layers: [metal3_dummy]
+    value: 2.0
+  - id: DM3.1
+    check: max_length
+    layers: [metal3_dummy]
+    value: 2.0
   - id: DM3.2b
     check: min_space
     layers: [metal3_dummy]
@@ -48,10 +99,30 @@ rules:
     check: min_space
     layers: [metal3_dummy, metal3_drawn]
     value: 2.0
+    params:
+      abutting: report
+  - id: DM3.3
+    check: forbidden
+    layers: [dm33_on_metal]
+    value: 0.0
   - id: DM3.8
     check: min_space
     layers: [metal3_dummy, dm8_sensitive]
     value: 6.0
+    params:
+      abutting: report
+  - id: DM3.8
+    check: forbidden
+    layers: [dm38_under_mark]
+    value: 0.0
+  - id: DM4.1
+    check: min_width
+    layers: [metal4_dummy]
+    value: 2.0
+  - id: DM4.1
+    check: max_length
+    layers: [metal4_dummy]
+    value: 2.0
   - id: DM4.2b
     check: min_space
     layers: [metal4_dummy]
@@ -64,10 +135,30 @@ rules:
     check: min_space
     layers: [metal4_dummy, metal4_drawn]
     value: 2.0
+    params:
+      abutting: report
+  - id: DM4.3
+    check: forbidden
+    layers: [dm43_on_metal]
+    value: 0.0
   - id: DM4.8
     check: min_space
     layers: [metal4_dummy, dm8_sensitive]
     value: 6.0
+    params:
+      abutting: report
+  - id: DM4.8
+    check: forbidden
+    layers: [dm48_under_mark]
+    value: 0.0
+  - id: DM5.1
+    check: min_width
+    layers: [metal5_dummy]
+    value: 2.0
+  - id: DM5.1
+    check: max_length
+    layers: [metal5_dummy]
+    value: 2.0
   - id: DM5.2b
     check: min_space
     layers: [metal5_dummy]
@@ -80,7 +171,19 @@ rules:
     check: min_space
     layers: [metal5_dummy, metal5_drawn]
     value: 2.0
+    params:
+      abutting: report
+  - id: DM5.3
+    check: forbidden
+    layers: [dm53_on_metal]
+    value: 0.0
   - id: DM5.8
     check: min_space
     layers: [metal5_dummy, dm8_sensitive]
     value: 6.0
+    params:
+      abutting: report
+  - id: DM5.8
+    check: forbidden
+    layers: [dm58_under_mark]
+    value: 0.0

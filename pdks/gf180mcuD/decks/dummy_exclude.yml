@@ -4,14 +4,21 @@
 
 # Dummy-fill exclude markers.  All 3 rules in this section.
 rules:
+  # The rule is the size of an NDMY *or* of a PMNDMY, and each answers for itself: read
+  # on the union, a narrow strip of one lying on a plate of the other is hidden by the
+  # merge (report, finding 1).
   - id: DE.2
     check: min_width
-    layers: [ndmy_or_pmndmy]
+    layers: [ndmy]
+    value: 0.8
+  - id: DE.2
+    check: min_width
+    layers: [pmndmy]
     value: 0.8
   - id: DE.3
-    check: max_area
-    layers: [ndmy]
-    value: 15000.0
+    check: forbidden
+    layers: [de3_viol]
+    value: 0.0
   - id: DE.4
     check: min_space
     layers: [ndmy]

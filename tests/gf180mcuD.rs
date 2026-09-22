@@ -2660,18 +2660,20 @@ fn hardening_antenna(#[case] gds: &str, #[case] topcell: &str, #[case] expected:
 // The same three against NDMY - "Dummy COMP cannot exit under NDMY".  Findings 1 and 3.
 #[case::dcf_11a_h2("dummy_comp/DCF.11a.h2.gds.gz", "TOP", vec!["DCF.11a", "DCF.11a", "DCF.11a"], vec![])]
 #[case::dcf_12_h1("dummy_comp/DCF.12.h1.gds.gz", "TOP", vec!["DCF.12", "DCF.12"], vec![])]
-// Abutting IND_MK and half over it; fill wholly under IND_MK is DCF.13's own case.
-// Report finding 1.
-#[case::dcf_12_h2("dummy_comp/DCF.12.h2.gds.gz", "TOP", vec!["DCF.12", "DCF.12"], vec![])]
-// A 5 x 5 dummy COMP, half a square, and a square with a bite out of it: DCF.1c fixes
-// the size and DCF.10 says a truncated one shall not exist.  Report finding 5.
-#[case::dcf_10_h1("dummy_comp/DCF.10.h1.gds.gz", "TOP", vec!["DCF.10", "DCF.10"], vec![])]
+// Abutting IND_MK and half over it.  The shared edge is DCF.12's space of nothing; the
+// fill lying *on* the marker is what DCF.13 forbids in as many words, which is where the
+// overlap half of this pair belongs.
+#[case::dcf_12_h2("dummy_comp/DCF.12.h2.gds.gz", "TOP", vec!["DCF.12", "DCF.13"], vec![])]
+// A 5 x 5 dummy COMP, half a square, and a square with a bite out of it.  DCF.10 is
+// Appendix B's - the manual stars it as a rule not coded - so nothing here reports the
+// truncated squares, and this layout pins that (report finding 5, kept).
+#[case::dcf_10_h1("dummy_comp/DCF.10.h1.gds.gz", "TOP", vec![], vec![])]
 // A dummy COMP wholly inside IND_MK: "Dummy COMP should not exist under IND_MK layer".
 // Report finding 4.
 #[case::dcf_13_h1("dummy_comp/DCF.13.h1.gds.gz", "TOP", vec!["DCF.13"], vec![])]
-// Fill 26 µm inside the PR_BNDRY polygon (clean) and 25.995 inside it: DCF.7a's space
-// from dummy COMP in the prime die to the scribe line.  Report finding 6.
-#[case::dcf_7a_h1("dummy_comp/DCF.7a.h1.gds.gz", "TOP", vec!["DCF.7a"], vec![])]
+// Fill 26 µm inside the PR_BNDRY polygon and 25.995 inside it.  DCF.7a is Appendix B's
+// too, with the rest of the scribe-line family (report finding 6, kept).
+#[case::dcf_7a_h1("dummy_comp/DCF.7a.h1.gds.gz", "TOP", vec![], vec![])]
 fn hardening_dummy_comp(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -2722,19 +2724,23 @@ fn hardening_dummy_comp(
 #[case::dpf_13_h1("dummy_poly2/DPF.13.h1.gds.gz", "TOP", vec!["DPF.13", "DPF.13"], vec![])]
 #[case::dpf_13_h2("dummy_poly2/DPF.13.h2.gds.gz", "TOP", vec!["DPF.13", "DPF.13"], vec![])]
 #[case::dpf_14_h1("dummy_poly2/DPF.14.h1.gds.gz", "TOP", vec!["DPF.14", "DPF.14"], vec![])]
-#[case::dpf_14_h2("dummy_poly2/DPF.14.h2.gds.gz", "TOP", vec!["DPF.14", "DPF.14"], vec![])]
+// Abutting IND_MK and half over it: the shared edge is DPF.14's space of nothing, the
+// fill lying on the marker is DPF.15 ("Dummy poly2 should not exist under IND_MK").
+#[case::dpf_14_h2("dummy_poly2/DPF.14.h2.gds.gz", "TOP", vec!["DPF.14", "DPF.15"], vec![])]
 #[case::dpf_16_h1("dummy_poly2/DPF.16.h1.gds.gz", "TOP", vec!["DPF.16", "DPF.16"], vec![])]
-#[case::dpf_16_h2("dummy_poly2/DPF.16.h2.gds.gz", "TOP", vec!["DPF.16", "DPF.16"], vec![])]
+// The same against MTPMARK, where the overlap half is DPF.17.
+#[case::dpf_16_h2("dummy_poly2/DPF.16.h2.gds.gz", "TOP", vec!["DPF.16", "DPF.17"], vec![])]
 #[case::dpf_19_h1("dummy_poly2/DPF.19.h1.gds.gz", "TOP", vec!["DPF.19", "DPF.19"], vec![])]
-#[case::dpf_19_h2("dummy_poly2/DPF.19.h2.gds.gz", "TOP", vec!["DPF.19", "DPF.19"], vec![])]
-// The 5.6 square DPF.1 asks for, and a truncated one: DPF.10, the poly twin of DCF.10.
-// Report finding 4.
-#[case::dpf_10_h1("dummy_poly2/DPF.10.h1.gds.gz", "TOP", vec!["DPF.10"], vec![])]
+// And against PMNDMY, where it is DPF.18 ("cannot exit under the marking layer").
+#[case::dpf_19_h2("dummy_poly2/DPF.19.h2.gds.gz", "TOP", vec!["DPF.18", "DPF.19"], vec![])]
+// The 5.6 square DPF.1 asks for, and a truncated one.  DPF.10 is Appendix B's, as
+// DCF.10 is (report finding 4, kept).
+#[case::dpf_10_h1("dummy_poly2/DPF.10.h1.gds.gz", "TOP", vec![], vec![])]
 // Dummy poly2 wholly under IND_MK (DPF.15), MTPMARK (DPF.17) and PMNDMY (DPF.18), each
 // of which the manual states as its own rule.  Report finding 3.
-// Fill 25.7 µm inside the PR_BNDRY polygon (clean) and 25.695 inside it: DPF.7's space
-// from dummy poly2 in the prime die to the scribe line.  Report finding 5.
-#[case::dpf_7_h1("dummy_poly2/DPF.7.h1.gds.gz", "TOP", vec!["DPF.7"], vec![])]
+// Fill 25.7 µm inside the PR_BNDRY polygon and 25.695 inside it.  DPF.7 is Appendix B's
+// too (report finding 5, kept).
+#[case::dpf_7_h1("dummy_poly2/DPF.7.h1.gds.gz", "TOP", vec![], vec![])]
 #[case::dpf_15_h1("dummy_poly2/DPF.15.h1.gds.gz", "TOP", vec!["DPF.15"], vec![])]
 #[case::dpf_17_h1("dummy_poly2/DPF.17.h1.gds.gz", "TOP", vec!["DPF.17"], vec![])]
 #[case::dpf_18_h1("dummy_poly2/DPF.18.h1.gds.gz", "TOP", vec!["DPF.18"], vec![])]
@@ -2756,8 +2762,9 @@ fn hardening_dummy_poly2(
 // the same two gaps on all five.
 #[rstest]
 #[case::dm1_2b_h1("dummy_metal/DM1.2b.h1.gds.gz", "TOP", vec!["DM1.2b", "DM1.2b"], vec![])]
-// The 0.975 gap on the tile lines, and a 0.98 one that must stay clean.
-#[case::dm1_2b_h2("dummy_metal/DM1.2b.h2.gds.gz", "TOP", vec!["DM1.2b", "DM1.2b", "DM1.2b"], vec![])]
+// The 0.975 gap on the tile lines, and a 0.98 one that must stay clean.  The notch
+// probe is a 6 µm U, and a dummy metal shape is 2 µm both ways: DM.1 reports its length.
+#[case::dm1_2b_h2("dummy_metal/DM1.2b.h2.gds.gz", "TOP", vec!["DM1.1", "DM1.2b", "DM1.2b", "DM1.2b"], vec![])]
 #[case::dm1_3_h1("dummy_metal/DM1.3.h1.gds.gz", "TOP", vec!["DM1.3", "DM1.3"], vec![])]
 // Fill abutting circuit Metal1 and half over it.  Report finding 1.
 #[case::dm1_3_h2("dummy_metal/DM1.3.h2.gds.gz", "TOP", vec!["DM1.3", "DM1.3"], vec![])]
@@ -2768,13 +2775,18 @@ fn hardening_dummy_poly2(
 // The other five layers DM.8 names, each 5.995 from a fill.
 #[case::dm1_8_h3("dummy_metal/DM1.8.h3.gds.gz", "TOP", vec!["DM1.8", "DM1.8", "DM1.8", "DM1.8", "DM1.8"], vec![])]
 // A 2.0 square (clean), a 1.995 one, a 2.005 one and a 2 x 4 bar: DM.1 fixes the dummy
-// metal's width and length at 2.0 both ways.  Report finding 3.
-#[case::dm_1_h1("dummy_metal/DM.1.h1.gds.gz", "TOP", vec!["DM1.1", "DM1.1", "DM1.1"], vec![])]
-// Dummy Metal1 to circuit Metal2 - the subsequent level - at 1.0 (clean), 0.995, and
-// overlapping.  DM.4 is the space and DM.6 the overlap.  Report finding 4.
-#[case::dm1_4_h1("dummy_metal/DM1.4.h1.gds.gz", "TOP", vec!["DM1.4", "DM1.6"], vec![])]
-// The same to Poly2, which is Metal1's previous level: DM.5 and DM.7.  Finding 4.
-#[case::dm1_5_h1("dummy_metal/DM1.5.h1.gds.gz", "TOP", vec!["DM1.5", "DM1.7"], vec![])]
+// metal's width and length at 2.0 both ways.  The narrow square is under the width on
+// both of its walls, which `min_width` names one at a time.
+#[case::dm_1_h1("dummy_metal/DM.1.h1.gds.gz", "TOP", vec!["DM1.1", "DM1.1", "DM1.1", "DM1.1"], vec![])]
+// Dummy Metal1 against the level above it and the level below it, at 1.0 (clean), 0.995
+// and overlapping - DM.4/DM.6 and DM.5/DM.7.  The deck says nothing: read as a distance
+// to the *circuit* metal of the neighbouring level those four rules cannot hold beside
+// the 30 % density floor, and read as a distance to its *dummy* metal they cannot hold
+// beside DM.9's 0.5 µm offset, which has the two patterns overlapping by design.  Both
+// readings report a real design by the hundred thousand.  Left uncoded with the foundry's
+// own runset, and flagged (report finding 4).
+#[case::dm1_4_h1("dummy_metal/DM1.4.h1.gds.gz", "TOP", vec![], vec![])]
+#[case::dm1_5_h1("dummy_metal/DM1.5.h1.gds.gz", "TOP", vec![], vec![])]
 // A 0.975 dummy-to-dummy gap and a 1.995 dummy-to-drawn gap on each of the five levels.
 #[case::dm_levels_h1("dummy_metal/DM.levels.h1.gds.gz", "TOP", vec!["DM1.2b", "DM1.3", "DM2.2b", "DM2.3", "DM3.2b", "DM3.3", "DM4.2b", "DM4.3", "DM5.2b", "DM5.3"], vec![])]
 fn hardening_dummy_metal(

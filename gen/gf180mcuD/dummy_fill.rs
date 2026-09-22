@@ -78,6 +78,25 @@ const PAIR: &[(&str, &str, &str, &str, f64)] = &[
     ("dummy_metal", "DM5.8", "metal5_dummy", "otp_mk", 6.0),
 ];
 
+/// Deck, rule, fill layer, the layer it may not lie on, and how far the good half puts
+/// it from that layer - the value of the space rule the prohibition sits beside, since
+/// the fill has to clear that too.
+const ON: &[(&str, &str, &str, &str, f64)] = &[
+    ("dummy_comp", "DCF.13", "comp_dummy", "ind_mk", 3.0),
+    ("dummy_poly2", "DPF.15", "poly2_dummy", "ind_mk", 3.0),
+    ("dummy_poly2", "DPF.17", "poly2_dummy", "mtpmark", 3.0),
+    ("dummy_poly2", "DPF.18", "poly2_dummy", "pmndmy", 8.0),
+];
+
+/// Deck, rule and fill layer of the rules that fix the fill's own size at `FILL`.
+const SIZE: &[(&str, &str, &str)] = &[
+    ("dummy_metal", "DM1.1", "metal1_dummy"),
+    ("dummy_metal", "DM2.1", "metal2_dummy"),
+    ("dummy_metal", "DM3.1", "metal3_dummy"),
+    ("dummy_metal", "DM4.1", "metal4_dummy"),
+    ("dummy_metal", "DM5.1", "metal5_dummy"),
+];
+
 /// A fill shape, plus whatever else it needs to be legal on its own.
 ///
 /// Dummy poly has to sit *on* dummy COMP - `DPF.1`, and unlike every other rule in these
@@ -115,13 +134,14 @@ pub fn generate(pdk: &PdkConfig) {
 
     for &(deck, id, lname, s) in SELF_SPACE {
         let f = layer(pdk, lname);
+        // The notch probe is a C, and a C is longer than one fill shape.  Where the deck
+        // fixes the fill's own size - DM.1 holds dummy metal to 2 µm each way - no shape
+        // with a notch in it can be drawn at all, so the metal patterns leave it out and
+        // read the space between two shapes only.
+        let notched = deck != "dummy_metal";
         for (name, g) in [("good", s), ("bad", s - D)] {
-            write(
-                deck,
-                &format!("{id}.{name}"),
+            let c = if notched {
                 [
-                    fill(pdk, f, lname, O, O, O + FILL, O + FILL),
-                    fill(pdk, f, lname, O + FILL + g, O, O + 2.0 * FILL + g, O + FILL),
                     // A C whose opening is the same gap: the notch the deck checks under
                     // this id is a space within one shape.
                     fill(
@@ -152,6 +172,18 @@ pub fn generate(pdk: &PdkConfig) {
                         O + 5.0 * FILL + g,
                     ),
                 ]
+                .concat()
+            } else {
+                Vec::new()
+            };
+            write(
+                deck,
+                &format!("{id}.{name}"),
+                [
+                    fill(pdk, f, lname, O, O, O + FILL, O + FILL),
+                    fill(pdk, f, lname, O + FILL + g, O, O + 2.0 * FILL + g, O + FILL),
+                    c,
+                ]
                 .concat(),
             );
         }
@@ -170,6 +202,48 @@ pub fn generate(pdk: &PdkConfig) {
                 .concat(),
             );
         }
+    }
+
+    // The prohibitions beside those spaces: the fill may not lie on the layer at all.
+    // The good half stands the fill off by the space rule's own value, the bad half puts
+    // it wholly inside - which is the case the manual's wording is written for and the
+    // one a marker drawn round a device produces.
+    for &(deck, id, lname, oname, clear) in ON {
+        let (f, o) = (layer(pdk, lname), layer(pdk, oname));
+        let mark = |x: f64| rect(o, x, O - 1.0, x + FILL + 2.0, O + FILL + 1.0);
+        write(
+            deck,
+            &format!("{id}.good"),
+            [
+                fill(pdk, f, lname, O, O, O + FILL, O + FILL),
+                vec![mark(O + FILL + clear)],
+            ]
+            .concat(),
+        );
+        write(
+            deck,
+            &format!("{id}.bad"),
+            [
+                fill(pdk, f, lname, O, O, O + FILL, O + FILL),
+                vec![mark(O - 1.0)],
+            ]
+            .concat(),
+        );
+    }
+
+    // The fill's own size, which DM.1 fixes at 2 µm each way.
+    for &(deck, id, lname) in SIZE {
+        let f = layer(pdk, lname);
+        write(
+            deck,
+            &format!("{id}.good"),
+            fill(pdk, f, lname, O, O, O + FILL, O + FILL),
+        );
+        write(
+            deck,
+            &format!("{id}.bad"),
+            fill(pdk, f, lname, O, O, O + FILL - D, O + FILL),
+        );
     }
 
     // DPF.1 is the odd one: dummy poly must sit *on* dummy COMP, so the good half puts a
