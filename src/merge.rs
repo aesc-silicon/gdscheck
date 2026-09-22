@@ -4956,8 +4956,22 @@ fn build_selection_tiles(
             };
             for piece in &pieces {
                 if kind == SelectionKind::Inside {
-                    if flags[*rid].load(Relaxed) && !poly_within(piece, own) {
-                        flags[*rid].store(false, Relaxed);
+                    // A piece lying in the filter's merged regions, which do not
+                    // touch, lies in one of them, and that one's box holds the piece's:
+                    // the piece is tested against those alone.  Tested against the
+                    // tile's whole filter it was the union of a tile's Activ, taken
+                    // afresh for every gate piece: 2.6 s for a million gates.
+                    if flags[*rid].load(Relaxed) {
+                        let (x0, y0, x1, y1) = poly_bbox(piece);
+                        let holders: Vec<MergedPoly> = own
+                            .iter()
+                            .zip(&fboxes)
+                            .filter(|(_, b)| b.0 <= x0 && b.1 <= y0 && b.2 >= x1 && b.3 >= y1)
+                            .map(|(p, _)| p.clone())
+                            .collect();
+                        if !poly_within(piece, &holders) {
+                            flags[*rid].store(false, Relaxed);
+                        }
                     }
                 } else if !flags[*rid].load(Relaxed) {
                     let (x0, y0, x1, y1) = poly_bbox(piece);
