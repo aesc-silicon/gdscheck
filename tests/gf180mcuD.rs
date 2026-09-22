@@ -1421,3 +1421,79 @@ fn hardening_comp(
     want.sort();
     assert_eq!(hardening("comp", gds, topcell, &[]), want, "{gds}");
 }
+
+// --- Contact (hardening/reports/gf180mcuD/contact.md).  Section 7.12 has no 3.3 V / 5 V
+// split, so no rule here is `_LV` / `_MV`.  `exact_width` reports one marker per wall,
+// two per contact that is off in one direction; `min_enclosure` one per deficient side.
+#[rstest]
+// Five contacts: 0.22 square (clean), 0.225 tall, 0.225 wide, 0.215 wide, 0.215 tall.
+#[case::co_1_h1("contact/CO.1.h1.gds.gz", "TOP", vec!["CO.1"; 8], vec![])]
+// A contact that is not a square: two abutting squares making a 0.44 x 0.22 bar, an L
+// with 0.22 arms, and one square drawn as two overlapping boxes (clean).
+#[case::co_1_h2("contact/CO.1.h2.gds.gz", "TOP", vec!["CO.1"; 6], vec![])]
+// A 4x4 array at 0.30 with one 0.275 row gap (four pairs); the same with three columns
+// and sixteen contacts in one row, neither an array.
+#[case::co_2b_h1("contact/CO.2b.h1.gds.gz", "TOP", vec!["CO.2b"; 4], vec![])]
+// A seventeenth contact 0.275 beside a legal 4x4 (1); the same beside a 3x3 (clean); a
+// contact 0.2762 corner to corner off a legal 4x4 (1); a 4x4 with its own 0.275 row gap
+// and a seventeenth contact 0.275 beside it (4 + 1).
+#[case::co_2b_h2("contact/CO.2b.h2.gds.gz", "TOP", vec!["CO.2b"; 7], vec![])]
+// The same array with a 0.275 row gap straddling x = 20, x = 42 and y = 21.
+#[case::co_2b_h3("contact/CO.2b.h3.gds.gz", "TOP", vec!["CO.2b"; 12], vec![])]
+// Poly over a contact by 0.07 (clean), 0.065, nothing, and a 0.05 chamfer passing 0.0636
+// from the contact's corner; a 0.04 chamfer at 0.0707 is clean.
+#[case::co_3_h1("contact/CO.3.h1.gds.gz", "TOP", vec!["CO.3"; 3], vec![])]
+// A contact the poly edge cuts (CO.3 and CO.11 on the part outside), a contact abutting
+// the poly from outside (CO.11 alone), and a 0.065 margin under SRAMCORE (exempt).
+#[case::co_3_h2("contact/CO.3.h2.gds.gz", "TOP", vec!["CO.11", "CO.11", "CO.3"], vec![])]
+// The same five readings against COMP.
+#[case::co_4_h1("contact/CO.4.h1.gds.gz", "TOP", vec!["CO.4"; 3], vec![])]
+// The same three conditions against COMP.
+#[case::co_4_h2("contact/CO.4.h2.gds.gz", "TOP", vec!["CO.11", "CO.11", "CO.4"], vec![])]
+// On butted N+/P+ COMP: 0.1 from the butting edge (clean), 0.095 on the N side, 0.095 on
+// the P side, and 0.095 from the N+ COMP's own bottom edge.
+#[case::co_5_h1("contact/CO.5.h1.gds.gz", "TOP", vec!["CO.5a", "CO.5a", "CO.5b"], vec![])]
+// Implants that overlap by 0.2 and implants 0.2 apart are not butted, so 0.095 is clean
+// there; the butted control at 0.095 fires.
+#[case::co_5_h2("contact/CO.5.h2.gds.gz", "TOP", vec!["CO.5a"], vec![])]
+// Metal1 over a contact by 0.005 (clean), flush, absent, and covering half of it.
+#[case::co_6_h1("contact/CO.6.h1.gds.gz", "TOP", vec!["CO.6"; 3], vec![])]
+// Line-end caps 0.055 past the contact on tracks 0.34 (not a narrow line, clean), 0.30,
+// 0.35 (clean) and 0.33 wide; 0.34 wide with a 0.06 cap is clean.
+#[case::co_6a_h1("contact/CO.6a.h1.gds.gz", "TOP", vec!["CO.6a"; 2], vec![])]
+// The same cap on a branch off a wide plate: 0.22 long is not a line end (clean), 0.24
+// and 0.30 are.
+#[case::co_6a_h2("contact/CO.6a.h2.gds.gz", "TOP", vec!["CO.6a"; 2], vec![])]
+// A 0.035 side with 0.06 beside it (clean), with 0.055 beside it, a 0.04 side that does
+// not trigger, two adjacent short sides, two opposite short sides (clean).
+#[case::co_6b_h1("contact/CO.6b.h1.gds.gz", "TOP", vec!["CO.6b"; 2], vec![])]
+// A COMP contact 0.15 from a gate (clean) and 0.145; 0.10 from a poly line that is not
+// over COMP (clean); 0.145 under OTP_MK, whole and over the gate only (both exempt).
+#[case::co_7_h1("contact/CO.7.h1.gds.gz", "TOP", vec!["CO.7"], vec![])]
+// A poly contact 0.17 from COMP (clean), 0.165, and 0.165 from a COMP the same poly
+// crosses elsewhere.
+#[case::co_8_h1("contact/CO.8.h1.gds.gz", "TOP", vec!["CO.8"; 2], vec![])]
+// A contact straddling the butting edge (CO.9, and no N+ or P+ overlap either side); one
+// abutting it from the P side (CO.9 by the `interacting` reading, and CO.5b at 0); a
+// contact across implants that overlap by 0.2, where there is no butting edge.
+#[case::co_9_h1("contact/CO.9.h1.gds.gz", "TOP", vec!["CO.5a", "CO.5b", "CO.5b", "CO.9", "CO.9"], vec![])]
+// Straddling contacts on butting edges at x = 20, 21, 40 and 42.
+#[case::co_9_h2("contact/CO.9.h2.gds.gz", "TOP", vec!["CO.9"; 4], vec![])]
+// A contact on the gate; one on the poly 0.17 above the COMP (clean); one whose bottom
+// edge lies on the COMP's top edge, a space of nothing, which CO.8 measures; one on the
+// gate with RES_MK over the whole overlap, which is no gate (clean).
+#[case::co_10_h1("contact/CO.10.h1.gds.gz", "TOP", vec!["CO.10", "CO.8"], vec![])]
+// A contact on field oxide; one on poly alone (clean); one 0.005 off the COMP's edge
+// (CO.11 on the sliver, CO.4 for crossing); one shared by an abutting COMP and poly - no
+// field oxide under it, but it crosses both edges and sits 0 from COMP.
+#[case::co_11_h1("contact/CO.11.h1.gds.gz", "TOP", vec!["CO.11", "CO.11", "CO.3", "CO.4", "CO.4", "CO.8"], vec![])]
+fn hardening_contact(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("contact", gds, topcell, &ignore), want, "{gds}");
+}
