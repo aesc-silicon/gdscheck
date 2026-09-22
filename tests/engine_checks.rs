@@ -948,7 +948,53 @@ fn net_rules_meet_the_bound_exactly_and_read_their_levels(
 /// - `beyond_edge` / `beyond_out` put a corner on the frame's outer edge and 0.005 µm
 ///   past it, with an ignored layer past the frame.
 /// - `labelled` carries the exemption label on one of two squares.
+///
+/// The hardening patterns, what a rule manual's residual asks of any layer, drawn once
+/// for every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/residual.rs`, every shape of a layout counted since the deck's rules
+/// read the same layers against each other:
+///
+/// - `bound_45`: a Diode cover's chamfer through the target's corner and 0.005 in; an
+///   Outer diamond's tip on a wall and 0.005 in.
+/// - `merge`: a target as six slices with one bare part, a cover as two overlapping
+///   boxes, two Diode squares overlapping as one region, an Outer box as two halves
+///   overlapping once.
+/// - `tile_lines`: bare parts ending on, starting on and across the tile lines, an
+///   overlap across x = 20, a Via partner across the line and a Diode partner sharing
+///   the wall on it, Diode squares across (20, 20) and at (1000, 1000).
+/// - `array_flat` / `array_ref`: fifty of each residual.
+/// - `extremes`: a 0.005 sliver, a 300 µm bar bare at its far end, a 300 µm overlap.
+/// - `array_tile_lines`: a 2×2 via grid across a tile line, and one whose rows are
+///   1.005 apart.
 #[rstest]
+#[case("bound_45", "R.uncovered", 1)]
+#[case("bound_45", "R.polygon", 1)]
+#[case("bound_45", "R.overlap", 1)]
+#[case("bound_45", "R.apart", 0)]
+#[case("bound_45", "R.touching", 4)]
+#[case("merge", "R.uncovered", 1)]
+#[case("merge", "R.polygon", 1)]
+#[case("merge", "R.bare", 5)]
+#[case("merge", "R.overlap", 1)]
+#[case("tile_lines", "R.uncovered", 8)]
+#[case("tile_lines", "R.polygon", 3)]
+#[case("tile_lines", "R.overlap", 3)]
+#[case("tile_lines", "R.apart", 0)]
+#[case("tile_lines", "R.touching", 6)]
+#[case("tile_lines", "R.bare", 15)]
+#[case("array_flat", "R.bare", 150)]
+#[case("array_flat", "R.uncovered", 50)]
+#[case("array_flat", "R.polygon", 50)]
+#[case("array_flat", "R.overlap", 50)]
+#[case("array_ref", "R.bare", 150)]
+#[case("array_ref", "R.uncovered", 50)]
+#[case("array_ref", "R.polygon", 50)]
+#[case("array_ref", "R.overlap", 50)]
+#[case("extremes", "R.bare", 3)]
+#[case("extremes", "R.uncovered", 1)]
+#[case("extremes", "R.polygon", 1)]
+#[case("extremes", "R.overlap", 1)]
+#[case("array_tile_lines", "R.array", 1)]
 #[case("bare", "R.bare", 3)]
 #[case("bare", "R.edges", 4)]
 #[case("covered_exact", "R.uncovered", 0)]
