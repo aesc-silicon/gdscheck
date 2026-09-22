@@ -14,9 +14,9 @@ Semantics
 ---------
 
 The dual of :doc:`min_density`, with the same scopes, denominators and ``boundary``
-convention: the listed layers' merged coverage is summed and divided by the chip's
-bounding box, by each window's area within the boundary box, or by each wide base
-region's filled area. A ``min_density``/``max_density`` pair on the same layers, scope
+convention: the listed layers' merged coverage is summed and divided by the die - the
+``boundary`` layer's own polygons, or the chip's bounding box where no boundary is
+named - by the die area within each window, or by each wide base region's filled area. A ``min_density``/``max_density`` pair on the same layers, scope
 and boundary forms the usual "keep fill density within [floor, ceiling]" rule pair, as
 one chip-wide number or window by window.
 

@@ -14,14 +14,21 @@
 //! copies into several tiles is counted once.
 //!
 //! The denominator is an area, not a layer's material.  A `boundary` layer param names
-//! the layer whose *bounding box* stands for the die: a seal ring is drawn as a hollow
-//! frame, so its own merged area is the thin frame and would wildly undercount the
-//! region it encloses, where its box is the die extent it is meant to mean.  Without a
-//! boundary the box of every shape in the design serves.  For the windowed density the
-//! grid always starts at the chip's raw box; the boundary box only restricts what part of
-//! each window counts, so an edge or corner window that falls outside the seal ring
-//! (chip dimensions are rarely a multiple of the window) is measured against the area
-//! that is actually there, and one with no overlap at all is skipped rather than failed.
+//! the layer that *is* the die - GF180's PR_BNDRY, IHP's `EdgeSeal.boundary` - and the
+//! measurement is read on its own polygons: the coverage counted is what lies inside
+//! them, and the area divided by is theirs.  A die is not always one rectangle (an
+//! L-shaped one, or two dies with a street between them are drawn as one boundary layer),
+//! and its bounding box then holds ground that is not die: counting that ground into the
+//! denominator drops every percentage, and counting geometry that sits on it into the
+//! numerator raises them.  A boundary drawn as a ring - a seal ring is a frame - is
+//! read as what it rings: its holes are filled first, so the die is the area inside the
+//! frame and not the frame's own material.  Without a boundary the box of
+//! every shape in the design serves.  For the windowed density the grid still runs over
+//! the boundary's box, so the windows are laid the same way whatever the die's shape;
+//! what each window is measured against is the die area inside it, so an edge or corner
+//! window that hangs over the die's edge (chip dimensions are rarely a multiple of the
+//! window) is read against the area that is actually there, and one with no die in it at
+//! all is skipped rather than failed.
 
 pub mod region;
 #[cfg(test)]
@@ -138,6 +145,44 @@ pub fn boundary_bbox(rule: &RuleDefinition, layout: &FlatLayout) -> Option<Box> 
     bbox_of(layout.get(l as i16, dt as i16).iter())
 }
 
+/// The die a boundary layer means: its own polygons together with whatever they ring.
+/// A seal ring is drawn as a frame, and the die is the area it encloses, not the frame's
+/// own material; a PR_BNDRY drawn as the die itself has no holes and is returned as it
+/// is.  The hole contours come from the stitched layer, so a ring split across tiles is
+/// one ring, and each is filed into the tiles it covers, clipped to their cores - which
+/// is how [`coverage_dbu2`] counts.
+fn filled_die(die: &TileMap, tile: i64) -> Option<TileMap> {
+    let holes = crate::merge::region_holes(die, tile as i32);
+    if holes.is_empty() {
+        return None;
+    }
+    let mut out = die.clone();
+    for hole in holes {
+        let poly = crate::merge::MergedPoly {
+            outer: hole,
+            holes: vec![],
+        };
+        let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
+        for p in &poly.outer {
+            x0 = x0.min(p.x as i64);
+            y0 = y0.min(p.y as i64);
+            x1 = x1.max(p.x as i64);
+            y1 = y1.max(p.y as i64);
+        }
+        for ty in y0.div_euclid(tile)..=(y1 - 1).div_euclid(tile) {
+            for tx in x0.div_euclid(tile)..=(x1 - 1).div_euclid(tile) {
+                let (cx0, cy0) = (tx * tile, ty * tile);
+                let part =
+                    crate::merge::clip_to_box(vec![poly.clone()], cx0, cy0, cx0 + tile, cy0 + tile);
+                if !part.is_empty() {
+                    out.entry((tx as i32, ty as i32)).or_default().extend(part);
+                }
+            }
+        }
+    }
+    Some(out)
+}
+
 /// Merged coverage (DBU²) of `maps` inside the window.  Each cache tile's regions are
 /// clipped to `core ∩ window`; cores are disjoint, so a region present in several
 /// halo-overlapping tiles is counted once.
@@ -241,12 +286,23 @@ pub fn run(
     for l in &rule.layers {
         merged.ensure(layout, l.gds_layer as i16, l.gds_datatype as i16);
     }
+    // The boundary is read as a region, not as its box, so it is merged like any layer.
+    let bl = boundary.and(rule.num("boundary").map(|l| {
+        let dt = rule.num("boundary_dt").unwrap_or(0.0);
+        (l as i16, dt as i16)
+    }));
+    if let Some((l, dt)) = bl {
+        merged.ensure(layout, l, dt);
+    }
     let tile = merged.tile_dbu() as i64;
     let layer_maps: Vec<&TileMap> = rule
         .layers
         .iter()
         .map(|l| merged.tiles(l.gds_layer as i16, l.gds_datatype as i16))
         .collect();
+    let drawn_die: Option<&TileMap> = bl.map(|(l, dt)| merged.tiles(l, dt));
+    let filled: Option<TileMap> = drawn_die.and_then(|d| filled_die(d, tile));
+    let die_map: Option<&TileMap> = filled.as_ref().or(drawn_die);
     // Several layers are read as their union: the drawing, its filler and its mask are
     // meant to be disjoint, but a mask drawn over the active - or a stripe on all three
     // layers at once - counted three times and read 90 % where 30 % was covered.
@@ -273,15 +329,40 @@ pub fn run(
     } else {
         layer_maps
     };
+    // Only what lies inside the die counts: fill sitting on the street between two dies,
+    // or in the corner of the box an L-shaped die leaves, is no part of its coverage.
+    let clipped: TileMap;
+    let maps: Vec<&TileMap> = match die_map {
+        None => maps,
+        Some(die) => {
+            clipped = maps[0]
+                .iter()
+                .filter_map(|(k, polys)| {
+                    let d = die.get(k)?;
+                    Some((
+                        *k,
+                        crate::merge::compose_tile(
+                            crate::merge::VirtualOp::Intersection,
+                            &[polys.as_slice(), d.as_slice()],
+                        ),
+                    ))
+                })
+                .collect();
+            vec![&clipped]
+        }
+    };
     let um2 = dbu_to_um * dbu_to_um;
 
     let Some(window_um) = window_um else {
-        // The whole coverage against the die: the boundary's box if the rule names one
-        // and it is drawn, else the box of everything.  What lies outside the boundary
-        // is no part of the die and counts for nothing - a block checked with its
-        // boundary drawn smaller than its metal read 125 % otherwise.
+        // The whole coverage against the die: the boundary's own polygons if the rule
+        // names a layer and it is drawn, else the box of everything.  What lies outside
+        // the boundary is no part of the die and counts for nothing - a block checked
+        // with its boundary drawn smaller than its metal read 125 % otherwise.
         let die = boundary.unwrap_or(chip);
-        let denominator = area(die) * um2;
+        let denominator = match die_map {
+            Some(m) => coverage_dbu2(&[m], tile, die) * um2,
+            None => area(die) * um2,
+        };
         if denominator == 0.0 {
             eprintln!("[{}] Could not compute density", rule.id);
             return vec![];
@@ -378,7 +459,11 @@ pub fn run(
         .map(|&(i, j)| {
             let ((wx0, ax), (wy0, ay)) = (xs[i], ys[j]);
             let window = (wx0, wy0, (wx0 + win).min(bx1), (wy0 + win).min(by1));
-            let denominator = area(intersect(window, (bx0, by0, bx1, by1)));
+            let clip = intersect(window, (bx0, by0, bx1, by1));
+            let denominator = match die_map {
+                Some(m) => coverage_dbu2(&[m], tile, clip),
+                None => area(clip),
+            };
             if denominator <= 0.0 {
                 return None;
             }

@@ -18,18 +18,23 @@ double-counted, and several layers are read as their union) is summed on the sha
 merge cache and divided by the area the scope names.
 
 ``scope: chip`` (default)
-   One chip-wide percentage. The denominator is the chip's bounding box: the box of
-   *every* shape in the design, or, with the ``boundary`` layer param, that layer's
-   bounding box. The bounding box, not the layer's own merged area, is what is used: a
-   seal ring is drawn as a hollow frame around the die, so its own area is the thin
-   frame and would wildly undercount the region it stands for.
+   One chip-wide percentage. The denominator is the die: the ``boundary`` layer's own
+   polygons when the rule names one, else the bounding box of *every* shape in the
+   design. A die is not always one rectangle - an L-shaped die, or two dies with a
+   street between them, are one boundary layer - and only what lies inside the boundary
+   counts, on both sides of the fraction: ground in the box that is not die neither adds
+   to the denominator nor carries fill into the numerator. A boundary drawn as a ring
+   (a seal ring is a frame) is read as what it rings: its holes are filled first, so the
+   die is the area inside the frame and not the frame's own material.
 ``scope: window``
    "Any ``window`` × ``window`` µm area": the windows slide over the die a merge tile at
    a time (20 µm by default) from the die's corner, and one more is laid against each
    far edge, so every part of the die lies in some whole window and no window is a
-   clipped remainder. The die is the ``boundary`` layer's bounding box when the rule
-   names one, else the chip's raw bounding box; a die narrower than the window in a
-   direction gets one window there, cut to the die. The coverage is summed once per
+   clipped remainder. The grid runs over the ``boundary`` layer's bounding box when the
+   rule names one, else the chip's raw bounding box, so the windows are laid the same
+   way whatever the die's shape; what each one is measured against is the die area
+   inside it, and a window with no die in it at all is skipped. A die narrower than the
+   window in a direction gets one window there, cut to the die. The coverage is summed once per
    merge tile and the windows on the tile grid are read off a summed-area table, so the
    number of windows costs nothing; the edge-anchored windows are clipped exactly.
    Overlapping violating windows are one violation, reported at the worst of them. IHP's
@@ -69,9 +74,11 @@ Parameters
    With ``scope: region``: the span in µm a base region's widest spot must exceed to
    be checked at all. Defaults to ``35.0``.
 ``layer_params: boundary``
-   The layer whose bounding box is the denominator (``chip``) or bounds each window's
-   denominator (``window``), by name: a seal ring or a die outline. Optional; without
-   it the bounding box of every shape in the design, or each window's full nominal area,
+   The layer that is the die, by name: GF180's ``pr_bndry``, IHP's
+   ``EdgeSeal.boundary``. Its polygons - holes filled, so a ring is read as what it
+   rings - are the denominator (``chip``) and bound each window's denominator
+   (``window``), and coverage outside them is not counted. Optional; without it the
+   bounding box of every shape in the design, or each window's full nominal area,
    serves.
 
 
