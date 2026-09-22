@@ -2211,3 +2211,66 @@ fn hardening_mim_b(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
 fn hardening_cup(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
     assert_eq!(hardening("cup", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- LDMOS NFET (hardening/reports/gf180mcuD/ldnmos.md).  Every fixture is a row of
+// whole devices 60 µm apart, one per reading of a rule: the value the manual names, the
+// 0.005 µm step past it, and - where the manual fixes a dimension rather than bounding it
+// - the step short of it as well.  The device is the unit because this section has no
+// opinion about a bare layer: the channel is the gate before the drift, the drain is an
+// active island inside the drift, and the body tap is read against the source it is or is
+// not butted to.
+#[rstest]
+// The gate's end cap at 0.4 (clean) and 0.395, which is both its ends.
+#[case::mdn_10b_h1("ldnmos/MDN.10b.h1.gds.gz", "TOP", vec!["MDN.10b"; 2])]
+// The field poly's overhang towards the drain, which the manual fixes at 0.2: 0.2
+// (clean), 0.195 and 0.205 - short and long are both violations.
+#[case::mdn_10c_h1("ldnmos/MDN.10c.h1.gds.gz", "TOP", vec!["MDN.10c"; 2])]
+// The gate against the substrate tap, the same butted/unbutted split MDN.5a makes: a tap
+// touching nothing at 0.4 (clean) and 0.395, one butted to an N+ at 0.32 (clean) and
+// 0.315.
+#[case::mdn_10ei_h1("ldnmos/MDN.10ei.h1.gds.gz", "TOP", vec!["MDN.10ei", "MDN.10eii"])]
+// The drift's overlap of the channel, fixed at 0.4: 0.4 (clean), 0.395 - one marker per
+// wall of the 0.395 strip - and 0.405.
+#[case::mdn_11_h1("ldnmos/MDN.11.h1.gds.gz", "TOP", vec!["MDN.11"; 3])]
+// The drift's hold on the drain: a 6 µm drain in a 7 µm drift (0.5 either side, clean), a
+// 6.01 one (0.495, one marker per wall), a drain that runs out through the drift's top
+// edge - which leaves the drift with no drain in it, MDN.11's reading as well as MDN.12's
+// - and the same with a second island the drift does enclose, where the tab that runs out
+// is an active the drift holds by nothing.  Report finding 1: gdscheck reports nothing on
+// the last, because its enclosure has no half for a shape that crosses out.
+#[case::mdn_12_h1("ldnmos/MDN.12.h1.gds.gz", "TOP", vec!["MDN.11", "MDN.12", "MDN.12", "MDN.12", "MDN.12"])]
+// A drift 6.0 from a deep well (clean), one 5.995 from it, and one lying on it.
+#[case::mdn_14_h1("ldnmos/MDN.14.h1.gds.gz", "TOP", vec!["MDN.14"; 2])]
+// The drain active at 0.22 (clean) and 0.215, then a contact flush with the drain's edge
+// - enclosed by the 0 µm MDN.15b asks - and one 0.005 past it.
+#[case::mdn_15a_h1("ldnmos/MDN.15a.h1.gds.gz", "TOP", vec!["MDN.15a", "MDN.15a", "MDN.15b"])]
+// One gap between two drifts under two readings: tied to one potential at 1.0 (clean) and
+// 0.995 (MDN.2a), untied at 2.0 (clean), 1.995 (MDN.2b) and 0.995.  Report finding 2: the
+// last is MDN.2b's gap alone, and gdscheck reports MDN.2a - the equal-potential rule - on
+// it as well.  Every gap is centred on a tile line (10, 20, 21, 40, 42).
+#[case::mdn_2b_h1("ldnmos/MDN.2b.h1.gds.gz", "TOP", vec!["MDN.2a", "MDN.2b", "MDN.2b"])]
+// The channel at 0.6 (clean), 0.595 - which leaves the gate 1.195 wide, so MDN.10a comes
+// with it - 20.0 (clean) and 20.005.
+#[case::mdn_3a_h1("ldnmos/MDN.3a.h1.gds.gz", "TOP", vec!["MDN.10a", "MDN.10a", "MDN.3a", "MDN.3b", "MDN.3b"])]
+// The transistor's width at 4.0 (clean), 3.995, 50.0 (clean) and 50.005 - the wide one
+// being MDN.13a's finger as well as MDN.4b's channel.
+#[case::mdn_4a_h1("ldnmos/MDN.4a.h1.gds.gz", "TOP", vec!["MDN.13a", "MDN.4a", "MDN.4a", "MDN.4b", "MDN.4b"])]
+// The body tap against the drift, one gap under two numbers: unbutted at 1.0 (clean) and
+// 0.995, butted to an N+ at 0.92 (clean) and 0.915, and a butted one at 0.995 - over the
+// butted number, under the unbutted one, which is what the split is for.
+#[case::mdn_5ai_h1("ldnmos/MDN.5ai.h1.gds.gz", "TOP", vec!["MDN.5ai", "MDN.5aii"])]
+// A tap whose corner meets the source N+'s corner at one point, 0.95 off the drift.  It
+// shares no edge with the source, so it is not a butted source and body tap and the 1 µm
+// number is its own.  Report finding 3: both tools read the point touch as butted and
+// stay silent.
+#[case::mdn_5aii_h2("ldnmos/MDN.5aii.h2.gds.gz", "TOP", vec!["MDN.5ai"])]
+// An active island with its top 0.5 below Dualgate's edge (clean) and one 0.495 below it.
+#[case::mdn_6a_h1("ldnmos/MDN.6a.h1.gds.gz", "TOP", vec!["MDN.6a"])]
+// A drift against an N-well: tied at 1.0 (clean) and 0.995, untied at 2.0 (clean) and
+// 1.995, and a drift lying on a well - which is one node, so MDN.8a alone.
+#[case::mdn_8a_h1("ldnmos/MDN.8a.h1.gds.gz", "TOP", vec!["MDN.8a", "MDN.8a", "MDN.8b"])]
+// A stray active 4.0 from the drift (clean) and one 3.995 from it.
+#[case::mdn_9_h1("ldnmos/MDN.9.h1.gds.gz", "TOP", vec!["MDN.9"])]
+fn hardening_ldnmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    assert_eq!(hardening("ldnmos", gds, topcell, &[]), expected, "{gds}");
+}
