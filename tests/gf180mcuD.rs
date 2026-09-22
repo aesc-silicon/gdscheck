@@ -914,7 +914,6 @@ fn via_patterns_cover_every_rule() {
 
 /// The rule ids one deck reports on a generated fixture, sorted, less the ones to
 /// ignore.
-#[allow(dead_code)] // until the first deck's table lands
 fn hardening(deck: &str, gds: &str, topcell: &str, ignore: &[&str]) -> Vec<String> {
     let path = format!("{GENERATED}/{gds}");
     let violations = run_drc(&path, PDK, &[deck], None, topcell, true).expect("DRC run failed");
@@ -925,4 +924,76 @@ fn hardening(deck: &str, gds: &str, topcell: &str, ignore: &[&str]) -> Vec<Strin
         .collect();
     ids.sort();
     ids
+}
+
+// --- N-well (hardening/reports/gf180mcuD/nwell.md).  A well is the 5 V kind where
+// Dualgate lies over it, and the 3.3 V kind otherwise - a marker abutting a well is not
+// over it.  `min_width` reports one marker per wall, two per narrow bar.
+#[rstest]
+// Five 0.855 wells: bare (LV), under Dualgate (MV), half under it (MV), Dualgate abutting
+// its edge (LV), 0.86 under Dualgate (clean).
+#[case::nw_1a_h1("nwell/NW.1a.h1.gds.gz", "TOP", vec!["NW.1a_LV", "NW.1a_LV", "NW.1a_LV", "NW.1a_LV", "NW.1a_MV", "NW.1a_MV", "NW.1a_MV", "NW.1a_MV"], vec![])]
+// A 0.855 well under V5_XTOR alone has no Dualgate over it: LV.  Under both: MV.
+#[case::nw_1a_h2("nwell/NW.1a.h2.gds.gz", "TOP", vec!["NW.1a_LV", "NW.1a_LV", "NW.1a_MV", "NW.1a_MV"], vec![])]
+// A 30 µm 0.855 well with Dualgate over its last 4 µm is MV whole; one with Dualgate
+// abutting its end is LV.
+#[case::nw_1a_h3("nwell/NW.1a.h3.gds.gz", "TOP", vec!["NW.1a_LV", "NW.1a_LV", "NW.1a_MV", "NW.1a_MV"], vec![])]
+// 1.995 resistor wells: marker overhanging (fires), marker inside the well (not a
+// resistor), NW.7's head-to-head marker (fires), 2.0 (clean), a 3.0 well with a 1.5
+// long marker (the width is 3.0, clean).
+#[case::nw_1b_h1("nwell/NW.1b.h1.gds.gz", "TOP", vec!["NW.1b_LV", "NW.1b_LV", "NW.1b_LV", "NW.1b_LV"], vec![])]
+// 1.995 resistor wells: under Dualgate (MV), Dualgate abutting the well (LV), 2.0 under
+// Dualgate (clean).
+#[case::nw_1b_h2("nwell/NW.1b.h2.gds.gz", "TOP", vec!["NW.1b_LV", "NW.1b_LV", "NW.1b_MV", "NW.1b_MV"], vec![])]
+// One-net pairs at 0.595 (fires) and 0.6; a 0.595 slot (fires) and a 0.6 one.
+#[case::nw_2a_h1("nwell/NW.2a.h1.gds.gz", "TOP", vec!["NW.2a_LV", "NW.2a_LV"], vec![])]
+// Under Dualgate 0.735 (fires) and 0.74; a 0.7 pair with Dualgate over the left well
+// only, reaching into the gap: the left well is MV, its space 0.74, fires.
+#[case::nw_2a_h2("nwell/NW.2a.h2.gds.gz", "TOP", vec!["NW.2a_MV", "NW.2a_MV"], vec![])]
+// 0.595 pairs under YMTP_MK: the marker over both wells, and over the gap only - the
+// space is inside the marker either way, exempt.
+#[case::nw_2a_h3("nwell/NW.2a.h3.gds.gz", "TOP", vec![], vec!["Y.NW.2b_LV"])]
+// Two-net pairs at 1.395, 1.4 (clean), 0.595; and at 1.395: joined through Metal2
+// (clean), the left plate over the right well (fires), a tap without a contact (fires),
+// a P+ diffusion for a tap (fires).  NW.2a at 0.595 is the same gap under its other name.
+#[case::nw_2b_h1("nwell/NW.2b.h1.gds.gz", "TOP", vec!["NW.2b_LV", "NW.2b_LV", "NW.2b_LV", "NW.2b_LV", "NW.2b_LV"], vec!["NW.2a_LV"])]
+// Two nets under Dualgate at 1.695 (fires) and 1.7.
+#[case::nw_2b_h2("nwell/NW.2b.h2.gds.gz", "TOP", vec!["NW.2b_MV"], vec![])]
+// Two nets 1.695 apart with Dualgate over the left well only: the left well is MV, its
+// space 1.7, fires; the same at 1.7 is clean.
+#[case::nw_2b_h3("nwell/NW.2b.h3.gds.gz", "TOP", vec!["NW.2b_MV"], vec![])]
+// Two nets at 1.395 with Dualgate abutting the left well's outer edge: both LV, fires.
+#[case::nw_2b_h4("nwell/NW.2b.h4.gds.gz", "TOP", vec!["NW.2b_LV"], vec![])]
+// Two tapped wells 1.395 apart in one DNWELL: shorted through it, clean.
+#[case::nw_2b_h5("nwell/NW.2b.h5.gds.gz", "TOP", vec![], vec![])]
+// Two untapped wells 1.395 apart in one tapped DNWELL: shorted through it, clean.
+#[case::nw_2b_h6("nwell/NW.2b.h6.gds.gz", "TOP", vec![], vec![])]
+// Two-net 1.395 gaps straddling x = 20 and 42; one-net 0.595 gaps straddling 40 and 21.
+#[case::nw_2b_h7("nwell/NW.2b.h7.gds.gz", "TOP", vec!["NW.2a_LV", "NW.2a_LV", "NW.2b_LV", "NW.2b_LV"], vec![])]
+// Well to DNWELL: 3.1 (clean), 3.095, abutting, 3.097 corner to corner, 3.111 corner to
+// corner (clean), 3.095 inside a DNWELL ring's hole.
+#[case::nw_3_h1("nwell/NW.3.h1.gds.gz", "TOP", vec!["NW.3", "NW.3", "NW.3", "NW.3"], vec![])]
+// Well over P-well by 0.005 (fires), abutting (clean), by 0.005 inside a DNWELL (fires).
+#[case::nw_4_h1("nwell/NW.4.h1.gds.gz", "TOP", vec!["NW.4", "NW.4"], vec![])]
+// Held by 0.5 (clean), 0.495, 0 (edge on edge), 0.495 to a chamfered corner, 0.502 to a
+// chamfered corner (clean).
+#[case::nw_5_h1("nwell/NW.5.h1.gds.gz", "TOP", vec!["NW.5_LV", "NW.5_LV", "NW.5_LV"], vec![])]
+// A 3.3 V well half out of the DNWELL: NW.5_LV, and not the 5 V rule.
+#[case::nw_5_h2("nwell/NW.5.h2.gds.gz", "TOP", vec!["NW.5_LV"], vec![])]
+// Under Dualgate: held by 0.495, half out, held by 0.5 (clean).
+#[case::nw_5_h3("nwell/NW.5.h3.gds.gz", "TOP", vec!["NW.5_MV", "NW.5_MV"], vec![])]
+// Held by 0.495 with Dualgate abutting the well's edge: a 3.3 V well, NW.5_LV.
+#[case::nw_5_h4("nwell/NW.5.h4.gds.gz", "TOP", vec!["NW.5_LV"], vec![])]
+// A well in a DNWELL with RES_MK all round it (fires); the same without a marker.
+#[case::nw_6_h1("nwell/NW.6.h1.gds.gz", "TOP", vec!["NW.6"], vec![])]
+// A well in a DNWELL with the marker between its COMP heads, NW.7's drawing: a resistor
+// in a DNWELL, fires.
+#[case::nw_6_h2("nwell/NW.6.h2.gds.gz", "TOP", vec!["NW.6"], vec![])]
+fn hardening_nwell(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(hardening("nwell", gds, topcell, &ignore), expected, "{gds}");
 }
