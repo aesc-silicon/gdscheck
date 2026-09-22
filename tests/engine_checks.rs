@@ -491,7 +491,42 @@ fn notch_rules_meet_the_bound_exactly_and_read_their_gates(
 /// - `within_*`: a U of Via with the reference on one leg and the target on the other
 ///   leg across the slot, or on the same leg.
 /// - `edge_*`: a 0.2 µm bar with the reference 20 and 20.005 from its right wall.
+///
+/// The hardening patterns, what a rule manual's reach asks of any layer, drawn once
+/// for every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/max_space.rs`:
+///
+/// - `bound`: targets 20 and 20.005 off on every side and off the corner, one 20.01
+///   off as the crow flies but 14.15 in each axis, covered - the reach is the square;
+///   as parts, every 2 µm target at 20 has its far half beyond reach.
+/// - `bound_45`: a diamond reference's reach is the diamond grown along its walls,
+///   not its box grown; a diamond target with its tip at 20 and at 20.005; a 45° strip
+///   reference with a box 19.997 and 20.004 from its wall.
+/// - `merge`: a reference as two overlapping boxes, a target as thirteen slices with one
+///   gap, a ring target round a reference out of reach, a reference ring covering.
+/// - `tile_lines`: pairs exactly 20 and 20.005 apart across a tile line, a target
+///   reaching from the reach into a gap, pairs across 21, 40 and 42, one at (1000,
+///   1000).
+/// - `array_flat` / `array_ref`: fifty pairs 21 apart.
+/// - `extremes`: a 0.005 sliver, a 300 µm bar with the reference at its middle (two
+///   gaps), a target with nothing near it.
+/// - `edge_tile_lines`: an Outer square across a line with one wall out of reach.
 #[rstest]
+#[case("bound", "SPC.max", 10)]
+#[case("bound", "M.poly", 5)]
+#[case("bound_45", "SPC.max", 5)]
+#[case("bound_45", "M.poly", 3)]
+#[case("merge", "SPC.max", 2)]
+#[case("merge", "M.poly", 1)]
+#[case("tile_lines", "SPC.max", 7)]
+#[case("tile_lines", "M.poly", 4)]
+#[case("array_flat", "SPC.max", 50)]
+#[case("array_flat", "M.poly", 50)]
+#[case("array_ref", "SPC.max", 50)]
+#[case("array_ref", "M.poly", 50)]
+#[case("extremes", "SPC.max", 4)]
+#[case("extremes", "M.poly", 2)]
+#[case("edge_tile_lines", "M.edge", 1)]
 #[case("part_exact", "SPC.max", 0)]
 #[case("part_over", "SPC.max", 1)]
 #[case("poly_exact", "M.poly", 0)]
