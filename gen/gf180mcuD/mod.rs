@@ -43,6 +43,7 @@ mod otp_mk;
 mod poly2;
 mod pplus;
 mod pres;
+mod resistors;
 mod sab;
 mod sram_3p3;
 mod sram_5p0;

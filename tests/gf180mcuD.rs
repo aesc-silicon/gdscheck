@@ -2328,3 +2328,118 @@ fn hardening_ldnmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: 
 fn hardening_ldpmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
     assert_eq!(hardening("ldpmos", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- P+ poly resistor (hardening/reports/gf180mcuD/pres.md).  A bar is a resistor when
+// Poly2 and Pplus meet under a salicide block with RES_MK touching them and no RESISTOR
+// marker over them; `min_width` reports one marker per wall.
+#[rstest]
+// Four 0.795 bars: the full device (fires), the same without RES_MK, without the block,
+// and with a RESISTOR marker over it - the last is a high-sheet resistor, not this one.
+#[case::pres_1_h1("pres/PRES.1.h1.gds.gz", "TOP", vec!["PRES.1"; 2], vec![])]
+// A RES_MK abutting the bar's left edge and covering none of it still makes the bar a
+// resistor; pulled 0.005 clear it does not.  The marking covers no part of the resistor,
+// which is what PRES.9a asks of it.
+#[case::pres_1_h2("pres/PRES.1.h2.gds.gz", "TOP", vec!["PRES.1", "PRES.1", "PRES.9a"], vec![])]
+// A 1.0 body with a 0.6 head outside the block: the width is measured on the whole bar.
+#[case::pres_1_h3("pres/PRES.1.h3.gds.gz", "TOP", vec!["PRES.1"; 2], vec![])]
+// The same 0.795 bar across x = 20, across x = 40 and 42, and across y = 20.
+#[case::pres_1_h4("pres/PRES.1.h4.gds.gz", "TOP", vec!["PRES.1"; 6], vec![])]
+// A serpentine whose two arms are 0.395 apart, and one at 0.4.  Report finding 1: the gap
+// inside one folded resistor is a space between Poly2 resistors and is not reported.
+#[case::pres_2_h1("pres/PRES.2.h1.gds.gz", "TOP", vec!["PRES.2"], vec![])]
+// Two resistors 0.395 apart with the gap straddling y = 40, and a clean 0.4 pair.
+#[case::pres_2_h2("pres/PRES.2.h2.gds.gz", "TOP", vec!["PRES.2"], vec![])]
+// COMP 0.595 off the body's end, at 0.6, and 0.594 away on the diagonal.
+#[case::pres_3_h1("pres/PRES.3.h1.gds.gz", "TOP", vec!["PRES.3"; 2], vec![])]
+// COMP abutting the body, overlapping it by 0.5, and wholly inside it.  Report finding 2:
+// the abutting COMP is a space of nothing and is not reported.
+#[case::pres_3_h2("pres/PRES.3.h2.gds.gz", "TOP", vec!["PRES.3"; 3], vec![])]
+// Unrelated Poly2 at 0.595, at 0.6, and at 0.595 with a salicide block of its own five
+// micron away.  Report finding 3: that block makes the bar related to this resistor.
+#[case::pres_4_h1("pres/PRES.4.h1.gds.gz", "TOP", vec!["PRES.4"; 2], vec![])]
+// The implant stopping in the middle of the block, so the resistor's own wall is the
+// implant's edge and the implant overlaps it by nothing.
+#[case::pres_5_h1("pres/PRES.5.h1.gds.gz", "TOP", vec!["PRES.5"], vec![])]
+// The block overhanging 0.275 above the body and 0.28 below it.
+#[case::pres_6_h1("pres/PRES.6.h1.gds.gz", "TOP", vec!["PRES.6"], vec![])]
+// The block covering the whole bar, 0.35 in the width direction and 0.15 past each end.
+// Report finding 4: the rule is the width direction, and the ends are not in it.
+#[case::pres_6_h2("pres/PRES.6.h2.gds.gz", "TOP", vec![], vec![])]
+// The block running 0.15 past the bar's left end and ending inside it on the right, where
+// the head and its contact are.  Report finding 4.
+#[case::pres_6_h3("pres/PRES.6.h3.gds.gz", "TOP", vec![], vec![])]
+// A contact abutting the block's edge and one wholly inside the block.
+#[case::pres_7_h1("pres/PRES.7.h1.gds.gz", "TOP", vec!["PRES.7"; 2], vec![])]
+// A contact 0.2149 from a salicide island on the diagonal: 0.152 in x and in y.
+#[case::pres_7_h2("pres/PRES.7.h2.gds.gz", "TOP", vec!["PRES.7"], vec![])]
+// Four markings: on the resistor's outline exactly (clean), 0.6 narrow, 0.6 short at each
+// end, and 0.9 past the block at each end but still short of the bar.
+#[case::pres_9a_h1("pres/PRES.9a.h1.gds.gz", "TOP", vec!["PRES.9a"; 3], vec![])]
+// A 1 long resistor under a 6.6 long marking that clears the whole bar.  Report finding 5:
+// the manual asks the marking's length to coincide with the block's.
+#[case::pres_9a_h2("pres/PRES.9a.h2.gds.gz", "TOP", vec!["PRES.9a"], vec![])]
+// A 140 x 140 octagon marking - 16238 µm², both sides over 80 - 19.9 from a 100 square.
+#[case::pres_9b_h1("pres/PRES.9b.h1.gds.gz", "TOP", vec!["PRES.9b"], vec![])]
+// One 110 x 160 marking with a 19.9 notch cut 70 into it: no adjacent marking.
+#[case::pres_9b_h2("pres/PRES.9b.h2.gds.gz", "TOP", vec![], vec![])]
+fn hardening_pres(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(hardening("pres", gds, topcell, &ignore), expected, "{gds}");
+}
+
+// --- N+ poly resistor (hardening/reports/gf180mcuD/lres.md).  Section 10.2 is 10.1 with
+// the implant swapped, so these are the same layouts on Nplus; the one place the two part
+// is the bar under a RESISTOR marker, which 10.2 still calls its own.
+#[rstest]
+// Four 0.795 bars: the full device, the same without RES_MK, without the block, and with a
+// RESISTOR marker over it.  10.2 has no clause taking that last bar away and 10.3 does not
+// claim it either (it recognises its device through Pplus), so it stays an N+ resistor.
+#[case::lres_1_h1("lres/LRES.1.h1.gds.gz", "TOP", vec!["LRES.1"; 4], vec![])]
+// A RES_MK abutting the bar's left edge, and the same pulled 0.005 clear.
+#[case::lres_1_h2("lres/LRES.1.h2.gds.gz", "TOP", vec!["LRES.1", "LRES.1", "LRES.9a"], vec![])]
+// A 1.0 body with a 0.6 head outside the block.
+#[case::lres_1_h3("lres/LRES.1.h3.gds.gz", "TOP", vec!["LRES.1"; 2], vec![])]
+// The same 0.795 bar across x = 20, across x = 40 and 42, and across y = 20.
+#[case::lres_1_h4("lres/LRES.1.h4.gds.gz", "TOP", vec!["LRES.1"; 6], vec![])]
+// A serpentine whose two arms are 0.395 apart, and one at 0.4.  Report finding 1.
+#[case::lres_2_h1("lres/LRES.2.h1.gds.gz", "TOP", vec!["LRES.2"], vec![])]
+// Two resistors 0.395 apart with the gap straddling y = 40, and a clean 0.4 pair.
+#[case::lres_2_h2("lres/LRES.2.h2.gds.gz", "TOP", vec!["LRES.2"], vec![])]
+// COMP 0.595 off the body's end, at 0.6, and 0.594 away on the diagonal.
+#[case::lres_3_h1("lres/LRES.3.h1.gds.gz", "TOP", vec!["LRES.3"; 2], vec![])]
+// COMP abutting the body, overlapping it, and wholly inside it.  Report finding 2.
+#[case::lres_3_h2("lres/LRES.3.h2.gds.gz", "TOP", vec!["LRES.3"; 3], vec![])]
+// Unrelated Poly2 at 0.595, at 0.6, and at 0.595 with a block of its own.  Report 3.
+#[case::lres_4_h1("lres/LRES.4.h1.gds.gz", "TOP", vec!["LRES.4"; 2], vec![])]
+// The implant stopping in the middle of the block.
+#[case::lres_5_h1("lres/LRES.5.h1.gds.gz", "TOP", vec!["LRES.5"], vec![])]
+// The block overhanging 0.275 above the body and 0.28 below it.
+#[case::lres_6_h1("lres/LRES.6.h1.gds.gz", "TOP", vec!["LRES.6"], vec![])]
+// The block covering the whole bar, 0.15 past each end.  Report finding 4.
+#[case::lres_6_h2("lres/LRES.6.h2.gds.gz", "TOP", vec![], vec![])]
+// The block 0.15 past the bar's left end only.  Report finding 4.
+#[case::lres_6_h3("lres/LRES.6.h3.gds.gz", "TOP", vec![], vec![])]
+// A contact abutting the block's edge and one wholly inside the block.
+#[case::lres_7_h1("lres/LRES.7.h1.gds.gz", "TOP", vec!["LRES.7"; 2], vec![])]
+// A contact 0.2149 from a salicide island on the diagonal.
+#[case::lres_7_h2("lres/LRES.7.h2.gds.gz", "TOP", vec!["LRES.7"], vec![])]
+// Four markings: on the outline exactly, 0.6 narrow, 0.6 short, 0.9 long.
+#[case::lres_9a_h1("lres/LRES.9a.h1.gds.gz", "TOP", vec!["LRES.9a"; 3], vec![])]
+// A 1 long resistor under a 6.6 long marking.  Report finding 5.
+#[case::lres_9a_h2("lres/LRES.9a.h2.gds.gz", "TOP", vec!["LRES.9a"], vec![])]
+// A 140 x 140 octagon marking 19.9 from a 100 square.
+#[case::lres_9b_h1("lres/LRES.9b.h1.gds.gz", "TOP", vec!["LRES.9b"], vec![])]
+// One 110 x 160 marking with a 19.9 notch cut into it.
+#[case::lres_9b_h2("lres/LRES.9b.h2.gds.gz", "TOP", vec![], vec![])]
+fn hardening_lres(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(hardening("lres", gds, topcell, &ignore), expected, "{gds}");
+}
