@@ -167,14 +167,45 @@ pub fn run_rule(
                 .get(&tile)
                 .is_some_and(|ps| ps.iter().any(|p| crate::merge::point_in_merged(xd, yd, p)))
         };
+        // A marker is a segment, and it meets the layer where any part of it does: a
+        // wall sampled at five points along it missed a six-micron pad on a thirty-five
+        // micron line, so a narrow line under a bond pad went unreported as soon as it
+        // ran far enough past the pad (report, cup finding 1).  Read tile by tile over
+        // the segment's own box, each polygon against the whole segment.
+        let meets = |x1: f64, y1: f64, x2: f64, y2: f64| {
+            let e = crate::merge::Edge {
+                a: crate::merge::IntPoint::new(
+                    (x1 / dbu_to_um).round() as i32,
+                    (y1 / dbu_to_um).round() as i32,
+                ),
+                b: crate::merge::IntPoint::new(
+                    (x2 / dbu_to_um).round() as i32,
+                    (y2 / dbu_to_um).round() as i32,
+                ),
+            };
+            let (tx0, tx1) = (
+                (x1.min(x2) / t).floor() as i32,
+                (x1.max(x2) / t).floor() as i32,
+            );
+            let (ty0, ty1) = (
+                (y1.min(y2) / t).floor() as i32,
+                (y1.max(y2) / t).floor() as i32,
+            );
+            (ty0..=ty1).any(|ty| {
+                (tx0..=tx1).any(|tx| {
+                    tiles
+                        .get(&(tx, ty))
+                        .is_some_and(|ps| ps.iter().any(|p| crate::merge::poly_meets_edge(p, &e)))
+                })
+            })
+        };
         let trace = std::env::var("GDSCHECK_RULE_TRACE").is_ok();
         out.retain(|v| {
             let keep = match v.geometry {
                 crate::violation::ViolationGeometry::Point { x, y } => touches(x, y),
-                crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => (0..=4).any(|i| {
-                    let f = i as f64 / 4.0;
-                    touches(x1 + (x2 - x1) * f, y1 + (y2 - y1) * f)
-                }),
+                crate::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                    meets(x1, y1, x2, y2)
+                }
                 crate::violation::ViolationGeometry::None => true,
             };
             if !keep && trace {

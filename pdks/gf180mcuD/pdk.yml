@@ -3654,10 +3654,6 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [metal5_slot_rect, via4]
-  - name: metal5_slot_on_contact
-    op: intersection
-    mode: lazy
-    layers: [metal5_slot_rect, contact]
   - name: metal5_slot_on_keepout
     op: intersection
     mode: lazy
@@ -3937,13 +3933,14 @@ virtual_layers:
   # actually sits on.  Every enclosure rule in the deck is measured against that
   # reconstruction rather than against Metal4 itself, so a routing shape elsewhere on
   # the same net is not mistaken for the plate.
-  # A selection radius - "the plate reaches this far" - so it wants the slack: a via at
-  # exactly 1.06 um only touches the grown region, and a whole-region test reads a
-  # zero-area touch as no overlap. This is the one grow in either PDK that needs it.
+  # The plate itself, and every margin in the section is measured against its edge, so
+  # it is grown by the manual's 1.06 and no more: the 5 nm of slack a *selection* radius
+  # wants put every such margin one grid step tight, and a via whose inner edge lies on
+  # the oversize counted as a bottom-plate via (report, mim_b finding 1).
   - name: fusetop_oversize
     op: grow
     radius: 1.06
-    slack: 0.005
+    slack: 0.0
     mode: lazy
     layers: [fusetop]
   - name: topmin1_metal_at_fusetop

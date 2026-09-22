@@ -213,7 +213,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::mim_b(
     "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
-    &[("MIMTM.1", 3), ("MIMTM.10", 3), ("MIMTM.11", 2), ("MIMTM.2", 9), ("MIMTM.3", 62), ("MIMTM.4", 12), ("MIMTM.5", 8), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6)]
+    &[("MIMTM.1", 3), ("MIMTM.10", 3), ("MIMTM.11", 2), ("MIMTM.2", 7), ("MIMTM.3", 62), ("MIMTM.4", 12), ("MIMTM.5", 11), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6)]
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
@@ -462,6 +462,13 @@ const COINCIDENT: &[(&str, &str, &str)] = &[
     // "crossing" halves report.  One shape, three rules, nothing to separate.
     ("contact", "CO.9", "CO.5a"),
     ("contact", "CO.9", "CO.5b"),
+    // A slot mark in a hole of the metal is `.10` by the manual's own id, and the same
+    // geometry is a mark no metal encloses, which is `.5`.  One drawing, two rules.
+    ("mslot", "MSLOT1.10", "MSLOT1.5"),
+    ("mslot", "MSLOT2.10", "MSLOT2.5"),
+    ("mslot", "MSLOT3.10", "MSLOT3.5"),
+    ("mslot", "MSLOT4.10", "MSLOT4.5"),
+    ("mslot", "MSLOT5.10", "MSLOT5.5"),
     // A block drawn over a whole gate is SB.16, and the poly under it then runs past
     // the block by nothing, which is SB.10's own contained-shape half.  One shape, two
     // rules.
@@ -2081,6 +2088,8 @@ fn hardening_mcell(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
     let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
     want.sort();
     assert_eq!(hardening("mcell", gds, topcell, &[]), want, "{gds}");
+}
+
 // --- MIM capacitor, option B (hardening/reports/gf180mcuD/mim_b.md).  Everything the
 // deck measures the bottom plate with is a layer nobody draws: FuseTop grown by 1.06 µm
 // and clipped to Metal4.  The expected values are the manual's 1.06, not the engine's.
@@ -2168,14 +2177,20 @@ fn hardening_mim_b(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
 #[case::cup_2_h4("cup/CUP.2.h4.gds.gz", "TOP", vec![])]
 // The pad abuts the bar's left edge without covering any of it.  Report finding 4: the
 // metal is selected, but no wall of it meets the pad by area and gdscheck drops both.
-#[case::cup_2_h5("cup/CUP.2.h5.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// The pad reaches neither wall, so no marker of the measurement meets it: the filter
+// keeps a violation by its *marker*, where upstream keeps it by the measurement between
+// the two walls (kept and open; report, finding 2).
+#[case::cup_2_h5("cup/CUP.2.h5.gds.gz", "TOP", vec!["CUP.2"])]
 // The 35 µm line of h3 with the pad over the whole of it, tile lines included.
 #[case::cup_2_h6("cup/CUP.2.h6.gds.gz", "TOP", vec!["CUP.2"; 2])]
 // An 8 µm line lying on its side with the pad across its middle.
 #[case::cup_2_h7("cup/CUP.2.h7.gds.gz", "TOP", vec!["CUP.2"; 2])]
 // An upright 8 µm line with the pad inside its width, reaching neither wall.  Report
 // finding 4: the measurement is under the pad even though its walls are not.
-#[case::cup_2_h8("cup/CUP.2.h8.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// The pad reaches neither wall, so no marker of the measurement meets it: the filter
+// keeps a violation by its *marker*, where upstream keeps it by the measurement between
+// the two walls (kept and open; report, finding 2).
+#[case::cup_2_h8("cup/CUP.2.h8.gds.gz", "TOP", vec![])]
 // A 20 µm line across one tile line with a 6 µm pad on its middle.
 #[case::cup_2_h9("cup/CUP.2.h9.gds.gz", "TOP", vec!["CUP.2"; 2])]
 // The 35 µm line of h3 with a 2 µm pad instead of a 6 µm one.  Report finding 3.

@@ -168,3 +168,15 @@ matched.
 - **MIMTM.11**: two 50 x 100 capacitors on one bottom plate summing to exactly 10000 µm²
   (clean) and to 10000.25 (fires); two 60 x 100 capacitors on *separate* bottom plates
   summing to 12000 (clean - the cap is per plate, not per layout).
+
+## Resolution (2026-09-22)
+
+- **1 (the virtual plate's 5 nm of slack)**: fixed in the deck.  `fusetop_oversize` is
+  grown by the manual's 1.06 and no more; the slack a *selection* radius wants put every
+  margin in the section one grid step tight and made a via whose inner edge lay on the
+  oversize a bottom-plate via.  The foundry case's MIMTM.2 goes 9 -> 7, which is
+  KLayout's count exactly.
+- **2 (a via abutting the plate)**: fixed in the deck, `abutting: report` on MIMTM.5
+  (the foundry case 8 -> 11).
+- The MIMTM.10 and MIMTM.12 notes are recorded and need nothing: the first is the
+  reading both tools share, the second is the manual's own "not coded".
