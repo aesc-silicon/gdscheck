@@ -15,6 +15,8 @@ seen the engine, and what came of it.
   the manual's answer.  Its *settled readings* are the decisions taken so far.
 - `oracle-ihp.sh` - the second opinion: a layout through gdscheck and IHP's KLayout
   decks in the elements container, one line per rule either side reported.
+- `oracle-gf180.sh` - the same for GF180MCU, through the upstream `gf180mcu.drc`
+  runset from the ciel checkout, in the same container.
 - `reports/<process>/<deck>.md` - one report per round: the findings, the oracle's
   answers, the verdicts, and a *Resolution* section saying what was fixed in the engine
   or the deck, what was kept and why, and what the gdscheck owner decided.
