@@ -205,3 +205,26 @@ three tile sizes and in agreement with the runset:
 | O.CO.7 | contact to gate line 0.13 / 0.125 | `O.CO.7.h1` |
 
 The deck's own good/bad pairs were left as they were; nothing this round drew moved them.
+
+---
+
+## Resolution (2026-09-22)
+
+- **Finding 1 (O.DF.6).** The rule reads `metric: euclidian` now, which finds the third
+  device - 0.02 µm of active over the gate's top wall where the rule asks 0.22, and both
+  tools were blind to it - and the second, 0.19 µm. The first device is kept and open:
+  every straight margin clears 0.22 while the chamfer comes within 0.1556, and neither
+  tool reports it. Two things about that fixture are worth knowing for whoever picks it
+  up: the devices moved from x = 10, 20, 30 to 12, 22, 32, because the margin this rule
+  reads runs along the active's left edge and on the 20 µm tile line the second device's
+  0.19 went unread - the probe sits on the line - which is a gdscheck defect of its own,
+  reproducible by moving the fixture back.
+- **Finding 2.** `comp_otp`, `sab_otp` and `poly_otp` are `overlapping` selections: the
+  marker names cells and selects whole regions. `O.DF.9.h1` reports the 0.1425 µm² active
+  and not the 1 µm² one whose corner the marker clips, and `O.DF.3a.h2` - a solid plate
+  under a U-shaped marker - is clean.
+- **Finding 3.** O.SB.3, O.SB.4 and O.CO.7 carry `abutting: report`.
+- **Finding 4.** `sab_otp_lv` and `sab_otp_mv` split on V5_XTOR and are complementary, as
+  note 1 of the section has it ("Rule of 5V OTP is set by utilizing 'V5_XTOR' and 'OTP_MK'
+  marking layer") and as section 11 words the same split for its SRAM cells. The Dualgate
+  cell's 1 µm² block is a 3.3 V cell's and owes O.SB.13_LV's 1.488, which it now gets.

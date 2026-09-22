@@ -154,3 +154,16 @@ decks but not gdscheck's suite: a fuse's contacts trip CO.6 and its P+ trips PP 
 rules from the `contact`, `pplus` and `comp` decks on every layout.  Those columns are
 `gdscheck-only` noise; the cases run the one deck through the `hardening` helper and see
 none of it.
+
+---
+
+## Resolution (2026-09-22)
+
+The one finding - the shared edge - was fixed: EF.12, EF.13, EF.15 and EF.20 carry
+`abutting: report`, and `EF.15.h1`'s contact lying against the link's end edge is reported
+beside the one that meets it at a point. On the foundry layout EF.12 goes 21 -> 29, EF.13
+5 -> 8 and EF.20 55 -> 65.
+
+The four readings recorded at the end of the report - EF.10/EF.11 as pad-against-pad,
+EF.16a counting contacts over the whole pad, and the two "NA" columns - are left as they
+are, for the gdscheck owner.
