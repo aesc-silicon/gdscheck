@@ -2443,3 +2443,60 @@ fn hardening_lres(
 ) {
     assert_eq!(hardening("lres", gds, topcell, &ignore), expected, "{gds}");
 }
+
+// --- High-sheet poly resistor (hardening/reports/gf180mcuD/hres.md).  Drawn as the manual
+// describes it: the implant comes in from each end, stops 0.1 over the salicide block, and
+// the resistor is the bare Poly2 between the two heads.
+#[rstest]
+// A 0.395 notch in the RESISTOR marker, 0.5 clear of the bar.
+#[case::hres_1_h1("hres/HRES.1.h1.gds.gz", "TOP", vec!["HRES.1"], vec![])]
+// Five 0.995 bars: the full device; without the RESISTOR marker; without RES_MK; without
+// the block; and one whose implant only abuts the bar - enough for this section, which
+// asks the Poly2 to touch the implant where 10.1 asks for Poly2 and Pplus.
+#[case::hres_2_h1("hres/HRES.2.h1.gds.gz", "TOP", vec!["HRES.2"; 4], vec![])]
+// The same 0.995 bar across x = 20, across x = 40 and 42, and across y = 20.
+#[case::hres_2_h2("hres/HRES.2.h2.gds.gz", "TOP", vec!["HRES.2"; 6], vec![])]
+// A serpentine whose two arms are 0.395 apart.  The same geometry under 10.1 and 10.2 is
+// reported by neither tool; here the deck has the notch and reports it (report finding 1).
+#[case::hres_3_h1("hres/HRES.3.h1.gds.gz", "TOP", vec!["HRES.3"], vec![])]
+// The RESISTOR marker covering the left half of the bar and stopping.
+#[case::hres_4_h1("hres/HRES.4.h1.gds.gz", "TOP", vec!["HRES.4"], vec![])]
+// Unrelated Poly2 0.295 from the marker, at 0.3, and at 0.295 with a salicide block of
+// its own.  Report finding 3: that block makes the bar related to this resistor.
+#[case::hres_5_h1("hres/HRES.5.h1.gds.gz", "TOP", vec!["HRES.5"; 2], vec![])]
+// COMP 0.295 from the marker, at 0.3, and under the marker but clear of the bar.
+#[case::hres_6_h1("hres/HRES.6.h1.gds.gz", "TOP", vec!["HRES.6"; 2], vec![])]
+// A contact on the head whose corner sticks out of the L-shaped implant.
+#[case::hres_7_h1("hres/HRES.7.h1.gds.gz", "TOP", vec!["HRES.7"], vec![])]
+// A contact on the body, wholly inside the salicide block.
+#[case::hres_8_h1("hres/HRES.8.h1.gds.gz", "TOP", vec!["HRES.8"], vec![])]
+// A contact abutting the block's edge, which leaves it 0.1 from the implant's edge too.
+#[case::hres_8_h2("hres/HRES.8.h2.gds.gz", "TOP", vec!["HRES.7", "HRES.8"], vec![])]
+// A 0.5 x 0.4 hole in the block over the middle of the body.  Report finding 6: the block
+// overlaps the resistor by nothing there.
+#[case::hres_9_h1("hres/HRES.9.h1.gds.gz", "TOP", vec!["HRES.9"], vec![])]
+// The block overhanging 0.275 above the bar and 0.28 below it.
+#[case::hres_9_h2("hres/HRES.9.h2.gds.gz", "TOP", vec!["HRES.9"], vec![])]
+// A notch bitten out of the block from above, ending 0.4 inside the bar.  Report finding
+// 7: neither tool reads the block's edge where it stops inside the resistor's width.
+#[case::hres_9_h3("hres/HRES.9.h3.gds.gz", "TOP", vec!["HRES.9"], vec![])]
+// The left head reaching 0.1 over the block, and one reaching 0.095.
+#[case::hres_10_h1("hres/HRES.10.h1.gds.gz", "TOP", vec!["HRES.10"; 2], vec![])]
+// The left head stopping 0.1 short of the block.  Report finding 8: an overlap of nothing
+// is under the minimum the rule names.
+#[case::hres_10_h2("hres/HRES.10.h2.gds.gz", "TOP", vec!["HRES.10"], vec![])]
+// The left head reaching 0.105 over the block.  Report finding 9: the rule's maximum half
+// is not read on the overlap the manual means.
+#[case::hres_10_h3("hres/HRES.10.h3.gds.gz", "TOP", vec!["HRES.10"], vec![])]
+// Three markings: on the body exactly (clean), 0.6 narrow, and 0.9 short at each end.
+#[case::hres_12a_h1("hres/HRES.12a.h1.gds.gz", "TOP", vec!["HRES.12a"; 2], vec![])]
+// A 140 x 140 octagon marking 19.9 from a 100 square.
+#[case::hres_12b_h1("hres/HRES.12b.h1.gds.gz", "TOP", vec!["HRES.12b"], vec![])]
+fn hardening_hres(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(hardening("hres", gds, topcell, &ignore), expected, "{gds}");
+}
