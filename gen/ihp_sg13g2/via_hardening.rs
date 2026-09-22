@@ -4,13 +4,15 @@
 
 //! Hardening layouts for the Via1-Via4 decks: section 5.19 (V1.a-V1.c1) and section 5.20
 //! (Vn.a-Vn.c1, one rule set for Via2-Via4) of the SG13G2 layout rules, with section
-//! 6.10's sentence on the sealring.  Every layout is
-//! `tests/data/ihp-sg13g2/via<n>/V<n>.<rule>.h<k>.gds.gz`, drawn once per index with the
-//! same geometry on Via1-Via4 (Metal(n) below); only the enclosure `c` differs (V1.c is
-//! 0.01, Vn.c is 0.005), so the V(n).c/c1 layouts take their margins from it.
+//! 6.10's sentence on the sealring.  Every layout is drawn with the same geometry on
+//! Via1-Via4 (Metal(n) below); only the enclosure `c` differs (V1.c is 0.01, Vn.c is
+//! 0.005), so the V(n).c/c1 layouts take their margins from it.  Via1's layouts are
+//! `tests/data/ihp-sg13g2/via1/V1.<rule>.h<k>.gds.gz`; Via2, Via3 and Via4 share
+//! `tests/data/ihp-sg13g2/vian/V.<rule>.h<k>.gds.gz`, the three layers at the same
+//! place - a Via(n) deck reads its own via and metal of it and nothing else.
 
 use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, um, write_gz,
+    chamfered_tr, diamond, flat_array, layer, library, poly, rect, strip45, um, write_gz,
 };
 use gds21::{GdsArrayRef, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct};
 use gdscheck::pdk::PdkConfig;
@@ -18,10 +20,71 @@ use gdscheck::pdk::PdkConfig;
 /// Via side, V(n).a is exact.
 const VIA: f64 = 0.19;
 
+/// What the layers' patterns of one layout are gathered into: the elements of a flat
+/// layout, or an array reference of a cell (`cols × rows` at `px`, `py`) beside flat
+/// elements.
+enum Out {
+    Flat(Vec<GdsElement>),
+    Array {
+        cell: Vec<GdsElement>,
+        cols: i16,
+        rows: i16,
+        px: f64,
+        py: f64,
+        extra: Vec<GdsElement>,
+    },
+}
+
+/// The layouts of one directory, gathered across the layers that share it.
+struct Group {
+    dir: String,
+    /// The file prefix: `V1` for Via1's own directory, `V` for the shared one.
+    prefix: String,
+    out: std::cell::RefCell<std::collections::BTreeMap<String, Out>>,
+}
+
+impl Group {
+    fn new(dir: &str, prefix: &str) -> std::rc::Rc<Group> {
+        std::rc::Rc::new(Group {
+            dir: format!("tests/data/ihp-sg13g2/{dir}"),
+            prefix: prefix.to_string(),
+            out: Default::default(),
+        })
+    }
+
+    /// Writes every gathered layout.
+    fn flush(&self) {
+        std::fs::create_dir_all(&self.dir).expect("failed to create output directory");
+        for (name, o) in self.out.borrow_mut().iter_mut() {
+            let path = format!("{}/{}{name}.gds.gz", self.dir, self.prefix);
+            match o {
+                Out::Flat(v) => write_gz(&path, library("TOP", std::mem::take(v))),
+                Out::Array {
+                    cell,
+                    cols,
+                    rows,
+                    px,
+                    py,
+                    extra,
+                } => write_gz(
+                    &path,
+                    ref_array_with(
+                        std::mem::take(cell),
+                        *cols,
+                        *rows,
+                        *px,
+                        *py,
+                        std::mem::take(extra),
+                    ),
+                ),
+            }
+        }
+    }
+}
+
 /// The layers of one Via(n) deck.
 struct L {
-    n: i32,
-    dir: String,
+    group: std::rc::Rc<Group>,
     /// Via(n).
     v: (i16, i16),
     /// Metal(n), the metal V(n).c/c1 ask to enclose the via.
@@ -34,11 +97,10 @@ struct L {
 }
 
 impl L {
-    fn new(pdk: &PdkConfig, n: i32) -> Self {
+    fn new(pdk: &PdkConfig, n: i32, group: std::rc::Rc<Group>) -> Self {
         let c = if n == 1 { 0.01 } else { 0.005 };
         L {
-            n,
-            dir: format!("tests/data/ihp-sg13g2/via{n}"),
+            group,
             v: layer(pdk, &format!("Via{n}")),
             m: layer(pdk, &format!("Metal{n}")),
             seal: layer(pdk, "EdgeSeal"),
@@ -47,21 +109,63 @@ impl L {
         }
     }
 
-    /// Writes `V<n><rule>`, e.g. `write(".a.h1", ..)` → `V2.a.h1.gds.gz`.
-    fn write(&self, rule: &str, elems: Vec<GdsElement>) {
-        write_gz(
-            &format!("{}/V{}{rule}.gds.gz", self.dir, self.n),
-            library("TOP", elems),
-        );
+    /// Gathers this layer's elements of `<rule>`, e.g. `write(".a.h1", ..)` into
+    /// `V.a.h1.gds.gz` (or `V1.a.h1.gds.gz`).
+    fn write(&self, rule: &str, mut elems: Vec<GdsElement>) {
+        let mut out = self.group.out.borrow_mut();
+        match out
+            .entry(rule.to_string())
+            .or_insert_with(|| Out::Flat(Vec::new()))
+        {
+            Out::Flat(v) => v.append(&mut elems),
+            Out::Array { extra, .. } => extra.append(&mut elems),
+        }
+    }
+
+    /// Gathers this layer's `cell` of an array layout `<rule>`: `cols × rows` at `px`,
+    /// `py`, with `extra` drawn flat beside it.
+    #[allow(clippy::too_many_arguments)]
+    fn write_array(
+        &self,
+        rule: &str,
+        mut cell: Vec<GdsElement>,
+        cols: i16,
+        rows: i16,
+        px: f64,
+        py: f64,
+        mut extra: Vec<GdsElement>,
+    ) {
+        let mut out = self.group.out.borrow_mut();
+        match out.entry(rule.to_string()).or_insert_with(|| Out::Array {
+            cell: Vec::new(),
+            cols,
+            rows,
+            px,
+            py,
+            extra: Vec::new(),
+        }) {
+            Out::Array {
+                cell: c, extra: e, ..
+            } => {
+                c.append(&mut cell);
+                e.append(&mut extra);
+            }
+            Out::Flat(v) => v.append(&mut extra),
+        }
     }
 
     /// `<rule>.h<k>` flat and `<rule>.h<k+1>` as a `GdsArrayRef`: 10 × 5 copies of `cell`
     /// at `pitch`.  Hierarchy must not change the answer: fifty violations either way.
     fn arrays(&self, rule: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
         self.write(&format!("{rule}.h{k}"), flat_array(&cell, 10, 5, pitch));
-        write_gz(
-            &format!("{}/V{}{rule}.h{}.gds.gz", self.dir, self.n, k + 1),
-            ref_array(cell, 10, 5, pitch),
+        self.write_array(
+            &format!("{rule}.h{}", k + 1),
+            cell,
+            10,
+            5,
+            pitch,
+            pitch,
+            vec![],
         );
     }
 
@@ -150,15 +254,18 @@ fn ref_array_with(
 }
 
 pub fn generate(pdk: &PdkConfig) {
+    let via1 = Group::new("via1", "V1");
+    let vian = Group::new("vian", "V");
     for n in 1..5 {
-        let l = L::new(pdk, n);
-        std::fs::create_dir_all(&l.dir).expect("failed to create output directory");
+        let l = L::new(pdk, n, if n == 1 { via1.clone() } else { vian.clone() });
         vn_a(&l);
         vn_b(&l);
         vn_b1(&l);
         vn_c(&l);
         vn_c1(&l);
     }
+    via1.flush();
+    vian.flush();
 }
 
 // --- V(n).a: min. and max. Via(n) width 0.19 ---
@@ -447,16 +554,14 @@ fn vn_b1(l: &L) {
     // h7 — the array itself as hierarchy: a 4 × 4 `GdsArrayRef` of a one-via cell at pitch
     // 0.41 (0.22 gaps) fires like the flat array; beside it, flat, a 4 × 4 at 0.29 in x
     // (clean).
-    write_gz(
-        &format!("{}/V{}.b1.h7.gds.gz", l.dir, l.n),
-        ref_array_with(
-            vec![l.via(0.0, 0.0)],
-            4,
-            4,
-            0.41,
-            0.41,
-            l.grid(6.0, 0.0, 4, 4, 0.29, 0.22),
-        ),
+    l.write_array(
+        ".b1.h7",
+        vec![l.via(0.0, 0.0)],
+        4,
+        4,
+        0.41,
+        0.41,
+        l.grid(6.0, 0.0, 4, 4, 0.29, 0.22),
     );
 
     // h8 — rings and pads.  A bond-pad style via ring one via thick at 0.22 gaps (20 per

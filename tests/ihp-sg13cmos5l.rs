@@ -33,43 +33,51 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
 
 /// Run every SG13G2 fixture of a shared deck (the same files under both PDKs; the
 /// decks that genuinely differ - forbidden, pad, passiv, topvia1, antenna - have their
-/// own fixtures) under both PDKs and require identical violation lists.  One test per
-/// deck, so the harness runs the decks side by side:
+/// own fixtures) under both PDKs and require identical violation lists.  A fixture
+/// directory and the deck read on it: the Metal2-5 and Via2-4 hardening layouts sit in
+/// `metaln` and `vian`, one file for the layers.  One test per pair, so the harness
+/// runs them side by side:
 /// the hardening rounds put 700 fixtures on the shared decks, and one test walking
 /// them all twice ran past a minute on the CI runner at the 7 µm tile.
 #[rstest]
 fn parity_with_sg13g2_on_shared_decks(
     #[values(
-        "offgrid",
-        "pin",
-        "lbe",
-        "activ",
-        "tgo",
-        "gatpoly",
-        "extblock",
-        "cont",
-        "contbar",
-        "salblock",
-        "nsdblock",
-        "psd",
-        "resistor",
-        "nwell",
-        "pwellblock",
-        "metal1",
-        "metal2",
-        "metal3",
-        "metal4",
-        "via1",
-        "via2",
-        "via3",
-        "topmetal1",
-        "sealring",
-        "slit",
-        "lu"
+        ("offgrid", "offgrid"),
+        ("pin", "pin"),
+        ("lbe", "lbe"),
+        ("activ", "activ"),
+        ("tgo", "tgo"),
+        ("gatpoly", "gatpoly"),
+        ("extblock", "extblock"),
+        ("cont", "cont"),
+        ("contbar", "contbar"),
+        ("salblock", "salblock"),
+        ("nsdblock", "nsdblock"),
+        ("psd", "psd"),
+        ("resistor", "resistor"),
+        ("nwell", "nwell"),
+        ("pwellblock", "pwellblock"),
+        ("metal1", "metal1"),
+        ("metal2", "metal2"),
+        ("metal3", "metal3"),
+        ("metal4", "metal4"),
+        ("metaln", "metal2"),
+        ("metaln", "metal3"),
+        ("metaln", "metal4"),
+        ("via1", "via1"),
+        ("via2", "via2"),
+        ("via3", "via3"),
+        ("vian", "via2"),
+        ("vian", "via3"),
+        ("topmetal1", "topmetal1"),
+        ("sealring", "sealring"),
+        ("slit", "slit"),
+        ("lu", "lu")
     )]
-    deck: &str,
+    pair: (&str, &str),
 ) {
-    let dir = format!("{G2_DATA}/{deck}");
+    let (dir, deck) = pair;
+    let dir = format!("{G2_DATA}/{dir}");
     let mut entries: Vec<_> = std::fs::read_dir(&dir)
         .unwrap_or_else(|e| panic!("fixture dir {dir}: {e}"))
         .map(|e| e.unwrap().path())

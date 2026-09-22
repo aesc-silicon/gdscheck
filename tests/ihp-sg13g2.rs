@@ -2256,10 +2256,11 @@ fn test_metal5(
 // --- Metal(n=2-5): the hardening layouts ---
 //
 // Section 5.17 (Mn.a-Mn.k) and section 5.18 (MnFil.*) are one rule set on four layers, and
-// so is every layout: `metal<n>/M<n>.<rule>.h<k>.gds.gz` carries the same geometry for
-// n = 2..5 (Via(n-1) and Metal(n-1) below).  The rule ids are given as suffixes and the
-// layer index is a second axis of the table, so a layer that answers differently fails on
-// its own.  Expected values are the manual's (hardening/reports/ihp-sg13g2/metaln.md);
+// so is every layout: `metaln/M.<rule>.h<k>.gds.gz` carries the same geometry on Metal2,
+// Metal3, Metal4 and Metal5 at the same place (Via(n-1) and Metal(n-1) below), and a
+// Metal(n) deck reads its own layers of it and nothing else.  The rule ids are given as
+// suffixes and the layer index is a second axis of the table, so a layer that answers
+// differently fails on its own.  Expected values are the manual's (hardening/reports/ihp-sg13g2/metaln.md);
 // `mn_dens` sets the density rules aside, which every small layout trips.
 
 /// The density rules, which every small layout trips, plus whatever else a layout draws
@@ -2487,7 +2488,7 @@ fn test_metaln_hardening(
     #[values(2, 3, 4, 5)] n: u32,
 ) {
     let deck = format!("metal{n}");
-    let gds = format!("metal{n}/M{n}{gds}.gds.gz");
+    let gds = format!("metaln/M{gds}.gds.gz");
     let id = |s: &&str| format!("M{n}{s}");
     let ignore: Vec<String> = ignore.iter().map(id).collect();
     let ignore: Vec<&str> = ignore.iter().map(String::as_str).collect();
@@ -2587,8 +2588,10 @@ fn test_via4(
 //
 // Section 5.19 (V1.a-V1.c1) and section 5.20 (Vn.a-Vn.c1) are one rule set on four
 // layers but for the enclosure value (V1.c 0.01, Vn.c 0.005), and so is every layout:
-// `via<n>/V<n>.<rule>.h<k>.gds.gz` carries the same geometry for n = 1..4 (Metal(n)
-// below), with the V(n).c/c1 margins taken from the deck's value.  The rule ids are
+// `via1/V1.<rule>.h<k>.gds.gz` and `vian/V.<rule>.h<k>.gds.gz` carry the same geometry,
+// the latter on Via2, Via3 and Via4 at the same place (Metal(n) below; a Via(n) deck
+// reads its own via and metal of it), with the V(n).c/c1 margins taken from the deck's
+// value.  The rule ids are
 // given as suffixes and the layer index is a second axis of the table, so a layer that
 // answers differently fails on its own.  Expected values are the manual's
 // (hardening/reports/ihp-sg13g2/via.md).  The V(n).a, V(n).b and V(n).b1 layouts
@@ -2723,7 +2726,11 @@ fn test_via_hardening(
     #[values(1, 2, 3, 4)] n: u32,
 ) {
     let deck = format!("via{n}");
-    let gds = format!("via{n}/V{n}{gds}.gds.gz");
+    let gds = if n == 1 {
+        format!("via1/V1{gds}.gds.gz")
+    } else {
+        format!("vian/V{gds}.gds.gz")
+    };
     let id = |s: &&str| format!("V{n}{s}");
     let ignore: Vec<String> = ignore.iter().map(id).collect();
     let ignore: Vec<&str> = ignore.iter().map(String::as_str).collect();

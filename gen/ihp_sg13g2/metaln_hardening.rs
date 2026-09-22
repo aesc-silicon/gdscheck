@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 //! Hardening layouts for the Metal(n=2-5) decks: section 5.17 (Mn.a-Mn.k) and section
-//! 5.18 (MnFil.*) of the SG13G2 layout rules, drawn once per layer with the index `n`.
-//! Every layout is `tests/data/ihp-sg13g2/metal<n>/M<n>.<rule>.h<k>.gds.gz`, with the
-//! same geometry on Metal2, Metal3, Metal4 and Metal5 (Via(n-1) and Metal(n-1) below),
-//! so the four decks can be read against one another.
+//! 5.18 (MnFil.*) of the SG13G2 layout rules, one rule set on four layers.  Every
+//! layout is `tests/data/ihp-sg13g2/metaln/M<rule>.h<k>.gds.gz` and carries the same
+//! geometry on Metal2, Metal3, Metal4 and Metal5 at the same place (Via(n-1) and
+//! Metal(n-1) below): a Metal(n) deck reads its own layers of it and nothing else, so
+//! one file serves the four decks, and the layers can be read against one another.
 
 use crate::helpers::{
     chamfered_tr, diamond, flat_array, layer, library, mixed_notch_pattern, notch_pattern, poly,
@@ -15,10 +16,20 @@ use crate::helpers::{
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
+/// What the four layers' patterns of one layout are gathered into: the elements of a
+/// flat layout, or the cell of an array layout and its pitch.
+enum Out {
+    Flat(Vec<GdsElement>),
+    Array(Vec<GdsElement>, f64),
+}
+
+type Gathered = std::rc::Rc<std::cell::RefCell<std::collections::BTreeMap<String, Out>>>;
+
 /// The layers of one Metal(n) deck.
 struct L {
     n: i32,
-    dir: String,
+    /// The layouts gathered across the four layers, written once by `flush`.
+    out: Gathered,
     /// Metal(n).
     m: (i16, i16),
     /// Via(n-1), the via the deck's Mn.c/c1 enclose.
@@ -32,11 +43,13 @@ struct L {
     bnd: (i16, i16),
 }
 
+const DIR: &str = "tests/data/ihp-sg13g2/metaln";
+
 impl L {
-    fn new(pdk: &PdkConfig, n: i32) -> Self {
+    fn new(pdk: &PdkConfig, n: i32, out: Gathered) -> Self {
         L {
             n,
-            dir: format!("tests/data/ihp-sg13g2/metal{n}"),
+            out,
             m: layer(pdk, &format!("Metal{n}")),
             vb: layer(pdk, &format!("Via{}", n - 1)),
             mb: layer(pdk, &format!("Metal{}", n - 1)),
@@ -48,22 +61,43 @@ impl L {
         }
     }
 
-    /// Writes `M<n><rule>.h<k>`, e.g. `write(".a.h1", ..)` → `M2.a.h1.gds.gz`.
-    fn write(&self, rule: &str, elems: Vec<GdsElement>) {
-        write_gz(
-            &format!("{}/M{}{rule}.gds.gz", self.dir, self.n),
-            library("TOP", elems),
-        );
+    /// Gathers this layer's elements of `M<rule>.h<k>`, e.g. `write(".a.h1", ..)` into
+    /// `M.a.h1.gds.gz`.
+    fn write(&self, rule: &str, mut elems: Vec<GdsElement>) {
+        let mut out = self.out.borrow_mut();
+        match out
+            .entry(format!("M{rule}"))
+            .or_insert_with(|| Out::Flat(Vec::new()))
+        {
+            Out::Flat(v) | Out::Array(v, _) => v.append(&mut elems),
+        }
     }
 
     /// `<rule>.h<k>` flat and `<rule>.h<k+1>` as a `GdsArrayRef`: 10 × 5 copies of `cell`
     /// at `pitch`.  Hierarchy must not change the answer: fifty violations either way.
-    fn arrays(&self, rule: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
+    fn arrays(&self, rule: &str, k: u32, mut cell: Vec<GdsElement>, pitch: f64) {
         self.write(&format!("{rule}.h{k}"), flat_array(&cell, 10, 5, pitch));
-        write_gz(
-            &format!("{}/M{}{rule}.h{}.gds.gz", self.dir, self.n, k + 1),
-            ref_array(cell, 10, 5, pitch),
-        );
+        let mut out = self.out.borrow_mut();
+        match out
+            .entry(format!("M{rule}.h{}", k + 1))
+            .or_insert_with(|| Out::Array(Vec::new(), pitch))
+        {
+            Out::Flat(v) | Out::Array(v, _) => v.append(&mut cell),
+        }
+    }
+
+    /// Writes every gathered layout.
+    fn flush(out: Gathered) {
+        std::fs::create_dir_all(DIR).expect("failed to create output directory");
+        for (name, o) in out.borrow_mut().iter_mut() {
+            let path = format!("{DIR}/{name}.gds.gz");
+            match o {
+                Out::Flat(v) => write_gz(&path, library("TOP", std::mem::take(v))),
+                Out::Array(v, pitch) => {
+                    write_gz(&path, ref_array(std::mem::take(v), 10, 5, *pitch))
+                }
+            }
+        }
     }
 
     /// A rectangular frame `(x0, y0)-(x1, y1)` with the hole `(hx0, hy0)-(hx1, hy1)`, drawn
@@ -156,9 +190,9 @@ fn chamfered_l(l: (i16, i16), x0: f64, y0: f64, k: f64) -> GdsElement {
 }
 
 pub fn generate(pdk: &PdkConfig) {
+    let out: Gathered = Default::default();
     for n in 2..6 {
-        let l = L::new(pdk, n);
-        std::fs::create_dir_all(&l.dir).expect("failed to create output directory");
+        let l = L::new(pdk, n, out.clone());
         mn_a(&l);
         mn_b(&l);
         mn_c(&l);
@@ -171,6 +205,7 @@ pub fn generate(pdk: &PdkConfig) {
         mn_density(&l);
         mnfil(&l);
     }
+    L::flush(out);
 }
 
 // --- Mn.a: min. Metal(n) width 0.20 ---
@@ -548,15 +583,18 @@ fn mn_b(l: &L) {
     );
 
     // h9 — nets.  Mn.b has no net condition: two lines 0.205 apart fire whether joined
-    // through Via(n-1) and a Metal(n-1) strap (left) or not (right).
+    // through Via(n-1) and a Metal(n-1) strap (left) or not (right).  Each layer's pair
+    // stands 20 µm further right, so the strap under one layer's pair - Metal(n-1), the
+    // layer below's own metal - lands where that layer draws nothing.
+    let dx = 20.0 * (l.n - 2) as f64;
     let e = vec![
-        rect(m, 2.0, 2.0, 3.0, 4.0),
-        rect(m, 3.205, 2.0, 4.205, 4.0),
-        l.via(2.405, 2.405),
-        l.via(3.605, 2.405),
-        strap(l.mb, &[(2.5, 2.5), (3.7, 2.5)]),
-        rect(m, 8.0, 2.0, 9.0, 4.0),
-        rect(m, 9.205, 2.0, 10.205, 4.0),
+        rect(m, dx + 2.0, 2.0, dx + 3.0, 4.0),
+        rect(m, dx + 3.205, 2.0, dx + 4.205, 4.0),
+        l.via(dx + 2.405, 2.405),
+        l.via(dx + 3.605, 2.405),
+        strap(l.mb, &[(dx + 2.5, 2.5), (dx + 3.7, 2.5)]),
+        rect(m, dx + 8.0, 2.0, dx + 9.0, 4.0),
+        rect(m, dx + 9.205, 2.0, dx + 10.205, 4.0),
     ];
     l.write(".b.h9", e);
 }
