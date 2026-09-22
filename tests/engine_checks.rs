@@ -312,7 +312,55 @@ fn gate_rules_choose_their_walls_from_a_deck(
 ///   wide, with Outer at 40 % of every window's own area.
 /// - `region_05` and `region_10` are a 100 µm plate with Via over 5 and 10 % of it;
 ///   `region_small` a 20 µm plate, too small to count.
+///
+/// The hardening patterns, what a rule manual's density asks of any layer, drawn once
+/// for every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/density.rs`.  A density is one number per layout, so the bound is a
+/// layout apiece:
+///
+/// - `bound_*`: Outer over exactly 50 and 60 % of the die, and 0.005 % either side;
+///   `bound_45*`: a right triangle over half the die, and 49.995 %.
+/// - `merge*`: two overlapping bands summing to 80 % and uniting to 60, a square past
+///   the die that the boundary cuts; the union at 60.005.
+/// - `tile_lines*`: a die off the lines with bars across every line summing to 50 %,
+///   and 49.995.
+/// - `array_*`: fifty boxes over half a die, flat and as an array reference, and
+///   49.995 %.
+/// - `window_hole`: an 80 µm hole in the Outer that a 50 µm window lies in from any
+///   tile's anchors.
+/// - `region_*`: a plate across a tile line with Via at 6 and 5.995 %; a plate drawn
+///   as four overlapping boxes; a plate 35.005 wide, which counts, and one exactly 35,
+///   which does not (the size is a strict bound); fifty plates flat and as an array
+///   reference.
 #[rstest]
+#[case("bound_50", "D.min", 0)]
+#[case("bound_50", "D.max", 0)]
+#[case("bound_49995", "D.min", 1)]
+#[case("bound_60", "D.max", 0)]
+#[case("bound_60", "D.min", 0)]
+#[case("bound_60005", "D.max", 1)]
+#[case("bound_45", "D.min", 0)]
+#[case("bound_45_under", "D.min", 1)]
+#[case("merge", "D.min", 0)]
+#[case("merge", "D.max", 0)]
+#[case("merge_over", "D.max", 1)]
+#[case("tile_lines", "D.min", 0)]
+#[case("tile_lines", "D.max", 0)]
+#[case("tile_lines_under", "D.min", 1)]
+#[case("array_flat", "D.min", 0)]
+#[case("array_flat", "D.max", 0)]
+#[case("array_ref", "D.min", 0)]
+#[case("array_ref", "D.max", 0)]
+#[case("array_under_flat", "D.min", 1)]
+#[case("array_under_ref", "D.min", 1)]
+#[case("window_hole", "D.wmin", 1)]
+#[case("region_tile_line", "D.region", 0)]
+#[case("region_tile_line_under", "D.region", 1)]
+#[case("region_merge", "D.region", 1)]
+#[case("region_size_over", "D.region", 1)]
+#[case("region_size_exact", "D.region", 0)]
+#[case("region_array_flat", "D.region", 50)]
+#[case("region_array_ref", "D.region", 50)]
 #[case("chip_40", "D.min", 1)]
 #[case("chip_40", "D.max", 0)]
 #[case("chip_70", "D.min", 0)]
