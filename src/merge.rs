@@ -4513,6 +4513,44 @@ fn assemble(
     }
 }
 
+/// Every hole of every region of the layer, each once.  A hole is the region's, not a
+/// copy's: a tile's copy is the merge of the drawn shapes reaching its zone, so a ring
+/// wider than the halo across a tile line is a U in either tile's copy and has no hole
+/// in any of them - a 6 µm ring across a line, a 50 µm one over three tiles, went
+/// unreported.  A region with a piece in one tile alone lies in that tile's core and
+/// its copy is exact; a region with pieces in several is assembled from them, each cut
+/// to its core, and read whole.
+pub fn region_holes(tiles: &TileMap, tile_dbu: i32) -> Vec<Vec<IntPoint>> {
+    let labeled = stitch_labeled(tiles, tile_dbu);
+    let t = tile_dbu as i64;
+    let mut pieces: Vec<Vec<((i32, i32), &MergedPoly)>> = vec![Vec::new(); labeled.regions.len()];
+    for (tile, polys) in &labeled.by_tile {
+        for (poly, rid) in polys {
+            pieces[*rid].push((*tile, poly));
+        }
+    }
+    pieces
+        .into_par_iter()
+        .flat_map_iter(|ps| match ps.as_slice() {
+            [] => Vec::new(),
+            [(_, m)] => m.holes.clone(),
+            many => {
+                let block: Vec<MergedPoly> = many
+                    .iter()
+                    .flat_map(|&((tx, ty), m)| {
+                        let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+                        clip_to_box(vec![m.clone()], x0, y0, x0 + t, y0 + t)
+                    })
+                    .collect();
+                union_pieces(block)
+                    .into_iter()
+                    .flat_map(|m| m.holes)
+                    .collect()
+            }
+        })
+        .collect()
+}
+
 /// The union of a few polygons, as [`assemble`] joins the cores' pieces.
 pub fn union_pieces(block: Vec<MergedPoly>) -> Vec<MergedPoly> {
     if block.len() <= 1 {
