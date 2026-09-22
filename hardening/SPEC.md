@@ -168,7 +168,9 @@ Metal2 and Metal3, Via1 and Via2 - share one set of fixtures, the layers drawn a
 same place in one file where the decks read only their own layers of it (`metaln/`,
 `vian/`).  The IHP rounds of 2026-09 drew everything per deck; their array layouts were
 taken out once the engine family had them (2026-09-22), and the rest is sorted into the
-engine family as it comes up.
+engine family as it comes up.  Since 2026-09-23 every check has its classes there -
+the engine decks name every check the registry knows, `overlap` included - and the
+engine family is where a class found wanting on one PDK is drawn for all of them.
 
 ## Deliverables
 
