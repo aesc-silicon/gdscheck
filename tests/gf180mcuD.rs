@@ -2789,3 +2789,35 @@ fn hardening_dummy_metal(
         "{gds}"
     );
 }
+
+// --- Dummy exclude (hardening/reports/gf180mcuD/dummy_exclude.md).  Section 10.8, three
+// rules on two marker layers.  `min_width` reports one marker per wall, so a narrow bar
+// counts twice.
+#[rstest]
+// 0.8 and 0.795 bars on NDMY and on PMNDMY.
+#[case::de_2_h1("dummy_exclude/DE.2.h1.gds.gz", "TOP", vec!["DE.2", "DE.2", "DE.2", "DE.2"], vec![])]
+// A 0.795 NDMY strip lying on a 20 µm PMNDMY plate, and a 0.795 PMNDMY strip on a 20 µm
+// NDMY plate: the rule is the size of an NDMY *or* of a PMNDMY, and each answers for
+// itself.  Report finding 1.
+#[case::de_2_h2("dummy_exclude/DE.2.h2.gds.gz", "TOP", vec!["DE.2", "DE.2", "DE.2", "DE.2"], vec![])]
+// 75 x 200 (exactly the 15000 µm² cap), 80 x 200 (over the cap with one side over 80 -
+// which is what the rule's second half allows), 100 x 200 and 80.005 x 200 (two sides
+// over 80).  Report finding 2.
+#[case::de_3_h1("dummy_exclude/DE.3.h1.gds.gz", "TOP", vec!["DE.3", "DE.3"], vec![])]
+// NDMY to NDMY at 20 / 19.995, and corner to corner at 20.004 / 19.997.
+#[case::de_4_h1("dummy_exclude/DE.4.h1.gds.gz", "TOP", vec!["DE.4", "DE.4"], vec![])]
+// The 19.995 gap on the tile lines: opening on x = 40, a notch open across x = 140, a
+// gap opening on y = 20, and a 20 µm gap on x = 40 that must stay clean.
+#[case::de_4_h2("dummy_exclude/DE.4.h2.gds.gz", "TOP", vec!["DE.4", "DE.4", "DE.4"], vec![])]
+fn hardening_dummy_exclude(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(
+        hardening("dummy_exclude", gds, topcell, &ignore),
+        expected,
+        "{gds}"
+    );
+}
