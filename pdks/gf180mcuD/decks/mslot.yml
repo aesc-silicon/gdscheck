@@ -38,14 +38,40 @@ rules:
     check: min_space
     layers: [metal1_slot_rect, via1]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT1.8
     check: min_space
     layers: [metal1_slot_rect, contact]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT1.9
     check: min_space
     layers: [metal1_slot_rect, dont_slot]
     value: 5.0
+    params:
+      abutting: report
+  # A via, a contact or a keep-out that lies *on* the mark is nothing away from it and
+  # has no gap to measure: the slot is cut out of the metal, so the via would land on
+  # nothing and no other rule sees it (report, mslot finding 4).
+  - id: MSLOT1.7
+    check: forbidden
+    layers: [metal1_slot_on_via]
+    value: 0.0
+  - id: MSLOT1.8
+    check: forbidden
+    layers: [metal1_slot_on_contact]
+    value: 0.0
+  - id: MSLOT1.9
+    check: forbidden
+    layers: [metal1_slot_on_keepout]
+    value: 0.0
+  # "Slot mark layer on the metal hole ... are not allowed" (report, finding 2).
+  - id: MSLOT1.10
+    check: forbidden
+    layers: [metal1_slot_in_hole]
+    value: 0.0
   - id: MSLOT2.0
     check: forbidden
     layers: [metal2_slot_not_rect]
@@ -80,14 +106,40 @@ rules:
     check: min_space
     layers: [metal2_slot_rect, via2]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT2.8
     check: min_space
     layers: [metal2_slot_rect, via1]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT2.9
     check: min_space
     layers: [metal2_slot_rect, dont_slot]
     value: 5.0
+    params:
+      abutting: report
+  # A via, a contact or a keep-out that lies *on* the mark is nothing away from it and
+  # has no gap to measure: the slot is cut out of the metal, so the via would land on
+  # nothing and no other rule sees it (report, mslot finding 4).
+  - id: MSLOT2.7
+    check: forbidden
+    layers: [metal2_slot_on_via]
+    value: 0.0
+  - id: MSLOT2.8
+    check: forbidden
+    layers: [metal2_slot_on_contact]
+    value: 0.0
+  - id: MSLOT2.9
+    check: forbidden
+    layers: [metal2_slot_on_keepout]
+    value: 0.0
+  # "Slot mark layer on the metal hole ... are not allowed" (report, finding 2).
+  - id: MSLOT2.10
+    check: forbidden
+    layers: [metal2_slot_in_hole]
+    value: 0.0
   - id: MSLOT3.0
     check: forbidden
     layers: [metal3_slot_not_rect]
@@ -122,14 +174,40 @@ rules:
     check: min_space
     layers: [metal3_slot_rect, via3]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT3.8
     check: min_space
     layers: [metal3_slot_rect, via2]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT3.9
     check: min_space
     layers: [metal3_slot_rect, dont_slot]
     value: 5.0
+    params:
+      abutting: report
+  # A via, a contact or a keep-out that lies *on* the mark is nothing away from it and
+  # has no gap to measure: the slot is cut out of the metal, so the via would land on
+  # nothing and no other rule sees it (report, mslot finding 4).
+  - id: MSLOT3.7
+    check: forbidden
+    layers: [metal3_slot_on_via]
+    value: 0.0
+  - id: MSLOT3.8
+    check: forbidden
+    layers: [metal3_slot_on_contact]
+    value: 0.0
+  - id: MSLOT3.9
+    check: forbidden
+    layers: [metal3_slot_on_keepout]
+    value: 0.0
+  # "Slot mark layer on the metal hole ... are not allowed" (report, finding 2).
+  - id: MSLOT3.10
+    check: forbidden
+    layers: [metal3_slot_in_hole]
+    value: 0.0
   - id: MSLOT4.0
     check: forbidden
     layers: [metal4_slot_not_rect]
@@ -164,14 +242,40 @@ rules:
     check: min_space
     layers: [metal4_slot_rect, via4]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT4.8
     check: min_space
     layers: [metal4_slot_rect, via3]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT4.9
     check: min_space
     layers: [metal4_slot_rect, dont_slot]
     value: 5.0
+    params:
+      abutting: report
+  # A via, a contact or a keep-out that lies *on* the mark is nothing away from it and
+  # has no gap to measure: the slot is cut out of the metal, so the via would land on
+  # nothing and no other rule sees it (report, mslot finding 4).
+  - id: MSLOT4.7
+    check: forbidden
+    layers: [metal4_slot_on_via]
+    value: 0.0
+  - id: MSLOT4.8
+    check: forbidden
+    layers: [metal4_slot_on_contact]
+    value: 0.0
+  - id: MSLOT4.9
+    check: forbidden
+    layers: [metal4_slot_on_keepout]
+    value: 0.0
+  # "Slot mark layer on the metal hole ... are not allowed" (report, finding 2).
+  - id: MSLOT4.10
+    check: forbidden
+    layers: [metal4_slot_in_hole]
+    value: 0.0
   - id: MSLOT5.0
     check: forbidden
     layers: [metal5_slot_not_rect]
@@ -206,7 +310,31 @@ rules:
     check: min_space
     layers: [metal5_slot_rect, via4]
     value: 0.2
+    params:
+      abutting: report
   - id: MSLOT5.9
     check: min_space
     layers: [metal5_slot_rect, dont_slot]
     value: 5.0
+    params:
+      abutting: report
+  # A via, a contact or a keep-out that lies *on* the mark is nothing away from it and
+  # has no gap to measure: the slot is cut out of the metal, so the via would land on
+  # nothing and no other rule sees it (report, mslot finding 4).
+  - id: MSLOT5.7
+    check: forbidden
+    layers: [metal5_slot_on_via]
+    value: 0.0
+  - id: MSLOT5.8
+    check: forbidden
+    layers: [metal5_slot_on_contact]
+    value: 0.0
+  - id: MSLOT5.9
+    check: forbidden
+    layers: [metal5_slot_on_keepout]
+    value: 0.0
+  # "Slot mark layer on the metal hole ... are not allowed" (report, finding 2).
+  - id: MSLOT5.10
+    check: forbidden
+    layers: [metal5_slot_in_hole]
+    value: 0.0
