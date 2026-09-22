@@ -70,16 +70,22 @@ rules:
     value: 0.28
     params:
       interacting_only: 1
+  - id: HRES.9
+    check: forbidden
+    layers: [hres9_uncovered]
+    value: 0.0
   - id: HRES.10
     check: min_width
     layers: [hres10_overlap]
     value: 0.1
   - id: HRES.10
-    check: max_enclosure
-    layers: [pplus, hres9_sab]
-    value: 0.1
-    params:
-      sides: any
+    check: forbidden
+    layers: [hres10_short]
+    value: 0.0
+  - id: HRES.10
+    check: forbidden
+    layers: [hres10_wide]
+    value: 0.0
   - id: HRES.12a
     check: forbidden
     layers: [hres12a_viol]

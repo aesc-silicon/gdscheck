@@ -34,6 +34,8 @@ const SAB_IN: f64 = 2.0;
 /// Contact side, and its clearance from the SAB - `HRES.8` asks 0.22.
 const CONT: f64 = 0.22;
 const CONT_GAP: f64 = 0.5;
+/// How far each implant head reaches over the block, which `HRES.10` fixes at 0.1.
+const HEAD_OVER: f64 = 0.1;
 
 struct Ctx {
     poly: (i16, i16),
@@ -59,6 +61,8 @@ struct Cell {
     mk: f64,
     /// How far the P+ implant's left edge sits from the left contact, for `HRES.7`.
     pp_left: Option<f64>,
+    /// How far each implant head reaches over the block - the 0.1 µm HRES.10 fixes.
+    head_over: f64,
 }
 
 impl Cell {
@@ -73,6 +77,7 @@ impl Cell {
             cont_gap: CONT_GAP,
             mk: MK,
             pp_left: None,
+            head_over: HEAD_OVER,
         }
     }
 
@@ -89,11 +94,22 @@ impl Cell {
             Some(margin) => self.contacts()[0] - margin,
             None => x - self.pp,
         };
+        // The implant is two heads, one from each end, stopping `head_over` over the
+        // block: the manual's PHRES is the *bare* Poly2 between them, its length the
+        // Pplus-to-Pplus space, and an implant drawn over the whole bar is a different
+        // device (report, finding 9).
         let mut v = vec![
             rect(c.poly, x, y, x + LEN, y + w),
             rect(
                 c.pplus,
                 pp_x0,
+                y - self.pp,
+                x + SAB_IN + self.head_over,
+                y + w + self.pp,
+            ),
+            rect(
+                c.pplus,
+                x + LEN - SAB_IN - self.head_over,
                 y - self.pp,
                 x + LEN + self.pp,
                 y + w + self.pp,
@@ -159,16 +175,13 @@ pub fn generate(pdk: &PdkConfig) {
     };
     let clean = || Cell::at(o, o).draw(&c);
 
-    // HRES.10 fixes how far the implant reaches past the block at 0.1 µm, and the clean
-    // cell already sits there - the implant runs 0.5 µm past the poly and the block 0.4.
-    // Pulling the block in widens the overlap without moving the implant.
-    let overlap = |sab_w: f64| {
+    // HRES.10 fixes how far each implant head reaches over the block at 0.1 µm, and the
+    // clean cell sits there; the bad half pushes the heads 0.005 further in.
+    write("HRES.10", "bad", {
         let mut cell = Cell::at(o, o);
-        cell.sab_w = sab_w;
+        cell.head_over = 0.105;
         cell.draw(&c)
-    };
-
-    write("HRES.10", "bad", overlap(0.395));
+    });
 
     for id in [
         "HRES.1", "HRES.2", "HRES.3", "HRES.4", "HRES.5", "HRES.6", "HRES.7", "HRES.8", "HRES.9",

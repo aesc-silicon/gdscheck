@@ -89,13 +89,15 @@ impl Cell {
                 y + w + self.sab_w,
             ),
         ];
-        // The RES_MK marking. A positive reach clears the body on every side, so no edge
-        // of it falls inside the Poly2 and PRES.9a has nothing to measure.
+        // The RES_MK marking. It coincides with the block along the body - which is the
+        // resistor's length - and clears the Poly2 either side of its width, the shape
+        // the process's own resistor cell draws: a marking out over the salicided heads
+        // is longer than the resistor, which is what PRES.9a reads.
         v.push(rect(
             c.res_mk,
-            x - self.mk,
+            x + SAB_IN,
             y - self.mk,
-            x + LEN + self.mk,
+            x + LEN - SAB_IN,
             y + w + self.mk,
         ));
         // A contact head at each end of the body, clear of the SAB.

@@ -157,7 +157,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::hres(
     "hres", "hres.gds.gz", "10_3_HRES",
-    &[("HRES.1", 7), ("HRES.10", 24), ("HRES.12a", 37), ("HRES.12b", 1), ("HRES.2", 62), ("HRES.3", 8), ("HRES.4", 38), ("HRES.5", 7), ("HRES.6", 7), ("HRES.7", 39), ("HRES.8", 27), ("HRES.9", 9)]
+    &[("HRES.1", 7), ("HRES.10", 63), ("HRES.12a", 37), ("HRES.12b", 1), ("HRES.2", 62), ("HRES.3", 8), ("HRES.4", 38), ("HRES.5", 7), ("HRES.6", 7), ("HRES.7", 39), ("HRES.8", 27), ("HRES.9", 10)]
 )]
 #[case::dualgate(
     "dualgate", "dualgate.gds.gz", "7_6_Dualgate",
@@ -185,7 +185,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::pres(
     "pres", "pres.gds.gz", "10_1_PRES",
-    &[("PRES.1", 51), ("PRES.2", 6), ("PRES.3", 9), ("PRES.4", 6), ("PRES.5", 9), ("PRES.6", 41), ("PRES.7", 8), ("PRES.9a", 5), ("PRES.9b", 1)]
+    &[("PRES.1", 51), ("PRES.2", 6), ("PRES.3", 10), ("PRES.4", 6), ("PRES.5", 9), ("PRES.6", 41), ("PRES.7", 8), ("PRES.9a", 7), ("PRES.9b", 1)]
 )]
 #[case::comp(
     "comp", "comp.gds.gz", "7_5_DF",
@@ -209,7 +209,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::lres(
     "lres", "lres.gds.gz", "10_2_LRES",
-    &[("LRES.1", 50), ("LRES.2", 6), ("LRES.3", 9), ("LRES.4", 6), ("LRES.5", 9), ("LRES.6", 41), ("LRES.7", 8), ("LRES.9a", 9), ("LRES.9b", 1)]
+    &[("LRES.1", 50), ("LRES.2", 6), ("LRES.3", 10), ("LRES.4", 6), ("LRES.5", 9), ("LRES.6", 41), ("LRES.7", 8), ("LRES.9a", 11), ("LRES.9b", 1)]
 )]
 #[case::mim_b(
     "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
@@ -2362,12 +2362,15 @@ fn hardening_ldpmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: 
 #[case::pres_5_h1("pres/PRES.5.h1.gds.gz", "TOP", vec!["PRES.5"], vec![])]
 // The block overhanging 0.275 above the body and 0.28 below it.
 #[case::pres_6_h1("pres/PRES.6.h1.gds.gz", "TOP", vec!["PRES.6"], vec![])]
-// The block covering the whole bar, 0.35 in the width direction and 0.15 past each end.
-// Report finding 4: the rule is the width direction, and the ends are not in it.
-#[case::pres_6_h2("pres/PRES.6.h2.gds.gz", "TOP", vec![], vec![])]
-// The block running 0.15 past the bar's left end and ending inside it on the right, where
-// the head and its contact are.  Report finding 4.
-#[case::pres_6_h3("pres/PRES.6.h3.gds.gz", "TOP", vec![], vec![])]
+// The block covering the whole bar, 0.35 in the width direction and 0.15 past each end,
+// and the same 0.15 past the left end only.  Both read as 0.15 short of the 0.28 (kept;
+// report finding 4).  The rule is the overlap in the width direction and the ends are not
+// in it, but which of a bar's walls lie in that direction is the device's orientation,
+// which neither deck knows: the block's own end and the resistor's are the same wall to
+// an enclosure.  Both tools report them, and a block that runs past the bar's end leaves
+// no salicided head there, which is not a device either.
+#[case::pres_6_h2("pres/PRES.6.h2.gds.gz", "TOP", vec!["PRES.6"; 2], vec![])]
+#[case::pres_6_h3("pres/PRES.6.h3.gds.gz", "TOP", vec!["PRES.6"], vec![])]
 // A contact abutting the block's edge and one wholly inside the block.
 #[case::pres_7_h1("pres/PRES.7.h1.gds.gz", "TOP", vec!["PRES.7"; 2], vec![])]
 // A contact 0.2149 from a salicide island on the diagonal: 0.152 in x and in y.
@@ -2419,10 +2422,10 @@ fn hardening_pres(
 #[case::lres_5_h1("lres/LRES.5.h1.gds.gz", "TOP", vec!["LRES.5"], vec![])]
 // The block overhanging 0.275 above the body and 0.28 below it.
 #[case::lres_6_h1("lres/LRES.6.h1.gds.gz", "TOP", vec!["LRES.6"], vec![])]
-// The block covering the whole bar, 0.15 past each end.  Report finding 4.
-#[case::lres_6_h2("lres/LRES.6.h2.gds.gz", "TOP", vec![], vec![])]
-// The block 0.15 past the bar's left end only.  Report finding 4.
-#[case::lres_6_h3("lres/LRES.6.h3.gds.gz", "TOP", vec![], vec![])]
+// The block covering the whole bar, 0.15 past each end, and the same past the left end
+// only - both kept as both tools read them, for the reason on `pres_6_h2` (finding 4).
+#[case::lres_6_h2("lres/LRES.6.h2.gds.gz", "TOP", vec!["LRES.6"; 2], vec![])]
+#[case::lres_6_h3("lres/LRES.6.h3.gds.gz", "TOP", vec!["LRES.6"], vec![])]
 // A contact abutting the block's edge and one wholly inside the block.
 #[case::lres_7_h1("lres/LRES.7.h1.gds.gz", "TOP", vec!["LRES.7"; 2], vec![])]
 // A contact 0.2149 from a salicide island on the diagonal.
@@ -2452,8 +2455,10 @@ fn hardening_lres(
 #[case::hres_1_h1("hres/HRES.1.h1.gds.gz", "TOP", vec!["HRES.1"], vec![])]
 // Five 0.995 bars: the full device; without the RESISTOR marker; without RES_MK; without
 // the block; and one whose implant only abuts the bar - enough for this section, which
-// asks the Poly2 to touch the implant where 10.1 asks for Poly2 and Pplus.
-#[case::hres_2_h1("hres/HRES.2.h1.gds.gz", "TOP", vec!["HRES.2"; 4], vec![])]
+// asks the Poly2 to touch the implant where 10.1 asks for Poly2 and Pplus.  That abutting
+// implant is also a head that reaches the block by nothing, which is under HRES.10's 0.1
+// (finding 8), and the runset reports it there too.
+#[case::hres_2_h1("hres/HRES.2.h1.gds.gz", "TOP", vec!["HRES.10", "HRES.2", "HRES.2", "HRES.2", "HRES.2"], vec![])]
 // The same 0.995 bar across x = 20, across x = 40 and 42, and across y = 20.
 #[case::hres_2_h2("hres/HRES.2.h2.gds.gz", "TOP", vec!["HRES.2"; 6], vec![])]
 // A serpentine whose two arms are 0.395 apart.  The same geometry under 10.1 and 10.2 is
