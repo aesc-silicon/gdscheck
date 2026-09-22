@@ -277,17 +277,6 @@ fn write(name: &str, e: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", e));
 }
 
-/// A `cols × rows` array of one resistor at `pitch`, flat (`.h<k>`) and as a
-/// GdsArrayRef (`.h<k+1>`).
-fn arrays(p: &P, name: &str, k: usize, r: &R, pitch: f64) {
-    let cell = r.build(p);
-    write(&format!("{name}.h{k}"), flat_array(&cell, 10, 5, pitch));
-    write_gz(
-        &format!("{DIR}/{name}.h{}.gds.gz", k + 1),
-        ref_array(cell, 10, 5, pitch),
-    );
-}
-
 pub fn generate(pdk: &PdkConfig) {
     std::fs::create_dir_all(DIR).expect("failed to create output directory");
     let p = P::new(pdk);
@@ -384,9 +373,6 @@ fn width_kit(p: &P, kind: Kind) {
     e.extend(R::new(kind, 5.0, 10.0, 0.495, 300.0).build(p));
     e.extend(at(1000.0, 1000.0, 0.495).build(p));
     write(&format!("{rule}.h3"), e);
-
-    // h4/h5: fifty 0.495 bodies.
-    arrays(p, &rule, 4, &at(1.0, 1.0, 0.495), 4.0);
 }
 
 /// A 45° body `shape` (poly) with the block the same shape and the rest a box `bx`.
@@ -510,14 +496,6 @@ fn tile_and_arrays(p: &P, kind: Kind, rule: &str, which: Layer) {
     e.extend(with(5.0, 10.0, 300.0, [0.18, 0.18, 0.18, 0.175]).build(p));
     e.extend(with(1000.0, 1000.0, 2.0, [0.18, 0.18, 0.18, 0.175]).build(p));
     write(&format!("{rule}.h2"), e);
-    // h3/h4: fifty with 0.175 on top.
-    arrays(
-        p,
-        rule,
-        3,
-        &with(1.0, 1.0, 2.0, [0.18, 0.18, 0.18, 0.175]),
-        4.0,
-    );
 }
 
 // ---------------------------------------------------------------------------
@@ -545,9 +523,6 @@ fn length_kit(p: &P, kind: Kind) {
     e.extend(at(42.0, 2.0, 0.5, 0.495).build(p));
     e.extend(at(1000.0, 1000.0, 0.5, 0.495).build(p));
     write(&format!("{rule}.h2"), e);
-
-    // h3/h4: fifty 0.495 blocks.
-    arrays(p, &rule, 3, &at(1.0, 1.0, 0.5, 0.495), 4.0);
 }
 
 // ---------------------------------------------------------------------------
@@ -602,9 +577,6 @@ fn cont_kit(p: &P, kind: Kind) {
     e.extend(long.build(p));
     e.extend(gaps(1000.0, 1000.0, 0.195, 0.2).build(p));
     write(&format!("{rule}.h2"), e);
-
-    // h3/h4: fifty with 0.195 on the left.
-    arrays(p, &rule, 3, &gaps(1.0, 1.0, 0.195, 0.2), 4.0);
 }
 
 // ---------------------------------------------------------------------------
@@ -654,9 +626,6 @@ fn rsil_b(p: &P) {
     e.extend(long.build(p));
     e.extend(gaps(1000.0, 1000.0, 0.115, 0.12).build(p));
     write("Rsil.b.h2", e);
-
-    // h3/h4: fifty with 0.115 on the left.
-    arrays(p, "Rsil.b", 3, &gaps(1.0, 1.0, 0.115, 0.12), 4.0);
 }
 
 // ---------------------------------------------------------------------------
@@ -794,13 +763,4 @@ fn rhi_b(p: &P) {
     e.extend(nsd(39.32, 5.0, 0.18, Some([0.18, 0.18, 0.175, 0.18])).build(p));
     e.extend(nsd(1000.0, 1000.0, 0.18, Some([0.18, 0.18, 0.18, 0.185])).build(p));
     write("Rhi.b.h2", e);
-
-    // h3/h4: fifty with nSD 0.005 past pSD on top.
-    arrays(
-        p,
-        "Rhi.b",
-        3,
-        &nsd(1.0, 1.0, 0.18, Some([0.18, 0.18, 0.18, 0.185])),
-        4.0,
-    );
 }

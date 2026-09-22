@@ -83,7 +83,9 @@ Draw at least these, for every rule where they make sense:
   `20 7 100` and look for `TILE-DEPENDENT`.
 - **Many at once**: an array of fifty instances of the violating pattern - the count
   should be fifty.  Draw it as a cell placed by an array reference
-  (`gds21::GdsArrayRef`) as well as flat: hierarchy must not change the answer.
+  (`gds21::GdsArrayRef`) as well as flat: hierarchy must not change the answer.  This
+  one is the engine family's (`gen/engine`, every check family has it); a deck draws
+  it only for a rule whose layer derivation could read hierarchy differently.
 - **Nets**, for a rule that says same net or different net: the connected and the
   unconnected version, where connection is by a contact and a Metal1 strap (see
   `helpers::strap`, `helpers::tap`).
@@ -162,10 +164,11 @@ is the same on every layer and in every PDK, and belongs in the engine family:
 GF180 round starts with it already tested.  A deck's own fixtures are for what only that
 deck has: the rule's conditions (a marker, a gate, a device), the layer derivations, the
 values and the exemptions.  Two decks that are the same template on two layers -
-Metal2 and Metal3, Via1 and Via2 - share one set of fixtures on one of them, plus a
-layout apiece proving the other runs on its own layer.  (The IHP rounds of 2026-09 drew
-everything per deck; sorting those into the engine family is the next round's first
-job.)
+Metal2 and Metal3, Via1 and Via2 - share one set of fixtures, the layers drawn at the
+same place in one file where the decks read only their own layers of it (`metaln/`,
+`vian/`).  The IHP rounds of 2026-09 drew everything per deck; their array layouts were
+taken out once the engine family had them (2026-09-22), and the rest is sorted into the
+engine family as it comes up.
 
 ## Deliverables
 

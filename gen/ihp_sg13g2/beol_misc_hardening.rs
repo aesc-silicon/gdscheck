@@ -14,10 +14,8 @@
 //! is the 4.2 µm ring itself, the conductors coincide with it, the via rings are 4.2
 //! long pieces overlapping into a ring, and the Passiv ring lies 3 µm outside.
 
-use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, write_gz,
-};
-use gds21::{GdsElement, GdsLibrary};
+use crate::helpers::{chamfered_tr, diamond, layer, library, poly, rect, strip45, write_gz};
+use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
 const SQRT2: f64 = std::f64::consts::SQRT_2;
@@ -115,25 +113,6 @@ fn write(deck: &str, name: &str, elems: Vec<GdsElement>) {
     write_gz(
         &format!("tests/data/ihp-sg13g2/{deck}/{name}.gds.gz"),
         library("TOP", elems),
-    );
-}
-
-fn write_lib(deck: &str, name: &str, lib: GdsLibrary) {
-    write_gz(&format!("tests/data/ihp-sg13g2/{deck}/{name}.gds.gz"), lib);
-}
-
-/// `<name>.h<k>` flat and `<name>.h<k+1>` as an array reference: 10 × 5 copies of
-/// `cell` at `pitch`.  Hierarchy must not change the answer.
-fn arrays(deck: &str, name: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
-    write(
-        deck,
-        &format!("{name}.h{k}"),
-        flat_array(&cell, 10, 5, pitch),
-    );
-    write_lib(
-        deck,
-        &format!("{name}.h{}", k + 1),
-        ref_array(cell, 10, 5, pitch),
     );
 }
 
@@ -556,15 +535,6 @@ fn seal_a(p: &P) {
     e.extend(seal(p, &[p.m1], 80.0, 40.0, 100.0, 60.0, 3.495)); // (h)
     e.extend(seal(p, &[p.m1], 1000.0, 1000.0, 1020.0, 1020.0, 3.495)); // (i)
     write("sealring", "Seal.a.h2", e);
-
-    // h3/h4 - fifty 3.495 frames (10 boxes, EdgeSeal + Metal1), flat and as an array.
-    arrays(
-        "sealring",
-        "Seal.a",
-        3,
-        seal(p, &[p.m1], 0.0, 0.0, 10.0, 10.0, 3.495),
-        15.0,
-    );
 }
 
 // --- Seal.b: min. Activ space to EdgeSeal-<conductor> 4.90 ---
@@ -623,7 +593,6 @@ fn seal_b(p: &P) {
     // square 4.895 inside its left wall, flat and as an array.
     let mut cell = seal(p, &[p.m1], 0.0, 0.0, 24.0, 24.0, 4.2);
     cell.push(rect(p.activ, 9.095, 10.0, 11.095, 12.0));
-    arrays("sealring", "Seal.b", 3, cell, 30.0);
 }
 
 // --- Seal.c/c1/c2/c3: EdgeSeal-Cont/Via/TopVia ring width 0.16/0.19/0.42/0.90 ---
@@ -755,7 +724,6 @@ fn seal_d(p: &P) {
     // 1.295 Cont ring, flat and as an array.
     let mut cell = seal(p, &[p.activ, p.m1], 0.0, 0.0, 12.0, 12.0, 4.2);
     cell.extend(via_ring(p.cont, 0.0, 0.0, 12.0, 12.0, 1.295, 0.16));
-    arrays("sealring", "Seal.d", 3, cell, 20.0);
 }
 
 // --- Seal.e: min. Passiv ring width outside of the sealring 4.20 ---
@@ -955,16 +923,6 @@ fn slt_a(p: &P) {
     e.extend(plated(p.tm2, p.tm2s, 60.0, 30.0, 2.795, 6.0, 3.0)); // (k)
     e.extend(plated(p.m3, p.m3s, 76.0, 30.0, 2.795, 6.0, 3.0)); // (l)
     write("slit", "Slt.a.h1", e);
-
-    // h2/h3 - fifty 2.795 × 4 slits, each in its own 8.795 × 10 plate, flat and as an
-    // array.
-    arrays(
-        "slit",
-        "Slt.a",
-        2,
-        plated(m, s, 0.0, 0.0, 2.795, 4.0, 3.0),
-        12.0,
-    );
 }
 
 // --- Slt.b: max. Metal:slit width 20.00 ---
@@ -1058,15 +1016,6 @@ fn slt_c(p: &P) {
     e.push(rect(m, 270.0, 220.0, 310.0, 260.0)); // (v)
     e.push(rect(p.passiv, 270.0, 220.0, 275.0, 260.0));
     write("slit", "Slt.c.h1", e);
-
-    // h2/h3 - fifty 30.005 squares, flat and as an array.
-    arrays(
-        "slit",
-        "Slt.c",
-        2,
-        vec![rect(m, 0.0, 0.0, 30.005, 30.005)],
-        40.0,
-    );
 }
 
 // --- Slt.e: no slits on pads ---
@@ -1288,9 +1237,6 @@ fn slt_i(p: &P) {
     e.push(rect(p.passiv, 265.0, 65.0, 315.0, 115.0));
     e.push(rect(p.dfpad, 265.0, 65.0, 315.0, 115.0));
     write("slit", "Slt.i.h1", e);
-
-    // h2/h3 - fifty 35.005 plates with one 2.8 × 3 slit, flat and as an array.
-    arrays("slit", "Slt.i", 2, one(0.0, 0.0, 35.005), 45.0);
 }
 
 // --- LBE.a: min. LBE width 100 ---
@@ -1317,15 +1263,6 @@ fn lbe_a(p: &P) {
         rect(l, 700.0, 400.0, 1000.0, 500.0),  // (j)
     ];
     write("lbe", "LBE.a.h1", e);
-
-    // h2/h3 - fifty 99.995 × 150 bars, flat and as an array.
-    arrays(
-        "lbe",
-        "LBE.a",
-        2,
-        vec![rect(l, 0.0, 0.0, 99.995, 150.0)],
-        260.0,
-    );
 }
 
 // --- LBE.b: max. LBE width 1500 ---
@@ -1646,7 +1583,6 @@ fn lu_a(p: &P) {
     let mut cell = vec![rect(p.nwell, 0.0, 0.0, 30.0, 10.0)];
     cell.extend(tie(p, 2.0, 4.5, None, true));
     cell.extend(psd(21.005, 4.0, 23.005, 6.0));
-    arrays("lu", "LU.a", 2, cell, 60.0);
 }
 
 /// h1 - LU.b, as LU.a.  In the substrate, a P+ tie (1 × 1 Activ under pSD, Cont)

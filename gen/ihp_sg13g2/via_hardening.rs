@@ -11,9 +11,7 @@
 //! `tests/data/ihp-sg13g2/vian/V.<rule>.h<k>.gds.gz`, the three layers at the same
 //! place - a Via(n) deck reads its own via and metal of it and nothing else.
 
-use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, strip45, um, write_gz,
-};
+use crate::helpers::{chamfered_tr, diamond, layer, library, poly, rect, strip45, um, write_gz};
 use gds21::{GdsArrayRef, GdsDateTime, GdsElement, GdsLibrary, GdsPoint, GdsStruct};
 use gdscheck::pdk::PdkConfig;
 
@@ -152,21 +150,6 @@ impl L {
             }
             Out::Flat(v) => v.append(&mut extra),
         }
-    }
-
-    /// `<rule>.h<k>` flat and `<rule>.h<k+1>` as a `GdsArrayRef`: 10 × 5 copies of `cell`
-    /// at `pitch`.  Hierarchy must not change the answer: fifty violations either way.
-    fn arrays(&self, rule: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
-        self.write(&format!("{rule}.h{k}"), flat_array(&cell, 10, 5, pitch));
-        self.write_array(
-            &format!("{rule}.h{}", k + 1),
-            cell,
-            10,
-            5,
-            pitch,
-            pitch,
-            vec![],
-        );
     }
 
     /// A 0.19 via with its lower-left corner at `(x, y)`.
@@ -346,9 +329,6 @@ fn vn_a(l: &L) {
         ],
     );
 
-    // h4/h5 — fifty 0.185 squares, flat and as an array.
-    l.arrays(".a", 4, vec![rect(v, 0.2, 0.2, 0.385, 0.385)], 3.0);
-
     // h6 — a 0.005 × 0.19 sliver, a 0.19 × 300 bar and a 0.185 square at (1000, 1000).
     l.write(
         ".a.h6",
@@ -433,9 +413,6 @@ fn vn_b(l: &L) {
     e.extend(pair(19.595, 8.0)); // gap 19.785..20.0
     e.extend(pair(1000.0, 1000.0));
     l.write(".b.h2", e);
-
-    // h3/h4 — fifty 0.215 pairs, flat and as an array.
-    l.arrays(".b", 3, pair(0.3, 0.3), 3.0);
 
     // h5 — large.  A 0.19 × 300 via bar (V(n).a too) with a via 0.215 below its middle
     // and one 0.22 below its far end: one pair.
@@ -546,10 +523,6 @@ fn vn_b1(l: &L) {
     e.extend(l.grid(16.0, 36.0, 20, 20, 0.22, 0.22));
     e.extend(l.grid(30.0, 2.0, 4, 50, 0.22, 0.22));
     l.write(".b1.h4", e);
-
-    // h5/h6 — fifty 4 × 4 arrays at 0.22, flat and as an array reference of a cell
-    // holding one array.
-    l.arrays(".b1", 5, l.grid(0.5, 0.5, 4, 4, 0.22, 0.22), 3.0);
 
     // h7 — the array itself as hierarchy: a 4 × 4 `GdsArrayRef` of a one-via cell at pitch
     // 0.41 (0.22 gaps) fires like the flat array; beside it, flat, a 4 × 4 at 0.29 in x
@@ -690,14 +663,6 @@ fn vn_c(l: &L) {
             rect(m, 15.0, 12.0, 25.0, 12.0 + w),
             l.via(19.905, 12.0 + c),
         ],
-    );
-
-    // h6/h7 — fifty vias short below in a line, flat and as an array.
-    l.arrays(
-        ".c",
-        6,
-        vec![rect(m, 0.2, 0.2, 1.2, 0.2 + w), l.via(0.6, 0.2 + s)],
-        3.0,
     );
 
     // h8 — a via short below at (1000, 1000); one in the middle of a 300 µm line.
@@ -879,14 +844,6 @@ fn vn_c1(l: &L) {
             rect(m, 18.0, 11.0, 20.0, 11.0 + w),
             l.via(19.76, 11.0 + c),
         ],
-    );
-
-    // h6/h7 — fifty line-end vias with 0.045 endcaps, flat and as an array.
-    l.arrays(
-        ".c1",
-        6,
-        vec![rect(m, 0.2, 0.2, 2.2, 0.2 + w), l.via(1.965, 0.2 + c)],
-        3.0,
     );
 
     // h8 — a 0.045 endcap at (1000, 1000) and at the far end of a 300 µm line.

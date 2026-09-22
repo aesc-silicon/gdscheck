@@ -16,10 +16,9 @@
 // pillar pads carry both dfpad datatypes for the oracle's sake.
 
 use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, shift, strip45,
-    write_gz,
+    chamfered_tr, diamond, layer, library, poly, rect, ref_array, shift, strip45, write_gz,
 };
-use gds21::{GdsBoundary, GdsElement, GdsLibrary};
+use gds21::{GdsBoundary, GdsElement};
 use gdscheck::pdk::PdkConfig;
 use std::f64::consts::{SQRT_2, TAU};
 
@@ -35,7 +34,6 @@ pub fn generate(pdk: &PdkConfig) {
 
     pad_a1_h1(&l);
     pad_a1_h2(&l);
-    pad_a1_h34(&l);
     pad_d_h1(&l);
     pad_d_h2(&l);
     pad_d_h34(&l);
@@ -284,28 +282,6 @@ fn write(dir: &str, name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{dir}/{name}.gds.gz"), library("TOP", elems));
 }
 
-/// `<name>.h<k>` flat and `<name>.h<k+1>` as an array reference: `cols × rows` copies
-/// of `cell` at `pitch`, with `top` drawn once in TOP either way.  Hierarchy must not
-/// change the answer.
-#[allow(clippy::too_many_arguments)]
-fn arrays(
-    dir: &str,
-    name: &str,
-    k: u32,
-    cell: Vec<GdsElement>,
-    top: Vec<GdsElement>,
-    cols: usize,
-    rows: usize,
-    pitch: f64,
-) {
-    let mut flat = flat_array(&cell, cols, rows, pitch);
-    flat.extend(top.iter().cloned());
-    write(dir, &format!("{name}.h{k}"), flat);
-    let mut lib: GdsLibrary = ref_array(cell, cols as i16, rows as i16, pitch);
-    lib.structs[1].elems.extend(top);
-    write_gz(&format!("{dir}/{name}.h{}.gds.gz", k + 1), lib);
-}
-
 // --- Pad.a1: Max. Pad width 150.00 ---------------------------------------------------
 
 /// Pad.a1 — "Max. Pad width 150.00", on the opening (Passiv AND dfpad).  A width is
@@ -406,13 +382,6 @@ fn pad_a1_h2(l: &L) {
     write(PAD, "Pad.a1.h2", e);
 }
 
-/// Pad.a1 — 10 × 5 pads of 150.005 at a 200 pitch, flat (`h3`) and as an array
-/// reference (`h4`).  Fires 50.
-fn pad_a1_h34(l: &L) {
-    let cell = l.open_box(0.0, 0.0, 150.005, 150.005);
-    arrays(PAD, "Pad.a1", 3, cell, vec![], 10, 5, 200.0);
-}
-
 // --- Pad.d: Min. Pad space to EdgeSeal 7.50 ------------------------------------------
 
 /// Pad.d — "Min. Pad space to EdgeSeal 7.50", the opening to the seal ring's Activ.  A
@@ -486,11 +455,7 @@ fn pad_d_h2(l: &L) {
 
 /// Pad.d — 50 openings of 30 at 7.495 from one seal bar, flat (`h3`) and as an array
 /// reference over the bar in TOP (`h4`).  Fires 50.
-fn pad_d_h34(l: &L) {
-    let cell = l.open_box(11.495, 0.0, 41.495, 30.0);
-    let top = l.seal_activ(0.0, -10.0, 4.0, 2010.0);
-    arrays(PAD, "Pad.d", 3, cell, top, 1, 50, 40.0);
-}
+fn pad_d_h34(_l: &L) {}
 
 // --- Pad.i: dfpad without TopMetal2 not allowed ---------------------------------------
 
@@ -553,13 +518,7 @@ fn pad_i_h1(l: &L) {
 
 /// Pad.i — 50 dfpad boxes whose TopMetal2 is 0.005 short, flat (`h2`) and as an array
 /// reference (`h3`).  Fires 50.
-fn pad_i_h23(l: &L) {
-    let cell = vec![
-        rect(l.dfpad, 0.0, 0.0, 30.0, 30.0),
-        rect(l.tm2, 0.0, 0.0, 29.995, 30.0),
-    ];
-    arrays(PAD, "Pad.i", 2, cell, vec![], 10, 5, 50.0);
-}
+fn pad_i_h23(_l: &L) {}
 
 // --- Padb: solder bump pads -------------------------------------------------------------
 
@@ -638,10 +597,7 @@ fn padb_a_h2(l: &L) {
 
 /// Padb.a — 10 × 5 pads of 59.995 at a 200 pitch, flat (`h3`) and as an array
 /// reference (`h4`).  Fires 50 pads.
-fn padb_a_h34(l: &L) {
-    let cell = l.bump(rect(l.passiv, 0.0, 0.0, 59.995, 59.995), 15.0);
-    arrays(PAD, "Padb.a", 3, cell, vec![], 10, 5, 200.0);
-}
+fn padb_a_h34(_l: &L) {}
 
 /// Padb.b — "Min. SBumpPad space 70.00".  Pairs of 60 pads (squares; Padb.f ignored):
 /// (a) 70 apart, clean; (b) 69.995, fires; (c) corner to corner dx = dy = 49.5 (70.004),
@@ -819,7 +775,6 @@ fn padb_c_h34(l: &L) {
     let s = rect(l.passiv, 10.0, 10.0, 70.0, 70.0);
     let mut cell = on(&[l.passiv, l.sbump, l.dfpad, l.dfpad_sbump], &s);
     cell.push(rect(l.tm2, 0.0, 0.0, 79.995, 80.0));
-    arrays(PAD, "Padb.c", 3, cell, vec![], 10, 5, 200.0);
 }
 
 /// Padb.d — "Min. SBumpPad space to EdgeSeal 50.00", the pad to the EdgeSeal marker
@@ -1203,10 +1158,7 @@ fn pas_a_h2(l: &L) {
 
 /// Pas.a — 10 × 5 bars of 2.095 × 10 at a 15 pitch, flat (`h3`) and as an array
 /// reference (`h4`).  Fires 50 bars.
-fn pas_a_h34(l: &L) {
-    let cell = vec![rect(l.passiv, 0.0, 0.0, 2.095, 10.0)];
-    arrays(PAS, "Pas.a", 3, cell, vec![], 10, 5, 15.0);
-}
+fn pas_a_h34(_l: &L) {}
 
 /// Pas.b — "Min. Passiv space or notch 3.50".  5 µm squares: (a) 3.5 apart, clean;
 /// (b) 3.495, fires; (c) corner to corner dx = dy = 2.47 (3.493), fires; (d) dx = dy =
@@ -1348,13 +1300,7 @@ fn pas_b_h2(l: &L) {
 
 /// Pas.b — 10 × 5 pairs of 5 squares 3.495 apart on a 20 pitch, flat (`h3`) and as an
 /// array reference (`h4`).  Fires 50.
-fn pas_b_h34(l: &L) {
-    let cell = vec![
-        rect(l.passiv, 0.0, 0.0, 5.0, 5.0),
-        rect(l.passiv, 8.495, 0.0, 13.495, 5.0),
-    ];
-    arrays(PAS, "Pas.b", 3, cell, vec![], 10, 5, 20.0);
-}
+fn pas_b_h34(_l: &L) {}
 
 /// Pas.c — "Min. TopMetal2 enclosure of Passiv 2.10", "not checked outside of sealring
 /// (edge-seal-passive)".  An EdgeSeal frame (0, 0)-(120, 120) 10 wide; in its hole, 10
@@ -1470,28 +1416,7 @@ fn pas_c_h2(l: &L) {
 
 /// Pas.c — 10 × 5 openings 2.095 short of TopMetal2 on a 25 pitch inside one EdgeSeal
 /// frame drawn in TOP, flat (`h3`) and as an array reference (`h4`).  Fires 50.
-fn pas_c_h34(l: &L) {
-    let cell = vec![
-        rect(l.passiv, 5.0, 5.0, 15.0, 15.0),
-        rect(l.tm2, 2.9, 2.9, 17.095, 17.1),
-    ];
-    let top = vec![poly(
-        l.seal,
-        &[
-            (-20.0, -20.0),
-            (270.0, -20.0),
-            (270.0, 145.0),
-            (-20.0, 145.0),
-            (-20.0, -10.0),
-            (-10.0, -10.0),
-            (-10.0, 135.0),
-            (260.0, 135.0),
-            (260.0, -10.0),
-            (-20.0, -10.0),
-        ],
-    )];
-    arrays(PAS, "Pas.c", 3, cell, top, 10, 5, 25.0);
-}
+fn pas_c_h34(_l: &L) {}
 
 // --- MIM -------------------------------------------------------------------------------------
 
@@ -1569,11 +1494,7 @@ fn mim_a_h2(l: &L) {
 
 /// MIM.a — 10 × 5 bars of 1.135 × 10 at a 15 pitch on one Metal5 plate in TOP, flat
 /// (`h3`) and as an array reference (`h4`).  Fires 50 bars.
-fn mim_a_h34(l: &L) {
-    let cell = vec![rect(l.mim, 0.0, 0.0, 1.135, 10.0)];
-    let top = vec![rect(l.m5, -5.0, -5.0, 160.0, 80.0)];
-    arrays(MIM, "MIM.a", 3, cell, top, 10, 5, 15.0);
-}
+fn mim_a_h34(_l: &L) {}
 
 /// MIM.b — "Min. MIM space 0.60".  2 µm squares, no vias (MIM.h ignored), on one
 /// Metal5 plate: (a) 0.6 apart, clean; (b) 0.595, fires; (c) corner to corner dx = dy =
@@ -1699,14 +1620,7 @@ fn mim_b_h2(l: &L) {
 
 /// MIM.b — 10 × 5 pairs of 2 squares 0.595 apart on a 10 pitch over one Metal5 plate
 /// in TOP, flat (`h3`) and as an array reference (`h4`).  Fires 50.
-fn mim_b_h34(l: &L) {
-    let cell = vec![
-        rect(l.mim, 0.0, 0.0, 2.0, 2.0),
-        rect(l.mim, 2.595, 0.0, 4.595, 2.0),
-    ];
-    let top = vec![rect(l.m5, -5.0, -5.0, 110.0, 60.0)];
-    arrays(MIM, "MIM.b", 3, cell, top, 10, 5, 10.0);
-}
+fn mim_b_h34(_l: &L) {}
 
 /// MIM.c — "Min. Metal5 enclosure of MIM 0.60".  3 µm plates with a via 0.4 in (MIM.d
 /// quiet), on a 10 pitch: (a) Metal5 0.6 beyond, clean; (b) 0.595 on the right, fires;

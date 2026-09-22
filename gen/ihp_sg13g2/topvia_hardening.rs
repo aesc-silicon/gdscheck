@@ -12,8 +12,8 @@
 // are in the `topvia1`/`topvia2` tables of tests/ihp-sg13g2.rs and the reasoning in
 // hardening/reports/ihp-sg13g2/topvia.md.
 
-use crate::helpers::{chamfered_tr, flat_array, layer, library, poly, rect, ref_array, write_gz};
-use gds21::{GdsElement, GdsLibrary};
+use crate::helpers::{chamfered_tr, layer, library, poly, rect, write_gz};
+use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
 const SQRT2: f64 = std::f64::consts::SQRT_2;
@@ -64,17 +64,6 @@ impl L {
             &format!("{}/{name}.gds.gz", self.dir),
             library("TOP", elems),
         );
-    }
-
-    fn write_lib(&self, name: &str, lib: GdsLibrary) {
-        write_gz(&format!("{}/{name}.gds.gz", self.dir), lib);
-    }
-
-    /// `<name>.h<k>` flat and `<name>.h<k+1>` as an array reference: 10 × 5 copies of
-    /// `cell` at `pitch`.  Hierarchy must not change the answer.
-    fn arrays(&self, name: &str, k: u32, cell: Vec<GdsElement>, pitch: f64) {
-        self.write(&format!("{name}.h{k}"), flat_array(&cell, 10, 5, pitch));
-        self.write_lib(&format!("{name}.h{}", k + 1), ref_array(cell, 10, 5, pitch));
     }
 
     /// A via of the one legal size with its lower-left corner at `(x, y)`.
@@ -319,14 +308,6 @@ fn tv_a_h(l: &L) {
     e.push(l.sq(g(20.0 - down(w / 2.0)), 25.0)); // clean
     l.write(&format!("{p}.h3"), e);
 
-    // h4/h5 — fifty `w − 0.005` squares, flat and as an array reference.
-    l.arrays(
-        &p,
-        4,
-        vec![rect(v, 0.2, 0.2, g(0.2 + wm), g(0.2 + wm))],
-        2.0,
-    );
-
     // h6 — the seal (section 6.10).  Under an EdgeSeal plate (1, 1)-(9, 9) a short
     // square is not checked; a `w` square inside the seal with its right wall on the
     // seal's edge x = 9 is wholly within it; a `w` square straddling that edge leaves a
@@ -441,9 +422,6 @@ fn tv_b_h(l: &L) {
     e.push(l.sq(g(20.0 - half - w), 34.0));
     e.push(l.sq(g(20.0 - half + s), 34.0)); // clean
     l.write(&format!("{p}.h3"), e);
-
-    // h4/h5 — fifty `s − 0.005` pairs, flat and as an array reference.
-    l.arrays(&p, 4, vec![l.sq(0.2, 0.2), l.sq(g(0.2 + w + sm), 0.2)], 5.0);
 
     // h6 — the seal (section 6.10).  Under an EdgeSeal plate (1, 1)-(9, 9) a pair
     // `s − 0.005` apart is not checked; a via inside the seal against its edge x = 9 and
@@ -651,7 +629,6 @@ fn tv_enc_h(l: &L, rule: char) {
     // h5/h6 — fifty vias with `e − 0.005` on the right, flat and as an array reference.
     let mut cell = l.enc(m, 1.0, 1.0, e, em, e, e);
     cell.push(rect(o, 0.0, 0.0, 3.0, 3.0));
-    l.arrays(&p, 5, cell, 3.0);
 
     // h7 — large and far.  A 300 µm metal strip `w + 2e` wide with three vias at `e`
     // (clean) and one `w + 2(e − 0.005)` wide with three vias short top and bottom (two
