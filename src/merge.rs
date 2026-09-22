@@ -3343,39 +3343,68 @@ fn stitch_inner(
     // point, which is always inside.  The largest piece is asked first, which settles
     // every one-piece region at once; only a point outside it costs a scan of the
     // tile it fell in.
-    for (region, v) in vsum.iter().enumerate() {
-        if v.2 == 0 {
-            continue;
-        }
-        let c = (v.0 / v.2 as f64, v.1 / v.2 as f64);
-        let inside = point_in_merged(c.0, c.1, piece_poly[largest[region].1]) || {
-            let tile = (
-                (c.0 / t as f64).floor() as i32,
-                (c.1 / t as f64).floor() as i32,
-            );
-            tile_pieces.get(&tile).is_some_and(|ids| {
-                ids.iter().any(|&id| {
-                    piece_region[id] == region && point_in_merged(c.0, c.1, piece_poly[id])
+    // Region by region in parallel: the contact layer is eight million regions of one
+    // piece, and one core asking each was a third of the stitch.
+    let centres: Vec<Option<(f64, f64)>> = vsum
+        .par_iter()
+        .enumerate()
+        .map(|(region, v)| {
+            if v.2 == 0 {
+                return None;
+            }
+            let c = (v.0 / v.2 as f64, v.1 / v.2 as f64);
+            let inside = point_in_merged(c.0, c.1, piece_poly[largest[region].1]) || {
+                let tile = (
+                    (c.0 / t as f64).floor() as i32,
+                    (c.1 / t as f64).floor() as i32,
+                );
+                tile_pieces.get(&tile).is_some_and(|ids| {
+                    ids.iter().any(|&id| {
+                        piece_region[id] == region && point_in_merged(c.0, c.1, piece_poly[id])
+                    })
                 })
-            })
-        };
-        if inside {
+            };
+            inside.then_some(c)
+        })
+        .collect();
+    for (region, c) in centres.into_iter().enumerate() {
+        if let Some(c) = c {
             regions[region].marker = c;
         }
     }
 
-    // Pieces were filed tile by tile, so each tile's run is contiguous.
+    // Pieces were filed tile by tile, so each tile's run is contiguous, and the runs
+    // are copied out side by side.
+    let mut runs: Vec<(usize, usize)> = Vec::new();
+    let mut at = 0;
+    while at < piece_loc.len() {
+        let tile = piece_loc[at].0;
+        let end = at + piece_loc[at..].partition_point(|(k, _)| *k == tile);
+        runs.push((at, end));
+        at = end;
+    }
     let mut by_tile: HashMap<(i32, i32), Vec<(MergedPoly, usize)>> = HashMap::new();
     let mut indices: HashMap<(i32, i32), Vec<(usize, usize)>> = HashMap::new();
-    for (id, (tile, i)) in piece_loc.into_iter().enumerate() {
-        match record {
-            Record::Polys => by_tile
-                .entry(tile)
-                .or_default()
-                .push((tiles[&tile][i].clone(), piece_region[id])),
-            Record::Indices => indices.entry(tile).or_default().push((i, piece_region[id])),
-            Record::None => {}
+    match record {
+        Record::Polys => {
+            by_tile = runs
+                .par_iter()
+                .map(|&(at, end)| {
+                    let tile = piece_loc[at].0;
+                    let polys = &tiles[&tile];
+                    let v: Vec<(MergedPoly, usize)> = (at..end)
+                        .map(|id| (polys[piece_loc[id].1].clone(), piece_region[id]))
+                        .collect();
+                    (tile, v)
+                })
+                .collect();
         }
+        Record::Indices => {
+            for (id, &(tile, i)) in piece_loc.iter().enumerate() {
+                indices.entry(tile).or_default().push((i, piece_region[id]));
+            }
+        }
+        Record::None => {}
     }
 
     if trace && pieces.len() > 100_000 {
@@ -3894,27 +3923,6 @@ pub fn clip_to_box(polys: Vec<MergedPoly>, x0: i64, y0: i64, x1: i64, y1: i64) -
     inside
 }
 
-/// The polygons of each tile that own area in the tile's core - what a stitch files
-/// for the tile, without the stitch.
-fn core_owned(tiles: &TileMap, tile_dbu: i32) -> TileMap {
-    let t = tile_dbu as i64;
-    tiles
-        .par_iter()
-        .filter_map(|(&(tx, ty), polys)| {
-            let cx0 = (tx as i64 * t) as f64;
-            let cy0 = (ty as i64 * t) as f64;
-            let cx1 = ((tx as i64 + 1) * t) as f64;
-            let cy1 = ((ty as i64 + 1) * t) as f64;
-            let own: Vec<MergedPoly> = polys
-                .iter()
-                .filter(|p| clipped_area_dbu(p, cx0, cy0, cx1, cy1) > 0.0)
-                .cloned()
-                .collect();
-            (!own.is_empty()).then_some(((tx, ty), own))
-        })
-        .collect()
-}
-
 /// Drop every polygon of each tile that has no area within the tile's zone of
 /// `halo_dbu` around its core.  Whole polygons touching the zone stay whole.
 fn trim_beyond_zone(tiles: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
@@ -3971,32 +3979,67 @@ fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32, clip: boo
             clip_to_box(polys, x0, y0, x1, y1)
         })
         .collect();
-    let mut buckets: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
-    for polys in owned {
-        for poly in polys {
-            let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
-            let tx0 = (x0 - halo).div_euclid(tile) as i32;
-            let tx1 = (x1 + halo).div_euclid(tile) as i32;
-            let ty0 = (y0 - halo).div_euclid(tile) as i32;
-            let ty1 = (y1 + halo).div_euclid(tile) as i32;
-            for tx in tx0..=tx1 {
-                for ty in ty0..=ty1 {
-                    buckets.entry((tx, ty)).or_default().push(poly.clone());
+    // Filed owner by owner in parallel, the maps joined after: one core filing eight
+    // million contacts was a quarter of a second per selection on the layer.
+    let buckets: HashMap<(i32, i32), Vec<MergedPoly>> = owned
+        .into_par_iter()
+        .fold(
+            HashMap::new,
+            |mut m: HashMap<(i32, i32), Vec<MergedPoly>>, polys| {
+                for poly in polys {
+                    let (x0, y0, x1, y1) = outer_bbox(&poly.outer);
+                    let tx0 = (x0 - halo).div_euclid(tile) as i32;
+                    let tx1 = (x1 + halo).div_euclid(tile) as i32;
+                    let ty0 = (y0 - halo).div_euclid(tile) as i32;
+                    let ty1 = (y1 + halo).div_euclid(tile) as i32;
+                    for tx in tx0..=tx1 {
+                        for ty in ty0..=ty1 {
+                            m.entry((tx, ty)).or_default().push(poly.clone());
+                        }
+                    }
                 }
+                m
+            },
+        )
+        .reduce(HashMap::new, |mut a, b| {
+            for (k, v) in b {
+                a.entry(k).or_default().extend(v);
             }
-        }
-    }
+            a
+        });
     // Union per tile, not just collect: stitching hands back one piece per tile the
     // region covers, and a tile that now sees several of them must see one shape, or a
     // spacing scan pairs a region's own pieces against each other and counts a violation
-    // once per piece that reaches the tile.
+    // once per piece that reaches the tile.  Pieces of one region meet, box to box;
+    // where no two boxes in the tile do, there is nothing to dissolve - a tile of
+    // contacts is fourteen hundred squares that touch nothing, swept for nothing.
     buckets
         .into_par_iter()
         .map(|(key, polys)| {
+            if !any_boxes_meet(&polys) {
+                return (key, polys);
+            }
             let merged = compose_tile(VirtualOp::Union, &[&polys]);
             (key, merged)
         })
         .collect()
+}
+
+/// Whether the boxes of any two of the polygons touch or overlap.
+fn any_boxes_meet(polys: &[MergedPoly]) -> bool {
+    let mut boxes: Vec<(i64, i64, i64, i64)> = polys.iter().map(|p| outer_bbox(&p.outer)).collect();
+    boxes.sort_unstable();
+    for (i, &(_, y0, x1, y1)) in boxes.iter().enumerate() {
+        for &(bx0, by0, _, by1) in &boxes[i + 1..] {
+            if bx0 > x1 {
+                break;
+            }
+            if by0 <= y1 && by1 >= y0 {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Keep whole regions of `cand` whose measured quantity falls in the filter's range.
@@ -4541,6 +4584,7 @@ fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> 
         }
     }
     let keep: Vec<bool> = (0..labeled.regions.len())
+        .into_par_iter()
         .map(|rid| match f {
             RegionFilter::Area(lo, hi) => {
                 let a = labeled.regions[rid].area_dbu;
@@ -4571,15 +4615,18 @@ fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> 
         })
         .collect();
 
-    let mut out: TileMap = HashMap::new();
-    for (tile, polys) in labeled.by_tile {
-        for (poly, rid) in polys {
-            if keep[rid] {
-                out.entry(tile).or_default().push(poly);
-            }
-        }
-    }
-    out
+    labeled
+        .by_tile
+        .into_par_iter()
+        .filter_map(|(tile, polys)| {
+            let kept: Vec<MergedPoly> = polys
+                .into_iter()
+                .filter(|(_, rid)| keep[*rid])
+                .map(|(poly, _)| poly)
+                .collect();
+            (!kept.is_empty()).then_some((tile, kept))
+        })
+        .collect()
 }
 
 /// True if the segment `e` meets the region `poly` — either endpoint inside or on it, or
@@ -5015,21 +5062,38 @@ fn build_selection_tiles(
     let t_match = t0.elapsed().as_secs_f64();
     let t0 = std::time::Instant::now();
 
-    let mut out: TileMap = HashMap::new();
-    for (tile, polys) in labeled.by_tile {
-        for (poly, rid) in polys {
-            if matches[rid] == keep {
-                out.entry(tile).or_default().push(poly);
-            }
-        }
-    }
+    let mut out: TileMap = labeled
+        .by_tile
+        .into_par_iter()
+        .filter_map(|(tile, polys)| {
+            let kept: Vec<MergedPoly> = polys
+                .into_iter()
+                .filter(|(_, rid)| matches[*rid] == keep)
+                .map(|(poly, _)| poly)
+                .collect();
+            (!kept.is_empty()).then_some((tile, kept))
+        })
+        .collect();
     if !keep {
-        let rest: TileMap = cand
-            .iter()
+        // The unvisited tiles' core-owned polygons, read tile by tile in parallel and
+        // copied once: the contact layer is eight million copies, and they were copied
+        // whole and then again for the part each tile owns.
+        let t = tile_dbu as i64;
+        let rest: Vec<((i32, i32), Vec<MergedPoly>)> = cand
+            .par_iter()
             .filter(|(k, _)| !visited.contains(k))
-            .map(|(k, v)| (*k, v.clone()))
+            .filter_map(|(&(tx, ty), polys)| {
+                let (cx0, cy0) = ((tx as i64 * t) as f64, (ty as i64 * t) as f64);
+                let (cx1, cy1) = (((tx as i64 + 1) * t) as f64, ((ty as i64 + 1) * t) as f64);
+                let own: Vec<MergedPoly> = polys
+                    .iter()
+                    .filter(|p| clipped_area_dbu(p, cx0, cy0, cx1, cy1) > 0.0)
+                    .cloned()
+                    .collect();
+                (!own.is_empty()).then_some(((tx, ty), own))
+            })
             .collect();
-        for (tile, polys) in core_owned(&rest, tile_dbu) {
+        for (tile, polys) in rest {
             out.entry(tile).or_default().extend(polys);
         }
     }
