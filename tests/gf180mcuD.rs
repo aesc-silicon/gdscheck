@@ -1615,6 +1615,83 @@ fn hardening_via(
 // up it, one step inside the 0.319 reach.
 #[case::np_12_h1("nplus/NP.12.h1.gds.gz", "TOP", vec!["NP.12"], vec![])]
 fn hardening_nplus(
+}
+
+// --- Salicide block (hardening/reports/gf180mcuD/sab.md).  OTP_MK exempts a block from
+// every rule of the section but SB.1, SB.6, SB.7, SB.8, SB.10 and SB.14; ESD_MK exempts
+// SB.12; LVS_IO and ESD_MK exempt SB.16.  `min_width` reports one marker per wall.
+#[rstest]
+// 0.415 and 0.42 wide, both under OTP_MK: the width rule reads the drawn block, so the
+// marker does not save the narrow one.  Two walls, two markers.
+#[case::sb_1_h1("sab/SB.1.h1.gds.gz", "TOP", vec!["SB.1"; 2], vec![])]
+// 0.415 pairs with OTP_MK over both (exempt), with it abutting one of them (fires), at
+// 0.42 (clean), and a 0.415 notch in a U (fires).
+#[case::sb_2_h1("sab/SB.2.h1.gds.gz", "TOP", vec!["SB.2"; 2], vec![])]
+// An unrelated COMP 0.215 above a block (fires) and at 0.22; then one COMP bar with a
+// block across it and a second block 0.215 above the bar, which that second block is not
+// on - a space it owes by the manual, which neither deck measures because the bar
+// overlaps the first block (report, finding 2).
+#[case::sb_3_h1("sab/SB.3.h1.gds.gz", "TOP", vec!["SB.3"; 2], vec![])]
+// A COMP abutting a block's edge and one 0.005 off it: two spaces under 0.22, the first
+// of them a space of nothing (report, finding 1).
+#[case::sb_3_h2("sab/SB.3.h2.gds.gz", "TOP", vec!["SB.3"; 2], vec![])]
+// Contacts 0.145 from a block (fires), 0.15 (clean), touching its edge (a space of
+// nothing, report, finding 1), on a block under OTP_MK (SB.8 alone) and on a bare block
+// (SB.4 and SB.8).
+#[case::sb_4_h1("sab/SB.4.h1.gds.gz", "TOP", vec!["SB.4"; 3], vec!["SB.8"; 2])]
+// Field poly 0.295 from a block (fires), 0.3 (clean) and 0.295 from a block under
+// OTP_MK (exempt).
+#[case::sb_5a_h1("sab/SB.5a.h1.gds.gz", "TOP", vec!["SB.5a"], vec![])]
+// Field poly abutting a block's edge and 0.005 off it: the first is a space of nothing
+// (report, finding 1).
+#[case::sb_5a_h2("sab/SB.5a.h2.gds.gz", "TOP", vec!["SB.5a"; 2], vec![])]
+// A poly bar wholly on a COMP plate, 0.275 from a block (fires) and 0.28 (clean).
+#[case::sb_5b_h1("sab/SB.5b.h1.gds.gz", "TOP", vec!["SB.5b"], vec![])]
+// A poly crossing a COMP's edge: its field strip is 0.29 from the block (SB.5a) and its
+// COMP strip 0.59 (no SB.5b); the same at 0.30 / 0.60 is clean.
+#[case::sb_5_h1("sab/SB.5.h1.gds.gz", "TOP", vec!["SB.5a"], vec![])]
+// One poly line cut in two by a COMP bar: a block on the left piece, a second block
+// 0.295 from the right piece, which no block is on - SB.5a, the section's "unrelated"
+// being read of the piece.
+#[case::sb_5_h2("sab/SB.5.h2.gds.gz", "TOP", vec!["SB.5a"], vec![])]
+// A COMP island wholly inside a block, which never runs past it (SB.7 by the manual,
+// silent in both decks - report, finding 3), and a COMP crossing a block on a coincident
+// wall, where the block's extension is nothing (SB.6).
+#[case::sb_7_h1("sab/SB.7.h1.gds.gz", "TOP", vec!["SB.6"], vec!["SB.7"])]
+// The same two on poly: the island (SB.10, silent - report, finding 3) and the
+// coincident wall, which here is read as the poly's fault and not the block's (report,
+// finding 4).
+#[case::sb_10_h1("sab/SB.10.h1.gds.gz", "TOP", vec!["SB.10"; 2], vec![])]
+// A 0.215 overlap with poly: bare (fires), under ESD_MK (exempt), with ESD_MK over the
+// block's far half so the overlap itself lies outside the marker (fires by the manual,
+// report, finding 5), and with ESD_MK abutting the block (fires).
+#[case::sb_12_h1("sab/SB.12.h1.gds.gz", "TOP", vec!["SB.12"; 3], vec![])]
+// 1.96 µm² (fires), 2.002 (clean), 1.96 under OTP_MK (exempt) and a ring of 1.985 µm²
+// whose outline is 2.25 - the area is the block's own.
+#[case::sb_13_h1("sab/SB.13.h1.gds.gz", "TOP", vec!["SB.13"; 2], vec![])]
+// A butted N+/P+ unsalicided poly - a poly diode - which has no corner to keep clear and
+// is exempt in both decks; and two unsalicided regions 0.5 by 0.5 apart, inside the
+// 0.56 square the rule names although 0.707 away.
+#[case::sb_14a_h1("sab/SB.14a.h1.gds.gz", "TOP", vec!["SB.14a"], vec![])]
+// Unsalicided N+ poly 0.5 by 0.5 from a P-channel gate's corner (inside the square) and
+// 0.565 by 0.565 (outside it).
+#[case::sb_14b_h1("sab/SB.14b.h1.gds.gz", "TOP", vec!["SB.14b"], vec![])]
+// An implant that lies on no unsalicided poly, 0.175 from one (fires) and 0.18 (clean).
+#[case::sb_15a_h1("sab/SB.15a.h1.gds.gz", "TOP", vec!["SB.15a"], vec![])]
+// A poly resistor's two N+ heads 0.315 from the block (fires twice) and at 0.32; and one
+// N+ covering the whole bar, which contains the block-on-poly region rather than facing
+// it and is no space.
+#[case::sb_15b_h1("sab/SB.15b.h1.gds.gz", "TOP", vec!["SB.15b"; 2], vec![])]
+// A block on a gate: bare (fires), under LVS_IO, ESD_MK or OTP_MK (exempt), with RES_MK
+// taking the transistor away (exempt), with LVS_IO over half the block (exempt - report,
+// finding 5) and bare again across the 20 µm tile line (fires).
+#[case::sb_16_h1("sab/SB.16.h1.gds.gz", "TOP", vec!["SB.16"; 2], vec![])]
+// A block beside the gate, sharing its edge (SB.16) and 0.005 clear of it (no SB.16).
+// Both blocks stand on the COMP beside the gate, whose field and COMP poly are a space
+// of nothing and 0.005 from them: SB.5a twice each and SB.5b once each (report,
+// finding 1).
+#[case::sb_16_h2("sab/SB.16.h2.gds.gz", "TOP", vec!["SB.16"], vec!["SB.5a", "SB.5a", "SB.5a", "SB.5a", "SB.5b", "SB.5b"])]
+fn hardening_sab(
     #[case] gds: &str,
     #[case] topcell: &str,
     #[case] first: Vec<&str>,
@@ -1688,4 +1765,7 @@ fn hardening_pplus(
         .collect();
     want.sort();
     assert_eq!(hardening("pplus", gds, topcell, &[]), want, "{gds}");
+}
+
+    assert_eq!(hardening("sab", gds, topcell, &[]), want, "{gds}");
 }
