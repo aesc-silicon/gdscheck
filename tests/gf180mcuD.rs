@@ -2150,3 +2150,49 @@ fn hardening_mcell(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
 fn hardening_mim_b(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
     assert_eq!(hardening("mim_b", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- Cu pillar (hardening/reports/gf180mcuD/cup.md).  The deck reads the drawn metal a
+// PAD marker lands on and no guard ring claims, and keeps the measurements that reach the
+// pad.  `min_width` reports one marker per wall, so one narrow line is two.
+#[rstest]
+// Four 0.995 bars under pads: GUARD_RING_MK abutting the bar (exempt), 0.505 clear of it
+// (fires), touching the pad but not the metal (fires), and abutting a Metal5 bar (exempt).
+#[case::cup_2_h1("cup/CUP.2.h1.gds.gz", "TOP", vec!["CUP.2"; 4])]
+// An L: 3 µm under the pad and a 0.995 arm running 32 µm away from it.  The narrow
+// stretch is not under the pad, so it is not a bond pad's metal line.
+#[case::cup_2_h2("cup/CUP.2.h2.gds.gz", "TOP", vec![])]
+// A 35 µm 0.995 line with the pad over x = 12..18 of it.  Report finding 3: gdscheck
+// drops the two walls because the line runs more than ~20 µm past the pad.
+#[case::cup_2_h3("cup/CUP.2.h3.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// The same bar drawn as dummy fill on Metal1 and Metal5: the rule reads the drawn layer.
+#[case::cup_2_h4("cup/CUP.2.h4.gds.gz", "TOP", vec![])]
+// The pad abuts the bar's left edge without covering any of it.  Report finding 4: the
+// metal is selected, but no wall of it meets the pad by area and gdscheck drops both.
+#[case::cup_2_h5("cup/CUP.2.h5.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// The 35 µm line of h3 with the pad over the whole of it, tile lines included.
+#[case::cup_2_h6("cup/CUP.2.h6.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// An 8 µm line lying on its side with the pad across its middle.
+#[case::cup_2_h7("cup/CUP.2.h7.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// An upright 8 µm line with the pad inside its width, reaching neither wall.  Report
+// finding 4: the measurement is under the pad even though its walls are not.
+#[case::cup_2_h8("cup/CUP.2.h8.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// A 20 µm line across one tile line with a 6 µm pad on its middle.
+#[case::cup_2_h9("cup/CUP.2.h9.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// The 35 µm line of h3 with a 2 µm pad instead of a 6 µm one.  Report finding 3.
+#[case::cup_2_h10("cup/CUP.2.h10.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// The 8 µm line of h7 with the 6 µm pad of h3 on it.
+#[case::cup_2_h11("cup/CUP.2.h11.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// Five 0.995 lines of 16, 20, 24, 28 and 32 µm with the same pad near the left end of
+// each.  Report finding 3: the 32 µm line is the one gdscheck drops.
+#[case::cup_2_h12("cup/CUP.2.h12.gds.gz", "TOP", vec!["CUP.2"; 10])]
+// The 35 µm line of h3 with the pad moved to its middle - the same violation, reported.
+#[case::cup_2_h13("cup/CUP.2.h13.gds.gz", "TOP", vec!["CUP.2"; 2])]
+// Three Cs: a 0.995 slot under the pad (fires), a 0.995 slot the pad stops 0.5 short of,
+// and a 1.0 slot under the pad.
+#[case::cup_3_h1("cup/CUP.3.h1.gds.gz", "TOP", vec!["CUP.3"])]
+// A 0.995 slot under a pad with GUARD_RING_MK abutting the C (exempt), and the same with
+// the marker 0.5 clear of it (fires).
+#[case::cup_3_h2("cup/CUP.3.h2.gds.gz", "TOP", vec!["CUP.3"])]
+fn hardening_cup(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    assert_eq!(hardening("cup", gds, topcell, &[]), expected, "{gds}");
+}
