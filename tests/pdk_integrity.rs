@@ -24,10 +24,10 @@ use std::collections::HashSet;
 /// A PDK's own `pdk.yml` as raw YAML.  The parsed `PdkConfig` has already discarded the
 /// layer *names* in the connect graph (they are resolved to GDS keys, and unresolvable
 /// ones are dropped), so checking those needs the source text.
-fn raw_pdk_yml(process: &str) -> serde_yml::Value {
+fn raw_pdk_yml(process: &str) -> serde_norway::Value {
     let path = format!("{}/pdks/{}/pdk.yml", env!("CARGO_MANIFEST_DIR"), process);
     let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{path}: {e}"));
-    serde_yml::from_str(&text).unwrap_or_else(|e| panic!("{path}: {e}"))
+    serde_norway::from_str(&text).unwrap_or_else(|e| panic!("{path}: {e}"))
 }
 
 /// Every embedded PDK is covered automatically, so adding one cannot skip these checks.
