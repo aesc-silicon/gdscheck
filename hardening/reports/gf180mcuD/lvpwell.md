@@ -181,3 +181,32 @@ Layout `LPW.5.h2`: a 2 × 8 well with a P+ COMP head at each end and RES_MK betw
   a DNWELL ring's hole 1.495 from the wall fires (`LPW.11.h1`).
 - LPW.12: 0.005 overlap fires, abutting is clean, an overlap inside a deep well is NW.4's
   and not LPW.12 (`LPW.12.h1`).
+
+## Resolution (2026-09-22)
+
+Judged against the manual's text and the upstream runset; every case now passes.
+
+- **1 (LPW.3 crossing)**: fixed in the deck.  LPW.3 gets the second half NW.5 already
+  had: `forbidden` on `lpw3_crossing` = the part of a well overlapping the deep well
+  that lies outside it.
+- **2 (LPW.3 by projection)**: fixed in the deck, `metric: euclidian` - the settled
+  reading for every enclosure since 2026-09-21.
+- **3 (LPW.11 at a touch, and the touching well's table)**: fixed in the deck.
+  `abutting: report` on LPW.11, and `lvpwell_dn` is now `overlapping [lvpwell, dnwell]`
+  rather than `interacting`: a well that only abuts the deep well is not inside it, so
+  it is table B's and not table A's.
+- **4 (mixed-voltage pair)**: fixed in the deck, a second LPW.2a_MV entry on the layer
+  pair `[lvpwell_dn_mv, lvpwell_dn_lv]`.
+- **5 (Dualgate abutting)**: fixed in the deck; `lvpwell_dn_lv` is
+  `not_overlapping [lvpwell_dn, dualgate]`, complementary to `lvpwell_dn_mv`, and the
+  `v5_xtor` step is gone.  Same as the nwell report's finding 1.
+- **6 (LPW.1_LV on a 5 V well)**: fixed in the deck; LPW.1_LV runs on
+  `lvpwell_dn_lv`, which finding 5 made complete.
+- **7 (5 V resistor outside the deep well)**: fixed in the deck.  Dualgate is off the
+  `lpw_well_exclude` list: the manual has one column for LPW.5 and no exemption, and a
+  well with a RES_MK and a COMP head at each end is a resistor whatever its voltage.
+
+Foundry case `lvpwell.gds.gz` after the changes: LPW.11 14 -> 15 (the touch), LPW.1_LV
+21 -> 13 (only the 3.3 V wells), LPW.3 71 -> 90 (the euclidian metric and the crossing
+half); every other count unchanged.  The reference design's findings are unchanged.
+Suite green at tiles 20, 7 and 100.

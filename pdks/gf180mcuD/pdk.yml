@@ -487,8 +487,10 @@ connectivity:
   # Well ties and device bodies: the tap diffusion is the connector between the well
   # and the contacted active it straps.  These sit ahead of the metal stack because
   # upstream's antenna phases have the wells connected from the contact level up.
+  # Every well layer a net-gated rule reads is listed: a region on a layer outside the
+  # graph resolves to no net, and a `different`-net rule reports every pair of those.
   - connector: ntap              # 4
-    layers: [nwell, nw_lv, nw_mv, ncomp_con]
+    layers: [nwell, nw_lv, nw_mv, nw_lv_out_dnwell, nw_mv_out_dnwell, ncomp_con]
   # `dnwell` itself is listed beside `dnwell_n` so the deep well has a net of its own:
   # DN.2a/DN.2b are the same-potential/different-potential spacing pair, and without the
   # drawn layer in the graph neither can resolve one.
@@ -741,8 +743,11 @@ virtual_layers:
     layers: [dnwell, dualgate]
 
   # ---- LVPWELL ------------------------------------------------------------
+  # "Inside DNWELL" is a well the deep well holds, not one that only touches it: a well
+  # abutting the deep well from outside is table B's (LPW.11), and reading it as table
+  # A's gave it LPW.1's width and no LPW.11 at all (report, lvpwell finding 3).
   - name: lvpwell_dn
-    op: interacting
+    op: overlapping
     mode: lazy
     layers: [lvpwell, dnwell]
   - name: lvpwell_out
@@ -774,7 +779,7 @@ virtual_layers:
   - name: nw5_mv_crossing_all
     op: overlapping
     mode: lazy
-    layers: [nwell, dnwell]
+    layers: [nw_mv, dnwell]
   - name: nw5_mv_crossing
     op: difference
     mode: lazy
@@ -836,16 +841,17 @@ virtual_layers:
   # ---- N-well voltage classes (nwell deck) --------------------------------
   # Upstream builds these as deck-local variables (`nw_lv`, `nw_mv`); they are named
   # here so a rule can reference them, keeping the upstream names for traceability.
-  # A well is low-voltage only if it touches neither marker *anywhere*, so these are
-  # whole-region selectors and not booleans against the markers.
-  - name: nw_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [nwell, v5_xtor]
+  # The 5 V column is Dualgate's ("circuits covered by Dualgate layer will have 5V/6V
+  # gate oxide", DV.4), so a well the marker covers is MV and every other well is LV:
+  # `overlapping` and `not_overlapping` against the one marker, which are complementary
+  # and leave no well unchecked.  Upstream's `not_interacting` on Dualgate *and* on
+  # V5_XTOR leaves a well the marker merely abuts, and a well marked V5_XTOR alone, on
+  # neither layer - a width and a space rule silent on a legal well (report, nwell
+  # findings 1 and 9).
   - name: nw_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [nw_no_v5, dualgate]
+    layers: [nwell, dualgate]
   - name: nw_mv
     op: overlapping
     mode: lazy
@@ -893,10 +899,15 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [nwell, lvpwell]
+  # NW.6: the resistor is the well under its marker, the marker read as NW.7 draws it -
+  # from one COMP head to the other, the well running past it at both ends.  Reading
+  # `nwell inside res_mk` instead needed a marker overhanging the well on every side,
+  # which NW.7 says not to draw, and the rule never fired on a real resistor (report,
+  # nwell finding 4).
   - name: nwell_in_res_mk
-    op: inside
+    op: intersection
     mode: lazy
-    layers: [nwell, res_mk]
+    layers: [nwell, nw_res_mk]
   - name: nwell_res_in_dnwell
     op: intersection
     mode: lazy
@@ -1685,14 +1696,27 @@ virtual_layers:
     op: not_interacting
     mode: lazy
     layers: [lvpwell_dn, v5_xtor]
+  # As `nw_lv`: the 5 V column is Dualgate's, so a well the marker covers is MV and
+  # every other well is LV (report, lvpwell finding 5).
   - name: lvpwell_dn_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [lvpwell_dn_no_v5, dualgate]
+    layers: [lvpwell_dn, dualgate]
   - name: lvpwell_dn_mv
     op: overlapping
     mode: lazy
     layers: [lvpwell_dn, dualgate]
+  # LPW.3's other half: a well that runs out of the deep well is enclosed by nothing
+  # there, and an enclosure has no margin to measure on the crossing side (report,
+  # lvpwell finding 1).  The nwell deck gives NW.5 the same pair.
+  - name: lpw3_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [lvpwell, dnwell]
+  - name: lpw3_crossing
+    op: difference
+    mode: lazy
+    layers: [lpw3_crossing_all, dnwell]
   - name: lvpwell_out_dn
     op: not_overlapping
     mode: lazy
@@ -1701,11 +1725,14 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [lvpwell_out_dn, nwell]
-  # LPW.5: an LVPWELL used as a resistor must sit inside a deep well.
+  # LPW.5: an LVPWELL used as a resistor must sit inside a deep well.  The manual has
+  # one column and no exemption, so the 5 V marker is not on the exclusion list:
+  # upstream's is, and a marked well with COMP heads under Dualgate was no resistor to
+  # either tool (report, lvpwell finding 7).
   - name: lpw_well_exclude
     op: union
     mode: lazy
-    layers: [poly2_drawn, dualgate, resistor, sab]
+    layers: [poly2_drawn, resistor, sab]
   - name: lvpwell_at_pcomp
     op: interacting
     mode: lazy

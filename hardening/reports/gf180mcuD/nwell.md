@@ -230,3 +230,43 @@ Layout `NW.1a.h2`: a 0.855 well under V5_XTOR with no Dualgate, and one under bo
   Dualgate, crossing included (`NW.5.h1`, `NW.5.h3`).
 - NW.6: the marker overhanging on every side in a DNWELL fires; no marker, clean
   (`NW.6.h1`).
+
+## Resolution (2026-09-22)
+
+Judged against the manual's text and the upstream runset; the engine and the deck were
+changed where the drawing was right, and every case now passes.
+
+- **1 (Dualgate abutting) and 9 (V5_XTOR alone)**: fixed in the deck.  The 5 V column is
+  Dualgate's (DV.4), so `nw_lv` is now `not_overlapping [nwell, dualgate]` and `nw_mv`
+  stays `overlapping`: the two classes are complementary, and no well falls through
+  both.  Upstream's extra `not_interacting v5_xtor` step is gone with it - a well marked
+  V5_XTOR and not covered by Dualgate is a 3.3 V well, and excluding it bought nothing
+  but a silent rule.
+- **2 (mixed-voltage pair)**: fixed in the deck.  NW.2a_MV and NW.2b_MV each get a
+  second entry on the layer pair `[nw_mv, nw_lv]`, which is exactly the gap between a
+  5 V well and a 3.3 V one; the stricter value applies to it.
+- **3 (NW.3 at a touch)**: fixed in the deck, `abutting: report` - the settled reading
+  since IHP's NW.d, a shared edge is a space of nothing.
+- **4 (NW.6 resistor)**: fixed in the deck.  `nwell_in_res_mk` is now `nwell ∩
+  nw_res_mk`, the same resistor NW.1b recognises (NW.7's marker, from head to head,
+  the well running past it), in place of `nwell inside res_mk`.
+- **5 (NW.5_MV on an LV well)**: fixed in the deck; the crossing half reads `nw_mv`
+  where it read every well.  The foundry case's NW.5_MV drops 25 -> 18 with it.
+- **6 (two wells in one deep well)**: fixed in the deck.  NW.2b now runs on
+  `nw_lv_out_dnwell` / `nw_mv_out_dnwell`: the manual heads both spacing rules "Outside
+  DNWELL", and wells inside a deep well are shorted through it, so a gap between two of
+  them is never one of different potential.  The layers were added to the `ntap`
+  connector's list, since a region on a layer outside the connectivity graph resolves
+  to no net and a `different`-net rule then reports every pair.
+- **7 (YMTP marker over the gap)**: kept, and the case flipped.  The base rule keeps a
+  pair whose wells are not inside the marker; the Y rule measures the same gap from its
+  own layer (`nwell ∩ ymtp_mk`), and a cell marker that covers a gap but not the cell's
+  wells is not how YMTP_MK is drawn.  The deck's comment on the exemption stays.
+- **8 (NW.1b on the marked region's short side)**: kept, and the case flipped to 6.
+  Both tools measure the marked region as drawn, and a 1.5 µm-long well resistor is not
+  a device; reading the well's own width through the marker would need the rule to
+  measure one layer and report inside another.
+
+Foundry case `nwell.gds.gz` after the changes: NW.3 14 -> 15 (the touch), NW.5_MV
+25 -> 18 (the LV wells no longer labelled MV); every other count unchanged.  The
+reference design's findings are unchanged.  Suite green at tiles 20, 7 and 100.

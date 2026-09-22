@@ -6,7 +6,7 @@
 rules:
   - id: LPW.1_LV
     check: min_width
-    layers: [lvpwell_dn]
+    layers: [lvpwell_dn_lv]
     value: 0.6
   - id: LPW.1_MV
     check: min_width
@@ -21,6 +21,14 @@ rules:
   - id: LPW.2a_MV
     check: min_space
     layers: [lvpwell_dn_mv]
+    value: 1.7
+    params:
+      net: different
+  # A gap between a 5 V well and a 3.3 V one is the 5 V well's, and neither voltage
+  # layer holds the pair.
+  - id: LPW.2a_MV
+    check: min_space
+    layers: [lvpwell_dn_mv, lvpwell_dn_lv]
     value: 1.7
     params:
       net: different
@@ -46,6 +54,11 @@ rules:
     value: 2.5
     params:
       interacting_only: 1
+      metric: euclidian
+  - id: LPW.3
+    check: forbidden
+    layers: [lpw3_crossing]
+    value: 0.0
   - id: LPW.5
     check: forbidden
     layers: [lpw5_viol]
@@ -54,6 +67,8 @@ rules:
     check: min_space
     layers: [lvpwell_out_dn, dnwell]
     value: 1.5
+    params:
+      abutting: report
   - id: LPW.12
     check: forbidden
     layers: [lpw12_viol]
