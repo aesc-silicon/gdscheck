@@ -13,7 +13,7 @@
 //! dimension a half-grid out.
 
 use super::OFFSET;
-use crate::helpers::{layer, library, rect, write_gz};
+use crate::helpers::{layer, library, poly, rect, write_gz};
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
@@ -40,6 +40,10 @@ struct Ctx {
     contact: (i16, i16),
     metal1: (i16, i16),
     comp: (i16, i16),
+    nplus: (i16, i16),
+    esd: (i16, i16),
+    sab: (i16, i16),
+    resistor: (i16, i16),
 }
 
 #[derive(Clone, Copy)]
@@ -189,6 +193,10 @@ pub fn generate(pdk: &PdkConfig) {
         contact: layer(pdk, "contact"),
         metal1: layer(pdk, "metal1_drawn"),
         comp: layer(pdk, "comp"),
+        nplus: layer(pdk, "nplus"),
+        esd: layer(pdk, "esd"),
+        sab: layer(pdk, "sab"),
+        resistor: layer(pdk, "resistor"),
     };
     let o = OFFSET;
     let write = |id: &str, polarity: &str, elems: Vec<GdsElement>| {
@@ -197,6 +205,7 @@ pub fn generate(pdk: &PdkConfig) {
             library("TOP", elems),
         );
     };
+    hardening(&c);
     let base = Cell::at(o, o);
     let clean = || base.draw(&c);
 
@@ -388,4 +397,326 @@ pub fn generate(pdk: &PdkConfig) {
         v.push(rect(c.comp, x, an.1, x + 2.0, an.3));
         v
     });
+}
+
+// --- Hardening (hardening/SPEC.md, the GF180MCU section) -------------------
+//
+// Layouts drawn from section 10.11 of the manual, with a case in the `hardening_efuse`
+// table of `tests/gf180mcuD.rs` and the findings in hardening/reports/gf180mcuD/efuse.md.
+//
+// This section is unlike the others: nine of its rules read "Min. Max." and *fix* a
+// dimension rather than bounding it, so the step past the value has two sides and the
+// deck's own bad halves only ever take the short one.  Most of what follows takes the
+// long one instead, and the rest is the classes a spacing rule has: the value, the step,
+// and the neighbour drawn flush against the shape it is measured from.
+//
+// Every probe is a whole fuse - a cathode, a link and an anode, all inside EFUSE_MK and
+// P+, the anode under LVS_SOURCE - because the deck reads those four layers together to
+// tell one part of the device from another, and a bar of any one of them on its own is
+// not a fuse at all.  Probes stand `H_PITCH` apart, which is more than twice EF.20's
+// 2.73 µm, the longest reach in the section.
+
+/// How far apart the fuses of one hardening row stand.
+const H_PITCH: f64 = 20.0;
+
+fn hwrite(name: &str, elems: Vec<GdsElement>) {
+    write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
+}
+
+/// A row of fuses, each with whatever extra shapes its own probe needs, drawn in the
+/// fuse's own frame.
+fn hrow(c: &Ctx, items: Vec<(Cell, Vec<GdsElement>)>) -> Vec<GdsElement> {
+    let mut v = Vec::new();
+    for (cell, extra) in items {
+        v.extend(cell.draw(c));
+        v.extend(extra);
+    }
+    v
+}
+
+fn hardening(c: &Ctx) {
+    let o = OFFSET;
+    // One fuse at the `i`-th place of a row, with `f` applied to it.
+    let at = |i: usize, f: &dyn Fn(&mut Cell)| {
+        let mut cell = Cell::at(o + i as f64 * H_PITCH, o);
+        f(&mut cell);
+        cell
+    };
+    let plain = |i: usize| at(i, &|_| {});
+    let nothing = |_: &mut Cell| {};
+
+    // --- EF.02: the fuse layer's width, which the manual fixes at 0.18 both ways.  Bare
+    // bars off to the side of one good fuse, so that nothing reads them as a device: the
+    // link of a real fuse cannot be widened without moving EF.22a's and EF.22b's
+    // shoulders with it.  Each bar is 2 µm long, which is what the max side has to not
+    // mistake for a width.
+    hwrite("EF.02.h1", {
+        let mut v = plain(0).draw(c);
+        for (i, w) in [(0usize, 0.18), (1, 0.175), (2, 0.185)] {
+            let x = o + 20.0 + i as f64 * 4.0;
+            v.push(rect(c.plfuse, x, o, x + 2.0, o + w));
+        }
+        v
+    });
+
+    // --- EF.03: the link's length, fixed at 1.26.  One step short and one step long.
+    // The whole poly runs 1.84 + 1.26 + 2.43, so moving the link moves EF.21's 5.53 with
+    // it and the shoulders stay put; both ids belong to each of these fuses.
+    hwrite(
+        "EF.03.h1",
+        hrow(
+            c,
+            vec![
+                (plain(0), vec![]),
+                (at(1, &|k| k.fuse_l = 1.255), vec![]),
+                (at(2, &|k| k.fuse_l = 1.265), vec![]),
+            ],
+        ),
+    );
+
+    // --- EF.06 to EF.09: the two pads' four dimensions, each fixed by the manual and
+    // each drawn here one step *over* the value.  The deck's own bad halves take them one
+    // step under.
+    hwrite(
+        "EF.06.h1",
+        hrow(
+            c,
+            vec![
+                (at(0, &|k| k.cat_w = 2.265), vec![]),
+                (at(1, &|k| k.cat_l = 1.845), vec![]),
+                // One step over 1.06 puts the anode's own edges off the 0.005 grid,
+                // since it grows either side of the centre line; two steps is the
+                // smallest wrong width that stays on it.
+                (at(2, &|k| k.an_w = 1.07), vec![]),
+                (at(3, &|k| k.an_l = 2.435), vec![]),
+            ],
+        ),
+    );
+
+    // --- EF.12: the cathode's contacts and the link's end, 0.155 µm.  The value, the
+    // step, and a contact drawn flush against the link's end.
+    hwrite(
+        "EF.12.h1",
+        hrow(
+            c,
+            vec![
+                (at(0, &|k| k.cat_gap = 0.155), vec![]),
+                (at(1, &|k| k.cat_gap = 0.15), vec![]),
+                (at(2, &|k| k.cat_gap = 0.0), vec![]),
+            ],
+        ),
+    );
+
+    // --- EF.13: the same at the anode, 0.14 µm.
+    hwrite(
+        "EF.13.h1",
+        hrow(
+            c,
+            vec![
+                (at(0, &|k| k.an_gap = 0.14), vec![]),
+                (at(1, &|k| k.an_gap = 0.135), vec![]),
+                (at(2, &|k| k.an_gap = 0.0), vec![]),
+            ],
+        ),
+    );
+
+    // --- EF.15: no contact may *touch* the link.  One 0.005 clear of it, one sharing its
+    // end edge, and one meeting its corner at a single point.
+    hwrite("EF.15.h1", {
+        let fuse_of = |cell: &Cell| cell.boxes()[1];
+        // Three contacts on the pad, so that the probe contact makes the four EF.16a
+        // asks for and that rule has nothing to say about any of these fuses.
+        let probe = |i: usize, f: &dyn Fn((f64, f64, f64, f64)) -> (f64, f64)| {
+            let cell = at(i, &|k| k.cat_contacts = 3);
+            let (x, y) = f(fuse_of(&cell));
+            (cell, vec![rect(c.contact, x, y, x + CO, y + CO)])
+        };
+        hrow(
+            c,
+            vec![
+                // 0.005 short of the link's left end, on the cathode.
+                probe(0, &|b| (b.0 - 0.005 - CO, b.1)),
+                // Flush against it.
+                probe(1, &|b| (b.0 - CO, b.1)),
+                // Meeting the link's bottom-left corner at one point.
+                probe(2, &|b| (b.0 - CO, b.1 - CO)),
+            ],
+        )
+    });
+
+    // --- EF.16a / EF.16b: each pad must hold exactly four contacts - so five is as wrong
+    // as three.  The fourth fuse has a fifth contact on the anode, stacked above the row.
+    hwrite("EF.16.h1", {
+        let extra_cat = {
+            let cell = plain(2);
+            let cat = cell.boxes()[0];
+            vec![rect(
+                c.contact,
+                cat.0 + 0.2,
+                cat.1 + 1.7,
+                cat.0 + 0.2 + CO,
+                cat.1 + 1.7 + CO,
+            )]
+        };
+        let extra_an = {
+            let cell = plain(3);
+            let an = cell.boxes()[2];
+            vec![rect(
+                c.contact,
+                an.0 + 0.4,
+                an.1 + 0.1,
+                an.0 + 0.4 + CO,
+                an.1 + 0.1 + CO,
+            )]
+        };
+        hrow(
+            c,
+            vec![
+                (plain(0), vec![]),
+                (at(1, &|k| k.cat_contacts = 3), vec![]),
+                (plain(2), extra_cat),
+                (plain(3), extra_an),
+            ],
+        )
+    });
+
+    // --- EF.17: 0.26 µm between markers, with both gaps centred on a tile line, and a
+    // 0.255 slot cut into a marker of its own.  A marker with nothing inside it answers
+    // to nothing else in the section.
+    hwrite("EF.17.h1", {
+        // Two fuses whose markers face at 0.26 across x = 20 ...
+        let a = Cell::at(13.94, o);
+        let b = Cell::at(20.53, o);
+        // ... and two more at 0.255 across x = 40.
+        let d = Cell::at(33.94, o);
+        let e = Cell::at(40.525, o);
+        let mut v = hrow(c, vec![(a, vec![]), (b, vec![]), (d, vec![]), (e, vec![])]);
+        // A bare marker with a 0.255 slot in it, well clear of the fuses.
+        v.push(poly(
+            c.efuse_mk,
+            &[
+                (60.0, 20.0),
+                (66.0, 20.0),
+                (66.0, 22.0),
+                (62.0, 22.0),
+                (62.0, 22.255),
+                (66.0, 22.255),
+                (66.0, 24.0),
+                (60.0, 24.0),
+            ],
+        ));
+        v
+    });
+
+    // --- EF.19: *Min. PLFUSE space to Metal1, Metal2* is zero, so metal drawn flush
+    // against the link keeps the space the rule asks for; metal *over* the link does not.
+    hwrite("EF.19.h1", {
+        let probe = |i: usize, over: bool| {
+            let cell = plain(i);
+            let b = cell.boxes()[1];
+            let m = if over {
+                rect(c.metal1, b.0, b.1 - 0.3, b.2, b.3 + 0.3)
+            } else {
+                rect(c.metal1, b.0, b.3, b.2, b.3 + 0.6)
+            };
+            (cell, vec![m])
+        };
+        hrow(c, vec![probe(0, false), probe(1, true)])
+    });
+
+    // --- EF.20: 2.73 µm from the link to an active.  The value, the step, and an active
+    // drawn flush against the link's own wall - which is a space of nothing.
+    hwrite("EF.20.h1", {
+        let probe = |i: usize, gap: Option<f64>| {
+            let cell = plain(i);
+            let b = cell.boxes()[1];
+            let comp = match gap {
+                Some(g) => rect(c.comp, b.0, b.3 + g, b.0 + 2.0, b.3 + g + 2.0),
+                None => rect(c.comp, b.0, b.3, b.0 + 2.0, b.3 + 2.0),
+            };
+            (cell, vec![comp])
+        };
+        hrow(
+            c,
+            vec![probe(0, Some(2.73)), probe(1, Some(2.725)), probe(2, None)],
+        )
+    });
+
+    // --- EF.10 / EF.11: 0.26 µm from a pad to the poly beside it.  Both decks read the
+    // rule as the pad against a pad of its own kind, so each probe is a pair of fuses,
+    // the second drawn right to left so that the pad of the same kind faces the first's.
+    let facing = |xa: f64, gap: f64| {
+        let a = Cell::at(xa, o);
+        let mut b = Cell::at(xa - (CAT_L + FUSE_L + AN_L) - gap, o);
+        b.flip = true;
+        let mut v = a.draw(c);
+        v.extend(b.draw(c));
+        v
+    };
+    // Cathode to cathode, at the value and one step under it.
+    hwrite("EF.10.h1", {
+        let mut v = facing(o + 8.0, 0.26);
+        v.extend(facing(o + 28.0, 0.255));
+        v
+    });
+    // Anode to anode: the left fuse is the one drawn right to left, so the two anodes
+    // face each other instead.
+    hwrite("EF.11.h1", {
+        let facing_an = |xa: f64, gap: f64| {
+            let a = Cell::at(xa, o);
+            let mut b = Cell::at(xa + CAT_L + FUSE_L + AN_L + gap, o);
+            b.flip = true;
+            let mut v = a.draw(c);
+            v.extend(b.draw(c));
+            v
+        };
+        let mut v = facing_an(o, 0.26);
+        v.extend(facing_an(o + 20.0, 0.255));
+        v
+    });
+
+    // --- EF.14: the marker has to hold LVS_SOURCE with zero to spare, so a source flush
+    // with the marker's edge is legal and one that crosses it is not.  The first fuse's
+    // marker ends exactly on the anode's right edge, where the source ends too.
+    hwrite(
+        "EF.14.h1",
+        hrow(
+            c,
+            vec![
+                (at(0, &|k| k.mk_right = 0.0), vec![]),
+                (
+                    at(1, &|k| {
+                        k.mk_right = 0.0;
+                        k.src_out = true;
+                    }),
+                    vec![],
+                ),
+            ],
+        ),
+    );
+
+    // The rest of EF.20's neighbour list: the rule names COMP, Nplus, ESD, SAB and
+    // Resistor, and one of each is drawn 2.725 µm from the link.
+    hwrite("EF.20.h2", {
+        let probe = |i: usize, l: (i16, i16)| {
+            let cell = plain(i);
+            let b = cell.boxes()[1];
+            let y = b.3 + 2.725;
+            (cell, vec![rect(l, b.0, y, b.0 + 2.0, y + 2.0)])
+        };
+        hrow(
+            c,
+            vec![
+                probe(0, c.nplus),
+                probe(1, c.esd),
+                probe(2, c.sab),
+                probe(3, c.resistor),
+            ],
+        )
+    });
+
+    // A fuse with nothing wrong with it at all, for the record: every rule of the section
+    // reads it and none of them may speak.
+    hwrite("EF.00.h1", hrow(c, vec![(plain(0), vec![])]));
+    let _ = nothing;
 }

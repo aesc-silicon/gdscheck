@@ -3190,3 +3190,61 @@ fn hardening_ymtp_mk(#[case] gds: &str, #[case] topcell: &str, #[case] expected:
     expected.sort();
     assert_eq!(hardening("ymtp_mk", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- eFuse (hardening/reports/gf180mcuD/efuse.md).  Nine of this section's rules fix a
+// dimension rather than bounding it, so the step past the value has two sides; these
+// fixtures take the long one, which the deck's own bad halves never do.  Every probe is
+// a whole fuse - cathode, link and anode, inside EFUSE_MK and P+, LVS_SOURCE on the
+// anode - because the deck tells the parts apart by those four layers together.
+#[rstest]
+// The fuse the manual describes, with nothing wrong with it: no rule of the section may
+// speak.
+#[case::ef_00_h1("efuse/EF.00.h1.gds.gz", "TOP", vec![])]
+// Bare PLFUSE bars 2 µm long and 0.18 (clean), 0.175 and 0.185 wide.  The manual fixes
+// the width both ways, so the wide bar fires as surely as the narrow one - and neither
+// tool mistakes the bar's 2 µm length for a width.
+#[case::ef_02_h1("efuse/EF.02.h1.gds.gz", "TOP", vec!["EF.02"; 3])]
+// The link 1.26 long (clean), 1.255 and 1.265.  The whole poly runs 1.84 + 1.26 + 2.43,
+// so moving the link moves EF.21's 5.53 with it.
+#[case::ef_03_h1("efuse/EF.03.h1.gds.gz", "TOP", vec!["EF.03", "EF.03", "EF.03", "EF.03", "EF.21", "EF.21", "EF.21", "EF.21"])]
+// The two pads' four fixed dimensions, each one step *over* the value: cathode 2.265
+// wide, cathode 1.845 long, anode 1.07 wide, anode 2.435 long.  A longer pad lengthens
+// the poly (EF.21) and a wider one narrows the shoulder where the link meets it
+// (EF.22a, EF.22b).
+#[case::ef_06_h1("efuse/EF.06.h1.gds.gz", "TOP", vec!["EF.06", "EF.06", "EF.07", "EF.07", "EF.08", "EF.08", "EF.09", "EF.09", "EF.21", "EF.21", "EF.21", "EF.21", "EF.22a", "EF.22b", "EF.22b"])]
+// Two fuses cathode to cathode at 0.26 (clean) and at 0.255.
+#[case::ef_10_h1("efuse/EF.10.h1.gds.gz", "TOP", vec!["EF.10"])]
+// Two fuses anode to anode at 0.26 (clean) and at 0.255.
+#[case::ef_11_h1("efuse/EF.11.h1.gds.gz", "TOP", vec!["EF.11"])]
+// The cathode's contacts 0.155 from the link's end (clean), 0.15, and flush against it -
+// which is a space of nothing and a contact touching the link, so EF.15 comes with it.
+// Report finding 1: gdscheck does not read the shared edge as a space.
+#[case::ef_12_h1("efuse/EF.12.h1.gds.gz", "TOP", vec!["EF.12", "EF.12", "EF.15"])]
+// The same at the anode, 0.14 / 0.135 / flush.  Report finding 1.
+#[case::ef_13_h1("efuse/EF.13.h1.gds.gz", "TOP", vec!["EF.13", "EF.13", "EF.15"])]
+// LVS_SOURCE ending exactly on the marker's edge - the zero enclosure the rule asks for -
+// and the same source running 1 µm past it.
+#[case::ef_14_h1("efuse/EF.14.h1.gds.gz", "TOP", vec!["EF.14"])]
+// A contact 0.005 short of the link (clean of EF.15, inside EF.12's 0.155), one sharing
+// the link's end edge, and one meeting its corner at a single point.  Report finding 1:
+// the shared edge is the one of the three gdscheck does not read as a space.
+#[case::ef_15_h1("efuse/EF.15.h1.gds.gz", "TOP", vec!["EF.12", "EF.12", "EF.12", "EF.15", "EF.15"])]
+// Four contacts on each pad (clean), three on a cathode, five on a cathode, five on an
+// anode - the rule fixes the number, so too many is as wrong as too few.
+#[case::ef_16_h1("efuse/EF.16.h1.gds.gz", "TOP", vec!["EF.16a", "EF.16a", "EF.16b"])]
+// Markers 0.26 apart across x = 20 (clean) and 0.255 apart across x = 40, and a bare
+// marker with a 0.255 slot cut into it.
+#[case::ef_17_h1("efuse/EF.17.h1.gds.gz", "TOP", vec!["EF.17", "EF.17"])]
+// Metal1 drawn flush against the link's long wall - the zero space EF.19 allows and no
+// crossing for EF.18 - and Metal1 over the link.
+#[case::ef_19_h1("efuse/EF.19.h1.gds.gz", "TOP", vec!["EF.18", "EF.19"])]
+// An active 2.73 from the link (clean), 2.725, and one flush against its wall.  Report
+// finding 1.
+#[case::ef_20_h1("efuse/EF.20.h1.gds.gz", "TOP", vec!["EF.20", "EF.20"])]
+// The rest of the rule's neighbour list at 2.725: Nplus, ESD, SAB and Resistor.
+#[case::ef_20_h2("efuse/EF.20.h2.gds.gz", "TOP", vec!["EF.20"; 4])]
+fn hardening_efuse(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut expected = expected;
+    expected.sort();
+    assert_eq!(hardening("efuse", gds, topcell, &[]), expected, "{gds}");
+}
