@@ -85,3 +85,16 @@ The same list as `pres.md`, on Nplus, with the same counts:
 - **LRES.9a's four markings** (`LRES.9a.h1`): on the outline exactly (clean), 0.6 narrow,
   0.6 short, 0.9 long. Three markers either side.
 - The engine family's generic classes were not redrawn.
+
+---
+
+## Resolution (2026-09-22)
+
+Findings 1-5 are section 10.1's and were fixed there; see the resolution of
+`hardening/reports/gf180mcuD/pres.md`, which lists each fix and what it did to this deck's
+counts (LRES.3 9 -> 10, LRES.9a 9 -> 11 on the foundry layout; LRES.6's two cases kept with
+the tools' reading).
+
+Finding 6 needed nothing: an N+ bar under a RESISTOR marker stays an N+ resistor because
+10.2 has no clause handing it to 10.3 and 10.3 does not recognise it, and both tools read
+it so. `lres_1_h1` keeps its four markers where `pres_1_h1` has two.
