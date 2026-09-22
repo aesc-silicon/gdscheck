@@ -13,7 +13,9 @@
 //! patterns straddle the value by the two nearest offsets, 0.708 and 0.706 µm.  Every
 //! expected count is read off the drawing: a violation is one pair.
 
-use crate::helpers::{layer, library, poly, rect, write_gz};
+use crate::helpers::{
+    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, write_gz,
+};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/engine/generated/space";
@@ -165,4 +167,123 @@ pub fn generate(pdk: &PdkConfig) {
     v.push(rect(inner, 30.2, 30.2, 32.05, 30.8));
     write("net_bridged", v);
     write("net_apart", squares());
+
+    // --- The hardening patterns: what a rule manual's space asks of any layer, drawn
+    // once here for every deck of every PDK (hardening/SPEC.md, "Where a pattern
+    // belongs").  S.min is 0.5; a violation is one pair.
+
+    // The bound and both metrics.  Gap 0.495 fires; a diagonal offset of 0.355/0.355 is
+    // 0.502 corner to corner (clean), 0.35/0.35 is 0.495 (fires); an x-gap of 0.495
+    // between boxes that meet corner-on in projection fires; 0.5 is clean.  S.min: 3.
+    write(
+        "bound",
+        vec![
+            rect(outer, 2.0, 2.0, 3.0, 3.0),
+            rect(outer, 3.495, 2.0, 4.495, 3.0), // S.min
+            rect(outer, 6.0, 2.0, 7.0, 3.0),
+            rect(outer, 7.355, 3.355, 8.355, 4.355), // clean (0.502)
+            rect(outer, 10.0, 2.0, 11.0, 3.0),
+            rect(outer, 11.35, 3.35, 12.35, 4.35), // S.min (0.495)
+            rect(outer, 2.0, 6.0, 3.0, 7.0),
+            rect(outer, 3.495, 7.0, 4.495, 8.0), // S.min (corner-on 0.495)
+            rect(outer, 6.0, 6.0, 7.0, 7.0),
+            rect(outer, 7.5, 6.5, 8.5, 7.5), // clean
+        ],
+    );
+
+    // 45° geometry at 0.495: a diamond tip above a wall, two parallel 45° strips, a box
+    // corner facing a chamfer, tip to tip.  The strips: d = 0.6 → 0.849 wide; a second
+    // strip dy higher is (dy − 1.2)/√2 away, dy = 1.9 → 0.495.  The chamfer along
+    // x + y = 16.5 is 0.495 from the box corner (12.85, 4.0), whose foot (12.6, 3.75)
+    // lies on the chamfer.  S.min: 4; the strip pair is under S.bent's 0.8 too (1).
+    write(
+        "bound_45",
+        vec![
+            rect(outer, 2.0, 2.0, 5.0, 3.0),
+            diamond(outer, 3.5, 3.995, 0.5), // S.min: tip 0.495 above the wall
+            strip45(outer, 7.0, 2.0, 2.0, 0.6),
+            strip45(outer, 7.0, 3.9, 2.0, 0.6), // S.min: strips 0.495 apart (S.bent)
+            chamfered_tr(outer, 11.0, 2.0, 13.0, 4.0, 16.5),
+            rect(outer, 12.85, 4.0, 14.5, 5.5), // S.min: corner 0.495 from the chamfer
+            diamond(outer, 17.0, 3.0, 0.5),
+            diamond(outer, 18.495, 3.0, 0.5), // S.min: tips 0.495 apart
+        ],
+    );
+
+    // Unions.  Overlapping, abutting and gridded boxes each 0.495 from a third box: one
+    // pair each, the gap read against the merged shape; an island 0.495 from a ring's
+    // inner wall.  S.min: 4.
+    let mut e = vec![
+        rect(outer, 2.0, 2.0, 2.6, 3.0),
+        rect(outer, 2.4, 2.0, 3.0, 3.0),
+        rect(outer, 3.495, 2.0, 4.5, 3.0), // S.min
+        rect(outer, 6.0, 2.0, 6.5, 3.0),
+        rect(outer, 6.5, 2.0, 7.0, 3.0),
+        rect(outer, 7.495, 2.0, 8.5, 3.0), // S.min
+    ];
+    for i in 0..5 {
+        for j in 0..5 {
+            let (x, y) = (10.0 + 0.2 * i as f64, 2.0 + 0.2 * j as f64);
+            e.push(rect(outer, x, y, x + 0.2, y + 0.2));
+        }
+    }
+    e.push(rect(outer, 11.495, 2.0, 12.5, 3.0)); // S.min
+    e.extend([
+        rect(outer, 14.0, 6.0, 18.0, 7.0),
+        rect(outer, 14.0, 9.0, 18.0, 10.0),
+        rect(outer, 14.0, 7.0, 15.0, 9.0),
+        rect(outer, 17.0, 7.0, 18.0, 9.0),
+    ]);
+    e.push(rect(outer, 15.5, 7.495, 16.5, 8.495)); // S.min: island 0.495 above the wall
+    write("merge", e);
+
+    // Tile lines.  0.495 gaps ending on x = 20, straddling 20, starting on 20, straddling
+    // 21, on 40, straddling 42, inside a tile at 10; two in y running across 20/21 and
+    // 40/42; a corner-to-corner pair (0.495) across (20, 20).  S.min: 10.
+    let pair = |x: f64, y: f64| {
+        vec![
+            rect(outer, x - 1.0, y, x, y + 1.0),
+            rect(outer, x + 0.495, y, x + 1.495, y + 1.0),
+        ]
+    };
+    let mut e = vec![];
+    e.extend(pair(9.505, 2.0));
+    e.extend(pair(19.505, 2.0));
+    e.extend(pair(19.75, 4.0));
+    e.extend(pair(20.0, 6.0));
+    e.extend(pair(20.75, 8.0));
+    e.extend(pair(39.505, 2.0));
+    e.extend(pair(41.75, 4.0));
+    e.push(rect(outer, 15.0, 12.0, 25.0, 13.0));
+    e.push(rect(outer, 15.0, 13.495, 25.0, 14.0));
+    e.push(rect(outer, 35.0, 12.0, 45.0, 13.0));
+    e.push(rect(outer, 35.0, 13.495, 45.0, 14.0));
+    e.push(rect(outer, 19.0, 19.0, 20.0, 20.0));
+    e.push(rect(outer, 20.35, 20.35, 21.0, 21.0));
+    write("tile_lines", e);
+
+    // Fifty 0.495 pairs, flat and as an array reference.  S.min: 50 each.
+    let cell = vec![
+        rect(outer, 0.2, 0.2, 0.7, 0.7),
+        rect(outer, 1.195, 0.2, 1.695, 0.7),
+    ];
+    write("array_flat", flat_array(&cell, 10, 5, 2.5));
+    write_gz(
+        &format!("{DIR}/array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 2.5),
+    );
+
+    // Small, long, far.  A 0.005 sliver 0.495 from a box, two 300 µm bars 0.495 apart
+    // (one pair), a pair at (1000, 1000).  S.min: 3.
+    write(
+        "extremes",
+        vec![
+            rect(outer, 2.0, 2.0, 3.0, 3.0),
+            rect(outer, 3.495, 2.0, 3.5, 3.0),
+            rect(outer, 2.0, 6.0, 302.0, 7.0),
+            rect(outer, 2.0, 7.495, 302.0, 8.0),
+            rect(outer, 1000.0, 1000.0, 1001.0, 1001.0),
+            rect(outer, 1001.495, 1000.0, 1002.0, 1001.0),
+        ],
+    );
 }
