@@ -18,7 +18,7 @@
 //! of vias on a block hides a tight pair in the block's own middle.  `tail` draws that,
 //! and we report the pair.
 
-use crate::helpers::{layer, library, rect, write_gz};
+use crate::helpers::{flat_array, layer, library, rect, ref_array, write_gz};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/engine/generated/array";
@@ -167,4 +167,39 @@ pub fn generate(pdk: &PdkConfig) {
         v.extend(block(via, O + 8.0 * pitch, O + 4.0 * pitch, 4, 4, SPACE, s));
         write(format!("u_{}", name(s)), v);
     }
+
+    // --- The hardening patterns: what a rule manual's array spacing asks of any via
+    // layer, drawn once here for every deck of every PDK (hardening/SPEC.md).  A
+    // violation is one block with a tight pair in it, however many.
+
+    // The bound: a 6x6 block spaced 0.36 is clean, 0.355 - one grid step under - is
+    // tight in both axes.  ARR.both: 1; ARR.one: 1.
+    let mut v = block(via, 2.0, 2.0, 6, 6, SPACE, SPACE);
+    v.extend(block(via, 8.0, 2.0, 6, 6, 0.355, 0.355));
+    write("bound".into(), v);
+
+    // Tile lines: 0.355 blocks across x = 20, ending on 20, starting on 20, across 21,
+    // across y = 40, across (40, 40), well inside a tile at 10.  A block is 3.46 wide.
+    // ARR.both: 7; ARR.one: 7.
+    let mut v = vec![];
+    for (i, x) in [10.0, 18.27, 16.54, 20.0, 19.27].iter().enumerate() {
+        v.extend(block(via, *x, 2.0 + 6.0 * i as f64, 6, 6, 0.355, 0.355));
+    }
+    v.extend(block(via, 2.0, 38.27, 6, 6, 0.355, 0.355));
+    v.extend(block(via, 38.27, 38.27, 6, 6, 0.355, 0.355));
+    write("tile_lines".into(), v);
+
+    // Fifty 0.355 blocks, flat and as an array reference.  ARR.both: 50; ARR.one: 50.
+    let cell = block(via, 0.2, 0.2, 6, 6, 0.355, 0.355);
+    write("array_flat".into(), flat_array(&cell, 10, 5, 6.0));
+    write_gz(
+        &format!("{DIR}/array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 6.0),
+    );
+
+    // Far off and long: a 0.355 block at (1000, 1000), and a 6x500 block 300 µm long
+    // over fifteen tiles.  ARR.both: 2; ARR.one: 2.
+    let mut v = block(via, 1000.0, 1000.0, 6, 6, 0.355, 0.355);
+    v.extend(block(via, 2.0, 2.0, 500, 6, 0.355, 0.355));
+    write("extremes".into(), v);
 }
