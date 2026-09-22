@@ -3083,3 +3083,68 @@ fn hardening_nat(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec
     expected.sort();
     assert_eq!(hardening("nat", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- OTP marker (hardening/reports/gf180mcuD/otp_mk.md).  The 3.3 V rule set with
+// tighter numbers inside OTP_MK; the gate lines run horizontally because O.PL.ORT
+// forbids the other orientation.  `min_gate_length` and `min_enclosure` report one
+// marker per wall.
+#[rstest]
+// A contact 0.13 from the gate line (clean), 0.125, and one flush against it.  Report
+// finding 3: the shared edge is a space of nothing and gdscheck does not report it.
+#[case::o_co_7_h1("otp_mk/O.CO.7.h1.gds.gz", "TOP", vec!["O.CO.7", "O.CO.7"])]
+// Actives 0.24 apart (clean) and 0.235 apart three times over, every gap on a tile line
+// at x = 20, 21, 40 and y = 20, plus a pair 0.18 × 0.15 off a corner - 0.2343 euclidian.
+// The pair drawn edge to edge is one region after merging and is no space at all.
+#[case::o_df_3a_h1("otp_mk/O.DF.3a.h1.gds.gz", "TOP", vec!["O.DF.3a"; 4])]
+// One solid 3 × 3 COMP with no notch in it, under a marker shaped like a U whose slot is
+// 0.2 µm.  Report finding 2: both tools cut the COMP to the marker and read the marker's
+// own slot as a notch in the active.
+#[case::o_df_3a_h2("otp_mk/O.DF.3a.h2.gds.gz", "TOP", vec![])]
+// The source/drain overhang at 0.22 (clean) and 0.215, on both walls of the second gate.
+#[case::o_df_6_h1("otp_mk/O.DF.6.h1.gds.gz", "TOP", vec!["O.DF.6", "O.DF.6"])]
+// The same overhang over a 45° source edge: straight up from the gate's top wall there is
+// exactly 0.22 but only 0.1556 to the chamfer; then 0.19 straight up; then 0.02.  Report
+// finding 1: gdscheck reads none of the three, KLayout reads the last.
+#[case::o_df_6_h2("otp_mk/O.DF.6.h2.gds.gz", "TOP", vec!["O.DF.6"; 3])]
+// An active of 0.1444 µm² (clean) and one of 0.1425, then a 1 µm² active with the marker
+// over a 0.3 µm corner of it.  Report finding 2: the cut leaves 0.09 µm² and both tools
+// report a COMP seven times the minimum.
+#[case::o_df_9_h1("otp_mk/O.DF.9.h1.gds.gz", "TOP", vec!["O.DF.9"])]
+// The channel length at 0.22 (clean) and 0.215.
+#[case::o_pl_2_h1("otp_mk/O.PL.2.h1.gds.gz", "TOP", vec!["O.PL.2", "O.PL.2"])]
+// Two gate lines over one active 0.18 apart (clean) and 0.175 apart, a 0.175 slot in a
+// field poly plate crossing x = 21, and two plates drawn edge to edge, which merge.
+#[case::o_pl_3a_h1("otp_mk/O.PL.3a.h1.gds.gz", "TOP", vec!["O.PL.3a", "O.PL.3a"])]
+// The poly end cap at 0.14 (clean) and 0.135 on both ends, then a gate line stopping
+// 0.2 inside the active - no end cap at all, and a channel edge that runs along y.
+#[case::o_pl_4_h1("otp_mk/O.PL.4.h1.gds.gz", "TOP", vec!["O.DF.6", "O.PL.4", "O.PL.4", "O.PL.ORT"])]
+// A horizontal gate (clean), one turned a quarter, and a turned one under V5_XTOR, which
+// is the 5 V cell the rule's own column marks NA.
+#[case::o_pl_ort_h1("otp_mk/O.PL.ORT.h1.gds.gz", "TOP", vec!["O.PL.ORT", "O.PL.ORT"])]
+// The block covering the active by 0.04 (clean) and by 0.035.
+#[case::o_sb_11_h1("otp_mk/O.SB.11.h1.gds.gz", "TOP", vec!["O.SB.11"])]
+// Blocks of 1.488 µm² (clean) and 1.482 at 3.3 V, 2.0 (clean) and 1.99375 under V5_XTOR,
+// and a 1 µm² block under Dualgate alone.  Report finding 4: a Dualgate OTP cell is in
+// neither class, so its area is never checked.
+#[case::o_sb_13_h1("otp_mk/O.SB.13.h1.gds.gz", "TOP", vec!["O.SB.13_LV", "O.SB.13_MV", "O.SB.13_MV"])]
+// Blocks 0.28 apart (clean) and 0.275 apart across x = 42, a 0.275 slot crossing x = 21,
+// and two blocks drawn edge to edge, which merge.
+#[case::o_sb_2_h1("otp_mk/O.SB.2.h1.gds.gz", "TOP", vec!["O.SB.2", "O.SB.2"])]
+// A block over no active, 0.09 from an active no block covers (clean), 0.085, and flush
+// against one.  Report finding 3.
+#[case::o_sb_3_h1("otp_mk/O.SB.3.h1.gds.gz", "TOP", vec!["O.SB.3", "O.SB.3"])]
+// A contact 0.03 from the block (clean), 0.025, flush against it, and under it.  Report
+// finding 3.
+#[case::o_sb_4_h1("otp_mk/O.SB.4.h1.gds.gz", "TOP", vec!["O.SB.4"; 3])]
+// A block 0.1 above a gate line it does not cover (clean), 0.095, the same 0.095 under
+// Dualgate - the 5 V rule, which Appendix B lists as not coded - and again under V5_XTOR
+// alone, which carries no thick oxide and is the 3.3 V cell.
+#[case::o_sb_5b_h1("otp_mk/O.SB.5b.h1.gds.gz", "TOP", vec!["O.SB.5b_LV", "O.SB.5b_LV"])]
+// The block reaching 0.1 past the gate line it blocks (clean), 0.095 on both walls, and a
+// block whose ends the poly line runs out of - which is how every blocked line is drawn.
+#[case::o_sb_9_h1("otp_mk/O.SB.9.h1.gds.gz", "TOP", vec!["O.SB.9", "O.SB.9"])]
+fn hardening_otp_mk(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut expected = expected;
+    expected.sort();
+    assert_eq!(hardening("otp_mk", gds, topcell, &[]), expected, "{gds}");
+}
