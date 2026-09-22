@@ -750,6 +750,23 @@ pub fn run(
                     }
                     None => &a_conv,
                 };
+                // The enclosing shapes near the piece, by the tile's grid of their
+                // boxes: a contact was boxed against every shape of metal in the tile,
+                // a hundred and more, and eight million contacts made that the rule.
+                let near: Vec<usize> = if cached_caps {
+                    match a_boxes.get(&(tx, ty)) {
+                        Some((_, grid)) => {
+                            let (x0, y0, x1, y1) = bp.bbox;
+                            grid.covering((x0 as i32, y0 as i32, x1 as i32, y1 as i32))
+                                .into_iter()
+                                .map(|i| i as usize)
+                                .collect()
+                        }
+                        None => Vec::new(),
+                    }
+                } else {
+                    (0..a_here.len()).collect()
+                };
                 // The stretch of the inner wall a pair was read on, in µm.
                 let edge_um =
                     |(x1, y1, x2, y2): (f64, f64, f64, f64)| (um(x1), um(y1), um(x2), um(y2));
@@ -762,11 +779,22 @@ pub fn run(
                 let mut best: Option<Read> = None;
                 let mut any_contained = false;
                 let mut clipped = false;
-                for a in a_here {
+                // The shapes holding the piece whole, for `adjacent`, which reads its
+                // sides on its own and needs no pair from here - unless a clip is to
+                // be told from a margin of nothing, which only the pairs see.
+                let mut contained: Vec<usize> = Vec::new();
+                for &i in &near {
+                    let a = &a_here[i];
                     if !all_inside(&bp, a) {
                         continue;
                     }
                     any_contained = true;
+                    if sides == Sides::Adjacent {
+                        contained.push(i);
+                        if !skip_clipped {
+                            continue;
+                        }
+                    }
                     let first = bp.segs()[0];
                     let first_edge = (
                         first.0.0 as f64,
@@ -854,9 +882,9 @@ pub fn run(
                 // `line_end` measures only where the enclosing shape's track ends: find
                 // the caps, then the via side facing one.
                 if sides == Sides::LineEnd {
-                    let caps: Vec<Seg> = a_here
+                    let caps: Vec<Seg> = near
                         .iter()
-                        .enumerate()
+                        .map(|&i| (i, &a_here[i]))
                         .filter(|(_, a)| all_inside(&bp, a) || regions_interact(&bp, a))
                         .flat_map(|(i, a)| {
                             if cached_caps {
@@ -911,9 +939,10 @@ pub fn run(
                 // `adjacent` is decided per side rather than by a reduction: a side under
                 // `trigger` is allowed to be short only if the sides bordering it are not.
                 if sides == Sides::Adjacent {
-                    let containing: Vec<&Outline> = a_here
+                    let containing: Vec<&Outline> = near
                         .iter()
-                        .filter(|a| all_inside(&bp, a) || regions_interact(&bp, a))
+                        .filter(|i| contained.contains(i) || regions_interact(&bp, &a_here[**i]))
+                        .map(|&i| &a_here[i])
                         .collect();
                     if containing.is_empty() {
                         continue;
@@ -971,8 +1000,9 @@ pub fn run(
                     if interacting_only {
                         // Skip shapes that overlap no enclosing region at all — they
                         // are not subject to this enclosure rule.
-                        let touching: Vec<(&MergedPoly, &Outline)> = a_here
+                        let touching: Vec<(&MergedPoly, &Outline)> = near
                             .iter()
+                            .map(|&i| &a_here[i])
                             .filter(|a| regions_interact(&bp, a))
                             .map(|a| (a.poly(), a))
                             .collect();

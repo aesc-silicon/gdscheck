@@ -3256,11 +3256,25 @@ pub fn regions_interact(a: &Outline, b: &Outline) -> bool {
     if !a.possibly_within(b, 1) {
         return false;
     }
-    a.vertices().any(|p| b.contains_or_on(p))
-        || b.vertices().any(|p| a.contains_or_on(p))
-        || a.segs
-            .iter()
-            .any(|&s| b.segs.iter().any(|&t| segs_meet_i(s, t)))
+    // The walls first, and only those of `b` reaching `a`'s box: a contact beside a
+    // wire whose box held its own was cast against the wire's every vertex.  Where no
+    // wall meets one of the other's, the two are nested or apart, and one vertex of
+    // each says which.
+    let (ax0, ay0, ax1, ay1) = a.bbox;
+    let mut meets = false;
+    b.for_segs_near(a.bbox, 0, |t| {
+        if !meets
+            && t.0.0.min(t.1.0) <= ax1
+            && t.0.0.max(t.1.0) >= ax0
+            && t.0.1.min(t.1.1) <= ay1
+            && t.0.1.max(t.1.1) >= ay0
+        {
+            meets = a.segs.iter().any(|&s| segs_meet_i(s, t));
+        }
+    });
+    meets
+        || a.vertices().next().is_some_and(|p| b.contains_or_on(p))
+        || b.vertices().next().is_some_and(|p| a.contains_or_on(p))
 }
 
 /// The facing pairs of `inner` against `outer`, each with its margin, and whether any

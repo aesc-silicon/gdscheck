@@ -3557,6 +3557,28 @@ impl CellGrid {
         }
     }
 
+    /// The pieces filed in any cell the box touches, each once.
+    pub(crate) fn covering(&self, (bx0, by0, bx1, by1): (i32, i32, i32, i32)) -> Vec<u32> {
+        let cx0 = ((bx0 - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
+        let cx1 = ((bx1 - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
+        let cy0 = ((by0 - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
+        let cy1 = ((by1 - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
+        let mut out = Vec::new();
+        for cy in cy0..=cy1 {
+            for cx in cx0..=cx1 {
+                let c = (cy * Self::SIDE + cx) as usize;
+                out.extend_from_slice(
+                    &self.items[self.start[c] as usize..self.start[c + 1] as usize],
+                );
+            }
+        }
+        if cy0 != cy1 || cx0 != cx1 {
+            out.sort_unstable();
+            out.dedup();
+        }
+        out
+    }
+
     /// The pieces filed in the cell holding `(x, y)`.
     pub(crate) fn at(&self, x: i32, y: i32) -> &[u32] {
         let cx = ((x - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
