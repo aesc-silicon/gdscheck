@@ -1037,3 +1037,66 @@ fn hardening_dnwell(
         "{gds}"
     );
 }
+
+// --- Low-voltage P-well (hardening/reports/gf180mcuD/lvpwell.md).  Table A (inside
+// DNWELL) or table B (outside), and the 5 V kind where Dualgate lies over the well.
+#[rstest]
+// In one DNWELL: 0.595 bare, 0.735 under Dualgate, 0.74 under it (clean), 0.6 bare
+// (clean), 0.735 half under it, 0.7 with Dualgate abutting (LV, clean).
+#[case::lpw_1_h1("lvpwell/LPW.1.h1.gds.gz", "TOP", vec!["LPW.1_LV", "LPW.1_LV", "LPW.1_MV", "LPW.1_MV", "LPW.1_MV", "LPW.1_MV"], vec![])]
+// 0.595 wells with no deep well near them: table B has no width rule.
+#[case::lpw_1_h2("lvpwell/LPW.1.h2.gds.gz", "TOP", vec![], vec![])]
+// A 0.595 well under Dualgate in a DNWELL: the 5 V rule, and only that.
+#[case::lpw_1_h3("lvpwell/LPW.1.h3.gds.gz", "TOP", vec!["LPW.1_MV", "LPW.1_MV"], vec![])]
+// A 30 µm 0.595 well whose last 5 µm lie in a DNWELL: narrow (two walls) and crossing.
+#[case::lpw_1_h4("lvpwell/LPW.1.h4.gds.gz", "TOP", vec!["LPW.1_LV", "LPW.1_LV", "LPW.3"], vec![])]
+// Two-net pairs in one DNWELL at 1.395, 1.4 (clean), 1.395 joined through Metal2
+// (clean), the left plate over the right well, an N+ diffusion for a tap.
+#[case::lpw_2a_h1("lvpwell/LPW.2a.h1.gds.gz", "TOP", vec!["LPW.2a_LV", "LPW.2a_LV", "LPW.2a_LV"], vec![])]
+// Two nets under Dualgate at 1.695 (fires) and 1.7.
+#[case::lpw_2a_h2("lvpwell/LPW.2a.h2.gds.gz", "TOP", vec!["LPW.2a_MV"], vec![])]
+// Two nets 1.695 apart with Dualgate over the left well only: the left is MV, fires.
+#[case::lpw_2a_h3("lvpwell/LPW.2a.h3.gds.gz", "TOP", vec!["LPW.2a_MV"], vec![])]
+// Two nets at 1.395 with Dualgate abutting the left well's outer edge: both LV, fires.
+#[case::lpw_2a_h4("lvpwell/LPW.2a.h4.gds.gz", "TOP", vec!["LPW.2a_LV"], vec![])]
+// One-net pairs at 0.855 (fires) and 0.86; a 0.855 slot (fires) and a 0.86 one.
+#[case::lpw_2b_h1("lvpwell/LPW.2b.h1.gds.gz", "TOP", vec!["LPW.2b_LV", "LPW.2b_LV"], vec![])]
+// The same under Dualgate: 0.855 pair, 0.86 pair (clean), 0.855 slot.
+#[case::lpw_2b_h2("lvpwell/LPW.2b.h2.gds.gz", "TOP", vec!["LPW.2b_MV", "LPW.2b_MV"], vec![])]
+// No deep well anywhere: 0.855 two-net pair, 0.855 slot, 1.395 two-net pair - table B
+// has no space rule.
+#[case::lpw_2_h5("lvpwell/LPW.2.h5.gds.gz", "TOP", vec![], vec![])]
+// Two-net 1.395 gaps straddling x = 20 and 42; one-net 0.855 gaps straddling 40 and 21.
+#[case::lpw_2_h6("lvpwell/LPW.2.h6.gds.gz", "TOP", vec!["LPW.2a_LV", "LPW.2a_LV", "LPW.2b_LV", "LPW.2b_LV"], vec![])]
+// Two untapped wells 1.395 apart in a DNWELL: nothing ties them, LPW.2a.
+#[case::lpw_2_h7("lvpwell/LPW.2.h7.gds.gz", "TOP", vec!["LPW.2a_LV"], vec![])]
+// Held by 2.5 (clean), 2.495, 0 (edge on edge), 2.475 to a chamfered corner, 2.546 to a
+// chamfered corner (clean).
+#[case::lpw_3_h1("lvpwell/LPW.3.h1.gds.gz", "TOP", vec!["LPW.3", "LPW.3", "LPW.3"], vec![])]
+// A well half out of the DNWELL: not enclosed.
+#[case::lpw_3_h2("lvpwell/LPW.3.h2.gds.gz", "TOP", vec!["LPW.3"], vec![])]
+// A resistor with no deep well (fires), one in a deep well, a marker with no COMP.
+#[case::lpw_5_h1("lvpwell/LPW.5.h1.gds.gz", "TOP", vec!["LPW.5"], vec![])]
+// A resistor under Dualgate with no deep well: the rule has no voltage column.
+#[case::lpw_5_h2("lvpwell/LPW.5.h2.gds.gz", "TOP", vec!["LPW.5"], vec![])]
+// Well to DNWELL: 1.5 (clean), 1.495, abutting, 1.499 corner to corner, 1.506 corner to
+// corner (clean), 1.495 inside a DNWELL ring's hole.
+#[case::lpw_11_h1("lvpwell/LPW.11.h1.gds.gz", "TOP", vec!["LPW.11", "LPW.11", "LPW.11", "LPW.11"], vec![])]
+// A 0.595 well abutting a DNWELL from outside: table B's LPW.11 at a space of nothing,
+// and not table A's width rule.  Whether it is also LPW.3 is a labelling question.
+#[case::lpw_11_h2("lvpwell/LPW.11.h2.gds.gz", "TOP", vec!["LPW.11"], vec!["LPW.3"])]
+// Well over N-well by 0.005 with no deep well (fires), abutting (clean), by 0.005 in a
+// DNWELL (NW.4's, clean here).
+#[case::lpw_12_h1("lvpwell/LPW.12.h1.gds.gz", "TOP", vec!["LPW.12"], vec![])]
+fn hardening_lvpwell(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    assert_eq!(
+        hardening("lvpwell", gds, topcell, &ignore),
+        expected,
+        "{gds}"
+    );
+}
