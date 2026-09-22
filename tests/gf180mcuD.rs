@@ -1497,3 +1497,58 @@ fn hardening_contact(
     want.sort();
     assert_eq!(hardening("contact", gds, topcell, &ignore), want, "{gds}");
 }
+// --- Via (hardening/reports/gf180mcuD/via.md).  Section 7.14 has no 3.3 V / 5 V split
+// either.  A via in a track narrower than 0.34 always has margins under V#.3d's 0.04
+// trigger, so the line-end cases carry V#.3d / V#.4c in their ignore list.
+#[rstest]
+// Five vias: 0.26 square (clean), 0.265 tall, 0.265 wide, 0.255 wide, 0.255 tall.
+#[case::v1_1_h1("via/V1.1.h1.gds.gz", "TOP", vec!["V1.1"; 8], vec![])]
+// A via that is not a square: two abutting squares making a 0.52 x 0.26 bar, an L with
+// 0.26 arms, and one square drawn as two overlapping boxes (clean).
+#[case::v1_1_h2("via/V1.1.h2.gds.gz", "TOP", vec!["V1.1"; 6], vec![])]
+// A 4x4 array at 0.38 with one 0.355 row gap (four pairs); the same with three columns
+// and sixteen vias in one row, neither an array.
+#[case::v1_2b_h1("via/V1.2b.h1.gds.gz", "TOP", vec!["V1.2b"; 4], vec![])]
+// A seventeenth via 0.355 beside a legal 4x4 (1); the same beside a 3x3 (clean); one
+// 0.42 away, outside the array (clean); a 4x4 with its own 0.355 row gap and a
+// seventeenth via 0.355 beside it (4 + 1).
+#[case::v1_2b_h2("via/V1.2b.h2.gds.gz", "TOP", vec!["V1.2b"; 6], vec![])]
+// The array rule's "projecting >= 0.26": a via 0.30 beside a legal 4x4, level with a row
+// (fires), a grid step up (0.255 of facing, exempt) and 0.15 up (0.11 of facing, exempt).
+#[case::v1_2b_h3("via/V1.2b.h3.gds.gz", "TOP", vec!["V1.2b"], vec![])]
+// The same array with a 0.355 row gap straddling x = 20, x = 42 and y = 21.
+#[case::v1_2b_h4("via/V1.2b.h4.gds.gz", "TOP", vec!["V1.2b"; 12], vec![])]
+// Metal1 flush with Via1 on one side, 0.06 above and below (clean, the rule asks 0); the
+// via 0.005 outside it; no Metal1 at all; Metal1 drawn as the via's own square, which
+// V1.3a allows and V1.3d does not.
+#[case::v1_3a_h1("via/V1.3a.h1.gds.gz", "TOP", vec!["V1.3a", "V1.3a", "V1.3d"], vec![])]
+// Line-end caps 0.055 past the via on tracks 0.34 (not a narrow line, clean), 0.35
+// (clean) and 0.32 wide; 0.34 wide with a 0.06 cap is clean.
+#[case::v1_3c_h1("via/V1.3c.h1.gds.gz", "TOP", vec!["V1.3c"], vec!["V1.3d"])]
+// The same cap on a branch off a wide plate: 0.275 long is not a line end (clean), 0.28
+// and 0.35 are - a via's branch is short below 0.28, a contact's below 0.24.
+#[case::v1_3c_h2("via/V1.3c.h2.gds.gz", "TOP", vec!["V1.3c"; 2], vec!["V1.3d"])]
+// A 0.035 side with 0.06 beside it (clean), with 0.055 beside it, a 0.04 side that does
+// not trigger, two adjacent short sides, two opposite short sides (clean).
+#[case::v1_3d_h1("via/V1.3d.h1.gds.gz", "TOP", vec!["V1.3d"; 2], vec![])]
+// Metal2 over Via1 by 0.01 (clean), 0.005, and absent.
+#[case::v1_4a_h1("via/V1.4a.h1.gds.gz", "TOP", vec!["V1.4a"; 2], vec![])]
+// The same line-end reading against the metal above.
+#[case::v1_4b_h1("via/V1.4b.h1.gds.gz", "TOP", vec!["V1.4b"], vec!["V1.4c"])]
+// The same adjacent-side reading against the metal above: 0.035 triggers, 0.04 does not.
+#[case::v1_4c_h1("via/V1.4c.h1.gds.gz", "TOP", vec!["V1.4c"], vec![])]
+// A contact, Via1, Via2 and Via3 on one centre: the manual permits the stack.
+#[case::v1_5_h1("via/V1.5.h1.gds.gz", "TOP", vec![], vec![])]
+// Metal2 under Via2 by 0.01 (clean), 0.005, and flush - which Via1 is allowed and Via2
+// is not.
+#[case::v2_3b_h1("via/V2.3b.h1.gds.gz", "TOP", vec!["V2.3b"; 2], vec![])]
+fn hardening_via(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("via", gds, topcell, &ignore), want, "{gds}");
+}
