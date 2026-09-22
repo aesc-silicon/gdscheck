@@ -3148,3 +3148,45 @@ fn hardening_otp_mk(#[case] gds: &str, #[case] topcell: &str, #[case] expected: 
     expected.sort();
     assert_eq!(hardening("otp_mk", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- YMTP marker (hardening/reports/gf180mcuD/ymtp_mk.md).  A handful of the ordinary
+// rules restated with their own numbers inside YMTP_MK, half of them at one voltage
+// only; a marker Dualgate covers is the 5 V one and every other marker is the 3.3 V one.
+// `min_width`, `min_gate_length` and `min_enclosure` report one marker per wall.
+#[rstest]
+// An N+ active 0.27 from an N-well (clean), 0.265, and one flush against it, then the
+// 5 V pair at 0.23 and 0.225.  Report finding 2: the shared edge is a space of nothing
+// and gdscheck does not report it.
+#[case::y_df_16_h1("ymtp_mk/Y.DF.16.h1.gds.gz", "TOP", vec!["Y.DF.16_LV", "Y.DF.16_LV", "Y.DF.16_MV"])]
+// The source/drain overhang at 0.15 (clean) and 0.145 under Dualgate, the same 0.145 with
+// OTP_MK over the active, and the same 0.145 at 3.3 V - where the manual's column is NA
+// and this deck has nothing to say.
+#[case::y_df_6_h1("ymtp_mk/Y.DF.6.h1.gds.gz", "TOP", vec!["Y.DF.6_MV", "Y.DF.6_MV"])]
+// Wells 1.0 apart (clean) and 0.995 apart across x = 21 at 3.3 V, 0.995 across x = 40
+// under Dualgate, and a 0.995 notch across y = 20.
+#[case::y_nw_2b_h1("ymtp_mk/Y.NW.2b.h1.gds.gz", "TOP", vec!["Y.NW.2b_LV", "Y.NW.2b_LV", "Y.NW.2b_MV"])]
+// A 0.995 pair inside DNWELL, which the rule is outside of; a 0.995 pair under a marker
+// Dualgate only abuts, which is the 3.3 V marker; and one solid 4 × 3 well with no notch
+// in it under a marker shaped like a U.  Report finding 3: both tools cut the well to the
+// marker and read the marker's own slot as a notch in the well.
+#[case::y_nw_2b_h2("ymtp_mk/Y.NW.2b.h2.gds.gz", "TOP", vec!["Y.NW.2b_LV"])]
+// A poly line 0.13 wide (clean), 0.125 wide, and 0.125 wide with PLFUSE over part of it -
+// which the rule excludes whole - then a 0.5 wide line in a 5 V marker, where the manual
+// gives no width at all, and the same line wholly under PLFUSE.
+#[case::y_pl_1_h1("ymtp_mk/Y.PL.1.h1.gds.gz", "TOP", vec!["Y.PL.1_LV", "Y.PL.1_LV", "Y.PL.1_MV"])]
+// The channel at 0.13 (clean), 0.125, and 0.125 under OTP_MK, then 0.47 (clean) and 0.465
+// under Dualgate.  A gate line narrower than 0.13 is also an interconnect narrower than
+// 0.13, so Y.PL.1_LV reads the two uncovered 3.3 V gates as well.
+#[case::y_pl_2_h1("ymtp_mk/Y.PL.2.h1.gds.gz", "TOP", vec!["Y.PL.1_LV", "Y.PL.1_LV", "Y.PL.1_LV", "Y.PL.1_LV", "Y.PL.2_LV", "Y.PL.2_LV", "Y.PL.2_MV", "Y.PL.2_MV"])]
+// The poly end cap at 0.16 (clean) and 0.155 under Dualgate, and the same 0.155 at 3.3 V,
+// where the manual's column is NA.
+#[case::y_pl_4_h1("ymtp_mk/Y.PL.4.h1.gds.gz", "TOP", vec!["Y.PL.4_MV", "Y.PL.4_MV"])]
+// Field poly 0.04 from an active (clean), 0.035, and flush against it, then the 5 V pair
+// at 0.2 and 0.195.  5a and 5b are one measurement under two ids, so every violation
+// carries both.  Report finding 2.
+#[case::y_pl_5_h1("ymtp_mk/Y.PL.5.h1.gds.gz", "TOP", vec!["Y.PL.5a_LV", "Y.PL.5a_LV", "Y.PL.5a_MV", "Y.PL.5b_LV", "Y.PL.5b_LV", "Y.PL.5b_MV"])]
+fn hardening_ymtp_mk(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut expected = expected;
+    expected.sort();
+    assert_eq!(hardening("ymtp_mk", gds, topcell, &[]), expected, "{gds}");
+}
