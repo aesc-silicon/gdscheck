@@ -154,3 +154,18 @@ three tile sizes and in agreement with the runset:
 | Y.PL.5a / 5b, LV and MV | field poly to active 0.04 / 0.035 and 0.2 / 0.195 | `Y.PL.5.h1` |
 
 The deck's own good/bad pairs were left as they were; nothing this round drew moved them.
+
+---
+
+## Resolution (2026-09-22)
+
+- **The marker-cut class** was fixed with `otp_mk`'s finding 2: every YMTP layer is an
+  `overlapping` selection now, so a solid well under a U-shaped marker keeps its own shape
+  and Y.NW.2b has no notch to report.
+- **The shared edge** is reported: Y.DF.16_LV/MV and Y.PL.5a/5b_LV/MV carry
+  `abutting: report`.
+- **Y.LU.3** is still missing and still not drawn. The report's argument stands - inside
+  the marker `comp`'s DF.14_LV already holds the same 20 µm, and what Y.LU.3 adds is the
+  condition that keeps it there where plain LU.3 would tighten it - so the exposure is a
+  tightening neither tool performs. Left for the gdscheck owner with the rest of the
+  latchup section.

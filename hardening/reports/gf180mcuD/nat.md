@@ -180,3 +180,31 @@ three tile sizes and in agreement with the runset:
 | NAT.12 | poly under the marker reaching no active; poly over an active under RES_MK | `NAT.12.h1` |
 
 The deck's own good/bad pairs were left as they were; nothing this round drew moved them.
+
+---
+
+## Resolution (2026-09-22)
+
+All four findings were fixed.
+
+- **Finding 1.** NAT.1 takes a `forbidden` half on the active that crosses the marker's
+  edge, as every enclosure in these decks does. `NAT.1.h1`'s third device fires.
+- **Finding 2.** NAT.1 carries `metric: euclidian`, the settled reading; `NAT.1.h2` fires.
+- **Finding 3.** NAT.2, NAT.3 and NAT.9's space carry `abutting: report`, and
+  `poly_off_nat` is `not_overlapping` rather than `not_interacting` - a poly that only
+  touches the marker is unrelated poly, and dropping it from the layer was what kept the
+  flush probe out of the rule altogether. The foundry layout's NAT.9 goes 4 -> 6.
+- **Finding 4.** Two fixes, one in the deck and one in the engine. The deck reads the net
+  on `natcomp_con`, which is in the connect graph, where `comp` never was - a layer
+  outside the graph resolves to no net, so every region counted as its own. The engine's
+  `max_nets_under` now collects the nets of *every* conductor inside a counted region and
+  groups the regions that share one: a COMP holds its source and its drain, which are two
+  nets on one shape, so reading a single net could not say what potential a COMP is at,
+  and reading the first one found made the answer depend on the tiling. Regions that share
+  a net are at one potential, which is what the rule counts. `NAT.6.h2` - two actives
+  strapped into one node - is clean at 20, 7 and 100, `NAT.6.h1` still fires, and the
+  foundry layout goes from seven markers to the two pairs really at different potentials
+  (the runset reports eight there, and could not see the strap in `h2` either).
+
+Recorded and left: Y.LU.3's absence is `ymtp_mk`'s; the oracle prints gdscheck's NAT.6
+column as zero because its filter keeps only marker lines carrying µm.
