@@ -729,14 +729,10 @@ virtual_layers:
   # ---- Deep N-well voltage classes ---------------------------------------
   # Whole-region selectors, not booleans: a deep well is 3.3 V only if it touches
   # neither marker anywhere, and 5/6 V if it overlaps dualgate anywhere.
-  - name: dnwell_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [dnwell, v5_xtor]
   - name: dnwell_3p3v
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [dnwell_no_v5, dualgate]
+    layers: [dnwell, dualgate]
   - name: dnwell_56v
     op: overlapping
     mode: lazy
@@ -913,23 +909,36 @@ virtual_layers:
     mode: lazy
     layers: [nwell_in_res_mk, dnwell]
 
+  # DF.10 measures the *field* a COMP encloses: the hole, less any COMP island lying in
+  # it.  Read as the hole alone, a 0.7 µm hole holding a 0.5 µm island counted the
+  # island's area as field (report, comp finding 4).
+  - name: comp_holes
+    op: holes
+    mode: lazy
+    layers: [comp]
+  - name: comp_field
+    op: difference
+    mode: lazy
+    layers: [comp_holes, comp]
+
   # ---- COMP voltage classes (comp deck) -----------------------------------
-  # Same shape as the well classes: low-voltage COMP touches neither marker
-  # anywhere, medium-voltage COMP overlaps dualgate.
-  - name: comp_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [comp, v5_xtor]
+  # Same shape as the well classes: the 5 V column is Dualgate's (DV.4), so a shape the
+  # marker covers is MV and every other shape is LV.  The two are complementary, where
+  # upstream's `not_interacting` on Dualgate and on V5_XTOR left a shape the marker
+  # merely abuts - and one marked V5_XTOR alone - in no column at all, silent under
+  # both (reports: nwell 1 and 9, comp 1, poly2 1).
   - name: comp_3p3v
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [comp_no_v5, dualgate]
+    layers: [comp, dualgate]
   - name: comp_56v
     op: overlapping
     mode: lazy
     layers: [comp, dualgate]
+  # A COMP the marker only touches is not in the BJT area: `overlapping`, not
+  # `interacting` (report, comp finding 7).
   - name: drc_bjt_two_comp
-    op: interacting
+    op: overlapping
     min: 2
     mode: lazy
     layers: [drc_bjt, comp_56v]
@@ -996,10 +1005,17 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [ntap_on_pactive, ptap_on_nactive]
+  # The butted pair is both halves: a MOS_CAP_MK over the P+ half alone intersected
+  # the N+ part and nothing fired, though the manual forbids butting a MOSCAP whichever
+  # half carries the marker (report, comp finding 6).
+  - name: comp_butted_pair
+    op: interacting
+    mode: lazy
+    layers: [comp, ncomp_butted]
   - name: df3b_moscap
     op: intersection
     mode: lazy
-    layers: [ncomp_butted, mos_cap_mk]
+    layers: [comp_butted_pair, mos_cap_mk]
   - name: df3b_bad
     op: union
     mode: lazy
@@ -1068,14 +1084,10 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [nwell_n_dn, sramcore]
-  - name: nw_ndn_sram_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [nwell_n_dn_no_sram, v5_xtor]
   - name: nw_ndn_sram_3p3v
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [nw_ndn_sram_no_v5, dualgate]
+    layers: [nwell_n_dn_no_sram, dualgate]
   - name: nw_ndn_sram_56v
     op: overlapping
     mode: lazy
@@ -1152,14 +1164,10 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [pcomp, nwell, dnwell]
-  - name: nwell_n_dn_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [nwell_n_dn, v5_xtor]
   - name: nwell_n_dn3p3v
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [nwell_n_dn_no_v5, dualgate]
+    layers: [nwell_n_dn, dualgate]
   - name: nwell_n_dn56v
     op: overlapping
     mode: lazy
@@ -1202,34 +1210,26 @@ virtual_layers:
     layers: [pcomp_56v, pcomp_out_nw_dn]
 
   # ---- DF.12 / DF.13 / DF.14 ---------------------------------------------
-  - name: comp_no_schottky
-    op: not_interacting
-    mode: lazy
-    layers: [comp, schottky_diode]
+  # DF.12 excepts the COMP *under* the marking, so the marking is taken away
+  # geometrically: dropping a whole active a marker happens to touch left the half
+  # outside the marking - an active with no implant - unreported (report, comp
+  # finding 9).
   - name: comp_no_implant
     op: difference
     mode: lazy
-    layers: [comp_no_schottky, nplus, pplus]
-  - name: pactive_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [pactive, v5_xtor]
+    layers: [comp, schottky_diode, nplus, pplus]
   - name: pactive_3p3v
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [pactive_no_v5, dualgate]
+    layers: [pactive, dualgate]
   - name: pactive_56v
     op: overlapping
     mode: lazy
     layers: [pactive, dualgate]
-  - name: nactive_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [nactive, v5_xtor]
   - name: nactive_3p3v
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [nactive_no_v5, dualgate]
+    layers: [nactive, dualgate]
   - name: nactive_56v
     op: overlapping
     mode: lazy
@@ -1326,18 +1326,20 @@ virtual_layers:
     mode: lazy
     layers: [comp, dualgate]
   # DV.7: a dualgate that meets a COMP but does not contain it is a partial overlap.
-  - name: dv_over_comp
+  # DV.7 is about the COMP - "COMP can not be partially overlapped by Dualgate" - so
+  # the violation is an active the marker reaches into and does not cover.  Read on the
+  # marker instead (a marker overlapping some active, less one covering some active), a
+  # marker that held one device was excused from straddling the next, which is the
+  # ordinary shape of the mistake: one marker over a row of transistors, ending in the
+  # middle of the last (report, dualgate finding 3).
+  - name: dv7_viol
+    op: not_inside
+    mode: lazy
+    layers: [comp_dv_over_dualgate, dualgate]
+  - name: comp_dv_over_dualgate
     op: overlapping
     mode: lazy
-    layers: [dualgate, comp_dv]
-  - name: dv_covering_comp
-    op: covering
-    mode: lazy
-    layers: [dualgate, comp_dv]
-  - name: dv7_viol
-    op: difference
-    mode: lazy
-    layers: [dv_over_comp, dv_covering_comp]
+    layers: [comp_dv, dualgate]
   # DV.9: one N-well holding both a 5/6 V and a 3.3 V PMOS gate.
   - name: pgate_dualgate
     op: intersection
@@ -1368,14 +1370,10 @@ virtual_layers:
 
   # ---- Metal, Cu pillar and guard ring -----------------------------------
   # M1.1 exempts the 3.3 V SRAM core, which has its own S.M1.1_LV rule.
-  - name: sram_lv_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [sramcore, v5_xtor]
   - name: sram_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [sram_lv_no_v5, dualgate]
+    layers: [sramcore, dualgate]
   - name: metal1_no_sram
     op: difference
     mode: lazy
@@ -1635,14 +1633,10 @@ virtual_layers:
     op: not_covering
     mode: lazy
     layers: [poly2_dummy, comp_dummy]
-  - name: poly_nat_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [poly_nat, v5_xtor]
   - name: poly_nat_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [poly_nat_no_v5, dualgate]
+    layers: [poly_nat, dualgate]
   - name: poly_nat_mv
     op: overlapping
     mode: lazy
@@ -1692,10 +1686,6 @@ virtual_layers:
     layers: [poly_nat_no_comp, poly_nat_res]
 
   # ---- LVPWELL ------------------------------------------------------------
-  - name: lvpwell_dn_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [lvpwell_dn, v5_xtor]
   # As `nw_lv`: the 5 V column is Dualgate's, so a well the marker covers is MV and
   # every other well is LV (report, lvpwell finding 5).
   - name: lvpwell_dn_lv
@@ -1876,34 +1866,35 @@ virtual_layers:
     layers: [comp_56v, poly2_drawn]
 
   # ---- Gate poly (poly2 deck) ---------------------------------------------
-  - name: poly2_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [poly2_drawn, v5_xtor]
   - name: poly2_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [poly2_no_v5, dualgate]
+    layers: [poly2_drawn, dualgate]
   - name: poly2_mv
     op: overlapping
     mode: lazy
     layers: [poly2_drawn, dualgate]
   # PL.1 splits on the poly fuse: the interconnect rule applies outside it, a separate
   # one inside.  `inside`/`not_overlapping` select whole regions, as upstream does.
+  # A poly that crosses the fuse's edge is neither wholly inside nor clear of it; the
+  # outside rule takes it, as the stricter of the two (report, poly2 finding 2).  The
+  # YMTP exemption is a whole-region selection for the same reason: cutting the marker
+  # out of the poly invented a wall along the marker's edge, and a 0.4 µm poly ending
+  # 0.1 past it read as a 0.1 µm one (report, poly2 finding 3).
   - name: poly2_lv_out_plfuse_all
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [poly2_lv, plfuse]
   - name: poly2_lv_out_plfuse
-    op: difference
+    op: not_inside
     mode: lazy
     layers: [poly2_lv_out_plfuse_all, ymtp_mk]
   - name: poly2_mv_out_plfuse_all
-    op: not_overlapping
+    op: not_inside
     mode: lazy
     layers: [poly2_mv, plfuse]
   - name: poly2_mv_out_plfuse
-    op: difference
+    op: not_inside
     mode: lazy
     layers: [poly2_mv_out_plfuse_all, ymtp_mk]
   - name: poly2_lv_in_plfuse
@@ -1927,7 +1918,14 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [poly2_mv, pl_exclude]
+  # The SRAM core exemption belongs to PL.5a_MV and PL.5b_MV, which name it; pulled up
+  # into the shared layer it took PL.4_MV out of the core as well, where the manual
+  # gives it no exemption (report, poly2 finding 5).
   - name: poly_pl_mv
+    op: difference
+    mode: lazy
+    layers: [poly_pl_mv_all]
+  - name: poly_pl_mv_no_sram
     op: not_overlapping
     mode: lazy
     layers: [poly_pl_mv_all, sramcore]
@@ -1944,7 +1942,10 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [tgate_at_poly2_lv, otp_mk, ymtp_mk]
-  # PL.3a: poly on COMP plus field poly, which is where the spacing rule applies.
+  # PL.3a: poly on COMP plus field poly, which together are the poly itself - the two
+  # halves carry the same value.  Built from `tgate`, whose resistor part is cut away,
+  # a poly crossing a marked active came apart into two pieces with a space between
+  # them where the poly is solid (report, poly2 finding 4).
   - name: poly2_field
     op: difference
     mode: lazy
@@ -1952,12 +1953,18 @@ virtual_layers:
   - name: poly2_on_comp_or_field
     op: union
     mode: lazy
-    layers: [tgate, poly2_field]
+    layers: [poly2_drawn, poly2_field]
   - name: pl3a_poly
     op: difference
     mode: lazy
     layers: [poly2_on_comp_or_field, otp_mk]
-  # PL.9: one poly interconnect touching both a 3.3 V and a 5/6 V area.
+  # PL.9: one poly interconnect touching both a 3.3 V and a 5/6 V area.  Here the
+  # *area* is meant, not the voltage class of a whole region: the part of the poly
+  # outside both markers, by difference.
+  - name: poly2_no_v5
+    op: difference
+    mode: lazy
+    layers: [poly2_drawn, v5_xtor]
   - name: poly2_lv_area
     op: difference
     mode: lazy
@@ -3105,14 +3112,10 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [comp, sab]
-  - name: sab_otp_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [sab_otp, v5_xtor]
   - name: sab_otp_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [sab_otp_no_v5, dualgate]
+    layers: [sab_otp, dualgate]
   - name: sab_otp_mv
     op: intersection
     mode: lazy
@@ -3128,14 +3131,10 @@ virtual_layers:
 
   # ---- YMTP marker (ymtp_mk deck) -----------------------------------------
   # A tighter rule set inside the marker, split by voltage the usual way.
-  - name: ymtp_no_v5
-    op: not_interacting
-    mode: lazy
-    layers: [ymtp_mk, v5_xtor]
   - name: ymtp_mk_lv
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
-    layers: [ymtp_no_v5, dualgate]
+    layers: [ymtp_mk, dualgate]
   - name: ymtp_mk_mv
     op: overlapping
     mode: lazy
@@ -4726,6 +4725,13 @@ edge_layers:
   - name: ncomp_pcomp_butting_edges
     op: and
     layers: [ncomp.edges, pcomp.edges]
+  # DF.11 measures the butting edge itself - the N+/P+ boundary *through* the active.
+  # Where the two implants overlap a little along the active's own outline, the shared
+  # boundary carries a stub there as well; those lie on the COMP's contour and are no
+  # butting edge.
+  - name: df11_butting_edges
+    op: not
+    layers: [ncomp_pcomp_butting_edges, comp.edges]
   # ESD.4a: the ESD boundary away from any PCOMP, enclosing the NCOMP boundary.
   - name: esd.edges
     op: edges

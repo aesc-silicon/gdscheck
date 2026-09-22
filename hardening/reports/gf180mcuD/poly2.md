@@ -239,3 +239,37 @@ is the gate width.  gdscheck is silent there, and the manual is on its side: PL.
 give a 45° gate its own width, so the geometry it describes cannot be a PL.4 or PL.5
 violation by construction.  The same artefact is what makes KLayout's PL.4 unusable on a
 chamfered active corner (finding 6).
+
+## Resolution (2026-09-22)
+
+- **1 (the voltage split)**: fixed in the deck, with every other voltage class of the
+  PDK - `poly2_lv` is `not_overlapping [poly2_drawn, dualgate]`, complementary to
+  `poly2_mv`.  PL.9's `poly2_lv_area`, which means the *area* and not the class, keeps
+  its geometric reading and its V5_XTOR step.
+- **2 (a poly crossing the PLFUSE edge)**: fixed in the deck; the outside rule takes a
+  poly that is not wholly inside the fuse (`not_inside`), as the stricter of the two.
+- **3 (the YMTP cut)**: fixed in the deck; the exemption selects whole regions
+  (`not_inside`) instead of cutting the marker out of the poly, which invented a wall
+  along the marker's edge.
+- **4 (PL.3a and the resistor)**: fixed in the deck; the layer is the poly itself, not
+  the poly with the marked part cut out of it.
+- **5 (PL.4_MV in the SRAM core)**: fixed in the deck; the core exemption sits on
+  PL.5a_MV and PL.5b_MV, which name it, and `poly_pl_mv` is unfiltered again.
+- **6 (a cap over a chamfered corner)**: kept and left open - the extension rules on
+  angled walls, the class the IHP gatpoly round named (its finding 11).  The case reads
+  4 and says so.  The layout's own 0.05 gap from the poly's side wall to where the
+  chamfer leaves the active is a field-poly-to-COMP space and now fires PL.5a/PL.5b
+  twice each, which is right.
+- **7 (the related COMP)**: fixed in the engine and the deck.  `min_space` takes
+  `pairs: any`, which measures both kinds of pair - those that share area, on their
+  facing gaps, and those that do not, at their closest approach - and PL.5a/PL.5b carry
+  it: the related active is the gate's own, and the gap meant lies elsewhere along the
+  same two shapes.
+- **8 (PL.6's 0.1 µm corner probe)**: kept and left open.  The probe size is upstream's
+  and was chosen against its markers; reading the vertex alone would add markers neither
+  tool has.  The cases read 14 and 3, with the reading noted.
+
+Foundry case `poly2.gds.gz`: PL.5a/PL.5b 6 -> 10 each (the related pairs), every other
+count unchanged.  `dualgate.gds.gz`: DV.1 4 -> 5, DV.3 2 -> 4, DV.6 4 -> 5, DV.8 7 -> 9,
+each moving toward KLayout's count.  The reference designs' findings are unchanged.
+Suite green at tiles 20, 7 and 100.

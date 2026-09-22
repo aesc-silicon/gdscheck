@@ -74,22 +74,35 @@ rules:
     params:
       interacting_only: 1
 
+  # PL.5a and PL.5b carry the same value and the same layers here; `pairs: any` lets
+  # both read the gap to the gate's own active as well as to any other.
   - id: PL.5a_LV
     check: min_space
     layers: [poly_pl_lv, comp_pl]
     value: 0.1
+    params:
+      pairs: any
   - id: PL.5a_MV
     check: min_space
-    layers: [poly_pl_mv, comp_pl]
+    layers: [poly_pl_mv_no_sram, comp_pl]
     value: 0.3
+    params:
+      pairs: any
+  # "Space from field Poly2 to related COMP": the related active is the gate's own, so
+  # the two shapes overlap where the gate crosses and the gap meant is elsewhere along
+  # them - `pairs: any` reads both that gap and the space to any other active.
   - id: PL.5b_LV
     check: min_space
     layers: [poly_pl_lv, comp_pl]
     value: 0.1
+    params:
+      pairs: any
   - id: PL.5b_MV
     check: min_space
-    layers: [poly_pl_mv, comp_pl]
+    layers: [poly_pl_mv_no_sram, comp_pl]
     value: 0.3
+    params:
+      pairs: any
 
   - id: PL.6
     check: no_corner

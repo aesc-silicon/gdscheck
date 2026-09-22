@@ -108,7 +108,10 @@ Parameters
    Optional. ``disjoint`` (the default) measures pairs that share no area at their
    closest approach. ``overlapping`` is for a rule whose two shapes overlap by
    definition (GF180 ``S.PL.5b_MV``: the space from a poly to the COMP it gates), where
-   the gap meant is between facing edges elsewhere along the same two shapes.
+   the gap meant is between facing edges elsewhere along the same two shapes. ``any``
+   measures both kinds, each its own way, for a rule whose shapes may or may not
+   overlap: GF180's ``PL.5b`` asks the space from a field poly to its *own* active,
+   which the gate crosses, and to any other.
 
 ``metric``
    Optional. ``euclidian`` (the default) or ``square``, KLayout's L-infinity metric for a

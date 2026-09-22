@@ -33,6 +33,10 @@ pub struct SpaceMode {
     /// Scan pairs that share area for their narrowest empty gap, rather than pairs that
     /// share none for their closest approach.  See [`facing_pairs_i`].
     overlapping: bool,
+    /// Scan both kinds, each the way it is measured: a rule whose shapes may or may not
+    /// overlap - GF180's PL.5b asks the space from a field poly to *its own* active,
+    /// which the gate crosses, and to any other.
+    both: bool,
     /// Measure L-infinity rather than euclidian.  See [`seg_seg_closest_square`].
     square: bool,
     /// Measure how deeply the pair penetrates rather than how far apart it is - the
@@ -196,7 +200,11 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                 if same_layer && ia == ib {
                     continue;
                 }
-                if !same_layer && !mode.overlapping && kin.overlapping.contains(&(ia, ib)) {
+                if !same_layer
+                    && !mode.overlapping
+                    && !mode.both
+                    && kin.overlapping.contains(&(ia, ib))
+                {
                     continue;
                 }
             }
@@ -210,12 +218,12 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             // did.  Asking anyway cast every vertex of each against the other's walls,
             // and was most of a same-layer spacing rule.
             let overlaps = !same_layer && regions_overlap(&a.outline, &b.outline);
-            if overlaps != mode.overlapping {
+            if !mode.both && overlaps != mode.overlapping {
                 continue; // this rule is about the other kind of pair
             }
             let shaving = !a.material || !b.material;
             // The gap and the two points that measure it, in µm.
-            let found: Option<Gap> = if mode.overlapping {
+            let found: Option<Gap> = if mode.overlapping || (mode.both && overlaps) {
                 // The pair shares area, so its closest approach is zero and meaningless.
                 // Take the narrowest facing gap that is genuinely empty instead - or,
                 // inward, the shallowest facing overlap that is genuinely material.
@@ -373,6 +381,7 @@ pub fn run_overlap(
 ) -> Vec<Violation> {
     let mode = SpaceMode {
         overlapping: true,
+        both: false,
         square: false,
         inward: true,
         abutting: false,
@@ -429,16 +438,17 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     // is for a rule whose two shapes overlap *by definition* - GF180's S.PL.5b_MV asks
     // the space from a poly to the COMP it gates - where the closest approach is zero and
     // the gap meant is between facing edges elsewhere along the same two shapes.
-    let overlapping_pairs = match rule.word("pairs") {
-        Some("overlapping") => true,
-        Some("disjoint") | None => false,
+    let (overlapping_pairs, both_pairs) = match rule.word("pairs") {
+        Some("overlapping") => (true, false),
+        Some("any") => (false, true),
+        Some("disjoint") | None => (false, false),
         Some(other) => {
             eprintln!(
-                "[{}] unknown pairs '{other}' — expected disjoint or overlapping; \
+                "[{}] unknown pairs '{other}' — expected disjoint, overlapping or any; \
                  using disjoint",
                 rule.id
             );
-            false
+            (false, false)
         }
     };
     // `square` is KLayout's L-infinity metric, which a rule words as "must not fall
@@ -476,6 +486,7 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     };
     let mode = forced.unwrap_or(SpaceMode {
         overlapping: overlapping_pairs,
+        both: both_pairs,
         square,
         inward: false,
         abutting,

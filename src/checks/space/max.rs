@@ -85,6 +85,23 @@ pub fn run(
     let value_dbu = rule.value / dbu_to_um;
     // `within` (a layer param) confines the reach to a layer, grown in half-micron
     // steps - under any well's own spacing, so the reach never crosses to another well.
+    // The reach is a square structuring element by default, which is what KLayout's
+    // `sized` gives on rectilinear geometry; `reach: round` makes it a disc, so a
+    // target diagonally off the reference is in reach at the value and no further.  A
+    // rule whose manual says "max distance" wants the disc (GF180's DF.13 and DF.14,
+    // which upstream sizes with `octagon_limit` "to approximate a circle").
+    let round = match mode(rule, "max_space", "reach") {
+        Ok(None) | Ok(Some("square")) => false,
+        Ok(Some("round")) => true,
+        Ok(Some(other)) => {
+            eprintln!(
+                "[{}] max_space: reach can only be `square` or `round`, not `{other}`",
+                rule.id
+            );
+            return vec![];
+        }
+        Err(NotAWord) => return vec![],
+    };
     let within = rule.num("within").map(|l| {
         let dt = rule.num("within_dt").unwrap_or(0.0);
         ((l as i16, dt as i16), 0.5 / dbu_to_um)
@@ -94,8 +111,8 @@ pub fn run(
     // grown a DBU further: what is then shared is the DBU strip, and a polygon a DBU
     // beyond the value touches that and shares nothing.
     let markers = match scope {
-        Scope::Part => merged.max_space_gaps(layout, a, b, value_dbu, within),
-        _ => merged.max_space_unreached(layout, a, b, value_dbu + 1.0, within),
+        Scope::Part => merged.max_space_gaps(layout, a, b, value_dbu, within, round),
+        _ => merged.max_space_unreached(layout, a, b, value_dbu + 1.0, within, round),
     };
     markers
         .into_iter()

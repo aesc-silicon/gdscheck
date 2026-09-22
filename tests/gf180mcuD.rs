@@ -161,7 +161,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::dualgate(
     "dualgate", "dualgate.gds.gz", "7_6_Dualgate",
-    &[("DV.1", 4), ("DV.2", 3), ("DV.3", 2), ("DV.5", 13), ("DV.6", 4), ("DV.7", 1), ("DV.8", 7), ("DV.9", 1)]
+    &[("DV.1", 5), ("DV.2", 3), ("DV.3", 4), ("DV.5", 13), ("DV.6", 5), ("DV.7", 1), ("DV.8", 9), ("DV.9", 1)]
 )]
 #[case::sram_3p3(
     "sram_3p3", "sram_3p3.gds.gz", "sram_3p3",
@@ -177,7 +177,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::poly2(
     "poly2", "poly2.gds.gz", "7_7_Poly2",
-    &[("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 28), ("PL.1_MV", 27), ("PL.1a_LV", 10), ("PL.1a_MV", 10), ("PL.2_LV", 99), ("PL.2_MV", 387), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 6), ("PL.5a_MV", 6), ("PL.5b_LV", 6), ("PL.5b_MV", 6), ("PL.6", 718), ("PL.7_LV", 40), ("PL.7_MV", 88), ("PL.9", 11)]
+    &[("PL.11", 6), ("PL.12", 5), ("PL.1_LV", 28), ("PL.1_MV", 27), ("PL.1a_LV", 10), ("PL.1a_MV", 10), ("PL.2_LV", 99), ("PL.2_MV", 387), ("PL.3a", 49), ("PL.4_LV", 4), ("PL.4_MV", 4), ("PL.5a_LV", 10), ("PL.5a_MV", 10), ("PL.5b_LV", 10), ("PL.5b_MV", 10), ("PL.6", 718), ("PL.7_LV", 40), ("PL.7_MV", 88), ("PL.9", 11)]
 )]
 #[case::dnwell(
     "dnwell", "dnwell.gds.gz", "7_2_DNWELL",
@@ -189,7 +189,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::comp(
     "comp", "comp.gds.gz", "7_5_DF",
-    &[("DF.10", 2), ("DF.11", 76), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45), ("DF.14_LV", 41), ("DF.14_MV", 41), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 6), ("DF.17_MV", 6), ("DF.18", 6), ("DF.19_LV", 6), ("DF.19_MV", 6), ("DF.1a_LV", 105), ("DF.1a_MV", 170), ("DF.1c", 10), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2), ("DF.3a_LV", 29), ("DF.3a_MV", 28), ("DF.3b", 16), ("DF.3c_LV", 7), ("DF.3c_MV", 11), ("DF.4a_LV", 12), ("DF.4a_MV", 6), ("DF.4b_LV", 7), ("DF.4b_MV", 7), ("DF.4c_LV", 9), ("DF.4c_MV", 7), ("DF.4d_LV", 7), ("DF.4d_MV", 7), ("DF.4e_LV", 7), ("DF.4e_MV", 7), ("DF.5_LV", 7), ("DF.5_MV", 7), ("DF.6_LV", 4), ("DF.6_MV", 4), ("DF.7_LV", 6), ("DF.7_MV", 6), ("DF.8_LV", 7), ("DF.8_MV", 7), ("DF.9", 215)]
+    &[("DF.10", 5), ("DF.11", 9), ("DF.12", 74), ("DF.13_LV", 45), ("DF.13_MV", 45), ("DF.14_LV", 41), ("DF.14_MV", 41), ("DF.16_LV", 6), ("DF.16_MV", 6), ("DF.17_LV", 10), ("DF.17_MV", 10), ("DF.18", 6), ("DF.19_LV", 6), ("DF.19_MV", 6), ("DF.1a_LV", 105), ("DF.1a_MV", 170), ("DF.1c", 10), ("DF.2a_LV", 4), ("DF.2a_MV", 4), ("DF.2b", 2), ("DF.3a_LV", 29), ("DF.3a_MV", 28), ("DF.3b", 16), ("DF.3c_LV", 7), ("DF.3c_MV", 11), ("DF.4a_LV", 12), ("DF.4a_MV", 6), ("DF.4b_LV", 9), ("DF.4b_MV", 9), ("DF.4c_LV", 9), ("DF.4c_MV", 7), ("DF.4d_LV", 7), ("DF.4d_MV", 7), ("DF.4e_LV", 7), ("DF.4e_MV", 7), ("DF.5_LV", 7), ("DF.5_MV", 7), ("DF.6_LV", 4), ("DF.6_MV", 4), ("DF.7_LV", 6), ("DF.7_MV", 6), ("DF.8_LV", 7), ("DF.8_MV", 7), ("DF.9", 215)]
 )]
 #[case::sab(
     "sab", "sab.gds.gz", "7_10_SB",
@@ -1164,7 +1164,11 @@ fn each(ids: &[(&'static str, usize)]) -> Vec<&'static str> {
 // stub and a poly inside the active have no cap to read (their corners PL.6, ignored);
 // 0.215 caps starting on x = 20 and x = 40, straddling x = 20 and x = 42 (4); 0.22 from
 // x = 42 is clean.
-#[case::pl4_h2("poly2/PL.4.h2.gds.gz", "TOP", vec!["PL.4_LV"; 5], vec!["PL.6"])]
+// The chamfered cap at 0.2157 is not read: the extension rules on angled walls are an
+// open class (report, finding 6, and the IHP gatpoly report's finding 11).  The poly's
+// own side wall stands 0.05 from where the chamfer leaves the active, which is a
+// field-poly-to-COMP space and fires PL.5a/PL.5b twice each.
+#[case::pl4_h2("poly2/PL.4.h2.gds.gz", "TOP", each(&[("PL.4_LV", 4), ("PL.5a_LV", 2), ("PL.5b_LV", 2)]), vec!["PL.6"])]
 // A 0.215 cap on a gate whose poly abuts the Dualgate: PL.4_LV by the manual, read in no
 // column by the runset (finding 1).
 #[case::pl4_h3("poly2/PL.4.h3.gds.gz", "TOP", vec!["PL.4_LV"], vec![])]
@@ -1187,14 +1191,17 @@ fn each(ids: &[(&'static str, usize)]) -> Vec<&'static str> {
 // the elbow in a YMTP marker (0); in the hole of an active ring of four boxes (0); on
 // the seam of two abutting active boxes (2); an L of two overlapping boxes (2, the
 // union's).  Two polys end on or 0.005 past an active edge (PL.4, ignored).
-#[case::pl6_h1("poly2/PL.6.h1.gds.gz", "TOP", vec!["PL.6"; 15], vec!["PL.4_LV"])]
+// The 0.1 µm corner probe is upstream's and is kept (report, finding 8: open): an
+// elbow 0.05 inside the active's edge is not counted.
+#[case::pl6_h1("poly2/PL.6.h1.gds.gz", "TOP", vec!["PL.6"; 14], vec!["PL.4_LV"])]
 // Elbows on the tile lines: the convex corner on x = 20, 0.005 either side of it, on
 // x = 40 and on (40, 40); the concave one on (21, 21) and on x = 42.  Two each.
 #[case::pl6_h2("poly2/PL.6.h2.gds.gz", "TOP", vec!["PL.6"; 14], vec![])]
 // A convex elbow exactly on the active's edge is not on the active (1, the concave one);
 // both elbows on the edges at the active's corner (0); the elbow 0.1 inside (2) and
 // 0.095 inside (2): both tools read only the concave one of each (finding 8).
-#[case::pl6_h3("poly2/PL.6.h3.gds.gz", "TOP", vec!["PL.6"; 5], vec!["PL.4_LV"])]
+// As h1, the elbows at 0.1 and 0.095 from the edge are not counted (report, finding 8).
+#[case::pl6_h3("poly2/PL.6.h3.gds.gz", "TOP", vec!["PL.6"; 3], vec!["PL.4_LV"])]
 // 45° gates: 0.2934 fires (two walls), once more across x = 20 and 21, once running
 // up-left; 0.3005 is clean; under a Dualgate with no implant 0.693 fires PL.7_MV and
 // 0.70004 is clean; an N+ 6 V gate at 0.693 fires PL.7_MV (and PL.2_MV, ignored).  The
@@ -1202,7 +1209,7 @@ fn each(ids: &[(&'static str, usize)]) -> Vec<&'static str> {
 #[case::pl7_h1("poly2/PL.7.h1.gds.gz", "TOP", each(&[("PL.7_LV", 6), ("PL.7_MV", 4)]), vec!["PL.1_LV", "PL.1_MV", "PL.2_MV"])]
 // A 0.2934 45° gate whose end lies on the Dualgate's edge: PL.7's layer is the gate less
 // the marker, no whole-region selector, so it stays 3.3 V in both tools (2).
-#[case::pl7_h2("poly2/PL.7.h2.gds.gz", "TOP", vec!["PL.7_LV"; 2], vec![])]
+#[case::pl7_h2("poly2/PL.7.h2.gds.gz", "TOP", vec!["PL.7_LV"; 2], vec!["PL.1_LV"])]
 // A poly across the Dualgate's edge, one of two boxes meeting on the edge, one bridging
 // two markers, one leaving a ring's hole, a 300 µm one into a marker at x = 250, the
 // edge on x = 20, 21, 40 and 42, and a poly 0.005 outside (10); a poly inside, one
@@ -1313,8 +1320,9 @@ fn hardening_dualgate(
 // MOSCAP marker, a 120 diamond; 100, a 99 diamond and a 75 remainder are clean.
 #[case::df2b_h1("comp/DF.2b.h1.gds.gz", "TOP", vec!["DF.2b"; 5], vec![])]
 // Space at 0.275 and 0.355, a 0.275 notch, a tap 0.275 from an N+ active, and a 3.3 V
-// active 0.275 from a 5 V one - which is in no column of the deck (report, finding 1).
-#[case::df3a_h1("comp/DF.3a.h1.gds.gz", "TOP", vec!["DF.3a_LV"; 4], vec!["DF.3a_MV"; 2])]
+// active 0.275 from a 5 V one - a pair of unlike voltage, which takes the stricter of
+// the two values and is reported under the 5 V id (report, finding 1).
+#[case::df3a_h1("comp/DF.3a.h1.gds.gz", "TOP", vec!["DF.3a_LV"; 3], vec!["DF.3a_MV"; 3])]
 // Two 300 µm bars 0.30 apart with Dualgate over their last 12 µm, and a 0.275 pair.
 #[case::df3a_h2("comp/DF.3a.h2.gds.gz", "TOP", vec!["DF.3a_LV"], vec!["DF.3a_MV"])]
 // Butting: a 0.005 implant overlap in an N-well, in the substrate and in a deep well, and
@@ -1346,9 +1354,11 @@ fn hardening_dualgate(
 // Source/drain overhang 0.235 / 0.395 / 0.3; the overhangs under MVSD and under RES_MK
 // belong to the LDMOS and to a resistor.
 #[case::df6_h1("comp/DF.6.h1.gds.gz", "TOP", vec!["DF.6_LV"], vec!["DF.6_MV"; 2])]
-// A gate running out over the active's end (no source/drain at all, report, finding 5),
-// a 0.235 overhang on a shared gate, and 0.235 overhangs on and across x = 20 and x = 42.
-#[case::df6_h2("comp/DF.6.h2.gds.gz", "TOP", vec!["DF.6_LV"; 5], vec![])]
+// A gate running out over the active's end (no source/drain at all) is reported by
+// neither tool and is left as it stands, an enclosure having no margin to read where
+// the cover runs past the shape (report, finding 5: open); a 0.235 overhang on a shared
+// gate, and 0.235 overhangs on and across x = 20 and x = 42.
+#[case::df6_h2("comp/DF.6.h2.gds.gz", "TOP", vec!["DF.6_LV"; 4], vec![])]
 // A P+ source/drain in a deep well 0.425 / 0.595 from the P-well; the P-well's own tap,
 // 0.5 inside it, is no space.
 #[case::df7_h1("comp/DF.7.h1.gds.gz", "TOP", vec!["DF.7_LV"], vec!["DF.7_MV"])]
@@ -1361,9 +1371,10 @@ fn hardening_dualgate(
 // hole with a 0.5 island leaving 0.24 of field (report, finding 4).  The island sits 0.1
 // from the ring, which is DF.3a.
 #[case::df10_h1("comp/DF.10.h1.gds.gz", "TOP", vec!["DF.10"; 5], vec!["DF.3a_LV"])]
-// Butting edge: 0.295 across a bar and across x = 20.  A 2.0 and a 1.0 long butting edge
-// on a 0.25 wide active are legal by the manual (report, finding 8).
-#[case::df11_h1("comp/DF.11.h1.gds.gz", "TOP", vec!["DF.11"; 4], vec![])]
+// Butting edge: 0.295 across a bar and across x = 20, one marker per edge.  A 2.0 and a
+// 1.0 long butting edge on a 0.25 wide active are legal by the manual (report,
+// finding 8), and the rule measures the edge now, not the active.
+#[case::df11_h1("comp/DF.11.h1.gds.gz", "TOP", vec!["DF.11"; 2], vec![])]
 // Implant cover: N+ 0.005 short, N+ ending on x = 20, and an active SCHOTTKY_DIODE covers
 // half of (report, finding 9).  The N+/P+ overlap is DF.3b.
 #[case::df12_h1("comp/DF.12.h1.gds.gz", "TOP", vec!["DF.12"; 3], vec!["DF.3b"])]
@@ -1380,15 +1391,16 @@ fn hardening_dualgate(
 // 20.005 across two tile lines; an N+ source/drain in a deep well's P-well with its tap
 // 9.5 away outside the deep well is within reach.
 #[case::df14_h2("comp/DF.14.h2.gds.gz", "TOP", vec!["DF.14_LV"], vec![])]
-// N-well to N+ active at 0.425 / 0.595, and two mixed-voltage pairs at 0.425 that fall
-// between the columns (report, finding 1).  YMTP_MK and SRAMCORE pairs are the cells'.
-#[case::df16_h1("comp/DF.16.h1.gds.gz", "TOP", vec!["DF.16_LV"; 3], vec!["DF.16_MV"])]
+// N-well to N+ active at 0.425 / 0.595, and two mixed-voltage pairs at 0.425, which
+// take the stricter value and the 5 V id (report, finding 1).  YMTP_MK and SRAMCORE pairs are the cells'.
+#[case::df16_h1("comp/DF.16.h1.gds.gz", "TOP", vec!["DF.16_LV"], vec!["DF.16_MV"; 3])]
 // A 300 µm N-well with Dualgate over its last 12 µm, 0.5 from a 5 V active; a 3.3 V well
 // of the same length 0.425 from a 3.3 V active.
 #[case::df16_h2("comp/DF.16.h2.gds.gz", "TOP", vec!["DF.16_LV"], vec!["DF.16_MV"])]
 // N-well to P+ tap at 0.115 / 0.155, a tap butted against the well's edge (report,
-// finding 11) and two mixed-voltage pairs at 0.115 (report, finding 1).
-#[case::df17_h1("comp/DF.17.h1.gds.gz", "TOP", vec!["DF.17_LV"; 4], vec!["DF.17_MV"])]
+// finding 5) and two mixed-voltage pairs at 0.115, which take the stricter value and
+// the 5 V id (report, finding 1).
+#[case::df17_h1("comp/DF.17.h1.gds.gz", "TOP", vec!["DF.17_LV"; 2], vec!["DF.17_MV"; 3])]
 // Deep well to P+ tap at 2.495 and at 2.496 diagonally; 2.5, 2.503 diagonally and a P+
 // source/drain inside an N-well are clean.
 #[case::df18_h1("comp/DF.18.h1.gds.gz", "TOP", vec!["DF.18"; 2], vec![])]
