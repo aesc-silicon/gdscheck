@@ -599,7 +599,91 @@ fn enclosure_bounds_and_sides_meet_the_bound_exactly(
 /// - `corner_square` turns four right angles, `corner_octagon` none; `sharp_triangle`
 ///   has two corners sharper than a right angle; `hole_ring` has a hole and
 ///   `hole_filled` not; `vert_over` has nine vertices; `via45` two 45° walls.
+///
+/// The hardening patterns, what a rule manual's extent, edge, corner, angle, hole and
+/// vertex rules ask of any layer, drawn once for every deck (hardening/SPEC.md); the
+/// counts are read off the drawings in `gen/engine/shape.rs`.  An extent is the merged
+/// region's bounding box: a 45° bar's box is not the bar, an L's box is its reach.
+///
+/// - `dim_*` (E.min_dim 0.5 / E.max_dim 2.0 on Outer): 0.495 bars both ways, a diamond
+///   0.48 across the box, 2.005 and a 45° strip with a 3.35 box; unions read at 0.495
+///   and 2.005, a sliced bar, a corner-touching pair as one region, an island; the tile
+///   lines, with a box whose piece left of a line is 0.3 wide staying clean and a 2.005
+///   bar whose pieces are under 2 firing once; fifty at once; a sliver and a plate.
+/// - `len_*` (E.min_len 5 / E.max_len 20 on Inner): the same for the long side, a 1 ×
+///   20.005 bar across a line whose pieces are 10 and 10.005 firing once.
+/// - `exact_*` (E.exact_dim 0.3 / E.exact_len 1.0 on Via): 0.295, 0.305, 0.995 and
+///   1.005; unions; vias across the lines whose pieces are 0.3 × 0.5 staying right.
+/// - `edge_*` (L.min 0.5 on Inner, L.edge through Outer's edge layer): a 0.495 cut,
+///   notch floor, step tread and a 0.4992 chamfer; a union's 0.495 edges and an island's
+///   four; floors across, ending on and starting on the lines and a riser lying on x =
+///   20, a square across a line having no short edge; fifty; a 0.005 floor.
+/// - `corner_*` (C.right on Outer): squares and an L across the lines, the cuts being
+///   no corners; unions' corners; fifty squares.  `sharp_tile_lines` (C.sharp): right
+///   triangles across the lines.  `angle_tile_lines` (A.ortho): a diamond, a strip and
+///   chamfers across the lines, one marker per edge; `angle45_tile_lines` (A.bent45):
+///   a 45° bar across a line, and a 26.6° one that is not 45.
+/// - `hole_tile_lines` (H.none on Outer): rings across the lines, one whose hole ends on
+///   a line, keyhole-drawn and bar-drawn, one holding an island, a 50 µm ring over
+///   three tiles - a hole wider than the halo is the region's and no tile copy's;
+///   `hole_array_*`: fifty rings.
+/// - `vert_*` (V.max 8 on Outer, on the drawn polygon): 9-gons across a line and far
+///   off, an octagon across a line whose pieces have more vertices than it; fifty.
 #[rstest]
+#[case("dim_bound", "E.min_dim", 3)]
+#[case("dim_bound", "E.max_dim", 2)]
+#[case("dim_merge", "E.min_dim", 3)]
+#[case("dim_merge", "E.max_dim", 1)]
+#[case("dim_tile_lines", "E.min_dim", 10)]
+#[case("dim_tile_lines", "E.max_dim", 1)]
+#[case("dim_array_flat", "E.min_dim", 50)]
+#[case("dim_array_ref", "E.min_dim", 50)]
+#[case("dim_extremes", "E.min_dim", 1)]
+#[case("dim_extremes", "E.max_dim", 1)]
+#[case("len_bound", "E.min_len", 4)]
+#[case("len_bound", "E.max_len", 1)]
+#[case("len_merge", "E.min_len", 2)]
+#[case("len_merge", "E.max_len", 1)]
+#[case("len_tile_lines", "E.min_len", 8)]
+#[case("len_tile_lines", "E.max_len", 2)]
+#[case("len_array_flat", "E.min_len", 50)]
+#[case("len_array_ref", "E.min_len", 50)]
+#[case("len_extremes", "E.min_len", 1)]
+#[case("len_extremes", "E.max_len", 1)]
+#[case("exact_bound", "E.exact_dim", 2)]
+#[case("exact_bound", "E.exact_len", 2)]
+#[case("exact_merge", "E.exact_dim", 1)]
+#[case("exact_merge", "E.exact_len", 1)]
+#[case("exact_tile_lines", "E.exact_dim", 2)]
+#[case("exact_tile_lines", "E.exact_len", 1)]
+#[case("exact_array_flat", "E.exact_dim", 50)]
+#[case("exact_array_ref", "E.exact_dim", 50)]
+#[case("exact_extremes", "E.exact_dim", 1)]
+#[case("exact_extremes", "E.exact_len", 1)]
+#[case("edge_bound", "L.min", 4)]
+#[case("edge_layer_bound", "L.edge", 4)]
+#[case("edge_merge", "L.min", 6)]
+#[case("edge_tile_lines", "L.min", 8)]
+#[case("edge_layer_tile_lines", "L.edge", 8)]
+#[case("edge_array_flat", "L.min", 50)]
+#[case("edge_array_ref", "L.min", 50)]
+#[case("edge_extremes", "L.min", 1)]
+#[case("corner_tile_lines", "C.right", 18)]
+#[case("corner_tile_lines", "H.none", 0)]
+#[case("corner_tile_lines", "V.max", 0)]
+#[case("corner_merge", "C.right", 16)]
+#[case("corner_array_flat", "C.right", 200)]
+#[case("corner_array_ref", "C.right", 200)]
+#[case("sharp_tile_lines", "C.sharp", 6)]
+#[case("sharp_tile_lines", "A.ortho", 3)]
+#[case("angle_tile_lines", "A.ortho", 10)]
+#[case("angle45_tile_lines", "A.bent45", 2)]
+#[case("hole_tile_lines", "H.none", 7)]
+#[case("hole_array_flat", "H.none", 50)]
+#[case("hole_array_ref", "H.none", 50)]
+#[case("vert_tile_lines", "V.max", 2)]
+#[case("vert_array_flat", "V.max", 50)]
+#[case("vert_array_ref", "V.max", 50)]
 #[case("dim_exact", "E.min_dim", 0)]
 #[case("dim_under", "E.min_dim", 1)]
 #[case("dim_max_exact", "E.max_dim", 0)]
