@@ -172,6 +172,44 @@ engine family as it comes up.  Since 2026-09-23 every check has its classes ther
 the engine decks name every check the registry knows, `overlap` included - and the
 engine family is where a class found wanting on one PDK is drawn for all of them.
 
+## GF180MCU
+
+The brief above is written for IHP; on GlobalFoundries' GF180MCU (process `gf180mcuD`)
+the same round runs with these in place of the IHP names:
+
+- **The manual** is the public design manual, rendered to text under `gf180mcu_drm/` in
+  the main checkout (`/home/daniel/work/aesc/gdscheck/gf180mcu_drm/`, read it from
+  there - it is not in git): `drm_07_02.txt` to `drm_07_18.txt` are chapter 7's layout
+  rules (7.1 geometry, 7.2 DNWELL, 7.3 LVPWELL, 7.4 NWELL, 7.5 COMP, 7.6 Dualgate, 7.7
+  Poly2, 7.8 Nplus, 7.9 Pplus, 7.10 SAB, 7.11 ESD, 7.12 Contact, 7.13 Metal, 7.14 Via,
+  7.15 MetalTop, 7.16 3 µm MetalTop, 7.17 Mcell), `drm_09*.txt` the density and antenna
+  chapters, `drm_10*.txt` the devices (10.1 PRES, 10.2 LRES, 10.3 HRES, 10.4 MIM, 10.5
+  NAT, 10.6 BJT, 10.8 dummy exclude, 10.10 OTP, 10.11 EFUSE, 10.12 LDMOS, 10.13 YMTP)
+  and `drm_12_3.txt` the guard ring.  A rule table reads as one line per cell - rule,
+  description, the 3.3 V value, the 5 V/6 V value - and the figures did not survive the
+  rendering.  Every rule with two values is two rules in the deck, `<id>_LV` under the
+  3.3 V reading and `<id>_MV` where the Dualgate marker lies over the shape.
+- **The foundry's deck** is the upstream KLayout runset from the ciel checkout,
+  `~/.ciel/ciel/gf180mcu/versions/*/gf180mcuD/libs.tech/klayout/tech/drc/rule_decks/<deck>.rb`,
+  the second reading of every rule (its `output` strings are the manual's wording).
+- **The oracle** is `hardening/oracle-gf180.sh <layout> [topcell] [tile ...]`, the runset
+  in the elements container (its klayout has what the runset needs, the machine's does
+  not) plus gdscheck's main suite - about two seconds.  The runset runs the density
+  rules on any layout (M1.4-M5.4, MT.3, PL.8, DCF.1b ...): noise unless the layout is
+  about them.  Its counts are one run's, not two.
+- **The layouts** go in `gen/gf180mcuD/<deck>.rs` beside the deck's good/bad pairs,
+  which must stay as they are, written to
+  `tests/data/gf180mcuD/generated/<deck>/<RULE>.h<n>.gds.gz`; regenerate with
+  `target/release/gen-testdata --pdk pdks/gf180mcuD/pdk.yml`.  `show-deck` is
+  `target/release/gdscheck show-deck --process gf180mcuD --deck <deck>`.
+- **The cases** go in `tests/gf180mcuD.rs` under `// --- Hardening ---`: one `#[rstest]`
+  table per deck, `hardening_<deck>`, each case
+  `#[case::<rule>_h<n>("<deck>/<RULE>.h<n>.gds.gz", "TOP", vec![...expected ids...],
+  vec![...ids to ignore...])` against `hardening(deck, gds, topcell, &ignore)`, which
+  runs the one deck and returns the sorted rule ids.
+- **The report** goes in `hardening/reports/gf180mcuD/<deck>.md`.
+- The grid is 0.005 µm, as at IHP; the `offgrid` deck reads every layer.
+
 ## Deliverables
 
 On your branch, committed:

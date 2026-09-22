@@ -905,3 +905,24 @@ fn via_patterns_cover_every_rule() {
         assert_eq!(bad, want, "{id} bad pattern");
     }
 }
+
+// --- Hardening (hardening/SPEC.md, the GF180MCU section) ---
+//
+// Layouts drawn from the manual's edges by someone who has not seen the engine, run
+// through gdscheck and the foundry's runset; the expected values are the manual's
+// answer, not the engine's, and the reasoning is in hardening/reports/gf180mcuD/.
+
+/// The rule ids one deck reports on a generated fixture, sorted, less the ones to
+/// ignore.
+#[allow(dead_code)] // until the first deck's table lands
+fn hardening(deck: &str, gds: &str, topcell: &str, ignore: &[&str]) -> Vec<String> {
+    let path = format!("{GENERATED}/{gds}");
+    let violations = run_drc(&path, PDK, &[deck], None, topcell, true).expect("DRC run failed");
+    let mut ids: Vec<String> = violations
+        .into_iter()
+        .filter(|v| !ignore.contains(&v.rule_id.as_str()))
+        .map(|v| v.rule_id)
+        .collect();
+    ids.sort();
+    ids
+}
