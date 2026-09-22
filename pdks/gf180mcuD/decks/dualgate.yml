@@ -10,6 +10,7 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
+      metric: euclidian
   - id: DV.1
     check: forbidden
     layers: [dv_1_crossing]
@@ -26,6 +27,8 @@ rules:
     check: min_space
     layers: [dualgate, comp_outside_dualgate]
     value: 0.24
+    params:
+      abutting: report
   - id: DV.5
     check: min_width
     layers: [dualgate]
@@ -36,6 +39,7 @@ rules:
     value: 0.24
     params:
       interacting_only: 1
+      metric: euclidian
   - id: DV.6
     check: forbidden
     layers: [dv_6_crossing]
@@ -50,6 +54,7 @@ rules:
     value: 0.4
     params:
       interacting_only: 1
+      metric: euclidian
   - id: DV.8
     check: forbidden
     layers: [dv_8_crossing]

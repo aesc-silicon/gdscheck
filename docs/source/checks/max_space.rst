@@ -62,6 +62,14 @@ Parameters
 ``scope``
    Optional. ``part`` (the default), ``polygon`` or ``edge``, as above.
 
+``reach``
+   Optional. ``square`` (the default) grows the reference by the value in each axis,
+   which is what KLayout's ``sized`` gives on rectilinear geometry, so a target
+   diagonally off a corner is in reach out to the value in *each* direction. ``round``
+   grows it by the value in *any* direction, which is what a rule worded "max distance"
+   means: GF180's ``DF.13`` and ``DF.14`` read it that way, and upstream approximates
+   the disc with an octagon ("to approximate a circle").
+
 ``within``
    Optional layer param (under ``layer_params``), with ``scope: part`` or ``polygon``.
    Confines the reach to that layer: the reference is grown in half-micron steps and cut
@@ -70,8 +78,8 @@ Parameters
    the tap is grown inside the well, in steps under the well's own spacing — so a
    diffusion on the far leg of a U-shaped well has no tap in reach across the slot
    however near the tap lies, and a tap in a neighbouring well is no tap for this one.
-   Under ``part`` the confined reach is what is subtracted from the target, and the
-   reach is grown squarely, as the plain one is.
+   Under ``part`` the confined reach is what is subtracted from the target. The steps
+   are whole DBU and add up to the value exactly, since each grow snaps to the grid.
 
 
 Violation markers

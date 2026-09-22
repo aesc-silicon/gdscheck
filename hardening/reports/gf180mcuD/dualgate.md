@@ -136,3 +136,15 @@ did not move with the tile size.
   6 V gate at x = 2 and the 3.3 V one at x = 42 fires across every tile line; two separate
   wells 1.4 apart are clean, and a 3.3 V gate under a V5_XTOR with no Dualgate is excused
   in both tools (`pgate.not_inside(v5_xtor)`), which is PL.11's business, not this rule's.
+
+## Resolution (2026-09-22)
+
+- **1 (the 45° marker wall)**: fixed in the deck; DV.1, DV.6 and DV.8 read
+  `metric: euclidian`, the settled reading for every enclosure since 2026-09-21.
+- **2 (a COMP abutting the marker)**: fixed in the deck, `abutting: report` on DV.3.
+- **3 (a marker excused by the active it covers)**: fixed in the deck.  DV.7 is about
+  the COMP - "COMP can not be partially overlapped by Dualgate" - so the violation is
+  an active the marker reaches into and does not cover, read on the active and not on
+  the marker.
+
+Foundry case `dualgate.gds.gz`: DV.1 4 -> 5, DV.3 2 -> 4, DV.6 4 -> 5, DV.8 7 -> 9.

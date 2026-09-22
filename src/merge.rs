@@ -97,6 +97,19 @@ fn offset(d: f64) -> OutlineStyle<f64> {
     }
 }
 
+/// [`offset`] with the corners rounded: a box grown by `d` is a box with quarter-disc
+/// corners, so every point of it lies within `d` of the box.  A reach measured as a
+/// distance in any direction wants this and not the square - KLayout's own decks
+/// approximate it with an octagon (GF180's DF.13 sizes `ntap` by half a micron at a
+/// time with `octagon_limit`, "to approximate a circle").
+fn offset_round(d: f64) -> OutlineStyle<f64> {
+    OutlineStyle {
+        outer_offset: d,
+        inner_offset: d,
+        join: LineJoin::Round(0.25),
+    }
+}
+
 /// Union the given boundaries into non-overlapping regions at full integer
 /// precision.  Touching and overlapping shapes are dissolved into single
 /// regions; enclosed empty space becomes a hole.
@@ -309,6 +322,15 @@ pub fn grow_by(polys: &[MergedPoly], radius: f64, margin: f64) -> Vec<MergedPoly
     shapes_to_merged(tile_shapes(polys).outline(&offset(radius + margin)))
 }
 
+/// [`grow_by`] with the corners rounded (see [`offset_round`]): every point of the
+/// result lies within `radius` of the shape, in any direction.
+pub fn grow_round(polys: &[MergedPoly], radius: f64) -> Vec<MergedPoly> {
+    if polys.is_empty() {
+        return Vec::new();
+    }
+    shapes_to_merged(tile_shapes(polys).outline(&offset_round(radius)))
+}
+
 /// Morphological erode (shrink) by `radius` DBU — the inverse of [`grow`], and KLayout's
 /// `sized(-r)`.  Unlike [`opening`] there is no dilate back: a region narrower than
 /// `2 * radius` disappears, and one that survives keeps its eroded outline, which is what
@@ -513,7 +535,12 @@ fn is_rectilinear(m: &MergedPoly) -> bool {
 /// the cut, so a 45° strip cut by the 7 µm tiles covered a target the whole strip
 /// does not.  The grown region is filed under every tile it overlaps, cut to that
 /// tile's core grown by the value, which is all a target in that core can meet.
-fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32), Vec<MergedPoly>> {
+fn grown_reference(
+    b: &TileMap,
+    value: f64,
+    tile_dbu: i32,
+    round: bool,
+) -> HashMap<(i32, i32), Vec<MergedPoly>> {
     let t = tile_dbu as i64;
     let rects_of = |tx: i32, ty: i32, polys: &[MergedPoly]| -> Vec<MergedPoly> {
         let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
@@ -536,8 +563,9 @@ fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32)
             .collect()
     };
     // Every wall along an axis, which is nearly every reference: the rectangles alone.
-    if b.par_iter()
-        .all(|(_, polys)| polys.iter().all(is_rectilinear))
+    if !round
+        && b.par_iter()
+            .all(|(_, polys)| polys.iter().all(is_rectilinear))
     {
         return b
             .par_iter()
@@ -557,7 +585,7 @@ fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32)
     let filed: Vec<((i32, i32), Vec<MergedPoly>)> = pieces
         .into_par_iter()
         .flat_map_iter(|ps| {
-            if ps.iter().all(|(_, m)| is_rectilinear(m)) {
+            if !round && ps.iter().all(|(_, m)| is_rectilinear(m)) {
                 return ps
                     .iter()
                     .map(|&((tx, ty), m)| ((tx, ty), rects_of(tx, ty, std::slice::from_ref(m))))
@@ -570,7 +598,16 @@ fn grown_reference(b: &TileMap, value: f64, tile_dbu: i32) -> HashMap<(i32, i32)
                     clip_to_box(vec![m.clone()], x0, y0, x0 + t, y0 + t)
                 })
                 .collect();
-            let grown = grow_by(&union_pieces(block), value, 0.0);
+            let grown = if round {
+                grow_round(&union_pieces(block), value)
+            } else {
+                grow_by(&union_pieces(block), value, 0.0)
+            };
+            if std::env::var("DBG_REACH").is_ok() {
+                for g in &grown {
+                    eprintln!("GROWN {:?}", poly_bbox(g));
+                }
+            }
             let v = value.ceil() as i64;
             let mut out = Vec::new();
             for g in &grown {
@@ -660,6 +697,7 @@ pub fn max_space_gaps(
     value: f64,
     tile_dbu: i32,
     within: Option<(&TileMap, f64)>,
+    round: bool,
 ) -> Vec<(f64, f64)> {
     // Confined to a layer, the cover is the reach grown inside it (see
     // `confined_reference`), per tile, in place of the grown rectangles: a tie in the
@@ -672,12 +710,12 @@ pub fn max_space_gaps(
                 (-r..=r).flat_map(move |dx| (-r..=r).map(move |dy| (tx + dx, ty + dy)))
             })
             .collect();
-        confined_reference(b, w, value, step, tile_dbu, &near)
+        confined_reference(b, w, value, step, tile_dbu, &near, round)
     });
     let grown = if confined.is_some() {
         HashMap::new()
     } else {
-        grown_reference(b, value, tile_dbu)
+        grown_reference(b, value, tile_dbu, round)
     };
     // The grown rectangles of a tile unioned once: a tap array grown by the value is
     // one blob, and a tile of `a` in reach of it took the difference against every
@@ -786,9 +824,15 @@ fn confined_reference(
     step: f64,
     tile_dbu: i32,
     near: &HashSet<(i32, i32)>,
+    round: bool,
 ) -> HashMap<(i32, i32), Vec<MergedPoly>> {
-    let n = (value / step).ceil().max(1.0);
-    let by = value / n;
+    // The steps are whole DBU and add up to the value exactly: a fractional step is
+    // snapped to the grid on every grow, and forty of them reached eight nanometres
+    // further than the rule allows - a target 0.005 past the value was in reach and
+    // one 0.010 past was not (report, comp finding 2).
+    let total = value.round().max(1.0) as i64;
+    let n = ((value / step).ceil().max(1.0) as i64).min(total);
+    let (base, rem) = (total / n, total % n);
     b.par_iter()
         .filter(|(k, _)| near.contains(k))
         .filter_map(|(&(tx, ty), polys)| {
@@ -799,11 +843,17 @@ fn confined_reference(
                 VirtualOp::Intersection,
                 &[&clip_to_box(polys.clone(), x0, y0, x1, y1), &wall],
             );
-            for _ in 0..n as usize {
+            for i in 0..n {
                 if reach.is_empty() {
                     break;
                 }
-                reach = compose_tile(VirtualOp::Intersection, &[&grow_by(&reach, by, 0.0), &wall]);
+                let by = (base + i64::from(i < rem)) as f64;
+                let step_out = if round {
+                    grow_round(&reach, by)
+                } else {
+                    grow_by(&reach, by, 0.0)
+                };
+                reach = compose_tile(VirtualOp::Intersection, &[&step_out, &wall]);
             }
             (!reach.is_empty()).then_some(((tx, ty), reach))
         })
@@ -827,6 +877,7 @@ pub fn max_space_unreached(
     value: f64,
     tile_dbu: i32,
     within: Option<(&TileMap, f64)>,
+    round: bool,
 ) -> Vec<(f64, f64)> {
     let labeled = stitch_labeled(a, tile_dbu);
     let reached: Vec<std::sync::atomic::AtomicBool> = (0..labeled.regions.len())
@@ -834,7 +885,7 @@ pub fn max_space_unreached(
         .collect();
     let t = tile_dbu as f64;
     let (grown, confined) = match within {
-        None => (Some(grown_reference(b, value, tile_dbu)), None),
+        None => (Some(grown_reference(b, value, tile_dbu, round)), None),
         Some((w, step)) => {
             let r = (value / t).ceil() as i32;
             let near: HashSet<(i32, i32)> = labeled
@@ -846,7 +897,9 @@ pub fn max_space_unreached(
                 .collect();
             (
                 None,
-                Some(confined_reference(b, w, value, step, tile_dbu, &near)),
+                Some(confined_reference(
+                    b, w, value, step, tile_dbu, &near, round,
+                )),
             )
         }
     };
@@ -6136,6 +6189,7 @@ impl MergedCache {
         b: (i16, i16),
         value: f64,
         within: Option<((i16, i16), f64)>,
+        round: bool,
     ) -> Vec<(f64, f64)> {
         self.ensure(layout, a.0, a.1);
         self.ensure(layout, b.0, b.1);
@@ -6149,6 +6203,7 @@ impl MergedCache {
             value,
             self.tile_dbu,
             within,
+            round,
         )
     }
 
@@ -6162,6 +6217,7 @@ impl MergedCache {
         b: (i16, i16),
         value: f64,
         within: Option<((i16, i16), f64)>,
+        round: bool,
     ) -> Vec<(f64, f64)> {
         self.ensure(layout, a.0, a.1);
         self.ensure(layout, b.0, b.1);
@@ -6175,6 +6231,7 @@ impl MergedCache {
             value,
             self.tile_dbu,
             within,
+            round,
         )
     }
 

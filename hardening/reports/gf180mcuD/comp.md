@@ -290,3 +290,45 @@ to redo it.
   facing-wall pair where KLayout gives one per edge pair (DF.3a, DF.10.h1's island at 0.1
   from the ring: 1 against 4), and one per short enclosure edge where a 45° approach gives
   KLayout two (DF.18, DF.19).
+
+## Resolution (2026-09-22)
+
+Judged against the manual's text and the upstream runset; the deck, and three times the
+engine, were changed where the drawing was right, and every case now passes.
+
+- **1 (the voltage split)**: fixed in the deck, and for every voltage class of this PDK
+  at once (twelve of them): the 5 V column is Dualgate's (DV.4), so `comp_3p3v` is
+  `not_overlapping [comp, dualgate]` against an `overlapping` `comp_56v` - complementary,
+  where upstream's `not_interacting` on Dualgate *and* on V5_XTOR left a shape the
+  marker abuts, and one marked V5_XTOR alone, in no column.  A pair of unlike voltage
+  is on neither layer, so DF.3a_MV, DF.16_MV and DF.17_MV get a second entry on the
+  layer *pair*, at the stricter of the two values; the cases carry the 5 V id for them.
+- **2 (the reach)**: fixed in the engine.  `max_space` takes `reach: round`, which grows
+  the reference by the value in any direction rather than in each axis, and DF.13/DF.14
+  carry it - the manual says "max distance", and upstream approximates the same disc
+  with an octagon.  The confined reach's steps are whole DBU now and add up to the value
+  exactly; fractional steps snapped to the grid reached eight nanometres too far.
+- **3 (the 45° enclosure)**: fixed in the deck, `metric: euclidian` on DF.4b.
+- **4 (DF.10's islands)**: fixed in the deck.  The field is `holes(comp)` less `comp`,
+  so an island in a hole is no longer counted as field.  The foundry case goes 2 -> 5,
+  which is KLayout's count exactly.
+- **5 (DF.17 at a touch)**: fixed in the deck, `abutting: report`.
+- **6 (butted MOSCAP)**: fixed in the deck; the marker meets the whole butted pair, not
+  its N+ half.
+- **7 (the BJT marker)**: fixed in the deck, `overlapping` in place of `interacting`.
+- **8 (DF.11)**: fixed in the deck.  The rule measures the butting *edge* now
+  (`min_edge_length` on the N+/P+ boundary through the active, the stubs where the two
+  implants overlap along the COMP's own contour taken out), not the active's width: one
+  marker per edge, so the case reads 2.
+- **9 (DF.12)**: fixed in the deck; the Schottky marking is taken away geometrically, so
+  the half of an active outside it is still an active with no implant.
+- **10/11 (DF.13 in a deep well)**: fixed in the deck; the reach is confined to
+  `all_nwell`, the same N-region the target is derived from.
+- **5 in the list above the findings (DF.6, a gate running out over the active's end)**:
+  kept and left open.  Neither tool reports it, and an enclosure has no margin to read
+  where the cover runs past the shape; expressing it needs a rule of its own shape.  The
+  case carries 4, with the reading noted.
+
+Foundry case `comp.gds.gz`: DF.10 2 -> 5, DF.11 76 -> 9, DF.17 6 -> 10, DF.4b 7 -> 9;
+every other count unchanged, and each of the four moved toward KLayout's.  The reference
+designs' findings are unchanged.  Suite green at tiles 20, 7 and 100.
