@@ -12,10 +12,15 @@ rules:
     check: min_width
     layers: [mvsd]
     value: 1.0
+  # The equi-potential half of the pair: a gap between two drifts on different nodes is
+  # MDN.2b's, at its own larger value, and was reported under both ids (report,
+  # finding 2).
   - id: MDN.2a
     check: min_space
     layers: [mvsd]
     value: 1.0
+    params:
+      net: same
   - id: MDN.2a
     check: min_notch
     layers: [mvsd]

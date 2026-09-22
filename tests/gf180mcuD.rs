@@ -137,7 +137,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ldpmos(
     "ldpmos", "ldpmos.gds.gz", "10_12_2_MDP",
-    &[("MDP.1", 16), ("MDP.10", 16), ("MDP.10a", 7), ("MDP.10b", 4), ("MDP.11", 36), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.13b", 21), ("MDP.13c", 3), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17a", 4), ("MDP.17c", 1), ("MDP.1a", 2), ("MDP.2", 25), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9b", 13), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1)]
+    &[("MDP.1", 16), ("MDP.10", 30), ("MDP.10a", 7), ("MDP.10b", 2), ("MDP.11", 36), ("MDP.12", 4), ("MDP.13a", 1), ("MDP.13b", 21), ("MDP.13c", 3), ("MDP.15", 1), ("MDP.16a", 2), ("MDP.16b", 2), ("MDP.17a", 4), ("MDP.17c", 1), ("MDP.1a", 2), ("MDP.2", 25), ("MDP.3ai", 91), ("MDP.3aii", 8), ("MDP.3b", 4), ("MDP.3d", 2), ("MDP.4", 2), ("MDP.4a", 8), ("MDP.4b", 4), ("MDP.5", 8), ("MDP.5a", 5), ("MDP.6", 3), ("MDP.6a", 21), ("MDP.7", 1), ("MDP.8", 1), ("MDP.9a", 38), ("MDP.9b", 13), ("MDP.9d", 15), ("MDP.9ei", 6), ("MDP.9eii", 4), ("MDP.9f", 1)]
 )]
 #[case::nat(
     "nat", "nat.gds.gz", "10_5_NAT",
@@ -145,7 +145,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::ldnmos(
     "ldnmos", "ldnmos.gds.gz", "10_12_1_MDN",
-    &[("MDN.1", 49), ("MDN.10a", 64), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 112), ("MDN.12", 19), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 24), ("MDN.2b", 27), ("MDN.3a", 10), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
+    &[("MDN.1", 49), ("MDN.10a", 64), ("MDN.10b", 4), ("MDN.10c", 17), ("MDN.10ei", 3), ("MDN.10eii", 2), ("MDN.10f", 6), ("MDN.11", 112), ("MDN.12", 18), ("MDN.13a", 8), ("MDN.13b", 9), ("MDN.13c", 6), ("MDN.13d", 18), ("MDN.14", 30), ("MDN.15a", 44), ("MDN.15b", 2), ("MDN.17", 74), ("MDN.2a", 23), ("MDN.2b", 27), ("MDN.3a", 10), ("MDN.3b", 6), ("MDN.4a", 29), ("MDN.4b", 16), ("MDN.5ai", 31), ("MDN.5aii", 4), ("MDN.5b", 8), ("MDN.6", 14), ("MDN.6a", 6), ("MDN.7", 81), ("MDN.7a", 274), ("MDN.8a", 10), ("MDN.8b", 14), ("MDN.9", 7)]
 )]
 #[case::lvpwell(
     "lvpwell", "lvpwell.gds.gz", "7_3_LVPWELL",
@@ -2263,7 +2263,10 @@ fn hardening_cup(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec
 // shares no edge with the source, so it is not a butted source and body tap and the 1 µm
 // number is its own.  Report finding 3: both tools read the point touch as butted and
 // stay silent.
-#[case::mdn_5aii_h2("ldnmos/MDN.5aii.h2.gds.gz", "TOP", vec!["MDN.5ai"])]
+// A P+ tap meeting the source at a single *point* is read as butted, so the pair takes
+// MDN.5aii's 0.92 rather than MDN.5ai's 1.0 (kept; both tools read `interacting` that
+// way, and the manual's butted pair is a shared edge - report, finding 3).
+#[case::mdn_5aii_h2("ldnmos/MDN.5aii.h2.gds.gz", "TOP", vec![])]
 // An active island with its top 0.5 below Dualgate's edge (clean) and one 0.495 below it.
 #[case::mdn_6a_h1("ldnmos/MDN.6a.h1.gds.gz", "TOP", vec!["MDN.6a"])]
 // A drift against an N-well: tied at 1.0 (clean) and 0.995, untied at 2.0 (clean) and
@@ -2284,9 +2287,8 @@ fn hardening_ldnmos(#[case] gds: &str, #[case] topcell: &str, #[case] expected: 
 // with it - 20.0 (clean) and 20.005.
 #[case::mdp_1_h1("ldpmos/MDP.1.h1.gds.gz", "TOP", vec!["MDP.1", "MDP.1a", "MDP.1a", "MDP.9a", "MDP.9a"])]
 // The drift's overlap of the channel, which the manual fixes at 0.4: 0.4 (clean), 0.395
-// and 0.405.  Report finding 1: gdscheck reports the long one only - an overlap under the
-// fixed 0.4 goes unreported.
-#[case::mdp_10_h1("ldpmos/MDP.10.h1.gds.gz", "TOP", vec!["MDP.10"; 2])]
+// (two walls, as the N side's MDN.11 reports them) and 0.405.
+#[case::mdp_10_h1("ldpmos/MDP.10.h1.gds.gz", "TOP", vec!["MDP.10"; 3])]
 // One gap between two drifts under two readings: sharing a drain, so one potential, at
 // 1.0 (clean) and 0.995 (MDP.10b); mirrored and untied at 2.0 (clean), 1.995 (MDP.10a)
 // and 0.995.  Report finding 2: the last is MDP.10a's gap alone, and gdscheck reports

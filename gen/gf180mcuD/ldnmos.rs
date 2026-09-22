@@ -379,14 +379,14 @@ pub fn generate(pdk: &PdkConfig) {
             y + h * 0.65,
         ));
         if plain {
-            // A third active on the drift, so it meets three and is not the two-active
-            // drain MDN.13d counts.
-            v.extend(ncomp(
-                x + w * 0.3,
-                y + h - 0.4,
-                x + w * 0.3 + 0.3,
-                y + h + 0.9,
-            ));
+            // Two more actives on the drift, so it meets four and is neither the two that
+            // make a drain nor the three of a multi-finger one, which are what MDN.13d
+            // counts.  Both lie wholly inside the drift, 0.6 off its top edge: a bare
+            // active that runs out through an edge is held by nothing there, which is
+            // MDN.12's.
+            for dx in [w * 0.3, w * 0.7] {
+                v.extend(ncomp(x + dx, y + h - 1.6, x + dx + 0.3, y + h - 0.6));
+            }
         }
         v
     };
@@ -423,9 +423,11 @@ pub fn generate(pdk: &PdkConfig) {
             v.push(rect(c.poly2, o + 11.6, gy0, o + 13.4, gy1));
             v.extend(ncomp(o + 15.0, o + 10.0, o + 15.3, o + 11.0));
             // Two more actives, so the right-hand drift meets four and is neither the two
-            // that make a drain nor the three that make a multi-finger one.
-            v.extend(ncomp(o + 16.0, o + 13.5, o + 17.0, o + 14.5));
-            v.extend(ncomp(o + 14.0, o + 6.0, o + 15.0, o + 7.5));
+            // that make a drain nor the three that make a multi-finger one.  Both lie
+            // wholly inside the drift, a micron off its edges: an active that runs out
+            // through one is MDN.12's.
+            v.extend(ncomp(o + 16.0, o + 11.5, o + 17.0, o + 13.0));
+            v.extend(ncomp(o + 14.0, o + 8.0, o + 15.0, o + 9.0));
         }
         let (ix0, iy0, ix1, iy1) = (o + 1.0, o + 1.0, o + 22.0, o + 22.0);
         let w = 2.0;
@@ -554,11 +556,13 @@ pub fn generate(pdk: &PdkConfig) {
     write("MDN.5ai", "bad", with(ptouch(0.995)));
 
     // MDN.5aii: a P+ active that *does* touch an N+, closer than 0.92 µm to a drift.  The
-    // N+ it touches runs onto the drift, or MDN.9 measures that instead.
+    // tap is a wide P+ strip and the N+ butts its far side, 4 µm clear of every drift -
+    // this one and the device's below - or MDN.9 measures that instead.  The drift sits
+    // high enough in the ring's hole to leave that room.
     let pbutt = |gap: f64| {
-        let mut v = device_bar(o + 6.0, o + 13.0, 5.0, 5.0, false, true);
-        v.extend(ncomp(o + 9.0, o + 13.5, o + 11.0 + gap, o + 14.5));
-        v.extend(pcomp(o + 11.0 + gap, o + 13.5, o + 13.0 + gap, o + 14.5));
+        let mut v = device_bar(o + 6.0, o + 15.0, 5.0, 5.0, false, true);
+        v.extend(pcomp(o + 11.0 + gap, o + 15.5, o + 15.2, o + 16.5));
+        v.extend(ncomp(o + 15.2, o + 15.5, o + 16.2, o + 16.5));
         v
     };
     write("MDN.5aii", "good", with(pbutt(2.0)));

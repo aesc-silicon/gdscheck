@@ -4091,6 +4091,13 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [ldmos_xtor, mvpsd, comp, poly2_drawn, pplus]
+  # MDP.10 fixes the overlap at 0.4: the wide half is the open above it, and the narrow
+  # half is the same width read from below, as the N side's MDN.11 already reads it
+  # (report, ldpmos finding 1).
+  - name: mdp10_uniform
+    op: not_interacting
+    mode: lazy
+    layers: [mdp10_overlap, mdp10_wide]
   - name: mdp10_wide
     op: open
     radius: 0.2
@@ -4218,10 +4225,22 @@ virtual_layers:
     op: not_covering
     mode: lazy
     layers: [mvsd_mdn, mdn12_bare_ncomp]
+  # The crossing half every enclosure needs: a bare active that runs out through the
+  # drift's edge is held by it by nothing there, and `enclosure_below` measures only
+  # where the drift does hold it - so once a second drain sat inside the drift, the one
+  # that crossed out went unreported (report, ldnmos finding 1).
+  - name: mdn12_crossing_all
+    op: overlapping
+    mode: lazy
+    layers: [mdn12_bare_ncomp_mdn, mvsd_mdn]
+  - name: mdn12_crossing
+    op: difference
+    mode: lazy
+    layers: [mdn12_crossing_all, mvsd_mdn]
   - name: mdn12_viol
     op: union
     mode: lazy
-    layers: [mdn12_short_off_poly, mdn12_no_drain]
+    layers: [mdn12_short_off_poly, mdn12_no_drain, mdn12_crossing]
   # ---- LDPMOS: the source and the gate ends, mirroring the N-side ----------
   - name: mdp_gate_in_mvpsd
     op: intersection
