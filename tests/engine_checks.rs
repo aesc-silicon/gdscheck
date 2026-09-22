@@ -274,6 +274,20 @@ fn width_rules_read_tiles_parameters_and_the_shapes_without_a_run(
 /// - `outside_half` is a 10 µm stripe with the piece at 34..36 and Via from 35 on, so
 ///   only the stretch 34..35 lies outside Via; `outside_all` has Via over the whole
 ///   piece.
+///
+/// The hardening patterns, what a rule manual's gate length asks of any layer, drawn
+/// once for every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/gate_length.rs`, two markers per gate:
+///
+/// - `bound`: gates 1.0 and 0.995 tall and wide, 3.0 and 3.005 tall against the
+///   maximum, 0.995 gates 3.0 and 3.005 long against the run.
+/// - `bound_45`: a 45° stripe with a piece cut from it, 0.99 and 1.004 across.
+/// - `merge`: a piece as two abutting halves (one gate), a stripe as two overlapping
+///   boxes, two pieces on one stripe (two gates).
+/// - `tile_lines`: gates whose piece is across, ends on and starts on the tile lines,
+///   a standing gate across y = 20, one at (1000, 1000).
+/// - `array_flat` / `array_ref`: fifty gates.
+/// - `extremes`: a 0.005 gate, a 300 µm stripe with a gate at its middle.
 #[rstest]
 #[case("stripe_far", "G.min", 2)]
 #[case("stripe_far", "G.len", 0)]
@@ -283,6 +297,15 @@ fn width_rules_read_tiles_parameters_and_the_shapes_without_a_run(
 #[case("stripe_long_run", "G.len", 2)]
 #[case("ends_on_reference", "G.max_shared", 2)]
 #[case("ends_on_reference", "G.max_unshared", 0)]
+#[case("bound", "G.min", 8)]
+#[case("bound", "G.max_shared", 2)]
+#[case("bound", "G.len", 2)]
+#[case("bound_45", "G.min", 2)]
+#[case("merge", "G.min", 8)]
+#[case("tile_lines", "G.min", 18)]
+#[case("array_flat", "G.min", 100)]
+#[case("array_ref", "G.min", 100)]
+#[case("extremes", "G.min", 4)]
 #[case("ends_on_reference", "G.min", 0)]
 #[case("ends_on_reference_tall", "G.max_shared", 2)]
 #[case("ends_on_reference_tall", "G.max_unshared", 2)]
