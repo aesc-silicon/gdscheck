@@ -211,3 +211,47 @@ the other side of it.
   past the block at each end. Three markers either side.
 - The engine family's classes (the bound and the step past it, the metrics, 45° walls,
   unions, holes, arrays, a shape far off) were not redrawn here.
+
+---
+
+## Resolution (2026-09-22)
+
+Findings 1, 2, 3 and 5 were fixed in the PDK; finding 4 was read again and kept, with the
+reason on its cases. Section 10.2 is this section word for word, so every fix landed on
+`lres` in the same commit and `lres.md` carries the same resolution.
+
+- **Finding 1 (PRES.2).** The deck takes a `min_notch 0.4` beside the space, as HRES.3
+  already had. A folded resistor is one polygon and its inner gap is the space the rule
+  names; the serpentine of `PRES.2.h1` reports one PRES.2 now, at the granularity HRES.3
+  reports the identical geometry.
+- **Finding 2 (PRES.3).** The space entry carries `params: abutting: report` - a shared
+  edge is a space of nothing, and nothing is under 0.6. Read there rather than on
+  `comp_on_pres`, which stays `overlapping`: a COMP that only touches a corner is already
+  a space of zero to the space half, and widening the overlap layer to `interacting` would
+  have reported it twice. `PRES.3.h2` reports three; the foundry layout goes 9 -> 10.
+- **Finding 3 (PRES.4).** `poly2_unrelated` is the union of two selections: Poly2 under no
+  block and Poly2 no marking names. Either one alone is too generous - `sab` exempts a bar
+  whose block lies at its far end (the fixture), `res_mk` would exempt every bar a marking
+  happens to reach (six of the foundry layout's eight). `PRES.4.h1` reports two, and the
+  foundry counts stand where they were.
+- **Finding 4 (PRES.6).** Kept. Separating a bar's width from its length is the device's
+  orientation, and neither deck has it: to an enclosure the block's own end wall and the
+  resistor's are the same wall, and the layouts where the two differ - a block running past
+  the bar's end - have no salicided head there, so they are not a resistor either.
+  `PRES.6.h2` expects two markers and `PRES.6.h3` one, which is what both tools report, and
+  the reading is written above the cases.
+- **Finding 5 (PRES.9a).** `pres9a_viol` gains a second half: a marking that lies over the
+  salicided head. The rule asks the marking's length to coincide with the resistor's -
+  which the same sentence defines as the block's - so a marking that reaches out over the
+  heads is longer than the resistor it marks, whatever its edges do. This is the process's
+  own shape: `ppolyf_u` in the PDK's pcell library draws `res_mk` on the block's span
+  exactly and `sab` overhanging the Poly2's width, and the fixtures and the shipped
+  patterns are drawn that way now. `PRES.9a.h2` reports one. The foundry layout goes 5 -> 7:
+  the two new ones are 97 µm of RES_MK over a 2 µm bar, at (±200, 685), which the runset
+  misses because its test only looks at marking edges that fall inside the Poly2.
+  The marking's reference outline is `poly2 ∧ sab` now - the implant left it, because an
+  implant that stops in the middle of the block is PRES.5's finding and made the marking's
+  edge, which lies on the block's, look like an edge of its own.
+
+Both readings recorded at the end of the findings stand: an abutting RES_MK still makes
+the bar a resistor, and PRES.9b's "both sides over 80 µm" is the marking's extent.

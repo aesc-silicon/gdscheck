@@ -219,3 +219,39 @@ full runset reports `PRES.9b` and `LRES.9b` on this layout too; the deck-only ca
   run inside the Poly2; and 0.9 µm short at each end. Two markers either side.
 - The engine family's generic classes (the bound and the step past it, the two metrics, 45°
   walls, unions, holes, arrays, a shape far off) were not redrawn here.
+
+---
+
+## Resolution (2026-09-22)
+
+All four findings of this deck were fixed in the PDK, and the shared finding 3 with them.
+
+- **Findings 6 and 7 (HRES.9).** A second half, `hres9_uncovered`: the resistor's Poly2
+  inside the block's own extent that the block does not cover. A hole cut in the block over
+  the body and a bite out of its edge that stops inside the bar are both that, and the
+  enclosure half - which reads only where the block already covers the poly - could see
+  neither. Bounding it by the block's extent is what keeps the salicided heads out of it:
+  Poly2 beyond the block's ends is meant to be bare. `HRES.9.h1` and `HRES.9.h3` report one
+  each; the foundry layout goes 9 -> 10 (the runset reads 13, in the two narrower terms it
+  writes for the same two cases).
+- **Finding 8 (HRES.10, the minimum).** `hres10_short`: an implant head on a resistor that
+  overlaps no block at all. Zero is under the 0.1 the rule fixes, and there is no strip for
+  the width half to measure. `HRES.10.h2` reports one. It also fires on the fifth device of
+  `HRES.2.h1` - the bar whose implant only abuts it - and the runset reports it there too.
+- **Finding 9 (HRES.10, the maximum).** Read on the strip the rule means: `hres10_wide` is
+  the overlap opened by half the value, which survives only where it is thicker than 0.1,
+  the way MDN.11 reads its own fixed overlap. The old `max_enclosure` asked how far the
+  implant reached *past* the block, which is the same number only on a bar implanted end to
+  end. `HRES.10.h3` reports one.
+  The deck's own good/bad pattern was that bar: its implant covered the whole device, so
+  the overlap was the whole block. It is drawn as the manual's PHRES now - two heads, each
+  0.1 µm over the block, and bare Poly2 between them - and HRES.10's bad half moves a head
+  to 0.105 instead of pulling the block in.
+- **Finding 3 (HRES.5).** Fixed with 10.1's: `poly2_unrelated` is now Poly2 under no block
+  *or* Poly2 no marking names. `HRES.5.h1` reports two; the foundry layout keeps its seven.
+- **Finding 1** was the other side of `pres`'s finding 1 and is fixed there: PRES.2 and
+  LRES.2 have the notch HRES.3 always had.
+
+The two readings recorded as such stand: a bar whose implant only abuts it is a high-sheet
+resistor to both tools (it now also carries HRES.10, above), and HRES.12b's "both sides
+over 80 µm" is the marking's extent.
