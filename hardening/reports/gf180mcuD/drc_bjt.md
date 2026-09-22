@@ -135,3 +135,19 @@ marker is 0 from it, and 0 is under 0.1.
 - **Tile invariance**: six layouts x tiles 20, 7 and 100, no rule's count moved; the three
   0.095 gaps of `BJT.3.h2` straddle x = 20, x = 42 and y = 20 and give 3 at every tile in both
   tools.
+
+---
+
+## Resolution (2026-09-22)
+
+Both findings were fixed in the PDK.
+
+- **Finding 1.** BJT.1 and BJT.2 read their "Min. DRC_BJT overlap of ..." distributively:
+  beside the selection that asks the marker to cover such a shape at all, each takes a
+  crossing half - the part of a deep well, or of a substrate tap, that lies outside the
+  marker it interacts with. That is the same half MDN.12 was given earlier in this branch,
+  for the same reason: a selection that is satisfied by one covered shape goes quiet
+  however many more hang out from under the marker. `BJT.1.h3` and `BJT.2.h1` report what
+  the manual asks, and the foundry layout's BJT.2 goes 2 -> 3, which is the runset's count;
+  all three rules now match it marker for marker there.
+- **Finding 2.** BJT.3 carries `abutting: report`.
