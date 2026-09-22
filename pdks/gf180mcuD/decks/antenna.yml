@@ -359,6 +359,9 @@ rules:
       diode_2_net_of: pcomp_con
       diode_3: nwell
       level_before: metal4_drawn
+  # Read one step further up than the other Via4 rules, as V3_MIMB is: the phase that
+  # emits this rule ties the cap plate to Via4 before it reads, and that step sits
+  # between Via4's own metal and Metal5's.
   - id: ANT.16_iii_ANT.15_V4_MIMB
     check: antenna_ratio
     layers: [via4]
@@ -372,4 +375,4 @@ rules:
       diode_2: p_diode
       diode_2_net_of: pcomp_con
       diode_3: nwell
-      level: via4
+      level_before: metal5_drawn
