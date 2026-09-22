@@ -221,4 +221,6 @@ pub fn generate(pdk: &PdkConfig) {
     write("PRES.9b", "bad", {
         vec![big_marker(&c, o, o), small_marker(&c, o + 130.0 + 19.9, o)]
     });
+
+    super::resistors::hardening(pdk, super::resistors::Kind::P);
 }
