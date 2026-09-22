@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # The shape family: each bound of an extent and of an edge length once, the corners,
-# angles, holes and vertex count.  Outer carries the dims, the right-angle corner rule,
-# the hole and vertex rules; Inner the lengths, the edge lengths, the sharp-corner and
-# angle rules; Via the exact dims and the 45° angle rule.
+# angles, holes, rings and vertex count, and the grid.  Outer carries the dims, the
+# right-angle corner rule, the hole and vertex rules and the grid; Inner the lengths,
+# the edge lengths, the sharp-corner and angle rules; Via the exact dims, the exact and
+# maximum edge length, the 45° angle rule and the ring rule; Outer round Inner the
+# unbroken ring.
 rules:
   - id: E.min_dim
     check: min_dim
@@ -68,3 +70,23 @@ rules:
     check: max_vertices
     layers: [Outer]
     value: 8
+  - id: L.exact
+    check: exact_edge_length
+    layers: [Via]
+    value: 1.0
+  - id: L.max
+    check: max_edge_length
+    layers: [Via]
+    value: 20.0
+  - id: O.grid
+    check: offgrid
+    layers: [Outer]
+    value: 0.005
+  - id: H.ring
+    check: no_ring
+    layers: [Via]
+    value: 0.0
+  - id: S.cover
+    check: ring_covers_boundary
+    layers: [Outer, Inner]
+    value: 0.0

@@ -214,4 +214,22 @@ pub fn generate(pdk: &PdkConfig) {
     let mut e = gate(2.0, 2.0, 10.0, 0.005, 2.0);
     e.extend(gate(2.0, 6.0, 300.0, 0.995, 2.0));
     write("extremes", e);
+
+    // Exactly so (G.exact, 1.0).  Gates 1.0 tall and wide are right; 0.995 and 1.005
+    // tall are off; a 1.0 gate with its piece across x = 20 is right, a 1.005 one is
+    // off; fifty 1.005 gates flat and as an array reference.  G.exact: 4, 2, 100, 100.
+    let mut e = gate(2.0, 2.0, 10.0, 1.0, 2.0);
+    e.extend(gate_v(2.0, 4.0, 10.0, 1.0, 2.0));
+    e.extend(gate(2.0, 16.0, 10.0, 0.995, 2.0)); // G.exact
+    e.extend(gate(2.0, 18.0, 10.0, 1.005, 2.0)); // G.exact
+    write("exact_bound", e);
+    let mut e = gate(15.0, 2.0, 10.0, 1.0, 2.0);
+    e.extend(gate(15.0, 4.0, 10.0, 1.005, 2.0)); // G.exact
+    write("exact_tile_lines", e);
+    let cell = gate(0.2, 0.2, 10.0, 1.005, 2.0);
+    write("exact_array_flat", flat_array(&cell, 5, 10, 12.0));
+    write_gz(
+        &format!("{DIR}/exact_array_ref.gds.gz"),
+        ref_array(cell, 5, 10, 12.0),
+    );
 }

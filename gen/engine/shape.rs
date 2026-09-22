@@ -748,4 +748,121 @@ pub fn generate(pdk: &PdkConfig) {
         &format!("{DIR}/vert_array_ref.gds.gz"),
         ref_array(cell, 10, 5, 4.0),
     );
+
+    // Exactly and at most so long (Via: L.exact 1.0, L.max 20).  A 1 µm square's four
+    // edges are 1; a 1 × 1.005 bar has two edges off, a 1 × 0.995 bar two; a 1 × 20
+    // bar's long edges are not 1 and not over 20; a 1 × 20.005 bar's are over.
+    // L.exact: 8; L.max: 2.
+    write(
+        "edge_exact_bound",
+        vec![
+            rect(via, 2.0, 2.0, 3.0, 3.0),      // right
+            rect(via, 4.0, 2.0, 5.0, 3.005),    // L.exact ×2
+            rect(via, 6.0, 2.0, 7.0, 2.995),    // L.exact ×2
+            rect(via, 8.0, 2.0, 9.0, 22.0),     // L.exact ×2
+            rect(via, 10.0, 2.0, 11.0, 22.005), // L.exact ×2, L.max ×2
+        ],
+    );
+
+    // Tile lines.  A 1 µm square across x = 20, whose pieces have cut edges of 0.5,
+    // is right; a 1 × 1.005 bar across 20 and one across y = 20 have two edges off
+    // each; a 1 × 20.005 bar across 40 has two over; one 1 × 1.005 at (1000, 1000).
+    // L.exact: 8; L.max: 2.
+    write(
+        "edge_exact_tile_lines",
+        vec![
+            rect(via, 19.5, 2.0, 20.5, 3.0),             // right
+            rect(via, 19.5, 5.0, 20.5, 6.005),           // L.exact ×2
+            rect(via, 2.0, 19.5, 3.005, 20.5),           // L.exact ×2
+            rect(via, 30.0, 2.0, 31.0, 22.005),          // L.exact ×2, L.max ×2
+            rect(via, 1000.0, 1000.0, 1001.0, 1001.005), // L.exact ×2
+        ],
+    );
+
+    // Fifty 1 × 1.005 bars, flat and as an array reference.  L.exact: 100 each.
+    let cell = vec![rect(via, 0.2, 0.2, 1.2, 1.205)];
+    write("edge_exact_array_flat", flat_array(&cell, 10, 5, 2.0));
+    write_gz(
+        &format!("{DIR}/edge_exact_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 2.0),
+    );
+
+    // The grid (Outer: O.grid, 0.005).  A box on the grid; a box whose left wall is at
+    // 2.001, two vertices off; one whose top is at 20.001, a nanometre past the tile
+    // line, two; one at 1000.001, two.  O.grid: 6.
+    write(
+        "grid_bound",
+        vec![
+            rect(outer, 10.0, 2.0, 12.0, 4.0),
+            rect(outer, 2.001, 2.0, 4.0, 4.0),             // ×2
+            rect(outer, 6.0, 18.0, 8.0, 20.001),           // ×2
+            rect(outer, 1000.001, 1000.0, 1002.0, 1002.0), // ×2
+        ],
+    );
+
+    // Fifty boxes with two vertices off the grid, flat and as an array reference
+    // placed on it.  O.grid: 100 each.
+    let cell = vec![rect(outer, 0.201, 0.2, 1.2, 1.2)];
+    write("grid_array_flat", flat_array(&cell, 10, 5, 2.0));
+    write_gz(
+        &format!("{DIR}/grid_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 2.0),
+    );
+
+    // Rings (Via: H.ring, the enclosed ground of the drawn shapes).  A ring drawn as
+    // four bars encloses one ground; one across x = 20 and one across (20, 20) do too;
+    // two nested rings enclose two - the band between and the middle; a ring with a
+    // gap encloses nothing; a ring at (1000, 1000).  H.ring: 6.
+    let vring = |x0: f64, y0: f64, x1: f64, y1: f64, band: f64, gap: bool| {
+        let mut v = vec![
+            rect(via, x0, y0, x1, y0 + band),
+            rect(via, x0, y1 - band, x1, y1),
+            rect(via, x0, y0 + band, x0 + band, y1 - band),
+        ];
+        if gap {
+            v.push(rect(via, x1 - band, y0 + band, x1, y0 + band + 1.0));
+            v.push(rect(via, x1 - band, y0 + band + 1.5, x1, y1 - band));
+        } else {
+            v.push(rect(via, x1 - band, y0 + band, x1, y1 - band));
+        }
+        v
+    };
+    let mut e = vring(2.0, 2.0, 6.0, 6.0, 0.5, false);
+    e.extend(vring(18.0, 2.0, 22.0, 6.0, 0.5, false));
+    e.extend(vring(18.0, 18.0, 22.0, 22.0, 0.5, false));
+    e.extend(vring(2.0, 10.0, 8.0, 16.0, 0.5, false));
+    e.extend(vring(3.5, 11.5, 6.5, 14.5, 0.5, false)); // nested: two grounds
+    e.extend(vring(10.0, 2.0, 14.0, 6.0, 0.5, true)); // a gap: none
+    e.extend(vring(1000.0, 1000.0, 1004.0, 1004.0, 0.5, false));
+    write("ring_tile_lines", e);
+
+    // Fifty rings, flat and as an array reference.  H.ring: 50 each.
+    let cell = vring(0.2, 0.2, 2.2, 2.2, 0.4, false);
+    write("ring_array_flat", flat_array(&cell, 10, 5, 3.0));
+    write_gz(
+        &format!("{DIR}/ring_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 3.0),
+    );
+
+    // An unbroken ring round a boundary (S.cover: Outer round Inner).  An Outer ring
+    // 10..50 drawn as four bars over three tiles encloses an Inner box 15..45; the
+    // same ring with a 1 µm gap in its right bar exposes the box, reported once.
+    // S.cover: 0 and 1.
+    let cover = |gap: bool| {
+        let mut v = vec![
+            rect(outer, 10.0, 10.0, 50.0, 12.0),
+            rect(outer, 10.0, 48.0, 50.0, 50.0),
+            rect(outer, 10.0, 12.0, 12.0, 48.0),
+            rect(inner, 15.0, 15.0, 45.0, 45.0),
+        ];
+        if gap {
+            v.push(rect(outer, 48.0, 12.0, 50.0, 30.0));
+            v.push(rect(outer, 48.0, 31.0, 50.0, 48.0));
+        } else {
+            v.push(rect(outer, 48.0, 12.0, 50.0, 48.0));
+        }
+        v
+    };
+    write("cover_closed", cover(false));
+    write("cover_gap", cover(true));
 }

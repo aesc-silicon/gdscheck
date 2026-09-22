@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # The width of Outer between chosen walls, chosen by the boundary of Inner: the shared
-# walls at least 1 µm, the unshared and the shared at most 3 µm, and the shared once
-# more outside Via and once more over runs longer than 3 µm.
+# walls at least 1 µm and exactly 1 µm, the unshared and the shared at most 3 µm, and
+# the shared once more outside Via and once more over runs longer than 3 µm.
 rules:
   - id: G.min
     check: min_gate_length
@@ -32,3 +32,7 @@ rules:
     value: 1.0
     params:
       length: 3.0
+  - id: G.exact
+    check: exact_gate_length
+    layers: [Outer, Inner]
+    value: 1.0
