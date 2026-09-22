@@ -3023,3 +3023,63 @@ fn hardening_lvs_bjt(
     want.sort();
     assert_eq!(hardening("lvs_bjt", gds, topcell, &ignore), want, "{gds}");
 }
+
+// --- Native-VT device (hardening/reports/gf180mcuD/nat.md).  A native transistor is an
+// N+ active clear of every well with a poly gate across it, under a NAT marker; Dualgate
+// over the marker makes it the 6 V kind.  `min_gate_length` reports one marker per wall.
+#[rstest]
+// The marker holding the active by 2.0 (clean), by 1.995 on one wall, and a third device
+// whose active runs out through the marker's edge - held by nothing, which is less than
+// the two microns NAT.1 asks.  Report finding 1: neither tool reads the crossing shape.
+#[case::nat_1_h1("nat/NAT.1.h1.gds.gz", "TOP", vec!["NAT.1", "NAT.1"])]
+// The marker's top-right corner chamfered so its 45° wall stands 1.994 µm from the
+// active's corner while both axis distances are 2.2.  An enclosure is euclidian (settled
+// 2026-09-21), so it fires.  Report finding 2: gdscheck reads the projection and is
+// silent; KLayout fires.
+#[case::nat_1_h2("nat/NAT.1.h2.gds.gz", "TOP", vec!["NAT.1"])]
+// An unrelated active 0.3 from the marker (clean), 0.295, sharing the marker's edge, and
+// one 0.22 × 0.2 off its corner - 0.2966 euclidian.  Report finding 3: the shared edge is
+// a space of nothing and gdscheck does not report it.
+#[case::nat_2_h1("nat/NAT.2.h1.gds.gz", "TOP", vec!["NAT.2", "NAT.2", "NAT.2"])]
+// An N-well 0.5 from the marker (clean), 0.495, and sharing its edge.  Report finding 3.
+#[case::nat_3_h1("nat/NAT.3.h1.gds.gz", "TOP", vec!["NAT.3", "NAT.3"])]
+// The channel at 1.8 and 1.795, at 3.3 V and again under a Dualgate that covers the
+// marker whole - one id each, two markers per gate, one per wall.
+#[case::nat_4_h1("nat/NAT.4.h1.gds.gz", "TOP", vec!["NAT.4", "NAT.4", "NAT.5", "NAT.5"])]
+// A 1.795 channel whose marker Dualgate only abuts: no thick oxide over the device, so it
+// is the 3.3 V one and NAT.4 is its rule.
+#[case::nat_4_h2("nat/NAT.4.h2.gds.gz", "TOP", vec!["NAT.4", "NAT.4"])]
+// Two actives under one marker, each with its own contact and its own Metal1 plate: two
+// potentials.
+#[case::nat_6_h1("nat/NAT.6.h1.gds.gz", "TOP", vec!["NAT.6"])]
+// The same pair with one Metal1 plate over both contacts - one potential, which is the
+// only thing the rule forbids two of.  Report finding 4: both tools report it anyway.
+#[case::nat_6_h2("nat/NAT.6.h2.gds.gz", "TOP", vec![])]
+// Bare markers 0.74 apart (clean) and 0.735 apart three times over, plus a 0.735 slot;
+// every gap centred on a tile line at x = 20, 21, 40, 42 and y = 20.
+#[case::nat_7_h1("nat/NAT.7.h1.gds.gz", "TOP", vec!["NAT.7"; 4])]
+// A marker Dualgate covers whole (clean), one it covers from the middle rightwards, and
+// one it abuts without covering - which is a 3.3 V device and has no overlap to measure.
+#[case::nat_8_h1("nat/NAT.8.h1.gds.gz", "TOP", vec!["NAT.8"])]
+// Unrelated poly 0.3 from the marker (clean), 0.295, and sharing its edge.  Report
+// finding 3.
+#[case::nat_9_h1("nat/NAT.9.h1.gds.gz", "TOP", vec!["NAT.9", "NAT.9"])]
+// Two gates on one active joined over the field by a poly bridge under the marker: poly
+// running from one gate of the marker to another is the interconnect the rule forbids.
+#[case::nat_9_h2("nat/NAT.9.h2.gds.gz", "TOP", vec!["NAT.9"])]
+// An N-well with one corner over the marker, one wholly inside it, and one abutting its
+// edge - the last is not a well inside the marker but NAT.3's zero space.  Report
+// finding 3.
+#[case::nat_10_h1("nat/NAT.10.h1.gds.gz", "TOP", vec!["NAT.10", "NAT.10", "NAT.3"])]
+// An N+ active under the marker with no poly on it, one whose gate only abuts it (both
+// tools read that as intersecting), and a P+ active, which is not an NCOMP.  The P+ and
+// the N+ under that third marker are two potentials, so NAT.6 comes with it.
+#[case::nat_11_h1("nat/NAT.11.h1.gds.gz", "TOP", vec!["NAT.11", "NAT.6"])]
+// Poly under the marker reaching no active, poly touching an active at a single point
+// (intersecting in both tools), and poly over an active carrying RES_MK.
+#[case::nat_12_h1("nat/NAT.12.h1.gds.gz", "TOP", vec!["NAT.12", "NAT.12"])]
+fn hardening_nat(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut expected = expected;
+    expected.sort();
+    assert_eq!(hardening("nat", gds, topcell, &[]), expected, "{gds}");
+}
