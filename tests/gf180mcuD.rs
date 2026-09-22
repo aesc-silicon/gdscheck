@@ -1628,3 +1628,64 @@ fn hardening_nplus(
     want.sort();
     assert_eq!(hardening("nplus", gds, topcell, &[]), want, "{gds}");
 }
+
+// --- P+ implant (hardening/reports/gf180mcuD/pplus.md).  The manual's section 7.9, the
+// mirror of 7.8 with the wells the other way round: the P+ rules read the N-well's inner
+// band where the N+ rules read its outer collar, and the P-well's outer collar where they
+// read its inner band.
+#[rstest]
+// One marker whose foot carries a legal butted P+/N+ pair and whose arm ends 0.155 from an
+// unrelated N+ active 8 um away.
+#[case::pp_3a_h1("pplus/PP.3a.h1.gds.gz", "TOP", vec!["PP.3a"], vec![])]
+// The same scene with the butted pair taken out: the control.
+#[case::pp_3a_h2("pplus/PP.3a.h2.gds.gz", "TOP", vec!["PP.3a"], vec![])]
+// N+ actives in an N-well's 0.429 rim (0.155 away, PP.3cii) and in its core (0.075 away,
+// PP.3ci); the same two at 0.16 and 0.08 are clean.
+#[case::pp_3ci_h1("pplus/PP.3ci.h1.gds.gz", "TOP", vec!["PP.3ci", "PP.3cii"], vec![])]
+// A butted P+/N+ edge round the corner from an N-channel gate, 0.297 corner to corner and
+// facing none of the gate's walls.
+#[case::pp_4a_h1("pplus/PP.4a.h1.gds.gz", "TOP", vec![], vec![])]
+// The same edge facing the gate's wall at 0.315 (fires) and at 0.32 (clean).
+#[case::pp_4a_h2("pplus/PP.4a.h2.gds.gz", "TOP", vec!["PP.4a"], vec![])]
+// A gate the marker holds by 0.225 (two walls) and a gate whose poly bar the marker's
+// right wall cuts: the overlap is nothing, and so is the extension past the COMP, which
+// an N-well tap owes to both PP.5b and PP.5dii.
+#[case::pp_5a_h1("pplus/PP.5a.h1.gds.gz", "TOP", vec!["PP.5a"; 3], vec!["PP.5b", "PP.5dii"])]
+// A P-tap just outside an N-well whose marker wall is drawn on the well wall: the COMP is
+// outside the well, so this is PP.5d's case and the marker is 0 from the well - PP.5dii.
+#[case::pp_5b_h1("pplus/PP.5b.h1.gds.gz", "TOP", vec!["PP.5dii"], vec![])]
+// Four taps in one P-well in a deep well: 0.015 past the COMP in the core (PP.5ci), 0.02
+// there (clean), 0.155 past a COMP in the 0.429 band (PP.5cii), 0.16 there (clean).
+#[case::pp_5ci_h1("pplus/PP.5ci.h1.gds.gz", "TOP", vec!["PP.5ci", "PP.5cii"], vec![])]
+// Two identical P-taps in the field, the marker 0.015 past the COMP.  Section 7.9 knows
+// nothing of guard rings, and the second one is drawn under GUARD_RING_MK.
+#[case::pp_5di_h1("pplus/PP.5di.h1.gds.gz", "TOP", vec!["PP.5di", "PP.5di"], vec![])]
+// A butted pair whose P+ half is 0.215 long (fires) and one 0.22 long.
+#[case::pp_6_h1("pplus/PP.6.h1.gds.gz", "TOP", vec!["PP.6"], vec![])]
+// Two unsalicided poly bars with the marker 0.175 past each; the one marked as a resistor
+// is exempt, the bare one is PP.9.
+#[case::pp_9_h1("pplus/PP.9.h1.gds.gz", "TOP", vec!["PP.9"], vec![])]
+// (a) an unsalicided COMP the marker holds by 0.175: PP.10; (b) one the marker's wall cuts
+// in half - an overlap of nothing, and the COMP's own edge is PP.5di's; (c) an unsalicided
+// poly whose wall the marker's wall touches - a space of nothing, PP.7.
+#[case::pp_10_h1("pplus/PP.10.h1.gds.gz", "TOP", vec!["PP.10", "PP.10"], vec!["PP.5di", "PP.7"])]
+// Butted P+/N+ edges 0.2 inside an N-well's wall, 0.2 outside it (at the tile line x = 20)
+// and 0.5 inside it.  PP.11 takes the band inside the well, NP.11 the collar outside it.
+#[case::pp_11_h1("pplus/PP.11.h1.gds.gz", "TOP", vec!["PP.11"], vec![])]
+// (a) a U of poly whose right leg the marker covers: 0.22 of air from the gate but 5 um
+// along the poly; (b) a straight bar with the marker 0.315 up it.
+#[case::pp_12_h1("pplus/PP.12.h1.gds.gz", "TOP", vec!["PP.12"], vec![])]
+fn hardening_pplus(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] first: Vec<&str>,
+    #[case] second: Vec<&str>,
+) {
+    let mut want: Vec<String> = first
+        .into_iter()
+        .chain(second)
+        .map(ToString::to_string)
+        .collect();
+    want.sort();
+    assert_eq!(hardening("pplus", gds, topcell, &[]), want, "{gds}");
+}
