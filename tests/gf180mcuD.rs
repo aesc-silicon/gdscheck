@@ -2081,4 +2081,72 @@ fn hardening_mcell(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
     let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
     want.sort();
     assert_eq!(hardening("mcell", gds, topcell, &[]), want, "{gds}");
+// --- MIM capacitor, option B (hardening/reports/gf180mcuD/mim_b.md).  Everything the
+// deck measures the bottom plate with is a layer nobody draws: FuseTop grown by 1.06 µm
+// and clipped to Metal4.  The expected values are the manual's 1.06, not the engine's.
+#[rstest]
+// A capacitor whose metal runs 2.0 past the plate, alone on the layout: the metal outside
+// the virtual plate is the plate's own, and there is nothing to measure against it.
+#[case::mimtm_1_h1("mim_b/MIMTM.1.h1.gds.gz", "TOP", vec![])]
+// The same overhang with routing metal 1.2 (clean) and 1.195 (fires) from the virtual
+// plate's edge.  Report finding 1: the virtual plate is grown by 1.065, so the 1.2 gap is
+// read as 1.195 and reported too.
+#[case::mimtm_1_h2("mim_b/MIMTM.1.h2.gds.gz", "TOP", vec!["MIMTM.1"])]
+// 1.195 gaps to the virtual plate straddling x = 20 and x = 42.
+#[case::mimtm_1_h3("mim_b/MIMTM.1.h3.gds.gz", "TOP", vec!["MIMTM.1"; 2])]
+// Bottom-plate vias held by 0.395 (fires) and 0.4; a via outside the metal sharing its
+// edge, and a via held by 0.395 in routing metal far from any plate - neither is within
+// the 1.06 oversize, so neither is this rule's.
+#[case::mimtm_2_h1("mim_b/MIMTM.2.h1.gds.gz", "TOP", vec!["MIMTM.2"])]
+// A via in the metal but past the 1.06 oversize (not this rule's, though the metal holds
+// it by 0.24), and a via crossing the metal's outer edge (the crossing half, fires).
+#[case::mimtm_2_h2("mim_b/MIMTM.2.h2.gds.gz", "TOP", vec!["MIMTM.2"])]
+// A via whose inner edge sits exactly on the 1.06 oversize - touching it is not being
+// within it - and one 0.01 inside it, both held by 0.395.  Only the second is a bottom-
+// plate via.  Report finding 1: the 1.065 grow makes the first one fire as well.
+#[case::mimtm_2_h3("mim_b/MIMTM.2.h3.gds.gz", "TOP", vec!["MIMTM.2"])]
+// A plate with no metal under it at all: no bottom plate, so no 0.6 overlap.
+#[case::mimtm_3_h1("mim_b/MIMTM.3.h1.gds.gz", "TOP", vec!["MIMTM.3"])]
+// A plate the metal covers only half of (the crossing half), and one overlapped by 0.595.
+#[case::mimtm_3_h2("mim_b/MIMTM.3.h2.gds.gz", "TOP", vec!["MIMTM.3"; 2])]
+// The metal 2.0 past the plate: the overlap is the oversize's 1.06, well over 0.6.
+#[case::mimtm_3_h3("mim_b/MIMTM.3.h3.gds.gz", "TOP", vec![])]
+// A via straddling the top plate's edge: the plate overlaps it nowhere by 0.4.
+#[case::mimtm_4_h1("mim_b/MIMTM.4.h1.gds.gz", "TOP", vec!["MIMTM.4"])]
+// A via abutting the top plate's edge from outside - a spacing to the plate of nothing.
+// Report finding 2: gdscheck reads a shared edge as no measurement and stays silent.
+#[case::mimtm_4_h2("mim_b/MIMTM.4.h2.gds.gz", "TOP", vec!["MIMTM.5"])]
+// A via 0.395 from the plate on the bottom metal (fires), and one 0.395 from a plate
+// whose metal stops flush with it, landing on nothing - not a bottom-plate via.  The
+// flush metal is an overlap of nothing, so MIMTM.3 fires there.
+#[case::mimtm_5_h1("mim_b/MIMTM.5.h1.gds.gz", "TOP", vec!["MIMTM.3", "MIMTM.5"])]
+// A via on the bottom metal whose corner sits on the plate's corner: a spacing of nothing.
+#[case::mimtm_5_h2("mim_b/MIMTM.5.h2.gds.gz", "TOP", vec!["MIMTM.5"])]
+// A U-shaped top plate with a 0.595 opening (fires) and one with a 0.6 opening.
+#[case::mimtm_6_h1("mim_b/MIMTM.6.h1.gds.gz", "TOP", vec!["MIMTM.6"])]
+// CAP_MK exactly on the plate (clean), 0.5 short of its edge (fires), as a frame with a
+// hole over the plate (fires), and as two abutting boxes whose union covers it (clean).
+#[case::mimtm_7_h1("mim_b/MIMTM.7.h1.gds.gz", "TOP", vec!["MIMTM.7"; 2])]
+// 25.0 µm² exactly and 24.975, each as a rectangle and as an L drawn from two boxes.
+#[case::mimtm_8a_h1("mim_b/MIMTM.8a.h1.gds.gz", "TOP", vec!["MIMTM.8a"; 2])]
+// 100 × 100 = 10000 exactly (clean) and 100.005 × 100 = 10000.5, which is over MIMTM.8b
+// and, being the whole of its bottom plate's total, over MIMTM.11 as well.
+#[case::mimtm_8b_h1("mim_b/MIMTM.8b.h1.gds.gz", "TOP", vec!["MIMTM.11", "MIMTM.8b"])]
+// Two vias on the plate 0.495 apart (fires) and 0.5.
+#[case::mimtm_9_h1("mim_b/MIMTM.9.h1.gds.gz", "TOP", vec!["MIMTM.9"])]
+// A via on the plate and one straddling its edge, 0.495 apart: the straddler is not a via
+// on the plate, so the pitch rule has only one - it is MIMTM.4's crossing instead.
+#[case::mimtm_9_h2("mim_b/MIMTM.9.h2.gds.gz", "TOP", vec!["MIMTM.4"])]
+// A Via3 in the bottom plate's 1.06 ring (report finding 4: both tools read the rule as
+// the metal under FuseTop only), and one straddling the plate's edge, which fires.
+#[case::mimtm_10_h1("mim_b/MIMTM.10.h1.gds.gz", "TOP", vec!["MIMTM.10"])]
+// Two 50 × 100 capacitors on one bottom plate: 10000 µm² exactly.
+#[case::mimtm_11_h1("mim_b/MIMTM.11.h1.gds.gz", "TOP", vec![])]
+// The same pair at 10000.25 µm², over the cap.  Neither plate is near it on its own.
+#[case::mimtm_11_h2("mim_b/MIMTM.11.h2.gds.gz", "TOP", vec!["MIMTM.11"])]
+// Two 6000 µm² capacitors on separate bottom plates: 12000 between them, but the cap is
+// per plate.
+#[case::mimtm_11_h3("mim_b/MIMTM.11.h3.gds.gz", "TOP", vec![])]
+fn hardening_mim_b(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    assert_eq!(hardening("mim_b", gds, topcell, &[]), expected, "{gds}");
 }
