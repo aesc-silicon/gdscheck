@@ -5493,6 +5493,10 @@ pub fn analyze_regions(
                 return hits.into_iter();
             }
             let metal_shapes = neigh.simplify_shape(FillRule::NonZero);
+            // Eroded by the radius itself, so a plate exactly twice the radius across
+            // vanishes: the size is a strict bound - IHP's Slt.c slots metal *wider*
+            // than 30 µm, Slt.i reads regions *larger* than 35 - and a plate exactly
+            // the size is not wide.
             let eroded = metal_shapes.outline(&offset(-erode_radius));
             let local: Vec<usize> = tile_pieces
                 .get(&(tx, ty))

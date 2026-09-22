@@ -37,10 +37,11 @@ merge cache and divided by the area the scope names.
    finer step here only finds what falls between its windows.
 ``scope: region``
    Two layers, positional: a *base* layer whose connected regions are measured, and a
-   *feature* layer whose coverage inside each of them is the density. Only regions at
-   least ``min_size`` µm across in every direction are checked, found by a tiled erosion
-   of radius ``min_size / 2``: a region that vanishes under it has no spot wide enough
-   and is skipped whatever its total area, so a long thin sliver never trips the rule.
+   *feature* layer whose coverage inside each of them is the density. Only regions
+   more than ``min_size`` µm across in every direction are checked, found by a tiled
+   erosion of radius ``min_size / 2``: a region that vanishes under it - one exactly
+   ``min_size`` across included - has no spot wide enough and is skipped whatever its
+   total area, so a long thin sliver never trips the rule.
    The percentage is the feature's area inside the region against the region's true
    filled area, not its bounding box, and each region passes or fails on its own, so a
    single starved plate cannot be averaged out by well-covered neighbours. Both layers
@@ -65,8 +66,8 @@ Parameters
 ``window``
    The tile size in µm, square; required with ``scope: window``.
 ``min_size``
-   With ``scope: region``: the span in µm a base region's widest spot must have to be
-   checked at all. Defaults to ``35.0``.
+   With ``scope: region``: the span in µm a base region's widest spot must exceed to
+   be checked at all. Defaults to ``35.0``.
 ``layer_params: boundary``
    The layer whose bounding box is the denominator (``chip``) or bounds each window's
    denominator (``window``), by name: a seal ring or a die outline. Optional; without
