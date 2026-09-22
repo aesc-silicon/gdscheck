@@ -1969,3 +1969,113 @@ fn hardening_metaltop(
     want.sort();
     assert_eq!(hardening("metaltop", gds, topcell, &[]), want, "{gds}");
 }
+
+/// The rule ids a case expects, as owned strings.
+fn ids(list: &[&str]) -> Vec<String> {
+    list.iter().map(ToString::to_string).collect()
+}
+
+/// Every rule of one level's slotting table, for all five levels.
+fn per_level(suffixes: &[&str]) -> Vec<String> {
+    (1..=5)
+        .flat_map(|n| suffixes.iter().map(move |s| format!("MSLOT{n}.{s}")))
+        .collect()
+}
+
+// --- Metal slotting (hardening/reports/gf180mcuD/mslot.md).  Section 14.6.3 of the
+// manual, whose own table has three things neither this deck nor the runset carries: the
+// 30 µm *maximum* on slot space in `.4`, the `.10` that forbids a slot mark on a hole in
+// the metal, and the Metal3-inside-FuseTop region in `.9`'s list.  `.6` is in the manual's
+// own Appendix B of rules not coded.  Counts: `forbidden` gives one marker per region,
+// `min_dim` / `min_length` / `max_length` one per mark, `min_space` one per pair, and
+// `min_enclosure` one per short approach.
+#[rstest]
+// One 22 x 150 µm plate per level carrying an L (`.0`), a 1.995 µm wide mark (`.2`), a
+// 9.995 µm long one (`.3`) and a pair 9.995 µm apart (`.4`).
+#[case::mslot_all_h1("mslot/MSLOT.all.h1.gds.gz", "TOP", per_level(&["0", "2", "3", "4"]))]
+// `.2` is the mark's short bbox side and `.3` its long one, whichever way round it lies:
+// 1.995 x 20 and 20 x 1.995 both fire `.2`, and a 2 x 2 square fires `.3` alone.
+#[case::mslot_dim_h1("mslot/MSLOT.dim.h1.gds.gz", "TOP", ids(&["MSLOT1.2", "MSLOT1.2", "MSLOT1.3"]))]
+// `.3`'s two bounds: 10 and 250 µm are legal, 9.995 and 250.005 are not.
+#[case::mslot_len_h1("mslot/MSLOT.len.h1.gds.gz", "TOP", ids(&["MSLOT1.3", "MSLOT1.3"]))]
+// `.4` at 10 µm (clean) and 9.995; and an L 5 µm from a rectangle, which is `.0`'s alone -
+// only rectangles reach the rules after `.0`.
+#[case::mslot_space_h1("mslot/MSLOT.space.h1.gds.gz", "TOP", ids(&["MSLOT1.0", "MSLOT1.4"]))]
+// The same 9.995 µm gap across x = 20, across x = 42, and with a mark's edge on x = 20.
+#[case::mslot_space_h2("mslot/MSLOT.space.h2.gds.gz", "TOP", ids(&["MSLOT1.4"; 3]))]
+// `.4`'s maximum: marks 30 µm apart are at the bound and 30.005 apart are over it.  Both
+// tools are silent - the deck and the runset carry the minimum alone (report, finding 1).
+#[case::mslot_space_h3("mslot/MSLOT.space.h3.gds.gz", "TOP", ids(&["MSLOT1.4"]))]
+// `.5` at 9.995 µm on one side, on all five levels, and 10 µm all round for the control.
+#[case::mslot_enc_h1("mslot/MSLOT.enc.h1.gds.gz", "TOP", per_level(&["5"]))]
+// A mark crossing the metal's edge, one with no metal at all, one on the dummy datatype,
+// and one 8 µm from the wall of a notch.  The runset reports only the last (report,
+// finding 5: gdscheck is right).
+#[case::mslot_enc_h2("mslot/MSLOT.enc.h2.gds.gz", "TOP", ids(&["MSLOT1.5"; 4]))]
+// A legal mark in the middle of a hole in the metal, 10 µm from every wall of it: the
+// manual's `.10`, which neither deck carries.  gdscheck reports it as `.5` instead, which
+// is the right answer under the wrong id (report, finding 2).
+#[case::mslot_hole_h1("mslot/MSLOT.hole.h1.gds.gz", "TOP", ids(&["MSLOT1.10"]))]
+// The per-level via map: `.7` is the via above the metal, `.8` the one below, and Metal5
+// has no `.7`.
+#[case::mslot_via_h1("mslot/MSLOT.via.h1.gds.gz", "TOP", ids(&["MSLOT1.7", "MSLOT1.8", "MSLOT2.7", "MSLOT2.8", "MSLOT3.7", "MSLOT3.8", "MSLOT4.7", "MSLOT4.8", "MSLOT5.8"]))]
+// A via 0.2 µm away (clean), one sharing part of the mark's edge, one wholly inside the
+// mark, one straddling its edge, and a Via2 beside a Metal1 mark (the wrong level).  Three
+// violations, none of which gdscheck reports (report, findings 3 and 4).
+#[case::mslot_via_h2("mslot/MSLOT.via.h2.gds.gz", "TOP", ids(&["MSLOT1.7"; 3]))]
+// A via bar sharing the whole of the mark's right edge, a contact sharing the whole of its
+// left edge, and a via touching one corner.  gdscheck reports the corner and neither edge
+// (report, finding 3).
+#[case::mslot_via_h3("mslot/MSLOT.via.h3.gds.gz", "TOP", ids(&["MSLOT1.7", "MSLOT1.7", "MSLOT1.8"]))]
+// `.9`'s six keep-out regions at 9.995 µm from a mark, the same pair at 10 (clean), and the
+// five layer combinations that build no keep-out at all.
+#[case::mslot_dont_h1("mslot/MSLOT.dont.h1.gds.gz", "TOP", ids(&["MSLOT1.9"; 6]))]
+// A pad opening lying on the mark, one sharing its edge, one whose grown keep-out shares
+// its edge, one at the 10 µm bound (clean), and a Metal3 island inside FuseTop at 9.995 -
+// the fifth region the manual's `.9` names (report, findings 3, 4 and 6).
+#[case::mslot_dont_h2("mslot/MSLOT.dont.h2.gds.gz", "TOP", ids(&["MSLOT1.9"; 4]))]
+// What "wider than 30 µm" is: 30 x 30 (clean), 30.005 x 30.005, 30.005 x 30 (clean), a
+// 40 x 20 plate and an L of two 40 x 20 arms (clean - no 30 µm square fits).
+#[case::mslot_wide_h1("mslot/MSLOT.wide.h1.gds.gz", "TOP", ids(&["MSLOT1.1"]))]
+// The slot that relieves it: a 2 µm mark leaves two 30 µm halves in a 62 µm plate (clean)
+// and two 30.005 halves in a 62.01 one.
+#[case::mslot_wide_h2("mslot/MSLOT.wide.h2.gds.gz", "TOP", ids(&["MSLOT1.1"; 2]))]
+// The via keep-out relieves it too: a 1.7 µm via bar grows to 2.1 and leaves 29.955 µm
+// halves (clean); a 1.5 µm bar grows to 1.9 and leaves 30.055.
+#[case::mslot_wide_h3("mslot/MSLOT.wide.h3.gds.gz", "TOP", ids(&["MSLOT1.1"; 2]))]
+// And so does a keep-out: a 2 µm pad opening over the top metal grows to 12 (clean); the
+// same opening with no top metal under it is no keep-out, and the plate is one region.
+#[case::mslot_wide_h4("mslot/MSLOT.wide.h4.gds.gz", "TOP", ids(&["MSLOT1.1"]))]
+// The 15 µm shrink and grow across the tile lines: a 30.005 µm square over x = 7 to 35,
+// one over x = 42, and one at (1000, 1000).
+#[case::mslot_wide_h5("mslot/MSLOT.wide.h5.gds.gz", "TOP", ids(&["MSLOT1.1"; 3]))]
+// One 30.005 µm square per level, all at the same place.
+#[case::mslot_wide_h6("mslot/MSLOT.wide.h6.gds.gz", "TOP", per_level(&["1"]))]
+fn hardening_mslot(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<String>) {
+    let mut want = expected;
+    want.sort();
+    assert_eq!(hardening("mslot", gds, topcell, &[]), want, "{gds}");
+}
+
+// --- Memory cell (hardening/reports/gf180mcuD/mcell.md).  Section 7.17 is four rules over
+// one marker layer and the deck carries all four.  `min_width` reports one marker per wall
+// where the runset reports one per edge pair; everything else agrees marker for marker.
+#[rstest]
+// MC.3's bound read twice: 0.5 x 0.7 and 0.4 x 0.875 are exactly 0.35 µm², 0.5 x 0.695 and
+// 0.4 x 0.87 are under it.  Then two 0.4 µm boxes abutting into one 0.32 µm² region (one
+// violation, not two) and two abutting into 0.36 (clean).
+#[case::mc_area_h1("mcell/MC.area.h1.gds.gz", "TOP", vec!["MC.3"; 3])]
+// MC.1 at 0.4 µm (clean) and 0.395 - two walls, two markers; MC.2's space and notch at 0.4
+// (clean) and 0.395.
+#[case::mc_width_h1("mcell/MC.width.h1.gds.gz", "TOP", vec!["MC.1", "MC.1", "MC.2", "MC.2"])]
+// MC.4 on a 0.5 x 0.7 hole (exactly 0.35 µm², clean) and a 0.5 x 0.695 one; then a C whose
+// inside reaches the outside through a 0.4 µm channel and through a 0.395 one - neither is
+// a hole, and the narrow one is MC.2's space between the two ends.
+#[case::mc_hole_h1("mcell/MC.hole.h1.gds.gz", "TOP", vec!["MC.2", "MC.4"])]
+// The marker is 11/17: the same 0.395 µm bar on 11/39 (MVSD), 11/16 and 11/18 is silent.
+#[case::mc_layer_h1("mcell/MC.layer.h1.gds.gz", "TOP", vec!["MC.1", "MC.1"])]
+fn hardening_mcell(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening("mcell", gds, topcell, &[]), want, "{gds}");
+}
