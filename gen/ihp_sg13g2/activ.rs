@@ -1914,7 +1914,8 @@ fn afil_d_h(l: &L) {
     // h2 — inside.  Figure 5.6 draws "d" from a filler inside a NWell to the well's edge
     // as well as from one outside: a filler 0.5 inside a NWell's edge fires, 1.0 inside is
     // clean; the same for nBuLay; a filler crossing a NWell's edge and one crossing an
-    // nBuLay's edge are at no distance (fire).
+    // nBuLay's edge share area and are no pair (the test's comment says how the
+    // section 4.2 nBuLay moves the readings).
     write(
         "AFil.d.h2",
         vec![

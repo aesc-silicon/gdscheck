@@ -2681,9 +2681,24 @@ pub fn regions_overlap(a: &Outline, b: &Outline) -> bool {
     if within(a, b) || within(b, a) {
         return true;
     }
-    a.segs
+    if a.segs
         .iter()
         .any(|&s| b.segs.iter().any(|&t| segs_cross_i(s, t)))
+    {
+        return true;
+    }
+    // A fourth way, with no vertex inside and no crossing: two boxes of one height
+    // overlapping sideways have the ends of every wall on the other's boundary and the
+    // walls between them inside - the overlap of two bars drawn edge to edge.  The
+    // walls run through the shared area, so a point along one lies strictly inside.
+    let along =
+        |(p, q): Seg, k: i64| ((p.0 * (4 - k) + q.0 * k) / 4, (p.1 * (4 - k) + q.1 * k) / 4);
+    let inside_along = |a: &Outline, b: &Outline| {
+        a.segs
+            .iter()
+            .any(|&s| (1..4).any(|k| b.strictly_contains(along(s, k))))
+    };
+    inside_along(a, b) || inside_along(b, a)
 }
 
 /// Whether two regions share a *run* of boundary rather than meeting at isolated points.
