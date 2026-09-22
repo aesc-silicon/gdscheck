@@ -63,7 +63,7 @@ required-features = ["dev-tools"]
 clap = { version = "4", features = ["derive", "env"] }
 gds21 = "3.0.0-pre.2"
 serde = { version = "1", features = ["derive"] }
-serde_yml = "0.0.12"
+serde_norway = "0.9"
 flate2 = "1"
 quick-xml = { version = "0.42", features = ["serialize"] }
 rayon = "1"

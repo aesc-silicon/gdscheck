@@ -596,7 +596,7 @@ impl PdkConfig {
     }
 
     fn from_yaml(content: &str, source: PdkSource) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut raw: PdkRaw = serde_yml::from_str(content)?;
+        let mut raw: PdkRaw = serde_norway::from_str(content)?;
 
         if let Some(base_rel) = raw.extends.take() {
             // A bare name is the base beside this PDK, bundled or not:
@@ -607,7 +607,7 @@ impl PdkConfig {
                 format!("../{base_rel}/pdk.yml")
             };
             let base_content = source.read(&base_rel)?;
-            let base: PdkRaw = serde_yml::from_str(&base_content)?;
+            let base: PdkRaw = serde_norway::from_str(&base_content)?;
             if base.extends.is_some() {
                 return Err(format!(
                     "extends chain not supported: base '{base_rel}' itself extends another PDK"
@@ -1086,7 +1086,7 @@ impl PdkConfig {
             .ok_or_else(|| format!("Suite '{suite_name}' not found in PDK '{}'", self.name))?;
 
         let content = self.source.read(&suite_ref.path)?;
-        let raw: SuiteRaw = serde_yml::from_str(&content)?;
+        let raw: SuiteRaw = serde_norway::from_str(&content)?;
 
         let mut rules = Vec::new();
         for inc in &raw.include {
@@ -1126,7 +1126,7 @@ impl PdkConfig {
             .ok_or_else(|| format!("Deck '{deck_name}' not found in PDK '{}'", self.name))?;
 
         let content = self.source.read(&deck_ref.path)?;
-        let mut raw: DeckRaw = serde_yml::from_str(&content)?;
+        let mut raw: DeckRaw = serde_norway::from_str(&content)?;
 
         if let Some(ids) = only {
             let present: HashSet<&str> = raw.rules.iter().map(|r| r.id.as_str()).collect();
