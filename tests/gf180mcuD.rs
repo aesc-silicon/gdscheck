@@ -2549,3 +2549,70 @@ fn hardening_hres(
 fn hardening_density(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
     assert_eq!(hardening("density", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- Antenna (hardening/reports/gf180mcuD/antenna.md).  The gate throughout is
+// 0.06615 µm² (0.21 µm of Poly2 across 0.315 µm of COMP) and a metal antenna is one
+// 0.66 µm wide bar, so its perimeter is 2(len + 0.66) and the manual's perimeter area is
+// that times the layer's thickness.
+#[rstest]
+// Three Poly2 antennas: 200.7 over a thin gate (fires), 198.3 (clean), and 200.7 over a
+// gate Dualgate covers - ANT.1 is read on every gate, thick or thin.
+#[case::ant_1_h1("antenna/ANT.1.h1.gds.gz", "TOP", vec!["ANT.1", "ANT.1"])]
+// A gate whose Poly2 is at 71 strapped through Metal1 to a gateless 40 µm Poly2 pad.
+// Poly2's ratio is read before the contact level: the two shapes are not added (316).
+#[case::ant_1_h2("antenna/ANT.1.h2.gds.gz", "TOP", vec![])]
+// The 200.7 antenna with an N+ diode on the Metal1 that straps its gate.  ANT.16's
+// relief is written for Metaln and Vian; Poly2 has none.
+#[case::ant_1_h3("antenna/ANT.1.h3.gds.gz", "TOP", vec!["ANT.1"])]
+// A 200.7 Poly2 antenna and a 408 Metal1 bar on a gate RES_MK covers: a resistor body is
+// not a gate, so neither ratio has a denominator.
+#[case::ant_1_h4("antenna/ANT.1.h4.gds.gz", "TOP", vec![])]
+// Fourteen contacts on the gate's Poly2 head: 10.24 over ANT.8's 10.
+#[case::ant_8_h1("antenna/ANT.8.h1.gds.gz", "TOP", vec!["ANT.8"])]
+// Thirteen on the gate (9.51), twenty on a gateless pad the same Metal1 strap reaches,
+// four on the transistor's own source/drain.  Contact is read before Metal1 joins
+// anything, and the diffusion is another node: 24.2 and 12.4 if either were added.
+#[case::ant_8_h2("antenna/ANT.8.h2.gds.gz", "TOP", vec![])]
+// The manual's own repair: a 408 Metal1 bar reached only by jogging up to Metal2 and
+// back.  Metal1's ratio is read with Metal2 absent, so the bar is off the gate's node.
+#[case::ant_16_i_ant_2_h1("antenna/ANT.16_i_ANT.2.h1.gds.gz", "TOP", vec![])]
+// The same 24.34 µm bar hung straight off the gate's contact: 408 over 400.
+#[case::ant_16_i_ant_2_h2("antenna/ANT.16_i_ANT.2.h2.gds.gz", "TOP", vec!["ANT.16_i_ANT.2"])]
+// A 91.84 µm bar, 1510.
+#[case::ant_16_i_ant_2_h3("antenna/ANT.16_i_ANT.2.h3.gds.gz", "TOP", vec!["ANT.16_i_ANT.2"])]
+// The same bar with an N+ diode on the node: gate area becomes 0.06615 + 2 × 0.1296 and
+// the ratio 307.  At a factor of one it would be 510.
+#[case::ant_16_i_ant_2_h4("antenna/ANT.16_i_ANT.2.h4.gds.gz", "TOP", vec![])]
+// The same bar with a 1 µm² N-well tied to the node by an N+ tap: 48.
+#[case::ant_16_i_ant_2_h5("antenna/ANT.16_i_ANT.2.h5.gds.gz", "TOP", vec![])]
+// A 184.34 µm bar with a P+ diode in an N-well that nothing ties.  Only the 0.1296 µm²
+// of P+ is on the node: 614.  With the untied well counted it would be 86.
+#[case::ant_16_i_ant_2_h6("antenna/ANT.16_i_ANT.2.h6.gds.gz", "TOP", vec!["ANT.16_i_ANT.2"])]
+// The 408 antenna with the gate on the tile line at x = 20 and the bar across 21, 40
+// and 42.
+#[case::ant_16_i_ant_2_h7("antenna/ANT.16_i_ANT.2.h7.gds.gz", "TOP", vec!["ANT.16_i_ANT.2"])]
+// The 184.34 µm bar on a gate Dualgate covers, with the same N+ diode: the thick gate's
+// factor of 15 gives 99.  At the thin gate's factor of 2 it would be 614.
+#[case::ant_16_ii_ant_2_h1("antenna/ANT.16_ii_ANT.2.h1.gds.gz", "TOP", vec![])]
+// A 17.86 µm bar (302 against a whole gate, 604 against half of one) over two gates:
+// Dualgate covers half of the first and abuts the second.  The marker names an area, so
+// the first gate is half thin and half thick and both halves fire; the second is clean.
+#[case::ant_16_ii_ant_2_h2("antenna/ANT.16_ii_ANT.2.h2.gds.gz", "TOP", vec!["ANT.16_i_ANT.2", "ANT.16_ii_ANT.2"])]
+// A 10.84 µm Metal5 bar at the top of a full riser: Metal5 is this stack's MetalTop and
+// 1.19 µm thick, so 413.8.  At an intermediate metal's 0.54 µm it would be 187.8.
+#[case::ant_16_i_ant_6_h1("antenna/ANT.16_i_ANT.6.h1.gds.gz", "TOP", vec!["ANT.16_i_ANT.6"])]
+// Twenty Via1 on the gate's Metal1: 20.4 over ANT.9's 20.
+#[case::ant_16_i_ant_9_h1("antenna/ANT.16_i_ANT.9.h1.gds.gz", "TOP", vec!["ANT.16_i_ANT.9"])]
+// One Via1 on the gate's Metal1 and twenty on an island the gate reaches only through
+// Metal2.  Via1's ratio is read with Metal2 absent: 1.02, not 21.5.
+#[case::ant_16_i_ant_9_h2("antenna/ANT.16_i_ANT.9.h2.gds.gz", "TOP", vec![])]
+// A MIM-B cap as section 10.4.2 draws it - Metal4 the bottom plate, FuseTop over it,
+// the top plate taken up through Via4 - with a 41.84 µm Metal5 bar: 404.6 over ANT.14's
+// 400.  Report finding 1: gdscheck ties the plate in at Via3 and sees nothing.
+#[case::ant_16_iii_ant_14_m5_mimb_h1("antenna/ANT.16_iii_ANT.14_M5_MIMB.h1.gds.gz", "TOP", vec!["ANT.16_iii_ANT.14_M5_MIMB"])]
+// The same cap with seventy-five Via4 on the bottom plate's arm: 20.6 over ANT.15's 20.
+// Report finding 1.
+#[case::ant_16_iii_ant_15_v4_mimb_h1("antenna/ANT.16_iii_ANT.15_V4_MIMB.h1.gds.gz", "TOP", vec!["ANT.16_iii_ANT.15_V4_MIMB"])]
+fn hardening_antenna(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    assert_eq!(hardening("antenna", gds, topcell, &[]), expected, "{gds}");
+}
