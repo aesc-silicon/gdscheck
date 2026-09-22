@@ -1506,6 +1506,194 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [top_metal_wide10_d, top_metal]
+  # ---- Dummy fill: where the fill lies *on* what it has to clear -----------
+  # A space rule is broken by a shared edge - the settled reading - and an overlap has
+  # less than no space at all, which `min_space` cannot see because there is no gap to
+  # measure.  Where the manual states the prohibition in words ("Dummy COMP should not
+  # exit under RES_MK") the same selection carries it, and a fill wholly inside the
+  # marker is caught by it too (reports, dummy_comp finding 1 and 3).
+  - name: dcf4_on_comp
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, comp]
+  - name: dcf5_on_poly2
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, poly2_drawn]
+  - name: dcf8a_under_res_mk
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, res_mk]
+  - name: dcf11a_under_ndmy
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, ndmy]
+  - name: dcf13_under_ind_mk
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, ind_mk]
+  - name: dpf4_on_comp
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, comp]
+  - name: dpf5_on_poly2
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, poly2_drawn]
+  - name: dpf8_under_res_mk
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, res_mk]
+  - name: dpf9_on_pad
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, pad]
+  - name: dpf11_under_ndmy
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, ndmy]
+  - name: dpf12_under_metal1
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, metal1_drawn]
+  - name: dpf13_under_metal2
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, metal2_drawn]
+  - name: dpf15_under_ind_mk
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, ind_mk]
+  - name: dpf17_under_mtpmark
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, mtpmark]
+  - name: dpf18_under_pmndmy
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, pmndmy]
+  # DCF.6a-d and DPF.6a-d name a *boundary*, and DCF.1a calls what they define a region:
+  # a region set by a distance to a boundary is a band straddling it, so the fill keeps
+  # its clearance from inside the well as well, and a fill that crosses the boundary has
+  # none at all (reports, finding 2).
+  - name: dcf6a_on_well
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, nwell]
+  - name: dcf6a_crossing
+    op: difference
+    mode: lazy
+    layers: [dcf6a_on_well, nwell]
+  - name: dcf6b_on_well
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, dnwell]
+  - name: dcf6b_crossing
+    op: difference
+    mode: lazy
+    layers: [dcf6b_on_well, dnwell]
+  - name: dcf6c_on_well
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, lvpwell]
+  - name: dcf6c_crossing
+    op: difference
+    mode: lazy
+    layers: [dcf6c_on_well, lvpwell]
+  - name: dcf6d_on_well
+    op: overlapping
+    mode: lazy
+    layers: [comp_dummy, dualgate]
+  - name: dcf6d_crossing
+    op: difference
+    mode: lazy
+    layers: [dcf6d_on_well, dualgate]
+  - name: dpf6a_on_well
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, nwell]
+  - name: dpf6a_crossing
+    op: difference
+    mode: lazy
+    layers: [dpf6a_on_well, nwell]
+  - name: dpf6b_on_well
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, dnwell]
+  - name: dpf6b_crossing
+    op: difference
+    mode: lazy
+    layers: [dpf6b_on_well, dnwell]
+  - name: dpf6c_on_well
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, lvpwell]
+  - name: dpf6c_crossing
+    op: difference
+    mode: lazy
+    layers: [dpf6c_on_well, lvpwell]
+  - name: dpf6d_on_well
+    op: overlapping
+    mode: lazy
+    layers: [poly2_dummy, dualgate]
+  - name: dpf6d_crossing
+    op: difference
+    mode: lazy
+    layers: [dpf6d_on_well, dualgate]
+  # Dummy metal on the level it fills, and on the marked areas it must stay out of.
+  - name: dm13_on_metal
+    op: overlapping
+    mode: lazy
+    layers: [metal1_dummy, metal1_drawn]
+  - name: dm18_under_mark
+    op: overlapping
+    mode: lazy
+    layers: [metal1_dummy, dm8_sensitive]
+  - name: dm23_on_metal
+    op: overlapping
+    mode: lazy
+    layers: [metal2_dummy, metal2_drawn]
+  - name: dm28_under_mark
+    op: overlapping
+    mode: lazy
+    layers: [metal2_dummy, dm8_sensitive]
+  - name: dm33_on_metal
+    op: overlapping
+    mode: lazy
+    layers: [metal3_dummy, metal3_drawn]
+  - name: dm38_under_mark
+    op: overlapping
+    mode: lazy
+    layers: [metal3_dummy, dm8_sensitive]
+  - name: dm43_on_metal
+    op: overlapping
+    mode: lazy
+    layers: [metal4_dummy, metal4_drawn]
+  - name: dm48_under_mark
+    op: overlapping
+    mode: lazy
+    layers: [metal4_dummy, dm8_sensitive]
+  - name: dm53_on_metal
+    op: overlapping
+    mode: lazy
+    layers: [metal5_dummy, metal5_drawn]
+  - name: dm58_under_mark
+    op: overlapping
+    mode: lazy
+    layers: [metal5_dummy, dm8_sensitive]
+  # DE.3's second half is what relieves its first: a marking over 15000 um^2 is allowed
+  # unless two of its sides are over 80 um, which is the only reading under which that
+  # sentence has any work to do (report, dummy_exclude finding 2).
+  - name: de3_big_area
+    op: with_area
+    min: 15000.001
+    mode: lazy
+    layers: [ndmy]
+  - name: de3_viol
+    op: with_bbox_min
+    min: 80.001
+    mode: lazy
+    layers: [de3_big_area]
   - name: dm8_sensitive
     op: union
     mode: lazy
