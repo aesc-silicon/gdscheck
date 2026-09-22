@@ -218,7 +218,18 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 ///   whatever the tile.
 /// - `array_flat` / `array_ref`: fifty 0.495 bars flat and as an array reference.
 /// - `comb`: three 0.495 teeth of one polygon; a U with 0.5 arms is clean.
+/// - `bent_*`: the 45° rule (W.bent, 0.7 on runs over 1.0) - strips 0.693 wide with
+///   long and with 1.018 walls, a Z route's jog and a chamfered L's bend 0.693 across,
+///   the same across the tile lines, fifty at once, a 300 µm strip and a sliver; 0.707,
+///   walls of 0.99 and a 0.693 diamond are clean.
 #[rstest]
+#[case("bent_bound", "W.bent", 6)]
+#[case("bent_bound", "W.min", 2)]
+#[case("bent_routes", "W.bent", 4)]
+#[case("bent_tile_lines", "W.bent", 10)]
+#[case("bent_array_flat", "W.bent", 100)]
+#[case("bent_array_ref", "W.bent", 100)]
+#[case("bent_extremes", "W.bent", 4)]
 #[case("bound", "W.min", 10)]
 #[case("bound", "W.max", 4)]
 #[case("bound_45", "W.min", 6)]
@@ -358,7 +369,16 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 /// - `array_flat` / `array_ref`: fifty 0.495 pairs flat and as an array reference.
 /// - `extremes`: a 0.005 sliver 0.495 from a box, two 300 µm bars 0.495 apart (one
 ///   pair), a pair at (1000, 1000).
+/// - `bent_*`: the 45° rule (S.bent, 0.8) - two strips 0.792 apart, a corner 0.792 from
+///   a chamfer, a tip 0.795 above a wall and one 0.795 from a wall, a corner 0.792 from
+///   a strip's wall, across the tile lines, fifty at once, 300 µm strips and a sliver;
+///   0.806 and 0.8 are clean.
 #[rstest]
+#[case("bent_bound", "S.bent", 5)]
+#[case("bent_tile_lines", "S.bent", 5)]
+#[case("bent_array_flat", "S.bent", 50)]
+#[case("bent_array_ref", "S.bent", 50)]
+#[case("bent_extremes", "S.bent", 2)]
 #[case("bound", "S.min", 3)]
 #[case("bound_45", "S.min", 4)]
 #[case("bound_45", "S.bent", 4)]
@@ -619,7 +639,26 @@ fn shape_rules_meet_the_bound_exactly_and_read_the_shape(
 ///   `chip_*`: two rectangles summing to exactly 10 µm² and over.
 /// - `net_*`: a 0.3 µm² region of Inner tied to Outer through a Via, the same left
 ///   loose, and a 1 µm² one tied.
+///
+/// The hardening patterns, what a rule manual's area asks of any layer, drawn once for
+/// every deck (hardening/SPEC.md); the counts are read off the drawings in
+/// `gen/engine/area.rs`:
+///
+/// - `bound`: 1.0 × 0.495, a 0.5 × 0.99 bar, an L, a diamond and a chamfered box under
+///   0.5 µm²; 1.0 × 0.5, 0.5 × 1.005 and a diamond over it are clean.
+/// - `merge`: an overlapping pair's union at 0.35 and an island in a ring; a pair
+///   meeting at a corner is one region, abutting boxes and a grid are clean.
+/// - `tile_lines`: 1.0 × 0.495 boxes ending on, straddling and starting on the tile
+///   lines, a bar across 20, one at (1000, 1000); a 1.0 × 0.5 box straddling 20 is clean.
+/// - `array_flat` / `array_ref`: fifty 0.4 µm² boxes flat and as an array reference.
+/// - `extremes`: a 0.005 × 2 sliver; a 0.005 × 100 one is 0.5 and clean.
 #[rstest]
+#[case("bound", "A.min", 5)]
+#[case("merge", "A.min", 2)]
+#[case("tile_lines", "A.min", 9)]
+#[case("array_flat", "A.min", 50)]
+#[case("array_ref", "A.min", 50)]
+#[case("extremes", "A.min", 1)]
 #[case("region_exact", "A.min", 0)]
 #[case("region_under", "A.min", 1)]
 #[case("region_max_exact", "A.max", 0)]
