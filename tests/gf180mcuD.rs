@@ -1103,3 +1103,183 @@ fn hardening_lvpwell(
         "{gds}"
     );
 }
+
+/// `expected` concatenated: `n` of each id in `ids`.
+fn each(ids: &[(&'static str, usize)]) -> Vec<&'static str> {
+    ids.iter()
+        .flat_map(|&(id, n)| std::iter::repeat_n(id, n))
+        .collect()
+}
+
+// --- Gate poly (poly2): hardening/reports/gf180mcuD/poly2.md.  Counts follow the engine's
+// marker cuts where it is right: two per narrow wall pair (min_width and the gate-length
+// rules), one per space or enclosure pair, one per corner, one per forbidden region.  The
+// 45° bars are drawn with horizontal ends, whose acute tips are PL.1 widths of their own
+// and are ignored where a bar serves another rule.
+
+#[rstest]
+// 0.175 fires the 3.3 V width (2) and 0.18 is clean; under a Dualgate 0.195, 0.18 and a
+// 0.175 poly crossing the marker's edge fire the 5 V width (6, plus PL.9); a 0.175 poly
+// abutting the marker's edge from outside is a 3.3 V interconnect by the manual (2) and is
+// read in no column by the runset (finding 1).
+#[case::pl1_h1("poly2/PL.1.h1.gds.gz", "TOP", each(&[("PL.1_LV", 4), ("PL.1_MV", 6)]), vec!["PL.9"])]
+// Inside PLFUSE: 0.175 fires PL.1a at both voltages (2 + 2), a 0.19 5 V poly is clean
+// inside and PL.1_MV outside (2); a poly abutting the fuse is outside (PL.1_LV, 2); a poly
+// crossing the fuse's edge is neither inside nor outside to the runset but is an
+// interconnect by the manual: 0.19 at 5 V (PL.1_MV, 2) and 0.175 at 3.3 V (PL.1_LV, 2)
+// (finding 2).
+#[case::pl1_h2("poly2/PL.1.h2.gds.gz", "TOP", each(&[("PL.1_LV", 4), ("PL.1_MV", 4), ("PL.1a_LV", 2), ("PL.1a_MV", 2)]), vec![])]
+// A 0.175 poly running out of a YMTP marker fires on its outside part (2); a 0.4 poly
+// ending 0.1 past the marker's edge is 0.4 wide by the manual - the 0.4 x 0.1 piece the
+// marker's cut leaves fires in both tools (finding 3).
+#[case::pl1_h3("poly2/PL.1.h3.gds.gz", "TOP", vec!["PL.1_LV"; 2], vec![])]
+// 0.275 channels (two walls each): a gate, a horizontal gate, one poly over two actives
+// (two gates), a 0.5 poly bitten to 0.275 over the active (its corners PL.6, ignored), and
+// gates with a wall on x = 20 and 21, straddling x = 20, 40 and 42, and clear of them;
+// 0.28 is clean.
+#[case::pl2_h1("poly2/PL.2.h1.gds.gz", "TOP", vec!["PL.2_LV"; 22], vec!["PL.6"])]
+// The four medium-voltage classes: 6 V N 0.695, 6 V P 0.545, 5 V N 0.595 (across x = 20)
+// and 5 V P 0.495 fire (two walls each); 0.7, 0.55, 0.6 and 0.5 are clean; a gate with no
+// implant and an N+ gate in an N-well are no device.
+#[case::pl2_h2("poly2/PL.2.h2.gds.gz", "TOP", vec!["PL.2_MV"; 8], vec![])]
+// Two 0.275 gates whose poly abuts the Dualgate - one along its edge, one at its corner:
+// 3.3 V gates by the manual (2 + 2); the runset reads them in no column (finding 1).
+#[case::pl2_h3("poly2/PL.2.h3.gds.gz", "TOP", vec!["PL.2_LV"; 4], vec![])]
+// 45° gates 0.272 wide fire PL.2 (two walls each): one, one across x = 20 and 21, one
+// running up-left; 0.286 is clean for PL.2 (PL.7 ignored).
+#[case::pl2_h4("poly2/PL.2.h4.gds.gz", "TOP", vec!["PL.2_LV"; 6], vec!["PL.7_LV", "PL.1_LV"])]
+// 0.235 between two gates on one active, between a gate's on-active part and a field
+// poly, across a 0.235 slot cut into a gate over the active's edge (its corners PL.6,
+// ignored), straddling x = 20 and from x = 40; 0.24 from x = 42 is clean.  A poly crossing
+// a 0.23 wide active under RES_MK is one poly and clean; the runset drops its on-active
+// part and reads its field pieces 0.23 apart (finding 4).
+#[case::pl3a_h1("poly2/PL.3a.h1.gds.gz", "TOP", vec!["PL.3a"; 5], vec!["PL.6"])]
+// 0.215 caps: at the bottom, at both ends (2), on a horizontal gate's left, under a
+// Dualgate (PL.4_MV) and under a Dualgate and an SRAM core marker (PL.4_MV - section 7.7
+// exempts nothing there and the runset checks it; the deck's poly_pl_mv drops the SRAM
+// core, finding 5); 0.22 is clean.
+#[case::pl4_h1("poly2/PL.4.h1.gds.gz", "TOP", each(&[("PL.4_LV", 4), ("PL.4_MV", 2)]), vec![])]
+// A gate over a chamfered active corner extending 0.215 past the chamfer fires (finding
+// 6), 0.22 is clean; caps chamfered at 45° from 0.25 and 0.35 up the wall are clean; a
+// stub and a poly inside the active have no cap to read (their corners PL.6, ignored);
+// 0.215 caps starting on x = 20 and x = 40, straddling x = 20 and x = 42 (4); 0.22 from
+// x = 42 is clean.
+#[case::pl4_h2("poly2/PL.4.h2.gds.gz", "TOP", vec!["PL.4_LV"; 5], vec!["PL.6"])]
+// A 0.215 cap on a gate whose poly abuts the Dualgate: PL.4_LV by the manual, read in no
+// column by the runset (finding 1).
+#[case::pl4_h3("poly2/PL.4.h3.gds.gz", "TOP", vec!["PL.4_LV"], vec![])]
+// Field poly to active (each pair under a and b): 0.095 beside an active, corner to
+// corner at 0.099, from x = 20, across x = 20 and across x = 42 (5); under a Dualgate
+// 0.295 and the 3.3 V-legal 0.2 (2, MV); a gate's own poly 0.095 beside an arm of the
+// L- and the U-shaped active it crosses - PL.5b's related active - fires (2) and the
+// engine skips the pair whose shapes overlap (finding 7).  0.1, 0.106, 0.3 and 0.1 from
+// x = 42 are clean.
+#[case::pl5_h1("poly2/PL.5.h1.gds.gz", "TOP", each(&[("PL.5a_LV", 7), ("PL.5b_LV", 7), ("PL.5a_MV", 2), ("PL.5b_MV", 2)]), vec![])]
+// A poly band parallel to a chamfered active corner 0.092 away fires under a and b;
+// 0.1025 is clean.  The bands' acute tips are PL.1 widths (ignored).
+#[case::pl5_h2("poly2/PL.5.h2.gds.gz", "TOP", vec!["PL.5a_LV", "PL.5b_LV"], vec!["PL.1_LV"])]
+// A field poly 0.095 beside an active, its end on the Dualgate's edge: 3.3 V by the
+// manual (a and b), read in no column by the runset (finding 1).
+#[case::pl5_h3("poly2/PL.5.h3.gds.gz", "TOP", vec!["PL.5a_LV", "PL.5b_LV"], vec![])]
+// Right-angle corners on the active: an L's two elbows (2); the elbow 0.05 inside the
+// active's edge (2 - both tools skip a corner within 0.1 of the edge, finding 8); the
+// convex elbow 0.005 outside (1); a T stub ending inside (4); a step in the width (2);
+// the elbow in a YMTP marker (0); in the hole of an active ring of four boxes (0); on
+// the seam of two abutting active boxes (2); an L of two overlapping boxes (2, the
+// union's).  Two polys end on or 0.005 past an active edge (PL.4, ignored).
+#[case::pl6_h1("poly2/PL.6.h1.gds.gz", "TOP", vec!["PL.6"; 15], vec!["PL.4_LV"])]
+// Elbows on the tile lines: the convex corner on x = 20, 0.005 either side of it, on
+// x = 40 and on (40, 40); the concave one on (21, 21) and on x = 42.  Two each.
+#[case::pl6_h2("poly2/PL.6.h2.gds.gz", "TOP", vec!["PL.6"; 14], vec![])]
+// A convex elbow exactly on the active's edge is not on the active (1, the concave one);
+// both elbows on the edges at the active's corner (0); the elbow 0.1 inside (2) and
+// 0.095 inside (2): both tools read only the concave one of each (finding 8).
+#[case::pl6_h3("poly2/PL.6.h3.gds.gz", "TOP", vec!["PL.6"; 5], vec!["PL.4_LV"])]
+// 45° gates: 0.2934 fires (two walls), once more across x = 20 and 21, once running
+// up-left; 0.3005 is clean; under a Dualgate with no implant 0.693 fires PL.7_MV and
+// 0.70004 is clean; an N+ 6 V gate at 0.693 fires PL.7_MV (and PL.2_MV, ignored).  The
+// bars' tips are PL.1 widths (ignored).
+#[case::pl7_h1("poly2/PL.7.h1.gds.gz", "TOP", each(&[("PL.7_LV", 6), ("PL.7_MV", 4)]), vec!["PL.1_LV", "PL.1_MV", "PL.2_MV"])]
+// A 0.2934 45° gate whose end lies on the Dualgate's edge: PL.7's layer is the gate less
+// the marker, no whole-region selector, so it stays 3.3 V in both tools (2).
+#[case::pl7_h2("poly2/PL.7.h2.gds.gz", "TOP", vec!["PL.7_LV"; 2], vec![])]
+// A poly across the Dualgate's edge, one of two boxes meeting on the edge, one bridging
+// two markers, one leaving a ring's hole, a 300 µm one into a marker at x = 250, the
+// edge on x = 20, 21, 40 and 42, and a poly 0.005 outside (10); a poly inside, one
+// abutting the edge from outside, one in the hole and one under V5_XTOR alone are clean.
+#[case::pl9_h1("poly2/PL.9.h1.gds.gz", "TOP", vec!["PL.9"; 10], vec![])]
+// A V5_XTOR 0.005 off a Dualgate, one 0.005 short of a Dualgate on x = 20, one at
+// (1000, 1000) (3); abutting, overlapping, in an OTP marker, two boxes of which one
+// touches, and touching across a tile line are clean.
+#[case::pl11_h1("poly2/PL.11.h1.gds.gz", "TOP", vec!["PL.11"; 3], vec![])]
+// An active under a gate half outside its V5_XTOR, one abutting the marker from outside
+// (the runset's reading of "enclose by 0"), and one running out of it past x = 20 (3);
+// inside, enclosed by 0, and without a gate are clean.
+#[case::pl12_h1("poly2/PL.12.h1.gds.gz", "TOP", vec!["PL.12"; 3], vec![])]
+fn hardening_poly2(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] mut expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    expected.sort();
+    assert_eq!(hardening("poly2", gds, topcell, &ignore), expected);
+}
+
+// --- Dual gate oxide (dualgate): hardening/reports/gf180mcuD/dualgate.md.  Counts as
+// above: two per narrow wall pair, one per space or enclosure pair, one per forbidden
+// region.  The runset's dnwell deck aborts on a layout with no connectivity and takes the
+// dnwell layer with it, so its DV.1 reading comes from a run of the dualgate deck alone.
+
+#[rstest]
+// 0.495 fires, 0.5 is clean; a deep well crossing the marker's edge (the part outside);
+// one sharing the marker's edge, enclosed by 0; one 0.495 from a chamfered marker corner
+// (the closest approach - the deck's enclosure rules carry no euclidian metric, finding
+// 1); the well's edge on x = 20 and the marker's edge on x = 20, 0.495 either way; a
+// second well in one marker at 0.495 (7).  A well abutting the marker from outside and
+// 0.5 at x = 42 are clean.
+#[case::dv1_h1("dualgate/DV.1.h1.gds.gz", "TOP", vec!["DV.1"; 7], vec![])]
+// 0.435 between markers, a 0.435 notch, corner to corner at 0.438, 0.435 across x = 20
+// and from x = 42 (5); 0.44, 0.4455 and two overlapping boxes are clean.
+#[case::dv2_h1("dualgate/DV.2.h1.gds.gz", "TOP", vec!["DV.2"; 5], vec![])]
+// 0.235 from an outside active, from a substrate tap, from a chamfered marker corner
+// (0.233), the active's edge on x = 20 and the marker's edge on x = 20 (5); an active
+// abutting the marker's edge is 0 away and fires (6; the engine calls a shared edge no
+// space, finding 2).  0.24, 0.24 at x = 42 and an active partly inside (DV.6 and DV.7,
+// ignored) are clean.
+#[case::dv3_h1("dualgate/DV.3.h1.gds.gz", "TOP", vec!["DV.3"; 6], vec!["DV.6", "DV.7"])]
+// 0.695 in x and in y, a 45° strip at 0.693, a 0.695 bar across x = 20 (two walls each);
+// 0.7, 0.700 and 0.7 across x = 42 are clean.
+#[case::dv5_h1("dualgate/DV.5.h1.gds.gz", "TOP", vec!["DV.5"; 8], vec![])]
+// 0.235 for an N+ active, an N+ tap in an N-well, a P+ active crossing the N-well's edge,
+// the active's edge on x = 20 and the marker's edge on x = 20; an active sharing the
+// marker's edge (0); one crossing the edge (and DV.7, ignored); an active corner 0.233
+// from a chamfered marker corner (finding 1) (8).  0.24, 0.24 at x = 42, a substrate tap
+// 0.1 inside, one crossing the edge and one abutting the N-well are clean.
+#[case::dv6_h1("dualgate/DV.6.h1.gds.gz", "TOP", vec!["DV.6"; 8], vec!["DV.7"])]
+// A marker straddling an active, one across x = 20 and one across x = 42 (3); a marker
+// that covers one active and straddles a second still straddles the second (4; the
+// deck's `covering` excuses the marker, the runset does not, finding 3).  A straddled
+// substrate tap, an active sharing the marker's edge, one abutting from outside and a
+// marker of two abutting boxes covering an active are clean (DV.3, DV.6 ignored).
+#[case::dv7_h1("dualgate/DV.7.h1.gds.gz", "TOP", vec!["DV.7"; 4], vec!["DV.3", "DV.6"])]
+// 0.395 on the left; a poly crossing the marker's edge; one sharing the edge (0); one
+// 0.389 from a chamfered marker corner (finding 1); one under a marker ring 0.395 from
+// the hole; the poly's edge on x = 20 and the marker's edge on x = 20; a 300 µm poly into
+// a marker at x = 250 (8).  0.4, 0.4 at x = 42, a poly abutting the marker from outside
+// and one in the ring's hole are clean.
+#[case::dv8_h1("dualgate/DV.8.h1.gds.gz", "TOP", vec!["DV.8"; 8], vec![])]
+// One N-well with a 6 V and a 3.3 V PMOS, one of two abutting boxes, one whose 3.3 V gate
+// a second marker straddles (DV.6, DV.7, DV.8 ignored), one with two 3.3 V gates (one
+// report), and a 44 µm well with the gates at x = 2 and x = 42 (5); two wells 1.4 apart
+// and a 3.3 V gate under V5_XTOR alone are clean.
+#[case::dv9_h1("dualgate/DV.9.h1.gds.gz", "TOP", vec!["DV.9"; 5], vec!["DV.6", "DV.7", "DV.8"])]
+fn hardening_dualgate(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] mut expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    expected.sort();
+    assert_eq!(hardening("dualgate", gds, topcell, &ignore), expected);
+}
