@@ -20,10 +20,9 @@ use super::params::{NotAWord, mode};
 use crate::connectivity::{Connectivity, LayerKey};
 use crate::geom::on_grid;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, VirtualOp, clipped_area_dbu, compose_tile, stitch_labeled};
+use crate::merge::{MergedCache, VirtualOp, clipped_area_dbu, compose_tile, stitch_labeled};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
-use rayon::prelude::*;
 use std::collections::HashSet;
 
 /// Which bound a rule puts on the area.
@@ -327,9 +326,8 @@ pub fn run_scoped(
             out
         }
         Scope::Hole => {
-            // Holes live in each merged region's `holes`, whole in every tile's copy of
-            // the region; each is owned by the tile whose core holds its centroid.
-            let tile = merged.tile_dbu() as i64;
+            // Holes are the stitched region's, read once each (`region_holes`): a hole
+            // a tile line runs through is the region's and no copy's.
             let mut out = Vec::new();
             for layer in &rule.layers {
                 let (gl, gd) = (layer.gds_layer as i16, layer.gds_datatype as i16);
@@ -342,41 +340,24 @@ pub fn run_scoped(
                     layer.name
                 );
                 let (rid, ln, title) = (rule.id.as_str(), layer.name.as_str(), title.as_str());
-                let mut v: Vec<Violation> = merged
-                    .tiles(gl, gd)
-                    .par_iter()
-                    .flat_map_iter(move |(&(tx, ty), polys)| {
-                        let core = Core {
-                            x0: tx as i64 * tile,
-                            y0: ty as i64 * tile,
-                            x1: (tx as i64 + 1) * tile,
-                            y1: (ty as i64 + 1) * tile,
-                        };
-                        let mut out = Vec::new();
-                        for m in polys {
-                            for hole in &m.holes {
-                                let (area, cx, cy) = crate::geom::ring_area_centroid(hole);
-                                if !kind.broken_by(area, limit) || !core.owns_region(cx, cy) {
-                                    continue;
-                                }
-                                let (x, y) = (cx * dbu_to_um, cy * dbu_to_um);
-                                out.push(Violation::point(
-                                    rid,
-                                    title,
-                                    format!(
-                                        "hole area {:.4} µm² {cmp} {:.4} µm² through {ln} at ({x:.4}, {y:.4}) µm",
-                                        um2(area),
-                                        rule.value
-                                    ),
-                                    x,
-                                    y,
-                                ));
-                            }
-                        }
-                        out.into_iter()
-                    })
-                    .collect();
-                out.append(&mut v);
+                for hole in crate::merge::region_holes(merged.tiles(gl, gd), merged.tile_dbu()) {
+                    let (area, cx, cy) = crate::geom::ring_area_centroid(&hole);
+                    if !kind.broken_by(area, limit) {
+                        continue;
+                    }
+                    let (x, y) = (cx * dbu_to_um, cy * dbu_to_um);
+                    out.push(Violation::point(
+                        rid,
+                        title,
+                        format!(
+                            "hole area {:.4} µm² {cmp} {:.4} µm² through {ln} at ({x:.4}, {y:.4}) µm",
+                            um2(area),
+                            rule.value
+                        ),
+                        x,
+                        y,
+                    ));
+                }
             }
             out
         }
