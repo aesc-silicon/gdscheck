@@ -3287,3 +3287,44 @@ fn hardening_acute(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
     expected.sort();
     assert_eq!(hardening("acute", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- Design geometry, the offgrid half (hardening/reports/gf180mcuD/offgrid.md).  Section
+// 7.1: the grid is an integer multiple of 0.005 µm and "all edge boundaries must be snapped
+// to the grid defined above".  One marker per off-grid vertex.
+#[rstest]
+// On the grid every way the layer allows: orthogonal, 45°, one grid step wide, a thousand
+// microns out, and in the negative quadrant.
+#[case::offgrid_h1("offgrid/OFFGRID.h1.gds.gz", "TOP", vec![])]
+// A box edge pushed 1, 2, 3, 4 and 5 nm off the grid; the 5 nm one lands back on it.  Four
+// boxes off, two vertices each.
+#[case::offgrid_h2("offgrid/OFFGRID.h2.gds.gz", "TOP", vec!["comp_OFFGRID"; 8])]
+// The same 3 nm offset at negative coordinates and at x = 1002, where a remainder taken
+// carelessly changes sign or loses its last digit.
+#[case::offgrid_h3("offgrid/OFFGRID.h3.gds.gz", "TOP", vec!["comp_OFFGRID"; 4])]
+// The tile lines: an on-grid wedge whose slanted edge crosses x = 20 at y = 10.0025 (a
+// vertex the tile cut invents, not the shape's - no marker), and three off-grid boxes, one
+// across x = 20, one across x = 42, one ending on x = 20.
+#[case::offgrid_h4("offgrid/OFFGRID.h4.gds.gz", "TOP", vec!["comp_OFFGRID"; 6])]
+// The placement off the grid, not the shape: an on-grid box placed at (20.003, 10), and a
+// three-column array on an on-grid origin with a 1.002 µm pitch.
+#[case::offgrid_h5("offgrid/OFFGRID.h5.gds.gz", "TOP", vec!["comp_OFFGRID"; 12])]
+// An off-grid text on a label layer, with an on-grid boundary beside it.  A text has no
+// edge boundary for the rule to read.
+#[case::offgrid_h6("offgrid/OFFGRID.h6.gds.gz", "TOP", vec![])]
+// An off-grid box on metal1_dummy and one on metal3_slot, two drawn layers of the PDK that
+// no rule of this deck names.  Report finding 1: neither tool has a rule to fire.
+#[case::offgrid_h7("offgrid/OFFGRID.h7.gds.gz", "TOP", vec!["metal1_dummy_OFFGRID", "metal1_dummy_OFFGRID", "metal3_slot_OFFGRID", "metal3_slot_OFFGRID"])]
+// Merging: an off-grid box whose off-grid edge sticks out of an on-grid one (two markers),
+// and an off-grid box wholly swallowed by one (none - nothing of it reaches a boundary).
+#[case::offgrid_h8("offgrid/OFFGRID.h8.gds.gz", "TOP", vec!["comp_OFFGRID"; 2])]
+// The acute deck's rotation fixture, read from this side: a 45° turn keeps every edge on
+// the lattice but takes three of the box's four vertices off the grid, and so does a 30°
+// turn.
+#[case::offgrid_h9("acute/ACUTE.h5.gds.gz", "TOP", vec!["comp_OFFGRID"; 6])]
+// The acute deck's wedge that is off the lattice and off the grid at once.
+#[case::offgrid_h10("acute/ACUTE.h7.gds.gz", "TOP", vec!["comp_OFFGRID"; 2])]
+fn hardening_offgrid(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut expected = expected;
+    expected.sort();
+    assert_eq!(hardening("offgrid", gds, topcell, &[]), expected, "{gds}");
+}
