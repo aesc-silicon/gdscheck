@@ -6,12 +6,13 @@
 //!
 //! CMOS5L is SG13G2 without the HBT module and with a reduced metal stack
 //! (M1-M4 + TopVia1 + TopMetal1); every shared rule is value-identical.  Instead of
-//! duplicating the SG13G2 fixture tree, the parity test below runs each shared deck
-//! on the *SG13G2* fixtures under both PDKs and requires identical results — this
-//! covers the whole shared rule set.
+//! duplicating the SG13G2 fixture tree, the parity tests below compare each shared
+//! deck as loaded under both PDKs - the same rules over the same layers - and run one
+//! SG13G2 fixture per deck under both, which covers the whole shared rule set.
 //! Only the genuinely different rules get their own fixtures (see
 //! gen/ihp_sg13cmos5l).
 
+use gdscheck::pdk::{PdkConfig, RuleDefinition};
 use gdscheck::run_drc;
 use rstest::rstest;
 
@@ -31,14 +32,129 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
     ids
 }
 
-/// Run every SG13G2 fixture of a shared deck (the same files under both PDKs; the
-/// decks that genuinely differ - forbidden, pad, passiv, topvia1, antenna - have their
-/// own fixtures) under both PDKs and require identical violation lists.  A fixture
-/// directory and the deck read on it: the Metal2-5 and Via2-4 hardening layouts sit in
-/// `metaln` and `vian`, one file for the layers.  One test per pair, so the harness
-/// runs them side by side:
-/// the hardening rounds put 700 fixtures on the shared decks, and one test walking
-/// them all twice ran past a minute on the CI runner at the 7 µm tile.
+/// The decks CMOS5L reads from the SG13G2 tree, by name.
+fn shared_decks() -> Vec<String> {
+    let c5l = PdkConfig::for_process(C5L).unwrap();
+    let shared: Vec<String> = c5l
+        .decks
+        .iter()
+        .filter(|d| d.path.starts_with("../ihp-sg13g2/"))
+        .map(|d| d.name.clone())
+        .collect();
+    assert!(shared.len() > 20, "shared decks: {shared:?}");
+    shared
+}
+
+/// A shared deck is the same rules over the same layers under both PDKs, and the engine
+/// reads nothing else, so it answers the same on any layout.  Compared as loaded: every
+/// rule of every shared deck (its layers with their GDS numbers, its value, its params
+/// with the layer params resolved), every SG13G2 virtual layer's definition and assigned
+/// number and the numbers of its sources (CMOS5L may add its own, and a same-name child
+/// entry would replace the base one, which is what this would catch), the waivers, and
+/// the connect graph: SG13G2's through Metal4, CMOS5L's own stack top, and the well step
+/// as SG13G2 has it, so every net a shared rule can read is the same net.  Structural,
+/// so it costs nothing; the DRC walk it replaces ran 700 fixtures twice and took 40 s
+/// of the 7 µm tile suite to say what this says.
+#[test]
+fn shared_decks_are_sg13g2s_as_loaded() {
+    let g2 = PdkConfig::for_process(G2).unwrap();
+    let c5l = PdkConfig::for_process(C5L).unwrap();
+    // One line per rule, its params in key order (they live in a `HashMap`).
+    let canon = |rules: Vec<RuleDefinition>| -> String {
+        rules
+            .iter()
+            .map(|r| {
+                let mut params: Vec<String> =
+                    r.params.iter().map(|(k, v)| format!("{k}={v:?}")).collect();
+                params.sort();
+                format!(
+                    "{} {} {:?} {} [{}] ignore={:?} text={:?}\n",
+                    r.id,
+                    r.check,
+                    r.layers,
+                    r.value,
+                    params.join(" "),
+                    r.ignore,
+                    r.text
+                )
+            })
+            .collect()
+    };
+    for deck in shared_decks() {
+        let a = canon(g2.load_deck(&deck).unwrap());
+        let b = canon(c5l.load_deck(&deck).unwrap());
+        assert_eq!(a, b, "deck '{deck}' loads differently under CMOS5L");
+    }
+    for vl in &g2.virtual_layers {
+        let twin = c5l
+            .virtual_layers
+            .iter()
+            .find(|v| v.name == vl.name)
+            .unwrap_or_else(|| panic!("virtual layer '{}' missing in CMOS5L", vl.name));
+        assert_eq!(
+            format!("{vl:#?}"),
+            format!("{twin:#?}"),
+            "virtual layer '{}'",
+            vl.name
+        );
+        for name in std::iter::once(&vl.name).chain(&vl.layers) {
+            assert_eq!(
+                format!("{:?}", g2.layer(name)),
+                format!("{:?}", c5l.layer(name)),
+                "layer '{name}' resolves differently"
+            );
+        }
+    }
+    assert_eq!(
+        format!("{:#?}", g2.edge_layers),
+        format!("{:#?}", c5l.edge_layers)
+    );
+    assert_eq!(format!("{:#?}", g2.waivers), format!("{:#?}", c5l.waivers));
+    // The connect graph: SG13G2's through Via3 ↔ Metal4, then CMOS5L's own stack top
+    // (TopVia1 lands on Metal4, not Metal5), then the well step as SG13G2 has it; the
+    // nBuLay step has no twin, the layer being forbidden.
+    let key = |name: &str| {
+        let l = g2
+            .layer(name)
+            .unwrap_or_else(|| panic!("no layer '{name}'"));
+        (l.gds_layer as i16, l.gds_datatype as i16)
+    };
+    let step =
+        |s: &gdscheck::connectivity::ConnectSpec| format!("{:?} -> {:?}", s.connector, s.layers);
+    let through_m4 = g2
+        .connectivity
+        .iter()
+        .rposition(|s| s.connector == key("Via3"))
+        .expect("SG13G2 connects Via3")
+        + 1;
+    let g2_steps: Vec<String> = g2.connectivity.iter().map(step).collect();
+    let c5l_steps: Vec<String> = c5l.connectivity.iter().map(step).collect();
+    assert_eq!(
+        c5l_steps[..through_m4],
+        g2_steps[..through_m4],
+        "the stack through Metal4"
+    );
+    let top =
+        |connector: &str, layer: &str| format!("{:?} -> {:?}", key(connector), vec![key(layer)]);
+    assert_eq!(
+        c5l_steps[through_m4..],
+        [
+            top("TopVia1", "Metal4"),
+            top("TopVia1", "TopMetal1"),
+            g2_steps
+                .iter()
+                .find(|s| s.starts_with(&format!("{:?}", key("NActivInNWell"))))
+                .expect("SG13G2 connects the well")
+                .clone(),
+        ]
+    );
+}
+
+/// The same, run: one SG13G2 fixture per shared deck (the first of its directory; the
+/// Metal2-4 and Via2-3 hardening layouts sit in `metaln` and `vian`, one file for the
+/// layers) under both PDKs, for the path the structural test does not walk - the
+/// embedded lookup of a `../ihp-sg13g2/` deck path and the `extends` of the layer
+/// tables, end to end.
 #[rstest]
 fn parity_with_sg13g2_on_shared_decks(
     #[values(
@@ -77,6 +193,10 @@ fn parity_with_sg13g2_on_shared_decks(
     pair: (&str, &str),
 ) {
     let (dir, deck) = pair;
+    assert!(
+        shared_decks().iter().any(|d| d == deck),
+        "'{deck}' is not a shared deck"
+    );
     let dir = format!("{G2_DATA}/{dir}");
     let mut entries: Vec<_> = std::fs::read_dir(&dir)
         .unwrap_or_else(|e| panic!("fixture dir {dir}: {e}"))
@@ -84,13 +204,13 @@ fn parity_with_sg13g2_on_shared_decks(
         .filter(|p| p.to_string_lossy().ends_with(".gds.gz"))
         .collect();
     entries.sort();
-    assert!(!entries.is_empty(), "no fixtures in {dir} — walker broken?");
-    for path in entries {
-        let path = path.to_string_lossy();
-        let g2 = drc(G2, &path, deck, &[]);
-        let c5l = drc(C5L, &path, deck, &[]);
-        assert_eq!(g2, c5l, "deck '{deck}', fixture '{path}'");
-    }
+    let path = entries
+        .first()
+        .unwrap_or_else(|| panic!("no fixtures in {dir}"));
+    let path = path.to_string_lossy();
+    let g2 = drc(G2, &path, deck, &[]);
+    let c5l = drc(C5L, &path, deck, &[]);
+    assert_eq!(g2, c5l, "deck '{deck}', fixture '{path}'");
 }
 
 /// Same-net NW.b1 regression, on the shared SG13G2 fixture (the parity test above only
