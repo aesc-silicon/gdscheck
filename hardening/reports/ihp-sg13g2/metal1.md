@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Deck `metal1` against SG13G2 Layout Rules Rev. 0.4, section 5.16 (M1.a-M1.k), section
 5.18 (M1Fil.a1-M1Fil.k) and the sealring waiver of section 6.10.  96 layouts,
 `tests/data/ihp-sg13g2/metal1/<rule>.h<n>.gds.gz`, drawn by
-`gen/ihp_sg13g2/metal1_hardening.rs`, each with a `#[case]` in the `metal1` table of
+`gen/ihp_sg13g2/metal.rs`, each with a `#[case]` in the `metal1` table of
 `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100 and
 through IHP's KLayout decks (`hardening/oracle-ihp.sh`; the density layouts through
 `gdscheck run --deck metal1`, since the oracle's suite and KLayout run leave density out).

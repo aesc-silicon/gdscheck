@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 Decks `sealring`, `slit`, `lbe` and `lu` against SG13G2 Layout Rules Rev. 0.4, sections
 6.10 (Sealring), 7.3 (Metal Slits), 9.1 (Localized Backside Etching) and 7.2.2 (Latch-up
-ties).  `gen/ihp_sg13g2/beol_misc_hardening.rs` draws 54 layouts
+ties).  `gen/ihp_sg13g2/{sealring,slit,lbe,lu}.rs` draws 54 layouts
 (`tests/data/ihp-sg13g2/{sealring,slit,lbe,lu}/<RULE>.h<k>.gds.gz`: 19, 14, 15 and 6),
 each with a `#[case]` in the deck's table of `tests/ihp-sg13g2.rs`.  Every layout ran
 through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks

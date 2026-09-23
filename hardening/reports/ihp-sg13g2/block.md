@@ -11,7 +11,7 @@ The six block decks against SG13G2 Layout Rules Rev. 0.4: section 5.2 (PWB.a-PWB
 (CntB.a-CntB.j), with section 4.2's derived layers.  Every rule of the six sections is in
 its deck (PWB.d, "overlap is allowed", is no check).  180 layouts,
 `tests/data/ihp-sg13g2/<deck>/<RULE>.h<n>.gds.gz`, drawn by
-`gen/ihp_sg13g2/block_hardening.rs`, each with a `#[case]` in its deck's table of
+`gen/ihp_sg13g2/{pwellblock,nbulay,nbulayblock,extblock,salblock,contbar}.rs`, each with a `#[case]` in its deck's table of
 `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100 and
 through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 

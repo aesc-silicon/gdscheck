@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 Decks `pad`, `passiv` and `mim` against SG13G2 Layout Rules Rev. 0.4, sections 6.9
 (Pad Dimensions, with 6.9.1 Solder Bump and 6.9.2 Copper Pillar), 5.27 (Passiv) and
-6.11 (MIM).  `gen/ihp_sg13g2/pad_hardening.rs` draws 59 layouts
+6.11 (MIM).  `gen/ihp_sg13g2/{pad,passiv,mim}.rs` draws 59 layouts
 (`tests/data/ihp-sg13g2/{pad,passiv,mim}/<RULE>.h<k>.gds.gz`: 30, 12 and 17), each with
 a `#[case]` in the deck's table of `tests/ihp-sg13g2.rs`.  Every layout ran through
 gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks

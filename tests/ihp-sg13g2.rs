@@ -3745,7 +3745,7 @@ const DECK_FORBIDDEN: &str = "forbidden";
 
 #[rstest]
 #[case("forbidden/forbidden.gds.gz", "TOP", vec!["forbidden"; 11], vec![])]
-// --- Hardening (hardening/SPEC.md, gen/ihp_sg13g2/offgrid_hardening.rs): one report per
+// --- Hardening (hardening/SPEC.md, gen/ihp_sg13g2/offgrid.rs and forbidden.rs): one report per
 // forbidden shape.  A BiWind across x = 20 and 40, one at (1000, 1000), a BiWind and a PEmWind
 // overlapping, a 0.005 NoDRC square.
 #[case("forbidden/forbidden.h1.gds.gz", "TOP", vec!["forbidden"; 5], vec![])]
@@ -3857,7 +3857,7 @@ const OFFGRID_LAYERS: &[&str] = &[
     "Exchange4",
 ];
 
-// Hardening (gen/ihp_sg13g2/offgrid_hardening.rs): one report per off-grid vertex, at every
+// Hardening (gen/ihp_sg13g2/offgrid.rs): one report per off-grid vertex, at every
 // tile size.  h1: edges 0.001, 0.003, 0.004 and 0.006 off (two vertices each), a box with all
 // four vertices off, boxes at -0.005 (clean) and -0.003 (four); h2: a diamond with one vertex
 // 0.002 off, a 45° strip whose far end is 0.003 off in y (two), on-grid 45° shapes clean;

@@ -10,7 +10,7 @@ Decks `topvia1` and `topvia2` against SG13G2 Layout Rules Rev. 0.4, sections 5.2
 (TV1.a-TV1.d) and 5.24 (TV2.a-TV2.d), with section 6.10's sentence on EdgeSeal ("the
 corresponding standard metal and via rules are not checked within EdgeSeal regions").
 The two decks share their rule text with different values (0.42/0.42/0.10/0.42 and
-0.90/1.06/0.50/0.50), so `gen/ihp_sg13g2/topvia_hardening.rs` draws each theme once for
+0.90/1.06/0.50/0.50), so `gen/ihp_sg13g2/topvia.rs` draws each theme once for
 both: 29 layouts per deck (`tests/data/ihp-sg13g2/topvia<n>/TV<n>.*.h<k>.gds.gz`), 58 in
 all, each with a `#[case]` in the `topvia1`/`topvia2` tables of `tests/ihp-sg13g2.rs`.
 Every layout ran through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
