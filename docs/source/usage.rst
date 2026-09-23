@@ -85,6 +85,11 @@ whose layers would take twice what is left is not checked but recorded — under
 rule in the summary (``N rule(s) not checked:``) and in the report, tagged ``skipped``
 — with exit status ``3``. A run that outgrows the limit anyway ends with a message
 saying where it was and what helps, where the kernel would have killed it silently.
+The run also caps glibc's malloc arenas at its thread count (``MALLOC_ARENA_MAX`` in the
+environment overrides it): glibc opens up to eight per core and each keeps the slack of
+what was freed in it, a gigabyte on the gf180 reference design on a 32-core machine, at no
+cost in time.
+
 ``gdscheck stats`` is where to start on such a run: with the same ``--input``,
 ``--process``, ``--topcell`` and ``--suite`` or ``--deck`` it flattens the layout,
 prints the shapes of every layer the rules read, largest first, with the memory limit

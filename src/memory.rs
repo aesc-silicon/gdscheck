@@ -186,6 +186,24 @@ pub fn trim() {
     }
 }
 
+/// Cap glibc's malloc arenas at `n`, unless `MALLOC_ARENA_MAX` is set, which is the
+/// caller's word on it.  glibc opens up to eight arenas per core and each keeps the
+/// slack of what was freed in it; a 32-core box ran the cmos5l reference design at
+/// 2.9 GB resident with 256 arenas and 2.85 GB with 32, 2.67 with 16, 2.47 with 8 -
+/// the last two at a cost in time from the contention (7 % and 40 %) - and the gf180
+/// design at 14.0 GB against 12.9, at the same speed.  One arena per thread is the
+/// point where the memory is had for nothing.
+pub fn cap_arenas(n: usize) {
+    if std::env::var_os("MALLOC_ARENA_MAX").is_some() {
+        return;
+    }
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    // SAFETY: mallopt sets an allocator parameter and touches nothing else.
+    unsafe {
+        libc::mallopt(libc::M_ARENA_MAX, n.clamp(1, i32::MAX as usize) as i32);
+    }
+}
+
 /// The resident set of this process, in bytes.
 pub fn rss_bytes() -> u64 {
     std::fs::read_to_string("/proc/self/statm")
