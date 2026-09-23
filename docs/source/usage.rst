@@ -63,6 +63,16 @@ bounds memory tighter and cuts the geometry into more pieces, a larger one holds
 a dense layer whole and copies less of it into halos. The result must not depend on it;
 a run that differs between two tile sizes is a bug worth reporting.
 
+``--memory <size>``, or ``GDSCHECK_MEMORY``, is what the run may take (``12G``,
+``800M``). Without it the run plans within the tightest cgroup limit above it — a
+container, a ``systemd-run`` scope, a CI runner — or, with none, the machine's
+``MemTotal``, less a tenth for the rest of the system. The flattened layout and the nets
+stay resident for the whole run; the merge cache is sized to what the limit leaves after
+them, and the run says so in one line (``Memory: limit 10.8 GB (cgroup limit 12.0 GB
+less a tenth), 7.1 GB resident, 3.7 GB for the merge cache``). A smaller cache means
+layers are merged again when a later rule needs them: slower, same result. A limit the
+resident part already exceeds turns the cache off and says so on stderr.
+
 Other subcommands inspect a PDK without running a check:
 
 .. code-block:: bash
@@ -175,6 +185,8 @@ Command-line reference
      - Optional output ``.lyrdb`` report path.
    * - ``--threads``
      - Worker threads (``0`` = all logical cores, the default).
+   * - ``--memory``
+     - Memory the run may take (``12G``); default: the cgroup's limit or ``MemTotal``, less a tenth.
    * - ``--no-connectivity``
      - Disable net extraction; net-aware checks are skipped.
    * - ``-v, --verbose``

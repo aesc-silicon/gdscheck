@@ -92,6 +92,13 @@ struct RunArgs {
     #[arg(long, env = "GDSCHECK_TILE_UM", default_value_t = gdscheck::merge::TILE_UM, value_name = "UM")]
     tile: f64,
 
+    /// Memory the run may take, e.g. `12G` or `800M`.  Without it the run plans within
+    /// its cgroup's limit (a container, a CI runner) or the machine's memory, less a
+    /// tenth; the merge cache is sized to what that leaves after the layout and the
+    /// nets, and a run that would not fit says so instead of being killed.
+    #[arg(long, env = "GDSCHECK_MEMORY", value_name = "SIZE", value_parser = gdscheck::memory::parse_size)]
+    memory: Option<u64>,
+
     /// Disable electrical net extraction.  Net-aware checks (e.g. antenna ratios) are
     /// then skipped; geometry-only checks are unaffected.
     #[arg(long)]
@@ -296,7 +303,10 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
 
     let decks: Vec<&str> = args.deck.iter().map(String::as_str).collect();
     let start = std::time::Instant::now();
-    let options = RunOptions { tile_um: args.tile };
+    let options = RunOptions {
+        tile_um: args.tile,
+        memory_limit: args.memory,
+    };
     let violations = match run_drc_with_options(
         &lib,
         &resolved.spec,
