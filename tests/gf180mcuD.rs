@@ -3250,3 +3250,40 @@ fn hardening_efuse(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
     expected.sort();
     assert_eq!(hardening("efuse", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- Design geometry, the acute half (hardening/reports/gf180mcuD/acute.md).  Section 7.1
+// of the manual: "All shapes must be orthogonal or on a 45° unless otherwise stated."  The
+// sentence is about the direction an edge runs in, not about the angle two edges meet at,
+// so a wedge with a 45° tip is legal and an edge at 45.1° is not.  One marker per illegal
+// edge.
+#[rstest]
+// A box, an octagon, a diamond, a chamfer and a box with a redundant vertex on its top
+// edge: 0°, 45°, 90°, 135° and a 180° turn, all of them legal.
+#[case::acute_h1("acute/ACUTE.h1.gds.gz", "TOP", vec![])]
+// Acute corners built from legal edges: a 45° wedge tip, an arrowhead, a 45° V-notch.  The
+// manual constrains edges, not corners - all three are clean, and the foundry's runset
+// agrees.
+#[case::acute_h2("acute/ACUTE.h2.gds.gz", "TOP", vec![])]
+// Five wedges whose hypotenuse runs at 26.57°, 45.14°, 44.86°, 89.9° and 0.1°.  Report
+// finding 1: gdscheck reports only the 26.57° one, KLayout all five.
+#[case::acute_h3("acute/ACUTE.h3.gds.gz", "TOP", vec!["comp_ACUTE"; 5])]
+// The same 26.57° wedge inside a tile, across x = 20, across x = 42 and across y = 20, plus
+// an orthogonal box straddling both cuts.  Four markers at every tile size.
+#[case::acute_h4("acute/ACUTE.h4.gds.gz", "TOP", vec!["comp_ACUTE"; 4])]
+// One on-grid box placed as drawn, at 45° and at 30°.  The 45° copy keeps every edge on the
+// lattice; the 30° copy has four edges off it.
+#[case::acute_h5("acute/ACUTE.h5.gds.gz", "TOP", vec!["comp_ACUTE"; 4])]
+// A 26.57° wedge on metal1_dummy and one on metal3_slot, two drawn layers of the PDK that
+// no rule of this deck names.  Report finding 2: neither tool has a rule to fire.
+#[case::acute_h6("acute/ACUTE.h6.gds.gz", "TOP", vec!["metal1_dummy_ACUTE", "metal3_slot_ACUTE"])]
+// A wedge that is off the lattice and off the grid at once - one ACUTE here, two OFFGRID in
+// the offgrid table, from the same polygon.
+#[case::acute_h7("acute/ACUTE.h7.gds.gz", "TOP", vec!["comp_ACUTE"])]
+// Eleven wedges leaning 0.14° to 13.00° away from 45°.  Report finding 1: gdscheck reports
+// the six past 1°, KLayout all eleven.
+#[case::acute_h8("acute/ACUTE.h8.gds.gz", "TOP", vec!["comp_ACUTE"; 11])]
+fn hardening_acute(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec<&str>) {
+    let mut expected = expected;
+    expected.sort();
+    assert_eq!(hardening("acute", gds, topcell, &[]), expected, "{gds}");
+}
