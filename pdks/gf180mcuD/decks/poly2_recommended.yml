@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Poly2 space on COMP for low active sheet resistivity, recommended.  Section 7.7's
+# PL.3b, which the manual stars: PL.3a asks 0.24 of the same gap, on COMP and on the
+# field alike, where this asks 0.26 at 3.3 V and 0.40 at 5/6 V of the gap over an active
+# alone.  A notch in one gate is the same gap as a space between two.
+rules:
+  - id: PL.3b_LV
+    check: min_space
+    layers: [pl3b_gate_lv]
+    value: 0.26
+  - id: PL.3b_LV
+    check: min_notch
+    layers: [pl3b_gate_lv]
+    value: 0.26
+  - id: PL.3b_MV
+    check: min_space
+    layers: [pl3b_gate_mv]
+    value: 0.4
+  - id: PL.3b_MV
+    check: min_notch
+    layers: [pl3b_gate_mv]
+    value: 0.4

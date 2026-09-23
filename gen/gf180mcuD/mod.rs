@@ -43,6 +43,7 @@ mod otp_mk;
 mod poly2;
 mod pplus;
 mod pres;
+mod recommended;
 mod resistors;
 mod sab;
 mod sram_3p3;
@@ -97,6 +98,7 @@ pub fn generate(pdk: &PdkConfig) {
     sram_3p3::generate(pdk);
     sram_5p0::generate(pdk);
     via::generate(pdk);
+    recommended::generate(pdk);
     via_recommended::generate(pdk);
     ymtp_mk::generate(pdk);
 }
