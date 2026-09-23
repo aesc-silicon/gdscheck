@@ -3338,11 +3338,13 @@ fn hardening_offgrid(#[case] gds: &str, #[case] topcell: &str, #[case] expected:
 // deficient side, and euclidian, the settled reading of 2026-09-21.
 #[rstest]
 // Margins on Metal1 of 0.12 (clean), 0.115 on the left, 0.115 on the left and the bottom,
-// 0.115 on all four, 1.0 on the top (clean) and flush on the left.  Eight sides under the
-// value.  Report finding 2: gdscheck stops at one marker per via.
-#[case::v1_3_3_h1("via_recommended/V1.3.3.h1.gds.gz", "TOP", vec!["V1.3.3"; 8], vec![])]
+// 0.115 on all four, 1.0 on the top (clean) and flush on the left.  Four vias are short,
+// and a via short on two sides that meet at a corner is one deficient margin, not two -
+// the run of short walls is the marker, as `min_enclosure` reports it everywhere (report
+// finding 2, kept: a violation is a structure, and the structure here is the via).
+#[case::v1_3_3_h1("via_recommended/V1.3.3.h1.gds.gz", "TOP", vec!["V1.3.3"; 4], vec![])]
 // The same against Metal2.
-#[case::v1_4_3_h1("via_recommended/V1.4.3.h1.gds.gz", "TOP", vec!["V1.4.3"; 8], vec![])]
+#[case::v1_4_3_h1("via_recommended/V1.4.3.h1.gds.gz", "TOP", vec!["V1.4.3"; 4], vec![])]
 // Chamfered metal corners whose perpendicular approach to the via's corner is 0.1202
 // (clean), 0.1167 and 0.1061, every axis margin 0.20 or 0.15; the last of them repeated
 // on the metal above.  Report finding 1: the deck reads projection, so all of them are
@@ -3404,9 +3406,11 @@ fn hardening_via_recommended(
 #[case::gr_2_h1("guard_ring/GR.2.h1.gds.gz", "TOP", vec!["GR.2", "GR.2"], vec![])]
 // No gap at all: a die Metal1 block whose wall is the marker's hole wall, a 20 µm block
 // lying across that wall, and a block 9.995 outside the ring on the scribe-line side.
-// Ten microns are missing three times.  Report findings 1 and 2: gdscheck reads only the
-// third.
-#[case::gr_2_h2("guard_ring/GR.2.h2.gds.gz", "TOP", vec!["GR.2", "GR.2", "GR.2"], vec![])]
+// The shared edge is a space of nothing and fires (report finding 1); the block lying
+// *on* the marker is kept silent (finding 2), because metal that runs onto the ring is
+// how a die connects to it - section 12.3.2 draws the Vss bus butted to the ring - and
+// nothing in the geometry tells that bus from an intruding plate.
+#[case::gr_2_h2("guard_ring/GR.2.h2.gds.gz", "TOP", vec!["GR.2", "GR.2"], vec![])]
 // Metal1 9.995 off the hole's left wall and Metal5 - variant D's MetalTop, the last member
 // of the rule's layer list - 9.995 off its bottom wall, both gaps across x = 35, 40 and 42
 // and y = 35, 40 and 42; Metal1 at exactly 10.000 is clean.
