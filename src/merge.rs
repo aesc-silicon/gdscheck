@@ -575,6 +575,52 @@ fn grown_reference(
             })
             .collect();
     }
+    // A grown polygon filed into every tile it reaches, cut to each tile's zone.
+    let v = value.ceil() as i64;
+    let file = |grown: &[MergedPoly]| -> Vec<((i32, i32), Vec<MergedPoly>)> {
+        let mut out = Vec::new();
+        for g in grown {
+            let (gx0, gy0, gx1, gy1) = poly_bbox(g);
+            for ty in (gy0 as i64).div_euclid(t)..=(gy1 as i64 - 1).div_euclid(t) {
+                for tx in (gx0 as i64).div_euclid(t)..=(gx1 as i64 - 1).div_euclid(t) {
+                    let (x0, y0) = (tx * t, ty * t);
+                    let part = clip_to_box(vec![g.clone()], x0 - v, y0 - v, x0 + t + v, y0 + t + v);
+                    if !part.is_empty() {
+                        out.push(((tx as i32, ty as i32), part));
+                    }
+                }
+            }
+        }
+        out
+    };
+    let collect = |filed: Vec<((i32, i32), Vec<MergedPoly>)>| {
+        let mut grown: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
+        for (k, v) in filed {
+            if !v.is_empty() {
+                grown.entry(k).or_default().extend(v);
+            }
+        }
+        grown
+    };
+    // The disc round every point of the reference, read tile by tile.  A round join
+    // at a cut point never reaches past the disc round that point, and the disc round
+    // any point of the reference lies inside the whole reference's grow - so the pieces
+    // grown one tile at a time, filed by tile, are that grow exactly, and the reference
+    // need not be put together first.  (A miter join is another matter: it runs along
+    // the cut wall past the cut, which is why the square reach of a wall off the axes
+    // below still grows the region whole.)  Put together, the N-well taps of a 5 mm
+    // die were eighty seconds of one rule; tile by tile they are five.
+    if round {
+        let filed: Vec<((i32, i32), Vec<MergedPoly>)> = b
+            .par_iter()
+            .flat_map_iter(|(&(tx, ty), polys)| {
+                let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
+                let block = clip_to_box(polys.to_vec(), x0, y0, x1, y1);
+                file(&grow_round(&block, value))
+            })
+            .collect();
+        return collect(filed);
+    }
     let labeled = stitch_labeled(b, tile_dbu);
     let mut pieces: Vec<Vec<((i32, i32), &MergedPoly)>> = vec![Vec::new(); labeled.regions.len()];
     for (tile, polys) in &labeled.by_tile {
@@ -598,41 +644,10 @@ fn grown_reference(
                     clip_to_box(vec![m.clone()], x0, y0, x0 + t, y0 + t)
                 })
                 .collect();
-            let grown = if round {
-                grow_round(&union_pieces(block), value)
-            } else {
-                grow_by(&union_pieces(block), value, 0.0)
-            };
-            if std::env::var("DBG_REACH").is_ok() {
-                for g in &grown {
-                    eprintln!("GROWN {:?}", poly_bbox(g));
-                }
-            }
-            let v = value.ceil() as i64;
-            let mut out = Vec::new();
-            for g in &grown {
-                let (gx0, gy0, gx1, gy1) = poly_bbox(g);
-                for ty in (gy0 as i64).div_euclid(t)..=(gy1 as i64 - 1).div_euclid(t) {
-                    for tx in (gx0 as i64).div_euclid(t)..=(gx1 as i64 - 1).div_euclid(t) {
-                        let (x0, y0) = (tx * t, ty * t);
-                        let part =
-                            clip_to_box(vec![g.clone()], x0 - v, y0 - v, x0 + t + v, y0 + t + v);
-                        if !part.is_empty() {
-                            out.push(((tx as i32, ty as i32), part));
-                        }
-                    }
-                }
-            }
-            out
+            file(&grow_by(&union_pieces(block), value, 0.0))
         })
         .collect();
-    let mut grown: HashMap<(i32, i32), Vec<MergedPoly>> = HashMap::new();
-    for (k, v) in filed {
-        if !v.is_empty() {
-            grown.entry(k).or_default().extend(v);
-        }
-    }
-    grown
+    collect(filed)
 }
 
 /// Whether the grown reference `r` takes any area of the piece `p`: cut to the box
@@ -641,10 +656,15 @@ fn grown_reference(
 /// tip touching it shares half a square DBU once a tile line has cut the tip in two.
 fn reach_takes(p: &MergedPoly, r: &MergedPoly) -> bool {
     let (rx0, ry0, rx1, ry1) = poly_bbox(r);
+    let (px0, py0, px1, py1) = poly_bbox(p);
+    // Boxes that do not share area share none.
+    if px1 <= rx0 || rx1 <= px0 || py1 <= ry0 || ry1 <= py0 {
+        return false;
+    }
     let filled =
         r.holes.is_empty() && merged_area_dbu(r) >= (rx1 - rx0) as f64 * (ry1 - ry0) as f64 - 0.5;
     if filled {
-        clip_to_box(
+        return clip_to_box(
             vec![p.clone()],
             rx0 as i64,
             ry0 as i64,
@@ -652,15 +672,32 @@ fn reach_takes(p: &MergedPoly, r: &MergedPoly) -> bool {
             ry1 as i64,
         )
         .iter()
-        .any(|q| merged_area_dbu(q) > 0.0)
-    } else {
-        compose_tile(
-            VirtualOp::Intersection,
-            &[std::slice::from_ref(p), std::slice::from_ref(r)],
-        )
-        .iter()
-        .any(|q| merged_area_dbu(q) > 0.0)
+        .any(|q| merged_area_dbu(q) > 0.0);
     }
+    // A point inside one shape that lies inside the other is shared area, and it is
+    // read before the overlay is: a reach grown round is a blob of a thousand vertices
+    // by the time it has gone fifteen microns in half-micron steps, and an overlay of
+    // every active in a well against every such blob in reach of it was eighty seconds
+    // of DF.13 where the rest of the deck was five.  Nearly every target in reach has
+    // its inside point in the reach; the ones that only touch the blob's edge, and the
+    // ones out of reach with a box that still meets it, go to the overlay as before.
+    // The point is nudged off the grid by an amount no grid line or diagonal shares,
+    // so a point lying on the other shape's boundary - which the even-odd cast may
+    // call inside - stays where it is, strictly within its own shape.
+    let (ax, ay) = inside_point(p);
+    if point_in_merged(ax + 0.37, ay + 0.29, r) {
+        return true;
+    }
+    let (bx, by) = inside_point(r);
+    if point_in_merged(bx + 0.37, by + 0.29, p) {
+        return true;
+    }
+    compose_tile(
+        VirtualOp::Intersection,
+        &[std::slice::from_ref(p), std::slice::from_ref(r)],
+    )
+    .iter()
+    .any(|q| merged_area_dbu(q) > 0.0)
 }
 
 /// The grown reference shapes that can meet a piece with box `(bx0, by0, bx1, by1)`:
@@ -808,6 +845,79 @@ pub fn max_space_gaps(
         .collect()
 }
 
+/// Every ring of `polys` with the vertices a chord could do without dropped: a vertex
+/// within `eps` DBU of the line between the vertices it would leave as neighbours.
+/// Douglas-Peucker on a closed ring, split at its two farthest-apart vertices.
+fn thin_outlines(polys: Vec<MergedPoly>, eps: f64) -> Vec<MergedPoly> {
+    fn dist_to_chord(p: IntPoint, a: IntPoint, b: IntPoint) -> f64 {
+        let (dx, dy) = ((b.x - a.x) as f64, (b.y - a.y) as f64);
+        let (px, py) = ((p.x - a.x) as f64, (p.y - a.y) as f64);
+        let len2 = dx * dx + dy * dy;
+        if len2 == 0.0 {
+            return (px * px + py * py).sqrt();
+        }
+        let t = ((px * dx + py * dy) / len2).clamp(0.0, 1.0);
+        let (ex, ey) = (px - t * dx, py - t * dy);
+        (ex * ex + ey * ey).sqrt()
+    }
+    fn keep(ring: &[IntPoint], lo: usize, hi: usize, eps: f64, out: &mut Vec<bool>) {
+        // Vertices lo and hi are kept; decide those strictly between them.
+        if hi <= lo + 1 {
+            return;
+        }
+        let (a, b) = (ring[lo], ring[hi]);
+        let mut worst = (0.0, lo);
+        for (i, &p) in ring.iter().enumerate().take(hi).skip(lo + 1) {
+            let d = dist_to_chord(p, a, b);
+            if d > worst.0 {
+                worst = (d, i);
+            }
+        }
+        if worst.0 <= eps {
+            return;
+        }
+        out[worst.1] = true;
+        keep(ring, lo, worst.1, eps, out);
+        keep(ring, worst.1, hi, eps, out);
+    }
+    let thin = |ring: &[IntPoint]| -> Vec<IntPoint> {
+        let n = ring.len();
+        if n < 8 {
+            return ring.to_vec();
+        }
+        // Split the ring at the vertex farthest from vertex 0, so each half is open.
+        let far = (1..n)
+            .max_by(|&i, &j| {
+                let d = |k: usize| {
+                    let (dx, dy) = (
+                        (ring[k].x - ring[0].x) as f64,
+                        (ring[k].y - ring[0].y) as f64,
+                    );
+                    dx * dx + dy * dy
+                };
+                d(i).partial_cmp(&d(j)).unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .unwrap_or(n / 2);
+        let mut out = vec![false; n + 1];
+        let mut closed: Vec<IntPoint> = ring.to_vec();
+        closed.push(ring[0]);
+        out[0] = true;
+        out[far] = true;
+        out[n] = true;
+        keep(&closed, 0, far, eps, &mut out);
+        keep(&closed, far, n, eps, &mut out);
+        (0..n).filter(|&i| out[i]).map(|i| ring[i]).collect()
+    };
+    polys
+        .into_iter()
+        .map(|m| MergedPoly {
+            outer: thin(&m.outer),
+            holes: m.holes.iter().map(|h| thin(h)).collect(),
+        })
+        .filter(|m| m.outer.len() >= 3)
+        .collect()
+}
+
 /// The reference confined to `within`: each tile's core pieces of `b`, grown in steps
 /// of `step` DBU and cut back to `within` after each until they have grown by `value`,
 /// filed under the tile.  The reach goes round a slot in the layer and never across a
@@ -849,7 +959,15 @@ fn confined_reference(
                 }
                 let by = (base + i64::from(i < rem)) as f64;
                 let step_out = if round {
-                    grow_round(&reach, by)
+                    // A round join puts an arc of chords at every corner, and on the
+                    // next step every chord's end is a corner of its own with an arc
+                    // of its own: a twelve-vertex tap was fourteen hundred vertices
+                    // after thirty steps, and the outline of each step cost what the
+                    // vertices did.  The arc grows by the step and needs no more
+                    // chords than it had, so the vertices a chord could do without -
+                    // within half a DBU of the line between their neighbours, which
+                    // is nothing on the grid - are dropped after every step.
+                    thin_outlines(grow_round(&reach, by), 0.5)
                 } else {
                     grow_by(&reach, by, 0.0)
                 };
