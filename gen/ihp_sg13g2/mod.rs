@@ -18,7 +18,6 @@ mod nbulay;
 mod nbulayblock;
 mod nmosi;
 mod npn;
-mod npn_hardening;
 mod nsdblock;
 mod nwell;
 mod offgrid;
@@ -65,7 +64,6 @@ pub fn generate(pdk: &PdkConfig) {
     resistor::generate(pdk);
     nmosi::generate(pdk);
     npn::generate(pdk);
-    npn_hardening::generate(pdk);
     sdiod::generate(pdk);
     sealring::generate(pdk);
     nwell::generate(pdk);
