@@ -159,6 +159,9 @@ struct RunArgs {
 }
 
 fn main() {
+    // Before any thread exists: glibc opens an arena for a thread the first time it
+    // allocates, and the cap holds only for arenas not yet opened.
+    gdscheck::memory::cap_arenas(std::thread::available_parallelism().map_or(8, |n| n.get()));
     let cli = Cli::parse();
     let dirs = cli.pdk_path;
     match cli.command {
