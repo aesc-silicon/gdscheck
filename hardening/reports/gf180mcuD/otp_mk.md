@@ -212,9 +212,13 @@ The deck's own good/bad pairs were left as they were; nothing this round drew mo
 
 - **Finding 1 (O.DF.6).** The rule reads `metric: euclidian` now, which finds the third
   device - 0.02 µm of active over the gate's top wall where the rule asks 0.22, and both
-  tools were blind to it - and the second, 0.19 µm. The first device is kept and open:
-  every straight margin clears 0.22 while the chamfer comes within 0.1556, and neither
-  tool reports it. Two things about that fixture are worth knowing for whoever picks it
+  tools were blind to it - and the second, 0.19 µm. The first device is **not** a
+  violation, and the finding's 0.1556 µm is a measurement to the chamfer's infinite line
+  rather than to the chamfer: the cut runs from (12, 11.03) up to (12.37, 11.4), the
+  closest point on it to the gate's corner at (12, 10.81) is its own lower end, and that
+  is 0.22 µm away - the value, to the nanometre. Below that end the active's boundary is
+  the vertical wall the gate crosses, which is the crossing and not a margin. Both tools
+  are right to stay silent, and the case says so. Two things about that fixture are worth knowing for whoever picks it
   up: the devices moved from x = 10, 20, 30 to 12, 22, 32, because the margin this rule
   reads runs along the active's left edge and on the 20 µm tile line the second device's
   0.19 went unread, which is a gdscheck defect of its own, reproducible by moving the
@@ -231,14 +235,30 @@ point lies *on* the line, no tile sees that wall whole - the shape crosses there
 every copy stops at it - so `uncut` finds a clip rather than a wall, defers to "the tile
 past it", and every tile defers.
 
-The obvious repair - let the tile that owns the point half-open (`Core::owns_from`) keep
-the read on its own piece - was tried and reverted: it finds the missing pair at every
-tile size, but the piece's read is not the whole wall's, and on the `lvpwell` foundry
-layout LPW.3 became tile-dependent (90 / 92 / 94 at 100 / 20 / 7) where it had been 90
-everywhere.  A repair has to give the owning tile the *wall*, not its piece - by way of a
-halo on the enclosed layer of at least the rule's value, with the double report that then
-arrives from both sides of the line collapsed - and that is a piece of engine work of its
-own.  Left for the gdscheck owner.
+The root cause is one step further down: the copy `uncut` searches for the whole wall is
+the enclosed layer's **per-tile copy, cut at the core**. Instrumented on the layout above,
+the two tiles hand it `[(3960, 2162), (3960, 2118), (4000, 2118), (4000, 2162)]` and
+`[(4000, 2162), (4000, 2118), (4240, 2118), (4240, 2162)]` - one wall of the gate in two
+halves, neither of which contains the crossing point in its interior. So `on_wall` finds
+nothing, the vertex is a clip in both, and both defer. The layer is not one of the
+clippable ones and its halo is the full micron minimum; the cut is the scan's own.
+
+Two cheap repairs were tried and reverted, and both say what a real one needs:
+
+- Let the tile that owns the point half-open (`Core::owns_from`) keep the read on its own
+  piece. It finds the missing pair at every tile size, but a piece's read is not the
+  wall's: on the `lvpwell` foundry layout LPW.3 became 90 / 92 / 94 at tile 100 / 20 / 7
+  where it had been 90 everywhere.
+- Let *every* tile keep its piece read and have the run reduction take the worst - the
+  reduction already joins the pieces of one wall into one run. Same answer on the layout
+  above, and LPW.3 went 90 / 92 / 99: a piece's read can be smaller than the wall's, which
+  is exactly what the clip guard was written to stop (its own comment: "a gate ending on a
+  tile line read 0.0707 to a chamfer from its cut vertex").
+
+So the repair has to hand `uncut` the *wall across the line* - the neighbouring tile's
+collinear piece, or the region's assembled walls, which the reduction already builds for
+its runs - and that is a piece of engine work with a test of its own. Left for the
+gdscheck owner, with this layout as the reproduction.
 - **Finding 2.** `comp_otp`, `sab_otp` and `poly_otp` are `overlapping` selections: the
   marker names cells and selects whole regions. `O.DF.9.h1` reports the 0.1425 µm² active
   and not the 1 µm² one whose corner the marker clips, and `O.DF.3a.h2` - a solid plate
