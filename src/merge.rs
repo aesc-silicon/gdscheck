@@ -6147,87 +6147,98 @@ impl MergedCache {
                 keys.extend(self.edge_layers[&src].keys().copied());
             }
         }
+        // One tile at a time was 35 s of the gf180 reference's 71 s of rules, under
+        // the cache's lock: the tiles are independent, so they compose in parallel
+        // and are bucketed after.
+        // In chunks, so what is composed and not yet bucketed is a chunk's worth, not
+        // the layer's: a run at its memory's edge went over it on the whole.
+        let keys: Vec<(i32, i32)> = keys.into_iter().collect();
+        let (layers, edge_layers, edge_spans) = (&self.layers, &self.edge_layers, &self.edge_spans);
+        let tile_dbu = self.tile_dbu;
         let mut out: EdgeTileMap = HashMap::new();
-        for tile in keys {
-            // Every tile this tile's subjects reach.  A filter that overlaps one of them
-            // shares points with it, so it crosses those tiles too and the spanning index
-            // has it filed there - which is what makes a long filter visible to a subject
-            // it meets three tiles away from where its own midpoint fell.
-            let mut reach: HashSet<(i32, i32)> = HashSet::from([tile]);
-            for (i, &src) in def.sources.iter().enumerate() {
-                if is_poly(i) || i >= subjects {
-                    continue;
-                }
-                for e in self.edge_layers[&src].get(&tile).into_iter().flatten() {
-                    reach.extend(edge_tiles(e, t));
-                }
-            }
-            let mut gathered: Vec<Vec<Edge>> = Vec::new();
-            let mut ps: Vec<std::borrow::Cow<[MergedPoly]>> = Vec::new();
-            for (i, &src) in def.sources.iter().enumerate() {
-                if is_poly(i) && def.op.mixes() {
-                    // A polygon filter is read wherever the subject edges go, like an
-                    // edge filter above: an edge is filed by its midpoint and can run
-                    // three tiles past it, and the polygon it meets there is in this
-                    // tile only if the polygon's halo happens to reach.  It used to,
-                    // by luck - a 40 µm rule elsewhere on the same layer - until halos
-                    // were built per rule and MDP.9b lost its drift edge to a 1 µm one.
-                    // Copies of one polygon filed in several tiles are dropped; two
-                    // tiles' differing merges of one region are both kept, and read as
-                    // a union by every op that takes a filter.
-                    let mut seen: HashSet<(usize, i32, i32, i32, i32)> = HashSet::new();
-                    let mut v: Vec<MergedPoly> = Vec::new();
-                    for tt in &reach {
-                        for m in self.layers[&src].get(tt).into_iter().flatten() {
-                            let (a, b) = (m.outer[0], m.outer[m.outer.len() / 2]);
-                            if seen.insert((m.outer.len(), a.x, a.y, b.x, b.y)) {
-                                v.push(m.clone());
-                            }
+        for chunk in keys.chunks(512) {
+            let composed_tiles: Vec<Vec<Edge>> = chunk
+                .par_iter()
+                .map(|&tile| {
+                    // Every tile this tile's subjects reach.  A filter that overlaps one of them
+                    // shares points with it, so it crosses those tiles too and the spanning index
+                    // has it filed there - which is what makes a long filter visible to a subject
+                    // it meets three tiles away from where its own midpoint fell.
+                    let mut reach: HashSet<(i32, i32)> = HashSet::from([tile]);
+                    for (i, &src) in def.sources.iter().enumerate() {
+                        if is_poly(i) || i >= subjects {
+                            continue;
+                        }
+                        for e in edge_layers[&src].get(&tile).into_iter().flatten() {
+                            reach.extend(edge_tiles(e, t));
                         }
                     }
-                    ps.push(std::borrow::Cow::Owned(v));
-                } else if is_poly(i) {
-                    ps.push(std::borrow::Cow::Borrowed(
-                        self.layers[&src]
-                            .get(&tile)
-                            .map(Vec::as_slice)
-                            .unwrap_or(&empty_p),
-                    ));
-                } else if i < subjects {
-                    gathered.push(
-                        self.edge_layers[&src]
-                            .get(&tile)
-                            .cloned()
-                            .unwrap_or_default(),
+                    let mut gathered: Vec<Vec<Edge>> = Vec::new();
+                    let mut ps: Vec<std::borrow::Cow<[MergedPoly]>> = Vec::new();
+                    for (i, &src) in def.sources.iter().enumerate() {
+                        if is_poly(i) && def.op.mixes() {
+                            // A polygon filter is read wherever the subject edges go, like an
+                            // edge filter above: an edge is filed by its midpoint and can run
+                            // three tiles past it, and the polygon it meets there is in this
+                            // tile only if the polygon's halo happens to reach.  It used to,
+                            // by luck - a 40 µm rule elsewhere on the same layer - until halos
+                            // were built per rule and MDP.9b lost its drift edge to a 1 µm one.
+                            // Copies of one polygon filed in several tiles are dropped; two
+                            // tiles' differing merges of one region are both kept, and read as
+                            // a union by every op that takes a filter.
+                            let mut seen: HashSet<(usize, i32, i32, i32, i32)> = HashSet::new();
+                            let mut v: Vec<MergedPoly> = Vec::new();
+                            for tt in &reach {
+                                for m in layers[&src].get(tt).into_iter().flatten() {
+                                    let (a, b) = (m.outer[0], m.outer[m.outer.len() / 2]);
+                                    if seen.insert((m.outer.len(), a.x, a.y, b.x, b.y)) {
+                                        v.push(m.clone());
+                                    }
+                                }
+                            }
+                            ps.push(std::borrow::Cow::Owned(v));
+                        } else if is_poly(i) {
+                            ps.push(std::borrow::Cow::Borrowed(
+                                layers[&src]
+                                    .get(&tile)
+                                    .map(Vec::as_slice)
+                                    .unwrap_or(&empty_p),
+                            ));
+                        } else if i < subjects {
+                            gathered
+                                .push(edge_layers[&src].get(&tile).cloned().unwrap_or_default());
+                        } else {
+                            let spans = &edge_spans[&src];
+                            let mut seen: HashSet<(i32, i32, i32, i32)> = HashSet::new();
+                            let mut v = Vec::new();
+                            for tt in &reach {
+                                for e in spans.get(tt).into_iter().flatten() {
+                                    if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+                                        v.push(*e);
+                                    }
+                                }
+                            }
+                            gathered.push(v);
+                        }
+                    }
+                    let es: Vec<&[Edge]> = gathered.iter().map(Vec::as_slice).collect();
+                    let ps: Vec<&[MergedPoly]> = ps.iter().map(|c| c.as_ref()).collect();
+                    let core = (
+                        tile.0 as i64 * t,
+                        tile.1 as i64 * t,
+                        (tile.0 as i64 + 1) * t,
+                        (tile.1 as i64 + 1) * t,
                     );
-                } else {
-                    let spans = &self.edge_spans[&src];
-                    let mut seen: HashSet<(i32, i32, i32, i32)> = HashSet::new();
-                    let mut v = Vec::new();
-                    for tt in &reach {
-                        for e in spans.get(tt).into_iter().flatten() {
-                            if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
-                                v.push(*e);
-                            }
-                        }
+                    compose_edge_tile(def.op, &es, &ps, core)
+                })
+                .collect();
+            for composed in composed_tiles {
+                if !composed.is_empty() {
+                    // Re-bucket: an op can move an edge's midpoint out of the tile it was
+                    // composed in (a cut piece sits elsewhere than its parent).
+                    for (k, v) in bucket_edges(composed, tile_dbu) {
+                        out.entry(k).or_default().extend(v);
                     }
-                    gathered.push(v);
-                }
-            }
-            let es: Vec<&[Edge]> = gathered.iter().map(Vec::as_slice).collect();
-            let ps: Vec<&[MergedPoly]> = ps.iter().map(|c| c.as_ref()).collect();
-            let core = (
-                tile.0 as i64 * t,
-                tile.1 as i64 * t,
-                (tile.0 as i64 + 1) * t,
-                (tile.1 as i64 + 1) * t,
-            );
-            let composed = compose_edge_tile(def.op, &es, &ps, core);
-            if !composed.is_empty() {
-                // Re-bucket: an op can move an edge's midpoint out of the tile it was
-                // composed in (a cut piece sits elsewhere than its parent).
-                for (k, v) in bucket_edges(composed, self.tile_dbu) {
-                    out.entry(k).or_default().extend(v);
                 }
             }
         }
