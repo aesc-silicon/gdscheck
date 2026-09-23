@@ -3102,11 +3102,12 @@ fn hardening_nat(#[case] gds: &str, #[case] topcell: &str, #[case] expected: Vec
 #[case::o_df_3a_h2("otp_mk/O.DF.3a.h2.gds.gz", "TOP", vec![])]
 // The source/drain overhang at 0.22 (clean) and 0.215, on both walls of the second gate.
 #[case::o_df_6_h1("otp_mk/O.DF.6.h1.gds.gz", "TOP", vec!["O.DF.6", "O.DF.6"])]
-// The same overhang over a 45° source edge: straight up from the gate's top wall there is
-// exactly 0.22 but only 0.1556 to the chamfer; then 0.19 straight up; then 0.02.  Read
-// euclidian the second and the third fire, where both tools were blind to them; the
-// first is the open half of report finding 1 - a 45° wall that comes under the value
-// from a corner while every straight margin clears it is read by neither tool (kept).
+// The same overhang over a 45° source edge: the first device's chamfer starts exactly
+// 0.22 above the gate's top wall, the second's 0.19 and the third's 0.02.  Read euclidian
+// the second and the third fire, where both tools were blind to them.  The first is
+// clean and rightly so: the report's 0.1556 is the distance to the chamfer's *line*, and
+// the chamfer ends at (12, 11.03) - the closest approach from the gate's corner to the
+// chamfer itself is the 0.22 the rule asks, to the nanometre.
 #[case::o_df_6_h2("otp_mk/O.DF.6.h2.gds.gz", "TOP", vec!["O.DF.6", "O.DF.6"])]
 // An active of 0.1444 µm² (clean) and one of 0.1425, then a 1 µm² active with the marker
 // over a 0.3 µm corner of it.  Report finding 2: the cut leaves 0.09 µm² and both tools
