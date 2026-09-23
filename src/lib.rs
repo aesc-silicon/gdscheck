@@ -1028,6 +1028,15 @@ fn run_drc_impl(
         }
         rules
     };
+    // The net-aware rules go first, as one pass: the nets - every connect-graph layer
+    // merged and stitched, 4.5 GB on the gf180 reference design - are built before
+    // them and freed after them, instead of staying beside the merge cache for the
+    // whole run.  Nothing reads the order: the summary is by rule id and the
+    // violations are sorted by geometry.
+    let (net_rules, rest): (Vec<_>, Vec<_>) = rules.into_iter().partition(net_aware);
+    let n_net = net_rules.len();
+    let rules: Vec<pdk::RuleDefinition> = net_rules.into_iter().chain(rest).collect();
+
     // Lazy (tiled) virtual layers: built per tile in the merge cache rather than
     // materialised in the layout.  A whole-layout check (`forbidden` past a boundary)
     // therefore cannot see them, so reject that combination up front rather than
@@ -1351,7 +1360,8 @@ fn run_drc_impl(
     }
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
-    let net = if connectivity && rules.iter().any(net_aware) && !pdk.connectivity.is_empty() {
+    let resident_layout = memory::rss_bytes();
+    let mut net = if connectivity && n_net > 0 && !pdk.connectivity.is_empty() {
         use std::io::Write;
         print!("Connecting nets ... ");
         std::io::stdout().flush().ok();
@@ -1434,7 +1444,7 @@ fn run_drc_impl(
     // died for its memory can be read back to the number it planned with.
     let limit = memory::limit(options.memory_limit);
     let resident = memory::rss_bytes();
-    let budget = cache_budget_polys(&limit, resident);
+    let mut budget = cache_budget_polys(&limit, resident);
     merged.set_budget(budget);
     if resident >= limit.bytes {
         eprintln!(
@@ -1456,6 +1466,17 @@ fn run_drc_impl(
     }
 
     for (i, rule) in rules.iter().enumerate() {
+        // The last net-aware rule is done: the nets go, and the cache gets the room.
+        if i == n_net && net.take().is_some() {
+            budget = cache_budget_polys(&limit, resident_layout);
+            merged.set_budget(budget);
+            if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                eprintln!(
+                    "nets freed after {n_net} rules, cache budget {:.1} GB",
+                    memory::gb(budget as u64 * memory::BYTES_PER_COPY)
+                );
+            }
+        }
         // What this rule needs of every layer in its closure, so a layer is merged at
         // that rather than at the maximum some other rule on it set.  The cache builds
         // ahead from `needs_of`, see `MergedCache::build_ahead`.
