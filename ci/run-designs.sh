@@ -14,6 +14,8 @@
 #   GDSCHECK           binary to use (default: target/release/gdscheck, else from PATH)
 #   SUITE              suite to run (default: main)
 #   TIMEOUT            per-design wall-clock limit, timeout(1) syntax (default: 15m)
+#   MEMORY_LIMIT       run every design in a transient cgroup with this memory.max
+#                      (systemd-run syntax, e.g. 12G; needs root - sudo on a runner)
 #   REPORTS            directory for .lyrdb reports of failed designs (default: ci/reports)
 #
 # Every run is traced (GDSCHECK_RULE_TRACE) under /usr/bin/time, and its performance
@@ -58,6 +60,16 @@ outcome() {
     esac
 }
 
+# Under MEMORY_LIMIT every run is put in a transient scope with that memory.max: the
+# run has to plan within it, and the kernel kills what does not.  A runner has sudo
+# and no user session for systemd, so the scope is a system one, run as this user.
+scope=()
+if [[ -n ${MEMORY_LIMIT:-} ]]; then
+    scope=(sudo systemd-run --scope --quiet -p "MemoryMax=$MEMORY_LIMIT" -p MemorySwapMax=0
+           sudo -u "$(id -un)" --preserve-env=GDSCHECK_RULE_TRACE,HOME)
+    echo "every run under a cgroup limit of $MEMORY_LIMIT"
+fi
+
 failed=()
 count=0
 while IFS=$'\t' read -r name _ path topcell; do
@@ -69,7 +81,7 @@ while IFS=$'\t' read -r name _ path topcell; do
     # The trace goes to stderr, with the run's own diagnostics, and stdout stays the
     # log; the summary reads both, since the run prints its totals to stdout.
     GDSCHECK_RULE_TRACE=1 timeout --kill-after=30s "$limit" \
-        /usr/bin/time -v -o "$trace.time" \
+        "${scope[@]}" /usr/bin/time -v -o "$trace.time" \
         "$gdscheck" run --process "$process" --suite "$suite" \
         --topcell "$topcell" --input "$path" --report "$report" \
         2>"$trace" | tee "$trace.out" || status=${PIPESTATUS[0]}
