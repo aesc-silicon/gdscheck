@@ -16,7 +16,6 @@ mod implant_hardening;
 mod lbe;
 mod lu;
 mod metal;
-mod metal1_hardening;
 mod metaln_hardening;
 mod mim;
 mod misc_hardening;
@@ -59,7 +58,6 @@ pub fn generate(pdk: &PdkConfig) {
     gatpoly::generate(pdk);
     cont::generate(pdk);
     metal::generate(pdk);
-    metal1_hardening::generate(pdk);
     metaln_hardening::generate(pdk);
     misc_hardening::generate(pdk);
     via::generate(pdk);
