@@ -231,3 +231,65 @@ fn gf180_connect_order_is_pinned_for_the_antenna_levels() {
         );
     }
 }
+
+/// Every mode word a deck writes must be one its check knows.  A check reads its words
+/// at run time and, on one it does not know, says so on stderr and runs with the
+/// default (`abutting: reprot` is `ignore`, `pairs: al` is `disjoint`) or not at all -
+/// either way the run reports success.  The vocabulary is the engine's, gathered here
+/// by key; a layer-valued param is written under `layer_params` and resolved to a
+/// number at load, so a word left in `params` is a mode word and nothing else.
+#[test]
+fn every_mode_word_is_one_its_check_knows() {
+    use gdscheck::pdk::Param;
+    let vocabulary: &[(&str, &[&str])] = &[
+        ("abutting", &["ignore", "report", "related"]),
+        ("angle", &["bent"]),
+        ("diode", &["with", "without"]),
+        ("metric", &["euclidian", "square", "sidewall"]),
+        ("net", &["same", "different", "connected"]),
+        ("op", &["apart", "beyond", "overlap", "uncovered"]),
+        ("pairs", &["disjoint", "overlapping", "any"]),
+        ("reach", &["round"]),
+        (
+            "scope",
+            &[
+                "chip",
+                "contained",
+                "edge",
+                "hole",
+                "part",
+                "polygon",
+                "region",
+                "window",
+            ],
+        ),
+        ("sides", &["all", "adjacent", "line_end"]),
+        ("span", &["narrowest"]),
+        ("touching", &["separate"]),
+        ("walls", &["unshared"]),
+    ];
+    for process in processes() {
+        let pdk = PdkConfig::for_process(process).unwrap();
+        for deck in &pdk.decks {
+            for rule in pdk.load_deck(&deck.name).unwrap() {
+                for (key, param) in &rule.params {
+                    let Param::Word(word) = param else {
+                        continue;
+                    };
+                    let known = vocabulary
+                        .iter()
+                        .find(|(k, _)| k == key)
+                        .map(|(_, words)| words.contains(&word.as_str()));
+                    assert_eq!(
+                        known,
+                        Some(true),
+                        "{process}: deck '{}', rule {}: `{key}: {word}` is not a word the \
+                         engine reads — a check would run as if it were absent",
+                        deck.name,
+                        rule.id
+                    );
+                }
+            }
+        }
+    }
+}
