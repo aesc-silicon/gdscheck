@@ -25,6 +25,10 @@ include = [
 
 [dev-dependencies]
 rstest = "0.23"
+# The pattern tests are one contract each over a thousand layouts; run in a loop they
+# were seven of the gf180mcuD file's thirteen seconds, on one core while thirty-one
+# waited.
+rayon = "1"
 
 # The tests run optimized: the suite is geometry over two thousand layouts at three
 # tile sizes, and unoptimized it took the CI runner 170 minutes at the 7 µm tile
