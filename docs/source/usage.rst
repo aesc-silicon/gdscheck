@@ -66,12 +66,21 @@ a run that differs between two tile sizes is a bug worth reporting.
 ``--memory <size>``, or ``GDSCHECK_MEMORY``, is what the run may take (``12G``,
 ``800M``). Without it the run plans within the tightest cgroup limit above it — a
 container, a ``systemd-run`` scope, a CI runner — or, with none, the machine's
-``MemTotal``, less a tenth for the rest of the system. The flattened layout and the nets
-stay resident for the whole run; the merge cache is sized to what the limit leaves after
-them, and the run says so in one line (``Memory: limit 10.8 GB (cgroup limit 12.0 GB
-less a tenth), 7.1 GB resident, 3.7 GB for the merge cache``). A smaller cache means
+``MemTotal``. Either way the plan keeps a margin under the amount: a twentieth (at
+least 256 MB) for what a burst of allocation adds between two readings of the resident
+set, and a tenth of the rest for a rule's own working set. The flattened layout and the
+nets stay resident for the whole run; the merge cache is sized to what the plan leaves
+after them, and the run says so in one line (``Memory: planning within 10.3 GB (cgroup
+limit 12.0 GB), 7.1 GB resident, 3.2 GB for the merge cache``). A smaller cache means
 layers are merged again when a later rule needs them: slower, same result. A limit the
 resident part already exceeds turns the cache off and says so on stderr.
+
+The run keeps to its limit as it goes: the net-aware rules run first and the nets are
+freed after them, the cache gives back what a rule overshot the plan by, and a rule
+whose layers would take twice what is left is not checked but recorded — under its
+rule in the summary (``N rule(s) not checked:``) and in the report, tagged ``skipped``
+— with exit status ``3``. A run that outgrows the limit anyway ends with a message
+saying where it was and what helps, where the kernel would have killed it silently.
 
 Other subcommands inspect a PDK without running a check:
 
@@ -186,16 +195,21 @@ Command-line reference
    * - ``--threads``
      - Worker threads (``0`` = all logical cores, the default).
    * - ``--memory``
-     - Memory the run may take (``12G``); default: the cgroup's limit or ``MemTotal``, less a tenth.
+     - Memory the run may take (``12G``); default: the cgroup's limit or ``MemTotal``.
    * - ``--no-connectivity``
      - Disable net extraction; net-aware checks are skipped.
    * - ``-v, --verbose``
      - Print every violation's message, not just per-rule counts.
 
 Exit status: ``0`` when the layout is clean, ``2`` when violations were found, ``1`` on
-any error (unreadable input, unknown PDK, deck or suite, failed report write). A
-violation the PDK waives is reported but does not fail the run: a layout whose only
-findings are waived exits with ``0``.
+any error (unreadable input, unknown PDK, deck or suite, failed report write), ``3``
+when the report is incomplete: a rule was not checked because the memory it needed was
+not there (see below), whatever else the report holds — a CI that reads ``2`` as "fix
+the layout" must not read a missing rule as one. A violation the PDK waives is reported
+but does not fail the run: a layout whose only findings are waived exits with ``0``. The
+run's last line says the same in words — ``Status: PASS``, ``Status: FAIL (12
+violation(s))``, ``Status: INCOMPLETE (1 rule(s) not checked for memory)`` — for whoever
+reads the terminal and not the exit code.
 
 ``list-decks`` / ``list-suites``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

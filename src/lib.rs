@@ -414,6 +414,39 @@ fn cache_budget_polys(limit: &memory::Limit, resident: u64) -> usize {
     memory::cache_budget_polys(limit, resident)
 }
 
+/// What building a rule's layers would add to the merge cache, in bytes: every drawn
+/// layer of its closure not cached at the halo it needs, at its shape count times what
+/// the tile and halo multiply it by - a shape lies in `(1 + 2h/t)²` tiles - at the
+/// measured cost of a copy, half the planning figure [`memory::BYTES_PER_COPY`].  A
+/// clippable layer is left out: it is built only round the rule's own geometry, not
+/// over the chip.  The derived layers built from the drawn ones are not counted; the
+/// estimate is for telling the rule that is out of the question (a contact layer at a
+/// 60 µm halo: 176 million copies, 44 GB) from the one that is not (MDN.4b: comp and
+/// poly at 50 µm, 9 GB by this count, 3 GB in the run).
+fn rule_estimate_bytes(
+    halos: &merge::RuleHalos,
+    layout: &layout::FlatLayout,
+    merged: &merge::MergedCache,
+    clippable: &std::collections::HashSet<(i16, i16)>,
+    tile_dbu: i32,
+    halo_dbu: i32,
+) -> u64 {
+    let (table, closure) = halos;
+    closure
+        .iter()
+        .filter(|k| merged.is_drawn(**k) && !clippable.contains(k))
+        .map(|k| {
+            let need = table.get(k).copied().unwrap_or(halo_dbu);
+            if merged.cached_halo(*k).is_some_and(|h| h >= need) {
+                return 0;
+            }
+            let shapes = layout.get(k.0, k.1).len() as f64;
+            let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
+            (shapes * f * f) as u64 * (memory::BYTES_PER_COPY / 2)
+        })
+        .sum()
+}
+
 fn propagate_virtual_halos(
     tiled_virtuals: &[(pdk::TiledVirtualSpec, merge::VirtualOp)],
     in_scope: Option<&std::collections::HashSet<(i16, i16)>>,
@@ -1060,6 +1093,11 @@ fn run_drc_impl(
 
     // The rules are validated above before the file is touched, so a bad deck is
     // reported without a layout - and a missing layout is reported after a good deck.
+    // What the run may take, and a watch on what it takes: over the hard line the
+    // run ends with a message where the kernel would end it without one.
+    let limit = memory::limit(options.memory_limit);
+    let watch = memory::Watch::start(limit.clone());
+    watch.at("loading the layout");
     let owned: GdsLibrary;
     let lib: &GdsLibrary = match source {
         LibSource::Loaded(l) => l,
@@ -1163,6 +1201,7 @@ fn run_drc_impl(
             Some(n)
         };
 
+    watch.at("flattening the layout");
     let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref(), &pdk.waivers);
     phase.end("flatten");
     pdk.compute_virtual_layers(&mut layout, dbu_to_um);
@@ -1363,6 +1402,7 @@ fn run_drc_impl(
     let resident_layout = memory::rss_bytes();
     let mut net = if connectivity && n_net > 0 && !pdk.connectivity.is_empty() {
         use std::io::Write;
+        watch.at("connecting nets");
         print!("Connecting nets ... ");
         std::io::stdout().flush().ok();
         let t = std::time::Instant::now();
@@ -1442,7 +1482,6 @@ fn run_drc_impl(
     // What stays resident is known now - the layout and the nets - and the merge
     // cache gets what the limit leaves.  Said in one line, so a run that was slower or
     // died for its memory can be read back to the number it planned with.
-    let limit = memory::limit(options.memory_limit);
     let resident = memory::rss_bytes();
     let mut budget = cache_budget_polys(&limit, resident);
     merged.set_budget(budget);
@@ -1457,7 +1496,7 @@ fn run_drc_impl(
         );
     } else {
         println!(
-            "Memory: limit {:.1} GB ({}), {:.1} GB resident, {:.1} GB for the merge cache",
+            "Memory: planning within {:.1} GB ({}), {:.1} GB resident, {:.1} GB for the merge cache",
             memory::gb(limit.bytes),
             limit.source,
             memory::gb(resident),
@@ -1468,6 +1507,7 @@ fn run_drc_impl(
     for (i, rule) in rules.iter().enumerate() {
         // The last net-aware rule is done: the nets go, and the cache gets the room.
         if i == n_net && net.take().is_some() {
+            memory::trim();
             budget = cache_budget_polys(&limit, resident_layout);
             merged.set_budget(budget);
             if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
@@ -1489,6 +1529,100 @@ fn run_drc_impl(
             );
             continue;
         }
+        watch.at(format!("checking {} ({})", rule.id, rule.check));
+        // What the rule's layers would add to the cache, against the room the limit
+        // leaves once the cache is emptied: a rule that would need three times that is
+        // beyond doubt - the estimate counts every copy and the cache never holds them
+        // all at once - and is not run, since it would be killed, but recorded, so the
+        // report says what it lacks.  A rule short of that runs, under the watch.
+        let estimate = rule_estimate_bytes(
+            &rule_halos[i],
+            &layout,
+            &merged,
+            &clippable,
+            tile_dbu,
+            halo_dbu,
+        );
+        let cached = merged.resident_polys() as u64 * memory::BYTES_PER_COPY;
+        let room = limit
+            .bytes
+            .saturating_sub(memory::rss_bytes().saturating_sub(cached));
+        if estimate > 3 * room {
+            let message = format!(
+                "not checked: its layers would take about {:.1} GB of memory and \
+                 {:.1} GB were left under the limit of {:.1} GB ({})",
+                memory::gb(estimate),
+                memory::gb(room),
+                memory::gb(limit.bytes),
+                limit.source
+            );
+            eprintln!("[{}] {message}", rule.id);
+            if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                let (table, closure) = &rule_halos[i];
+                let mut terms: Vec<(u64, String)> = closure
+                    .iter()
+                    .filter(|k| merged.is_drawn(**k) && !clippable.contains(k))
+                    .map(|k| {
+                        let need = table.get(k).copied().unwrap_or(halo_dbu);
+                        let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
+                        let shapes = layout.get(k.0, k.1).len();
+                        (
+                            (shapes as f64 * f * f) as u64 * (memory::BYTES_PER_COPY / 2),
+                            format!(
+                                "{} shapes={shapes} halo={need} cached={:?}",
+                                merged.name_of(*k),
+                                merged.cached_halo(*k)
+                            ),
+                        )
+                    })
+                    .collect();
+                terms.sort_by_key(|t| std::cmp::Reverse(t.0));
+                for (b, t) in terms.iter().take(5) {
+                    eprintln!("    estimate {:.1} GB: {t}", memory::gb(*b));
+                }
+            }
+            violations.push(violation::Violation::skipped(
+                &rule.id,
+                &format!("{} not checked", rule.check),
+                message,
+            ));
+            continue;
+        }
+        // Room for the rule's working set: what its layers would add beyond what the
+        // limit leaves now comes out of the cache first - every layer the rule does not
+        // read goes, latest use first - rather than out of the run.
+        let room_now = limit.bytes.saturating_sub(memory::rss_bytes());
+        if estimate > room_now {
+            let (_, closure) = &rule_halos[i];
+            let mut resident = merged.resident_layers();
+            resident.sort_by_key(|(key, _)| {
+                std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
+            });
+            let mut freed = 0usize;
+            for (key, polys) in resident {
+                if closure.contains(&key) {
+                    continue;
+                }
+                merged.evict(key.0, key.1);
+                freed += polys;
+                if (freed as u64) * memory::BYTES_PER_COPY >= estimate - room_now {
+                    break;
+                }
+            }
+            if freed > 0 {
+                merged.settle_frees();
+                memory::trim();
+                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                    eprintln!(
+                        "room for {}: {:.1} GB estimated against {:.1} GB left, {} copies evicted",
+                        rule.id,
+                        memory::gb(estimate),
+                        memory::gb(room_now),
+                        freed
+                    );
+                }
+            }
+        }
         let t_rule = std::time::Instant::now();
         let c_rule = cpu_seconds();
         violations.append(&mut checks::run_rule(
@@ -1500,12 +1634,13 @@ fn run_drc_impl(
         ));
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
             eprintln!(
-                "rule {} {} {:.1}s cpu={:.1}s rss={:.1}GB cache={}",
+                "rule {} {} {:.1}s cpu={:.1}s rss={:.1}GB est={:.1}GB cache={}",
                 rule.id,
                 rule.check,
                 t_rule.elapsed().as_secs_f64(),
                 cpu_seconds() - c_rule,
                 rss_gb(),
+                memory::gb(estimate),
                 merged.resident_summary()
             );
         }
@@ -1544,6 +1679,22 @@ fn run_drc_impl(
         // million shapes each that is a hundred million copies, fifty gigabytes, for
         // a rule reading one of them.  Over budget, the layers read again latest go
         // first, and come back for the cost of one merge when their rule arrives.
+        // Over the plan after this rule - the reserve was short of its working set -
+        // the cache gives the overshoot back, evicted just below.
+        let rss = memory::rss_bytes();
+        if rss > limit.bytes && merged.resident_polys() > 0 {
+            let over = ((rss - limit.bytes) / memory::BYTES_PER_COPY) as usize;
+            budget = budget.saturating_sub(over);
+            merged.set_budget(budget);
+            if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                eprintln!(
+                    "over the plan by {:.1} GB after {}: cache budget {:.1} GB",
+                    memory::gb(rss - limit.bytes),
+                    rule.id,
+                    memory::gb(budget as u64 * memory::BYTES_PER_COPY)
+                );
+            }
+        }
         if merged.resident_polys() > budget {
             let mut resident = merged.resident_layers();
             resident.sort_by_key(|(key, _)| {
@@ -1575,6 +1726,7 @@ fn run_drc_impl(
         // fit on a machine of this size before is killed for what it already dropped.
         if merged.pending_free_polys() > budget / 4 {
             merged.settle_frees();
+            memory::trim();
         }
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
             let plan = t_plan.elapsed().as_secs_f64();
