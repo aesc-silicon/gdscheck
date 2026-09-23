@@ -5,7 +5,6 @@
 mod activ;
 mod antenna;
 mod beol_misc_hardening;
-mod block_hardening;
 mod connectivity;
 mod cont;
 mod contbar;
@@ -82,7 +81,6 @@ pub fn generate(pdk: &PdkConfig) {
     slit::generate(pdk);
     lu::generate(pdk);
     antenna::generate(pdk);
-    block_hardening::generate(pdk);
     beol_misc_hardening::generate(pdk);
     mim::generate(pdk);
     connectivity::generate(pdk);
