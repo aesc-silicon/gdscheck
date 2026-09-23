@@ -2061,12 +2061,17 @@ virtual_layers:
   # SRAMCORE marks cells, so a rule section 11 replaces is off for the cells it replaces
   # it in and for no others: CO.4 has a rule in both sections, CO.3 and CO.6b only in the
   # 3.3 V one, so a 5 V core owes them chapter 7's value (report, sram_3p3 finding 3).
+  # These two are cuts, not selections, on purpose: the wall a cut invents is what a
+  # selection is for, and a contact is a 0.22 um square that no marker edge runs
+  # through in a layout that means anything - while selecting whole contacts stitched
+  # ten million of them for it, fourteen CPU-seconds and a gigabyte of peak on the
+  # reference design.
   - name: contact_no_sram
-    op: not_overlapping
+    op: difference
     mode: lazy
     layers: [contact, sramcore]
   - name: contact_no_sram_lv
-    op: not_overlapping
+    op: difference
     mode: lazy
     layers: [contact, sram_lv]
 
