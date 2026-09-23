@@ -43,6 +43,16 @@ pub fn boundaries_on<'a>(layout: &'a FlatLayout, layer: &Layer) -> &'a [GdsBound
     layout.get(layer.gds_layer as i16, layer.gds_datatype as i16)
 }
 
+/// Whether a rule has to run with no other beside it: the residual family registers
+/// virtual layers of its own in the cache as it goes, under keys another such rule
+/// could register differently.
+pub fn runs_alone(rule: &RuleDefinition) -> bool {
+    matches!(
+        rule.check.as_str(),
+        "forbidden" | "forbidden_unless_labeled"
+    )
+}
+
 pub fn run_rule(
     rule: &RuleDefinition,
     layout: &FlatLayout,
