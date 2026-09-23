@@ -13,7 +13,7 @@ mandatory rule of both sections is in its deck: npnG2.a defines the tie, npnG2.f
 ties to overlap, the `*R` rules (npn13G2.bR, npn13G2L.cR, npn13G2V.cR, emitters per
 chip) are recommended and deliberately left out.  45 layouts,
 `tests/data/ihp-sg13g2/{npn,sdiod}/<RULE>.h<n>.gds.gz`, drawn by
-`gen/ihp_sg13g2/npn_hardening.rs`, each with a `#[case]` in `tests/ihp-sg13g2.rs`.
+`gen/ihp_sg13g2/{npn,sdiod}.rs`, each with a `#[case]` in `tests/ihp-sg13g2.rs`.
 Every layout ran through gdscheck at tiles 20, 7 and 100 and through IHP's KLayout decks
 (`hardening/oracle-ihp.sh`).
 

@@ -10,7 +10,7 @@ Decks `metal2`, `metal3`, `metal4` and `metal5` against SG13G2 Layout Rules Rev.
 section 5.17 (Mn.a-Mn.k, one rule set for Metal2-Metal5) and section 5.18 (MnFil.*), with
 section 6.10's sentence on the sealring.  89 layouts per layer, 356 in all,
 `tests/data/ihp-sg13g2/metal<n>/M<n>.<rule>.h<k>.gds.gz`, drawn by
-`gen/ihp_sg13g2/metaln_hardening.rs` once per index (Via(n-1) and Metal(n-1) below the
+`gen/ihp_sg13g2/metal.rs` once per index (Via(n-1) and Metal(n-1) below the
 metal), each with a `#[case]` in `test_metaln_hardening` of `tests/ihp-sg13g2.rs`, a table
 whose second axis is the layer index 2-5.  Every Metal2 layout ran through gdscheck at
 tiles 20, 7 and 100 and through IHP's KLayout decks (`hardening/oracle-ihp.sh`); the

@@ -10,7 +10,7 @@ The resistor deck against SG13G2 Layout Rules Rev. 0.4: section 6.2 (Rsil, Rsil.
 6.3 (Rppd, Rppd.a-e) and 6.4 (Rhigh, Rhi.a-f), with section 4.2's derivations.  Every
 rule of the three sections is in the deck.  69 layouts,
 `tests/data/ihp-sg13g2/resistor/<RULE>.h<n>.gds.gz`, drawn by
-`gen/ihp_sg13g2/resistor_hardening.rs`, each with a `#[case]` in the resistor table of
+`gen/ihp_sg13g2/resistor.rs`, each with a `#[case]` in the resistor table of
 `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck at tiles 20, 7 and 100 and
 through IHP's KLayout decks (`hardening/oracle-ihp.sh`).
 

@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 # ihp-sg13g2 / offgrid, forbidden: hardening report
 
 Decks `offgrid` (every drawn layer on the 0.005 µm grid) and `forbidden` (the layers
-the process does not offer), drawn by `gen/ihp_sg13g2/offgrid_hardening.rs` in the
+the process does not offer), drawn by `gen/ihp_sg13g2/{offgrid,forbidden}.rs` in the
 main session (2026-09-21) - nine layouts, each with a `#[case]` in `tests/ihp-sg13g2.rs`,
 every one run at tiles 20, 7 and 100.  No KLayout column: IHP's deck has no grid check
 in the driver and the forbidden layers are its own list.

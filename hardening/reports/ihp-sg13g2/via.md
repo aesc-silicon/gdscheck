@@ -10,7 +10,7 @@ Decks `via1`, `via2`, `via3` and `via4` against SG13G2 Layout Rules Rev. 0.4, se
 5.19 (V1.a-V1.c1) and section 5.20 (Vn.a-Vn.c1, one rule set for Via2-Via4), with
 section 6.10's sentence on the sealring.  41 layouts per layer, 164 in all,
 `tests/data/ihp-sg13g2/via<n>/V<n>.<rule>.h<k>.gds.gz`, drawn by
-`gen/ihp_sg13g2/via_hardening.rs` once per index (Metal(n) below the via; the V(n).c/c1
+`gen/ihp_sg13g2/via.rs` once per index (Metal(n) below the via; the V(n).c/c1
 margins take the deck's value `c`, 0.01 on Via1 and 0.005 on Via2-4, so "a step short" is
 0.005 on Via1 and 0.000 on the others), each with a `#[case]` in `test_via_hardening` of
 `tests/ihp-sg13g2.rs`, a table whose second axis is the layer index 1-4.  Every Via1 and

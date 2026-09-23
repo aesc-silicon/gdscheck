@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Decks `nmosi`, `pin` and `antenna` against SG13G2 Layout Rules Rev. 0.4, sections 6.5
 (nmosi and nmosiHV, nmosi.b-nmosi.g, with section 4.2's Iso-PWell-Activ), 7.4 (Pin.a-Pin.h)
 and 7.1 (Ant.a-Ant.i).  51 layouts, `tests/data/ihp-sg13g2/<deck>/<RULE>.h<k>.gds.gz`,
-drawn by `gen/ihp_sg13g2/misc_hardening.rs`, each with a `#[case]` in `test_nmosi`,
+drawn by `gen/ihp_sg13g2/{nmosi,pin,antenna}.rs`, each with a `#[case]` in `test_nmosi`,
 `test_pin` or `test_antenna` of `tests/ihp-sg13g2.rs`.  Every layout ran through gdscheck
 at tiles 20, 7 and 100 and through IHP's KLayout decks: the nmosi and pin layouts with
 `hardening/oracle-ihp.sh` (the driver's tables plus the maximal deck; the nmosi rules

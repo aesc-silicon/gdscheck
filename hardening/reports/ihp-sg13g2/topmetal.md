@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Decks `topmetal1` and `topmetal2` against SG13G2 Layout Rules Rev. 0.4, sections 5.22
 (TM1.a-TM1.d), 5.23 (TM1Fil.a-TM1Fil.d), 5.25 (TM2.a-TM2.d, TM2.bR) and 5.26
 (TM2Fil.a-TM2Fil.d).  The two decks share every rule but TM2.bR, so
-`gen/ihp_sg13g2/topmetal_hardening.rs` draws each theme once for both with the deck's
+`gen/ihp_sg13g2/topmetal.rs` draws each theme once for both with the deck's
 own values: 59 layouts per deck (`tests/data/ihp-sg13g2/topmetal<n>/TM<n>.*.h<k>.gds.gz`,
 `TM<n>Fil.*.h<k>.gds.gz`) plus 11 for TM2.bR, 129 in all, each with a `#[case]` in the
 `topmetal1`/`topmetal2` tables of `tests/ihp-sg13g2.rs`.  Every layout ran through
