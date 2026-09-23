@@ -40,9 +40,14 @@ Parameters
    edge is forbidden.
 
 ``tolerance``
-   Optional, defaults to ``1.0`` (degrees). How close an edge's angle must be to the
-   forbidden orientation (or to 0°/90° in the "no angle param" case) to count as
-   orthogonal/matching.
+   Optional, in degrees. How close an edge's angle must be to the forbidden orientation,
+   or to a multiple of ``step``, to count as matching. It defaults to ``1.0`` with an
+   ``angle`` param, where the slack widens the net - an edge that misses the forbidden
+   orientation by half a degree is the orientation the rule is about - and to ``0`` in
+   the ``step`` form, where it would hole it: GF180's ACUTE is "all shapes must be
+   orthogonal or on a 45°", and geometry sits on a grid, so an edge is on the lattice
+   exactly or it is not. A degree of slack there is also scale-dependent, since one grid
+   step off over a short edge is a larger angle than over a long one.
 
 
 Violation markers

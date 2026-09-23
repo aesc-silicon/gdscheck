@@ -34,7 +34,19 @@ pub fn run(
     merged.ensure(layout, gl, gd);
 
     let forbidden = rule.num("angle"); // specific forbidden orientation
-    let tol = rule.num("tolerance").unwrap_or(1.0);
+    // An angle is exact unless a rule asks for slack.  GF180's ACUTE is "all shapes must
+    // be orthogonal or on a 45°", and a slope that misses 45° by a degree misses it: a
+    // degree of slack swallowed a 4.140 µm hypotenuse over a 4.000 µm base, and made the
+    // rule scale-dependent besides - one grid step over 0.2 µm fires where the same step
+    // over 0.3 µm does not.  The `angle` form, which names one orientation to forbid,
+    // keeps a degree: there the slack widens the net rather than holing it.
+    // The exact default is a millionth of a degree rather than zero: `atan2` on a 45°
+    // edge of equal legs lands a ten-thousandth of a billionth of a degree off it, and
+    // the smallest deviation a layout can draw is far larger - one grid step across a
+    // 4 µm edge is 0.07°.
+    let tol = rule
+        .num("tolerance")
+        .unwrap_or(if forbidden.is_some() { 1.0 } else { 1e-6 });
     // Allowed orientations are multiples of `step` degrees; 90 (the default) permits
     // only axis-aligned edges, 45 also permits the diagonals.  GF180's ACUTE rules want
     // the latter - they allow 0, 45, 90 and -45 and flag everything else.
