@@ -9,7 +9,8 @@
 //! and kept to.  The limit is read here from the most local source that has one: the
 //! amount the caller gave (`--memory`, `GDSCHECK_MEMORY`), else the tightest cgroup
 //! limit above the process (a container, a `systemd-run` scope, a CI runner), else the
-//! machine's `MemTotal`; a found limit is taken less a tenth, for the rest of the system.
+//! machine's `MemTotal`; the plan keeps a margin under it, for a burst between two
+//! readings of the resident set and for a rule's working set past the plan.
 //! Reading `MemTotal` alone was how a run inside a 12 GB container planned for 30 GB of
 //! merge cache and was killed at rule 663 of 905 (issue #32).
 
@@ -25,7 +26,12 @@ pub const BYTES_PER_COPY: u64 = 500;
 /// slower or dies for its memory can be read back to the number it planned with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Limit {
+    /// What the run plans within.
     pub bytes: u64,
+    /// Where the kernel would end the run: the found limit itself, short of the last
+    /// few per cent the sampling may miss, or the amount the caller gave.  A run over
+    /// it ends itself with a message instead (see [`Watch`]).
+    pub hard: u64,
     pub source: String,
 }
 
@@ -60,32 +66,123 @@ pub fn gb(bytes: u64) -> f64 {
 }
 
 /// The limit a run has to keep under: `given` when the caller set one, else the
-/// tightest cgroup limit above this process, else `MemTotal` - the last two less a
-/// tenth.  A machine without `/proc` (none of the supported ones) is planned at 32 GB.
+/// tightest cgroup limit above this process, else `MemTotal`.  A machine without
+/// `/proc` (none of the supported ones) is planned at 32 GB.
 pub fn limit(given: Option<u64>) -> Limit {
+    // The hard line is short of the amount by what a burst of allocation can add
+    // between two readings - the nets are stitched on every core at once, and a run
+    // under a 2 GB cgroup was killed from 1.1 GB resident within one interval - and
+    // the plan is a tenth under the hard line, for a rule's own working set past it.
+    let under = |bytes: u64, what: String| {
+        let hard = bytes.saturating_sub((bytes / 20).max(256 << 20));
+        Limit {
+            bytes: hard / 10 * 9,
+            hard,
+            source: what,
+        }
+    };
     if let Some(bytes) = given {
-        return Limit {
-            bytes,
-            source: "given".into(),
-        };
+        return under(bytes, format!("given {:.1} GB", gb(bytes)));
     }
     let root = Path::new("/");
     let cgroup = std::fs::read_to_string(root.join("proc/self/cgroup")).unwrap_or_default();
     if let Some(bytes) = cgroup_limit(root, &cgroup) {
-        return Limit {
-            bytes: bytes / 10 * 9,
-            source: format!("cgroup limit {:.1} GB less a tenth", gb(bytes)),
-        };
+        return under(bytes, format!("cgroup limit {:.1} GB", gb(bytes)));
     }
     match mem_total(root) {
-        Some(bytes) => Limit {
-            bytes: bytes / 10 * 9,
-            source: format!("MemTotal {:.1} GB less a tenth", gb(bytes)),
-        },
-        None => Limit {
-            bytes: 32 << 30,
-            source: "no /proc/meminfo, assuming 32 GB".into(),
-        },
+        Some(bytes) => under(bytes, format!("MemTotal {:.1} GB", gb(bytes))),
+        None => under(32 << 30, "no /proc/meminfo, assuming 32 GB".into()),
+    }
+}
+
+/// A thread that reads the resident set every ten milliseconds and, over the hard
+/// line, ends the run with a message: where it was (loading, flattening, connecting
+/// nets, or the rule it was on), what it held against what it had, and what helps.
+/// The kernel's OOM killer says nothing - a run inside a container was "Connecting
+/// nets ... Killed" and no more (issue #32).  The line is drawn under the limit by what
+/// a burst can allocate between two readings, so the run ends itself first; a burst
+/// faster still is the kernel's, and then the `Memory:` line and the trace's last rule
+/// are what is left to read.
+pub struct Watch {
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    peak: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    place: std::sync::Arc<std::sync::Mutex<String>>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+impl Watch {
+    pub fn start(limit: Limit) -> Self {
+        use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+        use std::sync::{Arc, Mutex};
+        let stop = Arc::new(AtomicBool::new(false));
+        let peak = Arc::new(AtomicU64::new(0));
+        let place = Arc::new(Mutex::new(String::from("starting")));
+        let (s, p, w) = (stop.clone(), peak.clone(), place.clone());
+        let handle = std::thread::spawn(move || {
+            while !s.load(Ordering::Relaxed) {
+                let rss = rss_bytes();
+                p.fetch_max(rss, Ordering::Relaxed);
+                if rss > limit.hard {
+                    let at = w.lock().map(|g| g.clone()).unwrap_or_default();
+                    eprintln!(
+                        "\ngdscheck: out of memory while {at}: {:.1} GB resident against a \
+                         limit of {:.1} GB ({}).  The kernel would kill the run next, without \
+                         a word; it ends here instead.  What helps: `--memory` below the \
+                         limit, so the merge cache is planned smaller and layers are merged \
+                         again when needed (slower, same result); `--no-connectivity` if the \
+                         nets are what is resident (the net-aware rules are then skipped, and \
+                         said so); more memory, or swap, which makes such a run slow instead \
+                         of dead.",
+                        gb(rss),
+                        gb(limit.hard),
+                        limit.source
+                    );
+                    std::process::exit(1);
+                }
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        });
+        Watch {
+            stop,
+            peak,
+            place,
+            handle: Some(handle),
+        }
+    }
+
+    /// Where the run is now, for the message.
+    pub fn at(&self, place: impl Into<String>) {
+        if let Ok(mut g) = self.place.lock() {
+            *g = place.into();
+        }
+    }
+
+    /// The largest resident set seen so far.
+    pub fn peak(&self) -> u64 {
+        self.peak.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+
+impl Drop for Watch {
+    fn drop(&mut self) {
+        self.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+        if let Some(h) = self.handle.take() {
+            h.join().ok();
+        }
+    }
+}
+
+/// Hand the heap's freed pages back to the kernel.  glibc keeps what a large free
+/// leaves in its arenas, so a run that dropped its nets or its cache still holds them
+/// as far as the cgroup and the OOM killer can see; on the gf180 reference design the
+/// resident set went from 7.2 GB to 6.1 GB when 4.5 GB of nets were dropped, and to
+/// the whole difference with this.
+pub fn trim() {
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
+    // SAFETY: malloc_trim takes a pad size and touches nothing but the allocator's
+    // own free lists.
+    unsafe {
+        libc::malloc_trim(0);
     }
 }
 
@@ -215,6 +312,7 @@ mod tests {
     fn the_budget_is_what_the_limit_leaves() {
         let limit = Limit {
             bytes: 10 << 30,
+            hard: 10 << 30,
             source: "given".into(),
         };
         assert_eq!(

@@ -327,6 +327,9 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
     println!("Topcell: {}", args.topcell);
     println!("DRC completed in {:.3}s", elapsed.as_secs_f64());
 
+    // A rule the run could not check for its memory is recorded, not a violation:
+    // said apart, under its rule, and the exit status says the report is incomplete.
+    let (skipped, violations): (Vec<_>, Vec<_>) = violations.into_iter().partition(|v| v.skipped);
     let waived_total = violations.iter().filter(|v| v.waived.is_some()).count();
     let headline = if waived_total > 0 {
         format!("{} violation(s), {waived_total} waived:", violations.len())
@@ -334,7 +337,11 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
         format!("{} violation(s):", violations.len())
     };
     if violations.is_empty() {
-        println!("DRC clean.");
+        if skipped.is_empty() {
+            println!("DRC clean.");
+        } else {
+            println!("No violations in the rules that were checked.");
+        }
     } else if args.verbose {
         println!("{headline}");
         for v in &violations {
@@ -363,9 +370,30 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
         }
     }
 
+    if !skipped.is_empty() {
+        // As the violations: the rule and how many of its checks, the reason only
+        // under --verbose - it was said on stderr when the rule was passed over.
+        println!("{} rule(s) not checked:", skipped.len());
+        if args.verbose {
+            for v in &skipped {
+                println!("  [{}] {}", v.rule_id, v.message);
+            }
+        } else {
+            let mut counts: std::collections::BTreeMap<&str, usize> =
+                std::collections::BTreeMap::new();
+            for v in &skipped {
+                *counts.entry(v.rule_id.as_str()).or_insert(0) += 1;
+            }
+            for (rule_id, count) in counts {
+                println!("  [{rule_id}] {count}");
+            }
+        }
+    }
+
     if let Some(report) = &args.report {
         let (t_rep, c_rep) = (std::time::Instant::now(), gdscheck::cpu_seconds());
-        match report::write_lyrdb(report, &args.topcell, &violations) {
+        let all: Vec<_> = violations.iter().chain(&skipped).cloned().collect();
+        match report::write_lyrdb(report, &args.topcell, &all) {
             Ok(()) => println!("Report written to: {report}"),
             Err(e) => {
                 eprintln!("Error writing report: {e}");
@@ -384,10 +412,28 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
         }
     }
 
-    // Exit codes: 0 clean, 1 error (bad input, PDK, report), 2 violations found.  A
-    // waived violation is reported but does not fail the run: a layout whose only
-    // findings the PDK waives is delivered as clean.
-    if violations.iter().any(|v| v.waived.is_none()) {
+    // Exit codes: 0 clean, 1 error (bad input, PDK, report), 2 violations found, 3 the
+    // report is incomplete - a rule was not checked for its memory - whatever else it
+    // holds, since a CI that reads 2 as "fix the layout" must not read a missing rule
+    // as one.  A waived violation is reported but does not fail the run: a layout
+    // whose only findings the PDK waives is delivered as clean.  The last line says
+    // the same in words, for whoever reads the terminal and not the exit code.
+    let failing = violations.iter().filter(|v| v.waived.is_none()).count();
+    if !skipped.is_empty() {
+        println!(
+            "Status: INCOMPLETE ({} rule(s) not checked for memory{})",
+            skipped.len(),
+            if failing > 0 {
+                format!(", {failing} violation(s)")
+            } else {
+                String::new()
+            }
+        );
+        std::process::exit(3);
+    }
+    if failing > 0 {
+        println!("Status: FAIL ({failing} violation(s))");
         std::process::exit(2);
     }
+    println!("Status: PASS");
 }

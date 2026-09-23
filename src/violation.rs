@@ -35,6 +35,10 @@ pub struct Violation {
     /// Set when the marker lies inside a cell the PDK waives for this rule: the cell
     /// and the waiver's reason.  The violation is still reported, marked as waived.
     pub waived: Option<String>,
+    /// Not a violation but the record of a rule the run could not check: the memory
+    /// it would have needed was not there.  Reported under its rule, so nothing is
+    /// silently missing; the run's exit status says the report is incomplete.
+    pub skipped: bool,
 }
 
 impl Violation {
@@ -53,6 +57,7 @@ impl Violation {
             message,
             geometry: ViolationGeometry::Edge { x1, y1, x2, y2 },
             waived: None,
+            skipped: false,
         }
     }
 
@@ -63,6 +68,15 @@ impl Violation {
             message,
             geometry: ViolationGeometry::Point { x, y },
             waived: None,
+            skipped: false,
+        }
+    }
+
+    /// The record of a rule that was not checked, and why.
+    pub fn skipped(rule_id: &str, description: &str, message: String) -> Self {
+        Self {
+            skipped: true,
+            ..Self::global(rule_id, description, message)
         }
     }
 
@@ -73,6 +87,7 @@ impl Violation {
             message,
             geometry: ViolationGeometry::None,
             waived: None,
+            skipped: false,
         }
     }
 }

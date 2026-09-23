@@ -44,12 +44,14 @@ if [[ -n ${GITHUB_STEP_SUMMARY:-} ]]; then
     } >> "$GITHUB_STEP_SUMMARY"
 fi
 
-# gdscheck exit codes: 0 clean (waived findings included), 1 error, 2 violations.
-# timeout(1) returns 124 on expiry; a Rust panic exits 101.
+# gdscheck exit codes: 0 clean (waived findings included), 1 error, 2 violations, 3 a
+# rule not checked for its memory.  timeout(1) returns 124 on expiry; a Rust panic
+# exits 101.
 outcome() {
     case $1 in
         0)   echo PASS ;;
         2)   echo "FAIL (violations)" ;;
+        3)   echo "FAIL (incomplete: a rule was not checked)" ;;
         124) echo "FAIL (timeout after $limit)" ;;
         101) echo "FAIL (crash)" ;;
         *)   echo "FAIL (exit $1)" ;;

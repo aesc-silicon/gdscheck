@@ -90,7 +90,9 @@ pub fn write_lyrdb(
     for v in violations {
         writer.write_event(Event::Start(BytesStart::new("item")))?;
         // KLayout's marker browser shows a `waived` tag as such and can hide them.
-        if v.waived.is_some() {
+        if v.skipped {
+            write_text(&mut writer, "tags", "skipped")?;
+        } else if v.waived.is_some() {
             write_text(&mut writer, "tags", "waived")?;
         }
         write_text(&mut writer, "category", &v.rule_id)?;
@@ -130,6 +132,24 @@ pub fn write_lyrdb(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A rule not checked is an item under its category, tagged `skipped` and without
+    /// geometry, so KLayout lists it where the rule's markers would be.
+    #[test]
+    fn a_skipped_rule_is_tagged_in_its_category() {
+        let v = vec![Violation::skipped(
+            "M1.a",
+            "min_width not checked",
+            "not checked: its layers would take about 40.0 GB".into(),
+        )];
+        let path = std::env::temp_dir().join("gdscheck_report_skipped.lyrdb");
+        write_lyrdb(path.to_str().unwrap(), "TOP", &v).unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+        assert!(text.contains("<tags>skipped</tags>"));
+        assert!(text.contains("<category>M1.a</category>"));
+        assert!(!text.contains("<value>edge:"));
+    }
 
     /// Rule ids with several dots (e.g. `Cnt.c.Digi`) must produce a category chain
     /// at full depth — KLayout resolves the item's category as a dot-separated path

@@ -71,14 +71,17 @@ grows memory unexpectedly:
   poorly; that's a check-implementation limitation worth reporting, not something to
   work around by itself.
 
-A run killed by the kernel — ``Killed`` in the log, nothing else — ran out of memory.
-The run plans its merge cache within the memory it may take: the cgroup's limit or the
-machine's ``MemTotal``, less a tenth, or what ``--memory`` says (see :doc:`usage`); the
-``Memory:`` line in the log is the plan it made. A machine that is short of it is best
+A run that ends with ``gdscheck: out of memory while ...`` ran out of the memory it
+may take — the cgroup's limit or the machine's ``MemTotal``, or what ``--memory``
+says (see :doc:`usage`); the ``Memory:`` line in the log is the plan it
+made, and the message says where it was and what helps. A run killed by the kernel
+instead — ``Killed`` in the log, nothing else — is the same thing on a version before
+the watch, or a limit the run could not see. A machine that is short of memory is best
 given a smaller ``--memory`` than a smaller ``--threads``: on the gf180 reference design
 the peak did not move between 32 and 4 threads, while halving the cache took 4 GB off it
 for half again the run time. Swap turns such a run from killed into slow, and is worth
-having on a laptop.
+having on a laptop. A rule the run could not fit is listed as not checked and the run
+exits with ``3``; the report is incomplete and says so, never silently clean.
 
 ``--threads N`` caps the ``rayon`` pool (default: all logical cores) — useful to leave
 headroom on a shared machine, or to get single-threaded, deterministic timing for
