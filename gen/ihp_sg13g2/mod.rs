@@ -43,7 +43,6 @@ mod tgo;
 mod topmetal;
 mod topmetal_hardening;
 mod topvia;
-mod topvia_hardening;
 mod via;
 
 use gdscheck::pdk::PdkConfig;
@@ -66,7 +65,6 @@ pub fn generate(pdk: &PdkConfig) {
     misc_hardening::generate(pdk);
     via::generate(pdk);
     topvia::generate(pdk);
-    topvia_hardening::generate(pdk);
     topmetal::generate(pdk);
     topmetal_hardening::generate(pdk);
     passiv::generate(pdk);
