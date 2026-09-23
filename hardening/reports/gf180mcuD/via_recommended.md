@@ -211,3 +211,23 @@ gave the answer the manual asks for.  No need to redo it.
 Test status on the engine as of this report: 3 of the 10 new cases fail
 (`V1.3.3.h1`, `V1.4.3.h1` on finding 2, `V1.3.3.h2` on finding 1).  The other 7 pass, as
 do the 16 older `via_recommended` good/bad pairs in `via_patterns_cover_every_rule`.
+
+---
+
+## Resolution (2026-09-23)
+
+- **Finding 1.** The eight rules carry `metric: euclidian`, the settled reading of an
+  enclosure: the margin is the closest approach from the via's boundary to the metal's, so
+  a chamfered corner that comes under the value counts even where every axis margin clears
+  it. `V1.3.3.h2` reports its three. The mandatory `via` deck's V*n*.3a and V*n*.4a carry
+  no metric either, but at 0.0 and 0.01 µm there is no chamfer that clears both axes and
+  fails the diagonal, so nothing was changed there.
+- **Finding 2 kept.** A via short on two sides that meet at a corner is one deficient
+  margin, not two: `min_enclosure` reports one marker per *run* of short walls, and the
+  walls of a via meet at corners, so a via short on all four is one run and one marker.
+  That is how every enclosure in these decks reports, and a violation here is a structure -
+  the via - rather than a side of one. `V1.3.3.h1` and `V1.4.3.h1` expect four.
+- **Finding 3 recorded, not acted on.** The `recommended` suite carries this deck and no
+  other, while the same appendix lists CO.6iii (Metal1 over contact, 0.12), DF.1b (0.3) and
+  PL.3b (0.26 / 0.4) in the same words. Those are three new rules with fixtures of their
+  own, which is a round rather than a fix; flagged for the gdscheck owner.

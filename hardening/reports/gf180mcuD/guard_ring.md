@@ -295,3 +295,24 @@ gave the answer the manual asks for.  No need to redo it.
 Test status on the engine as of this report: 3 of the 17 new cases fail - `GR.2.h2` and
 `GR.4.h2` on finding 1 (and `GR.2.h2` on finding 2 as well), `GR.11.h1` on finding 3.  The
 other 14 pass, as do the 16 older guard_ring good/bad pairs and the seal-ring test.
+
+---
+
+## Resolution (2026-09-23)
+
+- **Finding 1.** GR.2's eight spaces carry `abutting: report`. `GR.2.h2`'s first probe and
+  `GR.4.h2`'s trace both report, as the runset does.
+- **Finding 2 kept.** A die plate lying *on* the marker stays unreported. Metal that runs
+  onto the ring is how a die connects to it - section 12.3.2 draws the Vss bus butted to
+  the ring, and `GR.4.h2`'s second trace is that geometry - and nothing in the layout tells
+  a bus from an intruding plate. A crossing half on GR.2 would flag every connection to
+  every guard ring. `GR.2.h2` expects two.
+- **Finding 3.** `guard_ring_no_pad` is `not_overlapping` rather than `not_interacting`: a
+  pad sharing the marker's outer edge is beside the ring, not on top of it. `GR.11.h1`
+  reports two.
+- **Findings 4 and 5** needed nothing: gdscheck is right in both, and the runset's GR.3
+  shape-identity test and its GR.6 on plain COMP are its own readings.
+- **GR.5** is not a gap and the deck header no longer says it is: the section's table has a
+  Solder Bump column and an Other Cases column, this deck is the second throughout - its
+  GR.11 fires on a *missing* pad opening, which is what that column requires - and GR.5 has
+  no value there. GR.9 and GR.10 carry the manual's own asterisk.
