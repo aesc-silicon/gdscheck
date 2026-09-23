@@ -14,7 +14,6 @@ mod lbe;
 mod lu;
 mod metal;
 mod mim;
-mod misc_hardening;
 mod nbulay;
 mod nbulayblock;
 mod nmosi;
@@ -53,7 +52,6 @@ pub fn generate(pdk: &PdkConfig) {
     gatpoly::generate(pdk);
     cont::generate(pdk);
     metal::generate(pdk);
-    misc_hardening::generate(pdk);
     via::generate(pdk);
     topvia::generate(pdk);
     topmetal::generate(pdk);
