@@ -3381,3 +3381,87 @@ fn hardening_via_recommended(
         "{gds}"
     );
 }
+
+// --- Guard ring (hardening/reports/gf180mcuD/guard_ring.md).  The manual's section 12.4,
+// read with the scribe line and die seal chapter it sits in (12.1 to 12.3).  Every fixture
+// is a ring: a rectangular annulus with the marker, the active and the implant on one
+// outline, the five metals inside it and a pad on the band, its own numbers the rules'
+// bounds met exactly - 16 µm of active against GR.6 and 12 µm of metal against GR.4 - so
+// the perturbation is the whole layout.  The outline starts at 19, which puts the band
+// across the tile lines at 20, 21 and 28 and a 9.995 µm gap off the hole's wall across
+// x = 35, 40 and 42 at once.  `min_width` reports one marker per wall, two per narrow bar.
+#[rstest]
+// Two rings: the marker 0.005 inside the active's top edge (active outside the marker,
+// the maximum of "Min/Max ... 0" broken) and 0.005 outside it (the minimum broken).
+#[case::gr_1_h1("guard_ring/GR.1.h1.gds.gz", "TOP", vec!["GR.1", "GR.1"], vec![])]
+// The same outline drawn three ways: the marker one keyhole annulus, the active the eight
+// pieces a real ring is drawn as, the implant four overlapping bars.  One shape drawn as
+// many is one shape and the coincidence holds.
+#[case::gr_1_h2("guard_ring/GR.1.h2.gds.gz", "TOP", vec![], vec![])]
+// Both metrics, measured off a 16 µm bump the ring turns into the die: a block 9.8995 as
+// the crow flies from the bump's corner with no facing wall at all (fires), the same at
+// 10.0056 (clean), a wall at exactly 10.000 (clean) and one at 9.995.
+#[case::gr_2_h1("guard_ring/GR.2.h1.gds.gz", "TOP", vec!["GR.2", "GR.2"], vec![])]
+// No gap at all: a die Metal1 block whose wall is the marker's hole wall, a 20 µm block
+// lying across that wall, and a block 9.995 outside the ring on the scribe-line side.
+// Ten microns are missing three times.  Report findings 1 and 2: gdscheck reads only the
+// third.
+#[case::gr_2_h2("guard_ring/GR.2.h2.gds.gz", "TOP", vec!["GR.2", "GR.2", "GR.2"], vec![])]
+// Metal1 9.995 off the hole's left wall and Metal5 - variant D's MetalTop, the last member
+// of the rule's layer list - 9.995 off its bottom wall, both gaps across x = 35, 40 and 42
+// and y = 35, 40 and 42; Metal1 at exactly 10.000 is clean.
+#[case::gr_2_h3("guard_ring/GR.2.h3.gds.gz", "TOP", vec!["GR.2", "GR.2"], vec![])]
+// The rest of the rule's layer list at 9.995: COMP, NWELL, Poly2, Metal2, Metal3, Metal4.
+#[case::gr_2_h4("guard_ring/GR.2.h4.gds.gz", "TOP", vec!["GR.2"; 6], vec![])]
+// The implant 1 µm larger than the ring's active on both edges.  "Minimum Pplus overlap
+// ... 0" is a minimum, so covering it with room to spare is not breaking it.  Report
+// finding 4: KLayout asks for the two shapes to be identical.
+#[case::gr_3_h1("guard_ring/GR.3.h1.gds.gz", "TOP", vec![], vec![])]
+// The implant 0.005 short of the active on the outer edge all round.  GR.6 comes with it -
+// uncovering the active is what narrows the P+ active GR.6 measures - and is ignored here.
+#[case::gr_3_h2("guard_ring/GR.3.h2.gds.gz", "TOP", vec!["GR.3"], vec!["GR.6"])]
+// Every level's band 11.995 wide on the bottom bar: five levels, one narrow bar each.
+#[case::gr_4_h1("guard_ring/GR.4.h1.gds.gz", "TOP", vec!["GR.4"; 10], vec![])]
+// What the marker reaches: a 2 µm Metal1 die trace ending on the marker's hole wall
+// without crossing it is not ring metal (clean of GR.4, but a space of nothing from the
+// marker - report finding 1), and a 2 µm Metal2 trace starting on the ring's own metal
+// under the marker is.
+#[case::gr_4_h2("guard_ring/GR.4.h2.gds.gz", "TOP", vec!["GR.2", "GR.4", "GR.4"], vec![])]
+// The ring's metal set 2.995 µm in from the marker's outer edge - GR.5 under the manual's
+// Solder Bump column, and nothing at all under Other Cases, which is the column this deck
+// implements.
+#[case::gr_5_h1("guard_ring/GR.5.h1.gds.gz", "TOP", vec![], vec![])]
+// The active, the implant and the marker together 15.995 wide on the bottom bar.
+#[case::gr_6_h1("guard_ring/GR.6.h1.gds.gz", "TOP", vec!["GR.6", "GR.6"], vec![])]
+// COMP 16 µm wide with the implant covering 15.995 of it: the rule names PCOMP, so it is
+// the P+ active that is measured and not the COMP.  Report finding 5.
+#[case::gr_6_h2("guard_ring/GR.6.h2.gds.gz", "TOP", vec!["GR.3", "GR.6", "GR.6"], vec![])]
+// A ring 46 µm square with a 16 µm band, so its hole is 14 µm across.  A width is a width
+// of material; the hole is empty.
+#[case::gr_6_h3("guard_ring/GR.6.h3.gds.gz", "TOP", vec![], vec![])]
+// The ring's contacts: 0.700 apart (clean), 0.695, a staggered pair 0.42 by 0.55 whose
+// only distance is the 0.6920 diagonal, a staggered pair at 0.7071 (clean), 0.695 across
+// the tile line at x = 21, and a pair 0.3 apart out in the die, where the rule does not
+// reach.
+#[case::gr_7_h1("guard_ring/GR.7.h1.gds.gz", "TOP", vec!["GR.7", "GR.7", "GR.7"], vec![])]
+// One pair 0.695 apart on each of Via1 to Via4 - variant D has no Via5 - and a Via1 pair
+// out in the die.
+#[case::gr_8_h1("guard_ring/GR.8.h1.gds.gz", "TOP", vec!["GR.8"; 4], vec![])]
+// Three rings: one with its pad on the band, one with none, one with a pad just outside
+// the marker sharing its outer edge.  A pad that only touches the marker is not a pad
+// opening on top of it.  Report finding 3.
+#[case::gr_11_h1("guard_ring/GR.11.h1.gds.gz", "TOP", vec!["GR.11", "GR.11"], vec![])]
+fn hardening_guard_ring(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(
+        hardening("guard_ring", gds, topcell, &ignore),
+        want,
+        "{gds}"
+    );
+}
