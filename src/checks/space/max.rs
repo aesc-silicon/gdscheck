@@ -24,7 +24,7 @@
 
 use super::super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
-use crate::merge::{Edge, MergedCache, MergedPoly};
+use crate::merge::{Edge, MergedPoly, SharedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -43,7 +43,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
         eprintln!(
@@ -205,7 +205,7 @@ fn run_edges(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let (a, b) = (&rule.layers[0], &rule.layers[1]);
     let akey = (a.gds_layer as i16, a.gds_datatype as i16);

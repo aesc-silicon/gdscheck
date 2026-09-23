@@ -11,7 +11,7 @@
 use super::Kind;
 use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, IntPoint, MergedCache, MergedPoly};
+use crate::merge::{Core, IntPoint, MergedPoly, SharedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -213,7 +213,7 @@ pub fn run_width(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     check_name: &str,
     op: &str,
     label: &str,
@@ -347,7 +347,7 @@ type Openings = std::sync::Mutex<HashMap<Vec<(i32, i32)>, std::sync::Arc<Vec<Mer
 /// stitched, so a wide shape across tiles is one report whatever the tile.
 fn narrowest_over(
     rule: &RuleDefinition,
-    merged: &MergedCache,
+    merged: &SharedCache,
     (gl, gd): (i16, i16),
     lname: &str,
     dbu_to_um: f64,
@@ -439,7 +439,7 @@ pub fn run_gate(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let name = kind.gate_name();
     let (Some(body), Some(reference)) = (rule.layers.first(), rule.layers.get(1)) else {

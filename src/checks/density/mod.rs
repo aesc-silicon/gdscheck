@@ -36,7 +36,7 @@ mod tests;
 
 use super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
-use crate::merge::{MergedCache, TileMap, clipped_area_dbu};
+use crate::merge::{SharedCache, TileMap, clipped_area_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -233,7 +233,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let name = kind.name();
     let Some(scope) = Scope::parse(rule, name) else {

@@ -34,7 +34,7 @@ pub mod labeled;
 
 use super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, MergedPoly, VirtualOp, merge_boundaries};
+use crate::merge::{Core, MergedPoly, SharedCache, VirtualOp, merge_boundaries};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use std::collections::HashSet;
@@ -129,7 +129,7 @@ fn exemption(rule: &RuleDefinition) -> Result<Option<Exemption>, ()> {
 /// `base` less the regions carrying the exemption label, as a derived key; `base`
 /// itself without one.
 fn exempt(
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     base: (i16, i16),
     exemption: &Option<Exemption>,
     scratch: &mut Scratch,
@@ -159,7 +159,7 @@ fn report(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     key: (i16, i16),
     label: &str,
     descr: &str,
@@ -184,7 +184,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let Some(op) = Op::parse(rule) else {
         return vec![];
@@ -291,7 +291,7 @@ pub fn run(
         let target = key(0);
         let rest: Vec<(i16, i16)> = (1..rule.layers.len()).map(key).collect();
         // The selections read one partner: the others joined, when there are several.
-        let mut partner = |scratch: &mut Scratch| -> (i16, i16) {
+        let partner = |scratch: &mut Scratch| -> (i16, i16) {
             if rest.len() == 1 {
                 return rest[0];
             }
@@ -360,7 +360,7 @@ fn forbidden_edges(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     key: (i16, i16),
     name: &str,
 ) -> Vec<Violation> {

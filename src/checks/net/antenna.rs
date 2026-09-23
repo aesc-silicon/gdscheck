@@ -32,7 +32,7 @@
 use super::super::params::{NotAWord, mode};
 use crate::connectivity::{Connectivity, LayerKey};
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::{Layer, RuleDefinition};
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -88,7 +88,7 @@ fn diode_area_per_net(
     conn: &Connectivity,
     part: &crate::connectivity::Partition,
     layout: &FlatLayout,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     d2: f64,
 ) -> HashMap<usize, f64> {
     let mut out: HashMap<usize, f64> = HashMap::new();
@@ -119,7 +119,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&Connectivity>,
 ) -> Vec<Violation> {
     let Some(conn) = conn else {

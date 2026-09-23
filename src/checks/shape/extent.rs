@@ -12,7 +12,7 @@
 
 use super::Kind;
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -53,7 +53,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let Some(layer) = rule.layers.first() else {
         eprintln!("[{}] {} needs a layer", rule.id, axis.name(kind));

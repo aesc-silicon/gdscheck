@@ -21,7 +21,7 @@ mod tests;
 use super::params::{bent_only, min_run};
 use crate::geom::Limit;
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -97,7 +97,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     // A width is the thickness of a region, and an edge layer carries no region: it used
     // to be read by pairing its segments, which could not tell a gap from a thickness
@@ -155,7 +155,7 @@ pub fn run_gate(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     scan::run_gate(kind, rule, layout, dbu_to_um, merged)
 }

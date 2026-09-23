@@ -14,7 +14,7 @@
 
 use super::Kind;
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -23,7 +23,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
         eprintln!(

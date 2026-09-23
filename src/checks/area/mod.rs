@@ -20,7 +20,7 @@ use super::params::{NotAWord, mode};
 use crate::connectivity::{Connectivity, LayerKey};
 use crate::geom::on_grid;
 use crate::layout::FlatLayout;
-use crate::merge::{MergedCache, VirtualOp, clipped_area_dbu, compose_tile, stitch_labeled};
+use crate::merge::{SharedCache, VirtualOp, clipped_area_dbu, compose_tile, stitch_labeled};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use std::collections::HashSet;
@@ -178,7 +178,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&Connectivity>,
 ) -> Vec<Violation> {
     let name = kind.name();
@@ -213,7 +213,7 @@ pub fn run_scoped(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&Connectivity>,
 ) -> Vec<Violation> {
     let name = kind.name();

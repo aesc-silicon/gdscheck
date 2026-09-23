@@ -9,7 +9,7 @@
 //! tile line runs through, or one wider than a tile, is the region's and no copy's.
 
 use crate::layout::FlatLayout;
-use crate::merge::{MergedCache, region_holes};
+use crate::merge::{SharedCache, region_holes};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -17,7 +17,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let Some(layer) = rule.layers.first() else {
         eprintln!("[{}] no_hole needs a layer", rule.id);

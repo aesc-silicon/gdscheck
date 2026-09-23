@@ -7,7 +7,7 @@
 
 use super::{Kind, run};
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::{MergedCache, SharedCache};
 use crate::pdk::{Layer, Param, RuleDefinition};
 use crate::violation::{Violation, ViolationGeometry};
 use gds21::{GdsBoundary, GdsPoint};
@@ -73,8 +73,8 @@ fn boundary(l: (i16, i16)) -> [(&'static str, f64); 2] {
 }
 
 /// A cache tiled at 20 µm with a 1 µm halo, as a run has it.
-fn cache() -> MergedCache {
-    MergedCache::new(20_000, 1_000, HashMap::new())
+fn cache() -> SharedCache {
+    SharedCache::new(MergedCache::new(20_000, 1_000, HashMap::new()))
 }
 
 fn density_of(v: &Violation) -> f64 {
@@ -92,17 +92,17 @@ fn chip_density_is_the_layers_coverage_over_the_box() {
         brect(A, 0, 0, 100_000, 40_000),
         brect(B, 0, 50_000, 100_000, 60_000),
     ]);
-    let mut m = cache();
-    let go = |layers: &[(i16, i16)], kind: Kind, value: f64, m: &mut MergedCache| {
+    let m = cache();
+    let go = |layers: &[(i16, i16)], kind: Kind, value: f64, m: &SharedCache| {
         run(kind, &rule(layers, value, &boundary(FRAME)), &lay, DBU, m)
     };
-    let v = go(&[A], Kind::Min, 50.0, &mut m);
+    let v = go(&[A], Kind::Min, 50.0, &m);
     assert_eq!(v.len(), 1);
     assert_eq!(density_of(&v[0]), 40.0);
-    assert!(go(&[A], Kind::Min, 40.0, &mut m).is_empty());
-    assert!(go(&[A], Kind::Max, 40.0, &mut m).is_empty());
-    assert_eq!(go(&[A], Kind::Max, 39.9, &mut m).len(), 1);
-    let v = go(&[A, B], Kind::Min, 60.0, &mut m);
+    assert!(go(&[A], Kind::Min, 40.0, &m).is_empty());
+    assert!(go(&[A], Kind::Max, 40.0, &m).is_empty());
+    assert_eq!(go(&[A], Kind::Max, 39.9, &m).len(), 1);
+    let v = go(&[A, B], Kind::Min, 60.0, &m);
     assert_eq!(density_of(&v[0]), 50.0);
 }
 
@@ -121,30 +121,30 @@ fn the_denominator_is_the_boundary_not_its_box() {
         v.extend(extra);
         layout(v)
     };
-    let mut m = cache();
+    let m = cache();
     let lay = ell(vec![]);
     let v = run(
         Kind::Min,
         &rule(&[A], 100.0, &boundary(FRAME)),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(density_of(&v[0]), 34.67, "2600 of 7500 µm², not of 10 000");
     // The same layout with 2400 µm² of A in the notch - the part of the box that is no
     // die.  It is not the die's coverage and does not raise it.
-    let mut m = cache();
+    let m = cache();
     let lay = ell(vec![brect(A, 60_000, 60_000, 100_000, 120_000)]);
     let v = run(
         Kind::Min,
         &rule(&[A], 100.0, &boundary(FRAME)),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(density_of(&v[0]), 34.67);
     // A die drawn as one box reads as its box, which is what it is.
-    let mut m = cache();
+    let m = cache();
     let lay = layout(vec![
         brect(FRAME, 0, 0, 100_000, 100_000),
         brect(A, 0, 0, 100_000, 25_000),
@@ -154,10 +154,10 @@ fn the_denominator_is_the_boundary_not_its_box() {
         &rule(&[A], 100.0, &boundary(FRAME)),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(density_of(&v[0]), 25.0);
-    let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &mut m);
+    let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &m);
     assert_eq!(
         density_of(&v[0]),
         25.0,
@@ -165,7 +165,7 @@ fn the_denominator_is_the_boundary_not_its_box() {
     );
     // A narrower design without a boundary: A alone is the die, so it covers all of it.
     let lay = layout(vec![brect(A, 0, 0, 100_000, 25_000)]);
-    let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &mut m);
+    let v = run(Kind::Min, &rule(&[A], 100.0, &[]), &lay, DBU, &m);
     assert!(v.is_empty());
 }
 
@@ -180,16 +180,16 @@ fn windowed_density_reads_every_window() {
         brect(FRAME, 0, 0, 100_000, 100_000),
         brect(A, 0, 0, 50_000, 75_000),
     ]);
-    let mut m = cache();
-    let go = |kind: Kind, value: f64, m: &mut MergedCache| {
+    let m = cache();
+    let go = |kind: Kind, value: f64, m: &SharedCache| {
         let mut p = vec![("window", 50.0)];
         p.extend(boundary(FRAME));
         run(kind, &windowed(rule(&[A], value, &p)), &lay, DBU, m)
     };
-    let v = go(Kind::Min, 60.0, &mut m);
+    let v = go(Kind::Min, 60.0, &m);
     assert_eq!(v.len(), 1, "{v:?}");
     assert_eq!(density_of(&v[0]), 0.0);
-    let v = go(Kind::Max, 60.0, &mut m);
+    let v = go(Kind::Max, 60.0, &m);
     assert_eq!(v.len(), 1);
     assert_eq!(density_of(&v[0]), 100.0);
     let ViolationGeometry::Edge { x1, y1, x2, y2 } = v[0].geometry else {
@@ -209,16 +209,10 @@ fn a_partial_window_is_measured_against_what_is_there() {
         brect(A, 0, 0, 130_000, 20_000),
         brect(B, 150_000, 0, 160_000, 50_000),
     ]);
-    let mut m = cache();
+    let m = cache();
     let mut p = vec![("window", 50.0)];
     p.extend(boundary(FRAME));
-    let v = run(
-        Kind::Min,
-        &windowed(rule(&[A], 50.0, &p)),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run(Kind::Min, &windowed(rule(&[A], 50.0, &p)), &lay, DBU, &m);
     // Every window over the boundary is 40 %, one violation - and none over the B
     // island at 150.
     assert_eq!(v.len(), 1, "{v:?}");
@@ -228,7 +222,7 @@ fn a_partial_window_is_measured_against_what_is_there() {
         &windowed(rule(&[A], 50.0, &[("window", 50.0)])),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     // Without a boundary the die runs to 160 and the window against its far edge, at
     // 110, holds 20 × 20 of A: 16 %, the worst of one violation.
@@ -240,24 +234,15 @@ fn a_partial_window_is_measured_against_what_is_there() {
 #[test]
 fn a_malformed_or_unbounded_rule() {
     let lay = layout(vec![brect(A, 0, 0, 10_000, 5_000)]);
-    let mut m = cache();
-    assert!(
-        run(
-            Kind::Min,
-            &windowed(rule(&[A], 50.0, &[])),
-            &lay,
-            DBU,
-            &mut m
-        )
-        .is_empty()
-    );
+    let m = cache();
+    assert!(run(Kind::Min, &windowed(rule(&[A], 50.0, &[])), &lay, DBU, &m).is_empty());
     // A boundary layer with no shapes: the die is the shapes' box, which is A itself.
     let v = run(
         Kind::Max,
         &rule(&[A], 99.9, &boundary(FRAME)),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(v.len(), 1);
     assert_eq!(density_of(&v[0]), 100.0);

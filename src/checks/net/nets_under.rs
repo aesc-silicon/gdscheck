@@ -26,7 +26,7 @@
 
 use crate::connectivity::Connectivity;
 use crate::layout::FlatLayout;
-use crate::merge::{MergedCache, point_in_merged, stitch_labeled};
+use crate::merge::{SharedCache, point_in_merged, stitch_labeled};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use std::collections::{HashMap, HashSet};
@@ -35,7 +35,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&Connectivity>,
 ) -> Vec<Violation> {
     let (Some(mark), Some(cond)) = (rule.layers.first(), rule.layers.get(1)) else {

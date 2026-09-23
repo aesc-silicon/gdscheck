@@ -9,7 +9,7 @@
 
 use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, MergedPoly, TileMap, poly_bbox, representative_point};
+use crate::merge::{Core, MergedPoly, SharedCache, TileMap, poly_bbox, representative_point};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -387,7 +387,7 @@ pub fn run_overlap(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let mode = SpaceMode {
         overlapping: true,
@@ -411,7 +411,7 @@ pub fn run_gated<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + Sy
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     gate: G,
 ) -> Vec<Violation> {
     run_gated_with(rule, layout, dbu_to_um, merged, None, gate)
@@ -422,7 +422,7 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     forced: Option<SpaceMode>,
     gate: G,
 ) -> Vec<Violation> {
@@ -614,7 +614,7 @@ pub fn piece_notches(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     key: (i16, i16),
     lname: &str,
     limit: Limit,

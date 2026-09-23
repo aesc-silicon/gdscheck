@@ -20,7 +20,7 @@
 
 use super::Kind;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache};
+use crate::merge::{Core, SharedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -38,7 +38,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let check_name = name(kind);
     let Some(layer) = rule.layers.first() else {

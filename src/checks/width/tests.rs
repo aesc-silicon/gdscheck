@@ -11,7 +11,7 @@ use super::scan::{pinch_points, scan_widths};
 use super::{Kind, run, run_gate};
 use crate::geom::Limit;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, EdgeOp, MergedCache, MergedPoly};
+use crate::merge::{Core, EdgeOp, MergedCache, MergedPoly, SharedCache};
 use crate::pdk::{Layer, Param, RuleDefinition};
 use crate::violation::{Violation, ViolationGeometry};
 use gds21::{GdsBoundary, GdsPoint};
@@ -105,13 +105,13 @@ fn num(v: f64) -> Param {
 }
 
 /// A cache with one tile the size of the world, and no halo: nothing about tiling.
-fn cache() -> MergedCache {
-    MergedCache::new(10_000_000, 0, HashMap::new())
+fn cache() -> SharedCache {
+    SharedCache::new(MergedCache::new(10_000_000, 0, HashMap::new()))
 }
 
 /// A cache tiled at `tile` DBU with a halo of `halo` DBU on every layer.
-fn tiled(tile: i32, halo: i32) -> MergedCache {
-    MergedCache::new(tile, halo, HashMap::new())
+fn tiled(tile: i32, halo: i32) -> SharedCache {
+    SharedCache::new(MergedCache::new(tile, halo, HashMap::new()))
 }
 
 /// The measured width a violation's message names, in µm.
@@ -205,23 +205,11 @@ fn pieces_sharing_a_run_do_not_pinch() {
 #[test]
 fn a_pair_across_a_tile_line_is_reported_once() {
     let lay = layout(vec![brect(A, 15_000, 10_000, 27_000, 10_400)]);
-    let mut m = tiled(20_000, 1_000);
-    let v = run(
-        Kind::Min,
-        &rule("min_width", &[A], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let m = tiled(20_000, 1_000);
+    let v = run(Kind::Min, &rule("min_width", &[A], 0.5, &[]), &lay, DBU, &m);
     assert_eq!(v.len(), 2, "{v:?}");
     // The bar's length, 10 000, is no width under a 0.5 µm rule either way.
-    let v = run(
-        Kind::Min,
-        &rule("min_width", &[A], 0.4, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run(Kind::Min, &rule("min_width", &[A], 0.4, &[]), &lay, DBU, &m);
     assert!(v.is_empty());
 }
 
@@ -230,16 +218,16 @@ fn a_pair_across_a_tile_line_is_reported_once() {
 #[test]
 fn the_three_bounds_read_one_box() {
     let lay = layout(vec![brect(A, 0, 0, 300, 320)]);
-    let mut m = cache();
-    let go = |k: Kind, check: &str, v: f64, m: &mut MergedCache| {
+    let m = cache();
+    let go = |k: Kind, check: &str, v: f64, m: &SharedCache| {
         run(k, &rule(check, &[A], v, &[]), &lay, DBU, m).len()
     };
-    assert_eq!(go(Kind::Min, "min_width", 0.3, &mut m), 0);
-    assert_eq!(go(Kind::Min, "min_width", 0.31, &mut m), 2);
-    assert_eq!(go(Kind::Max, "max_width", 0.32, &mut m), 0);
-    assert_eq!(go(Kind::Max, "max_width", 0.31, &mut m), 2);
-    assert_eq!(go(Kind::Exact, "exact_width", 0.3, &mut m), 2);
-    assert_eq!(go(Kind::Exact, "exact_width", 0.31, &mut m), 4);
+    assert_eq!(go(Kind::Min, "min_width", 0.3, &m), 0);
+    assert_eq!(go(Kind::Min, "min_width", 0.31, &m), 2);
+    assert_eq!(go(Kind::Max, "max_width", 0.32, &m), 0);
+    assert_eq!(go(Kind::Max, "max_width", 0.31, &m), 2);
+    assert_eq!(go(Kind::Exact, "exact_width", 0.3, &m), 2);
+    assert_eq!(go(Kind::Exact, "exact_width", 0.31, &m), 4);
 }
 
 /// A pinch is a width of zero: a minimum reports it as a point, a maximum or an exact
@@ -250,29 +238,17 @@ fn a_pinch_is_a_minimum_violation_only() {
         brect(A, 0, 0, 1_000, 1_000),
         brect(A, 1_000, 1_000, 2_000, 2_000),
     ]);
-    let mut m = cache();
-    let v = run(
-        Kind::Min,
-        &rule("min_width", &[A], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let m = cache();
+    let v = run(Kind::Min, &rule("min_width", &[A], 0.5, &[]), &lay, DBU, &m);
     assert_eq!((v.len(), points(&v)), (1, 1), "{v:?}");
-    let v = run(
-        Kind::Max,
-        &rule("max_width", &[A], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run(Kind::Max, &rule("max_width", &[A], 0.5, &[]), &lay, DBU, &m);
     assert_eq!(points(&v), 0);
     let v = run(
         Kind::Exact,
         &rule("exact_width", &[A], 1.0, &[]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(points(&v), 0);
 }
@@ -296,27 +272,21 @@ fn angle_bent_and_length_select_the_runs() {
         ..Default::default()
     };
     let lay = layout(vec![(A, diag), brect(A, 0, 0, 3_000, 400)]);
-    let mut m = cache();
+    let m = cache();
     let bent = [("angle", word("bent"))];
     let v = run(
         Kind::Min,
         &rule("min_width", &[A], 0.7, &bent),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(v.len(), 2, "{v:?}");
     assert!(
         v.iter().all(|v| (width_of(v) - 0.5996).abs() < 0.001),
         "{v:?}"
     );
-    let v = run(
-        Kind::Min,
-        &rule("min_width", &[A], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run(Kind::Min, &rule("min_width", &[A], 0.5, &[]), &lay, DBU, &m);
     assert_eq!(v.len(), 2, "{v:?}");
     assert!(v.iter().all(|v| width_of(v) == 0.4), "{v:?}");
     let long = [("angle", word("bent")), ("length", num(2.0))];
@@ -325,7 +295,7 @@ fn angle_bent_and_length_select_the_runs() {
         &rule("min_width", &[A], 0.7, &long),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert!(v.is_empty(), "{v:?}");
     // The straight bar's walls share 3 000: a plain rule with length 2 µm keeps it,
@@ -335,7 +305,7 @@ fn angle_bent_and_length_select_the_runs() {
         &rule("min_width", &[A], 0.5, &[("length", num(2.0))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(v.len(), 2);
     let v = run(
@@ -343,7 +313,7 @@ fn angle_bent_and_length_select_the_runs() {
         &rule("min_width", &[A], 0.5, &[("length", num(3.0))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert!(v.is_empty());
 }
@@ -353,21 +323,15 @@ fn angle_bent_and_length_select_the_runs() {
 #[test]
 fn a_malformed_width_rule_reports_nothing() {
     let lay = layout(vec![brect(A, 0, 0, 300, 3_000)]);
-    let mut m = cache();
-    let ok = run(
-        Kind::Min,
-        &rule("min_width", &[A], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let m = cache();
+    let ok = run(Kind::Min, &rule("min_width", &[A], 0.5, &[]), &lay, DBU, &m);
     assert_eq!(ok.len(), 2);
     let v = run(
         Kind::Min,
         &rule("min_width", &[A], 0.5, &[("angle", word("steep"))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert!(v.is_empty());
     let v = run(
@@ -375,17 +339,11 @@ fn a_malformed_width_rule_reports_nothing() {
         &rule("min_width", &[A], 0.5, &[("angle", num(45.0))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert!(v.is_empty());
-    m.register_edge(C, EdgeOp::Edges, vec![A]);
-    let v = run(
-        Kind::Min,
-        &rule("min_width", &[C], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    m.lock().register_edge(C, EdgeOp::Edges, vec![A]);
+    let v = run(Kind::Min, &rule("min_width", &[C], 0.5, &[]), &lay, DBU, &m);
     assert!(v.is_empty());
 }
 
@@ -403,13 +361,13 @@ fn a_gate_is_read_where_the_walls_are_shared() {
         brect(A, 0, 0, 30_000, 800),
         brect(B, 26_000, 0, 28_000, 800),
     ]);
-    let mut m = tiled(20_000, 1_000);
+    let m = tiled(20_000, 1_000);
     let v = run_gate(
         Kind::Min,
         &rule("min_gate_length", &[A, B], 1.0, &[]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(v.len(), 2, "{v:?}");
     for v in &v {
@@ -423,7 +381,7 @@ fn a_gate_is_read_where_the_walls_are_shared() {
         &rule("min_gate_length", &[A, B], 0.8, &[]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert!(v.is_empty());
 }
@@ -437,19 +395,19 @@ fn shared_and_unshared_walls_are_two_dimensions() {
         brect(B, 5_000, 9_000, 10_000, 12_000),
         brect(B, 14_000, 9_000, 19_000, 12_000),
     ]);
-    let mut m = cache();
+    let m = cache();
     let unshared = [("walls", word("unshared"))];
-    let go = |k: Kind, v: f64, p: &[(&str, Param)], m: &mut MergedCache| {
+    let go = |k: Kind, v: f64, p: &[(&str, Param)], m: &SharedCache| {
         run_gate(k, &rule("gate", &[A, B], v, p), &lay, DBU, m).len()
     };
     // Between the ends: 4 000.  Between top and bottom: 1 000.
-    assert_eq!(go(Kind::Max, 3.0, &[], &mut m), 2);
-    assert_eq!(go(Kind::Max, 4.0, &[], &mut m), 0);
-    assert_eq!(go(Kind::Max, 3.0, &unshared, &mut m), 0);
-    assert_eq!(go(Kind::Min, 1.1, &unshared, &mut m), 2);
-    assert_eq!(go(Kind::Min, 1.0, &unshared, &mut m), 0);
-    assert_eq!(go(Kind::Exact, 4.0, &[], &mut m), 0);
-    assert_eq!(go(Kind::Exact, 1.0, &[], &mut m), 2);
+    assert_eq!(go(Kind::Max, 3.0, &[], &m), 2);
+    assert_eq!(go(Kind::Max, 4.0, &[], &m), 0);
+    assert_eq!(go(Kind::Max, 3.0, &unshared, &m), 0);
+    assert_eq!(go(Kind::Min, 1.1, &unshared, &m), 2);
+    assert_eq!(go(Kind::Min, 1.0, &unshared, &m), 0);
+    assert_eq!(go(Kind::Exact, 4.0, &[], &m), 0);
+    assert_eq!(go(Kind::Exact, 1.0, &[], &m), 2);
 }
 
 /// `outside` cuts the kept stretches to a region's exterior, and `length` asks a run of
@@ -461,7 +419,7 @@ fn outside_and_length_cut_the_gate() {
         brect(B, 4_000, 0, 6_000, 800),
         brect(C, 5_000, -1_000, 20_000, 2_000),
     ]);
-    let mut m = cache();
+    let m = cache();
     let outside = [
         ("outside", num(C.0 as f64)),
         ("outside_dt", num(C.1 as f64)),
@@ -471,7 +429,7 @@ fn outside_and_length_cut_the_gate() {
         &rule("gate", &[A, B], 1.0, &outside),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(v.len(), 2, "{v:?}");
     for v in &v {
@@ -485,7 +443,7 @@ fn outside_and_length_cut_the_gate() {
         &rule("gate", &[A, B], 1.0, &[("length", num(2.0))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert!(v.is_empty(), "the crossing's run is 2 000, not more");
     let v = run_gate(
@@ -493,7 +451,7 @@ fn outside_and_length_cut_the_gate() {
         &rule("gate", &[A, B], 1.0, &[("length", num(1.9))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(v.len(), 2);
 }
@@ -506,31 +464,19 @@ fn a_gate_pinch_counts_where_the_filter_keeps_it() {
         brect(A, 1_000, 1_000, 2_000, 2_000),
         brect(B, 1_000, -500, 3_000, 2_500),
     ]);
-    let mut m = cache();
+    let m = cache();
     // The pinch at (1 000, 1 000) lies on B's left wall: shared keeps it, unshared not.
-    let v = run_gate(
-        Kind::Min,
-        &rule("gate", &[A, B], 0.5, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run_gate(Kind::Min, &rule("gate", &[A, B], 0.5, &[]), &lay, DBU, &m);
     assert_eq!(points(&v), 1, "{v:?}");
     let v = run_gate(
         Kind::Min,
         &rule("gate", &[A, B], 0.5, &[("walls", word("unshared"))]),
         &lay,
         DBU,
-        &mut m,
+        &m,
     );
     assert_eq!(points(&v), 0, "{v:?}");
-    let v = run_gate(
-        Kind::Exact,
-        &rule("gate", &[A, B], 1.0, &[]),
-        &lay,
-        DBU,
-        &mut m,
-    );
+    let v = run_gate(Kind::Exact, &rule("gate", &[A, B], 1.0, &[]), &lay, DBU, &m);
     assert_eq!(points(&v), 0, "{v:?}");
 }
 
@@ -542,41 +488,16 @@ fn a_malformed_gate_rule_reports_nothing() {
         brect(A, 0, 0, 10_000, 800),
         brect(B, 4_000, 0, 6_000, 800),
     ]);
-    let mut m = cache();
+    let m = cache();
     assert_eq!(
-        run_gate(
-            Kind::Min,
-            &rule("gate", &[A, B], 1.0, &[]),
-            &lay,
-            DBU,
-            &mut m
-        )
-        .len(),
+        run_gate(Kind::Min, &rule("gate", &[A, B], 1.0, &[]), &lay, DBU, &m).len(),
         2
     );
-    assert!(run_gate(Kind::Min, &rule("gate", &[A], 1.0, &[]), &lay, DBU, &mut m).is_empty());
+    assert!(run_gate(Kind::Min, &rule("gate", &[A], 1.0, &[]), &lay, DBU, &m).is_empty());
     let bad = [("walls", word("inner"))];
-    assert!(
-        run_gate(
-            Kind::Min,
-            &rule("gate", &[A, B], 1.0, &bad),
-            &lay,
-            DBU,
-            &mut m
-        )
-        .is_empty()
-    );
+    assert!(run_gate(Kind::Min, &rule("gate", &[A, B], 1.0, &bad), &lay, DBU, &m).is_empty());
     let bad = [("walls", num(1.0))];
-    assert!(
-        run_gate(
-            Kind::Min,
-            &rule("gate", &[A, B], 1.0, &bad),
-            &lay,
-            DBU,
-            &mut m
-        )
-        .is_empty()
-    );
+    assert!(run_gate(Kind::Min, &rule("gate", &[A, B], 1.0, &bad), &lay, DBU, &m).is_empty());
 }
 
 // ---------------------------------------------------------------------------------------

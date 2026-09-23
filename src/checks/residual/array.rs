@@ -20,7 +20,7 @@
 //! is far coarser than the drift within a row.
 
 use crate::layout::FlatLayout;
-use crate::merge::{MergedCache, point_in_merged, stitch_labeled};
+use crate::merge::{SharedCache, point_in_merged, stitch_labeled};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use std::collections::{HashMap, HashSet};
@@ -73,7 +73,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     rows: usize,
     cols: usize,
 ) -> Vec<Violation> {

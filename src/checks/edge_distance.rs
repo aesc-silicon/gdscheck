@@ -28,7 +28,7 @@
 //! its material is on however many booleans later it is read.
 
 use crate::layout::FlatLayout;
-use crate::merge::{Edge, MergedCache};
+use crate::merge::{Edge, SharedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -43,7 +43,7 @@ use rayon::prelude::*;
 /// Mixed kinds are a config error and say so. So is a rule that names an edge layer where
 /// the check cannot use one: that used to build the edge key as an empty polygon layer
 /// and pass in silence, which is the failure mode this engine works hardest to avoid.
-pub fn on_edge_layers(rule: &RuleDefinition, merged: &MergedCache, check: &str) -> bool {
+pub fn on_edge_layers(rule: &RuleDefinition, merged: &SharedCache, check: &str) -> bool {
     let kinds: Vec<bool> = rule
         .layers
         .iter()
@@ -73,7 +73,7 @@ pub fn run_enclosure(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     run(rule, layout, dbu_to_um, merged, Rel::Enclosure)
 }
@@ -83,7 +83,7 @@ pub fn run_space(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     run(rule, layout, dbu_to_um, merged, Rel::Space)
 }
@@ -122,7 +122,7 @@ fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     rel: Rel,
 ) -> Vec<Violation> {
     let name = match rel {

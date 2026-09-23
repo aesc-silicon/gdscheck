@@ -30,7 +30,7 @@
 //! drawn shapes were butted together counts, and one that two shapes merge away does not.
 
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache, TileMap, point_in_merged};
+use crate::merge::{Core, SharedCache, TileMap, point_in_merged};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -69,7 +69,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let Some(layer) = rule.layers.first() else {
         eprintln!("[{}] no_corner needs a layer", rule.id);
