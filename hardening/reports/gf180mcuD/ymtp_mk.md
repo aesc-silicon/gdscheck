@@ -164,7 +164,11 @@ The deck's own good/bad pairs were left as they were; nothing this round drew mo
   and Y.NW.2b has no notch to report.
 - **The shared edge** is reported: Y.DF.16_LV/MV and Y.PL.5a/5b_LV/MV carry
   `abutting: report`.
-- **Y.LU.3** is still missing and still not drawn. The report's argument stands - inside
+- **Y.LU.3** is still missing and still not drawn, and it is not one rule but the tip of
+  section 14.3.1: LU.1 to LU.5 are marked "Rule" in the manual and neither this PDK nor
+  the foundry's runset carries any of them, because each picks its value - 50, 30 or 15 µm
+  of tap space - by a second measurement the deck format cannot express. The gap is
+  recorded in `pdks/gf180mcuD/pdk.yml`'s own header, where a deck author will meet it. The report's argument stands - inside
   the marker `comp`'s DF.14_LV already holds the same 20 µm, and what Y.LU.3 adds is the
   condition that keeps it there where plain LU.3 would tighten it - so the exposure is a
   tightening neither tool performs. Left for the gdscheck owner with the rest of the
