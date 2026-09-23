@@ -35,7 +35,6 @@ mod pin;
 mod psd;
 mod pwellblock;
 mod resistor;
-mod resistor_hardening;
 mod salblock;
 mod sdiod;
 mod sealring;
@@ -82,7 +81,6 @@ pub fn generate(pdk: &PdkConfig) {
     nsdblock::generate(pdk);
     psd::generate(pdk);
     resistor::generate(pdk);
-    resistor_hardening::generate(pdk);
     nmosi::generate(pdk);
     npn::generate(pdk);
     npn_hardening::generate(pdk);
