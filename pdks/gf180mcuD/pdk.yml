@@ -9,8 +9,16 @@
 # another variant (mim_a on option A, metaltop_30k on a 30K top metal) are absent,
 # and the per-level metal/via decks stop at the 5LM stack.
 #
-# Skeleton.  The layer table, derived layers, connect graph, decks and suites are
-# in place; the decks themselves are still empty.
+# What is not here.  Chapter 14.3.1, the latch-up family, is uncoded: LU.1 to LU.5 are
+# marked "Rule" in the manual's own comment column, and neither this PDK nor the
+# foundry's KLayout runset carries any of them - the runset reads LATCHUP_MK for angles
+# and the grid and nothing else.  They are conditional rules, and that is why: LU.1 asks
+# a maximum tap space of 50, 30 or 15 um to every point of a PCOMP's boundary, and which
+# of the three depends on the minimum LVPWELL-to-PCOMP space measured within 50 um of it
+# - a value one measurement picks for another, which the deck format has no way to say.
+# Section 10.13's Y.LU.3 is the YMTP variant of the same sentence and is absent with the
+# rest (hardening/reports/gf180mcuD/ymtp_mk.md).  The measurement itself the engine can
+# do: IHP's LU.a-LU.d are `max_space` with `scope: part` and `within`.
 name: GlobalFoundries GF180MCU (variant D)
 version: "0.1"
 
