@@ -744,6 +744,11 @@ impl PdkConfig {
         self.layer_map.get(name)
     }
 
+    /// Every layer the PDK names, drawn and derived, by name.
+    pub fn layers(&self) -> impl Iterator<Item = (&str, &Layer)> {
+        self.layer_map.iter().map(|(n, l)| (n.as_str(), l))
+    }
+
     /// Convert a merged region's **outer ring** to a closed `GdsBoundary` on
     /// `(layer, dt)`.  A single GDS boundary cannot represent holes; `context` (the
     /// virtual layer's name) enables a warning when any are dropped — pass `None`

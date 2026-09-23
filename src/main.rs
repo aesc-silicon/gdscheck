@@ -12,8 +12,10 @@ use std::path::PathBuf;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// Directory holding PDKs as `<dir>/<process>/pdk.yml`, searched before the
-    /// embedded ones; repeatable.  `GDSCHECK_PDK_PATH` lists more, separated like PATH.
+    /// A directory of PDKs, searched before the embedded ones (repeatable)
+    ///
+    /// Holds PDKs as `<dir>/<process>/pdk.yml`.  `GDSCHECK_PDK_PATH` lists more,
+    /// separated like PATH.
     #[arg(long, global = true, value_name = "DIR")]
     pdk_path: Vec<PathBuf>,
 
@@ -33,6 +35,44 @@ enum Command {
     ListSuites(PdkArgs),
     /// Print every rule defined in a deck.
     ShowDeck(ShowDeckArgs),
+    /// Print what a run would take: the shapes per layer and the memory plan
+    ///
+    /// Flattens the layout for a suite or decks and prints the shapes of every layer
+    /// the rules read, largest first, with the memory limit and what is resident once
+    /// the layout is flattened.  Where to start when a run is killed or slow.
+    Stats(StatsArgs),
+}
+
+#[derive(Parser, Debug)]
+#[command(group(ArgGroup::new("selection").required(true).multiple(false).args(["deck", "suite"])))]
+struct StatsArgs {
+    /// Input GDS file (plain or gzip-compressed)
+    #[arg(short, long)]
+    input: String,
+
+    /// PDK process name (e.g. ihp-sg13g2) or a path to a pdk.yml
+    #[arg(short, long)]
+    process: String,
+
+    /// Deck(s) whose layers to count, comma-separated; repeatable
+    ///
+    /// Mutually exclusive with --suite.
+    #[arg(short, long, value_delimiter = ',', group = "selection")]
+    deck: Vec<String>,
+
+    /// Suite whose layers to count
+    ///
+    /// Mutually exclusive with --deck.
+    #[arg(short, long, group = "selection")]
+    suite: Option<String>,
+
+    /// Top cell name
+    #[arg(short, long)]
+    topcell: String,
+
+    /// Memory the run would be given, e.g. `12G` (default as for `run`)
+    #[arg(long, env = "GDSCHECK_MEMORY", value_name = "SIZE", value_parser = gdscheck::memory::parse_size)]
+    memory: Option<u64>,
 }
 
 /// Arguments shared by the list-* commands.
@@ -65,12 +105,14 @@ struct RunArgs {
     #[arg(short, long)]
     process: String,
 
-    /// Deck(s) to run, comma-separated (e.g. `metal1,via1`); repeatable.
+    /// Deck(s) to run, comma-separated (e.g. `metal1,via1`); repeatable
+    ///
     /// Mutually exclusive with --suite.
     #[arg(short, long, value_delimiter = ',', group = "selection")]
     deck: Vec<String>,
 
-    /// Suite to run — a curated rule selection (e.g. `main`, `precheck`).
+    /// Suite to run, a curated rule selection (e.g. `main`, `precheck`)
+    ///
     /// Mutually exclusive with --deck.
     #[arg(short, long, group = "selection")]
     suite: Option<String>,
@@ -87,24 +129,31 @@ struct RunArgs {
     #[arg(long, default_value_t = 0)]
     threads: usize,
 
-    /// Tile size of the merge cache in µm: layers are merged, stitched and measured per
-    /// tile of this size.  Smaller bounds memory tighter, larger copies less into halos.
+    /// Tile size of the merge cache in µm
+    ///
+    /// Layers are merged, stitched and measured per tile of this size.  Smaller bounds
+    /// memory tighter, larger copies less into halos.
     #[arg(long, env = "GDSCHECK_TILE_UM", default_value_t = gdscheck::merge::TILE_UM, value_name = "UM")]
     tile: f64,
 
-    /// Memory the run may take, e.g. `12G` or `800M`.  Without it the run plans within
-    /// its cgroup's limit (a container, a CI runner) or the machine's memory, less a
-    /// tenth; the merge cache is sized to what that leaves after the layout and the
-    /// nets, and a run that would not fit says so instead of being killed.
+    /// Memory the run may take, e.g. `12G` or `800M`
+    ///
+    /// Without it the run plans within its cgroup's limit (a container, a CI runner)
+    /// or the machine's memory, with a margin; the merge cache is sized to what that
+    /// leaves after the layout and the nets, and a run that would not fit says so
+    /// instead of being killed.
     #[arg(long, env = "GDSCHECK_MEMORY", value_name = "SIZE", value_parser = gdscheck::memory::parse_size)]
     memory: Option<u64>,
 
-    /// Disable electrical net extraction.  Net-aware checks (e.g. antenna ratios) are
-    /// then skipped; geometry-only checks are unaffected.
+    /// `gdscheck stats`: flatten, print what the run would take, stop.
+    #[arg(skip)]
+    stats: bool,
+
+    /// Disable net extraction; net-aware checks (antenna ratios) are then skipped
     #[arg(long)]
     no_connectivity: bool,
 
-    /// Print every violation's message, not just the per-rule counts.
+    /// Print every violation's message, not just the per-rule counts
     #[arg(short, long)]
     verbose: bool,
 }
@@ -114,6 +163,23 @@ fn main() {
     let dirs = cli.pdk_path;
     match cli.command {
         Command::Run(args) => run(args, &dirs),
+        Command::Stats(args) => run(
+            RunArgs {
+                input: args.input,
+                process: args.process,
+                deck: args.deck,
+                suite: args.suite,
+                topcell: args.topcell,
+                report: None,
+                threads: 0,
+                tile: gdscheck::merge::TILE_UM,
+                memory: args.memory,
+                stats: true,
+                no_connectivity: true,
+                verbose: false,
+            },
+            &dirs,
+        ),
         Command::ListProcesses => list_processes(&dirs),
         Command::ListDecks(args) => list(&args.process, &dirs, ListKind::Decks),
         Command::ListSuites(args) => list(&args.process, &dirs, ListKind::Suites),
@@ -306,6 +372,7 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
     let options = RunOptions {
         tile_um: args.tile,
         memory_limit: args.memory,
+        stats: args.stats,
     };
     let violations = match run_drc_with_options(
         &lib,
@@ -323,6 +390,9 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
         }
     };
     let elapsed = start.elapsed();
+    if args.stats {
+        return;
+    }
 
     println!("Topcell: {}", args.topcell);
     println!("DRC completed in {:.3}s", elapsed.as_secs_f64());

@@ -81,6 +81,11 @@ whose layers would take twice what is left is not checked but recorded — under
 rule in the summary (``N rule(s) not checked:``) and in the report, tagged ``skipped``
 — with exit status ``3``. A run that outgrows the limit anyway ends with a message
 saying where it was and what helps, where the kernel would have killed it silently.
+``gdscheck stats`` is where to start on such a run: with the same ``--input``,
+``--process``, ``--topcell`` and ``--suite`` or ``--deck`` it flattens the layout,
+prints the shapes of every layer the rules read, largest first, with the memory limit
+and what is resident then, and stops — the layer a hundred times the size of the others
+is the one a slow or killed run is about.
 
 Other subcommands inspect a PDK without running a check:
 
@@ -90,9 +95,13 @@ Other subcommands inspect a PDK without running a check:
    gdscheck list-decks  --process ihp-sg13g2
    gdscheck list-suites --process ihp-sg13g2
    gdscheck show-deck   --process ihp-sg13g2 --deck metal1
+   gdscheck stats       --process ihp-sg13g2 --suite main --topcell TOP --input chip.gds.gz
 
 ``show-deck`` prints every rule in a deck (id, check, layers, value, params) — useful
 for confirming exactly what a suite pulls in before running it on a real layout.
+``stats`` flattens the layout for a suite or decks and prints what a run would take:
+the shapes of every layer the rules read, largest first, and the memory limit with
+what is resident then (see *Memory* below).
 
 
 Decks and suites
