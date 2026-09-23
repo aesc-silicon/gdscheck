@@ -182,3 +182,15 @@ twice.)
 - An off-grid box protruding from an on-grid one, and one swallowed by it (`h8`).
 - The `acute` deck's rotation fixture (`acute/ACUTE.h5`) and its off-lattice, off-grid wedge
   (`acute/ACUTE.h7`), both agreeing with KLayout marker for marker.
+
+---
+
+## Resolution (2026-09-23)
+
+The deck had no wrong answers, and the one gap - metal1_dummy, metal2_dummy, metal3_slot,
+metal4_slot and metal5_slot in neither this deck nor `acute`, inherited name for name from
+the foundry's own runset - is closed: 98 rules, one per drawn layer of the PDK.
+`OFFGRID.h7` reports the two vertices it draws on those layers.
+
+The `acute` side of the same round fixed the 1° angle tolerance, which is why
+`OFFGRID.h4`'s incidental `comp_ACUTE` marker now matches the runset too.
