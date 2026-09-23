@@ -17,7 +17,7 @@
 pub mod scan;
 
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 pub use scan::Sides;
@@ -72,7 +72,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let Some(sides) = Sides::of(rule, kind.name()) else {
         return vec![];
@@ -87,7 +87,7 @@ fn run_sides(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     if rule.layers.len() < 2 {
         eprintln!(

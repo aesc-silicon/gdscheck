@@ -12,7 +12,7 @@ use super::super::helper::piece_notches;
 use super::super::params::{bent_only, min_run};
 use crate::geom::{Limit, notch_pairs};
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedCache};
+use crate::merge::{Core, SharedCache};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -21,7 +21,7 @@ pub fn run(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     let limit = Limit::at_least(rule.value, dbu_to_um);
     let Some(bent) = bent_only(rule, "min_notch") else {

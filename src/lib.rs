@@ -1550,12 +1550,16 @@ fn run_drc_impl(
         );
     }
 
+    // From here the cache is shared: the checks read it through the lock, the
+    // bookkeeping between rules takes the lock itself.
+    let shared = merge::SharedCache::new(merged);
+
     for (i, rule) in rules.iter().enumerate() {
         // The last net-aware rule is done: the nets go, and the cache gets the room.
         if i == n_net && net.take().is_some() {
             memory::trim();
             budget = cache_budget_polys(&limit, resident_layout);
-            merged.set_budget(budget);
+            shared.lock().set_budget(budget);
             if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                 eprintln!(
                     "nets freed after {n_net} rules, cache budget {:.1} GB",
@@ -1566,8 +1570,10 @@ fn run_drc_impl(
         // What this rule needs of every layer in its closure, so a layer is merged at
         // that rather than at the maximum some other rule on it set.  The cache builds
         // ahead from `needs_of`, see `MergedCache::build_ahead`.
-        merged.set_rule_halos(Some(rule_halos[i].clone()));
-        merged.set_rule_named(rule_keys(rule).into_iter().collect());
+        shared.lock().set_rule_halos(Some(rule_halos[i].clone()));
+        shared
+            .lock()
+            .set_rule_named(rule_keys(rule).into_iter().collect());
         if net_aware(rule) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
@@ -1584,12 +1590,12 @@ fn run_drc_impl(
         let estimate = rule_estimate_bytes(
             &rule_halos[i],
             &layout,
-            &merged,
+            &shared.lock(),
             &clippable,
             tile_dbu,
             halo_dbu,
         );
-        let cached = merged.resident_polys() as u64 * memory::BYTES_PER_COPY;
+        let cached = shared.lock().resident_polys() as u64 * memory::BYTES_PER_COPY;
         let room = limit
             .bytes
             .saturating_sub(memory::rss_bytes().saturating_sub(cached));
@@ -1607,7 +1613,7 @@ fn run_drc_impl(
                 let (table, closure) = &rule_halos[i];
                 let mut terms: Vec<(u64, String)> = closure
                     .iter()
-                    .filter(|k| merged.is_drawn(**k) && !clippable.contains(k))
+                    .filter(|k| shared.lock().is_drawn(**k) && !clippable.contains(k))
                     .map(|k| {
                         let need = table.get(k).copied().unwrap_or(halo_dbu);
                         let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
@@ -1616,8 +1622,8 @@ fn run_drc_impl(
                             (shapes as f64 * f * f) as u64 * (memory::BYTES_PER_COPY / 2),
                             format!(
                                 "{} shapes={shapes} halo={need} cached={:?}",
-                                merged.name_of(*k),
-                                merged.cached_halo(*k)
+                                shared.lock().name_of(*k),
+                                shared.lock().cached_halo(*k)
                             ),
                         )
                     })
@@ -1640,7 +1646,7 @@ fn run_drc_impl(
         let room_now = limit.bytes.saturating_sub(memory::rss_bytes());
         if estimate > room_now {
             let (_, closure) = &rule_halos[i];
-            let mut resident = merged.resident_layers();
+            let mut resident = shared.lock().resident_layers();
             resident.sort_by_key(|(key, _)| {
                 std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
             });
@@ -1649,14 +1655,14 @@ fn run_drc_impl(
                 if closure.contains(&key) {
                     continue;
                 }
-                merged.evict(key.0, key.1);
+                shared.lock().evict(key.0, key.1);
                 freed += polys;
                 if (freed as u64) * memory::BYTES_PER_COPY >= estimate - room_now {
                     break;
                 }
             }
             if freed > 0 {
-                merged.settle_frees();
+                shared.lock().settle_frees();
                 memory::trim();
                 if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
@@ -1675,7 +1681,7 @@ fn run_drc_impl(
             rule,
             &layout,
             dbu_to_um,
-            &mut merged,
+            &shared,
             net.as_ref(),
         ));
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
@@ -1687,7 +1693,7 @@ fn run_drc_impl(
                 cpu_seconds() - c_rule,
                 rss_gb(),
                 memory::gb(estimate),
-                merged.resident_summary()
+                shared.lock().resident_summary()
             );
         }
 
@@ -1698,26 +1704,26 @@ fn run_drc_impl(
             // anything later needs - the same ratio the rebuild uses, so a copy a
             // little fatter than the next rule's reach serves it rather than being
             // merged again at 14% fewer copies.
-            let cached = merged.cached_halo(*key);
+            let cached = shared.lock().cached_halo(*key);
             if future < 0 {
                 if cached.is_some() && std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
                         "evict {} cached={:?} future={future}",
-                        merged.name_of(*key),
+                        shared.lock().name_of(*key),
                         cached
                     );
                 }
-                merged.evict(key.0, key.1);
+                shared.lock().evict(key.0, key.1);
             } else if cached.is_some_and(|h| h > future * 4) {
                 if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
                         "evict {} fatter than {}: cached={:?} future={future}",
-                        merged.name_of(*key),
+                        shared.lock().name_of(*key),
                         future * 4,
                         cached
                     );
                 }
-                merged.evict_fatter_than(key.0, key.1, future * 4);
+                shared.lock().evict_fatter_than(key.0, key.1, future * 4);
             }
         }
         // A budget on what stays resident.  Eviction by need alone keeps every layer
@@ -1728,10 +1734,10 @@ fn run_drc_impl(
         // Over the plan after this rule - the reserve was short of its working set -
         // the cache gives the overshoot back, evicted just below.
         let rss = memory::rss_bytes();
-        if rss > limit.bytes && merged.resident_polys() > 0 {
+        if rss > limit.bytes && shared.lock().resident_polys() > 0 {
             let over = ((rss - limit.bytes) / memory::BYTES_PER_COPY) as usize;
             budget = budget.saturating_sub(over);
-            merged.set_budget(budget);
+            shared.lock().set_budget(budget);
             if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                 eprintln!(
                     "over the plan by {:.1} GB after {}: cache budget {:.1} GB",
@@ -1741,37 +1747,37 @@ fn run_drc_impl(
                 );
             }
         }
-        if merged.resident_polys() > budget {
-            let mut resident = merged.resident_layers();
+        if shared.lock().resident_polys() > budget {
+            let mut resident = shared.lock().resident_layers();
             resident.sort_by_key(|(key, _)| {
                 std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
             });
             // The variants set aside go first, then whole layers.
             for (key, _) in &resident {
-                if merged.resident_polys() <= budget {
+                if shared.lock().resident_polys() <= budget {
                     break;
                 }
-                merged.drop_variants(key.0, key.1);
+                shared.lock().drop_variants(key.0, key.1);
             }
             for (key, polys) in resident {
-                if merged.resident_polys() <= budget {
+                if shared.lock().resident_polys() <= budget {
                     break;
                 }
                 if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
                     eprintln!(
                         "evict {} over budget: {polys} copies, next use at rule {:?}",
-                        merged.name_of(key),
+                        shared.lock().name_of(key),
                         next_use.get(&key).map(|v| v[i])
                     );
                 }
-                merged.evict(key.0, key.1);
+                shared.lock().evict(key.0, key.1);
             }
         }
         // What was let go is freed aside, unless it is a large part of the budget: then
         // the memory has to be back before the next rule builds into it, or a run that
         // fit on a machine of this size before is killed for what it already dropped.
-        if merged.pending_free_polys() > budget / 4 {
-            merged.settle_frees();
+        if shared.lock().pending_free_polys() > budget / 4 {
+            shared.lock().settle_frees();
             memory::trim();
         }
         if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
@@ -1781,7 +1787,7 @@ fn run_drc_impl(
             }
         }
     }
-    merged.set_rule_halos(None);
+    shared.lock().set_rule_halos(None);
 
     phase.end("rules");
     // A run is over the same layout twice, so its report should be the same file twice.

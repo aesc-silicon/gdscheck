@@ -43,7 +43,7 @@ use crate::geom::{
     parallel_run_applies,
 };
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 
@@ -104,7 +104,7 @@ pub fn run_min(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&Connectivity>,
 ) -> Vec<Violation> {
     // `rows` or `cols` gates the rule on membership in a via array, a different scan.
@@ -123,7 +123,7 @@ pub fn run_min_gated(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&Connectivity>,
     gates: Gates,
 ) -> Vec<Violation> {
@@ -272,7 +272,7 @@ pub fn run_min_overlap(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
 ) -> Vec<Violation> {
     super::helper::run_overlap(rule, layout, dbu_to_um, merged)
 }

@@ -33,7 +33,7 @@ pub mod space;
 pub mod width;
 
 use crate::layout::FlatLayout;
-use crate::merge::MergedCache;
+use crate::merge::SharedCache;
 use crate::pdk::{Layer, RuleDefinition};
 use crate::violation::Violation;
 use gds21::GdsBoundary;
@@ -47,7 +47,7 @@ pub fn run_rule(
     rule: &RuleDefinition,
     layout: &FlatLayout,
     dbu_to_um: f64,
-    merged: &mut MergedCache,
+    merged: &SharedCache,
     conn: Option<&crate::connectivity::Connectivity>,
 ) -> Vec<Violation> {
     let mut out = match rule.check.as_str() {

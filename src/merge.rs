@@ -6246,10 +6246,11 @@ impl MergedCache {
     /// The edges of an edge layer filed under every tile they cross, for a reader that
     /// wants what runs through a tile whether or not its middle is there.  Must be
     /// `ensure_edges`d first.
-    pub fn edge_spans(&self, key: (i16, i16)) -> &EdgeTileMap {
+    pub fn edge_spans(&self, key: (i16, i16)) -> Arc<EdgeTileMap> {
         self.edge_spans
             .get(&key)
             .expect("MergedCache::edge_spans called before ensure_edges")
+            .clone()
     }
 
     /// Per-tile edges of an edge layer.  Must be `ensure_edges`d first.
@@ -7120,6 +7121,152 @@ impl MergedCache {
         });
         self.kin.insert((key, touching), built.clone());
         built
+    }
+}
+
+/// The merge cache as rules running side by side share it: every call takes the lock
+/// for its own duration and hands back what the cache holds by `Arc`, so a rule takes
+/// what it reads under the lock and computes outside it.  A build - a merge, a stitch,
+/// a virtual layer - runs under the lock too, one at a time across the rules; it is
+/// parallel inside, so little is lost, and nothing is built twice.  The methods are
+/// the cache's own, with `&self`; the rule loop's bookkeeping takes [`Self::lock`].
+pub struct SharedCache {
+    inner: std::sync::Mutex<MergedCache>,
+}
+
+impl SharedCache {
+    pub fn new(cache: MergedCache) -> Self {
+        SharedCache {
+            inner: std::sync::Mutex::new(cache),
+        }
+    }
+
+    /// The cache itself, for what the rule loop does between rules.
+    pub fn lock(&self) -> std::sync::MutexGuard<'_, MergedCache> {
+        self.inner.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    pub fn into_inner(self) -> MergedCache {
+        self.inner.into_inner().unwrap_or_else(|e| e.into_inner())
+    }
+
+    pub fn ensure(&self, layout: &FlatLayout, layer: i16, datatype: i16) {
+        self.lock().ensure(layout, layer, datatype);
+    }
+
+    pub fn ensure_at(&self, layout: &FlatLayout, layer: i16, datatype: i16, want: i32) {
+        self.lock().ensure_at(layout, layer, datatype, want);
+    }
+
+    pub fn tiles(&self, layer: i16, datatype: i16) -> Arc<TileMap> {
+        self.lock().tiles(layer, datatype)
+    }
+
+    pub fn tile_dbu(&self) -> i32 {
+        self.lock().tile_dbu()
+    }
+
+    pub fn halo_dbu(&self, l: i16, d: i16) -> i32 {
+        self.lock().halo_dbu(l, d)
+    }
+
+    pub fn halo_of(&self, layer: i16, datatype: i16) -> i32 {
+        self.lock().halo_of(layer, datatype)
+    }
+
+    pub fn core(&self, tx: i32, ty: i32) -> Core {
+        self.lock().core(tx, ty)
+    }
+
+    pub fn is_drawn(&self, key: (i16, i16)) -> bool {
+        self.lock().is_drawn(key)
+    }
+
+    pub fn name_of(&self, key: (i16, i16)) -> String {
+        self.lock().name_of(key)
+    }
+
+    pub fn register_virtual(
+        &self,
+        key: (i16, i16),
+        op: VirtualOp,
+        sources: Vec<(i16, i16)>,
+        text: Option<String>,
+    ) {
+        self.lock().register_virtual(key, op, sources, text);
+    }
+
+    pub fn is_edge_layer(&self, key: (i16, i16)) -> bool {
+        self.lock().is_edge_layer(key)
+    }
+
+    pub fn edge_base_region(&self, key: (i16, i16)) -> Option<(i16, i16)> {
+        self.lock().edge_base_region(key)
+    }
+
+    pub fn ensure_edges(&self, layout: &FlatLayout, key: (i16, i16)) {
+        self.lock().ensure_edges(layout, key);
+    }
+
+    pub fn edges(&self, key: (i16, i16)) -> Arc<EdgeTileMap> {
+        self.lock().edges(key)
+    }
+
+    pub fn edge_spans(&self, key: (i16, i16)) -> Arc<EdgeTileMap> {
+        self.lock().edge_spans(key)
+    }
+
+    pub fn regions(&self, layout: &FlatLayout, layer: i16, datatype: i16) -> Arc<Vec<Region>> {
+        self.lock().regions(layout, layer, datatype)
+    }
+
+    pub fn regions_cut(&self, layout: &FlatLayout, layer: i16, datatype: i16) -> Vec<Region> {
+        self.lock().regions_cut(layout, layer, datatype)
+    }
+
+    pub fn kin(&self, layer: i16, datatype: i16, touching: bool) -> Arc<IndexedRegions> {
+        self.lock().kin(layer, datatype, touching)
+    }
+
+    pub fn plate_regions(
+        &self,
+        layout: &FlatLayout,
+        metal: (i16, i16),
+        feature: (i16, i16),
+        erode_radius: f64,
+    ) -> Vec<PlateInfo> {
+        self.lock()
+            .plate_regions(layout, metal, feature, erode_radius)
+    }
+
+    pub fn max_space_gaps(
+        &self,
+        layout: &FlatLayout,
+        a: (i16, i16),
+        b: (i16, i16),
+        value: f64,
+        within: Option<((i16, i16), f64)>,
+        round: bool,
+    ) -> Vec<(f64, f64)> {
+        self.lock()
+            .max_space_gaps(layout, a, b, value, within, round)
+    }
+
+    pub fn max_space_unreached(
+        &self,
+        layout: &FlatLayout,
+        a: (i16, i16),
+        b: (i16, i16),
+        value: f64,
+        within: Option<((i16, i16), f64)>,
+        round: bool,
+    ) -> Vec<(f64, f64)> {
+        self.lock()
+            .max_space_unreached(layout, a, b, value, within, round)
+    }
+
+    pub fn evict(&self, layer: i16, datatype: i16) {
+        self.lock().evict(layer, datatype);
     }
 }
 
