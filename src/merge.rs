@@ -5736,7 +5736,17 @@ struct Frees {
 }
 
 impl Frees {
+    /// A free worth a thread is a big one: ten million copies are a second of
+    /// deallocation and belong aside, where a handful is a memcpy and the thread costs
+    /// more than the work - a spawn and a join is two context switches, and a run over a
+    /// small layout does a hundred of these.
+    const INLINE: usize = 100_000;
+
     fn later<T: Send + 'static>(&mut self, v: T, polys: usize) {
+        if polys < Self::INLINE {
+            drop(v);
+            return;
+        }
         self.threads.retain(|t| !t.is_finished());
         self.polys += polys;
         self.threads.push(std::thread::spawn(move || drop(v)));

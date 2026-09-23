@@ -406,21 +406,23 @@ const PATTERN_DECKS: &[&str] = &[
 
 #[test]
 fn pattern_good_halves_are_silent() {
-    for deck in PATTERN_DECKS {
-        for id in dedup(rule_ids(deck)) {
-            let got = run_generated(deck, &id, "good");
-            assert!(
-                got.is_empty(),
-                "{deck}: {id} good pattern is not clean: {got:?}"
-            );
-        }
-    }
+    // One contract over a thousand layouts, read in parallel: the decks are independent
+    // and each layout is its own run, so the loop is the only thing that was serial.
+    use rayon::prelude::*;
+    pattern_decks().into_par_iter().for_each(|(deck, id)| {
+        let got = run_generated(deck, &id, "good");
+        assert!(
+            got.is_empty(),
+            "{deck}: {id} good pattern is not clean: {got:?}"
+        );
+    });
 }
 
 #[test]
 fn pattern_bad_halves_fire_their_own_rule() {
-    for deck in PATTERN_DECKS {
-        for id in dedup(rule_ids(deck)) {
+    use rayon::prelude::*;
+    pattern_decks().into_par_iter().for_each(|(deck, id)| {
+        {
             let got = run_generated(deck, &id, "bad");
             let fired: Vec<&String> = got.iter().map(|(r, _)| r).collect();
             assert!(
@@ -438,7 +440,7 @@ fn pattern_bad_halves_fire_their_own_rule() {
                 .filter(|r| {
                     !COINCIDENT
                         .iter()
-                        .any(|&(d, of, also)| d == *deck && of == id && also == r.as_str())
+                        .any(|&(d, of, also)| d == deck && of == id && also == r.as_str())
                 })
                 .collect();
             assert!(
@@ -447,7 +449,17 @@ fn pattern_bad_halves_fire_their_own_rule() {
                  its own rule"
             );
         }
-    }
+    });
+}
+
+/// Every (deck, rule) the pattern contract covers: the rule ids are read from the decks
+/// once, and the layouts are independent of one another, so the two contracts read them
+/// in parallel.
+fn pattern_decks() -> Vec<(&'static str, String)> {
+    PATTERN_DECKS
+        .iter()
+        .flat_map(|deck| dedup(rule_ids(deck)).into_iter().map(move |id| (*deck, id)))
+        .collect()
 }
 
 /// Rule ids in `deck` that measure exactly what `id` measures - same check, same layers,
