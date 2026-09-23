@@ -1791,8 +1791,11 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [comp_in_guard_ring, pplus]
+  # GR.11 asks for "a pad opening on top of" the ring, and a pad that only shares the
+  # marker's outer edge is beside it, not on it: the selection wants area, not a touch
+  # (report, guard_ring finding 3).
   - name: guard_ring_no_pad
-    op: not_interacting
+    op: not_overlapping
     mode: lazy
     layers: [guard_ring_mk, pad]
   - name: metal1_pad
