@@ -4,7 +4,8 @@
 
 # The spacing check on plain layers: the plain bound, and each gate once.  Outer carries
 # the plain rule, the bent rule and the two net rules; Inner the width and the length
-# gate on their own; Via the two together.
+# gate on their own; Via the two together.  Outer against Inner carries the two-layer
+# rules: the plain pair, each reading of a touch, and each choice of pairs.
 rules:
   - id: S.min
     check: min_space
@@ -47,3 +48,32 @@ rules:
     params:
       width: 0.3
       length: 2.0
+  # Two layers: the plain pair, each reading of a touch, and each choice of pairs.
+  - id: S.pair
+    check: min_space
+    layers: [Outer, Inner]
+    value: 0.5
+  - id: S.abut
+    check: min_space
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      abutting: report
+  - id: S.related
+    check: min_space
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      abutting: related
+  - id: S.over
+    check: min_space
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      pairs: overlapping
+  - id: S.any
+    check: min_space
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      pairs: any

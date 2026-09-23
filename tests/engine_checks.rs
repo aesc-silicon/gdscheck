@@ -465,7 +465,38 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 ///   broken in two), the wide part of a padded line and an L's arm, both metrics and the
 ///   ends, unions, the tile lines, fifty at once, a 300 µm pair and a sliver; a U's slot
 ///   is a notch, not a space of lines.
+/// - `pair_*`: Outer against Inner (S.pair; S.abut with `abutting: report`, S.related
+///   with `related`; S.over with `pairs: overlapping`, S.any with `any`) - the bound
+///   and both metrics, 45° geometry, unions, the tile lines, fifty at once, extremes,
+///   all as for one layer; `pair_touch` the three readings of a touch (a point is a
+///   space of nothing to the default and to `report`, a run only to `report`, neither
+///   to `related`), on and across the tile lines; `pair_related` an L touching a box
+///   along one edge and 0.495 from it along another, no pair to `related`;
+///   `pair_over` a bar crossing a U's base with an arm 0.495 from its wall, a pair to
+///   `overlapping` and `any` and not to the default.
 #[rstest]
+#[case("pair_bound", "S.pair", 3)]
+#[case("pair_bound", "S.abut", 3)]
+#[case("pair_bound", "S.related", 3)]
+#[case("pair_bound", "S.any", 3)]
+#[case("pair_bound", "S.over", 0)]
+#[case("pair_45", "S.pair", 4)]
+#[case("pair_merge", "S.pair", 3)]
+#[case("pair_merge", "S.over", 0)]
+#[case("pair_touch", "S.pair", 2)]
+#[case("pair_touch", "S.abut", 6)]
+#[case("pair_touch", "S.related", 0)]
+#[case("pair_related", "S.abut", 2)]
+#[case("pair_related", "S.related", 1)]
+#[case("pair_over", "S.over", 2)]
+#[case("pair_over", "S.pair", 1)]
+#[case("pair_over", "S.any", 3)]
+#[case("pair_tile_lines", "S.pair", 10)]
+#[case("pair_tile_lines", "S.abut", 10)]
+#[case("pair_tile_lines", "S.related", 10)]
+#[case("pair_array_flat", "S.pair", 50)]
+#[case("pair_array_ref", "S.pair", 50)]
+#[case("pair_extremes", "S.pair", 3)]
 #[case("gated_bound", "S.both", 3)]
 #[case("gated_run", "S.both", 4)]
 #[case("gated_wide", "S.both", 2)]
