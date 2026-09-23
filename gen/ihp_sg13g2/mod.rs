@@ -41,7 +41,6 @@ mod sealring;
 mod slit;
 mod tgo;
 mod topmetal;
-mod topmetal_hardening;
 mod topvia;
 mod via;
 
@@ -66,7 +65,6 @@ pub fn generate(pdk: &PdkConfig) {
     via::generate(pdk);
     topvia::generate(pdk);
     topmetal::generate(pdk);
-    topmetal_hardening::generate(pdk);
     passiv::generate(pdk);
     pin::generate(pdk);
     lbe::generate(pdk);
