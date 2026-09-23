@@ -68,7 +68,7 @@ pub fn run(
             rule.value,
             layer.name
         );
-        for (&(tx, ty), edges) in merged.edges(key) {
+        for (&(tx, ty), edges) in merged.edges(key).iter() {
             let core = core_of(tx, ty);
             for e in edges {
                 let (mx, my) = e.midpoint();
@@ -87,7 +87,7 @@ pub fn run(
             rule.value,
             layer.name
         );
-        for (&(tx, ty), polys) in merged.tiles(key.0, key.1) {
+        for (&(tx, ty), polys) in merged.tiles(key.0, key.1).iter() {
             let core = core_of(tx, ty);
             for m in polys {
                 for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {

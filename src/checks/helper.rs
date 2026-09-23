@@ -517,18 +517,21 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     if let Some((gl, gd)) = gap_key {
         merged.ensure(layout, gl, gd);
     }
-    let gap_map = gap_key.map(|(gl, gd)| merged.tiles(gl, gd));
+    let gap_map_arc = gap_key.map(|(gl, gd)| merged.tiles(gl, gd));
+    let gap_map = gap_map_arc.as_deref();
     // The zone a tile's copies are exact in: its core grown by the layers' halo.  A
     // copy is the whole shape, but past the zone it may be wrong - a difference layer
     // built in the tile has its subtrahend only within reach - so a gate reading along
     // the walls reads within the zone alone.
     let zone_halo = merged.halo_dbu(al, ad).min(merged.halo_dbu(bl, bd)) as i64;
-    let map_a = merged.tiles(al, ad);
-    let map_b = if same_layer {
-        map_a
+    let map_a_arc = merged.tiles(al, ad);
+    let map_a = &*map_a_arc;
+    let map_b_arc = if same_layer {
+        map_a_arc.clone()
     } else {
         merged.tiles(bl, bd)
     };
+    let map_b = &*map_b_arc;
 
     // Every spacing violation has an `a`-region within the halo of the tile that
     // owns its gap, so that tile is an `a` key — iterating `a`'s tiles covers all
@@ -622,7 +625,8 @@ pub fn piece_notches(
     merged.ensure(layout, gl, gd);
     let tile = merged.tile_dbu() as i64;
     let regions = merged.kin(gl, gd, false);
-    let map = merged.tiles(gl, gd);
+    let map_arc = merged.tiles(gl, gd);
+    let map = &*map_arc;
     let kin = Kin::of((map, regions), None, tile as i32, false);
     let (rid, limit_um) = (rule.id.as_str(), rule.value);
     map.par_iter()

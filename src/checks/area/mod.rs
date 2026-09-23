@@ -340,7 +340,7 @@ pub fn run_scoped(
                     layer.name
                 );
                 let (rid, ln, title) = (rule.id.as_str(), layer.name.as_str(), title.as_str());
-                for hole in crate::merge::region_holes(merged.tiles(gl, gd), merged.tile_dbu()) {
+                for hole in crate::merge::region_holes(&merged.tiles(gl, gd), merged.tile_dbu()) {
                     let (area, cx, cy) = crate::geom::ring_area_centroid(&hole);
                     if !kind.broken_by(area, limit) {
                         continue;
@@ -385,7 +385,7 @@ pub fn run_scoped(
             merged.ensure(layout, ok, od);
             merged.ensure(layout, ik, id);
             let tile = merged.tile_dbu();
-            let labeled = stitch_labeled(merged.tiles(ok, od), tile);
+            let labeled = stitch_labeled(&merged.tiles(ok, od), tile);
             let mut total = vec![0.0_f64; labeled.regions.len()];
             // The violation is about the whole container, so it is marked at the middle
             // of it rather than at whichever piece the stitcher named it after.
@@ -394,7 +394,8 @@ pub fn run_scoped(
                 let t = tile as i64;
                 let (x0, y0) = ((tx as i64 * t) as f64, (ty as i64 * t) as f64);
                 let (x1, y1) = (((tx as i64 + 1) * t) as f64, ((ty as i64 + 1) * t) as f64);
-                let ins = merged.tiles(ik, id).get(&(tx, ty));
+                let ins_map = merged.tiles(ik, id);
+                let ins = ins_map.get(&(tx, ty));
                 for (poly, rid) in polys {
                     let b = &mut bbox[*rid];
                     for p in &poly.outer {

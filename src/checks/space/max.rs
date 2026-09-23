@@ -232,7 +232,7 @@ fn run_edges(
     let mut edges: Vec<Edge> = Vec::new();
     let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
         std::collections::HashSet::new();
-    for (&(tx, ty), es) in merged.edges(akey) {
+    for (&(tx, ty), es) in merged.edges(akey).iter() {
         let core = crate::merge::Core {
             x0: tx as i64 * tile,
             y0: ty as i64 * tile,
@@ -247,7 +247,9 @@ fn run_edges(
         }
     }
 
-    let btiles = merged.tiles(bkey.0, bkey.1);
+    let btiles_arc = merged.tiles(bkey.0, bkey.1);
+
+    let btiles = &*btiles_arc;
     let mut out = Vec::new();
     for e in edges {
         let seg = (e.a.x as f64, e.a.y as f64, e.b.x as f64, e.b.y as f64);

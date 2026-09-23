@@ -5838,7 +5838,7 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
 /// layer and its filler) line up tile-for-tile.  The first check that needs a
 /// layer pays for its merge; the rest reuse it.
 /// One build of a layer set aside: the halo it was built for, its tiles, its copies.
-type Variant = (i32, TileMap, usize);
+type Variant = (i32, Arc<TileMap>, usize);
 
 /// What is being freed on threads of their own: ten million polygon copies are a
 /// second of deallocation, which held every core idle between two rules.  Freed aside,
@@ -5886,7 +5886,7 @@ pub struct MergedCache {
     tile_dbu: i32,
     halo_dbu: i32,
     halo_by_layer: HashMap<(i16, i16), i32>,
-    layers: HashMap<(i16, i16), TileMap>,
+    layers: HashMap<(i16, i16), Arc<TileMap>>,
     /// The halo each cached layer was actually built at.  A layer can be cached at less
     /// than its configured halo when only rules that measure nothing have read it so far;
     /// a later consumer that needs more rebuilds it.  See [`MergedCache::ensure_at`].
@@ -5897,7 +5897,7 @@ pub struct MergedCache {
     /// takes the minimum; a layer outside it - a violation boundary, a layer named in
     /// `params` - takes its configured halo.  `None` outside a rule.
     rule_halos: Option<RuleHalos>,
-    regions: HashMap<(i16, i16), Vec<Region>>,
+    regions: HashMap<(i16, i16), Arc<Vec<Region>>>,
     /// The indexed stitch of a layer's tiles, with and without corner contacts joined
     /// (see [`stitch_cut_indexed`]), kept for the next rule on the layer: a contact
     /// layer is stitched once for its twenty rules rather than once each.  Indices
@@ -5909,10 +5909,10 @@ pub struct MergedCache {
     /// Edge layers, keyed the same way and built the same way, but holding boundary
     /// segments rather than regions.  Kept apart from `layers` because the element type
     /// differs — a check asks for one or the other, never both under one key.
-    edge_layers: HashMap<(i16, i16), EdgeTileMap>,
+    edge_layers: HashMap<(i16, i16), Arc<EdgeTileMap>>,
     edge_defs: HashMap<(i16, i16), TiledEdge>,
     /// Every edge layer filed under every tile it crosses, for reading as a filter.
-    edge_spans: HashMap<(i16, i16), EdgeTileMap>,
+    edge_spans: HashMap<(i16, i16), Arc<EdgeTileMap>>,
     /// The halo each cached edge layer was built for; see `layer_halo`.
     edge_halo: HashMap<(i16, i16), i32>,
     /// Derived layers delivered as core-clipped pieces copied out to their consumers'
@@ -6088,8 +6088,8 @@ impl MergedCache {
 
     fn ensure_edges_inner(&mut self, layout: &FlatLayout, key: (i16, i16)) {
         let Some(def) = self.edge_defs.get(&key).cloned() else {
-            self.edge_layers.insert(key, EdgeTileMap::new());
-            self.edge_spans.insert(key, EdgeTileMap::new());
+            self.edge_layers.insert(key, Arc::new(EdgeTileMap::new()));
+            self.edge_spans.insert(key, Arc::new(EdgeTileMap::new()));
             return;
         };
         // An op's sources are polygons, edges, or one of each; resolve accordingly.
@@ -6118,8 +6118,8 @@ impl MergedCache {
                             self.name_of(src)
                         );
                     }
-                    self.edge_layers.insert(key, EdgeTileMap::new());
-                    self.edge_spans.insert(key, EdgeTileMap::new());
+                    self.edge_layers.insert(key, Arc::new(EdgeTileMap::new()));
+                    self.edge_spans.insert(key, Arc::new(EdgeTileMap::new()));
                     return;
                 }
             }
@@ -6239,8 +6239,8 @@ impl MergedCache {
             );
         }
         self.edge_spans
-            .insert(key, spanning_index(&out, self.tile_dbu));
-        self.edge_layers.insert(key, out);
+            .insert(key, Arc::new(spanning_index(&out, self.tile_dbu)));
+        self.edge_layers.insert(key, Arc::new(out));
     }
 
     /// The edges of an edge layer filed under every tile they cross, for a reader that
@@ -6253,10 +6253,11 @@ impl MergedCache {
     }
 
     /// Per-tile edges of an edge layer.  Must be `ensure_edges`d first.
-    pub fn edges(&self, key: (i16, i16)) -> &EdgeTileMap {
+    pub fn edges(&self, key: (i16, i16)) -> Arc<EdgeTileMap> {
         self.edge_layers
             .get(&key)
             .expect("MergedCache::edges called before ensure_edges")
+            .clone()
     }
 
     /// Whole-layer connected regions (areas + markers), built by stitching the
@@ -6268,7 +6269,7 @@ impl MergedCache {
         stitch_regions_cut(&self.layers[&(layer, datatype)], self.tile_dbu)
     }
 
-    pub fn regions(&mut self, layout: &FlatLayout, layer: i16, datatype: i16) -> &[Region] {
+    pub fn regions(&mut self, layout: &FlatLayout, layer: i16, datatype: i16) -> Arc<Vec<Region>> {
         self.ensure(layout, layer, datatype);
         if !self.regions.contains_key(&(layer, datatype)) {
             let r = stitch_regions(&self.layers[&(layer, datatype)], self.tile_dbu);
@@ -6283,9 +6284,9 @@ impl MergedCache {
                     );
                 }
             }
-            self.regions.insert((layer, datatype), r);
+            self.regions.insert((layer, datatype), Arc::new(r));
         }
-        &self.regions[&(layer, datatype)]
+        self.regions[&(layer, datatype)].clone()
     }
 
     /// Connected regions of `metal` with their enclosed `feature` area and a wide-spot
@@ -6324,7 +6325,7 @@ impl MergedCache {
         if let Some((w, _)) = within {
             self.ensure(layout, w.0, w.1);
         }
-        let within = within.map(|(w, step)| (&self.layers[&w], step));
+        let within = within.map(|(w, step)| (&*self.layers[&w], step));
         max_space_gaps(
             &self.layers[&a],
             &self.layers[&b],
@@ -6352,7 +6353,7 @@ impl MergedCache {
         if let Some((w, _)) = within {
             self.ensure(layout, w.0, w.1);
         }
-        let within = within.map(|(w, step)| (&self.layers[&w], step));
+        let within = within.map(|(w, step)| (&*self.layers[&w], step));
         max_space_unreached(
             &self.layers[&a],
             &self.layers[&b],
@@ -6637,7 +6638,7 @@ impl MergedCache {
                 let tiles = build_text_selection_tiles(cand, &pts, self.tile_dbu);
                 self.layer_polys
                     .insert(key, tiles.values().map(|v| v.len()).sum());
-                self.layers.insert(key, tiles);
+                self.layers.insert(key, Arc::new(tiles));
                 self.kin.retain(|(k, _), _| *k != key);
                 self.layer_halo.insert(key, want);
                 return;
@@ -6784,7 +6785,7 @@ impl MergedCache {
                 let filt = def
                     .sources
                     .get(1)
-                    .map(|s| &self.layers[s])
+                    .map(|s| &*self.layers[s])
                     .unwrap_or(&empty);
                 let tiles = build_selection_tiles(cand, filt, kind, keep, count, self.tile_dbu);
                 // Stitching hands back one whole copy per region per tile that owns a
@@ -6815,7 +6816,7 @@ impl MergedCache {
                 self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                 return;
             }
-            let src_maps: Vec<&TileMap> = def.sources.iter().map(|s| &self.layers[s]).collect();
+            let src_maps: Vec<&TileMap> = def.sources.iter().map(|s| &*self.layers[s]).collect();
             let tiles = build_virtual_tiles(def.op, &src_maps);
             // A boolean is exact only out to the thinner of its sources' reaches, and
             // past that it is whatever the tile's copies happened to hold: a source
@@ -6873,7 +6874,7 @@ impl MergedCache {
         self.dump_if_asked(key, &tiles);
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
-        self.layers.insert(key, tiles);
+        self.layers.insert(key, Arc::new(tiles));
         self.kin.retain(|(k, _), _| *k != key);
         self.layer_halo.insert(key, halo);
     }
@@ -6916,7 +6917,7 @@ impl MergedCache {
         self.dump_if_asked(key, &tiles);
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
-        self.layers.insert(key, tiles);
+        self.layers.insert(key, Arc::new(tiles));
         self.kin.retain(|(k, _), _| *k != key);
         self.layer_halo.insert(key, want);
         self.release_spent_sources(key);
@@ -7094,10 +7095,11 @@ impl MergedCache {
 
     /// Per-tile merged geometry of a layer.  Must be `ensure`d first; a layer
     /// with no shapes yields an empty map.
-    pub fn tiles(&self, layer: i16, datatype: i16) -> &TileMap {
+    pub fn tiles(&self, layer: i16, datatype: i16) -> Arc<TileMap> {
         self.layers
             .get(&(layer, datatype))
             .expect("MergedCache::tiles called before ensure")
+            .clone()
     }
 
     /// The indexed stitch of a cached layer's tiles - [`stitch_labeled_indexed`] with

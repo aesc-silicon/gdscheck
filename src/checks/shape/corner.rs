@@ -114,9 +114,12 @@ pub fn run(
     );
 
     let tile = merged.tile_dbu() as i64;
-    let gmap = merged.tiles(gl, gd);
-    let imap = inside.map(|k| merged.tiles(k.0, k.1));
-    let omap = outside.map(|k| merged.tiles(k.0, k.1));
+    let gmap_arc = merged.tiles(gl, gd);
+    let gmap = &*gmap_arc;
+    let imap_arc = inside.map(|k| merged.tiles(k.0, k.1));
+    let imap = imap_arc.as_deref();
+    let omap_arc = outside.map(|k| merged.tiles(k.0, k.1));
+    let omap = omap_arc.as_deref();
     let rid = rule.id.as_str();
     let ln = layer.name.as_str();
 

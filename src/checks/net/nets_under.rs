@@ -68,9 +68,10 @@ pub fn run(
     merged.ensure(layout, net_key.0, net_key.1);
 
     let tile = merged.tile_dbu();
-    let marks = stitch_labeled(merged.tiles(mk, md), tile);
-    let conds = stitch_labeled(merged.tiles(ck, cd), tile);
-    let net_tiles = merged.tiles(net_key.0, net_key.1);
+    let marks = stitch_labeled(&merged.tiles(mk, md), tile);
+    let conds = stitch_labeled(&merged.tiles(ck, cd), tile);
+    let net_tiles_arc = merged.tiles(net_key.0, net_key.1);
+    let net_tiles = &*net_tiles_arc;
     // The pieces of each counted region, tile by tile, for the net lookup below.
     let mut pieces: Vec<Vec<((i32, i32), &crate::merge::MergedPoly)>> =
         vec![Vec::new(); conds.regions.len()];

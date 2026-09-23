@@ -103,8 +103,8 @@ pub fn run(
     merged.ensure(layout, vk, vd);
 
     let tile = merged.tile_dbu();
-    let hosts = stitch_labeled(merged.tiles(hk, hd), tile);
-    let vias = stitch_labeled(merged.tiles(vk, vd), tile);
+    let hosts = stitch_labeled(&merged.tiles(hk, hd), tile);
+    let vias = stitch_labeled(&merged.tiles(vk, vd), tile);
 
     let mut per_host: HashMap<usize, Vec<(f64, f64)>> = HashMap::new();
     for region in &vias.regions {

@@ -430,14 +430,14 @@ pub fn run(
         merged.ensure(layout, ol, od);
     }
     let labeled = merged.kin(bl, bd, true);
-    let map_a = merged.tiles(al, ad);
-    let map_b = merged.tiles(bl, bd);
+    let map_a_arc = merged.tiles(al, ad);
+    let map_a = &*map_a_arc;
+    let map_b_arc = merged.tiles(bl, bd);
+    let map_b = &*map_b_arc;
     let a_boxes = boxes_of(map_a, tile);
     let b_boxes = boxes_of(map_b, tile);
-    let over = over_key.map(|(ol, od)| {
-        let m = merged.tiles(ol, od);
-        (m, boxes_of(m, tile))
-    });
+    let over_arc = over_key.map(|(ol, od)| merged.tiles(ol, od));
+    let over = over_arc.as_ref().map(|m| (&**m, boxes_of(m, tile)));
     // Read just outside the inner wall, where the margin lies: a wall flush with the
     // layer's own edge has its margin off the layer, and is not the rule's (an
     // nSD:block ending with the Activ wants no SalBlock past it there).  A closest

@@ -158,7 +158,8 @@ pub fn run_rule(
     if let (Some(l), Some(d)) = (rule.num("interacting"), rule.num("interacting_dt")) {
         let key = (l as i16, d as i16);
         merged.ensure(layout, key.0, key.1);
-        let tiles = merged.tiles(key.0, key.1);
+        let tiles_arc = merged.tiles(key.0, key.1);
+        let tiles = &*tiles_arc;
         let t = merged.tile_dbu() as f64 * dbu_to_um;
         let touches = |x: f64, y: f64| {
             let tile = ((x / t).floor() as i32, (y / t).floor() as i32);
