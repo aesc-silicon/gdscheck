@@ -7,4 +7,7 @@
 # manufacturable.  Kept out of `main` and `core` because they fire on most of the
 # geometry they cover, and a run mixing them with real violations hides the real ones.
 include:
+  - deck: comp_recommended
+  - deck: contact_recommended
+  - deck: poly2_recommended
   - deck: via_recommended

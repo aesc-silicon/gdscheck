@@ -41,9 +41,15 @@ decks:
   - name: comp
     path: decks/comp.yml
     description: Active area (COMP)
+  - name: comp_recommended
+    path: decks/comp_recommended.yml
+    description: Active width as a resistor, recommended
   - name: contact
     path: decks/contact.yml
     description: Contact
+  - name: contact_recommended
+    path: decks/contact_recommended.yml
+    description: Metal1 enclosure of contact on all sides, recommended
   - name: cup
     path: decks/cup.yml
     description: Cu pillar
@@ -131,6 +137,9 @@ decks:
   - name: poly2
     path: decks/poly2.yml
     description: Gate poly
+  - name: poly2_recommended
+    path: decks/poly2_recommended.yml
+    description: Poly2 space on COMP for low sheet resistivity, recommended
   - name: pplus
     path: decks/pplus.yml
     description: P+ implant
@@ -2256,6 +2265,36 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [poly2_drawn, poly2_field]
+  # ---- The guidance of Appendix B ------------------------------------------
+  # Rules the manual documents and does not check: they improve a parameter - a contact's
+  # resistance, an active's or a gate's sheet resistivity - where the mandatory rule
+  # protects yield.  They live in decks of their own and in the `recommended` suite.
+  #
+  # DF.1b is the width of an active *used as a resistor*, which is what RES_MK marks; the
+  # marking names the device, so it selects the whole active.
+  - name: comp_resistor
+    op: overlapping
+    mode: lazy
+    layers: [comp, res_mk]
+  # PL.3b is PL.3a's guideline twin and reads the "on COMP" half of it alone, which is the
+  # gate: upstream writes PL.3a as `tgate.or(poly2 outside comp)`, and only the gate half
+  # carries 3b's larger value.  The class is the poly's, whole, as everywhere in poly2.
+  - name: pl3b_gate_lv_all
+    op: intersection
+    mode: lazy
+    layers: [tgate, poly2_lv]
+  - name: pl3b_gate_lv
+    op: difference
+    mode: lazy
+    layers: [pl3b_gate_lv_all, otp_mk]
+  - name: pl3b_gate_mv_all
+    op: intersection
+    mode: lazy
+    layers: [tgate, poly2_mv]
+  - name: pl3b_gate_mv
+    op: difference
+    mode: lazy
+    layers: [pl3b_gate_mv_all, otp_mk]
   - name: pl3a_poly
     op: difference
     mode: lazy

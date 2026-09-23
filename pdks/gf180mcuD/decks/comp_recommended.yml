@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Active width as a resistor, recommended.  Section 7.5's DF.1b, "Min. COMP width as a
+# resistor with low sheet resistivity", which the manual stars: the mandatory DF.1a asks
+# 0.22 at 3.3 V and 0.30 at 5/6 V of any active, where this asks 0.30 of one a RES_MK
+# marks, at either voltage.
+rules:
+  - id: DF.1b
+    check: min_width
+    layers: [comp_resistor]
+    value: 0.3

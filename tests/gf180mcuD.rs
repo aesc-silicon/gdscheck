@@ -3469,3 +3469,28 @@ fn hardening_guard_ring(
         "{gds}"
     );
 }
+
+// --- The guidance of Appendix B (hardening/reports/gf180mcuD/recommended.md).  Three
+// rules the manual documents and does not check, each the guideline twin of a mandatory
+// one: CO.6 III asks 0.12 µm of Metal1 round a contact where CO.6 asks 0.005, DF.1b asks
+// 0.3 µm of an active used as a resistor where DF.1a asks 0.22, and PL.3b asks 0.26 at
+// 3.3 V and 0.4 at 5 V of the gap between two gates where PL.3a asks 0.24.  The foundry's
+// runset carries none of them, so the manual's sentence is the whole argument.  Each
+// fixture runs against its own deck, which is what keeps this guidance out of `main`.
+#[rstest]
+// Metal1 round a 0.22 µm contact by 0.12 (clean), 0.115, and 0.06 - the last drawn to
+// CO.6's own value and no further, which is the layout the guideline is written for.
+#[case::co_6iii_h1("contact_recommended", "recommended/CO.6iii.h1.gds.gz", vec!["CO.6iii"; 2])]
+// An active under RES_MK 0.3 µm wide (clean) and 0.295, and a 0.295 µm active with no
+// marking - a wire, which DF.1a holds to 0.22 and this rule does not read at all.
+// `min_width` names each wall of the narrow bar.
+#[case::df_1b_h1("comp_recommended", "recommended/DF.1b.h1.gds.gz", vec!["DF.1b"; 2])]
+// Two gates over one active 0.26 µm apart (clean) and 0.255, the same pair at 0.4 and
+// 0.395 under Dualgate, and a 0.255 gap between two polys *off* the active, which is
+// PL.3a's gap and not this rule's.
+#[case::pl_3b_h1("poly2_recommended", "recommended/PL.3b.h1.gds.gz", vec!["PL.3b_LV", "PL.3b_MV"])]
+fn hardening_recommended(#[case] deck: &str, #[case] gds: &str, #[case] expected: Vec<&str>) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(hardening(deck, gds, "TOP", &[]), want, "{gds}");
+}

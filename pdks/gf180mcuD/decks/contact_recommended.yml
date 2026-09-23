@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Metal1 enclosure of contact on all sides, recommended.  Section 7.12's CO.6 III, "for
+# minimum contact resistance variation", which the manual stars: the mandatory halves
+# (CO.6, CO.6a, CO.6b) ask 0.005 all round, 0.06 at a line end and 0.06 on the sides next
+# to a flush one.  The via guidance of section 7.14 is the same sentence one level up.
+rules:
+  - id: CO.6iii
+    check: min_enclosure
+    layers: [metal1, contact]
+    value: 0.12
+    params:
+      metric: euclidian
