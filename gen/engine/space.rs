@@ -564,4 +564,192 @@ pub fn generate(pdk: &PdkConfig) {
             rect(via, 7.05, 2.0, 7.055, 5.0), // S.both, sliver
         ],
     );
+
+    // --- The two-layer patterns (S.pair, S.abut, S.related, S.over and S.any on Outer
+    // against Inner, all 0.5): what a rule manual's "A to B" space asks, drawn once
+    // here for every such deck of every PDK.  A violation is one pair.
+
+    // The bound and both metrics, Outer to Inner.  Gap 0.495 fires, 0.5 is clean; corner
+    // to corner 0.35/0.35 (0.495) fires, 0.355/0.355 (0.502) is clean; 0.495 between
+    // boxes meeting corner-on fires.  No pair touches or overlaps, so every reading of
+    // the touch and both choices of pair that admit disjoint pairs agree: S.pair,
+    // S.abut, S.related and S.any 3, S.over 0.
+    write(
+        "pair_bound",
+        vec![
+            rect(outer, 2.0, 2.0, 3.0, 3.0),
+            rect(inner, 3.495, 2.0, 4.495, 3.0), // fires
+            rect(outer, 6.0, 2.0, 7.0, 3.0),
+            rect(inner, 7.5, 2.0, 8.5, 3.0), // clean
+            rect(outer, 10.0, 2.0, 11.0, 3.0),
+            rect(inner, 11.35, 3.35, 12.35, 4.35), // fires (0.495)
+            rect(outer, 14.0, 2.0, 15.0, 3.0),
+            rect(inner, 15.355, 3.355, 16.355, 4.355), // clean (0.502)
+            rect(outer, 2.0, 6.0, 3.0, 7.0),
+            rect(inner, 3.495, 7.0, 4.495, 8.0), // fires (corner-on 0.495)
+        ],
+    );
+
+    // 45° geometry at 0.495 across the two layers: an Inner diamond's tip above an Outer
+    // wall, an Inner strip beside an Outer strip (dy = 1.9 → 0.495; dy = 1.92 → 0.509 is
+    // clean), an Inner box corner facing an Outer chamfer, tip to tip.  S.pair: 4.
+    write(
+        "pair_45",
+        vec![
+            rect(outer, 2.0, 2.0, 5.0, 3.0),
+            diamond(inner, 3.5, 3.995, 0.5), // fires
+            strip45(outer, 7.0, 2.0, 2.0, 0.6),
+            strip45(inner, 7.0, 3.9, 2.0, 0.6), // fires
+            strip45(outer, 11.0, 2.0, 2.0, 0.6),
+            strip45(inner, 11.0, 3.92, 2.0, 0.6), // clean
+            chamfered_tr(outer, 15.0, 2.0, 17.0, 4.0, 20.5),
+            rect(inner, 16.85, 4.0, 18.5, 5.5), // fires
+            diamond(outer, 21.0, 3.0, 0.5),
+            diamond(inner, 22.495, 3.0, 0.5), // fires
+        ],
+    );
+
+    // Unions.  Outer drawn as two overlapping boxes 0.495 from an Inner box; Inner as
+    // two abutting slices 0.495 from an Outer box; an Inner island 0.495 from the inner
+    // wall of an Outer ring - in the ring's hole, not on its material, so a disjoint
+    // pair.  S.pair: 3, S.over: 0.
+    write(
+        "pair_merge",
+        vec![
+            rect(outer, 2.0, 2.0, 2.6, 3.0),
+            rect(outer, 2.4, 2.0, 3.0, 3.0),
+            rect(inner, 3.495, 2.0, 4.5, 3.0), // fires
+            rect(outer, 6.0, 2.0, 7.0, 3.0),
+            rect(inner, 7.495, 2.0, 8.0, 3.0),
+            rect(inner, 8.0, 2.0, 8.5, 3.0), // fires, once
+            rect(outer, 10.0, 6.0, 14.0, 7.0),
+            rect(outer, 10.0, 9.0, 14.0, 10.0),
+            rect(outer, 10.0, 7.0, 11.0, 9.0),
+            rect(outer, 13.0, 7.0, 14.0, 9.0),
+            rect(inner, 11.5, 7.495, 12.5, 8.495), // fires
+        ],
+    );
+
+    // Touching.  A touch is a gap of nothing, and the three readings of it differ: the
+    // default reports a touch at a point and drops one along a run (a butted tie is
+    // drawn edge to edge by design); `report` counts both; `related` counts neither.
+    // Two boxes edge to edge; two corner to corner; edge to edge with the shared edge
+    // on x = 20, running across y = 20 (on x = 10), and at (1000, 1000); corner to
+    // corner at exactly (20, 20).  Nothing else is within 0.5 of anything.  S.pair: 2
+    // (the two points), S.abut: 6, S.related: 0.
+    write(
+        "pair_touch",
+        vec![
+            rect(outer, 2.0, 2.0, 3.0, 3.0),
+            rect(inner, 3.0, 2.0, 4.0, 3.0), // a run: S.abut
+            rect(outer, 6.0, 2.0, 7.0, 3.0),
+            rect(inner, 7.0, 3.0, 8.0, 4.0), // a point: S.pair, S.abut
+            rect(outer, 18.0, 2.0, 20.0, 3.0),
+            rect(inner, 20.0, 2.0, 22.0, 3.0), // a run on x = 20: S.abut
+            rect(outer, 8.0, 18.0, 10.0, 22.0),
+            rect(inner, 10.0, 18.0, 12.0, 22.0), // a run across y = 20: S.abut
+            rect(outer, 1000.0, 1000.0, 1001.0, 1001.0),
+            rect(inner, 1001.0, 1000.0, 1002.0, 1001.0), // a run, far: S.abut
+            rect(outer, 19.0, 19.0, 20.0, 20.0),
+            rect(inner, 20.0, 20.0, 21.0, 21.0), // a point at (20, 20): S.pair, S.abut
+        ],
+    );
+
+    // Related.  An Inner L abutting an Outer box along one edge and 0.495 from it along
+    // the other: the two touch, so under `related` they are one device and no pair,
+    // wherever else they face each other; under `report` the abutment is a space of
+    // nothing.  Beside it, an Inner box 0.495 from an Outer box and touching nothing
+    // fires under every reading.  S.abut: 2, S.related: 1.
+    write(
+        "pair_related",
+        vec![
+            rect(outer, 2.0, 2.0, 4.0, 4.0),
+            poly(
+                inner,
+                &[
+                    (4.0, 2.0),
+                    (5.0, 2.0),
+                    (5.0, 5.495),
+                    (2.0, 5.495),
+                    (2.0, 4.495),
+                    (4.0, 4.495),
+                ],
+            ),
+            rect(outer, 8.0, 2.0, 9.0, 3.0),
+            rect(inner, 9.495, 2.0, 10.495, 3.0), // fires
+        ],
+    );
+
+    // Overlapping pairs.  An Inner bar crossing the base of an Outer U, its wall 0.495
+    // from one arm's: the pair shares area, so its closest approach is nothing and the
+    // gap meant is the narrowest empty one between facing walls - S.over reads it,
+    // S.pair does not.  The same with the gap 0.5 is clean; the same with the gap
+    // straddling x = 20 fires; and a disjoint Inner box 0.495 from an Outer box is
+    // S.pair's alone.  S.over: 2, S.pair: 1, S.any: 3.
+    let u = |x: f64, gap: f64| {
+        vec![
+            rect(outer, x, 2.0, x + 5.0, 3.0),
+            rect(outer, x, 3.0, x + 1.0, 6.0),
+            rect(outer, x + 3.0 + gap, 3.0, x + 5.0, 6.0),
+            rect(inner, x + 2.0, 1.0, x + 3.0, 7.0),
+        ]
+    };
+    let mut e = vec![];
+    e.extend(u(2.0, 0.495)); // S.over
+    e.extend(u(9.0, 0.5)); // clean
+    e.extend(u(16.8, 0.495)); // S.over, the gap 19.8 .. 20.295 across x = 20
+    e.push(rect(outer, 30.0, 2.0, 31.0, 3.0));
+    e.push(rect(inner, 31.495, 2.0, 32.495, 3.0)); // S.pair
+    write("pair_over", e);
+
+    // Tile lines.  0.495 Outer-to-Inner gaps ending on x = 20, straddling 20, starting
+    // on 20, straddling 21, on 40, straddling 42, inside a tile at 10; two in y running
+    // across 20/21 and 40/42; a corner-to-corner pair (0.495) across (20, 20).  S.pair,
+    // S.abut, S.related: 10.
+    let pair = |x: f64, y: f64| {
+        vec![
+            rect(outer, x - 1.0, y, x, y + 1.0),
+            rect(inner, x + 0.495, y, x + 1.495, y + 1.0),
+        ]
+    };
+    let mut e = vec![];
+    e.extend(pair(9.505, 2.0));
+    e.extend(pair(19.505, 2.0));
+    e.extend(pair(19.75, 4.0));
+    e.extend(pair(20.0, 6.0));
+    e.extend(pair(20.75, 8.0));
+    e.extend(pair(39.505, 2.0));
+    e.extend(pair(41.75, 4.0));
+    e.push(rect(outer, 15.0, 12.0, 25.0, 13.0));
+    e.push(rect(inner, 15.0, 13.495, 25.0, 14.0));
+    e.push(rect(outer, 35.0, 12.0, 45.0, 13.0));
+    e.push(rect(inner, 35.0, 13.495, 45.0, 14.0));
+    e.push(rect(outer, 19.0, 19.0, 20.0, 20.0));
+    e.push(rect(inner, 20.35, 20.35, 21.0, 21.0));
+    write("pair_tile_lines", e);
+
+    // Fifty 0.495 Outer-to-Inner pairs, flat and as an array reference.  S.pair: 50.
+    let cell = vec![
+        rect(outer, 0.2, 0.2, 0.7, 0.7),
+        rect(inner, 1.195, 0.2, 1.695, 0.7),
+    ];
+    write("pair_array_flat", flat_array(&cell, 10, 5, 2.5));
+    write_gz(
+        &format!("{DIR}/pair_array_ref.gds.gz"),
+        ref_array(cell, 10, 5, 2.5),
+    );
+
+    // Small, long, far.  A 0.005 Inner sliver 0.495 from an Outer box, a 300 µm Outer
+    // bar 0.495 from a 300 µm Inner bar (one pair), a pair at (1000, 1000).  S.pair: 3.
+    write(
+        "pair_extremes",
+        vec![
+            rect(outer, 2.0, 2.0, 3.0, 3.0),
+            rect(inner, 3.495, 2.0, 3.5, 3.0),
+            rect(outer, 2.0, 6.0, 302.0, 7.0),
+            rect(inner, 2.0, 7.495, 302.0, 8.0),
+            rect(outer, 1000.0, 1000.0, 1001.0, 1001.0),
+            rect(inner, 1001.495, 1000.0, 1002.0, 1001.0),
+        ],
+    );
 }
