@@ -217,8 +217,28 @@ The deck's own good/bad pairs were left as they were; nothing this round drew mo
   tool reports it. Two things about that fixture are worth knowing for whoever picks it
   up: the devices moved from x = 10, 20, 30 to 12, 22, 32, because the margin this rule
   reads runs along the active's left edge and on the 20 µm tile line the second device's
-  0.19 went unread - the probe sits on the line - which is a gdscheck defect of its own,
-  reproducible by moving the fixture back.
+  0.19 went unread, which is a gdscheck defect of its own, reproducible by moving the
+  fixture back.
+
+### The tile-line miss, traced (open)
+
+Three copies of that second device at x = 20, 24 and 42 report at every tile size except
+the one whose lines fall on them: at tile 20 the x = 20 device is silent, at tile 7 the
+x = 42 one is, at tile 100 all three report.  The mechanism is in the enclosure scan's
+`uncut`, which exists so that a margin read from a vertex the tiling made is re-read on
+the whole wall and kept by the tile that owns the closest point.  Where the crossing
+point lies *on* the line, no tile sees that wall whole - the shape crosses there and
+every copy stops at it - so `uncut` finds a clip rather than a wall, defers to "the tile
+past it", and every tile defers.
+
+The obvious repair - let the tile that owns the point half-open (`Core::owns_from`) keep
+the read on its own piece - was tried and reverted: it finds the missing pair at every
+tile size, but the piece's read is not the whole wall's, and on the `lvpwell` foundry
+layout LPW.3 became tile-dependent (90 / 92 / 94 at 100 / 20 / 7) where it had been 90
+everywhere.  A repair has to give the owning tile the *wall*, not its piece - by way of a
+halo on the enclosed layer of at least the rule's value, with the double report that then
+arrives from both sides of the line collapsed - and that is a piece of engine work of its
+own.  Left for the gdscheck owner.
 - **Finding 2.** `comp_otp`, `sab_otp` and `poly_otp` are `overlapping` selections: the
   marker names cells and selects whole regions. `O.DF.9.h1` reports the 0.1425 µm² active
   and not the 1 µm² one whose corner the marker clips, and `O.DF.3a.h2` - a solid plate
