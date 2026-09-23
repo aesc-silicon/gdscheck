@@ -7,6 +7,7 @@ pub mod connectivity;
 pub mod flatten;
 pub mod geom;
 pub mod layout;
+pub mod memory;
 pub mod merge;
 pub mod pdk;
 pub mod report;
@@ -148,16 +149,7 @@ impl PhaseTrace {
 
 /// The process's resident set, in GB, for the traces.
 fn rss_gb() -> f64 {
-    std::fs::read_to_string("/proc/self/statm")
-        .ok()
-        .and_then(|s| {
-            s.split_whitespace()
-                .nth(1)
-                .and_then(|v| v.parse::<f64>().ok())
-        })
-        .unwrap_or(0.0)
-        * 4096.0
-        / 1e9
+    memory::gb(memory::rss_bytes())
 }
 
 /// Checks that need electrical connectivity (net extraction).  When connectivity is
@@ -406,25 +398,20 @@ type Reach = (i32, i32);
 /// core; a `grow` only dilates, so 1·r.  The radius part is charged even when no distance
 /// rule reads the virtual - a grow feeding a `forbidden` chain still needs its source
 /// within reach to be right per tile.
-/// How many polygon copies the merge cache may hold between rules: `GDSCHECK_CACHE_POLYS`,
-/// or a quarter of physical memory at the half kilobyte a copy costs on average.
-fn cache_budget_polys() -> usize {
+/// How many polygon copies the merge cache may hold between rules: `GDSCHECK_CACHE_POLYS`
+/// when set, else what the run's memory limit leaves after `resident` bytes - the
+/// flattened layout and the nets, which stay for the whole run - at
+/// [`memory::BYTES_PER_COPY`] each.  Planned once the resident part is known, so a
+/// 12 GB container with 7 GB resident plans 3.7 GB of cache, not a quarter of the
+/// machine it happens to run on.
+fn cache_budget_polys(limit: &memory::Limit, resident: u64) -> usize {
     if let Some(v) = std::env::var("GDSCHECK_CACHE_POLYS")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
     {
         return v;
     }
-    let total_kb = std::fs::read_to_string("/proc/meminfo")
-        .ok()
-        .and_then(|s| {
-            s.lines()
-                .find(|l| l.starts_with("MemTotal:"))
-                .and_then(|l| l.split_whitespace().nth(1))
-                .and_then(|v| v.parse::<u64>().ok())
-        })
-        .unwrap_or(32 * 1024 * 1024);
-    (total_kb * 1024 / 4 / 500) as usize
+    memory::cache_budget_polys(limit, resident)
 }
 
 fn propagate_virtual_halos(
@@ -938,6 +925,10 @@ pub struct RunOptions {
     /// dense layer whole and copies less of it into halos.  [`merge::TILE_UM`] is the
     /// default, and what the engine patterns are drawn against.
     pub tile_um: f64,
+    /// What the run may take of memory, in bytes, when the caller says: `--memory`,
+    /// `GDSCHECK_MEMORY`.  Else it is read from the cgroup or the machine, less a tenth
+    /// (see [`memory::limit`]).
+    pub memory_limit: Option<u64>,
 }
 
 impl Default for RunOptions {
@@ -950,7 +941,13 @@ impl Default for RunOptions {
             .ok()
             .and_then(|v| v.trim().parse::<f64>().ok())
             .unwrap_or(merge::TILE_UM);
-        RunOptions { tile_um }
+        let memory_limit = std::env::var("GDSCHECK_MEMORY")
+            .ok()
+            .and_then(|v| memory::parse_size(&v).ok());
+        RunOptions {
+            tile_um,
+            memory_limit,
+        }
     }
 }
 
@@ -1031,7 +1028,6 @@ fn run_drc_impl(
         }
         rules
     };
-
     // Lazy (tiled) virtual layers: built per tile in the merge cache rather than
     // materialised in the layout.  A whole-layout check (`forbidden` past a boundary)
     // therefore cannot see them, so reject that combination up front rather than
@@ -1353,9 +1349,6 @@ fn run_drc_impl(
             coming.insert(*key, i);
         }
     }
-    let budget = cache_budget_polys();
-    merged.set_budget(budget);
-
     // Net extraction is lazy: build it once, only if the deck actually has a net-aware
     // check and connectivity is enabled.  A geometry-only deck never pays for it.
     let net = if connectivity && rules.iter().any(net_aware) && !pdk.connectivity.is_empty() {
@@ -1435,6 +1428,32 @@ fn run_drc_impl(
         }
     }
     phase.end("net extraction");
+
+    // What stays resident is known now - the layout and the nets - and the merge
+    // cache gets what the limit leaves.  Said in one line, so a run that was slower or
+    // died for its memory can be read back to the number it planned with.
+    let limit = memory::limit(options.memory_limit);
+    let resident = memory::rss_bytes();
+    let budget = cache_budget_polys(&limit, resident);
+    merged.set_budget(budget);
+    if resident >= limit.bytes {
+        eprintln!(
+            "Memory: {:.1} GB resident is over the limit of {:.1} GB ({}); the merge cache \
+             is off and every layer is merged again when a rule needs it - expect a slow \
+             run, or a killed one if a rule's own working set does not fit either",
+            memory::gb(resident),
+            memory::gb(limit.bytes),
+            limit.source
+        );
+    } else {
+        println!(
+            "Memory: limit {:.1} GB ({}), {:.1} GB resident, {:.1} GB for the merge cache",
+            memory::gb(limit.bytes),
+            limit.source,
+            memory::gb(resident),
+            memory::gb(budget as u64 * memory::BYTES_PER_COPY)
+        );
+    }
 
     for (i, rule) in rules.iter().enumerate() {
         // What this rule needs of every layer in its closure, so a layer is merged at
