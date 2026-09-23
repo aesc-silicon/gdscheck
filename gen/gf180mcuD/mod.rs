@@ -48,6 +48,7 @@ mod sab;
 mod sram_3p3;
 mod sram_5p0;
 mod via;
+mod via_recommended;
 mod ymtp_mk;
 
 use gdscheck::pdk::PdkConfig;
@@ -96,6 +97,7 @@ pub fn generate(pdk: &PdkConfig) {
     sram_3p3::generate(pdk);
     sram_5p0::generate(pdk);
     via::generate(pdk);
+    via_recommended::generate(pdk);
     ymtp_mk::generate(pdk);
 }
 

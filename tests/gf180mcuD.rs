@@ -3328,3 +3328,56 @@ fn hardening_offgrid(#[case] gds: &str, #[case] topcell: &str, #[case] expected:
     expected.sort();
     assert_eq!(hardening("offgrid", gds, topcell, &[]), expected, "{gds}");
 }
+
+// --- Via enclosure guidance (hardening/reports/gf180mcuD/via_recommended.md).  Section
+// 7.14's third item of V*n*.3 and V*n*.4, "Minimum Metal[n] / Metal[n+1] overlap of Vian
+// on all sides for minimum Vian resistance variation (guideline): 0.12", which Appendix B
+// lists as not coded and which the foundry's runset therefore does not carry: on these
+// layouts the manual is the whole argument.  The expected values read the guideline per
+// side of the via, the way the engine's own enclosure family counts one marker per
+// deficient side, and euclidian, the settled reading of 2026-09-21.
+#[rstest]
+// Margins on Metal1 of 0.12 (clean), 0.115 on the left, 0.115 on the left and the bottom,
+// 0.115 on all four, 1.0 on the top (clean) and flush on the left.  Eight sides under the
+// value.  Report finding 2: gdscheck stops at one marker per via.
+#[case::v1_3_3_h1("via_recommended/V1.3.3.h1.gds.gz", "TOP", vec!["V1.3.3"; 8], vec![])]
+// The same against Metal2.
+#[case::v1_4_3_h1("via_recommended/V1.4.3.h1.gds.gz", "TOP", vec!["V1.4.3"; 8], vec![])]
+// Chamfered metal corners whose perpendicular approach to the via's corner is 0.1202
+// (clean), 0.1167 and 0.1061, every axis margin 0.20 or 0.15; the last of them repeated
+// on the metal above.  Report finding 1: the deck reads projection, so all of them are
+// silent.
+#[case::v1_3_3_h2("via_recommended/V1.3.3.h2.gds.gz", "TOP", vec!["V1.3.3", "V1.3.3", "V1.4.3"], vec![])]
+// An overlap of nothing on one side: the metal stopping half way across the via, ending
+// flush with its edge, and absent altogether - once below and once above.
+#[case::v1_3_3_h3("via_recommended/V1.3.3.h3.gds.gz", "TOP", vec!["V1.3.3", "V1.3.3", "V1.3.3", "V1.4.3", "V1.4.3", "V1.4.3"], vec![])]
+// One plate drawn as four overlapping boxes (clean), a hole in the plate 0.115 and 0.12
+// from the via, and a via alone in the hole of a metal ring 0.12 from its inner wall - a
+// boundary 0.12 away with no overlap at all.
+#[case::v1_3_3_h4("via_recommended/V1.3.3.h4.gds.gz", "TOP", vec!["V1.3.3", "V1.3.3"], vec![])]
+// The same 0.115 margin with its gap laid across x = 20, x = 42 and y = 20.
+#[case::v1_3_3_h5("via_recommended/V1.3.3.h5.gds.gz", "TOP", vec!["V1.3.3"; 3], vec![])]
+// Two vias under one Metal1 region, one 0.115 from its left wall and one 0.115 under a
+// notch in its top: the guideline is about a via, not about a plate.
+#[case::v1_3_3_h6("via_recommended/V1.3.3.h6.gds.gz", "TOP", vec!["V1.3.3"; 2], vec![])]
+// Via2 with Metal2 0.115 on its left and Metal3 0.115 on its right, and a second via of
+// the level generous on both: the level's layers, wired right.
+#[case::v2_3_3_h1("via_recommended/V2.3.3.h1.gds.gz", "TOP", vec!["V2.3.3", "V2.4.3"], vec![])]
+// Via3 between Metal3 and Metal4.
+#[case::v3_3_3_h1("via_recommended/V3.3.3.h1.gds.gz", "TOP", vec!["V3.3.3", "V3.4.3"], vec![])]
+// Via4 between Metal4 and Metal5, which is variant D's top metal.
+#[case::v4_3_3_h1("via_recommended/V4.3.3.h1.gds.gz", "TOP", vec!["V4.3.3", "V4.4.3"], vec![])]
+fn hardening_via_recommended(
+    #[case] gds: &str,
+    #[case] topcell: &str,
+    #[case] expected: Vec<&str>,
+    #[case] ignore: Vec<&str>,
+) {
+    let mut want: Vec<String> = expected.into_iter().map(ToString::to_string).collect();
+    want.sort();
+    assert_eq!(
+        hardening("via_recommended", gds, topcell, &ignore),
+        want,
+        "{gds}"
+    );
+}
