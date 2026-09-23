@@ -68,29 +68,10 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // max_width likewise one per wall (four on a square).
 // Three 0.145 bars (x, y, 300 µm long across every tile line) → two markers each.
 #[case::act_a_h1("activ/Act.a.h1.gds.gz", "TOP", vec!["Act.a"; 6], dens(&[]))]
-// 45°: a 0.148 diamond (4) and a 0.148 45° strip (2) fire; 0.156 and the chamfers are clean.
-#[case::act_a_h2("activ/Act.a.h2.gds.gz", "TOP", vec!["Act.a"; 6], dens(&["Act.d"]))]
-// Unions 0.145 wide (overlapping boxes, abutting slices, one ring side, an island) fire;
-// unions 0.15 wide and a bar drawn as a 3 × 10 grid are clean.
-#[case::act_a_h3("activ/Act.a.h3.gds.gz", "TOP", vec!["Act.a"; 8], dens(&[]))]
-// Ten 0.145 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
-#[case::act_a_h4("activ/Act.a.h4.gds.gz", "TOP", vec!["Act.a"; 20], dens(&[]))]
 // A 0.005 sliver and a 0.145 bar at (1000, 1000).
 #[case::act_a_h7("activ/Act.a.h7.gds.gz", "TOP", vec!["Act.a"; 4], dens(&["Act.d"]))]
-// A comb with three 0.145 teeth; a U with 0.15 arms is clean.
-#[case::act_a_h8("activ/Act.a.h8.gds.gz", "TOP", vec!["Act.a"; 6], dens(&[]))]
-// Gap 0.205, a 0.145/0.145 diagonal (0.205) and a corner-on 0.205 fire; 0.21 and the
-// 0.15/0.15 diagonal (0.212) are clean.
-#[case::act_b_h1("activ/Act.b.h1.gds.gz", "TOP", vec!["Act.b"; 3], dens(&[]))]
-// 45°: diamond tip to wall, two 45° strips, chamfer to corner, tip to tip at 0.205.
-#[case::act_b_h2("activ/Act.b.h2.gds.gz", "TOP", vec!["Act.b"; 4], dens(&[]))]
-// "Space or notch": straight and 45° notches (2 + 2), a comb with three 0.205 slots, a slot
-// in a plate, a keyhole ring with a 0.205 hole, two facing Ls, an island 0.205 from a ring.
-#[case::act_b_h3("activ/Act.b.h3.gds.gz", "TOP", vec!["Act.b"; 11], dens(&[]))]
 // Overlapping, abutting and gridded boxes each 0.205 from a third box: one each.
 #[case::act_b_h4("activ/Act.b.h4.gds.gz", "TOP", vec!["Act.b"; 3], dens(&[]))]
-// Ten 0.205 gaps on, across and straddling x = 20/21/40/42, incl. a corner on x = 20.
-#[case::act_b_h5("activ/Act.b.h5.gds.gz", "TOP", vec!["Act.b"; 10], dens(&[]))]
 // A 0.005 sliver 0.205 from a box, two 300 µm bars 0.205 apart, a pair at (1000, 1000).
 #[case::act_b_h8("activ/Act.b.h8.gds.gz", "TOP", vec!["Act.b"; 3], dens(&["Act.a", "Act.d"]))]
 // Activ 0.205 from Activ:filler is AFil.c1's and from Activ.mask nobody's; P+ to N+ Activ
@@ -106,8 +87,6 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // two abutting boxes, a gate across a sliver are nothing; the Activ past a gate *end*
 // inside the Activ reads as a 0.10 extension, in KLayout too (report, finding 1).
 #[case::act_c_h3("activ/Act.c.h3.gds.gz", "TOP", vec!["Act.c"; 3], dens(&["Act.a", "Act.d"]))]
-// Nine 0.225 S/Ds on, across and straddling x = 20/21/40/42, two of them 10 µm wide.
-#[case::act_c_h4("activ/Act.c.h4.gds.gz", "TOP", vec!["Act.c"; 9], dens(&[]))]
 // A 300 µm transistor, a 300 µm gate across a small Activ, one at (1000, 1000).
 #[case::act_c_h7("activ/Act.c.h7.gds.gz", "TOP", vec!["Act.c"; 3], dens(&[]))]
 // Two fingers with a 0.225 outer S/D; one gate across two Activs, the upper 0.615 wide.
@@ -118,12 +97,8 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // (0.12), a ring's material (0.12), an island (0.09) fire once each; two 0.09 boxes
 // touching at one corner are two regions (2) - report, finding 2.
 #[case::act_d_h2("activ/Act.d.h2.gds.gz", "TOP", vec!["Act.d"; 7], dens(&["Act.a", "Act.b", "Act.e"]))]
-// Nine 0.12 shapes on, across and straddling x = 20/21/40/42; 0.122 and 0.123 are clean.
-#[case::act_d_h3("activ/Act.d.h3.gds.gz", "TOP", vec!["Act.d"; 9], dens(&[]))]
 // A 0.01 sliver and a 0.12 box at (1000, 1000); a 0.005 × 30 sliver (0.15) is clean.
 #[case::act_d_h6("activ/Act.d.h6.gds.gz", "TOP", vec!["Act.d"; 2], dens(&["Act.a"]))]
-// Four 0.05 chamfers take a 0.1225 box to 0.1175; a 0.16 box with 0.1 chamfers keeps 0.14.
-#[case::act_d_h7("activ/Act.d.h7.gds.gz", "TOP", vec!["Act.d"; 1], dens(&[]))]
 // Holes of 0.1485, 0.149 (0.25 × 0.595), a 0.146 diamond and a 0.14 chamfered square fire;
 // 0.15, 0.157 and 0.16 are clean.
 #[case::act_e_h1("activ/Act.e.h1.gds.gz", "TOP", vec!["Act.e"; 4], dens(&[]))]
@@ -145,43 +120,27 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // fire, one each; 4.95, a 5.0 × 6 union and a 6 × 6 filler with a hole (2.75 wide) are
 // clean.
 #[case::afil_a_h2("activ/AFil.a.h2.gds.gz", "TOP", vec!["AFil.a"; 4], dens(&[]))]
-// Seven 5.005 squares on, across and straddling x = 20/21/40/42 and a 5.005-tall 30 µm
-// bar, one each; a 5.0 square straddling 20 and a 5.0-tall bar are clean.
-#[case::afil_a_h3("activ/AFil.a.h3.gds.gz", "TOP", vec!["AFil.a"; 8], dens(&[]))]
 // A 300 × 5.005 bar and a 5.005 square at (1000, 1000), one each.
 #[case::afil_a_h6("activ/AFil.a.h6.gds.gz", "TOP", vec!["AFil.a"; 2], dens(&[]))]
 // Three 0.995 bars (x, y, 300 µm long) → two markers each.  The 300 µm bars also draw
 // AFil.a on their length (finding 4), set aside here and in the cases below.
 #[case::afil_a1_h1("activ/AFil.a1.h1.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&["AFil.a"]))]
-// 45°: a 0.99 diamond (4) and a 0.99 strip (2) fire; 1.004 and a chamfered box are clean.
-#[case::afil_a1_h2("activ/AFil.a1.h2.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&[]))]
 // Unions 0.995 wide (overlap, slices, one ring side, an island) fire; 1.0 unions and a grid
 // are clean.
 #[case::afil_a1_h3("activ/AFil.a1.h3.gds.gz", "TOP", vec!["AFil.a1"; 8], dens(&["AFil.a"]))]
-// Ten 0.995 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
-#[case::afil_a1_h4("activ/AFil.a1.h4.gds.gz", "TOP", vec!["AFil.a1"; 20], dens(&["AFil.a"]))]
 // A 0.005 sliver and a 0.995 bar at (1000, 1000).
 #[case::afil_a1_h7("activ/AFil.a1.h7.gds.gz", "TOP", vec!["AFil.a1"; 4], dens(&[]))]
 // A comb with three 0.995 teeth; a U with 1.0 arms is clean.
 #[case::afil_a1_h8("activ/AFil.a1.h8.gds.gz", "TOP", vec!["AFil.a1"; 6], dens(&["AFil.a"]))]
-// Gap 0.415, a 0.295/0.295 diagonal (0.417) and a corner-on 0.415 fire; 0.42/0.424 clean.
-#[case::afil_b_h1("activ/AFil.b.h1.gds.gz", "TOP", vec!["AFil.b"; 3], dens(&[]))]
-// 45°: diamond tip to wall, two 45° strips, chamfer to corner, tip to tip at 0.415.
-#[case::afil_b_h2("activ/AFil.b.h2.gds.gz", "TOP", vec!["AFil.b"; 4], dens(&["AFil.a"]))]
 // "Space" without "or notch": 0.415 notches into a filler are not AFil.b's; two facing Ls
 // and an island in a ring at 0.415 are (report, note A).
 #[case::afil_b_h3("activ/AFil.b.h3.gds.gz", "TOP", vec!["AFil.b"; 2], dens(&[]))]
 // Overlapping, abutting and gridded boxes each 0.415 from a third filler: one each.
 #[case::afil_b_h4("activ/AFil.b.h4.gds.gz", "TOP", vec!["AFil.b"; 3], dens(&[]))]
-// Ten 0.415 gaps on, across and straddling x = 20/21/40/42, incl. a corner on x = 20.
-#[case::afil_b_h5("activ/AFil.b.h5.gds.gz", "TOP", vec!["AFil.b"; 10], dens(&["AFil.a"]))]
 // A 0.005 sliver 0.415 from a filler, two 300 µm bars 0.415 apart, a pair at (1000, 1000).
 #[case::afil_b_h8("activ/AFil.b.h8.gds.gz", "TOP", vec!["AFil.b"; 3], dens(&["AFil.a", "AFil.a1"]))]
 // A filler 0.415 from an Activ is AFil.c1's, from an Activ.mask nobody's.
 #[case::afil_b_h9("activ/AFil.b.h9.gds.gz", "TOP", vec![], dens(&["AFil.c1"]))]
-// A Cont and a GatPoly 1.095 away, a Cont and a GatPoly at a 0.775/0.775 diagonal (1.096)
-// fire; 1.10 and 0.78/0.78 (1.103) are clean.
-#[case::afil_c_h1("activ/AFil.c.h1.gds.gz", "TOP", vec!["AFil.c"; 4], dens(&[]))]
 // 45°: a GatPoly chamfer 1.096 from a filler's corner and a GatPoly diamond tip at 1.095
 // fire; a chamfer at 1.103 is clean.
 #[case::afil_c_h2("activ/AFil.c.h2.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&[]))]
@@ -189,12 +148,8 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // not GatPoly; a Cont overlapping the filler's edge shares area with it and is no pair,
 // as KLayout has it (report, finding 5).
 #[case::afil_c_h3("activ/AFil.c.h3.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&[]))]
-// Eight 1.095 gaps on, across and straddling x = 20/21/40/42, one to a 10 µm GatPoly.
-#[case::afil_c_h4("activ/AFil.c.h4.gds.gz", "TOP", vec!["AFil.c"; 8], dens(&["AFil.a"]))]
 // A 300 µm GatPoly 1.095 from a 300 µm filler, a pair at (1000, 1000).
 #[case::afil_c_h7("activ/AFil.c.h7.gds.gz", "TOP", vec!["AFil.c"; 2], dens(&["AFil.a"]))]
-// Gap 0.415, a 0.295/0.295 diagonal (0.417) and a corner-on 0.415 fire; 0.42/0.424 clean.
-#[case::afil_c1_h1("activ/AFil.c1.h1.gds.gz", "TOP", vec!["AFil.c1"; 3], dens(&[]))]
 // 45°: an Activ diamond tip, an Activ strip against a filler strip, a filler chamfer
 // against an Activ corner, all at 0.415-0.417.
 #[case::afil_c1_h2("activ/AFil.c1.h2.gds.gz", "TOP", vec!["AFil.c1"; 3], dens(&["AFil.a"]))]
@@ -302,15 +257,9 @@ const DECK_TGO: &str = "tgo";
 // 0.265 left, 0.265 top, 0.265 all round, a right margin of 0 and the 0.265 one of two
 // Activs under one oxide fire; an Activ crossing the oxide's edge (figure 5.7) is nothing.
 #[case::tgo_a_h1("tgo/TGO.a.h1.gds.gz", "TOP", vec!["TGO.a"; 5], vec![])]
-// A chamfer 0.265 from the Activ's corner, a diamond Activ in a square 0.265 from its
-// corners and a square Activ in a diamond whose walls pass 0.265 from its corners fire
-// (closest approach, one per corner: 1 + 4 + 4).
-#[case::tgo_a_h2("tgo/TGO.a.h2.gds.gz", "TOP", vec!["TGO.a"; 9], vec![])]
 // An oxide drawn as two boxes and an Activ drawn as four quadrants, 0.265 each, fire; an
 // Activ in an oxide ring's hole and one crossing its inner edge are nothing.
 #[case::tgo_a_h3("tgo/TGO.a.h3.gds.gz", "TOP", vec!["TGO.a"; 2], vec![])]
-// 0.265 on and across x = 20/21/40/42; a 0.27 across x = 20 is clean.
-#[case::tgo_a_h4("tgo/TGO.a.h4.gds.gz", "TOP", vec!["TGO.a"; 5], vec![])]
 // A 300 µm Activ 0.265 from its oxide's edge, and 0.265 at (1000, 1000).
 #[case::tgo_a_h7("tgo/TGO.a.h7.gds.gz", "TOP", vec!["TGO.a"; 2], vec![])]
 // 0.265 in x and y, 0.2687 corner to corner, an Activ in a ring's hole, one beside a
@@ -337,8 +286,6 @@ const DECK_TGO: &str = "tgo";
 // Activ, off the rule's `over` layer; an oxide and an Activ drawn as two boxes each, the
 // union's oxide edge 0.335 from the gate, fire.
 #[case::tgo_c_h2("tgo/TGO.c.h2.gds.gz", "TOP", vec!["TGO.c"; 1], vec![])]
-// 0.335 with the Activ's end on x = 20, straddling 21, on 40 and straddling 42.
-#[case::tgo_c_h3("tgo/TGO.c.h3.gds.gz", "TOP", vec!["TGO.c"; 4], vec![])]
 // 0.335 in x, 0.335 with the Activ 0.1 from the oxide (its TGO.b set aside), 0.335 from
 // the gate's width edge, 0.339 corner to corner, an abutting gate (a space of zero, its
 // TGO.b set aside) and 0.335 at (1000, 1000) fire; 0.3465 corner to corner is clean.
@@ -348,28 +295,15 @@ const DECK_TGO: &str = "tgo";
 #[case::tgo_d_h2("tgo/TGO.d.h2.gds.gz", "TOP", vec!["TGO.d"; 2], vec![])]
 // 0.335 gaps straddling and ending on x = 20, straddling 21, 40 and 42.
 #[case::tgo_d_h3("tgo/TGO.d.h3.gds.gz", "TOP", vec!["TGO.d"; 5], vec![])]
-// 0.855 in x and y, 0.854 corner to corner, 0.855 beside a 300 µm oxide and 0.855 at
-// (1000, 1000) fire; 0.8655 corner to corner and an x-gap of 0.855 whose corners are 0.906
-// apart are clean.
-#[case::tgo_e_h1("tgo/TGO.e.h1.gds.gz", "TOP", vec!["TGO.e"; 5], vec![])]
 // A U with a 0.855 slot, a comb with two, and a 0.855 slot into a plate fire: a notch is
 // the oxide's space to itself (report, finding 4); a U at 0.86 is clean.
 #[case::tgo_e_h2("tgo/TGO.e.h2.gds.gz", "TOP", vec!["TGO.e"; 4], vec![])]
-// Two 45° oxides 0.855 apart and a diamond's corner 0.855 from a wall fire; at 0.865 clean.
-#[case::tgo_e_h3("tgo/TGO.e.h3.gds.gz", "TOP", vec!["TGO.e"; 2], vec![])]
-// 0.855 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
-#[case::tgo_e_h4("tgo/TGO.e.h4.gds.gz", "TOP", vec!["TGO.e"; 7], vec![])]
 // 0.855 bars in x and y, a 0.005 sliver and a 0.855 × 300 bar fire, two walls each; 0.86 is
 // clean.
 #[case::tgo_f_h1("tgo/TGO.f.h1.gds.gz", "TOP", vec!["TGO.f"; 8], vec![])]
-// A 0.854 diamond (four walls) and a 0.854 45° strip (two) fire; 0.866 and a chamfered box
-// are clean.
-#[case::tgo_f_h2("tgo/TGO.f.h2.gds.gz", "TOP", vec!["TGO.f"; 6], vec![])]
 // Two overlapping boxes, two abutting slices and one ring side at 0.855 fire (two walls
 // each); a plate drawn as a 10 × 10 grid is clean.
 #[case::tgo_f_h3("tgo/TGO.f.h3.gds.gz", "TOP", vec!["TGO.f"; 6], vec![])]
-// 0.855 bars ending on, starting on and straddling x = 20/21/40/42 and one across x = 20.
-#[case::tgo_f_h4("tgo/TGO.f.h4.gds.gz", "TOP", vec!["TGO.f"; 12], vec![])]
 fn test_tgo(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -425,14 +359,9 @@ const DECK_GAT: &str = "gatpoly";
 // ignored where it serves another rule.
 // 0.125 bars in x and y, a 300 µm bar, a 0.005 sliver, a bar at (1000, 1000); 0.13 clean.
 #[case::gat_a_h1("gatpoly/Gat.a.h1.gds.gz", "TOP", vec!["Gat.a"; 10], vec!["GFil.g", "Gat.e"])]
-// 45°: a 0.127 diamond (4) and strip (2) fire; 0.134 and the chamfered shapes are clean.
-// The 3 µm 45° strips are Gat.g by both tools' reading of "45-degree bent shapes".
-#[case::gat_a_h2("gatpoly/Gat.a.h2.gds.gz", "TOP", vec!["Gat.a"; 6], vec!["GFil.g", "Gat.e", "Gat.g"])]
 // Unions 0.125 wide (overlapping boxes, abutting slices, a dogbone neck, one ring wall, an
 // island in a ring) fire once each; 0.13 unions and a 2 × 10 grid are clean.
 #[case::gat_a_h3("gatpoly/Gat.a.h3.gds.gz", "TOP", vec!["Gat.a"; 10], vec!["GFil.g"])]
-// Ten 0.125 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
-#[case::gat_a_h4("gatpoly/Gat.a.h4.gds.gz", "TOP", vec!["Gat.a"; 20], vec!["GFil.g"])]
 // A comb with three 0.125 teeth; a U with 0.13 arms is clean.
 #[case::gat_a_h7("gatpoly/Gat.a.h7.gds.gz", "TOP", vec!["Gat.a"; 6], vec!["GFil.g"])]
 // NFET = GatPoly over N+Activ, N+ by drawn nSD or by default: 0.125 gates on a bare Activ
@@ -472,18 +401,9 @@ const DECK_GAT: &str = "gatpoly";
 // Two 0.395 fingers of four, a dumbbell, gates straddling/ending on x = 20 and a horizontal
 // one across it; 0.40 straddling 20 is clean.
 #[case::gat_a4_h2("gatpoly/Gat.a4.h2.gds.gz", "TOP", vec!["Gat.a4"; 12], vec!["GFil.g"])]
-// Gap 0.175, a 0.125/0.125 diagonal (0.177), a corner-on 0.175 and a vertical 0.175 fire;
-// 0.18, the 0.13/0.13 diagonal (0.184) and 0.18 half-overlapping are clean.
-#[case::gat_b_h1("gatpoly/Gat.b.h1.gds.gz", "TOP", vec!["Gat.b"; 4], vec!["GFil.g"])]
-// 45°: diamond tip to wall 0.175, two 45° strips 0.173, chamfer to corner 0.177, tip to tip
-// 0.175 fire; 0.18/0.184 controls are clean.
-#[case::gat_b_h2("gatpoly/Gat.b.h2.gds.gz", "TOP", vec!["Gat.b"; 4], vec!["GFil.g"])]
 // "Space or notch": a U slot, three comb slots, a slot in a plate, two facing Ls, a ring
 // hole and an island in a ring, all 0.175.
 #[case::gat_b_h3("gatpoly/Gat.b.h3.gds.gz", "TOP", vec!["Gat.b"; 8], vec!["GFil.g"])]
-// Two unions 0.175 apart and a grid 0.175 from a bar fire once each; 0.175 gaps on, across
-// and straddling x = 20/21/40/42, a horizontal gap across 20 and a corner pair on (20, 20).
-#[case::gat_b_h4("gatpoly/Gat.b.h4.gds.gz", "TOP", vec!["Gat.b"; 10], vec!["GFil.g"])]
 // Two gate fingers 0.175 apart, a poly 0.175 past a gate's cap, a sliver 0.175 from a bar,
 // two 300 µm bars, a pair at (1000, 1000).
 #[case::gat_b_h7("gatpoly/Gat.b.h7.gds.gz", "TOP", vec!["Gat.b"; 5], vec!["GFil.g", "Gat.a", "Gat.e"])]
@@ -517,27 +437,15 @@ const DECK_GAT: &str = "gatpoly";
 // A 0.175 cap at (1000, 1000), across an Activ seam, and a gate drawn as two boxes (once);
 // under SRAM the deck does not check.
 #[case::gat_c_h6("gatpoly/Gat.c.h6.gds.gz", "TOP", vec!["Gat.c"; 3], vec!["GFil.g"])]
-// 0.065 beside, a 0.045/0.045 diagonal (0.0636), corner-on, above and below fire; 0.07 and
-// the 0.05/0.05 diagonal (0.0707) are clean.
-#[case::gat_d_h1("gatpoly/Gat.d.h1.gds.gz", "TOP", vec!["Gat.d"; 5], vec!["GFil.g"])]
-// 45°: diamond tip 0.065, a 45° wall 0.0636 from an Activ corner, a box corner 0.0636 from
-// an Activ chamfer, parallel 45° walls 0.0636 apart fire; 0.07/0.0707 controls are clean.
-#[case::gat_d_h2("gatpoly/Gat.d.h2.gds.gz", "TOP", vec!["Gat.d"; 4], vec!["GFil.g"])]
 // A poly abutting the Activ edge (space 0.00, `abutting: report`) and one touching its
 // corner fire; a gate 0.065 past a second Activ, a gate 0.065 short of its Activ, a poly
 // 0.065 from both arms of a U (one pair, the U being one region); a poly overlapping the
 // Activ by 0.05 is a gate (Gat.c, not Gat.d).
 #[case::gat_d_h3("gatpoly/Gat.d.h3.gds.gz", "TOP", vec!["Gat.d"; 5], vec!["GFil.g", "Gat.c"])]
-// 0.065 gaps on, across and straddling x = 20/21/40/42, a horizontal one across 20, a
-// corner pair on (20, 20), one at (1000, 1000), a 300 µm pair; 0.07 across 20 is clean.
-#[case::gat_d_h4("gatpoly/Gat.d.h4.gds.gz", "TOP", vec!["Gat.d"; 10], vec!["GFil.g"])]
 // 0.0885, a 0.0897 bar, a 0.0882 diamond, a 0.0885 union and a 0.0884 ring fire; 0.09 (a
 // box, a union, abutting halves, a grid) and an L of 0.1001 are clean.  The ring's 0.04
 // hole is a Gat.b notch.
 #[case::gat_e_h1("gatpoly/Gat.e.h1.gds.gz", "TOP", vec!["Gat.e"; 5], vec!["GFil.g", "Gat.b"])]
-// 0.0885 squares straddling x = 20, starting on 20, straddling 40 and 42, one at
-// (1000, 1000), a 0.0897 bar across 20; 0.09 squares across tile lines are clean.
-#[case::gat_e_h2("gatpoly/Gat.e.h2.gds.gz", "TOP", vec!["Gat.e"; 6], vec!["GFil.g"])]
 // 90° bends over the Activ: an L gate, a T stub, a notched gate (also Gat.a1) and a gate
 // stepping from 0.3 to 0.5 inside the Activ.
 #[case::gat_f_h1("gatpoly/Gat.f.h1.gds.gz", "TOP", vec!["Gat.f"; 4], vec!["GFil.g", "Gat.a1", "Gat.a"])]
@@ -552,36 +460,14 @@ const DECK_GAT: &str = "gatpoly";
 // L gates cornered on x = 20 and 40, straddling 42, at (1000, 1000), a 45° gate across
 // x = 20, one each; a straight gate across 20 is clean.
 #[case::gat_f_h4("gatpoly/Gat.f.h4.gds.gz", "TOP", vec!["Gat.f"; 5], vec!["GFil.g", "Gat.a", "Gat.c", "Gat.e"])]
-// 0.1591-wide 45° bands with walls 0.636, 0.396, 0.552, 0.566 and 0.544 long fire (two
-// walls each); 0.1626 wide, and 0.1591 with 0.389 walls, are clean.
-#[case::gat_g_h1("gatpoly/Gat.g.h1.gds.gz", "TOP", vec!["Gat.g"; 10], vec!["GFil.g", "Gat.a", "Gat.e"])]
-// Z routes 0.155 wide with a 0.1556 jog 0.636 long fire, up and mirrored down; a 0.354 jog
-// and a 0.1626 jog are clean; an L with a chamfered corner 0.1556 across, outer 45° edge
-// 0.495 and inner 0.368, has one wall under 0.39 and is clean, as KLayout reads it
-// (report, note G).
-#[case::gat_g_h2("gatpoly/Gat.g.h2.gds.gz", "TOP", vec!["Gat.g"; 4], vec!["GFil.g"])]
-// The firing Z route with its jog straddling x = 20, starting on 20, across 40 and 42, at
-// (1000, 1000).
-#[case::gat_g_h3("gatpoly/Gat.g.h3.gds.gz", "TOP", vec!["Gat.g"; 10], vec!["GFil.g"])]
 // The width is the narrowest dimension (`span: narrowest`, KLayout's 2.5 shrink): only
 // the 5.005 × 5.005 box and the 300 × 5.005 bar are over 5.00 in every direction, one
 // report each; 5.005 × 5, the 300 × 5 bar, the union, the L, the ring and the 5.005 × 5
 // squares across the tile lines are 5.0 wide and clean (report, note B).
 #[case::gfil_a_h1("gatpoly/GFil.a.h1.gds.gz", "TOP", vec!["GFil.a"; 2], vec!["GFil.g"])]
-// 45°: a diamond 5.02 across both diagonals fires, once; a strip 5.02 wide by 4.24 and a
-// strip 5.09 long by 3.5 are under 5.00 across, and clean, like 4.95 and a chamfered
-// 5 × 5.
-#[case::gfil_a_h2("gatpoly/GFil.a.h2.gds.gz", "TOP", vec!["GFil.a"; 1], vec!["GFil.g"])]
 // A 300 µm bar merged with a ring below it and one merged with a box: one report per
 // merged shape, whatever the tile size (report, finding 10).
 #[case::gfil_a_h5("gatpoly/GFil.a.h5.gds.gz", "TOP", vec!["GFil.a"; 2], vec!["GFil.g"])]
-// 0.695 in x and y, a 0.693 diamond (4) and strip (2), a 0.695 union, a 0.695 bar across
-// x = 20, a 300 µm bar, one at (1000, 1000); 0.70 and 0.707 shapes are clean.
-#[case::gfil_b_h1("gatpoly/GFil.b.h1.gds.gz", "TOP", vec!["GFil.b"; 18], vec!["GFil.g", "GFil.a"])]
-// 0.795, a 0.56/0.56 diagonal (0.792), a diamond tip 0.795 from a wall, an island 0.795
-// from a ring, gaps across x = 20 and 40, one at (1000, 1000), 300 µm bars fire; 0.80,
-// 0.806 are clean, and so is a 0.795 U slot: the manual says "space", not "space or notch".
-#[case::gfil_c_h1("gatpoly/GFil.c.h1.gds.gz", "TOP", vec!["GFil.c"; 8], vec!["GFil.g", "GFil.a"])]
 // Per layer (Activ, GatPoly, Cont, pSD, nSD:block, SalBlock): 1.095 and a 0.77/0.77
 // diagonal (1.089) fire, 1.10 and 1.103 are clean.
 #[case::gfil_d_h1("gatpoly/GFil.d.h1.gds.gz", "TOP", vec!["GFil.d"; 12], vec!["GFil.g"])]
@@ -940,16 +826,6 @@ const DECK_SAL: &str = "salblock";
 // Overlapping boxes 0.415 wide, a bar of three boxes, a frame's 0.415 side, a 0.005
 // sliver; unions of 0.42, halves, quadrants, a clockwise square and an island are clean.
 #[case::sal_a_h2("salblock/Sal.a.h2.gds.gz", "TOP", vec!["Sal.a"; 8], vec![])]
-// 0.415 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
-#[case::sal_a_h3("salblock/Sal.a.h3.gds.gz", "TOP", vec!["Sal.a"; 20], vec![])]
-// 0.415, 0.417 corner to corner, a diamond tip at 0.415, a chamfer 0.417 from a corner
-// and two chamfers 0.417 apart; 0.42, 0.424 and 0.1 in x with 0.42 in y are clean.
-#[case::sal_b_h1("salblock/Sal.b.h1.gds.gz", "TOP", vec!["Sal.b"; 5], vec![])]
-// A U and a straight-vs-45° notch of 0.415 both ways, a comb with three 0.415 slots, a
-// ring with a 0.415 hole, an island 0.415 from a ring's wall, two unions 0.415 apart.
-#[case::sal_b_h2("salblock/Sal.b.h2.gds.gz", "TOP", vec!["Sal.b"; 10], vec![])]
-// 0.415 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
-#[case::sal_b_h3("salblock/Sal.b.h3.gds.gz", "TOP", vec!["Sal.b"; 10], vec![])]
 // Extensions 0.195 on each side, all round, a chamfer 0.198 from the Activ's corner and
 // the Activ's edge on the block's edge fire; an Activ running out of the block with 0.7
 // beside it, 0.2 and a 0.205 chamfer are clean.
@@ -1005,25 +881,12 @@ const DECK_NSDB: &str = "nsdblock";
 // 0.305 bars in x and y, a 0.005 sliver and a 0.305 × 300 bar fire, two walls each; 0.31 is
 // clean.
 #[case::nsdb_a_h1("nsdblock/nSDB.a.h1.gds.gz", "TOP", vec!["nSDB.a"; 8], vec![])]
-// A 0.304 diamond (four walls) and a 0.304 45° strip (two) fire; 0.315 and a chamfered box
-// are clean.
-#[case::nsdb_a_h2("nsdblock/nSDB.a.h2.gds.gz", "TOP", vec!["nSDB.a"; 6], vec![])]
 // Two overlapping boxes, two abutting slices and one ring side at 0.305 fire (two walls
 // each); a plate drawn as a 10 × 10 grid is clean.
 #[case::nsdb_a_h3("nsdblock/nSDB.a.h3.gds.gz", "TOP", vec!["nSDB.a"; 6], vec![])]
-// 0.305 bars ending on, starting on and straddling x = 20/21/40/42 and one across x = 20.
-#[case::nsdb_a_h4("nsdblock/nSDB.a.h4.gds.gz", "TOP", vec!["nSDB.a"; 12], vec![])]
-// 0.305 in x and y, 0.304 corner to corner, 0.305 beside a 300 µm block and 0.305 at
-// (1000, 1000) fire; 0.3154 corner to corner and an x-gap of 0.305 whose corners are 0.428
-// apart are clean.
-#[case::nsdb_b_h1("nsdblock/nSDB.b.h1.gds.gz", "TOP", vec!["nSDB.b"; 5], vec![])]
 // A U with a 0.305 slot, a comb with two and a 0.305 slot into a plate fire; a U at 0.31 is
 // clean.
 #[case::nsdb_b_h2("nsdblock/nSDB.b.h2.gds.gz", "TOP", vec!["nSDB.b"; 4], vec![])]
-// Two 45° blocks 0.305 apart and a diamond's corner 0.305 from a wall fire; at 0.315 clean.
-#[case::nsdb_b_h3("nsdblock/nSDB.b.h3.gds.gz", "TOP", vec!["nSDB.b"; 2], vec![])]
-// 0.305 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
-#[case::nsdb_b_h4("nsdblock/nSDB.b.h4.gds.gz", "TOP", vec!["nSDB.b"; 7], vec![])]
 // 0.305 in x and y, 0.304 corner to corner, a pSD overlapping one arm of a U-shaped block
 // and 0.2 from its other arm (report, finding 13), a pSD in a block ring's hole 0.305 from
 // the wall and 0.305 at (1000, 1000) fire; 0.31, an abutting pSD and an overlapping one
@@ -1032,8 +895,6 @@ const DECK_NSDB: &str = "nsdblock";
 // A block's chamfered corner 0.305 from a pSD's corner and a diamond pSD's corner 0.305
 // from a block's wall fire.
 #[case::nsdb_c_h2("nsdblock/nSDB.c.h2.gds.gz", "TOP", vec!["nSDB.c"; 2], vec![])]
-// 0.305 gaps straddling, ending on and starting on x = 20, straddling 21, 40 and 42.
-#[case::nsdb_c_h3("nsdblock/nSDB.c.h3.gds.gz", "TOP", vec!["nSDB.c"; 6], vec![])]
 // A Cont inside a block, half over its edge, 0.005 over it, half over an edge on x = 20, in
 // a block straddling 21, at (1000, 1000), and a 0.16 × 0.5 bar in a block fire; a Cont
 // abutting the edge, touching at a corner and in a block ring's hole are no overlap.
@@ -1069,16 +930,6 @@ const DECK_NBLB: &str = "nbulayblock";
 #[case::nblb_a_h1("nbulayblock/NBLB.a.h1.gds.gz", "TOP", vec!["NBLB.a"; 14], vec!["NBLB.c"])]
 // Overlapping boxes 1.495 wide, a bar of three boxes, a frame's 1.495 side, a 0.005 sliver.
 #[case::nblb_a_h2("nbulayblock/NBLB.a.h2.gds.gz", "TOP", vec!["NBLB.a"; 8], vec!["NBLB.c"])]
-// 1.495 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
-#[case::nblb_a_h3("nbulayblock/NBLB.a.h3.gds.gz", "TOP", vec!["NBLB.a"; 20], vec!["NBLB.c"])]
-// 0.995, 0.997 corner to corner, a diamond tip at 0.995, a chamfer 0.997 from a corner
-// and two chamfers 0.997 apart; 1.0, 1.004 and 0.1 in x with 1.0 in y are clean.
-#[case::nblb_b_h1("nbulayblock/NBLB.b.h1.gds.gz", "TOP", vec!["NBLB.b"; 5], vec!["NBLB.c"])]
-// A U and a straight-vs-45° notch of 0.995 both ways, a comb with three slots, a ring
-// with a 0.995 hole, an island 0.995 from a ring's wall, two unions 0.995 apart.
-#[case::nblb_b_h2("nbulayblock/NBLB.b.h2.gds.gz", "TOP", vec!["NBLB.b"; 10], vec!["NBLB.c"])]
-// 0.995 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
-#[case::nblb_b_h3("nbulayblock/NBLB.b.h3.gds.gz", "TOP", vec!["NBLB.b"; 10], vec!["NBLB.c"])]
 // Enclosures 0.995 on each side, all round, a chamfer 0.997 from the block's corner, a
 // block half out of the nBuLay and a block edge on the nBuLay edge fire; 1.0 and a
 // 1.004 chamfer are clean.
@@ -1151,27 +1002,10 @@ const DECK_NBL: &str = "nbulay";
 #[case::nbl_a_h1("nbulay/NBL.a.h1.gds.gz", "TOP", vec!["NBL.a"; 14], vec![])]
 // Overlapping boxes 0.995 wide, a bar of three boxes, a frame's 0.995 side, a 0.005 sliver.
 #[case::nbl_a_h2("nbulay/NBL.a.h2.gds.gz", "TOP", vec!["NBL.a"; 8], vec![])]
-// 0.995 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
-#[case::nbl_a_h3("nbulay/NBL.a.h3.gds.gz", "TOP", vec!["NBL.a"; 20], vec![])]
-// 1.495, 1.499 corner to corner, a diamond tip at 1.495, a chamfer 1.499 from a corner
-// and two chamfers 1.499 apart; 1.5, 1.506 and 0.1 in x with 1.5 in y are clean for NBL.b.
-#[case::nbl_b_h1("nbulay/NBL.b.h1.gds.gz", "TOP", vec!["NBL.b"; 5], vec!["NBL.c"])]
-// "Space or notch": a U and a straight-vs-45° notch of 1.495 both ways, a comb with
-// three 1.495 slots and a ring with a 1.495 hole (eight, finding 3); an island 1.495 from
-// a ring's wall and two unions 1.495 apart (two).
-#[case::nbl_b_h2("nbulay/NBL.b.h2.gds.gz", "TOP", vec!["NBL.b"; 10], vec!["NBL.c"])]
-// 1.495 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
-#[case::nbl_b_h3("nbulay/NBL.b.h3.gds.gz", "TOP", vec!["NBL.b"; 10], vec!["NBL.c"])]
 // A square in a ring's hole 1.495 from the hole's right and top walls: two walls under
 // the value (the count moves with the tile size: finding 4).
 // One marker for the pair (the square and the ring are one region pair), at every tile.
 #[case::nbl_b_h6("nbulay/NBL.b.h6.gds.gz", "TOP", vec!["NBL.b"; 1], vec!["NBL.c"])]
-// Bare regions 3.195 apart, 3.196 corner to corner, a diamond tip at 3.195, a chamfer
-// 3.196 from a corner and two chamfers 3.196 apart; 3.2, 3.203 and 0.1 in x with 3.2 in
-// y are clean.
-#[case::nbl_c_h1("nbulay/NBL.c.h1.gds.gz", "TOP", vec!["NBL.c"; 5], vec![])]
-// 3.195 gaps on and across the tile lines, a corner on (80, 20), 300 µm bars, (1000, 1000).
-#[case::nbl_c_h3("nbulay/NBL.c.h3.gds.gz", "TOP", vec!["NBL.c"; 10], vec![])]
 // Two nBuLay 2.0 apart with a 0.7 PWell:block strip in the middle (0.65 of PWell either
 // side) fire; with the block over the whole gap there is no PWell between them (finding 6).
 #[case::nbl_c_h6("nbulay/NBL.c.h6.gds.gz", "TOP", vec!["NBL.c"], vec![])]
@@ -1260,16 +1094,6 @@ const DECK_PWB: &str = "pwellblock";
 #[case::pwb_a_h1("pwellblock/PWB.a.h1.gds.gz", "TOP", vec!["PWB.a"; 14], vec![])]
 // Overlapping boxes 0.615 wide, a bar of three boxes, a frame's 0.615 side, a 0.005 sliver.
 #[case::pwb_a_h2("pwellblock/PWB.a.h2.gds.gz", "TOP", vec!["PWB.a"; 8], vec![])]
-// 0.615 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
-#[case::pwb_a_h3("pwellblock/PWB.a.h3.gds.gz", "TOP", vec!["PWB.a"; 20], vec![])]
-// 0.615, 0.615 corner to corner, a diamond tip at 0.615, a chamfer 0.615 from a corner
-// and two chamfers 0.615 apart; 0.62, 0.622 and 0.1 in x with 0.62 in y are clean.
-#[case::pwb_b_h1("pwellblock/PWB.b.h1.gds.gz", "TOP", vec!["PWB.b"; 5], vec![])]
-// A U and a straight-vs-45° notch of 0.615 both ways, a comb with three slots, a ring
-// with a 0.615 hole, an island 0.615 from a ring's wall, two unions 0.615 apart.
-#[case::pwb_b_h2("pwellblock/PWB.b.h2.gds.gz", "TOP", vec!["PWB.b"; 10], vec![])]
-// 0.615 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
-#[case::pwb_b_h3("pwellblock/PWB.b.h3.gds.gz", "TOP", vec!["PWB.b"; 10], vec![])]
 // A well 0.615 from a block, 0.615 corner to corner, a block diamond tip and chamfer;
 // 0.62, 0.622, 0.1 in x with 0.62 in y and a well abutting the block (PWB.d) are clean.
 #[case::pwb_c_h1("pwellblock/PWB.c.h1.gds.gz", "TOP", vec!["PWB.c"; 4], vec![])]
@@ -1365,8 +1189,6 @@ const DECK_NW: &str = "nwell";
 // Merged unions 0.615 wide (overlapping boxes, abutting slices, one ring side, an island
 // in a ring) fire; unions 0.62 wide and a bar drawn as a 4 × 10 grid are clean.
 #[case::nw_a_h3("nwell/NW.a.h3.gds.gz", "TOP", vec!["NW.a"; 8], vec!["NW.b1"])]
-// Ten 0.615 bars on, across and straddling x = 20/21/40/42 plus an L cornered on x = 20.
-#[case::nw_a_h4("nwell/NW.a.h4.gds.gz", "TOP", vec!["NW.a"; 20], vec![])]
 // A 0.005 sliver and a 0.615 bar at (1000, 1000).
 #[case::nw_a_h7("nwell/NW.a.h7.gds.gz", "TOP", vec!["NW.a"; 4], vec![])]
 // A comb with three 0.615 teeth; a U with 0.62 arms is clean.
@@ -1374,16 +1196,8 @@ const DECK_NW: &str = "nwell";
 // Gap 0.615, a 0.43/0.43 diagonal (0.608) and a corner-to-corner 0.615 fire; 0.62 and the
 // 0.44/0.44 diagonal (0.622) are clean.  Bare wells under 1.80 apart also draw NW.b1.
 #[case::nw_b_h1("nwell/NW.b.h1.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.b1"])]
-// 45°: diamond tip to wall, two 45° strips, chamfer to corner, tip to tip at 0.615/0.601.
-#[case::nw_b_h2("nwell/NW.b.h2.gds.gz", "TOP", vec!["NW.b"; 4], vec!["NW.b1"])]
-// "Space or notch": straight and 45° notches (2 + 2), a comb with three 0.615 slots, a slot
-// in a plate, two facing Ls, a keyhole ring with a 0.615 hole, an island 0.615 from a ring.
-// The deck has no min_notch half for NW.b, so only the Ls and the island are reported.
-#[case::nw_b_h3("nwell/NW.b.h3.gds.gz", "TOP", vec!["NW.b"; 11], vec!["NW.b1"])]
 // Overlapping, abutting and gridded boxes each 0.615 from a third box: one each.
 #[case::nw_b_h4("nwell/NW.b.h4.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.b1"])]
-// Ten 0.615 gaps on, across and straddling x = 20/21/40/42, incl. a corner on x = 20.
-#[case::nw_b_h5("nwell/NW.b.h5.gds.gz", "TOP", vec!["NW.b"; 10], vec!["NW.b1"])]
 // A 0.005 sliver 0.615 from a box, two 300 µm bars 0.615 apart, a pair at (1000, 1000).
 #[case::nw_b_h8("nwell/NW.b.h8.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.a"])]
 // Two wells 0.50 apart on different Metal1 nets and two on one net: closer than 0.62 they
@@ -1682,46 +1496,30 @@ fn m1dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::m1_j_h2("metal1/M1.j.h2.gds.gz", "TOP", vec!["M1.j"], vec![])]
 // 0.995 fillers in x and y, a 300 µm bar, a 0.005 sliver, one at (1000, 1000).
 #[case::m1fil_a1_h1("metal1/M1Fil.a1.h1.gds.gz", "TOP", vec!["M1Fil.a1"; 10], m1dens(&["M1Fil.a2"]))]
-// A 0.99 diamond (4) and strip (2) fire; 1.004 and a chamfered box are clean.
-#[case::m1fil_a1_h2("metal1/M1Fil.a1.h2.gds.gz", "TOP", vec!["M1Fil.a1"; 6], m1dens(&[]))]
 // Unions 0.995 wide (overlap, slices, a ring wall, an island) fire two walls each.
 #[case::m1fil_a1_h3("metal1/M1Fil.a1.h3.gds.gz", "TOP", vec!["M1Fil.a1"; 8], m1dens(&[]))]
-// Ten 0.995 bars on, across and straddling x = 20/21/40/42 and an L cornered on 20.
-#[case::m1fil_a1_h4("metal1/M1Fil.a1.h4.gds.gz", "TOP", vec!["M1Fil.a1"; 20], m1dens(&["M1Fil.a2"]))]
 // A comb with three 0.995 teeth; a U with 1.0 arms is clean.
 #[case::m1fil_a1_h7("metal1/M1Fil.a1.h7.gds.gz", "TOP", vec!["M1Fil.a1"; 6], m1dens(&[]))]
 // 5.005 × 5, 5 × 5.005, 5.005 × 5.005, a 5.005 union, an L spanning 5.005, a ring 5.005
 // across and a diamond spanning 5.2 (3.68 between its walls) fire, one marker each: the
 // bounding box's long side, KLayout's `with_bbox_max`; 5 × 5 is clean.
 #[case::m1fil_a2_h1("metal1/M1Fil.a2.h1.gds.gz", "TOP", vec!["M1Fil.a2"; 7], m1dens(&[]))]
-// 5.005 boxes straddling 20 and 40 and at (1000, 1000); a 5 × 3 straddling 20 is clean.
-#[case::m1fil_a2_h2("metal1/M1Fil.a2.h2.gds.gz", "TOP", vec!["M1Fil.a2"; 3], m1dens(&[]))]
-// Gap 0.415, a 0.29/0.29 diagonal (0.410), corner-on 0.415; 0.42 and 0.424 are clean.
-#[case::m1fil_b_h1("metal1/M1Fil.b.h1.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&[]))]
-// 45° at 0.415: tip to wall, parallel strips, chamfer to corner, tip to tip.
-#[case::m1fil_b_h2("metal1/M1Fil.b.h2.gds.gz", "TOP", vec!["M1Fil.b"; 4], m1dens(&[]))]
 // Facing Ls and an island in a ring at 0.415 fire; a U's 0.415 slot is a notch, and
 // M1Fil.b says "space" (report).
 #[case::m1fil_b_h3("metal1/M1Fil.b.h3.gds.gz", "TOP", vec!["M1Fil.b"; 2], m1dens(&[]))]
 // Overlapping, abutting and gridded fillers each 0.415 from a third: one each.
 #[case::m1fil_b_h4("metal1/M1Fil.b.h4.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&[]))]
-// Ten 0.415 gaps on, across and straddling x = 20/21/40/42 incl. a corner pair.
-#[case::m1fil_b_h5("metal1/M1Fil.b.h5.gds.gz", "TOP", vec!["M1Fil.b"; 10], m1dens(&["M1Fil.a2"]))]
 // A 0.005 sliver 0.415 from a filler, two 300 µm bars 0.415 apart, a pair at (1000, 1000).
 #[case::m1fil_b_h8("metal1/M1Fil.b.h8.gds.gz", "TOP", vec!["M1Fil.b"; 3], m1dens(&["M1Fil.a1", "M1Fil.a2"]))]
 // A filler 0.415 from Metal1 is M1Fil.c's, from Metal1:mask nobody's; overlapping and
 // abutting fillers are one filler (5.5 wide, M1Fil.a2).
 #[case::m1fil_b_h9("metal1/M1Fil.b.h9.gds.gz", "TOP", vec!["M1Fil.c"], m1dens(&["M1Fil.a2"]))]
-// 0.415, a 0.410 diagonal and corner-on 0.415 fire; 0.42 and 0.424 are clean.
-#[case::m1fil_c_h1("metal1/M1Fil.c.h1.gds.gz", "TOP", vec!["M1Fil.c"; 3], m1dens(&[]))]
 // 45°: Metal1 tip to filler, filler chamfer to Metal1 corner, parallel strips, strip tip
 // to filler wall, all under 0.42.
 #[case::m1fil_c_h2("metal1/M1Fil.c.h2.gds.gz", "TOP", vec!["M1Fil.c"; 4], m1dens(&[]))]
 // A filler abutting Metal1 along an edge and one touching it at a corner point are 0.00
 // from it; a filler crossing the Metal1 edge or inside it shares area and is no pair.
 #[case::m1fil_c_h3("metal1/M1Fil.c.h3.gds.gz", "TOP", vec!["M1Fil.c"; 2], m1dens(&[]))]
-// Ten 0.415 gaps on, across and straddling x = 20/21/40/42 incl. a corner pair.
-#[case::m1fil_c_h4("metal1/M1Fil.c.h4.gds.gz", "TOP", vec!["M1Fil.c"; 10], m1dens(&["M1Fil.a2"]))]
 // A 0.005 Metal1 sliver, a 300 µm pair, a pair at (1000, 1000).
 #[case::m1fil_c_h7("metal1/M1Fil.c.h7.gds.gz", "TOP", vec!["M1Fil.c"; 3], m1dens(&["M1.a", "M1.d", "M1Fil.a2"]))]
 // 0.995, a 0.99 diagonal, corner-on 0.995, a TRANS diamond tip at 0.995 and an abutting
@@ -2554,29 +2352,16 @@ const DECK_TM1: &str = "topmetal1";
 // Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM1.a: 1.635 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 1.64 is clean.
 #[case::tm1_a_h1("topmetal1/TM1.a.h1.gds.gz", "TOP", vec!["TM1.a"; 10], vec!["TM1.c", "TM1.d"])]
-// A diamond (4) and a 45° strip (2) one grid step under the width; the on-grid step
-// above, a chamfered box and an L with a chamfered inner corner are clean.
-#[case::tm1_a_h2("topmetal1/TM1.a.h2.gds.gz", "TOP", vec!["TM1.a"; 6], vec!["TM1.c", "TM1.d"])]
 // Unions one step narrow (overlap, slices, one ring side, an island) fire once each; the
 // unions at the width and a gridded bar are clean.
 #[case::tm1_a_h3("topmetal1/TM1.a.h3.gds.gz", "TOP", vec!["TM1.a"; 8], vec!["TM1.c", "TM1.d"])]
-// Ten narrow bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
-#[case::tm1_a_h4("topmetal1/TM1.a.h4.gds.gz", "TOP", vec!["TM1.a"; 20], vec!["TM1.c", "TM1.d"])]
 // A comb with three narrow teeth; a U at the width is clean.
 #[case::tm1_a_h7("topmetal1/TM1.a.h7.gds.gz", "TOP", vec!["TM1.a"; 6], vec!["TM1.c", "TM1.d"])]
-// TM1.b: a gap one step under 1.64 in x and y, a corner-to-corner pair under it and a
-// corner-on pair; the gaps at 1.64 (straight, diagonal, corner-on) are clean.
-#[case::tm1_b_h1("topmetal1/TM1.b.h1.gds.gz", "TOP", vec!["TM1.b"; 4], vec!["TM1.c", "TM1.d"])]
 // 45°: a diamond tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, each
 // one step under; the controls at the value are clean.
 #[case::tm1_b_h2("topmetal1/TM1.b.h2.gds.gz", "TOP", vec!["TM1.b"; 4], vec!["TM1.c", "TM1.d"])]
-// "Space or notch": a U notch, a straight-vs-45° notch, a comb (two slots), a slot, a
-// keyhole hole, two facing Ls and an island in a ring, all one step under.
-#[case::tm1_b_h3("topmetal1/TM1.b.h3.gds.gz", "TOP", vec!["TM1.b"; 8], vec!["TM1.c", "TM1.d"])]
 // Two unions and a gridded plate one step under: once each; overlapping boxes are one shape.
 #[case::tm1_b_h4("topmetal1/TM1.b.h4.gds.gz", "TOP", vec!["TM1.b"; 2], vec!["TM1.c", "TM1.d"])]
-// Eleven gaps on, across and straddling x = 20/21/40/42 and y = 20/21, two corner-on.
-#[case::tm1_b_h5("topmetal1/TM1.b.h5.gds.gz", "TOP", vec!["TM1.b"; 11], vec!["TM1.c", "TM1.d"])]
 // A 0.005 sliver one step from a plate (its width is TM1.a's), 300 µm bars, (1000, 1000).
 #[case::tm1_b_h8("topmetal1/TM1.b.h8.gds.gz", "TOP", vec!["TM1.b"; 3], vec!["TM1.c", "TM1.d", "TM1.a"])]
 // The rule names no net: a pair joined through a via and the metal below fires like the
@@ -2606,17 +2391,12 @@ const DECK_TM1: &str = "topmetal1";
 // Unions 4.995 wide (overlap, slices, one ring wall, an island) fire once each; the rings'
 // spans are TM1Fil.a1's.
 #[case::tm1fil_a_h3("topmetal1/TM1Fil.a.h3.gds.gz", "TOP", vec!["TM1Fil.a"; 8], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
-// Ten 4.995 bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
-#[case::tm1fil_a_h4("topmetal1/TM1Fil.a.h4.gds.gz", "TOP", vec!["TM1Fil.a"; 20], vec!["TM1.c", "TM1.d"])]
 // A comb with three 4.995 teeth; a U with 5.0 arms is clean; both span over 10 (TM1Fil.a1's).
 #[case::tm1fil_a_h7("topmetal1/TM1Fil.a.h7.gds.gz", "TOP", vec!["TM1Fil.a"; 6], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
 // TM1Fil.a1 is the filler's long side (figure 5.23): 10.005 × 10, 10 × 10.005, 6 × 10.005, a
 // 6 × 300 bar and a bar at (1000, 1000) fire, one marker each (the bounding box's long
 // side, KLayout's `with_bbox_max`); 10 × 10 is clean.
 #[case::tm1fil_a1_h1("topmetal1/TM1Fil.a1.h1.gds.gz", "TOP", vec!["TM1Fil.a1"; 5], vec!["TM1.c", "TM1.d"])]
-// A diamond spanning 10.01 and a 45° strip spanning 10.245 fire, one shape each (the
-// count is the tool's cut; report, finding 2); 10.0 and 8.245 spans are clean.
-#[case::tm1fil_a1_h2("topmetal1/TM1Fil.a1.h2.gds.gz", "TOP", vec!["TM1Fil.a1"; 2], vec!["TM1.c", "TM1.d"])]
 // A 6 × 10.005 union, an abutting 10.005, a gridded 10.005 bar, an L spanning 12 and a
 // plus spanning 14 fire; the 6 × 10 union is clean.
 #[case::tm1fil_a1_h3("topmetal1/TM1Fil.a1.h3.gds.gz", "TOP", vec!["TM1Fil.a1"; 5], vec!["TM1.c", "TM1.d"])]
@@ -2624,8 +2404,6 @@ const DECK_TM1: &str = "topmetal1";
 #[case::tm1fil_a1_h4("topmetal1/TM1Fil.a1.h4.gds.gz", "TOP", vec!["TM1Fil.a1"; 10], vec!["TM1.c", "TM1.d"])]
 // A 0.005 × 10.005 sliver: TM1Fil.a1 on its length, TM1Fil.a on its width.
 #[case::tm1fil_a1_h7("topmetal1/TM1Fil.a1.h7.gds.gz", "TOP", vec!["TM1Fil.a1"], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
-// TM1Fil.b: 2.995 in x and y, a 2.998 diagonal, a corner-on 2.995; 3.0 and 3.005 are clean.
-#[case::tm1fil_b_h1("topmetal1/TM1Fil.b.h1.gds.gz", "TOP", vec!["TM1Fil.b"; 4], vec!["TM1.c", "TM1.d"])]
 // 45°: a tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, all 2.995;
 // the chamfered fillers are under TM1Fil.a themselves (note A), set aside here.
 #[case::tm1fil_b_h2("topmetal1/TM1Fil.b.h2.gds.gz", "TOP", vec!["TM1Fil.b"; 4], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
@@ -2634,14 +2412,9 @@ const DECK_TM1: &str = "topmetal1";
 #[case::tm1fil_b_h3("topmetal1/TM1Fil.b.h3.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d", "TM1Fil.a1"])]
 // Two unions and a gridded plate 2.995 apart: once each.
 #[case::tm1fil_b_h4("topmetal1/TM1Fil.b.h4.gds.gz", "TOP", vec!["TM1Fil.b"; 2], vec!["TM1.c", "TM1.d"])]
-// Ten 2.995 gaps on, across and straddling x = 20/21/40/42 and y = 20/21, one corner-on.
-#[case::tm1fil_b_h5("topmetal1/TM1Fil.b.h5.gds.gz", "TOP", vec!["TM1Fil.b"; 10], vec!["TM1.c", "TM1.d"])]
 // A 0.005 sliver 2.995 from a filler (its width is TM1Fil.a's), 6 × 10 fillers 2.995 apart,
 // a pair at (1000, 1000).
 #[case::tm1fil_b_h8("topmetal1/TM1Fil.b.h8.gds.gz", "TOP", vec!["TM1Fil.b"; 3], vec!["TM1.c", "TM1.d", "TM1Fil.a"])]
-// TM1Fil.c: 2.995 with the metal right, left and above, a 2.998 diagonal, a corner-on; 3.0
-// and 3.005 are clean, and so is a TM1.mask shape 2.995 away (the rule names the drawing layer).
-#[case::tm1fil_c_h1("topmetal1/TM1Fil.c.h1.gds.gz", "TOP", vec!["TM1Fil.c"; 5], vec!["TM1.c", "TM1.d"])]
 // 45°: a metal tip to a filler wall, a metal strip to a filler strip, a metal chamfer to a
 // filler corner, a filler chamfer to a metal corner, all 2.995; the chamfered fillers'
 // own TM1Fil.a (note A) set aside.
@@ -2701,29 +2474,16 @@ const DECK_TM2: &str = "topmetal2";
 // Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 2.00 is clean.
 #[case::tm2_a_h1("topmetal2/TM2.a.h1.gds.gz", "TOP", vec!["TM2.a"; 10], vec!["TM2.c", "TM2.d"])]
-// A diamond (4) and a 45° strip (2) one grid step under the width; the on-grid step
-// above, a chamfered box and an L with a chamfered inner corner are clean.
-#[case::tm2_a_h2("topmetal2/TM2.a.h2.gds.gz", "TOP", vec!["TM2.a"; 6], vec!["TM2.c", "TM2.d"])]
 // Unions one step narrow (overlap, slices, one ring side, an island) fire once each; the
 // unions at the width and a gridded bar are clean.
 #[case::tm2_a_h3("topmetal2/TM2.a.h3.gds.gz", "TOP", vec!["TM2.a"; 8], vec!["TM2.c", "TM2.d"])]
-// Ten narrow bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
-#[case::tm2_a_h4("topmetal2/TM2.a.h4.gds.gz", "TOP", vec!["TM2.a"; 20], vec!["TM2.c", "TM2.d"])]
 // A comb with three narrow teeth; a U at the width is clean.
 #[case::tm2_a_h7("topmetal2/TM2.a.h7.gds.gz", "TOP", vec!["TM2.a"; 6], vec!["TM2.c", "TM2.d"])]
-// TM2.b: a gap one step under 2.00 in x and y, a corner-to-corner pair under it and a
-// corner-on pair; the gaps at 2.00 (straight, diagonal, corner-on) are clean.
-#[case::tm2_b_h1("topmetal2/TM2.b.h1.gds.gz", "TOP", vec!["TM2.b"; 4], vec!["TM2.c", "TM2.d"])]
 // 45°: a diamond tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, each
 // one step under; the controls at the value are clean.
 #[case::tm2_b_h2("topmetal2/TM2.b.h2.gds.gz", "TOP", vec!["TM2.b"; 4], vec!["TM2.c", "TM2.d"])]
-// "Space or notch": a U notch, a straight-vs-45° notch, a comb (two slots), a slot, a
-// keyhole hole, two facing Ls and an island in a ring, all one step under.
-#[case::tm2_b_h3("topmetal2/TM2.b.h3.gds.gz", "TOP", vec!["TM2.b"; 8], vec!["TM2.c", "TM2.d"])]
 // Two unions and a gridded plate one step under: once each; overlapping boxes are one shape.
 #[case::tm2_b_h4("topmetal2/TM2.b.h4.gds.gz", "TOP", vec!["TM2.b"; 2], vec!["TM2.c", "TM2.d"])]
-// Eleven gaps on, across and straddling x = 20/21/40/42 and y = 20/21, two corner-on.
-#[case::tm2_b_h5("topmetal2/TM2.b.h5.gds.gz", "TOP", vec!["TM2.b"; 11], vec!["TM2.c", "TM2.d"])]
 // A 0.005 sliver one step from a plate (its width is TM2.a's), 300 µm bars, (1000, 1000).
 #[case::tm2_b_h8("topmetal2/TM2.b.h8.gds.gz", "TOP", vec!["TM2.b"; 3], vec!["TM2.c", "TM2.d", "TM2.a"])]
 // The rule names no net: a pair joined through a via and the metal below fires like the
@@ -2753,17 +2513,12 @@ const DECK_TM2: &str = "topmetal2";
 // Unions 4.995 wide (overlap, slices, one ring wall, an island) fire once each; the rings'
 // spans are TM2Fil.a1's.
 #[case::tm2fil_a_h3("topmetal2/TM2Fil.a.h3.gds.gz", "TOP", vec!["TM2Fil.a"; 8], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
-// Ten 4.995 bars on, across and straddling x = 20/21/40/42 plus an L cornered on 20.
-#[case::tm2fil_a_h4("topmetal2/TM2Fil.a.h4.gds.gz", "TOP", vec!["TM2Fil.a"; 20], vec!["TM2.c", "TM2.d"])]
 // A comb with three 4.995 teeth; a U with 5.0 arms is clean; both span over 10 (TM2Fil.a1's).
 #[case::tm2fil_a_h7("topmetal2/TM2Fil.a.h7.gds.gz", "TOP", vec!["TM2Fil.a"; 6], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
 // TM2Fil.a1 is the filler's long side (figure 5.23): 10.005 × 10, 10 × 10.005, 6 × 10.005, a
 // 6 × 300 bar and a bar at (1000, 1000) fire, one marker each (the bounding box's long
 // side, KLayout's `with_bbox_max`); 10 × 10 is clean.
 #[case::tm2fil_a1_h1("topmetal2/TM2Fil.a1.h1.gds.gz", "TOP", vec!["TM2Fil.a1"; 5], vec!["TM2.c", "TM2.d"])]
-// A diamond spanning 10.01 and a 45° strip spanning 10.245 fire, one shape each (the
-// count is the tool's cut; report, finding 2); 10.0 and 8.245 spans are clean.
-#[case::tm2fil_a1_h2("topmetal2/TM2Fil.a1.h2.gds.gz", "TOP", vec!["TM2Fil.a1"; 2], vec!["TM2.c", "TM2.d"])]
 // A 6 × 10.005 union, an abutting 10.005, a gridded 10.005 bar, an L spanning 12 and a
 // plus spanning 14 fire; the 6 × 10 union is clean.
 #[case::tm2fil_a1_h3("topmetal2/TM2Fil.a1.h3.gds.gz", "TOP", vec!["TM2Fil.a1"; 5], vec!["TM2.c", "TM2.d"])]
@@ -2771,8 +2526,6 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2fil_a1_h4("topmetal2/TM2Fil.a1.h4.gds.gz", "TOP", vec!["TM2Fil.a1"; 10], vec!["TM2.c", "TM2.d"])]
 // A 0.005 × 10.005 sliver: TM2Fil.a1 on its length, TM2Fil.a on its width.
 #[case::tm2fil_a1_h7("topmetal2/TM2Fil.a1.h7.gds.gz", "TOP", vec!["TM2Fil.a1"], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
-// TM2Fil.b: 2.995 in x and y, a 2.998 diagonal, a corner-on 2.995; 3.0 and 3.005 are clean.
-#[case::tm2fil_b_h1("topmetal2/TM2Fil.b.h1.gds.gz", "TOP", vec!["TM2Fil.b"; 4], vec!["TM2.c", "TM2.d"])]
 // 45°: a tip to a wall, two 45° strips, a chamfer to a corner, tip to tip, all 2.995;
 // the chamfered fillers are under TM2Fil.a themselves (note A), set aside here.
 #[case::tm2fil_b_h2("topmetal2/TM2Fil.b.h2.gds.gz", "TOP", vec!["TM2Fil.b"; 4], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
@@ -2781,14 +2534,9 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2fil_b_h3("topmetal2/TM2Fil.b.h3.gds.gz", "TOP", vec!["TM2Fil.b"; 2], vec!["TM2.c", "TM2.d", "TM2Fil.a1"])]
 // Two unions and a gridded plate 2.995 apart: once each.
 #[case::tm2fil_b_h4("topmetal2/TM2Fil.b.h4.gds.gz", "TOP", vec!["TM2Fil.b"; 2], vec!["TM2.c", "TM2.d"])]
-// Ten 2.995 gaps on, across and straddling x = 20/21/40/42 and y = 20/21, one corner-on.
-#[case::tm2fil_b_h5("topmetal2/TM2Fil.b.h5.gds.gz", "TOP", vec!["TM2Fil.b"; 10], vec!["TM2.c", "TM2.d"])]
 // A 0.005 sliver 2.995 from a filler (its width is TM2Fil.a's), 6 × 10 fillers 2.995 apart,
 // a pair at (1000, 1000).
 #[case::tm2fil_b_h8("topmetal2/TM2Fil.b.h8.gds.gz", "TOP", vec!["TM2Fil.b"; 3], vec!["TM2.c", "TM2.d", "TM2Fil.a"])]
-// TM2Fil.c: 2.995 with the metal right, left and above, a 2.998 diagonal, a corner-on; 3.0
-// and 3.005 are clean, and so is a TM2.mask shape 2.995 away (the rule names the drawing layer).
-#[case::tm2fil_c_h1("topmetal2/TM2Fil.c.h1.gds.gz", "TOP", vec!["TM2Fil.c"; 5], vec!["TM2.c", "TM2.d"])]
 // 45°: a metal tip to a filler wall, a metal strip to a filler strip, a metal chamfer to a
 // filler corner, a filler chamfer to a metal corner, all 2.995; the chamfered fillers'
 // own TM2Fil.a (note A) set aside.
@@ -2866,18 +2614,6 @@ const DECK_PAS: &str = "passiv";
 // strip and a diamond of 2.093, an L of 2.095 arms (four), a 2.095 neck, a 0.005 sliver,
 // a 300 µm bar and a bar at (1000, 1000); 2.1 straight, at 45° and as a diamond are clean.
 #[case::pas_a_h1("passiv/Pas.a.h1.gds.gz", "TOP", vec!["Pas.a"; 22], vec![])]
-// 2.095 bars across x = 20 and 21, across 40 and 42, starting on 100, across y = 20 and
-// ending on x = 20 (two walls each); a 2.1 bar across 60 is clean.
-#[case::pas_a_h2("passiv/Pas.a.h2.gds.gz", "TOP", vec!["Pas.a"; 10], vec![])]
-// Pas.b: 3.495 straight, corner to corner under 3.5 (euclidian), two 45° strips 3.493
-// apart, a U of 3.49, a comb with two 3.495 slots, a 3.495 slot, a ring with a 3.49
-// hole (both ways), a 3 square 3.495 from the walls of a ring's hole (one pair), a merged
-// shape 3.495 from a square; 3.5 straight, 3.507 corner to corner, dx = 3 with dy = 6,
-// strips 3.5002 apart, a U of 3.5 and a square 3.5 from a hole's walls are clean.
-#[case::pas_b_h1("passiv/Pas.b.h1.gds.gz", "TOP", vec!["Pas.b"; 11], vec![])]
-// 3.495 gaps across x = 20 and 21, across 40, starting on 20, ending on 42, across 100,
-// at (1000, 1000) and corner to corner on (60, 60).
-#[case::pas_b_h2("passiv/Pas.b.h2.gds.gz", "TOP", vec!["Pas.b"; 7], vec![])]
 // Pas.c: in the hole of an EdgeSeal frame, TopMetal2 2.095 short on the right, a corner
 // cut passing 2.093 from the opening's corner and an opening with no TopMetal2 fire;
 // 2.1, a cut passing 2.104 and TopMetal2 as two abutting boxes are clean; an opening
@@ -2980,16 +2716,6 @@ const DECK_LBE: &str = "lbe";
 #[case::lbe_b2_h1("lbe/LBE.b2.h1.gds.gz", "TOP",
     vec!["LBE.b2", "LBE.b2", "LBE.b2", "LBE.c", "LBE.a"],
     vec!["LBE.i"])]
-// LBE.c: 99.995 apart, 99.985 corner to corner, a 99.995 notch, a corner 99.99 from a
-// 45° wall; 100 apart and 100.006 corner to corner are clean.
-#[case::lbe_c_h1("lbe/LBE.c.h1.gds.gz", "TOP", vec!["LBE.c"; 4], vec!["LBE.i"])]
-// LBE.d: 149.995 from the inner wall, a corner 149.99 from a 45° inner wall.
-#[case::lbe_d_h1("lbe/LBE.d.h1.gds.gz", "TOP", vec!["LBE.d"; 2], vec!["LBE.i"])]
-// LBE.e: a dfpad 49.995 away, a Passiv 49.995 away, a Passiv corner 49.99 away, a 45°
-// Passiv wall 49.99 away, a Passiv over the LBE's corner.
-#[case::lbe_e_h1("lbe/LBE.e.h1.gds.gz", "TOP", vec!["LBE.e"; 5], vec!["LBE.i"])]
-// LBE.f: an Activ 29.995 away, a corner 29.995 away, a 45° wall 29.99 away.
-#[case::lbe_f_h1("lbe/LBE.f.h1.gds.gz", "TOP", vec!["LBE.f"; 3], vec!["LBE.i"])]
 // LBE.h: a ring, two abutting U's, a ring with an island, a polygon with a hole, a ring
 // with 45° corners; a U is open, and a C with a 0.005 gap is open (the gap is LBE.c).
 #[case::lbe_h_h1("lbe/LBE.h.h1.gds.gz", "TOP",
@@ -3031,16 +2757,6 @@ const DECK_EXTB: &str = "extblock";
 #[case::extb_a_h1("extblock/EXTB.a.h1.gds.gz", "TOP", vec!["EXTB.a"; 14], vec![])]
 // Overlapping boxes 0.305 wide, a bar of three boxes, a frame's 0.305 side, a 0.005 sliver.
 #[case::extb_a_h2("extblock/EXTB.a.h2.gds.gz", "TOP", vec!["EXTB.a"; 8], vec![])]
-// 0.305 bars on and across the tile lines, at (1000, 1000), and 300 µm long.
-#[case::extb_a_h3("extblock/EXTB.a.h3.gds.gz", "TOP", vec!["EXTB.a"; 20], vec![])]
-// 0.305, 0.304 corner to corner, a diamond tip at 0.305, a chamfer 0.304 from a corner
-// and two chamfers 0.304 apart; 0.31, 0.311 and 0.1 in x with 0.31 in y are clean.
-#[case::extb_b_h1("extblock/EXTB.b.h1.gds.gz", "TOP", vec!["EXTB.b"; 5], vec![])]
-// A U and a straight-vs-45° notch of 0.305 both ways, a comb with three slots, a ring
-// with a 0.305 hole, an island 0.305 from a ring's wall, two unions 0.305 apart.
-#[case::extb_b_h2("extblock/EXTB.b.h2.gds.gz", "TOP", vec!["EXTB.b"; 10], vec![])]
-// 0.305 gaps on and across the tile lines, a corner on (60, 20), 300 µm bars, (1000, 1000).
-#[case::extb_b_h3("extblock/EXTB.b.h3.gds.gz", "TOP", vec!["EXTB.b"; 10], vec![])]
 // pSD 0.305 from a block, 0.304 corner to corner, a block diamond tip and chamfer, and
 // pSD abutting the block (0: finding 1); 0.31, 0.311 and 0.1 in x with 0.31 in y are clean.
 #[case::extb_c_h1("extblock/EXTB.c.h1.gds.gz", "TOP", vec!["EXTB.c"; 5], vec![])]
@@ -3207,25 +2923,12 @@ const DECK_PSD: &str = "psd";
 // 0.305 bars in x and y, a 0.005 sliver (a pSD.k, set aside) and a 0.305 × 300 bar fire,
 // two walls each; 0.31 is clean.
 #[case::psd_a_h1("psd/pSD.a.h1.gds.gz", "TOP", vec!["pSD.a"; 8], vec!["pSD.k"])]
-// A 0.304 diamond (four walls) and a 0.304 45° strip (two) fire; 0.315 and a chamfered box
-// are clean (the diamonds' pSD.k set aside).
-#[case::psd_a_h2("psd/pSD.a.h2.gds.gz", "TOP", vec!["pSD.a"; 6], vec!["pSD.k"])]
 // Two overlapping boxes, two abutting slices and one ring side at 0.305 fire (two walls
 // each); a plate drawn as a 10 × 10 grid is clean.
 #[case::psd_a_h3("psd/pSD.a.h3.gds.gz", "TOP", vec!["pSD.a"; 6], vec![])]
-// 0.305 bars ending on, starting on and straddling x = 20/21/40/42 and one across x = 20.
-#[case::psd_a_h4("psd/pSD.a.h4.gds.gz", "TOP", vec!["pSD.a"; 12], vec![])]
-// 0.305 in x and y, 0.304 corner to corner, 0.305 beside a 300 µm pSD and 0.305 at
-// (1000, 1000) fire; 0.3154 corner to corner and an x-gap of 0.305 whose corners are 0.428
-// apart are clean.
-#[case::psd_b_h1("psd/pSD.b.h1.gds.gz", "TOP", vec!["pSD.b"; 5], vec![])]
 // "Min. pSD space or notch": a U with a 0.305 slot, a comb with two and a 0.305 slot into
 // a plate fire (report, finding 5); a U at 0.31 is clean.
 #[case::psd_b_h2("psd/pSD.b.h2.gds.gz", "TOP", vec!["pSD.b"; 4], vec![])]
-// Two 45° pSDs 0.305 apart and a diamond's corner 0.305 from a wall fire; at 0.315 clean.
-#[case::psd_b_h3("psd/pSD.b.h3.gds.gz", "TOP", vec!["pSD.b"; 2], vec![])]
-// 0.305 gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42 and y = 20.
-#[case::psd_b_h4("psd/pSD.b.h4.gds.gz", "TOP", vec!["pSD.b"; 7], vec![])]
 // 0.175 left, 0.175 top and 0.175 all round fire; a flush edge (figure 5.10's "f not
 // required"), an Activ without pSD, one a pSD abuts and one 0.5 from a pSD are clean.
 #[case::psd_c_h1("psd/pSD.c.h1.gds.gz", "TOP", vec!["pSD.c"; 3], vec![])]
@@ -3291,11 +2994,6 @@ const DECK_PSD: &str = "psd";
 // A 45° pSD wall 0.295 from the gate's corner, a diamond pSD's corner 0.295 above the
 // gate, and 0.295 on and across x = 20/21/40/42 fire.
 #[case::psd_j_h2("psd/pSD.j.h2.gds.gz", "TOP", vec!["pSD.j"; 6], vec![])]
-// 0.2475, a 0.245 diamond, a 0.24 union of two boxes, 0.2475 across x = 20/21/40, two 0.16
-// boxes touching at a corner (two; their pSD.a/b set aside), 0.16 at (1000, 1000) and a 0.2
-// sliver (a pSD.a) fire; 0.25, a 0.2592 diamond and two abutting boxes adding to 0.25 are
-// clean.
-#[case::psd_k_h1("psd/pSD.k.h1.gds.gz", "TOP", vec!["pSD.k"; 10], vec!["pSD.a", "pSD.b"])]
 // A 0.2475 hole, a 0.49 hole holding a 0.25 island (0.24 empty; the island's pSD.b set
 // aside; report, finding 12), an L-shaped hole of 0.24, and 0.2475 holes across x = 20, 21
 // and at (1000, 1000) fire; 0.25 is clean.
@@ -3362,12 +3060,6 @@ const DECK_RESISTOR: &str = "resistor";
 #[case::rsil_a_h2("resistor/Rsil.a.h2.gds.gz", "TOP", vec!["Rsil.a"; 6], vec!["Rsil.f"])]
 // 0.495 bodies across x = 20, ending on x = 40, starting on x = 42, across y = 20, 300 µm long, at (1000, 1000).
 #[case::rsil_a_h3("resistor/Rsil.a.h3.gds.gz", "TOP", vec!["Rsil.a"; 12], vec!["Rsil.f"])]
-// Rsil.b: a Cont 0.115 from the RES, 0.08/0.08 corner to corner (0.113), abutting the RES
-// (finding 2), a bare Cont 0.115 below; 0.12, 0.115/0.06 (0.130), a Cont crossing the
-// RES's end (shares area, no pair) and a bare Cont at 0.12 are clean.
-#[case::rsil_b_h1("resistor/Rsil.b.h1.gds.gz", "TOP", vec!["Rsil.b"; 4], vec![])]
-// 0.115 across x = 20, RES starting on x = 42, a Cont ending on x = 60, 300 µm, (1000, 1000); a Cont ending on x = 40 at 0.12 is clean.
-#[case::rsil_b_h2("resistor/Rsil.b.h2.gds.gz", "TOP", vec!["Rsil.b"; 5], vec![])]
 // Finding 1, decided: Rsil.c is the RES stopping short of the poly's *long* edge - the
 // strip of poly it leaves outside along that edge, which the heads' full width tells
 // apart from them.  The RES 0.05 inside the top edge and 0.05 inside both edges fire
@@ -3866,9 +3558,6 @@ const DECK_ANTENNA: &str = "antenna";
 // one marker per gate.  "Max. ratio" is met at the value: 200.0 is clean, 200.2 fires.
 // Metal1 19.98, 20.0 and 20.02 µm² on one gate: 199.8, 200.0, 200.2.
 #[case::ant_b_h1("antenna/Ant.b.h1.gds.gz", "TOP", vec!["Ant.b"], vec![])]
-// Wires across x = 20 and 40 (200.2, 199.8), ending on x = 40 (210), an L across x = 20
-// and y = 40 (200.2).
-#[case::ant_b_h2("antenna/Ant.b.h2.gds.gz", "TOP", vec!["Ant.b"; 3], vec![])]
 // Two gates under 30 µm² (150, clean); one under 30 (300); figure 7.1's per-level sum:
 // G1 195 + 10 at Metal2 (205, fires), G2 10 + 10 (clean), 112.5 on the whole net; the
 // gate's Activ as two boxes (200.2); Metal1 as two overlapping boxes, 19.98 in union.
@@ -4016,26 +3705,10 @@ const DECK_MIM: &str = "mim";
 // strip and a diamond of 1.1314, an L of 1.135 arms (four), a 1.135 neck, a 0.005 sliver,
 // a 300 µm bar and a bar at (1000, 1000); 1.14 straight, at 45° and as a diamond are clean.
 #[case::mim_a_h1("mim/MIM.a.h1.gds.gz", "TOP", vec!["MIM.a"; 22], vec!["MIM.f", "MIM.h"])]
-// 1.135 bars across x = 20 and 21, across 40, starting on 100, across y = 20 and ending
-// on x = 42 (two walls each); a 1.14 bar across 7 is clean.
-#[case::mim_a_h2("mim/MIM.a.h2.gds.gz", "TOP", vec!["MIM.a"; 10], vec!["MIM.h"])]
-// MIM.b is a space, not a notch (the manual's wording; report, note E): 0.595 straight,
-// 0.594 corner to corner, two 45° strips 0.594 apart, a 2 square 0.595 from the walls
-// of a ring's hole (one pair), a merged shape 0.595 from a square fire; a U of 0.59, a
-// comb with 0.595 slots and a ring with a 0.59 hole do not; 0.6, 0.601 corner to
-// corner, dx = 0.5 with dy = 3, strips 0.601 apart, a U of 0.6 and a square 0.6 from a
-// hole's walls are clean.
-#[case::mim_b_h1("mim/MIM.b.h1.gds.gz", "TOP", vec!["MIM.b"; 5], vec!["MIM.f", "MIM.h"])]
-// 0.595 gaps across x = 20 and 21, starting on 40, ending on 42, across 100, at (1000,
-// 1000) and corner to corner on (60, 60).
-#[case::mim_b_h2("mim/MIM.b.h2.gds.gz", "TOP", vec!["MIM.b"; 7], vec!["MIM.h"])]
 // MIM.c: Metal5 0.595 on the right, a corner cut passing 0.594, no Metal5, the plate
 // 0.5 over Metal5's edge, 0.595 all round (one run); 0.6, a cut passing 0.601 and two
 // abutting boxes are clean.
 #[case::mim_c_h1("mim/MIM.c.h1.gds.gz", "TOP", vec!["MIM.c"; 5], vec![])]
-// 0.595 margins ending on x = 20, starting on 20, across 40, across 100 and at (1000,
-// 1000); 0.6 starting on 20 is clean.
-#[case::mim_c_h2("mim/MIM.c.h2.gds.gz", "TOP", vec!["MIM.c"; 5], vec![])]
 // MIM.d: a via 0.355 from a wall, 0.355 from two walls (one run), a via 0.2 over the
 // plate's wall, a via 0.2 over its corner, a corner cut passing 0.3536 from the via's
 // corner; 0.36, a cut passing 0.3606, a via outside the plate and a Vmim at 0.355 are
@@ -4044,11 +3717,6 @@ const DECK_MIM: &str = "mim";
 // 0.355 margins ending on x = 20, starting on 20, across 40, across 100 and at (1000,
 // 1000); 0.36 starting on 20 is clean.
 #[case::mim_d_h2("mim/MIM.d.h2.gds.gz", "TOP", vec!["MIM.d"; 5], vec![])]
-// MIM.e: a TopMetal1 wire 0.595 from the plate, 0.594 corner to corner, the cap's own
-// exit wire turning back along the plate's wall 0.595 outside it, a 45° wall passing
-// 0.594 from the plate's corner; 0.6, 0.601 corner to corner, the top plate over the
-// MIM and its exit wire crossing the MIM's wall are clean (report, finding 6).
-#[case::mim_e_h1("mim/MIM.e.h1.gds.gz", "TOP", vec!["MIM.e"; 4], vec![])]
 // MIM.f per device: 1.2996, 1.2935 and two 1.0 squares touching at a corner; 1.3053,
 // 1.3, two 1.0 squares sharing a wall (2.0), overlapping (1.75) and an L of 2.04 are
 // clean.
@@ -4057,8 +3725,6 @@ const DECK_MIM: &str = "mim";
 // (6000), an L of 7500, 75 × 75.005 as two boxes; 75 × 75, 100 × 56.25 and a ring of
 // 5500 are clean.
 #[case::mim_g_h1("mim/MIM.g.h1.gds.gz", "TOP", vec!["MIM.g"; 5], vec![])]
-// MIM.gR: 32 caps of 74 × 74 (175232) placed by one GdsArrayRef.
-#[case::mim_gr_h1("mim/MIM.gR.h1.gds.gz", "TOP", vec!["MIM.gR"], vec![])]
 // MIM.h per device: no via, a via abutting the plate from outside, a ring with the via
 // in its hole, no via at (1000, 1000); a TopVia1, a Vmim, two plates sharing a wall
 // with one via are clean; a via 0.2 over the wall is over the plate (MIM.d instead).
@@ -4083,8 +3749,6 @@ const DECK_FORBIDDEN: &str = "forbidden";
 // forbidden shape.  A BiWind across x = 20 and 40, one at (1000, 1000), a BiWind and a PEmWind
 // overlapping, a 0.005 NoDRC square.
 #[case("forbidden/forbidden.h1.gds.gz", "TOP", vec!["forbidden"; 5], vec![])]
-// Fifty LDMOS boxes, flat and as a GdsArrayRef.
-#[case("forbidden/forbidden.h2.gds.gz", "TOP", vec!["forbidden"; 50], vec![])]
 #[case("forbidden/forbidden.h3.gds.gz", "TOP", vec!["forbidden"; 50], vec![])]
 fn test_forbidden(
     #[case] gds: &str,

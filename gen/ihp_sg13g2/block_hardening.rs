@@ -8,14 +8,14 @@
 //! with section 4.2's derived layers (N+Activ, P+Activ, PWell, the generated nBuLay).
 //! Every layout is `tests/data/ihp-sg13g2/<deck>/<RULE>.h<k>.gds.gz`.
 //!
-//! The width and space rules of the five block layers share two kits (`width_kit`,
-//! `space_kit`), the two-layer space rules a third (`space2_kit`); the conditions of each
-//! rule - which Activ is N+, what "in PWell" or "unrelated" means, the generated nBuLay -
-//! are drawn rule by rule below.
+//! The width rules of the five block layers share a kit (`width_kit`), the two-layer
+//! space rules another (`space2_kit`); their plain space rules are read on the engine's
+//! patterns (`gen/engine/space.rs`), and the conditions of each rule - which Activ is N+,
+//! what "in PWell" or "unrelated" means, the generated nBuLay - are drawn rule by rule
+//! below.
 
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, diamond, layer, library, mixed_notch_pattern, notch_pattern, poly,
-    rect, strap, strip45, tap, write_gz,
+    chamfered_tr, diamond, layer, library, poly, rect, strap, strip45, tap, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -115,42 +115,11 @@ fn ring(
     ]
 }
 
-/// A comb: a plate `(x, y)-(x + width, y + height)` with `n` slots of width `slot` and
-/// depth `depth` cut into its top edge, teeth `tooth` wide between them.
-#[allow(clippy::too_many_arguments)]
-fn comb(
-    l: (i16, i16),
-    x: f64,
-    y: f64,
-    height: f64,
-    n: usize,
-    slot: f64,
-    depth: f64,
-    tooth: f64,
-) -> GdsElement {
-    let mut pts = vec![(x, y)];
-    let width = tooth * (n + 1) as f64 + slot * n as f64;
-    pts.push((x + width, y));
-    pts.push((x + width, y + height));
-    let mut cx = x + width;
-    for _ in 0..n {
-        cx -= tooth;
-        pts.push((cx, y + height));
-        pts.push((cx, y + height - depth));
-        cx -= slot;
-        pts.push((cx, y + height - depth));
-        pts.push((cx, y + height));
-    }
-    pts.push((x, y + height));
-    poly(l, &pts)
-}
-
 // --- The kits ---
 
 /// Min. width `w` of layer `l` (`s`, the largest space the deck asks of the layer, keeps
 /// the sub-patterns apart): `<rule>.h1` the bound and the 45° shapes, `.h2` shapes that
-/// merge, `.h3` the tile lines, a 300 µm bar and (1000, 1000), `.h4`/`.h5` fifty flat and
-/// as an array.
+/// merge.  The tile lines are the engine's (`gen/engine/width.rs`).
 fn width_kit(p: &P, deck: &str, rule: &str, l: (i16, i16), w: f64, s: f64) {
     let d = w - G;
     let len = grid(3.0 * w).max(1.0);
@@ -268,198 +237,6 @@ fn width_kit(p: &P, deck: &str, rule: &str, l: (i16, i16), w: f64, s: f64) {
     x += o + gap;
     e.push(rect(l, x, y, x + G, y + len));
     p.write(deck, &format!("{rule}.h2"), e);
-
-    // h3 - tile lines.  d bars (two walls each) inside a tile at x = 10, straddling
-    // x = 20, ending on 20, starting on 20, straddling 21, 40 and 42, one straddling
-    // y = 20, one at (1000, 1000); a d × 300 bar across every line at y = 30; a w bar
-    // straddling x = 40 is clean.
-    let row = len + gap;
-    let e = vec![
-        rect(l, 9.9, 2.0, 9.9 + d, 2.0 + len),
-        rect(l, 19.9, 2.0, 19.9 + d, 2.0 + len),
-        rect(l, 20.0 - d, 2.0 + row, 20.0, 2.0 + row + len),
-        rect(l, 20.0, 2.0 + 2.0 * row, 20.0 + d, 2.0 + 2.0 * row + len),
-        rect(l, 20.9, 2.0 + 3.0 * row, 20.9 + d, 2.0 + 3.0 * row + len),
-        rect(l, 39.9, 2.0, 39.9 + d, 2.0 + len),
-        rect(l, 41.9, 2.0 + 2.0 * row, 41.9 + d, 2.0 + 2.0 * row + len),
-        rect(l, 10.0, 19.9, 10.0 + len, 19.9 + d),
-        rect(l, 1000.0, 1000.0, 1000.0 + d, 1000.0 + len),
-        rect(l, 2.0, 30.0, 302.0, 30.0 + d),
-        rect(l, 39.9, 2.0 + 3.0 * row, 39.9 + w, 2.0 + 3.0 * row + len),
-    ];
-    p.write(deck, &format!("{rule}.h3"), e);
-}
-
-/// Min. space (and notch) `s` of layer `l`, whose min. width is `w` (`clear`, the largest
-/// space the deck asks of the layer, keeps the sub-patterns apart): `<rule>.h1` the bound
-/// and both metrics, `.h2` notches and unions (when `notch`), `.h3` the tile lines, a
-/// 300 µm pair and (1000, 1000), `.h4`/`.h5` fifty flat and as an array.
-#[allow(clippy::too_many_arguments)]
-fn space_kit(
-    p: &P,
-    deck: &str,
-    rule: &str,
-    l: (i16, i16),
-    s: f64,
-    w: f64,
-    clear: f64,
-    notch: bool,
-) {
-    let d = s - G;
-    let q = 2.0 * s.max(w);
-    let gap = clear.max(s) + 1.0;
-    let av = diag_under(s);
-    let ac = diag_over(s);
-    let bx = |x: f64, y: f64| rect(l, x, y, x + q, y + q);
-
-    // h1 - the bound and both metrics.  Pairs at s (clean) and d (fires); corner to
-    // corner at av/av (av·√2 under s, fires) and ac/ac (clean); 0.1 in x with s in y
-    // (clean: the euclidian gap is over s); a diamond tip d from a wall (fires) and s
-    // (clean); a corner facing a chamfer av·√2 away (fires) and ac·√2 (clean); two
-    // parallel chamfers av·√2 apart (fires) and ac·√2 (clean).
-    let y = 2.0;
-    let mut x = 2.0;
-    let mut e = vec![bx(x, y), bx(x + q + s, y)];
-    x += 2.0 * q + s + gap;
-    e.push(bx(x, y));
-    e.push(bx(x + q + d, y));
-    x += 2.0 * q + d + gap;
-    for a in [av, ac] {
-        e.push(bx(x, y));
-        e.push(bx(x + q + a, y + q + a));
-        x += 2.0 * q + a + gap;
-    }
-    e.push(bx(x, y));
-    e.push(bx(x + q + 0.1, y + q + s));
-    x += 2.0 * q + gap;
-    for g in [d, s] {
-        e.push(bx(x, y));
-        e.push(diamond(l, x + q + g + q / 2.0, y + q / 2.0, q / 2.0));
-        x += 2.0 * q + g + gap;
-    }
-    for a in [av, ac] {
-        let c = 2.0 * a + 0.1;
-        let qa = q + c;
-        e.push(chamfered_tr(l, x, y, x + qa, y + qa, x + qa + y + qa - c));
-        e.push(bx(x + qa - 0.05, y + qa - 0.05));
-        x += qa + q + gap;
-    }
-    for a in [av, ac] {
-        let qa = q + 2.0 * a;
-        let k1 = x + qa + y + qa - 2.0 * a;
-        e.push(chamfered_tr(l, x, y, x + qa, y + qa, k1));
-        e.push(chamfered_bl(
-            l,
-            x + qa - a,
-            y + qa - a,
-            x + 2.0 * qa - a,
-            y + 2.0 * qa - a,
-            k1 + 2.0 * a,
-        ));
-        x += 2.0 * qa + gap;
-    }
-    p.write(deck, &format!("{rule}.h1"), e);
-
-    // h2 - notches and unions.  A U notch and a straight-vs-45° notch of d (the helpers'
-    // patterns, s controls beside them); a comb with three d slots; a ring whose hole is d
-    // wide; a square in a ring's hole d from one inner wall (s from the others); two
-    // unions (each two overlapping boxes) d apart.
-    if notch {
-        let t = w + 0.1;
-        let mut e = notch_pattern(l, t, s, gap, 2.0, -G);
-        let size = (s + 2.0 * t).max(1.0);
-        let ny = size + gap;
-        e.extend(
-            mixed_notch_pattern(l, t, s, 0.5, gap, 2.0, -G)
-                .into_iter()
-                .map(|el| shift1(&el, 0.0, ny)),
-        );
-        let ny2 = ny + (d + 0.5 + 2.0 * t).max(1.0) + gap;
-        let mut x = 2.0;
-        e.push(comb(l, x, ny2, 2.0 * s + t, 3, d, 2.0 * s, t));
-        x += 4.0 * t + 3.0 * d + gap;
-        let o = grid(3.0 * s + 2.0 * t);
-        e.extend(ring(
-            l,
-            x,
-            ny2,
-            x + o,
-            ny2 + o,
-            x + t,
-            ny2 + t,
-            x + t + d,
-            ny2 + o - t,
-        ));
-        x += o + gap;
-        let (ox, oy) = (q + s + d + 2.0 * t, q + 2.0 * s + 2.0 * t);
-        e.extend(ring(
-            l,
-            x,
-            ny2,
-            x + ox,
-            ny2 + oy,
-            x + t,
-            ny2 + t,
-            x + ox - t,
-            ny2 + oy - t,
-        ));
-        e.push(rect(
-            l,
-            x + t + s,
-            ny2 + t + s,
-            x + t + s + q,
-            ny2 + t + s + q,
-        ));
-        x += ox + gap;
-        e.push(rect(l, x, ny2, x + q - 0.1, ny2 + q));
-        e.push(rect(l, x + 0.1, ny2, x + q, ny2 + q));
-        e.push(rect(l, x + q + d, ny2, x + 2.0 * q + d - 0.1, ny2 + q));
-        e.push(rect(l, x + q + d + 0.1, ny2, x + 2.0 * q + d, ny2 + q));
-        p.write(deck, &format!("{rule}.h2"), e);
-    }
-
-    // h3 - tile lines.  d gaps straddling x = 20 (three rows: the gap over the line, the
-    // gap starting on it, the gap ending on it), straddling 21, 40 and 42, one straddling
-    // y = 20 at x = xy (30, or further right of the x = 20 column for a large value), a
-    // corner-to-corner pair whose corner is on (xc, 20) (60, or the next multiple of 20
-    // clear of the x = 42 column), a 300 µm pair at y = 60, one at (1000, 1000).
-    let row = q + gap;
-    let xy = 30f64.max(grid(20.0 + d + q + gap));
-    let xc = 60f64.max(((42.0 + d + 2.0 * q + gap) / 20.0).ceil() * 20.0);
-    let e = vec![
-        bx(19.9 - q, 2.0),
-        bx(19.9 + d, 2.0),
-        bx(20.0 - q, 2.0 + row),
-        bx(20.0 + d, 2.0 + row),
-        bx(20.0 - d - q, 2.0 + 2.0 * row),
-        bx(20.0, 2.0 + 2.0 * row),
-        bx(20.9 - q, 2.0 + 3.0 * row),
-        bx(20.9 + d, 2.0 + 3.0 * row),
-        bx(39.9 - q, 2.0),
-        bx(39.9 + d, 2.0),
-        bx(41.9 - q, 2.0 + row),
-        bx(41.9 + d, 2.0 + row),
-        bx(xy, 19.9 - q),
-        bx(xy, 19.9 + d),
-        bx(xc - q, 20.0 - q),
-        bx(xc + av, 20.0 + av),
-        rect(l, 2.0, 60.0, 302.0, 60.0 + w + 0.1),
-        rect(
-            l,
-            2.0,
-            60.0 + w + 0.1 + d,
-            302.0,
-            60.0 + 2.0 * (w + 0.1) + d,
-        ),
-        bx(1000.0, 1000.0),
-        bx(1000.0 + q + d, 1000.0),
-    ];
-    p.write(deck, &format!("{rule}.h3"), e);
-}
-
-/// Translate one element.
-fn shift1(e: &GdsElement, dx: f64, dy: f64) -> GdsElement {
-    crate::helpers::shift(std::slice::from_ref(e), dx, dy).remove(0)
 }
 
 /// A two-layer space rule of value `s` between a `free` layer (drawn as any polygon: the
@@ -538,9 +315,8 @@ fn space2_kit(
     p.write(deck, &format!("{rule}.h1"), e);
 
     // h2 - tile lines.  d gaps straddling x = 20 (over the line, starting on it, ending
-    // on it), straddling 21, 40, 42, y = 20 at x = xy, a corner on (xc, 20) (as in
-    // `space_kit`), a 300 µm free strip d from a fixed box at y = 60, one pair at (1000,
-    // 1000).
+    // on it), straddling 21, 40, 42, y = 20 at x = xy, a corner on (xc, 20), a 300 µm
+    // free strip d from a fixed box at y = 60, one pair at (1000, 1000).
     let row = q.max(qf) + gap;
     let xy = 30f64.max(grid(20.0 + d + q.max(qf) + gap));
     let xc = 60f64.max(((42.0 + d + 2.0 * q.max(qf) + gap) / 20.0).ceil() * 20.0);
@@ -604,7 +380,6 @@ fn pwellblock(p: &P) {
     let deck = "pwellblock";
     let b = p.pwb;
     width_kit(p, deck, "PWB.a", b, 0.62, 0.62);
-    space_kit(p, deck, "PWB.b", b, 0.62, 0.62, 0.62, true);
 
     // PWB.c - min. PWell:block space to NWell 0.62; PWB.d - overlap is allowed.  The kit
     // with the well as the fixed box; its abutting pair is legal (PWB.d).
@@ -888,10 +663,8 @@ fn nbulay(p: &P) {
     let n = p.nbl;
     width_kit(p, deck, "NBL.a", n, 1.0, 3.2);
     // NBL.b - space or notch (same net) 1.50: the notch half is in h2.
-    space_kit(p, deck, "NBL.b", n, 1.5, 1.0, 3.2, true);
     // NBL.c - PWell width between nBuLay regions (different net) 3.20.  Bare regions are
     // different nets; no notch layout: a notch is one region.
-    space_kit(p, deck, "NBL.c", n, 3.2, 1.0, 3.2, false);
 
     // NBL.b.h6 - a 3 × 3 square in a ring's hole 1.495 from the hole's right and top
     // walls (1.5 from the others): two walls under the value, two markers.
@@ -1121,7 +894,6 @@ fn nbulayblock(p: &P) {
     let deck = "nbulayblock";
     let b = p.nblb;
     width_kit(p, deck, "NBLB.a", b, 1.5, 1.0);
-    space_kit(p, deck, "NBLB.b", b, 1.0, 1.5, 1.0, true);
 
     // NBLB.c - nBuLay enclosure of nBuLay:block 1.00.  The kit with a 2 × 2 block.
     let blk = |x0: f64, y0: f64, x1: f64, y1: f64| vec![rect(b, x0, y0, x1, y1)];
@@ -1193,7 +965,6 @@ fn extblock(p: &P) {
     let deck = "extblock";
     let l = p.extb;
     width_kit(p, deck, "EXTB.a", l, 0.31, 0.31);
-    space_kit(p, deck, "EXTB.b", l, 0.31, 0.31, 0.31, true);
     // EXTB.c - EXTBlock space to pSD 0.31; pSD alone is pSD.
     let psd = |x0: f64, y0: f64, x1: f64, y1: f64| vec![rect(p.psd, x0, y0, x1, y1)];
     space2_kit(
@@ -1215,7 +986,6 @@ fn salblock(p: &P) {
     let deck = "salblock";
     let sb = p.sal;
     width_kit(p, deck, "Sal.a", sb, 0.42, 0.42);
-    space_kit(p, deck, "Sal.b", sb, 0.42, 0.42, 0.42, true);
 
     // Sal.c - SalBlock extension over Activ or GatPoly 0.20.  The kit with a 0.5 Activ.
     let act = |x0: f64, y0: f64, x1: f64, y1: f64| vec![rect(p.activ, x0, y0, x1, y1)];

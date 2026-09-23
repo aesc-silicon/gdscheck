@@ -1464,20 +1464,6 @@ fn m1fil_a1_h(l: &L) {
         ],
     );
 
-    // h2 — 45°.  A diamond a = 0.71 (1.004 wide) is clean, a = 0.70 (0.99) fires four
-    // walls; a 45° strip d = 0.71 is clean, d = 0.70 fires two; a chamfered box is clean.
-    // Six.
-    write(
-        "M1Fil.a1.h2",
-        vec![
-            diamond(f, 3.0, 3.0, 0.71),
-            diamond(f, 6.0, 3.0, 0.70),
-            strip45(f, 8.0, 2.0, 2.0, 0.71),
-            strip45(f, 12.0, 2.0, 2.0, 0.70),
-            chamfered_tr(f, 2.0, 6.0, 4.0, 8.0, 11.5),
-        ],
-    );
-
     // h3 — unions.  Two overlapping 0.6 boxes making 1.0 are clean, making 0.995 fire
     // once; two abutting slices 0.5 + 0.495 fire once; a 1.0 bar as a 4 × 6 grid is
     // clean; a ring with one 0.995 wall fires once; a 0.995 island in a ring's hole fires
@@ -1500,36 +1486,6 @@ fn m1fil_a1_h(l: &L) {
     e.extend(l.ring(f, 8.0, 7.0, 12.0, 11.0, 9.0, 8.0, 11.0, 10.0));
     e.push(rect(f, 9.5, 8.5, 10.495, 9.5));
     write("M1Fil.a1.h3", e);
-
-    // h4 — tile lines.  0.995 bars ending on x = 20, straddling 20, starting on 20,
-    // straddling 21, ending on 40, straddling 42, at 10; 0.995-tall bars across 20/21 and
-    // 40/42; an L cornered on x = 20 with a 0.995 vertical arm.  Ten.
-    write(
-        "M1Fil.a1.h4",
-        vec![
-            rect(f, 9.005, 2.0, 10.0, 5.0),
-            rect(f, 19.005, 2.0, 20.0, 5.0),
-            rect(f, 19.5, 7.0, 20.495, 10.0),
-            rect(f, 20.0, 12.0, 20.995, 15.0),
-            rect(f, 20.5, 17.0, 21.495, 20.0),
-            rect(f, 39.005, 2.0, 40.0, 5.0),
-            rect(f, 41.5, 7.0, 42.495, 10.0),
-            rect(f, 15.0, 22.0, 25.0, 22.995),
-            rect(f, 35.0, 22.0, 45.0, 22.995),
-            poly(
-                f,
-                &[
-                    (20.0, 25.0),
-                    (24.0, 25.0),
-                    (24.0, 26.5),
-                    (20.995, 26.5),
-                    (20.995, 30.0),
-                    (20.0, 30.0),
-                ],
-            ),
-            rect(f, 19.5, 32.0, 20.5, 35.0), // clean
-        ],
-    );
 
     // h7 — a comb with three 0.995 teeth (six) and a U with 1.0 arms (clean); the slots
     // are 0.5 wide.
@@ -1605,58 +1561,12 @@ fn m1fil_a2_h(l: &L) {
     e.extend(l.ring(f, 16.0, 9.0, 21.005, 14.0, 17.5, 10.5, 19.5, 12.5));
     e.push(diamond(f, 26.0, 12.0, 2.6));
     write("M1Fil.a2.h1", e);
-
-    // h2 — tile lines.  5.005 × 3 boxes straddling x = 20 and x = 40, one at (1000, 1000);
-    // a 5 × 3 box straddling 20 is clean.  Six.
-    write(
-        "M1Fil.a2.h2",
-        vec![
-            rect(f, 17.5, 2.0, 22.505, 5.0),
-            rect(f, 37.5, 2.0, 42.505, 5.0),
-            rect(f, 1000.0, 1000.0, 1005.005, 1003.0),
-            rect(f, 17.5, 7.0, 22.5, 10.0),
-        ],
-    );
 }
 
 // --- M1Fil.b: min. Metal1:filler space 0.42 ---
 
 fn m1fil_b_h(l: &L) {
     let f = l.fill;
-
-    // h1 — the bound and both metrics.  Gap 0.415 fires; a diagonal 0.29/0.29 (0.410)
-    // fires, 0.30/0.30 (0.424) is clean; corner-on 0.415 fires; 0.42 is clean.  Three.
-    write(
-        "M1Fil.b.h1",
-        vec![
-            rect(f, 2.0, 2.0, 4.0, 4.0),
-            rect(f, 4.415, 2.0, 6.415, 4.0),
-            rect(f, 8.0, 2.0, 10.0, 4.0),
-            rect(f, 10.29, 4.29, 12.29, 6.29),
-            rect(f, 14.0, 2.0, 16.0, 4.0),
-            rect(f, 16.3, 4.3, 18.3, 6.3),
-            rect(f, 2.0, 8.0, 4.0, 10.0),
-            rect(f, 4.415, 10.0, 6.415, 12.0),
-            rect(f, 8.0, 8.0, 10.0, 10.0),
-            rect(f, 10.42, 9.0, 12.42, 11.0),
-        ],
-    );
-
-    // h2 — 45° geometry.  A diamond tip 0.415 above a wall; two 45° strips (1.004 wide)
-    // 0.4136 apart; a box corner 0.4136 from a chamfer; two tips 0.415 apart.  Four.
-    write(
-        "M1Fil.b.h2",
-        vec![
-            rect(f, 2.0, 2.0, 6.0, 4.0),
-            diamond(f, 4.0, 5.415, 1.0),
-            strip45(f, 8.0, 2.0, 2.0, 0.71),
-            strip45(f, 8.0, 4.005, 2.0, 0.71),
-            chamfered_tr(f, 13.0, 2.0, 16.0, 5.0, 19.5),
-            rect(f, 15.585, 4.5, 18.0, 7.0),
-            diamond(f, 21.0, 4.0, 1.0),
-            diamond(f, 23.415, 4.0, 1.0),
-        ],
-    );
 
     // h3 — notches.  A U with a 0.415 slot is a notch and M1Fil.b says "space" (M1.b says
     // "space or notch"): clean by the wording; two Ls facing across 0.415 fire; an island
@@ -1721,31 +1631,6 @@ fn m1fil_b_h(l: &L) {
     e.push(rect(f, 16.415, 2.0, 18.415, 4.0));
     write("M1Fil.b.h4", e);
 
-    // h5 — tile lines.  0.415 gaps ending on x = 20, straddling 20, starting on 20,
-    // straddling 21, on 40, straddling 42, at 10; two in y across 20/21 and 40/42; a
-    // corner-to-corner 0.410 across (20, 20).  Ten.
-    let pair = |x: f64, y: f64| {
-        vec![
-            rect(f, x - 2.0, y, x, y + 2.0),
-            rect(f, x + 0.415, y, x + 2.415, y + 2.0),
-        ]
-    };
-    let mut e = vec![];
-    e.extend(pair(9.585, 2.0));
-    e.extend(pair(19.585, 2.0));
-    e.extend(pair(19.8, 5.0));
-    e.extend(pair(20.0, 8.0));
-    e.extend(pair(20.8, 11.0));
-    e.extend(pair(39.585, 2.0));
-    e.extend(pair(41.8, 5.0));
-    e.push(rect(f, 15.0, 14.0, 25.0, 16.0));
-    e.push(rect(f, 15.0, 16.415, 25.0, 18.415));
-    e.push(rect(f, 35.0, 14.0, 45.0, 16.0));
-    e.push(rect(f, 35.0, 16.415, 45.0, 18.415));
-    e.push(rect(f, 18.0, 21.0, 20.0, 23.0));
-    e.push(rect(f, 20.29, 23.29, 22.29, 25.29));
-    write("M1Fil.b.h5", e);
-
     // h8 — small, long, far.  A 0.005 sliver 0.415 from a filler (the sliver is M1Fil.a1),
     // two 300 µm bars 0.415 apart (once; both are M1Fil.a2 by their length), a pair at
     // (1000, 1000).  Three.
@@ -1783,24 +1668,6 @@ fn m1fil_c_h(l: &L) {
     let f = l.fill;
     let m = l.m1;
 
-    // h1 — the bound and both metrics: 0.415 fires, 0.42 is clean; diagonal 0.410 fires,
-    // 0.424 is clean; corner-on 0.415 fires.  Three.
-    write(
-        "M1Fil.c.h1",
-        vec![
-            rect(f, 2.0, 2.0, 4.0, 4.0),
-            rect(m, 4.415, 2.0, 6.415, 4.0),
-            rect(f, 8.0, 2.0, 10.0, 4.0),
-            rect(m, 10.42, 2.0, 12.42, 4.0),
-            rect(f, 14.0, 2.0, 16.0, 4.0),
-            rect(m, 16.29, 4.29, 18.29, 6.29),
-            rect(f, 2.0, 8.0, 4.0, 10.0),
-            rect(m, 4.3, 10.3, 6.3, 12.3),
-            rect(f, 8.0, 8.0, 10.0, 10.0),
-            rect(m, 10.415, 10.0, 12.415, 12.0),
-        ],
-    );
-
     // h2 — 45°.  A Metal1 diamond tip 0.415 above a filler; a filler chamfer 0.4136 from a
     // Metal1 corner; a Metal1 45° strip parallel to a filler strip at 0.4136; a Metal1
     // strip's tip 0.415 from a filler wall.  Four.
@@ -1835,31 +1702,6 @@ fn m1fil_c_h(l: &L) {
             rect(m, 19.0, 1.0, 23.0, 5.0),
         ],
     );
-
-    // h4 — tile lines.  0.415 gaps ending on x = 20, straddling 20, starting on 20,
-    // straddling 21, on 40, straddling 42, at 10; two in y across 20/21 and 40/42; a
-    // corner pair across (20, 20).  Ten.
-    let pair = |x: f64, y: f64| {
-        vec![
-            rect(f, x - 2.0, y, x, y + 2.0),
-            rect(m, x + 0.415, y, x + 2.415, y + 2.0),
-        ]
-    };
-    let mut e = vec![];
-    e.extend(pair(9.585, 2.0));
-    e.extend(pair(19.585, 2.0));
-    e.extend(pair(19.8, 5.0));
-    e.extend(pair(20.0, 8.0));
-    e.extend(pair(20.8, 11.0));
-    e.extend(pair(39.585, 2.0));
-    e.extend(pair(41.8, 5.0));
-    e.push(rect(f, 15.0, 14.0, 25.0, 16.0));
-    e.push(rect(m, 15.0, 16.415, 25.0, 18.415));
-    e.push(rect(f, 35.0, 14.0, 45.0, 16.0));
-    e.push(rect(m, 35.0, 16.415, 45.0, 18.415));
-    e.push(rect(f, 18.0, 21.0, 20.0, 23.0));
-    e.push(rect(m, 20.29, 23.29, 22.29, 25.29));
-    write("M1Fil.c.h4", e);
 
     // h7 — small, long, far.  A 0.005 Metal1 sliver 0.415 from a filler (M1.a, M1.d), a
     // 300 µm filler bar 0.415 from a 300 µm Metal1 bar (once; the filler is M1Fil.a2 by

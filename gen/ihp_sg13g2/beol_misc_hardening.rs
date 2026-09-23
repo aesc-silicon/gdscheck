@@ -265,10 +265,6 @@ pub fn generate(pdk: &PdkConfig) {
     lbe_b(&p);
     lbe_b1(&p);
     lbe_b2(&p);
-    lbe_c(&p);
-    lbe_d(&p);
-    lbe_e(&p);
-    lbe_f(&p);
     lbe_h(&p);
     lbe_i(&p);
     lu_a(&p);
@@ -1328,114 +1324,11 @@ fn lbe_b2(p: &P) {
 
 // --- LBE.c: min. LBE space or notch 100 ---
 
-/// h1 - the bound and both metrics.  Pairs of 200 squares: (a) 100 apart, clean; (b)
-/// 99.995 apart (at (1000, 1000)): fires; (c) corner to corner dx = dy = 70.7
-/// (99.99): fires; (d) dx = dy = 70.715 (100.006): clean; (e) a U 500 × 300 with a
-/// 99.995 slot 200 deep: the notch fires; (f) a square whose top-right corner is
-/// chamfered (legs 100) against a square whose corner is 99.99 from the 45° wall:
-/// fires.
-fn lbe_c(p: &P) {
-    let l = p.lbe;
-    let mut e = vec![
-        rect(l, 0.0, 0.0, 200.0, 200.0), // (a)
-        rect(l, 300.0, 0.0, 500.0, 200.0),
-        rect(l, 1000.0, 1000.0, 1200.0, 1200.0), // (b)
-        rect(l, 1299.995, 1000.0, 1499.995, 1200.0),
-        rect(l, 600.0, 0.0, 800.0, 200.0), // (c)
-        rect(l, 870.7, 270.7, 1070.7, 470.7),
-        rect(l, 1200.0, 0.0, 1400.0, 200.0), // (d)
-        rect(l, 1470.715, 270.715, 1670.715, 470.715),
-        chamfered_tr(l, 0.0, 1000.0, 200.0, 1200.0, 1300.0), // (f)
-        rect(l, 220.705, 1220.705, 420.705, 1420.705),
-    ];
-    e.push(poly(
-        l,
-        &[
-            (0.0, 600.0),
-            (500.0, 600.0),
-            (500.0, 900.0),
-            (300.0, 900.0),
-            (300.0, 700.0),
-            (200.005, 700.0),
-            (200.005, 900.0),
-            (0.0, 900.0),
-        ],
-    )); // (e)
-    write("lbe", "LBE.c.h1", e);
-}
-
 // --- LBE.d: min. LBE space to the inner edge of EdgeSeal 150 ---
-
-/// h1 - the bound.  EdgeSeal rings 4.2 wide (500 boxes) with an LBE inside: (a) 150
-/// from the left inner wall (and further from the rest): clean; (b) 149.995: fires;
-/// rings with 45° corners (600 boxes, legs 100, the inner bottom-left chamfer x + y =
-/// 105.94 from the box's corner): (c) an LBE whose corner is 149.99 from the diagonal
-/// (at 159.025 in both axes): fires; (d) 150.005 (159.04): clean.
-fn lbe_d(p: &P) {
-    let mut e = vec![];
-    for (i, gap) in [(0.0, 150.0), (1.0, 149.995)] {
-        let x0 = i * 600.0;
-        e.extend(frame(p.seal, x0, 0.0, x0 + 500.0, 500.0, 4.2));
-        e.push(rect(p.lbe, x0 + 4.2 + gap, 160.0, x0 + 340.0, 340.0));
-    }
-    for (i, c) in [(2.0, 159.025), (3.0, 159.04)] {
-        let x0 = i * 600.0;
-        e.push(oct_frame(
-            p.seal,
-            x0,
-            0.0,
-            x0 + 600.0,
-            600.0,
-            100.0,
-            4.2,
-            4.2,
-        ));
-        e.push(rect(p.lbe, x0 + c, c, x0 + 350.0, 350.0));
-    }
-    write("lbe", "LBE.d.h1", e);
-}
 
 // --- LBE.e: min. LBE space to dfpad and Passiv 50 ---
 
-/// h1 - the bound, both metrics and 45°.  An LBE 200 square at (200, 200): (a) a
-/// dfpad 50 to its right, clean; (b) a dfpad 49.995 above: fires; (c) a Passiv 49.995
-/// to its left: fires; (d) a Passiv square whose corner is dx = dy = 35.35 (49.99)
-/// from the LBE's top-right corner: fires; (e) a Passiv square below-left whose
-/// chamfered corner (x + y = 329.3) passes 49.99 from the LBE's bottom-left corner:
-/// fires; (f) a Passiv square overlapping the LBE's bottom-right corner: 0 (less)
-/// apart, fires.
-fn lbe_e(p: &P) {
-    let e = vec![
-        rect(p.lbe, 200.0, 200.0, 400.0, 400.0),
-        rect(p.dfpad, 450.0, 200.0, 550.0, 400.0), // (a)
-        rect(p.dfpad, 200.0, 449.995, 400.0, 549.995), // (b)
-        rect(p.passiv, 50.005, 200.0, 150.005, 400.0), // (c)
-        rect(p.passiv, 435.35, 435.35, 535.35, 535.35), // (d)
-        chamfered_tr(p.passiv, 0.0, 0.0, 190.0, 190.0, 329.3), // (e)
-        rect(p.passiv, 350.0, 150.0, 450.0, 250.0), // (f)
-    ];
-    write("lbe", "LBE.e.h1", e);
-}
-
 // --- LBE.f: min. LBE space to Activ 30 ---
-
-/// h1 - the bound, both metrics and 45°.  An LBE 200 square at (200, 200): (a) an
-/// Activ 30 to its right, clean; (b) 29.995 above: fires; (c) an Activ square whose
-/// corner is dx = dy = 21.21 (29.995) from the LBE's top-right corner: fires; (d) dx =
-/// dy = 21.22 (30.01) from the top-left corner: clean; (e) an Activ square below-left
-/// whose chamfered corner (x + y = 357.59) passes 29.99 from the LBE's bottom-left
-/// corner: fires.
-fn lbe_f(p: &P) {
-    let e = vec![
-        rect(p.lbe, 200.0, 200.0, 400.0, 400.0),
-        rect(p.activ, 430.0, 250.0, 450.0, 350.0), // (a)
-        rect(p.activ, 200.0, 429.995, 400.0, 449.995), // (b)
-        rect(p.activ, 421.21, 421.21, 441.21, 441.21), // (c)
-        rect(p.activ, 158.78, 421.22, 178.78, 441.22), // (d)
-        chamfered_tr(p.activ, 100.0, 100.0, 190.0, 190.0, 357.59), // (e)
-    ];
-    write("lbe", "LBE.f.h1", e);
-}
 
 // --- LBE.h: no LBE ring ---
 

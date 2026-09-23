@@ -91,37 +91,6 @@ fn ring(
     ]
 }
 
-/// A box with a rectangular hole, as one keyhole polygon (the outline runs in along a
-/// zero-width cut from the left wall, round the hole and back).
-#[allow(clippy::too_many_arguments)]
-fn keyhole(
-    l: (i16, i16),
-    x0: f64,
-    y0: f64,
-    x1: f64,
-    y1: f64,
-    hx0: f64,
-    hy0: f64,
-    hx1: f64,
-    hy1: f64,
-) -> GdsElement {
-    poly(
-        l,
-        &[
-            (x0, y0),
-            (x1, y0),
-            (x1, y1),
-            (x0, y1),
-            (x0, hy0),
-            (hx0, hy0),
-            (hx0, hy1),
-            (hx1, hy1),
-            (hx1, hy0),
-            (x0, hy0),
-        ],
-    )
-}
-
 /// A comb on `l`: base `(x0, y0)-(x0 + 3·tooth + 2·slot, y0 + base)`, three teeth
 /// `tooth` wide and `height` tall, slots `slot` wide between them.
 fn comb(
@@ -267,35 +236,6 @@ fn tm_a_h(l: &L) {
         ],
     );
 
-    // h2 — 45° geometry.  A diamond's width is the distance between opposite walls
-    // (a·√2): the smallest on-grid `a` at or above w/√2 is clean, one step less fires;
-    // the same for a 45° strip (d·√2).  A chamfered box and an L with a chamfered inner
-    // corner are wide everywhere and stay clean.
-    let ac = up(w / SQRT2);
-    let af = g(ac - 0.005);
-    l.write(
-        &format!("{p}.h2"),
-        vec![
-            diamond(m, 5.0, 5.0, ac),                    // clean
-            diamond(m, 12.0, 5.0, af),                   // TM.a
-            strip45(m, 18.0, 2.0, 4.0, ac),              // clean
-            strip45(m, 26.0, 2.0, 4.0, af),              // TM.a
-            chamfered_tr(m, 2.0, 12.0, 8.0, 18.0, 24.0), // clean
-            poly(
-                m,
-                &[
-                    (12.0, 12.0),
-                    (20.0, 12.0),
-                    (20.0, 15.0),
-                    (16.0, 15.0),
-                    (15.0, 16.0),
-                    (15.0, 20.0),
-                    (12.0, 20.0),
-                ],
-            ), // clean: L with 3-wide arms
-        ],
-    );
-
     // h3 — shapes that merge.  The rule reads the union: two overlapping boxes whose
     // union is `w` wide are clean, `w − 0.005` fires once; four abutting slices of w/4
     // make w (clean), three plus a short one make w − 0.005 (fires); a w bar drawn as a
@@ -339,35 +279,6 @@ fn tm_a_h(l: &L) {
     e.push(rect(m, 21.0, 14.0, g(21.0 + wm), 16.0)); // island narrow → TM.a
     l.write(&format!("{p}.h3"), e);
 
-    // h4 — tile lines.  Narrow bars well inside a tile, ending on x = 20, straddling 20,
-    // starting on 20, straddling 21, ending on 40, straddling 42; narrow-tall bars
-    // running across 20/21 and 40/42; an L with its corner on x = 20 and only the
-    // vertical arm narrow.  Ten narrow shapes whatever the tile; the `w` controls are
-    // clean.
-    let mut e = vec![];
-    for (i, x) in tile_xs(wm).iter().enumerate() {
-        let y = 2.0 + 6.0 * i as f64;
-        e.push(rect(m, *x, y, g(x + wm), y + 4.0));
-    }
-    e.extend([
-        rect(m, 15.0, 46.0, 25.0, g(46.0 + wm)),
-        rect(m, 35.0, 46.0, 45.0, g(46.0 + wm)),
-        poly(
-            m,
-            &[
-                (20.0, 50.0),
-                (25.0, 50.0),
-                (25.0, 53.0),
-                (g(20.0 + wm), 53.0),
-                (g(20.0 + wm), 58.0),
-                (20.0, 58.0),
-            ],
-        ),
-        rect(m, 19.0, 60.0, g(19.0 + w), 64.0), // w straddling 20 → clean
-        rect(m, 15.0, 66.0, 25.0, g(66.0 + w)), // w tall across 20 → clean
-    ]);
-    l.write(&format!("{p}.h4"), e);
-
     // h7 — a comb whose three teeth are narrow (three violations of one polygon, two
     // markers each; the slots are 2.5 wide, clear of TM.b) and a U whose arms are `w`
     // (clean).
@@ -386,35 +297,6 @@ fn tm_b_h(l: &L) {
     let (m, s) = (l.met, l.w);
     let sm = g(s - 0.005);
     let p = format!("TM{}.b", l.n);
-    // Corner-to-corner offsets: the smallest on-grid d with d·√2 ≥ s is clean, one step
-    // less fires.
-    let dc = up(s / SQRT2);
-    let df = g(dc - 0.005);
-
-    // h1 — the bound and both metrics.  4 × 4 squares: a gap of `s` is clean, `s − 0.005`
-    // fires in x and in y; a diagonal pair whose corners are dc/dc apart (euclidian ≥ s)
-    // is clean, df/df (euclidian < s, both axis offsets far under s) fires; a corner-on
-    // pair (no overlap of the projections, corners `s − 0.005` apart along x) fires, at
-    // `s` it is clean.
-    l.write(
-        &format!("{p}.h1"),
-        vec![
-            rect(m, 2.0, 2.0, 6.0, 6.0),
-            rect(m, g(6.0 + s), 2.0, g(10.0 + s), 6.0), // clean
-            rect(m, 2.0, 10.0, 6.0, 14.0),
-            rect(m, g(6.0 + sm), 10.0, g(10.0 + sm), 14.0), // TM.b (x)
-            rect(m, 14.0, 2.0, 18.0, 6.0),
-            rect(m, 14.0, g(6.0 + sm), 18.0, g(10.0 + sm)), // TM.b (y)
-            rect(m, 22.0, 2.0, 26.0, 6.0),
-            rect(m, g(26.0 + dc), g(6.0 + dc), g(30.0 + dc), g(10.0 + dc)), // clean diagonal
-            rect(m, 34.0, 2.0, 38.0, 6.0),
-            rect(m, g(38.0 + df), g(6.0 + df), g(42.0 + df), g(10.0 + df)), // TM.b diagonal
-            rect(m, 2.0, 20.0, 6.0, 24.0),
-            rect(m, g(6.0 + sm), 24.0, g(10.0 + sm), 28.0), // TM.b corner-on
-            rect(m, 14.0, 20.0, 18.0, 24.0),
-            rect(m, g(18.0 + s), 24.0, g(22.0 + s), 28.0), // clean corner-on
-        ],
-    );
 
     // h2 — 45° geometry.  A diamond's tip `s − 0.005` from a wall (fires; `s` clean); two
     // 45° strips at a perpendicular gap one step under s (fires; at/over s clean); a
@@ -445,70 +327,6 @@ fn tm_b_h(l: &L) {
         ],
     );
 
-    // h3 — notches and slots.  "Space or notch": a U notch of `s − 0.005` (fires; `s`
-    // clean), a straight wall facing a 45° wall of the same shape across `s − 0.005` at
-    // the notch floor (fires), a three-tooth comb with two narrow slots (two), a slot cut into a
-    // plate (one), a keyhole-drawn ring with a narrow hole (one); two Ls whose arms face
-    // across `s − 0.005` and an island `s − 0.005` from a ring's inner wall are separate
-    // shapes (one each).
-    let mut e = vec![
-        u(m, 2.0, 2.0, 3.0, sm, 3.0, 5.0), // TM.b: notch
-        u(m, 14.0, 2.0, 3.0, s, 3.0, 5.0), // clean
-        poly(
-            m,
-            &[
-                (26.0, 2.0),
-                (g(36.0 + sm), 2.0),
-                (g(36.0 + sm), 9.0),
-                (g(33.0 + sm), 9.0),
-                (g(29.0 + sm), 5.0),
-                (29.0, 5.0),
-                (29.0, 10.0),
-                (26.0, 10.0),
-            ],
-        ), // TM.b: straight wall x = 29 vs the 45° wall, floor `s − 0.005`
-        comb(m, 2.0, 14.0, 3.0, sm, 3.0, 5.0), // TM.b × 2
-        poly(
-            m,
-            &[
-                (22.0, 14.0),
-                (32.0, 14.0),
-                (32.0, 22.0),
-                (g(27.0 + sm), 22.0),
-                (g(27.0 + sm), 17.0),
-                (27.0, 17.0),
-                (27.0, 22.0),
-                (22.0, 22.0),
-            ],
-        ), // TM.b: slot
-        keyhole(m, 36.0, 14.0, 46.0, 24.0, 39.0, 17.0, g(39.0 + sm), 21.0), // TM.b: hole
-        poly(
-            m,
-            &[
-                (2.0, 26.0),
-                (10.0, 26.0),
-                (10.0, 29.0),
-                (5.0, 29.0),
-                (5.0, 34.0),
-                (2.0, 34.0),
-            ],
-        ),
-        poly(
-            m,
-            &[
-                (g(5.0 + sm), 31.0),
-                (13.0, 31.0),
-                (13.0, 39.0),
-                (10.0, 39.0),
-                (10.0, 34.0),
-                (g(5.0 + sm), 34.0),
-            ],
-        ), // TM.b: facing Ls
-    ];
-    e.extend(ring(m, 18.0, 26.0, 30.0, 38.0, 21.0, 29.0, 27.0, 35.0));
-    e.push(rect(m, g(21.0 + sm), 31.0, 25.0, 33.0)); // TM.b: island to the ring's wall
-    l.write(&format!("{p}.h3"), e);
-
     // h4 — shapes that merge.  A union of overlapping boxes and a union of abutting
     // boxes `s − 0.005` apart fire once, not once per drawn box; a plate drawn as a 3 × 4
     // grid of boxes `s − 0.005` from a bar fires once; two boxes overlapping into one
@@ -531,28 +349,6 @@ fn tm_b_h(l: &L) {
         rect(m, 4.0, 12.0, 10.0, 14.0), // overlaps: one shape, no gap
     ]);
     l.write(&format!("{p}.h4"), e);
-
-    // h5 — tile lines.  Gaps of `s − 0.005` well inside a tile and ending on x = 20,
-    // straddling 20, starting on 20, straddling 21, ending on 40, straddling 42; one
-    // ending on y = 20 and one straddling y = 21; a corner-on pair off the lines and one
-    // whose corner lies on x = 20.  Eleven gaps whatever the tile.
-    let mut e = vec![];
-    for (i, (x0, x1)) in tile_gaps(sm).iter().enumerate() {
-        let y = 2.0 + 6.0 * i as f64;
-        e.push(rect(m, x0 - 4.0, y, *x0, y + 4.0));
-        e.push(rect(m, *x1, y, x1 + 4.0, y + 4.0));
-    }
-    e.extend([
-        rect(m, 50.0, g(16.0 - sm), 54.0, g(20.0 - sm)),
-        rect(m, 50.0, 20.0, 54.0, 24.0), // gap ends on y = 20
-        rect(m, 58.0, 16.0, 62.0, 20.5),
-        rect(m, 58.0, g(20.5 + sm), 62.0, g(24.5 + sm)), // gap straddles y = 21
-        rect(m, 66.0, 2.0, 70.0, 6.0),
-        rect(m, g(70.0 + sm), 6.0, g(74.0 + sm), 10.0), // corner-on, corner (70, 6)
-        rect(m, 16.0, 46.0, 20.0, 50.0),
-        rect(m, g(20.0 + sm), 50.0, g(24.0 + sm), 54.0), // corner-on, corner on x = 20
-    ]);
-    l.write(&format!("{p}.h5"), e);
 
     // h8 — large and small.  A 0.005 µm sliver `s − 0.005` from a plate (fires TM.b; its
     // own width is TM.a's), two 300 µm bars `s − 0.005` apart (one gap crossing every tile
@@ -758,34 +554,6 @@ fn tmfil_a_h(l: &L) {
     e.push(rect(f, 30.0, 20.0, 34.995, 25.0)); // island 4.995 wide → TMFil.a
     l.write(&format!("{p}.h3"), e);
 
-    // h4 — tile lines.  4.995 × 6 bars well inside a tile, ending on x = 20, straddling
-    // 20, starting on 20, straddling 21, ending on 40, straddling 42; 4.995-tall 10 µm
-    // bars across 20/21 and 40/42; an L cornered on x = 20 with only the vertical arm
-    // narrow.  Ten narrow shapes; the 5.0 controls are clean.
-    let mut e = vec![];
-    for (i, x) in tile_xs(4.995).iter().enumerate() {
-        let y = 2.0 + 10.0 * i as f64;
-        e.push(rect(f, *x, y, g(x + 4.995), y + 6.0));
-    }
-    e.extend([
-        rect(f, 15.0, 74.0, 25.0, 78.995),
-        rect(f, 35.0, 74.0, 45.0, 78.995),
-        poly(
-            f,
-            &[
-                (20.0, 84.0),
-                (30.0, 84.0),
-                (30.0, 89.0),
-                (24.995, 89.0),
-                (24.995, 94.0),
-                (20.0, 94.0),
-            ],
-        ),
-        rect(f, 17.5, 98.0, 22.5, 104.0), // 5.0 straddling 20 → clean
-        rect(f, 15.0, 108.0, 25.0, 113.0), // 5.0 tall across 20 → clean
-    ]);
-    l.write(&format!("{p}.h4"), e);
-
     // h7 — a comb whose three teeth are 4.995 wide (three violations of one polygon) and
     // a U with 5.0 arms (clean); both span more than 10 µm (TMFil.a1's, set aside).
     l.write(
@@ -814,21 +582,6 @@ fn tmfil_a1_h(l: &L) {
             rect(f, 44.0, 2.0, 54.005, 8.0),           // TMFil.a1, 6 × 10.005
             rect(f, 2.0, 16.0, 302.0, 22.0),           // TMFil.a1, 300 µm
             rect(f, 1000.0, 1000.0, 1010.005, 1006.0), // TMFil.a1, far away
-        ],
-    );
-
-    // h2 — 45°.  A diamond of half-diagonal 5.0 spans 10.0 (clean); 5.005 spans 10.01
-    // (fires, though its walls are 7.08 apart); a 45° strip 6 wide (d = 4.245) and 5.66
-    // long spanning 8.245 (clean) and one 8.49 long spanning 10.245 (fires, though its
-    // walls are 6 apart and its end caps 8.49); a chamfered 10 × 10 box (clean).
-    l.write(
-        &format!("{p}.h2"),
-        vec![
-            diamond(f, 8.0, 8.0, 5.0),                    // clean
-            diamond(f, 24.0, 8.0, 5.005),                 // TMFil.a1
-            strip45(f, 40.0, 2.0, 4.0, 4.245),            // clean
-            strip45(f, 54.0, 2.0, 6.0, 4.245),            // TMFil.a1
-            chamfered_tr(f, 2.0, 18.0, 12.0, 28.0, 38.0), // clean
         ],
     );
 
@@ -919,27 +672,6 @@ fn tmfil_b_h(l: &L) {
     let f = l.fil;
     let p = format!("TM{}Fil.b", l.n);
 
-    // h1 — the bound and both metrics.  6 × 6 fillers: 3.0 apart clean, 2.995 fires in x
-    // and in y; a diagonal pair 2.125/2.125 apart (3.005) is clean, 2.12/2.12 (2.998)
-    // fires; a corner-on pair 2.995 apart fires.
-    l.write(
-        &format!("{p}.h1"),
-        vec![
-            rect(f, 2.0, 2.0, 8.0, 8.0),
-            rect(f, 11.0, 2.0, 17.0, 8.0), // clean
-            rect(f, 2.0, 14.0, 8.0, 20.0),
-            rect(f, 10.995, 14.0, 16.995, 20.0), // TMFil.b (x)
-            rect(f, 22.0, 2.0, 28.0, 8.0),
-            rect(f, 22.0, 10.995, 28.0, 16.995), // TMFil.b (y)
-            rect(f, 34.0, 2.0, 40.0, 8.0),
-            rect(f, 42.125, 10.125, 48.125, 16.125), // clean diagonal 3.005
-            rect(f, 54.0, 2.0, 60.0, 8.0),
-            rect(f, 62.12, 10.12, 68.12, 16.12), // TMFil.b diagonal 2.998
-            rect(f, 34.0, 22.0, 40.0, 28.0),
-            rect(f, 42.995, 28.0, 48.995, 34.0), // TMFil.b corner-on
-        ],
-    );
-
     // h2 — 45°.  A diamond's tip 2.995 from a filler wall (fires; 3.0 clean); two 45°
     // strips 5.006 wide (d = 3.54) and 9.05 long, overlapping 1.05 along the diagonal, at
     // a perpendicular gap of 2.995 (fires; 3.002 clean); a chamfered filler corner 2.995
@@ -1015,25 +747,6 @@ fn tmfil_b_h(l: &L) {
     } // TMFil.b once
     l.write(&format!("{p}.h4"), e);
 
-    // h5 — tile lines.  2.995 gaps well inside a tile and ending on x = 20, straddling 20,
-    // starting on 20, straddling 21, ending on 40, straddling 42; one ending on y = 20,
-    // one straddling y = 21; a corner-on pair with its corner on x = 20.  Ten gaps.
-    let mut e = vec![];
-    for (i, (x0, x1)) in tile_gaps(2.995).iter().enumerate() {
-        let y = 2.0 + 10.0 * i as f64;
-        e.push(rect(f, x0 - 6.0, y, *x0, y + 6.0));
-        e.push(rect(f, *x1, y, x1 + 6.0, y + 6.0));
-    }
-    e.extend([
-        rect(f, 60.0, 11.005, 66.0, 17.005),
-        rect(f, 60.0, 20.0, 66.0, 26.0), // gap ends on y = 20
-        rect(f, 70.0, 14.5, 76.0, 20.5),
-        rect(f, 70.0, 23.495, 76.0, 29.495), // gap straddles y = 21
-        rect(f, 14.0, 76.0, 20.0, 82.0),
-        rect(f, 22.995, 82.0, 28.995, 88.0), // corner-on, corner on x = 20
-    ]);
-    l.write(&format!("{p}.h5"), e);
-
     // h8 — large and small.  A 0.005 sliver 2.995 from a filler (TMFil.b; its width is
     // TMFil.a's), two 6 × 10 fillers 2.995 apart, a pair at (1000, 1000).
     l.write(
@@ -1052,34 +765,8 @@ fn tmfil_b_h(l: &L) {
 // --- TM<n>Fil.c: min. filler space to TopMetal 3.00 ---
 
 fn tmfil_c_h(l: &L) {
-    let (f, m, k) = (l.fil, l.met, l.mask);
+    let (f, m) = (l.fil, l.met);
     let p = format!("TM{}Fil.c", l.n);
-
-    // h1 — the bound and both metrics.  A 6 × 6 filler and a 4 × 6 metal: 3.0 apart
-    // clean; 2.995 fires with the metal right, left and above; a diagonal 2.12/2.12
-    // (2.998) fires, 2.125/2.125 (3.005) is clean; a corner-on 2.995 fires; a filler 2.995
-    // from a TopMetal.mask shape draws nothing (the rule names the drawing layer).
-    l.write(
-        &format!("{p}.h1"),
-        vec![
-            rect(f, 2.0, 2.0, 8.0, 8.0),
-            rect(m, 11.0, 2.0, 15.0, 8.0), // clean
-            rect(f, 20.0, 2.0, 26.0, 8.0),
-            rect(m, 28.995, 2.0, 32.995, 8.0), // TMFil.c (metal right)
-            rect(m, 38.0, 2.0, 42.0, 8.0),
-            rect(f, 44.995, 2.0, 50.995, 8.0), // TMFil.c (metal left)
-            rect(f, 2.0, 14.0, 8.0, 20.0),
-            rect(m, 2.0, 22.995, 8.0, 26.995), // TMFil.c (metal above)
-            rect(f, 14.0, 14.0, 20.0, 20.0),
-            rect(m, 22.125, 22.125, 26.125, 28.125), // clean diagonal
-            rect(f, 32.0, 14.0, 38.0, 20.0),
-            rect(m, 40.12, 22.12, 44.12, 28.12), // TMFil.c diagonal
-            rect(f, 2.0, 32.0, 8.0, 38.0),
-            rect(m, 10.995, 38.0, 14.995, 44.0), // TMFil.c corner-on
-            rect(f, 22.0, 32.0, 28.0, 38.0),
-            rect(k, 30.995, 32.0, 34.995, 38.0), // mask: nothing
-        ],
-    );
 
     // h2 — 45°.  A metal diamond's tip 2.995 from a filler wall (fires; 3.0 clean); a
     // metal 45° strip 2.995 from a filler strip 5.006 wide (d = 3.54) and 9.05 long

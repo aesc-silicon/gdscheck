@@ -171,6 +171,11 @@ taken out once the engine family had them (2026-09-22), and the rest is sorted i
 engine family as it comes up.  Since 2026-09-23 every check has its classes there -
 the engine decks name every check the registry knows, `overlap` included - and the
 engine family is where a class found wanting on one PDK is drawn for all of them.
+Once the two-layer space classes were there too (the plain pair, a touch under each
+`abutting`, a pair under each `pairs`), the IHP fixtures that were only classes - the
+45°, union, tile-line and bound variants of a plain width or space rule, 126 files -
+were taken out (2026-09-23), so a deck's fixtures now read as its conditions and its
+values, and a class is drawn once in `gen/engine/`.
 
 ## GF180MCU
 

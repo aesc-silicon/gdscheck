@@ -513,62 +513,6 @@ fn strip45(layer: (i16, i16), x0: f64, y0: f64, len: f64, d: f64) -> GdsElement 
     )
 }
 
-/// 45° strip from `(x0, y0)` running `len` down-right; its lower-left wall is the line
-/// `x + y = x0 + y0` and its perpendicular width `d·√2`.
-fn strip135(layer: (i16, i16), x0: f64, y0: f64, len: f64, d: f64) -> GdsElement {
-    poly(
-        layer,
-        &[
-            (x0, y0),
-            (x0 + len, y0 - len),
-            (x0 + len + d, y0 - len + d),
-            (x0 + d, y0 + d),
-        ],
-    )
-}
-
-/// Box `(x0, y0)-(x1, y1)` whose top-right corner is chamfered along `x + y = k`.
-fn chamfered_tr(layer: (i16, i16), x0: f64, y0: f64, x1: f64, y1: f64, k: f64) -> GdsElement {
-    poly(
-        layer,
-        &[(x0, y0), (x1, y0), (x1, k - x1), (k - y1, y1), (x0, y1)],
-    )
-}
-
-/// A 45° band with square-cut ends: horizontal extent `wt` (perpendicular width
-/// `wt/√2`), rising `h` (each 45° wall is `h·√2` long).  Unlike `band`, nothing is
-/// snapped: the caller picks grid values.
-fn band45(l: (i16, i16), x: f64, y: f64, wt: f64, h: f64) -> GdsElement {
-    poly(
-        l,
-        &[(x, y), (x + wt, y), (x + wt + h, y + h), (x + h, y + h)],
-    )
-}
-
-/// A Z route 0.155 wide: horizontal from `(x, y)` to `x+2`, a 45° jog rising `h`, then
-/// horizontal again for 2 µm.  The jog's walls are `wt/√2` apart (`wt` = 0.22 → 0.1556,
-/// 0.23 → 0.1626); each 45° wall is `h·√2` long.  Mirrored in y when `down`.
-fn zroute(l: (i16, i16), x: f64, y: f64, wt: f64, h: f64, down: bool) -> GdsElement {
-    let w = 0.155;
-    // The top wall's 45° line is x − y = (x + 2) − y − wt; it meets y + w at x + 2 − wt + w.
-    let pts = [
-        (x, y),
-        (x + 2.0, y),
-        (x + 2.0 + h, y + h),
-        (x + 4.0 + h, y + h),
-        (x + 4.0 + h, y + h + w),
-        (x + 2.0 - wt + w + h, y + h + w),
-        (x + 2.0 - wt + w, y + w),
-        (x, y + w),
-    ];
-    if down {
-        let m: Vec<(f64, f64)> = pts.iter().map(|&(px, py)| (px, 2.0 * y - py)).collect();
-        poly(l, &m)
-    } else {
-        poly(l, &pts)
-    }
-}
-
 fn write(name: &str, elems: Vec<GdsElement>) {
     write_gz(&format!("{DIR}/{name}.gds.gz"), library("TOP", elems));
 }
@@ -586,10 +530,7 @@ fn hardening(pdk: &PdkConfig) {
     gat_d_h(&l);
     gat_e_h(&l);
     gat_f_h(&l);
-    gat_g_h(&l);
     gfil_a_h(&l);
-    gfil_b_h(&l);
-    gfil_c_h(&l);
     gfil_d_h(&l);
     gfil_e_h(&l);
     gfil_f_h(&l);
@@ -616,32 +557,6 @@ fn gat_a_h(l: &L) {
             rect(gp, 2.0, 12.0, 302.0, 12.125),         // Gat.a, 300 µm
             rect(gp, 2.0, 16.0, 2.005, 18.0),           // Gat.a, sliver
             rect(gp, 1000.0, 1000.0, 1000.125, 1002.0), // Gat.a, far
-        ],
-    );
-
-    // h2 — 45° geometry.  Diamond a = 0.095 → 0.1344 clean, a = 0.09 → 0.1273 fires; the
-    // same for a 45° strip (d·√2).  A chamfered box and an L with a chamfered inner
-    // corner are wide everywhere and stay clean.
-    write(
-        "Gat.a.h2",
-        vec![
-            diamond(gp, 3.0, 3.0, 0.095),                  // clean
-            diamond(gp, 7.0, 3.0, 0.09),                   // Gat.a
-            strip45(gp, 10.0, 2.0, 3.0, 0.095),            // clean
-            strip45(gp, 15.0, 2.0, 3.0, 0.09),             // Gat.a
-            chamfered_tr(gp, 10.0, 8.0, 12.0, 10.0, 21.5), // clean
-            poly(
-                gp,
-                &[
-                    (14.0, 8.0),
-                    (17.0, 8.0),
-                    (17.0, 8.5),
-                    (14.8, 8.5),
-                    (14.5, 8.8),
-                    (14.5, 11.0),
-                    (14.0, 11.0),
-                ],
-            ), // clean: L, arms 0.5, inner corner chamfered
         ],
     );
 
@@ -691,38 +606,6 @@ fn gat_a_h(l: &L) {
     e.extend(l.ring(gp, 6.0, 7.0, 9.0, 10.0, 6.5, 7.5, 8.5, 9.5));
     e.push(rect(gp, 7.0, 8.0, 7.125, 9.0)); // island 0.125 → Gat.a (0.5 from the walls)
     write("Gat.a.h3", e);
-
-    // h4 — tile lines.  0.125 bars ending on x = 20, straddling 20, starting on 20,
-    // straddling 21, ending on 40, straddling 42, inside a tile at 10; 0.125-tall bars
-    // across 20/21 and 40/42; an L cornered on x = 20 with only its vertical arm narrow.
-    // Ten violations whatever the tile; the 0.13 controls are clean.
-    write(
-        "Gat.a.h4",
-        vec![
-            rect(gp, 9.875, 2.0, 10.0, 4.0),
-            rect(gp, 19.875, 2.0, 20.0, 4.0),
-            rect(gp, 19.94, 6.0, 20.065, 8.0),
-            rect(gp, 20.0, 10.0, 20.125, 12.0),
-            rect(gp, 20.94, 14.0, 21.065, 16.0),
-            rect(gp, 39.875, 2.0, 40.0, 4.0),
-            rect(gp, 41.94, 6.0, 42.065, 8.0),
-            rect(gp, 15.0, 18.0, 25.0, 18.125),
-            rect(gp, 35.0, 18.0, 45.0, 18.125),
-            poly(
-                gp,
-                &[
-                    (20.0, 22.0),
-                    (23.0, 22.0),
-                    (23.0, 22.5),
-                    (20.125, 22.5),
-                    (20.125, 26.0),
-                    (20.0, 26.0),
-                ],
-            ),
-            rect(gp, 19.935, 28.0, 20.065, 30.0), // 0.13 straddling 20 → clean
-            rect(gp, 15.0, 32.0, 25.0, 32.13),    // 0.13 tall across 20 → clean
-        ],
-    );
 
     // h7 — a comb whose three teeth are 0.125 wide (three violations of one polygon); a
     // U with 0.13 arms is clean.
@@ -1086,52 +969,6 @@ fn gat_a4_h(l: &L) {
 fn gat_b_h(l: &L) {
     let gp = l.gp;
 
-    // h1 — the bound and both metrics.  Gap 0.175 fires, 0.18 is clean; a diagonal offset
-    // of 0.125/0.125 (0.177) fires, 0.13/0.13 (0.184) is clean; a corner-on gap of 0.175
-    // fires; a 0.18 gap with the boxes half overlapping in y is clean.
-    write(
-        "Gat.b.h1",
-        vec![
-            rect(gp, 2.0, 2.0, 3.0, 3.0),
-            rect(gp, 3.18, 2.0, 4.18, 3.0), // clean
-            rect(gp, 6.0, 2.0, 7.0, 3.0),
-            rect(gp, 7.175, 2.0, 8.175, 3.0), // Gat.b
-            rect(gp, 10.0, 2.0, 11.0, 3.0),
-            rect(gp, 11.125, 3.125, 12.125, 4.125), // Gat.b (0.177)
-            rect(gp, 14.0, 2.0, 15.0, 3.0),
-            rect(gp, 15.13, 3.13, 16.13, 4.13), // clean (0.184)
-            rect(gp, 2.0, 6.0, 3.0, 7.0),
-            rect(gp, 3.175, 6.5, 4.175, 7.5), // Gat.b, corner-on
-            rect(gp, 6.0, 6.0, 7.0, 7.0),
-            rect(gp, 7.18, 6.5, 8.18, 7.5), // clean
-            rect(gp, 10.0, 6.0, 11.0, 7.0),
-            rect(gp, 10.0, 7.175, 11.0, 8.175), // Gat.b (y)
-        ],
-    );
-
-    // h2 — 45°.  A diamond tip 0.175 from a wall fires (0.18 clean); two 45° strips 0.173
-    // apart fire (0.184 clean); a chamfer 0.177 from a box corner fires (0.184 clean); two
-    // diamond tips 0.175 apart fire.
-    write(
-        "Gat.b.h2",
-        vec![
-            diamond(gp, 3.0, 3.0, 0.5),
-            rect(gp, 3.675, 2.0, 4.675, 4.0), // Gat.b
-            diamond(gp, 7.0, 3.0, 0.5),
-            rect(gp, 7.68, 2.0, 8.68, 4.0), // clean
-            strip45(gp, 10.0, 2.0, 2.0, 0.2),
-            strip45(gp, 10.0, 2.645, 2.0, 0.2), // Gat.b (0.173)
-            strip45(gp, 14.0, 2.0, 2.0, 0.2),
-            strip45(gp, 14.0, 2.66, 2.0, 0.2), // clean (0.184)
-            chamfered_tr(gp, 2.0, 6.0, 4.0, 8.0, 11.8),
-            rect(gp, 4.025, 8.025, 5.025, 9.025), // Gat.b (0.177)
-            chamfered_tr(gp, 7.0, 6.0, 9.0, 8.0, 16.8),
-            rect(gp, 9.03, 8.03, 10.03, 9.03), // clean (0.184)
-            diamond(gp, 12.0, 7.0, 0.5),
-            diamond(gp, 13.175, 7.0, 0.5), // Gat.b, tip to tip
-        ],
-    );
-
     // h3 — "space or notch".  A U with a 0.175 slot, a comb with three 0.175 slots, a
     // 0.175 slot cut into a plate, two Ls whose arms face across 0.175, a ring whose hole
     // is 0.175 wide, an island 0.175 from a ring's inner wall: eight.
@@ -1210,46 +1047,6 @@ fn gat_b_h(l: &L) {
     e.extend(l.ring(gp, 6.0, 6.0, 9.0, 9.0, 6.5, 6.5, 8.5, 8.5));
     e.push(rect(gp, 6.675, 7.0, 7.675, 8.0)); // island 0.175 from the left wall
     write("Gat.b.h3", e);
-
-    // h4 — merges and tile lines.  Two unions (of two overlapping boxes each) 0.175 apart
-    // fire once; a 1 × 1 drawn as a 5 × 5 grid 0.175 from a bar fires once; 0.175 gaps
-    // straddling x = 20, ending on 20, starting on 20, straddling 21, 40 and 42, a
-    // horizontal gap across 20, a 0.125/0.125 corner pair on (20, 20); a 0.18 gap across
-    // 20 is clean.
-    let mut e = vec![
-        rect(gp, 2.0, 2.0, 2.6, 3.0),
-        rect(gp, 2.5, 2.0, 3.0, 3.0),
-        rect(gp, 3.175, 2.0, 3.7, 3.0),
-        rect(gp, 3.6, 2.0, 4.175, 3.0), // Gat.b once
-    ];
-    for i in 0..5 {
-        for j in 0..5 {
-            let (x, y) = (6.0 + 0.2 * i as f64, 2.0 + 0.2 * j as f64);
-            e.push(rect(gp, x, y, x + 0.2, y + 0.2));
-        }
-    }
-    e.push(rect(gp, 7.175, 2.0, 8.175, 3.0)); // Gat.b once
-    e.extend(vec![
-        rect(gp, 18.9, 2.0, 19.9, 3.0),
-        rect(gp, 20.075, 2.0, 21.075, 3.0),
-        rect(gp, 18.825, 5.0, 19.825, 6.0),
-        rect(gp, 20.0, 5.0, 21.0, 6.0),
-        rect(gp, 19.0, 8.0, 20.0, 9.0),
-        rect(gp, 20.175, 8.0, 21.175, 9.0),
-        rect(gp, 19.9, 11.0, 20.9, 12.0),
-        rect(gp, 21.075, 11.0, 22.075, 12.0),
-        rect(gp, 38.9, 2.0, 39.9, 3.0),
-        rect(gp, 40.075, 2.0, 41.075, 3.0),
-        rect(gp, 40.9, 5.0, 41.9, 6.0),
-        rect(gp, 42.075, 5.0, 43.075, 6.0),
-        rect(gp, 15.0, 15.0, 25.0, 16.0),
-        rect(gp, 15.0, 16.175, 25.0, 17.175),
-        rect(gp, 19.0, 19.0, 20.0, 20.0),
-        rect(gp, 20.125, 20.125, 21.125, 21.125),
-        rect(gp, 18.9, 23.0, 19.9, 24.0),
-        rect(gp, 20.08, 23.0, 21.08, 24.0), // clean
-    ]);
-    write("Gat.b.h4", e);
 
     // h7 — in context.  Two 1.2 V gate fingers 0.175 apart on one Activ; a gate and an
     // unrelated poly line 0.175 past its end cap; a 0.005 sliver 0.175 from a bar; two
@@ -1518,55 +1315,6 @@ fn gat_d_h(l: &L) {
     let gp = l.gp;
     let act = l.activ;
 
-    // h1 — the bound and both metrics.  0.07 is clean, 0.065 fires; a 0.05/0.05 diagonal
-    // (0.0707) is clean, 0.045/0.045 (0.0636) fires; corner-on 0.065 fires; 0.065 above
-    // and below fire.
-    write(
-        "Gat.d.h1",
-        vec![
-            rect(act, 2.0, 2.0, 3.0, 3.0),
-            rect(gp, 3.07, 2.0, 3.37, 3.0), // clean
-            rect(act, 5.0, 2.0, 6.0, 3.0),
-            rect(gp, 6.065, 2.0, 6.365, 3.0), // Gat.d
-            rect(act, 8.0, 2.0, 9.0, 3.0),
-            rect(gp, 9.05, 3.05, 9.35, 3.35), // clean (0.0707)
-            rect(act, 11.0, 2.0, 12.0, 3.0),
-            rect(gp, 12.045, 3.045, 12.345, 3.345), // Gat.d (0.0636)
-            rect(act, 14.0, 2.0, 15.0, 3.0),
-            rect(gp, 15.065, 2.5, 15.365, 3.5), // Gat.d, corner-on
-            rect(act, 2.0, 6.0, 3.0, 7.0),
-            rect(gp, 2.0, 7.065, 3.0, 7.365), // Gat.d
-            rect(act, 5.0, 6.0, 6.0, 7.0),
-            rect(gp, 5.0, 5.635, 6.0, 5.935), // Gat.d
-        ],
-    );
-
-    // h2 — 45°.  A poly diamond tip 0.065 from an Activ wall fires (0.07 clean); a 45°
-    // strip whose wall passes 0.0636 from an Activ corner fires (0.0707 clean); a poly box
-    // corner 0.0636 from a chamfered Activ corner fires (0.0707 clean); a 45° poly wall
-    // 0.0636 from a parallel Activ chamfer fires (0.0707 clean).
-    write(
-        "Gat.d.h2",
-        vec![
-            rect(act, 2.0, 2.0, 3.0, 3.0),
-            diamond(gp, 3.365, 2.5, 0.3), // Gat.d
-            rect(act, 6.0, 2.0, 7.0, 3.0),
-            diamond(gp, 7.37, 2.5, 0.3), // clean
-            rect(act, 8.0, 2.0, 9.0, 3.0),
-            strip135(gp, 8.59, 3.5, 1.5, 0.2), // Gat.d (0.0636)
-            rect(act, 12.0, 2.0, 13.0, 3.0),
-            strip135(gp, 12.6, 3.5, 1.5, 0.2), // clean (0.0707)
-            chamfered_tr(act, 2.0, 6.0, 3.0, 7.0, 9.8),
-            rect(gp, 2.945, 6.945, 3.5, 7.5), // Gat.d (0.0636)
-            chamfered_tr(act, 5.0, 6.0, 6.0, 7.0, 12.8),
-            rect(gp, 5.95, 6.95, 6.5, 7.5), // clean (0.0707)
-            chamfered_tr(act, 8.0, 6.0, 9.0, 7.0, 15.8),
-            poly(gp, &[(8.89, 7.0), (9.89, 6.0), (10.09, 6.2), (9.09, 7.2)]), // Gat.d (0.0636)
-            chamfered_tr(act, 12.0, 6.0, 13.0, 7.0, 19.8),
-            poly(gp, &[(12.9, 7.0), (13.9, 6.0), (14.1, 6.2), (13.1, 7.2)]), // clean (0.0707)
-        ],
-    );
-
     // h3 — touching and in context.  A poly abutting the Activ edge (space 0.00) fires; a
     // poly touching the Activ at a corner point fires; a poly overlapping the Activ by
     // 0.05 is a gate (a Gat.c, not a Gat.d); a gate that runs 0.065 past a second Activ
@@ -1600,37 +1348,6 @@ fn gat_d_h(l: &L) {
                 ],
             ),
             rect(gp, 2.565, 6.7, 3.435, 7.5), // 2 × Gat.d
-        ],
-    );
-
-    // h4 — tile lines, far, long.  0.065 gaps straddling x = 20, ending on 20, starting on
-    // 20, straddling 21, 40 and 42; a horizontal gap across 20; a 0.045/0.045 corner pair on
-    // (20, 20); a pair at (1000, 1000); a 300 µm pair; a 0.07 gap across 20 is clean.
-    write(
-        "Gat.d.h4",
-        vec![
-            rect(act, 18.97, 2.0, 19.97, 3.0),
-            rect(gp, 20.035, 2.0, 20.335, 3.0),
-            rect(act, 18.935, 5.0, 19.935, 6.0),
-            rect(gp, 20.0, 5.0, 20.3, 6.0),
-            rect(act, 19.0, 8.0, 20.0, 9.0),
-            rect(gp, 20.065, 8.0, 20.365, 9.0),
-            rect(act, 19.97, 11.0, 20.97, 12.0),
-            rect(gp, 21.035, 11.0, 21.335, 12.0),
-            rect(act, 38.97, 2.0, 39.97, 3.0),
-            rect(gp, 40.035, 2.0, 40.335, 3.0),
-            rect(act, 40.97, 5.0, 41.97, 6.0),
-            rect(gp, 42.035, 5.0, 42.335, 6.0),
-            rect(act, 15.0, 15.0, 25.0, 16.0),
-            rect(gp, 15.0, 16.065, 25.0, 16.365),
-            rect(act, 19.0, 19.0, 20.0, 20.0),
-            rect(gp, 20.045, 20.045, 20.345, 20.345),
-            rect(act, 18.965, 23.0, 19.965, 24.0),
-            rect(gp, 20.035, 23.0, 20.335, 24.0), // clean
-            rect(act, 1000.0, 1000.0, 1001.0, 1001.0),
-            rect(gp, 1001.065, 1000.0, 1001.365, 1001.0),
-            rect(act, 2.0, 27.0, 302.0, 28.0),
-            rect(gp, 2.0, 28.065, 302.0, 28.365),
         ],
     );
 }
@@ -1678,27 +1395,6 @@ fn gat_e_h(l: &L) {
         ],
     )); // clean
     write("Gat.e.h1", e);
-
-    // h2 — tile lines, far, long.  A 0.09 square straddling x = 20 is clean (the area is
-    // the whole shape's, not the tile's); 0.0885 squares straddling 20, starting on 20,
-    // straddling 40 and 42 fire; a 0.09 square ending on 20 and one straddling 21 are
-    // clean; a 300 µm bar is clean; a 0.0885 square at (1000, 1000) fires; a 0.13 × 0.69
-    // bar across 20 fires.
-    write(
-        "Gat.e.h2",
-        vec![
-            rect(gp, 19.85, 2.0, 20.15, 2.3),
-            rect(gp, 19.85, 5.0, 20.15, 5.295),
-            rect(gp, 19.7, 8.0, 20.0, 8.3),
-            rect(gp, 20.0, 11.0, 20.3, 11.295),
-            rect(gp, 20.85, 14.0, 21.15, 14.3),
-            rect(gp, 39.85, 2.0, 40.15, 2.295),
-            rect(gp, 41.85, 5.0, 42.15, 5.295),
-            rect(gp, 2.0, 20.0, 302.0, 20.13),
-            rect(gp, 1000.0, 1000.0, 1000.3, 1000.295),
-            rect(gp, 19.7, 24.0, 20.39, 24.13),
-        ],
-    );
 }
 
 // --- Gat.f: no 45° or 90° angles for GatPoly on Activ ---
@@ -1867,83 +1563,6 @@ fn gat_f_h(l: &L) {
     );
 }
 
-// --- Gat.g: min. width 0.16 of 45°-bent GatPoly where the bend is longer than 0.39 ---
-
-fn gat_g_h(l: &L) {
-    let gp = l.gp;
-
-    // h1 — the bound.  Square-cut 45° bands: 0.1626 wide (wt 0.23) with 0.636 walls is
-    // clean; 0.1591 (wt 0.225) with 0.636 walls fires; 0.1591 with 0.389 walls (h 0.275,
-    // not > 0.39) is clean; with 0.396 walls (h 0.28), 0.552 (h 0.39), 0.566 (h 0.40) and
-    // 0.544 (h 0.385) it fires.  The acute tips are Gat.a and Gat.e noise.
-    write(
-        "Gat.g.h1",
-        vec![
-            band45(gp, 2.0, 2.0, 0.23, 0.45),    // clean
-            band45(gp, 5.0, 2.0, 0.225, 0.45),   // Gat.g
-            band45(gp, 8.0, 2.0, 0.225, 0.275),  // clean, bend 0.389
-            band45(gp, 11.0, 2.0, 0.225, 0.28),  // Gat.g, bend 0.396
-            band45(gp, 14.0, 2.0, 0.225, 0.39),  // Gat.g, bend 0.552
-            band45(gp, 17.0, 2.0, 0.225, 0.40),  // Gat.g, bend 0.566
-            band45(gp, 20.0, 2.0, 0.225, 0.385), // Gat.g, bend 0.544
-        ],
-    );
-
-    // h2 — real routes.  A Z route 0.155 wide (legal for Gat.a) whose 45° jog is 0.1556
-    // wide and 0.636 long fires; the same jog 0.354 long is clean; a 0.1626 jog is clean;
-    // the Z mirrored (drawn clockwise, running down) fires.  An L 0.155 wide with a
-    // chamfered corner: outer 45° edge 0.495, inner 0.368, 0.1556 apart - the bend is
-    // longer than 0.39 on its outside, so it fires; the same 0.1626 apart is clean.
-    write(
-        "Gat.g.h2",
-        vec![
-            zroute(gp, 2.0, 2.0, 0.22, 0.45, false), // Gat.g
-            zroute(gp, 2.0, 5.0, 0.22, 0.25, false), // clean
-            zroute(gp, 2.0, 8.0, 0.23, 0.45, false), // clean
-            zroute(gp, 2.0, 14.0, 0.22, 0.45, true), // Gat.g
-            poly(
-                gp,
-                &[
-                    (10.35, 2.0),
-                    (12.0, 2.0),
-                    (12.0, 2.155),
-                    (10.415, 2.155),
-                    (10.155, 2.415),
-                    (10.155, 4.0),
-                    (10.0, 4.0),
-                    (10.0, 2.35),
-                ],
-            ), // Gat.g
-            poly(
-                gp,
-                &[
-                    (14.35, 2.0),
-                    (16.0, 2.0),
-                    (16.0, 2.155),
-                    (14.425, 2.155),
-                    (14.155, 2.425),
-                    (14.155, 4.0),
-                    (14.0, 4.0),
-                    (14.0, 2.35),
-                ],
-            ), // clean (0.1626)
-        ],
-    );
-
-    // h3 — tile lines and far.  The firing Z route with its jog straddling x = 20
-    // (19.935..20.45), starting on 20, across 40 and 42, and at (1000, 1000).
-    write(
-        "Gat.g.h3",
-        vec![
-            zroute(gp, 18.0, 2.0, 0.22, 0.45, false),
-            zroute(gp, 18.065, 5.0, 0.22, 0.45, false),
-            zroute(gp, 38.0, 2.0, 0.22, 0.45, false),
-            zroute(gp, 40.0, 5.0, 0.22, 0.45, false),
-            zroute(gp, 1000.0, 1000.0, 0.22, 0.45, false),
-        ],
-    );
-}
-
 // --- GFil.a: max. GatPoly:filler width 5.00 ---
 
 fn gfil_a_h(l: &L) {
@@ -1991,22 +1610,6 @@ fn gfil_a_h(l: &L) {
     e.extend(l.ring(gf, 26.0, 18.0, 31.005, 23.0, 28.0, 20.0, 29.0, 21.0)); // GFil.a
     write("GFil.a.h1", e);
 
-    // h2 — 45°.  A diamond a = 3.5 (walls 4.95 apart) is clean, a = 3.55 (5.02) fires
-    // across both diagonals; a 45° strip d = 3.5 with 4.24 walls is clean, d = 3.55 fires
-    // across its width, and d = 3.5 with 5.09 walls fires along its length; a 5 × 5 box
-    // with a chamfered corner is clean.
-    write(
-        "GFil.a.h2",
-        vec![
-            diamond(gf, 6.0, 6.0, 3.55),                  // 2 × GFil.a
-            diamond(gf, 16.0, 6.0, 3.5),                  // clean
-            strip45(gf, 6.0, 12.0, 3.0, 3.5),             // clean
-            strip45(gf, 16.0, 12.0, 3.0, 3.55),           // GFil.a
-            strip45(gf, 26.0, 12.0, 3.6, 3.5),            // GFil.a (length 5.09)
-            chamfered_tr(gf, 2.0, 22.0, 7.0, 27.0, 33.0), // clean
-        ],
-    );
-
     // h5 — merged shapes across tile lines.  A 300 × 5.005 bar merged with a 13 × 13 ring
     // hanging below it (the ring's hole 3 × 3), and a 300 × 5.005 bar merged with a 5 × 5.5
     // box below it: one shape each, wide across the bar and across the union's height.
@@ -2015,91 +1618,6 @@ fn gfil_a_h(l: &L) {
     e.push(rect(gf, 2.0, 30.0, 302.0, 35.005));
     e.push(rect(gf, 46.0, 25.0, 51.0, 30.5));
     write("GFil.a.h5", e);
-}
-
-// --- GFil.b: min. GatPoly:filler width 0.70 ---
-
-fn gfil_b_h(l: &L) {
-    let gf = l.gfil;
-
-    // h1 — the bound, 45°, merges, tile lines, long, far.  0.70 is legal, 0.695 fires (x
-    // and y); a diamond a = 0.5 (0.707) and a 45° strip d = 0.5 are clean, a = 0.49 and
-    // d = 0.49 (0.693) fire; overlapping boxes whose union is 0.695 wide fire once, 0.70
-    // is clean; a 0.695 bar straddling x = 20 fires (0.70 clean); a 300 × 0.695 bar and a
-    // 0.695 bar at (1000, 1000) fire.
-    write(
-        "GFil.b.h1",
-        vec![
-            rect(gf, 2.0, 2.0, 2.7, 4.0),      // clean
-            rect(gf, 5.0, 2.0, 5.695, 4.0),    // GFil.b
-            rect(gf, 8.0, 2.0, 10.0, 2.695),   // GFil.b
-            diamond(gf, 13.0, 3.0, 0.5),       // clean
-            diamond(gf, 16.0, 3.0, 0.49),      // GFil.b
-            strip45(gf, 19.0, 2.0, 2.0, 0.5),  // clean
-            strip45(gf, 23.0, 2.0, 2.0, 0.49), // GFil.b
-            rect(gf, 2.0, 6.0, 2.4, 8.0),
-            rect(gf, 2.295, 6.0, 2.695, 8.0), // union 0.695 → GFil.b
-            rect(gf, 5.0, 6.0, 5.4, 8.0),
-            rect(gf, 5.3, 6.0, 5.7, 8.0),        // union 0.70 → clean
-            rect(gf, 19.65, 10.0, 20.345, 12.0), // GFil.b
-            rect(gf, 19.65, 14.0, 20.35, 16.0),  // clean
-            rect(gf, 2.0, 20.0, 302.0, 20.695),  // GFil.b
-            rect(gf, 1000.0, 1000.0, 1000.695, 1002.0), // GFil.b
-        ],
-    );
-}
-
-// --- GFil.c: min. GatPoly:filler space 0.80 ---
-
-fn gfil_c_h(l: &L) {
-    let gf = l.gfil;
-
-    // h1 — the bound, both metrics, 45°, a notch, tile lines, far, long.  0.80 is legal,
-    // 0.795 fires; a 0.56/0.56 diagonal (0.792) fires, 0.57/0.57 (0.806) is clean; a
-    // diamond tip 0.795 from a wall fires; an island 0.795 from a ring's inner wall fires;
-    // a U with a 0.795 slot is a notch, and the manual says "space" for this rule (not
-    // "space or notch") - clean by the letter; 0.795 gaps straddling x = 20 and 40 fire
-    // (0.80 clean); a pair at (1000, 1000) and two 300 µm bars 0.795 apart fire.
-    let mut e = vec![
-        rect(gf, 2.0, 2.0, 3.0, 3.0),
-        rect(gf, 3.8, 2.0, 4.8, 3.0), // clean
-        rect(gf, 6.0, 2.0, 7.0, 3.0),
-        rect(gf, 7.795, 2.0, 8.795, 3.0), // GFil.c
-        rect(gf, 10.0, 2.0, 11.0, 3.0),
-        rect(gf, 11.56, 3.56, 12.56, 4.56), // GFil.c (0.792)
-        rect(gf, 14.0, 2.0, 15.0, 3.0),
-        rect(gf, 15.57, 3.57, 16.57, 4.57), // clean (0.806)
-        diamond(gf, 8.0, 7.0, 1.0),
-        rect(gf, 9.795, 6.0, 10.795, 8.0), // GFil.c
-        poly(
-            gf,
-            &[
-                (2.0, 6.0),
-                (4.795, 6.0),
-                (4.795, 9.0),
-                (3.795, 9.0),
-                (3.795, 7.0),
-                (3.0, 7.0),
-                (3.0, 9.0),
-                (2.0, 9.0),
-            ],
-        ), // notch: clean by the letter
-    ];
-    e.extend(l.ring(gf, 12.0, 6.0, 17.0, 11.0, 13.0, 7.0, 16.0, 10.0));
-    e.push(rect(gf, 13.795, 8.0, 14.6, 9.0)); // island → GFil.c
-    e.extend(vec![
-        rect(gf, 18.9, 12.0, 19.9, 13.0),
-        rect(gf, 20.695, 12.0, 21.695, 13.0), // GFil.c
-        rect(gf, 18.9, 15.0, 19.9, 16.0),
-        rect(gf, 20.7, 15.0, 21.7, 16.0), // clean
-        rect(gf, 38.9, 12.0, 39.9, 13.0),
-        rect(gf, 40.695, 12.0, 41.695, 13.0), // GFil.c
-        rect(gf, 1000.0, 1000.0, 1001.0, 1001.0),
-        rect(gf, 1001.795, 1000.0, 1002.795, 1001.0), // GFil.c
-        rect(gf, 2.0, 20.0, 302.0, 21.0),
-        rect(gf, 2.0, 21.795, 302.0, 22.795), // GFil.c
-    ]);
-    write("GFil.c.h1", e);
 }
 
 // --- GFil.d: min. GatPoly:filler space to Activ, GatPoly, Cont, pSD, nSD:block, SalBlock 1.10 ---
