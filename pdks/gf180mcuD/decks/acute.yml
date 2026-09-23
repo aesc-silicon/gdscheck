@@ -562,3 +562,33 @@ rules:
     value: 0.0
     params:
       step: 45
+  - id: metal1_dummy_ACUTE
+    check: no_angle
+    layers: [metal1_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal2_dummy_ACUTE
+    check: no_angle
+    layers: [metal2_dummy]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal3_slot_ACUTE
+    check: no_angle
+    layers: [metal3_slot]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal4_slot_ACUTE
+    check: no_angle
+    layers: [metal4_slot]
+    value: 0.0
+    params:
+      step: 45
+  - id: metal5_slot_ACUTE
+    check: no_angle
+    layers: [metal5_slot]
+    value: 0.0
+    params:
+      step: 45

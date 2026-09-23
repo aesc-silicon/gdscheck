@@ -376,3 +376,23 @@ rules:
     check: offgrid
     layers: [border]
     value: 0.005
+  - id: metal1_dummy_OFFGRID
+    check: offgrid
+    layers: [metal1_dummy]
+    value: 0.005
+  - id: metal2_dummy_OFFGRID
+    check: offgrid
+    layers: [metal2_dummy]
+    value: 0.005
+  - id: metal3_slot_OFFGRID
+    check: offgrid
+    layers: [metal3_slot]
+    value: 0.005
+  - id: metal4_slot_OFFGRID
+    check: offgrid
+    layers: [metal4_slot]
+    value: 0.005
+  - id: metal5_slot_OFFGRID
+    check: offgrid
+    layers: [metal5_slot]
+    value: 0.005
