@@ -62,3 +62,36 @@ jobs:
           name: reports-${{ matrix.pdk }}
           path: ci/reports
           if-no-files-found: ignore
+
+  # The cmos5l design once more inside a 3 GB cgroup, less than its unbounded peak
+  # of 4 GB: the run has to plan its memory within the limit it is given (issue #32)
+  # and make room as it goes, and the kernel kills what does not.  The smallest
+  # design, so the job costs its build and twenty seconds.
+  laptop:
+    name: ihp-sg13cmos5l in 3 GB
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the reference designs
+        uses: actions/checkout@v4
+        with:
+          repository: aesc-silicon/reference-designs
+          path: reference-designs
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run the design in a 3 GB cgroup
+        env:
+          REFERENCE_DESIGNS: ${{ github.workspace }}/reference-designs
+          TIMEOUT: 15m
+          MEMORY_LIMIT: 3G
+        run: ci/run-designs.sh ihp-sg13cmos5l
