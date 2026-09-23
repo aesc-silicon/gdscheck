@@ -28,7 +28,6 @@ mod npn_hardening;
 mod nsdblock;
 mod nwell;
 mod offgrid;
-mod offgrid_hardening;
 mod pad;
 mod pad_hardening;
 mod passiv;
@@ -59,7 +58,6 @@ pub(super) const SPACE_DELTA: f64 = -0.005;
 pub fn generate(pdk: &PdkConfig) {
     activ::generate(pdk);
     offgrid::generate(pdk);
-    offgrid_hardening::generate(pdk);
     tgo::generate(pdk);
     implant_hardening::generate(pdk);
     gatpoly::generate(pdk);
