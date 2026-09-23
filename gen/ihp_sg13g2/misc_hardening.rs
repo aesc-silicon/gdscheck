@@ -1180,19 +1180,6 @@ fn ant_b(p: &P) {
     e.extend(gate_m1(p, 14.0, 2.0, 4.0, 5.005));
     write_gz(&format!("{ANT}/Ant.b.h1.gds.gz"), library("TOP", e));
 
-    // h2, the tile lines: a 0.5 wide Metal1 wire from the gate at x = 10 to x = 50.04
-    // across x = 20 and 40, 40.04 × 0.5 = 20.02, ratio 200.2 (fires); the same wire to
-    // x = 49.96, 19.98, ratio 199.8 (clean); a 0.7 wire from x = 10 ending on x = 40,
-    // 30 × 0.7 = 21.0, ratio 210 (fires); an L: 20 × 0.5 = 10.0 along y = 22.6 from x = 10
-    // across x = 20, then 0.5 × 20.04 = 10.02 up x = 29.5 across y = 40, abutting - 20.02
-    // in union, ratio 200.2 (fires).
-    let mut e = gate_m1(p, 10.0, 2.0, 40.04, 0.5);
-    e.extend(gate_m1(p, 10.0, 6.0, 39.96, 0.5));
-    e.extend(gate_m1(p, 10.0, 12.0, 30.0, 0.7));
-    e.extend(gate_m1(p, 10.0, 22.0, 20.0, 0.5));
-    e.push(rect(p.m1, 29.5, 23.1, 30.0, 43.14));
-    write_gz(&format!("{ANT}/Ant.b.h2.gds.gz"), library("TOP", e));
-
     // h3, several gates and the union.  At x = 2 two gates under one 6.0 × 5.0 = 30 µm²
     // Metal1, gate area 0.2, ratio 150 (clean); at x = 10 one gate under 30 µm², ratio
     // 300 (fires).  At y = 10 the per-level sum of figure 7.1: gate G1 at x = 2 with

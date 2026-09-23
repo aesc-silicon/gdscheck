@@ -16,7 +16,6 @@ use gdscheck::pdk::PdkConfig;
 
 /// One grid step.
 const S: f64 = 0.005;
-const SQRT2: f64 = std::f64::consts::SQRT_2;
 
 /// The layers the three decks draw on.
 struct L {
@@ -88,14 +87,6 @@ fn sq(l: (i16, i16), x: f64, y: f64, b: f64) -> GdsElement {
     rect(l, x, y, x + b, y + b)
 }
 
-/// The largest half-diagonal on the 0.005 grid whose diamond is narrower than `v`, and
-/// the smallest whose diamond is wider.
-fn diag(v: f64) -> (f64, f64) {
-    let fire = ((v - S) / SQRT2 / S).floor() * S;
-    let clean = ((v + S) / SQRT2 / S).ceil() * S;
-    (fire, clean)
-}
-
 // ---------------------------------------------------------------------------------------
 // The width and space suites, shared by TGO.f/e, pSD.a/b and nSDB.a/b.
 // ---------------------------------------------------------------------------------------
@@ -103,13 +94,9 @@ fn diag(v: f64) -> (f64, f64) {
 /// The `min_width` suite for `l` at value `v` (bars 3 µm long):
 /// h1 the bound (a `v` bar clean; `v − 0.005` bars in x and y, a 0.005 sliver and a 300 µm
 ///    bar fire, two walls each);
-/// h2 45° (a diamond and a 45° strip under `v` fire, four and two walls; the ones over `v`
-///    and a chamfered box are clean);
 /// h3 unions (two overlapping boxes, two abutting slices and one side of a ring at
-///    `v − 0.005` fire; a plate drawn as a 10 × 10 grid is clean);
-/// h4 tile lines (bars ending on, starting on and straddling x = 20/21/40/42, a horizontal
-///    bar across x = 20);
-/// h5/h6 fifty bars flat and as an array.
+///    `v − 0.005` fire; a plate drawn as a 10 × 10 grid is clean).
+/// The 45° shapes and the tile lines are the engine's (`gen/engine/width.rs`).
 fn width_suite(deck: &str, rule: &str, l: (i16, i16), v: f64) {
     let n = v - S;
     write(
@@ -121,19 +108,6 @@ fn width_suite(deck: &str, rule: &str, l: (i16, i16), v: f64) {
             rect(l, 2.0, 6.0, 5.0, 6.0 + n),
             rect(l, 7.0, 2.0, 7.0 + S, 5.0),
             rect(l, 9.0, -100.0, 9.0 + n, 200.0),
-        ],
-    );
-
-    let (a_fire, a_clean) = diag(v);
-    write(
-        deck,
-        &format!("{rule}.h2"),
-        vec![
-            diamond(l, 3.0, 3.0, a_fire),
-            diamond(l, 6.0, 3.0, a_clean),
-            strip45(l, 2.0, 6.0, 2.0, a_fire),
-            strip45(l, 6.0, 6.0, 2.0, a_clean),
-            chamfered_tr(l, 9.0, 2.0, 10.0 + v, 3.0 + v, 13.0 + 2.0 * v - 0.3),
         ],
     );
 
@@ -151,51 +125,14 @@ fn width_suite(deck: &str, rule: &str, l: (i16, i16), v: f64) {
         }
     }
     write(deck, &format!("{rule}.h3"), e);
-
-    let h = n / 2.0;
-    write(
-        deck,
-        &format!("{rule}.h4"),
-        vec![
-            rect(l, 20.0 - n, 2.0, 20.0, 4.0),
-            rect(l, 20.0, 6.0, 20.0 + n, 8.0),
-            rect(l, 21.0 - h, 10.0, 21.0 + h, 12.0),
-            rect(l, 40.0 - h, 2.0, 40.0 + h, 4.0),
-            rect(l, 42.0 - h, 2.0, 42.0 + h, 4.0),
-            rect(l, 18.0, 14.0, 23.0, 14.0 + n),
-        ],
-    );
 }
 
 /// The `min_space` suite for `l` at value `v` between boxes of side `b`:
-/// h1 the bound (a gap of `v` clean; `v − 0.005` in x and y, a corner-to-corner gap under
-///    `v` on the diagonal (its axis-aligned parts well under), a box beside a 300 µm bar
-///    and a pair at (1000, 1000) fire; a diagonal gap over `v` and a pair whose x-gap is
-///    under `v` but whose corners are over it are clean);
 /// h2 notches (a U and a slot into a plate at `v − 0.005`, a comb with two such slots
-///    fire; a U at `v` is clean);
-/// h3 45° (two 45° strips and a diamond's corner against a wall at `v − 0.005` fire, at
-///    `v + 0.005` clean);
-/// h4 tile lines (gaps straddling, ending on and starting on x = 20, straddling 21, 40, 42
-///    and y = 20);
-/// h5/h6 fifty pairs flat and as an array.
+///    fire; a U at `v` is clean).
+/// The bound, the 45° shapes and the tile lines are the engine's (`gen/engine/space.rs`).
 fn space_suite(deck: &str, rule: &str, l: (i16, i16), v: f64, b: f64) {
     let n = v - S;
-    let (d_fire, d_clean) = diag(v);
-    let pair =
-        |x: f64, y: f64, gx: f64, gy: f64| vec![sq(l, x, y, b), sq(l, x + b + gx, y + b + gy, b)];
-    let cs = 2.0 * b + v + 1.0;
-    let mut e = vec![sq(l, 2.0, 2.0, b), sq(l, 2.0 + b + v, 2.0, b)];
-    e.extend(pair(2.0 + cs, 2.0, n, -b));
-    e.extend(pair(2.0 + 2.0 * cs, 2.0, -b, n));
-    e.extend(pair(2.0 + 3.0 * cs, 2.0, d_fire, d_fire));
-    e.extend(pair(2.0 + 4.0 * cs, 2.0, d_clean, d_clean));
-    e.extend(pair(2.0 + 5.0 * cs, 2.0, n, 0.3));
-    e.push(rect(l, 60.0, -100.0, 61.0, 200.0));
-    e.push(sq(l, 61.0 + n, 2.0, b));
-    e.extend(pair(1000.0, 1000.0, n, -b));
-    write(deck, &format!("{rule}.h1"), e);
-
     let u = |x: f64, y: f64, g: f64| {
         vec![
             rect(l, x, y, x + b, y + 3.0),
@@ -216,70 +153,6 @@ fn space_suite(deck: &str, rule: &str, l: (i16, i16), v: f64, b: f64) {
     e.push(rect(l, x, 2.0, x + 1.5 - n / 2.0, 5.0));
     e.push(rect(l, x + 1.5 + n / 2.0, 2.0, x + 3.0, 5.0));
     write(deck, &format!("{rule}.h2"), e);
-
-    let d = b;
-    let dy_fire = (n * SQRT2 / S).floor() * S + 2.0 * d;
-    let dy_clean = ((v + S) * SQRT2 / S).ceil() * S + 2.0 * d;
-    let mut e = vec![
-        strip45(l, 2.0, 2.0, 3.0, d),
-        strip45(l, 2.0, 2.0 + dy_fire, 3.0, d),
-        strip45(l, 10.0, 2.0, 3.0, d),
-        strip45(l, 10.0, 2.0 + dy_clean, 3.0, d),
-    ];
-    let a = b;
-    e.push(rect(l, 2.0, 16.0, 6.0, 16.0 + b));
-    e.push(diamond(l, 3.0, 16.0 + b + n + a, a));
-    e.push(rect(l, 10.0, 16.0, 14.0, 16.0 + b));
-    e.push(diamond(l, 11.0, 16.0 + b + v + S + a, a));
-    write(deck, &format!("{rule}.h3"), e);
-
-    let across = |xl: f64, y: f64| {
-        vec![
-            rect(l, xl - 1.5 - n / 2.0, y, xl - n / 2.0, y + b),
-            rect(l, xl + n / 2.0, y, xl + 1.5 + n / 2.0, y + b),
-        ]
-    };
-    let mut e = across(20.0, 2.0);
-    e.push(rect(
-        l,
-        20.0 - n - 1.5,
-        2.0 + b + 1.0,
-        20.0 - n,
-        2.0 + 2.0 * b + 1.0,
-    ));
-    e.push(rect(l, 20.0, 2.0 + b + 1.0, 21.5, 2.0 + 2.0 * b + 1.0));
-    e.push(rect(
-        l,
-        18.5,
-        2.0 + 2.0 * b + 2.0,
-        20.0,
-        2.0 + 3.0 * b + 2.0,
-    ));
-    e.push(rect(
-        l,
-        20.0 + n,
-        2.0 + 2.0 * b + 2.0,
-        21.5 + n,
-        2.0 + 3.0 * b + 2.0,
-    ));
-    e.extend(across(21.0, 2.0 + 3.0 * b + 3.0));
-    e.extend(across(40.0, 2.0));
-    e.extend(across(42.0, 2.0 + b + 1.0));
-    e.push(rect(
-        l,
-        10.0,
-        20.0 - 1.5 - n / 2.0,
-        10.0 + b,
-        20.0 - n / 2.0,
-    ));
-    e.push(rect(
-        l,
-        10.0,
-        20.0 + n / 2.0,
-        10.0 + b,
-        20.0 + 1.5 + n / 2.0,
-    ));
-    write(deck, &format!("{rule}.h4"), e);
 }
 
 pub fn generate(pdk: &PdkConfig) {
@@ -307,7 +180,6 @@ pub fn generate(pdk: &PdkConfig) {
     psd_g(&l);
     psd_i(&l);
     psd_j(&l);
-    psd_k(&l);
     psd_l(&l);
     psd_mn(&l);
 
@@ -382,29 +254,6 @@ fn tgo_a(l: &L) {
     e.push(rect(l.act, 8.0, 6.0, 9.0, 7.0));
     write("tgo", "TGO.a.h1", e);
 
-    // h2: a chamfer 0.265 from the Activ's corner (walls 0.27) fires, one at 0.275 is
-    // clean; a diamond Activ in a square oxide 0.265 from its corners fires four times,
-    // at 0.27 clean; a square Activ in a diamond oxide whose walls pass 0.265 from its
-    // corners fires four times, at 0.27 clean.
-    write(
-        "tgo",
-        "TGO.a.h2",
-        vec![
-            chamfered_tr(l.tgo, 2.0, 2.0, 4.0, 4.0, 7.835),
-            rect(l.act, 2.27, 2.27, 3.73, 3.73),
-            chamfered_tr(l.tgo, 6.0, 2.0, 8.0, 4.0, 11.85),
-            rect(l.act, 6.27, 2.27, 7.73, 3.73),
-            rect(l.tgo, 10.235, 2.235, 11.765, 3.765),
-            diamond(l.act, 11.0, 3.0, 0.5),
-            rect(l.tgo, 13.23, 2.23, 14.77, 3.77),
-            diamond(l.act, 14.0, 3.0, 0.5),
-            diamond(l.tgo, 17.0, 3.0, 0.875),
-            rect(l.act, 16.75, 2.75, 17.25, 3.25),
-            diamond(l.tgo, 17.0, 7.0, 0.885),
-            rect(l.act, 16.75, 6.75, 17.25, 7.25),
-        ],
-    );
-
     // h3: an oxide drawn as two overlapping boxes whose union leaves 0.265 fires; an Activ
     // drawn as four quadrants with 0.265 fires; an Activ in the hole of an oxide ring and
     // one crossing the ring's inner edge are nothing.
@@ -422,16 +271,6 @@ fn tgo_a(l: &L) {
     e.push(rect(l.act, 11.5, 3.5, 12.5, 4.5));
     e.push(rect(l.act, 13.0, 3.0, 14.0, 4.0));
     write("tgo", "TGO.a.h3", e);
-
-    // h4: 0.265 with the oxide's edge on x = 20, the Activ's edge on x = 20, straddling 21,
-    // on 40 and straddling 42 fire; a 0.27 one straddling x = 20 is clean.
-    let mut e = l.tgo_box(18.735, 2.0, 0.27, 0.27, 0.265, 0.27);
-    e.extend(l.tgo_box(19.0, 6.0, 0.27, 0.27, 0.265, 0.27));
-    e.extend(l.tgo_box(20.5, 10.0, 0.27, 0.27, 0.265, 0.27));
-    e.extend(l.tgo_box(39.0, 2.0, 0.27, 0.27, 0.265, 0.27));
-    e.extend(l.tgo_box(41.5, 2.0, 0.27, 0.27, 0.265, 0.27));
-    e.extend(l.tgo_box(19.5, 14.0, 0.27, 0.27, 0.27, 0.27));
-    write("tgo", "TGO.a.h4", e);
 
     // h7: a 300 µm Activ 0.265 from its oxide's top edge, and a 0.265 at (1000, 1000).
     write(
@@ -569,13 +408,6 @@ fn tgo_c(l: &L) {
     e.push(rect(l.tgo, 7.5, 1.73, 8.6, 3.27));
     e.push(rect(l.tgo, 8.4, 1.73, 8.785, 3.27));
     write("tgo", "TGO.c.h2", e);
-
-    // h3: 0.335 with the oxide's edge on x = 20, straddling 21, on 40 and straddling 42.
-    let mut e = l.hv2(19.215, 2.0, 0.34, 0.335);
-    e.extend(l.hv2(20.5, 6.0, 0.34, 0.335));
-    e.extend(l.hv2(39.215, 2.0, 0.34, 0.335));
-    e.extend(l.hv2(41.5, 6.0, 0.34, 0.335));
-    write("tgo", "TGO.c.h3", e);
 }
 
 /// TGO.d, "Min. space between ThickGateOx and GatPoly over Activ outside thick gate oxide
@@ -1154,36 +986,6 @@ fn psd_j(l: &L) {
     cell.push(rect(l.psd, 0.995, 0.0, 2.0, 2.0));
 }
 
-/// pSD.k, "Min. pSD area (µm²) 0.25".
-fn psd_k(l: &L) {
-    // h1: 0.5 × 0.5 clean, 0.5 × 0.495 fires; a diamond of 0.245 fires, of 0.2592 clean;
-    // two overlapping 0.4 boxes whose union is 0.24 fire once; two abutting boxes adding to
-    // 0.25 are clean; 0.2475 straddling x = 20, 21 and 40 fire once each; two 0.16 boxes
-    // touching at a corner fire twice (their pSD.b set aside); 0.16 at (1000, 1000) fires; a
-    // 0.005 × 40 sliver (a pSD.a, set aside) fires.
-    write(
-        "psd",
-        "pSD.k.h1",
-        vec![
-            rect(l.psd, 2.0, 2.0, 2.5, 2.5),
-            rect(l.psd, 4.0, 2.0, 4.5, 2.495),
-            diamond(l.psd, 7.0, 2.5, 0.35),
-            diamond(l.psd, 9.0, 2.5, 0.36),
-            rect(l.psd, 11.0, 2.0, 11.4, 2.4),
-            rect(l.psd, 11.2, 2.0, 11.6, 2.4),
-            rect(l.psd, 13.0, 2.0, 13.25, 2.5),
-            rect(l.psd, 13.25, 2.0, 13.5, 2.5),
-            rect(l.psd, 19.75, 2.0, 20.25, 2.495),
-            rect(l.psd, 20.75, 6.0, 21.25, 6.495),
-            rect(l.psd, 39.75, 2.0, 40.25, 2.495),
-            rect(l.psd, 2.0, 6.0, 2.4, 6.4),
-            rect(l.psd, 2.4, 6.4, 2.8, 6.8),
-            rect(l.psd, 1000.0, 1000.0, 1000.4, 1000.4),
-            rect(l.psd, 6.0, 6.0, 6.005, 46.0),
-        ],
-    );
-}
-
 /// pSD.l, "Min. pSD enclosed area (µm²) 0.25"; figure 5.10 draws `l` in a hole holding an
 /// island as the empty area between.
 fn psd_l(l: &L) {
@@ -1293,27 +1095,6 @@ fn nsdb_c(l: &L) {
             sq(l.psd, 4.165, 3.765, 1.0),
             rect(l.nsdb, 7.0, 2.0, 8.195, 4.0),
             diamond(l.psd, 9.0, 3.0, 0.5),
-        ],
-    );
-
-    // h3: 0.305 gaps straddling x = 20, ending on it, starting on it, straddling 21, 40 and
-    // 42.
-    write(
-        "nsdblock",
-        "nSDB.c.h3",
-        vec![
-            sq(l.nsdb, 18.85, 2.0, 1.0),
-            sq(l.psd, 20.155, 2.0, 1.0),
-            sq(l.nsdb, 18.695, 6.0, 1.0),
-            sq(l.psd, 20.0, 6.0, 1.0),
-            sq(l.nsdb, 19.0, 10.0, 1.0),
-            sq(l.psd, 20.305, 10.0, 1.0),
-            sq(l.nsdb, 19.85, 14.0, 1.0),
-            sq(l.psd, 21.155, 14.0, 1.0),
-            sq(l.nsdb, 38.85, 2.0, 1.0),
-            sq(l.psd, 40.155, 2.0, 1.0),
-            sq(l.nsdb, 40.85, 6.0, 1.0),
-            sq(l.psd, 42.155, 6.0, 1.0),
         ],
     );
 }

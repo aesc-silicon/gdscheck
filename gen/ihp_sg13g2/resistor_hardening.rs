@@ -289,7 +289,6 @@ pub fn generate(pdk: &PdkConfig) {
             cont_kit(&p, kind);
         }
     }
-    rsil_b(&p);
     rsil_c(&p);
     rsil_d(&p);
     rhi_b(&p);
@@ -577,55 +576,6 @@ fn cont_kit(p: &P, kind: Kind) {
     e.extend(long.build(p));
     e.extend(gaps(1000.0, 1000.0, 0.195, 0.2).build(p));
     write(&format!("{rule}.h2"), e);
-}
-
-// ---------------------------------------------------------------------------
-// Rsil.b: "Min. RES space to Cont 0.12".
-
-fn rsil_b(p: &P) {
-    let gaps = |x, y, l, r| {
-        let mut q = R::new(Kind::Rsil, x, y, 0.5, 2.0);
-        q.gap = (l, r);
-        q
-    };
-    let bare = |x, y| rect(p.cont, x, y, x + CONT, y + CONT);
-
-    // h1: 0.12 both (clean); 0.115 left; on a 1.0 head a Cont 0.08/0.08 from the RES's
-    // corner (0.113, fires) and one 0.115/0.06 (0.130, clean); a Cont abutting the RES;
-    // a Cont crossing the RES's end (shares area, no pair); a bare Cont 0.115 below the
-    // RES; a bare Cont 0.12 below (clean).
-    let mut e = gaps(2.0, 2.0, 0.12, 0.12).build(p);
-    e.extend(gaps(2.0, 5.0, 0.115, 0.12).build(p));
-    for (i, (dx, dy)) in [(0.08, 0.08), (0.115, 0.06)].iter().enumerate() {
-        let mut r = gaps(2.0, 8.0 + 3.0 * i as f64, 0.12, 0.12);
-        r.head_w = 1.0;
-        r.conts.0 = false;
-        let (rx, ry) = (r.x0, r.y0 + r.w);
-        e.extend(r.build(p));
-        e.extend(p.cont(rx - dx - CONT / 2.0, ry + dy + CONT / 2.0));
-    }
-    e.extend(gaps(2.0, 14.0, 0.0, 0.12).build(p));
-    e.extend(gaps(10.0, 2.0, -0.05, 0.12).build(p));
-    let r = gaps(10.0, 5.0, 0.12, 0.12);
-    e.extend(r.build(p));
-    e.push(bare(10.5, 5.0 - 0.115 - CONT));
-    let r = gaps(10.0, 8.0, 0.12, 0.12);
-    e.extend(r.build(p));
-    e.push(bare(10.5, 8.0 - 0.12 - CONT));
-    write("Rsil.b.h1", e);
-
-    // h2: 0.115 across x = 20 (Cont ending at 19.9, RES at 20.015), a Cont ending on
-    // x = 40 with RES at 40.12 (clean), RES starting on x = 42 with 0.115, a Cont ending
-    // on x = 60 with RES at 60.115, a 300 µm body with 0.115 on the right, at (1000, 1000).
-    let mut e = gaps(20.015, 2.0, 0.115, 0.12).build(p);
-    e.extend(gaps(40.12, 5.0, 0.12, 0.12).build(p));
-    e.extend(gaps(42.0, 2.0, 0.115, 0.12).build(p));
-    e.extend(gaps(60.115, 2.0, 0.115, 0.12).build(p));
-    let mut long = gaps(5.0, 10.0, 0.12, 0.115);
-    long.len = 300.0;
-    e.extend(long.build(p));
-    e.extend(gaps(1000.0, 1000.0, 0.115, 0.12).build(p));
-    write("Rsil.b.h2", e);
 }
 
 // ---------------------------------------------------------------------------

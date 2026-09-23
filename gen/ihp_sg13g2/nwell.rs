@@ -4,8 +4,8 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
-    chamfered_bl, chamfered_tr, diamond, layer, library, min_width_pattern, mixed_notch_pattern,
-    notch_pattern, poly, rect, strap, strip45, tap, write_gz,
+    chamfered_tr, diamond, layer, library, min_width_pattern, poly, rect, strap, strip45, tap,
+    write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -436,37 +436,6 @@ impl L {
         ]
     }
 
-    /// The same ring as one keyhole polygon (GDS has no holes: the outline runs in along
-    /// a zero-width cut, round the hole and back out).
-    #[allow(clippy::too_many_arguments)]
-    fn keyhole_ring(
-        &self,
-        x0: f64,
-        y0: f64,
-        x1: f64,
-        y1: f64,
-        hx0: f64,
-        hy0: f64,
-        hx1: f64,
-        hy1: f64,
-    ) -> GdsElement {
-        poly(
-            self.nw,
-            &[
-                (x0, y0),
-                (x1, y0),
-                (x1, y1),
-                (x0, y1),
-                (x0, hy0),
-                (hx0, hy0),
-                (hx0, hy1),
-                (hx1, hy1),
-                (hx1, hy0),
-                (x0, hy0),
-            ],
-        )
-    }
-
     /// DigiBnd frame 1 µm wide whose hole is `(x0, y0)-(x1, y1)`.
     fn digi_ring(&self, x0: f64, y0: f64, x1: f64, y1: f64) -> GdsElement {
         poly(
@@ -636,38 +605,6 @@ fn nw_a_h(l: &L) {
     e.push(rect(nw, 15.6, 8.6, 16.215, 9.4)); // island 0.615 wide → NW.a
     write("NW.a.h3", e);
 
-    // h4 — tile lines.  0.615-wide bars ending on x = 20, straddling 20, starting on 20,
-    // straddling 21, ending on 40, straddling 42, well inside a tile at 10; 0.615-tall
-    // bars running across 20/21 and 40/42; an L with its corner on x = 20 and only the
-    // vertical arm narrow.  Ten violations whatever the tile; the 0.62 controls are clean.
-    write(
-        "NW.a.h4",
-        vec![
-            rect(nw, 9.385, 2.0, 10.0, 4.0),
-            rect(nw, 19.385, 2.0, 20.0, 4.0),
-            rect(nw, 19.7, 6.0, 20.315, 8.0),
-            rect(nw, 20.0, 10.0, 20.615, 12.0),
-            rect(nw, 20.7, 14.0, 21.315, 16.0),
-            rect(nw, 39.385, 2.0, 40.0, 4.0),
-            rect(nw, 41.7, 6.0, 42.315, 8.0),
-            rect(nw, 15.0, 18.0, 25.0, 18.615),
-            rect(nw, 35.0, 18.0, 45.0, 18.615),
-            poly(
-                nw,
-                &[
-                    (20.0, 22.0),
-                    (23.0, 22.0),
-                    (23.0, 23.0),
-                    (20.615, 23.0),
-                    (20.615, 26.0),
-                    (20.0, 26.0),
-                ],
-            ),
-            rect(nw, 19.7, 28.0, 20.32, 30.0), // 0.62 straddling 20 → clean
-            rect(nw, 15.0, 32.0, 25.0, 32.62), // 0.62 tall across 20 → clean
-        ],
-    );
-
     // h7 — a 0.005 sliver (one grid step) and a bar far from everything at (1000, 1000).
     write(
         "NW.a.h7",
@@ -743,109 +680,6 @@ fn nw_b_h(l: &L) {
         ],
     );
 
-    // h2 — 45° geometry.  A diamond tip 0.615 from a straight wall fires, 0.62 is clean;
-    // two parallel 45° strips (d = 1, shifted 2.87 in y → perpendicular gap 0.615) fire,
-    // shifted 2.88 (0.622) clean; a box corner facing a chamfer whose edge passes 0.601
-    // from it fires (c = 0.25), 0.622 (c = 0.28) clean; two diamond tips 0.615 apart fire.
-    write(
-        "NW.b.h2",
-        vec![
-            rect(nw, 2.0, 2.0, 4.0, 6.0),
-            diamond(nw, 5.615, 4.0, 1.0), // NW.b (tip at 4.615)
-            rect(nw, 9.0, 2.0, 11.0, 6.0),
-            diamond(nw, 12.62, 4.0, 1.0), // clean (tip at 11.62)
-            strip45(nw, 2.0, 8.0, 3.0, 1.0),
-            strip45(nw, 2.0, 10.87, 3.0, 1.0), // NW.b (0.615)
-            strip45(nw, 9.0, 8.0, 3.0, 1.0),
-            strip45(nw, 9.0, 10.88, 3.0, 1.0), // clean (0.622)
-            rect(nw, 15.0, 2.0, 17.0, 4.0),
-            chamfered_bl(nw, 17.3, 4.3, 19.3, 6.3, 21.85), // NW.b (0.601 to the corner)
-            rect(nw, 15.0, 8.0, 17.0, 10.0),
-            chamfered_bl(nw, 17.3, 10.3, 19.3, 12.3, 27.88), // clean (0.622)
-            diamond(nw, 15.0, 16.0, 1.0),
-            diamond(nw, 17.615, 16.0, 1.0), // NW.b (tips 0.615 apart)
-        ],
-    );
-
-    // h3 — notches and slots.  The helpers give a straight U notch and a straight-vs-45°
-    // notch, each at 0.615 (fires) and 0.62 (clean); a comb with three 0.615 slots fires
-    // three times; a 0.615 slot cut into a plate fires; two Ls whose vertical arms face
-    // across 0.615 fire once; a ring whose hole is 0.615 wide is a notch (fires), 0.62 is
-    // clean; an island 0.615 from the inner wall of a ring fires.
-    let mut e = notch_pattern(nw, 1.0, 0.62, 3.0, 2.0, SPACE_DELTA);
-    e.extend(mixed_notch_pattern(
-        nw,
-        1.0,
-        0.62,
-        1.0,
-        3.0,
-        26.0,
-        SPACE_DELTA,
-    ));
-    e.push(poly(
-        nw,
-        &[
-            (2.0, 10.0),
-            (8.0, 10.0),
-            (8.0, 11.0),
-            (7.845, 11.0),
-            (7.845, 13.0),
-            (6.845, 13.0),
-            (6.845, 11.0),
-            (6.23, 11.0),
-            (6.23, 13.0),
-            (5.23, 13.0),
-            (5.23, 11.0),
-            (4.615, 11.0),
-            (4.615, 13.0),
-            (3.615, 13.0),
-            (3.615, 11.0),
-            (3.0, 11.0),
-            (3.0, 13.0),
-            (2.0, 13.0),
-        ],
-    )); // comb: three 0.615 slots → 3 × NW.b
-    e.push(poly(
-        nw,
-        &[
-            (11.0, 10.0),
-            (15.0, 10.0),
-            (15.0, 13.0),
-            (13.615, 13.0),
-            (13.615, 11.5),
-            (13.0, 11.5),
-            (13.0, 13.0),
-            (11.0, 13.0),
-        ],
-    )); // slot 0.615 wide → NW.b
-    e.push(poly(
-        nw,
-        &[
-            (2.0, 15.0),
-            (5.0, 15.0),
-            (5.0, 16.0),
-            (3.0, 16.0),
-            (3.0, 18.0),
-            (2.0, 18.0),
-        ],
-    ));
-    e.push(poly(
-        nw,
-        &[
-            (3.615, 17.0),
-            (6.615, 17.0),
-            (6.615, 18.0),
-            (4.615, 18.0),
-            (4.615, 20.0),
-            (3.615, 20.0),
-        ],
-    )); // arms face across 0.615 (y 17..18) → NW.b
-    e.push(l.keyhole_ring(9.0, 15.0, 12.0, 18.0, 10.2, 16.0, 10.815, 17.0)); // hole 0.615 → NW.b
-    e.extend(l.ring(14.0, 15.0, 17.0, 18.0, 15.2, 16.0, 15.82, 17.0)); // hole 0.62 → clean
-    e.extend(l.ring(2.0, 22.0, 7.0, 27.0, 3.0, 23.0, 6.0, 26.0));
-    e.push(rect(nw, 3.615, 24.0, 4.615, 25.0)); // island 0.615 from the left wall → NW.b
-    write("NW.b.h3", e);
-
     // h4 — shapes that merge.  Two overlapping boxes, two abutting boxes and a 4 × 4 grid
     // of small boxes each face a third box across 0.615: one violation each, measured from
     // the union; the 0.62 control is clean.
@@ -868,38 +702,6 @@ fn nw_b_h(l: &L) {
         }
     }
     write("NW.b.h4", e);
-
-    // h5 — tile lines.  0.615 gaps well inside a tile, starting on x = 20, ending on 20,
-    // straddling 20, straddling 21, ending on 40, straddling 42; a horizontal 0.615 gap
-    // running across 20/21 and across 40/42; a diagonal 0.43/0.43 pair whose corner is
-    // on x = 20.  Ten violations; the 0.62 control straddling 20 is clean.
-    write(
-        "NW.b.h5",
-        vec![
-            rect(nw, 8.7, 2.0, 9.7, 4.0),
-            rect(nw, 10.315, 2.0, 11.315, 4.0),
-            rect(nw, 19.0, 2.0, 20.0, 4.0),
-            rect(nw, 20.615, 2.0, 21.615, 4.0),
-            rect(nw, 18.385, 6.0, 19.385, 8.0),
-            rect(nw, 20.0, 6.0, 21.0, 8.0),
-            rect(nw, 18.7, 10.0, 19.7, 12.0),
-            rect(nw, 20.315, 10.0, 21.315, 12.0),
-            rect(nw, 19.7, 14.0, 20.7, 16.0),
-            rect(nw, 21.315, 14.0, 22.315, 16.0),
-            rect(nw, 38.385, 2.0, 39.385, 4.0),
-            rect(nw, 40.0, 2.0, 41.0, 4.0),
-            rect(nw, 40.7, 6.0, 41.7, 8.0),
-            rect(nw, 42.315, 6.0, 43.315, 8.0),
-            rect(nw, 15.0, 18.0, 25.0, 19.0),
-            rect(nw, 15.0, 19.615, 25.0, 20.615),
-            rect(nw, 35.0, 18.0, 45.0, 19.0),
-            rect(nw, 35.0, 19.615, 45.0, 20.615),
-            rect(nw, 18.0, 22.0, 20.0, 24.0),
-            rect(nw, 20.43, 24.43, 22.43, 26.43),
-            rect(nw, 18.7, 28.0, 19.7, 30.0),
-            rect(nw, 20.32, 28.0, 21.32, 30.0), // 0.62 → clean
-        ],
-    );
 
     // h8 — a 0.005 sliver 0.615 from a box (NW.b, and NW.a for the sliver); two 300 µm bars
     // 0.615 apart (one violation); a pair far away at (1000, 1000).

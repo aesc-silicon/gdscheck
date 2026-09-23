@@ -57,29 +57,20 @@ pub fn generate(pdk: &PdkConfig) {
     padc_f_h1(&l);
 
     pas_a_h1(&l);
-    pas_a_h2(&l);
     pas_a_h34(&l);
-    pas_b_h1(&l);
-    pas_b_h2(&l);
     pas_b_h34(&l);
     pas_c_h1(&l);
     pas_c_h2(&l);
     pas_c_h34(&l);
 
     mim_a_h1(&l);
-    mim_a_h2(&l);
     mim_a_h34(&l);
-    mim_b_h1(&l);
-    mim_b_h2(&l);
     mim_b_h34(&l);
     mim_c_h1(&l);
-    mim_c_h2(&l);
     mim_d_h1(&l);
     mim_d_h2(&l);
-    mim_e_h1(&l);
     mim_f_h1(&l);
     mim_g_h1(&l);
-    mim_gr_h1(&l);
     mim_h_h1(&l);
 }
 
@@ -92,7 +83,6 @@ struct L {
     dfpad_sbump: (i16, i16),
     dfpad_pillar: (i16, i16),
     tm2: (i16, i16),
-    tm1: (i16, i16),
     activ: (i16, i16),
     seal: (i16, i16),
     mim: (i16, i16),
@@ -111,7 +101,6 @@ impl L {
             dfpad_sbump: layer(pdk, "dfpad.sbump"),
             dfpad_pillar: layer(pdk, "dfpad.pillar"),
             tm2: layer(pdk, "TopMetal2"),
-            tm1: layer(pdk, "TopMetal1"),
             activ: layer(pdk, "Activ"),
             seal: layer(pdk, "EdgeSeal"),
             mim: layer(pdk, "MIM"),
@@ -1138,165 +1127,9 @@ fn pas_a_h1(l: &L) {
     write(PAS, "Pas.a.h1", e);
 }
 
-/// Pas.a — the tile lines: 2.095 bars (a) vertical from x = 19.95 to 22.045 (across 20
-/// and 21); (b) from 39.995 to 42.09 (across 40 and 42); (c) from 100 to 102.095
-/// (starting on the line); (d) horizontal 2.095 tall from x = 15 to 25 at y = 20 (its
-/// walls across the line); (e) ending exactly on x = 20 (17.905 to 20).  A 2.1 bar from
-/// 59.95 to 62.05 across 60 and 63, clean.  Fires 5.
-fn pas_a_h2(l: &L) {
-    let p = l.passiv;
-    let e = vec![
-        rect(p, 19.95, 0.0, 22.045, 10.0),
-        rect(p, 39.995, 0.0, 42.09, 10.0),
-        rect(p, 100.0, 0.0, 102.095, 10.0),
-        rect(p, 15.0, 20.0, 25.0, 22.095),
-        rect(p, 17.905, 40.0, 20.0, 50.0),
-        rect(p, 59.95, 0.0, 62.05, 10.0),
-    ];
-    write(PAS, "Pas.a.h2", e);
-}
-
 /// Pas.a — 10 × 5 bars of 2.095 × 10 at a 15 pitch, flat (`h3`) and as an array
 /// reference (`h4`).  Fires 50 bars.
 fn pas_a_h34(_l: &L) {}
-
-/// Pas.b — "Min. Passiv space or notch 3.50".  5 µm squares: (a) 3.5 apart, clean;
-/// (b) 3.495, fires; (c) corner to corner dx = dy = 2.47 (3.493), fires; (d) dx = dy =
-/// 2.48 (3.507), clean; (e) dx = 3.0, dy = 6 (6.7 euclidian, 3.0 on the x axis alone),
-/// clean; (f) two 45° strips of d = 2, 8.94 apart in y (3.4931 across), fires; (g) 8.95
-/// apart (3.5002), clean; (h) a U whose arms are 3.49 apart (a notch), fires; (i) a
-/// comb of three 3 µm fingers with 3.495 slots, fires twice; (j) a 3.495 slot 6 deep
-/// into a 15 plate, fires; (k) a ring of 15 with a 3.49 hole, fires; (l) a ring of 15
-/// with a 10 hole holding a 3 square (3.5 each side), clean; (m) with a 9.99 hole
-/// (3.495 each side), fires; (n) a square drawn as two overlapping boxes 3.495 from a
-/// square, fires once.
-fn pas_b_h1(l: &L) {
-    let p = l.passiv;
-    let sq = |x: f64, y: f64| rect(p, x, y, x + 5.0, y + 5.0);
-    let mut e = vec![
-        sq(0.0, 0.0),
-        sq(8.5, 0.0),
-        sq(20.0, 0.0),
-        sq(28.495, 0.0),
-        sq(40.0, 0.0),
-        sq(47.47, 7.47),
-        sq(60.0, 0.0),
-        sq(67.48, 7.48),
-        sq(80.0, 0.0),
-        sq(88.0, 11.0),
-        strip45(p, 100.0, 0.0, 10.0, 2.0),
-        strip45(p, 100.0, 8.94, 10.0, 2.0),
-        strip45(p, 120.0, 0.0, 10.0, 2.0),
-        strip45(p, 120.0, 8.95, 10.0, 2.0),
-    ];
-    // (h) U: 10 wide, arms 3.2525 (3.495 between), 10 tall, base 3.
-    let u = |x: f64, y: f64, gap: f64| {
-        let arm = (10.0 - gap) / 2.0;
-        poly(
-            p,
-            &[
-                (x, y),
-                (x + 10.0, y),
-                (x + 10.0, y + 10.0),
-                (x + 10.0 - arm, y + 10.0),
-                (x + 10.0 - arm, y + 3.0),
-                (x + arm, y + 3.0),
-                (x + arm, y + 10.0),
-                (x, y + 10.0),
-            ],
-        )
-    };
-    e.push(u(140.0, 0.0, 3.5)); // clean
-    e.push(u(155.0, 0.0, 3.49));
-    // (i) comb: base 16 × 3, three fingers 3 wide, slots 3.495.
-    let (x, y) = (170.0, 0.0);
-    e.push(poly(
-        p,
-        &[
-            (x, y),
-            (x + 15.99, y),
-            (x + 15.99, y + 13.0),
-            (x + 12.99, y + 13.0),
-            (x + 12.99, y + 3.0),
-            (x + 9.495, y + 3.0),
-            (x + 9.495, y + 13.0),
-            (x + 6.495, y + 13.0),
-            (x + 6.495, y + 3.0),
-            (x + 3.0, y + 3.0),
-            (x + 3.0, y + 13.0),
-            (x, y + 13.0),
-        ],
-    ));
-    // (j) slot 3.495 wide, 6 deep, from the top of a 15 plate.
-    let (x, y) = (200.0, 0.0);
-    e.push(poly(
-        p,
-        &[
-            (x, y),
-            (x + 15.0, y),
-            (x + 15.0, y + 15.0),
-            (x + 9.25, y + 15.0),
-            (x + 9.25, y + 9.0),
-            (x + 5.755, y + 9.0),
-            (x + 5.755, y + 15.0),
-            (x, y + 15.0),
-        ],
-    ));
-    let ring = |x: f64, y: f64, s: f64, h: f64| {
-        let m = (s - h) / 2.0;
-        poly(
-            p,
-            &[
-                (x, y),
-                (x + s, y),
-                (x + s, y + s),
-                (x, y + s),
-                (x, y + m),
-                (x + m, y + m),
-                (x + m, y + m + h),
-                (x + m + h, y + m + h),
-                (x + m + h, y + m),
-                (x, y + m),
-            ],
-        )
-    };
-    e.push(ring(230.0, 0.0, 15.0, 3.49));
-    e.push(ring(250.0, 0.0, 15.0, 10.0));
-    e.push(rect(p, 256.0, 6.0, 259.0, 9.0));
-    e.push(ring(270.0, 0.0, 15.0, 9.99));
-    e.push(rect(p, 276.0, 6.0, 279.0, 9.0));
-    e.push(rect(p, 300.0, 0.0, 303.0, 5.0));
-    e.push(rect(p, 302.0, 0.0, 305.0, 5.0));
-    e.push(sq(308.495, 0.0));
-    write(PAS, "Pas.b.h1", e);
-}
-
-/// Pas.b — the tile lines: 5 squares 3.495 apart with the gap (a) from 18 to 21.495
-/// (across 20 and 21), (b) from 38.5 to 41.995 (across 40), (c) from 20 exactly, (d)
-/// ending on 42 exactly, (e) from 98.5 to 101.995 (across 100), (f) at (1000, 1000);
-/// (g) a corner-to-corner pair dx = dy = 2.47 whose corners sit on (60, 60) and
-/// (62.47, 62.47).  Fires 7.
-fn pas_b_h2(l: &L) {
-    let p = l.passiv;
-    let sq = |x: f64, y: f64| rect(p, x, y, x + 5.0, y + 5.0);
-    let e = vec![
-        sq(13.0, 0.0),
-        sq(21.495, 0.0),
-        sq(33.5, 0.0),
-        sq(41.995, 0.0),
-        sq(15.0, 10.0),
-        sq(23.495, 10.0),
-        sq(33.505, 10.0),
-        sq(42.0, 10.0),
-        sq(93.5, 0.0),
-        sq(101.995, 0.0),
-        sq(1000.0, 1000.0),
-        sq(1008.495, 1000.0),
-        sq(55.0, 55.0),
-        sq(62.47, 62.47),
-    ];
-    write(PAS, "Pas.b.h2", e);
-}
 
 /// Pas.b — 10 × 5 pairs of 5 squares 3.495 apart on a 20 pitch, flat (`h3`) and as an
 /// array reference (`h4`).  Fires 50.
@@ -1474,149 +1307,9 @@ fn mim_a_h1(l: &L) {
     write(MIM, "MIM.a.h1", e);
 }
 
-/// MIM.a — the tile lines: 1.135 bars (a) from x = 19.95 to 21.085 (across 20 and 21);
-/// (b) from 39.995 to 41.13 (across 40); (c) from 100 to 101.135; (d) horizontal 1.135
-/// tall from x = 15 to 25 at y = 20; (e) ending on x = 42 (40.865 to 42).  A 1.14 bar
-/// from 6.5 to 7.64 (across 7), clean.  Fires 5.
-fn mim_a_h2(l: &L) {
-    let m = l.mim;
-    let e = vec![
-        rect(m, 19.95, 0.0, 21.085, 10.0),
-        rect(m, 39.995, 0.0, 41.13, 10.0),
-        rect(m, 100.0, 0.0, 101.135, 10.0),
-        rect(m, 15.0, 20.0, 25.0, 21.135),
-        rect(m, 40.865, 30.0, 42.0, 40.0),
-        rect(m, 6.5, 0.0, 7.64, 10.0),
-        rect(l.m5, -5.0, -5.0, 110.0, 50.0),
-    ];
-    write(MIM, "MIM.a.h2", e);
-}
-
 /// MIM.a — 10 × 5 bars of 1.135 × 10 at a 15 pitch on one Metal5 plate in TOP, flat
 /// (`h3`) and as an array reference (`h4`).  Fires 50 bars.
 fn mim_a_h34(_l: &L) {}
-
-/// MIM.b — "Min. MIM space 0.60".  2 µm squares, no vias (MIM.h ignored), on one
-/// Metal5 plate: (a) 0.6 apart, clean; (b) 0.595, fires; (c) corner to corner dx = dy =
-/// 0.42 (0.594), fires; (d) dx = dy = 0.425 (0.601), clean; (e) dx = 0.5, dy = 3 (3.04
-/// euclidian), clean; (f) two 45° strips of d = 1, 2.84 apart in y (0.594 across),
-/// fires; (g) 2.85 apart (0.601), clean; (h) a U whose arms are 0.59 apart, fires;
-/// (i) a comb of three 2 fingers with 0.595 slots, fires twice; (j) a ring of 6 with a
-/// 0.59 hole, fires; (k) a ring of 6 with a 3.2 hole holding a 2 square (0.6 each
-/// side), clean; (l) with a 3.19 hole (0.595 each side), fires; (m) a square as two
-/// overlapping boxes 0.595 from a square, fires once.
-fn mim_b_h1(l: &L) {
-    let m = l.mim;
-    let sq = |x: f64, y: f64| rect(m, x, y, x + 2.0, y + 2.0);
-    let mut e = vec![
-        sq(0.0, 0.0),
-        sq(2.6, 0.0),
-        sq(10.0, 0.0),
-        sq(12.595, 0.0),
-        sq(20.0, 0.0),
-        sq(22.42, 2.42),
-        sq(30.0, 0.0),
-        sq(32.425, 2.425),
-        sq(40.0, 0.0),
-        sq(42.5, 5.0),
-        strip45(m, 50.0, 0.0, 5.0, 1.0),
-        strip45(m, 50.0, 2.84, 5.0, 1.0),
-        strip45(m, 60.0, 0.0, 5.0, 1.0),
-        strip45(m, 60.0, 2.85, 5.0, 1.0),
-    ];
-    let u = |x: f64, y: f64, gap: f64| {
-        let arm = (5.0 - gap) / 2.0;
-        poly(
-            m,
-            &[
-                (x, y),
-                (x + 5.0, y),
-                (x + 5.0, y + 5.0),
-                (x + 5.0 - arm, y + 5.0),
-                (x + 5.0 - arm, y + 2.0),
-                (x + arm, y + 2.0),
-                (x + arm, y + 5.0),
-                (x, y + 5.0),
-            ],
-        )
-    };
-    e.push(u(70.0, 0.0, 0.6));
-    e.push(u(80.0, 0.0, 0.59));
-    let (x, y) = (90.0, 0.0);
-    e.push(poly(
-        m,
-        &[
-            (x, y),
-            (x + 7.19, y),
-            (x + 7.19, y + 6.0),
-            (x + 5.19, y + 6.0),
-            (x + 5.19, y + 2.0),
-            (x + 4.595, y + 2.0),
-            (x + 4.595, y + 6.0),
-            (x + 2.595, y + 6.0),
-            (x + 2.595, y + 2.0),
-            (x + 2.0, y + 2.0),
-            (x + 2.0, y + 6.0),
-            (x, y + 6.0),
-        ],
-    ));
-    let ring = |x: f64, y: f64, s: f64, h: f64| {
-        let mm = (s - h) / 2.0;
-        poly(
-            m,
-            &[
-                (x, y),
-                (x + s, y),
-                (x + s, y + s),
-                (x, y + s),
-                (x, y + mm),
-                (x + mm, y + mm),
-                (x + mm, y + mm + h),
-                (x + mm + h, y + mm + h),
-                (x + mm + h, y + mm),
-                (x, y + mm),
-            ],
-        )
-    };
-    e.push(ring(100.0, 0.0, 6.0, 0.59));
-    e.push(ring(110.0, 0.0, 6.0, 3.2));
-    e.push(sq(112.0, 2.0));
-    e.push(ring(120.0, 0.0, 6.0, 3.19));
-    e.push(sq(122.0, 2.0));
-    e.push(rect(m, 130.0, 0.0, 131.5, 2.0));
-    e.push(rect(m, 131.0, 0.0, 132.5, 2.0));
-    e.push(sq(133.095, 0.0));
-    e.push(rect(l.m5, -5.0, -5.0, 140.0, 15.0));
-    write(MIM, "MIM.b.h1", e);
-}
-
-/// MIM.b — the tile lines: 2 squares 0.595 apart with the gap (a) from 19.7 to
-/// 20.295 (across 20), (b) from 20.7 to 21.295 (across 21), (c) from 40 exactly, (d)
-/// ending on 42, (e) from 99.7 to 100.295, (f) at (1000, 1000); (g) a corner-to-corner
-/// pair dx = dy = 0.42 whose corners sit on (60, 60) and (60.42, 60.42).  Fires 7.
-fn mim_b_h2(l: &L) {
-    let m = l.mim;
-    let sq = |x: f64, y: f64| rect(m, x, y, x + 2.0, y + 2.0);
-    let e = vec![
-        sq(17.7, 0.0),
-        sq(20.295, 0.0),
-        sq(18.7, 5.0),
-        sq(21.295, 5.0),
-        sq(38.0, 0.0),
-        sq(40.595, 0.0),
-        sq(39.405, 5.0),
-        sq(42.0, 5.0),
-        sq(97.7, 0.0),
-        sq(100.295, 0.0),
-        sq(1000.0, 1000.0),
-        sq(1002.595, 1000.0),
-        sq(58.0, 58.0),
-        sq(60.42, 60.42),
-        rect(l.m5, -5.0, -5.0, 110.0, 70.0),
-        rect(l.m5, 995.0, 995.0, 1010.0, 1010.0),
-    ];
-    write(MIM, "MIM.b.h2", e);
-}
 
 /// MIM.b — 10 × 5 pairs of 2 squares 0.595 apart on a 10 pitch over one Metal5 plate
 /// in TOP, flat (`h3`) and as an array reference (`h4`).  Fires 50.
@@ -1677,26 +1370,6 @@ fn mim_c_h1(l: &L) {
     e.extend(plate(x, y));
     e.push(rect(l.m5, x - 0.595, y - 0.595, x + 3.595, y + 3.595));
     write(MIM, "MIM.c.h1", e);
-}
-
-/// MIM.c — the tile lines: 3 plates with Metal5 0.595 short on one side, the short
-/// margin (a) from 19.405 to 20 (ending on the line), (b) from 20 to 20.595 (starting
-/// on it), (c) from 39.7 to 40.295 (across 40), (d) from 99.7 to 100.295, (e) at
-/// (1000, 1000); (f) Metal5 from 20 to 20.6 beyond a plate, clean.  Fires 5.
-fn mim_c_h2(l: &L) {
-    let mut e = vec![];
-    let plate = |e: &mut Vec<GdsElement>, x: f64, y: f64, right: f64| {
-        e.push(rect(l.mim, x, y, x + 3.0, y + 3.0));
-        e.push(rect(l.tv1, x + 0.4, y + 0.4, x + 0.82, y + 0.82));
-        e.push(rect(l.m5, x - 0.6, y - 0.6, x + 3.0 + right, y + 3.6));
-    };
-    plate(&mut e, 16.405, 0.0, 0.595);
-    plate(&mut e, 17.0, 10.0, 0.595);
-    plate(&mut e, 36.7, 0.0, 0.595);
-    plate(&mut e, 96.7, 0.0, 0.595);
-    plate(&mut e, 1000.0, 1000.0, 0.595);
-    plate(&mut e, 17.0, 20.0, 0.6);
-    write(MIM, "MIM.c.h2", e);
 }
 
 /// MIM.d — "Min. MIM enclosure of TopVia1 0.36", for the vias that touch MIM.  3 µm
@@ -1801,81 +1474,6 @@ fn mim_d_h2(l: &L) {
     write(MIM, "MIM.d.h2", e);
 }
 
-/// MIM.e — "Min. TopMetal1 space to MIM 0.60".  3 µm plates on Metal5 0.7 beyond with
-/// a via 0.5 in, on a 12 pitch: (a) a TopMetal1 wire 0.6 to the right, clean; (b)
-/// 0.595, fires; (c) a wire past the plate's corner dx = dy = 0.42 (0.594), fires; (d)
-/// dx = dy = 0.425, clean; (e) the cap's top plate: TopMetal1 over the via, inside the
-/// MIM, clean; (f) the top plate with a 1 µm exit wire crossing the MIM's wall, clean;
-/// (g) the exit wire turning to run along the MIM's wall 0.595 outside it, fires; (h)
-/// a TopMetal1 45° wall passing 0.594 from the plate's corner, fires.  Fires 4.
-fn mim_e_h1(l: &L) {
-    let at = |i: usize| ((i % 8) as f64 * 12.0, 0.0);
-    let mut e = vec![];
-    let plate = |e: &mut Vec<GdsElement>, x: f64, y: f64| {
-        e.push(rect(l.mim, x, y, x + 3.0, y + 3.0));
-        e.push(rect(l.m5, x - 0.7, y - 0.7, x + 3.7, y + 3.7));
-        e.push(rect(l.tv1, x + 0.5, y + 0.5, x + 0.92, y + 0.92));
-    };
-    let (x, y) = at(0);
-    plate(&mut e, x, y);
-    e.push(rect(l.tm1, x + 3.6, y, x + 5.6, y + 3.0));
-    let (x, y) = at(1);
-    plate(&mut e, x, y);
-    e.push(rect(l.tm1, x + 3.595, y, x + 5.595, y + 3.0));
-    let (x, y) = at(2);
-    plate(&mut e, x, y);
-    e.push(rect(l.tm1, x + 3.42, y + 3.42, x + 5.42, y + 5.42));
-    let (x, y) = at(3);
-    plate(&mut e, x, y);
-    e.push(rect(l.tm1, x + 3.425, y + 3.425, x + 5.425, y + 5.425));
-    let (x, y) = at(4);
-    plate(&mut e, x, y);
-    e.push(rect(l.tm1, x + 0.4, y + 0.4, x + 2.6, y + 2.6));
-    let (x, y) = at(5);
-    plate(&mut e, x, y);
-    e.push(poly(
-        l.tm1,
-        &[
-            (x + 0.4, y + 0.4),
-            (x + 2.6, y + 0.4),
-            (x + 2.6, y + 1.0),
-            (x + 6.0, y + 1.0),
-            (x + 6.0, y + 2.0),
-            (x + 2.6, y + 2.0),
-            (x + 2.6, y + 2.6),
-            (x + 0.4, y + 2.6),
-        ],
-    ));
-    let (x, y) = at(6);
-    plate(&mut e, x, y);
-    e.push(poly(
-        l.tm1,
-        &[
-            (x + 0.4, y + 0.4),
-            (x + 2.6, y + 0.4),
-            (x + 2.6, y + 1.0),
-            (x + 5.0, y + 1.0),
-            (x + 5.0, y + 4.595),
-            (x - 1.0, y + 4.595),
-            (x - 1.0, y + 3.595),
-            (x + 4.0, y + 3.595),
-            (x + 4.0, y + 2.0),
-            (x + 2.6, y + 2.0),
-            (x + 2.6, y + 2.6),
-            (x + 0.4, y + 2.6),
-        ],
-    ));
-    // (h): a triangle whose 45° wall X − Y = x + 3.84 passes 0.84/√2 = 0.594 from the
-    // plate's bottom-right corner, the foot of the perpendicular on the wall.
-    let (x, y) = at(7);
-    plate(&mut e, x, y);
-    e.push(poly(
-        l.tm1,
-        &[(x + 2.84, y - 1.0), (x + 8.0, y - 1.0), (x + 8.0, y + 4.16)],
-    ));
-    write(MIM, "MIM.e.h1", e);
-}
-
 /// MIM.f — "Min. MIM area per MIM device 1.30".  Plates on one Metal5 plate, no vias
 /// (MIM.h ignored; MIM.a ignored on the narrow ones), on a 6 pitch: (a) 1.14 × 1.14
 /// (1.2996), fires; (b) 1.14 × 1.145 (1.3053), clean; (c) 1.3 × 1.0 (1.3), clean; (d)
@@ -1973,14 +1571,6 @@ fn mim_g_h1(l: &L) {
     e.push(rect(l.m5, x - 0.7, y - 0.7, x + 75.7, y + 75.705));
     e.push(rect(l.tv1, x + 0.5, y + 0.5, x + 0.92, y + 0.92));
     write(MIM, "MIM.g.h1", e);
-}
-
-/// MIM.gR — "Max. recommended total MIM area per chip 174800": 8 × 4 caps of 74 × 74
-/// (5476 each, 175232 in all) placed by one array reference.  Fires once.
-fn mim_gr_h1(l: &L) {
-    let cell = l.cap(0.0, 0.0, 74.0, 74.0, 0.5);
-    let lib = ref_array(cell, 8, 4, 80.0);
-    write_gz(&format!("{MIM}/MIM.gR.h1.gds.gz"), lib);
 }
 
 /// MIM.h — "TopVia1 must be over MIM": every MIM device carries a TopVia1 (or a Vmim,

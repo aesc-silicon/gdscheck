@@ -98,7 +98,7 @@ pub fn generate(pdk: &PdkConfig) {
 
     // forbidden — h1: a BiWind across x = 20 and 40 (one shape, one report), one at
     // (1000, 1000), a BiWind overlapping a PEmWind (one each), a NoDRC 0.005 square;
-    // h2/h3: fifty LDMOS boxes, flat and as a GdsArrayRef.
+    // h3: fifty LDMOS boxes as a GdsArrayRef.
     let bi = layer(pdk, "BiWind");
     let pem = layer(pdk, "PEmWind");
     let nodrc = layer(pdk, "NoDRC");
@@ -117,10 +117,6 @@ pub fn generate(pdk: &PdkConfig) {
         ),
     );
     let cell = vec![rect(ldmos, 0.2, 0.2, 1.2, 1.2)];
-    write_gz(
-        &format!("{FORBIDDEN}/forbidden.h2.gds.gz"),
-        library("TOP", flat_array(&cell, 10, 5, 2.0)),
-    );
     write_gz(
         &format!("{FORBIDDEN}/forbidden.h3.gds.gz"),
         ref_array(cell, 10, 5, 2.0),
