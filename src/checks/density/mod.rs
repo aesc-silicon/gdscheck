@@ -295,12 +295,14 @@ pub fn run(
         merged.ensure(layout, l, dt);
     }
     let tile = merged.tile_dbu() as i64;
-    let layer_maps: Vec<&TileMap> = rule
+    let layer_arcs: Vec<_> = rule
         .layers
         .iter()
         .map(|l| merged.tiles(l.gds_layer as i16, l.gds_datatype as i16))
         .collect();
-    let drawn_die: Option<&TileMap> = bl.map(|(l, dt)| merged.tiles(l, dt));
+    let layer_maps: Vec<&TileMap> = layer_arcs.iter().map(|a| &**a).collect();
+    let drawn_die_arc = bl.map(|(l, dt)| merged.tiles(l, dt));
+    let drawn_die: Option<&TileMap> = drawn_die_arc.as_deref();
     let filled: Option<TileMap> = drawn_die.and_then(|d| filled_die(d, tile));
     let die_map: Option<&TileMap> = filled.as_ref().or(drawn_die);
     // Several layers are read as their union: the drawing, its filler and its mask are

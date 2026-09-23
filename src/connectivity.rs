@@ -151,7 +151,8 @@ impl Connectivity {
         // merged in turn and stitched all at once.
         let mut merge_secs: HashMap<LayerKey, f64> = HashMap::new();
         let stitch_one = |cache: &MergedCache, &key: &LayerKey| {
-            let tiles = cache.tiles(key.0, key.1);
+            let tiles_arc = cache.tiles(key.0, key.1);
+            let tiles = &*tiles_arc;
             let t1 = std::time::Instant::now();
             let labeled = if conductors.contains(&key) {
                 stitch_labeled(tiles, tile_dbu)
@@ -187,7 +188,8 @@ impl Connectivity {
         for (key, labeled, t_stitch) in stitched {
             let indexed = conductors.contains(&key);
             if trace {
-                let tiles = cache.tiles(key.0, key.1);
+                let tiles_arc = cache.tiles(key.0, key.1);
+                let tiles = &*tiles_arc;
                 eprintln!(
                     "conn {}/{} halo={} indexed={} tiles={} polys={} regions={} \
                      merge={:.1}s stitch={:.1}s",

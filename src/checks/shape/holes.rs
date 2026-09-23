@@ -28,7 +28,7 @@ pub fn run(
     println!("[{}] Checking no_hole on layer {}", rule.id, layer.name);
 
     let mut out = Vec::new();
-    for hole in region_holes(merged.tiles(gl, gd), merged.tile_dbu()) {
+    for hole in region_holes(&merged.tiles(gl, gd), merged.tile_dbu()) {
         if hole.len() < 3 {
             continue;
         }

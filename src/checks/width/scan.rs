@@ -490,9 +490,12 @@ pub fn run_gate(
         Kind::Exact => "Exact gate-length violation",
     };
     let tile = merged.tile_dbu() as i64;
-    let bmap = merged.tiles(bl, bd);
-    let rmap = merged.tiles(rl, rd);
-    let omap = outside.map(|(ol, od)| merged.tiles(ol, od));
+    let bmap_arc = merged.tiles(bl, bd);
+    let bmap = &*bmap_arc;
+    let rmap_arc = merged.tiles(rl, rd);
+    let rmap = &*rmap_arc;
+    let omap_arc = outside.map(|(ol, od)| merged.tiles(ol, od));
+    let omap = omap_arc.as_deref();
     let none: Vec<MergedPoly> = Vec::new();
     let rid = rule.id.as_str();
     let bname = body.name.as_str();

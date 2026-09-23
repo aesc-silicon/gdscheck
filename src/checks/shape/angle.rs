@@ -64,7 +64,8 @@ pub fn run(
     }
 
     let tile = merged.tile_dbu() as i64;
-    let gmap = merged.tiles(gl, gd);
+    let gmap_arc = merged.tiles(gl, gd);
+    let gmap = &*gmap_arc;
     let rid = rule.id.as_str();
     let ln = layer.name.as_str();
     // Orientation of a forbidden angle, folded into [0,180).

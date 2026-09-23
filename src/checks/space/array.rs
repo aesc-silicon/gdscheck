@@ -123,8 +123,8 @@ pub fn run(
     merged.ensure(layout, gl, gd);
     let tile = merged.tile_dbu() as i64;
     let halo = merged.halo_of(gl, gd) as i64;
-    let pieces: Vec<((i32, i32), &crate::merge::MergedPoly)> = merged
-        .tiles(gl, gd)
+    let gmap = merged.tiles(gl, gd);
+    let pieces: Vec<((i32, i32), &crate::merge::MergedPoly)> = gmap
         .iter()
         .flat_map(|(&t, polys)| polys.iter().map(move |m| (t, m)))
         .collect();

@@ -378,7 +378,7 @@ fn forbidden_edges(
     // violation, and it is measurable: NP.11 emitted 26 markers for 10 segments and
     // O.PL.ORT 725 for 367, in both cases exactly the reference's count once folded.
     let mut seen: HashSet<(i32, i32, i32, i32)> = HashSet::new();
-    for (&(tx, ty), edges) in merged.edges(key) {
+    for (&(tx, ty), edges) in merged.edges(key).iter() {
         let core = Core {
             x0: tx as i64 * tile,
             y0: ty as i64 * tile,
