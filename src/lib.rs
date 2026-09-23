@@ -414,6 +414,43 @@ fn cache_budget_polys(limit: &memory::Limit, resident: u64) -> usize {
     memory::cache_budget_polys(limit, resident)
 }
 
+/// `--stats`: the shapes of every drawn layer the run flattened, largest first, with
+/// the memory limit and what is resident once the layout is flattened.  The layer that
+/// is a hundred times the others is where a slow or killed run starts.
+fn print_stats(
+    pdk: &pdk::PdkConfig,
+    layout: &layout::FlatLayout,
+    rules: &[pdk::RuleDefinition],
+    limit: &memory::Limit,
+) {
+    let mut rows: Vec<(usize, String, (u16, u16))> = pdk
+        .layers()
+        .map(|(name, l)| {
+            (
+                layout.get(l.gds_layer as i16, l.gds_datatype as i16).len(),
+                name.to_string(),
+                (l.gds_layer, l.gds_datatype),
+            )
+        })
+        .filter(|r| r.0 > 0)
+        .collect();
+    rows.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    let total: usize = rows.iter().map(|r| r.0).sum();
+    println!(
+        "Layers flattened for {} rules ({total} shapes):",
+        rules.len()
+    );
+    for (shapes, name, (l, d)) in &rows {
+        println!("  {shapes:>12}  {name} ({l}/{d})");
+    }
+    println!(
+        "Memory: planning within {:.1} GB ({}), {:.1} GB resident with the layout flattened",
+        memory::gb(limit.bytes),
+        limit.source,
+        memory::gb(memory::rss_bytes())
+    );
+}
+
 /// What building a rule's layers would add to the merge cache, in bytes: every drawn
 /// layer of its closure not cached at the halo it needs, at its shape count times what
 /// the tile and halo multiply it by - a shape lies in `(1 + 2h/t)²` tiles - at the
@@ -962,6 +999,10 @@ pub struct RunOptions {
     /// `GDSCHECK_MEMORY`.  Else it is read from the cgroup or the machine, less a tenth
     /// (see [`memory::limit`]).
     pub memory_limit: Option<u64>,
+    /// Stop after the layout is flattened and say what the run would take: the shapes
+    /// of every layer the rules read, largest first, the memory limit and what is
+    /// resident then - where to start when a run is killed or slow.
+    pub stats: bool,
 }
 
 impl Default for RunOptions {
@@ -980,6 +1021,7 @@ impl Default for RunOptions {
         RunOptions {
             tile_um,
             memory_limit,
+            stats: false,
         }
     }
 }
@@ -1204,6 +1246,10 @@ fn run_drc_impl(
     watch.at("flattening the layout");
     let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref(), &pdk.waivers);
     phase.end("flatten");
+    if options.stats {
+        print_stats(&pdk, &layout, &rules, &limit);
+        return Ok(vec![]);
+    }
     pdk.compute_virtual_layers(&mut layout, dbu_to_um);
     phase.end("global virtuals");
 
