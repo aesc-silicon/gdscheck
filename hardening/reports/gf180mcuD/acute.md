@@ -169,3 +169,25 @@ and fails until they exist.
 - A cell placed at 0°, 45° and 30° (`h5`).
 - One polygon that is off the lattice and off the grid at once: one `comp_ACUTE` here, two
   `comp_OFFGRID` in the offgrid table, both tools agreeing on both counts (`h7`).
+
+---
+
+## Resolution (2026-09-23)
+
+Both findings were fixed.
+
+- **Finding 1, the 1° tolerance.** `no_angle`'s `step` form is exact now - the default
+  tolerance is 1e-6 degrees, which is where `atan2` lands on a 45° edge of equal legs and
+  a thousandth of the smallest deviation a layout can draw (one grid step across a 4 µm
+  edge is 0.07°). The `angle` form keeps its degree: there the slack widens the net rather
+  than holing it, and no deck uses that form today. `ACUTE.h3` reports five and `ACUTE.h8`
+  eleven, as the manual reads them and as the runset does. The three reference designs are
+  unchanged, so no real geometry was leaning on the tolerance.
+- **The coverage gap** (shared with `offgrid.md`): metal1_dummy, metal2_dummy,
+  metal3_slot, metal4_slot and metal5_slot are in both decks now, 98 rules each, one per
+  drawn layer. `ACUTE.h6` reports its two markers.
+
+The reading the round settled - that the ACUTE sentence constrains the direction an edge
+runs in and not the angle two edges meet at, so a 45° wedge is legal - is recorded and
+followed; section 3.6's "only 90 and 45 deg bends" carries no rule number and neither tool
+codes it.
