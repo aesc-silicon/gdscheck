@@ -12,7 +12,6 @@ mod contbar;
 mod extblock;
 mod forbidden;
 mod gatpoly;
-mod implant_hardening;
 mod lbe;
 mod lu;
 mod metal;
@@ -53,7 +52,6 @@ pub fn generate(pdk: &PdkConfig) {
     activ::generate(pdk);
     offgrid::generate(pdk);
     tgo::generate(pdk);
-    implant_hardening::generate(pdk);
     gatpoly::generate(pdk);
     cont::generate(pdk);
     metal::generate(pdk);
