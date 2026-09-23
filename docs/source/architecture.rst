@@ -162,3 +162,17 @@ per-window density) fans out across ``rayon``'s thread pool, one task per tile k
 independent (correctness depends only on the halo, not on execution order), this
 parallelism is exact, not an approximation — the result of a threaded run is identical to
 a single-threaded one.
+
+The rules themselves run one after another over the merge cache, which the checks read
+through a lock (``SharedCache``): a call takes the lock for its duration and hands back
+what the cache holds by ``Arc``, so a check computes on its copies outside the lock, and
+a build — a merge, a stitch, a derived layer — runs under the lock on a thread pool of its
+own, so the thread that holds the lock never steals a job that would take it. Up to
+``GDSCHECK_WAVE`` rules (four by default) run side by side on threads of their own,
+admitted against the memory plan (what each rule's layers would add, plus a reserve for
+its working set); a rule that registers derived layers of its own (the ``forbidden``
+family) runs alone. The waves overlap the rules that keep few cores busy outside the
+lock — the density rules of a 4 mm² design took the run from 65 to 58 s — and nothing
+of a rule's time under the lock, which is a build: on the gf180 reference design the
+gain came from composing the edge layers' tiles in parallel instead. ``GDSCHECK_WAVE=1``
+runs the rules one at a time; the result is the same either way.

@@ -63,6 +63,10 @@ bounds memory tighter and cuts the geometry into more pieces, a larger one holds
 a dense layer whole and copies less of it into halos. The result must not depend on it;
 a run that differs between two tile sizes is a bug worth reporting.
 
+``GDSCHECK_WAVE=N`` lets up to ``N`` rules run side by side over the shared merge cache,
+within the memory plan; the default is four, ``1`` runs them one at a time (see
+:doc:`architecture`, *Parallelism*). The result does not depend on it.
+
 ``--memory <size>``, or ``GDSCHECK_MEMORY``, is what the run may take (``12G``,
 ``800M``). Without it the run plans within the tightest cgroup limit above it — a
 container, a ``systemd-run`` scope, a CI runner — or, with none, the machine's

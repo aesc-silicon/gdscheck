@@ -1553,35 +1553,59 @@ fn run_drc_impl(
     // From here the cache is shared: the checks read it through the lock, the
     // bookkeeping between rules takes the lock itself.
     let shared = merge::SharedCache::new(merged);
+    let trace = std::env::var("GDSCHECK_RULE_TRACE").is_ok();
+    // How many rules may run side by side: `GDSCHECK_WAVE`, four by default, 1 for
+    // one at a time.  Rules of a wave share the cache through its lock and the cores
+    // through rayon, and the wave's memory is admitted against the plan: what each
+    // rule's layers would add, and a reserve for each one's working set.  A rule
+    // alone keeps every core only while it has tiles enough with work in them; the
+    // density rules of a 4 mm² SG13CMOS5L design ran at one to three cores for
+    // twelve of its 65 s, and a wave of four brings the run to 58 s with the same
+    // findings.  Where a rule's time is under the cache's lock - a build - no wave
+    // overlaps it: on the gf180 reference design the waves gain 0.4 s of 72, and the
+    // gain there came from composing the edge layers' tiles in parallel instead.  A
+    // run started on a rayon worker - a test from a parallel iterator - runs its
+    // rules one at a time on that worker whatever is asked: a wave's rules run on
+    // threads of their own and the worker waits for them, and a pool whose every
+    // worker waits so has no one left to run the rules' tile jobs.
+    let wave_max: usize = if rayon::current_thread_index().is_some() {
+        1
+    } else {
+        std::env::var("GDSCHECK_WAVE")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .filter(|&n| n >= 1)
+            .unwrap_or(4)
+    };
+    let reserve = limit.bytes / 20;
 
-    for (i, rule) in rules.iter().enumerate() {
+    let mut i = 0;
+    while i < rules.len() {
         // The last net-aware rule is done: the nets go, and the cache gets the room.
         if i == n_net && net.take().is_some() {
             memory::trim();
             budget = cache_budget_polys(&limit, resident_layout);
             shared.lock().set_budget(budget);
-            if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            if trace {
                 eprintln!(
                     "nets freed after {n_net} rules, cache budget {:.1} GB",
                     memory::gb(budget as u64 * memory::BYTES_PER_COPY)
                 );
             }
         }
-        // What this rule needs of every layer in its closure, so a layer is merged at
-        // that rather than at the maximum some other rule on it set.  The cache builds
-        // ahead from `needs_of`, see `MergedCache::build_ahead`.
-        shared.lock().set_rule_halos(Some(rule_halos[i].clone()));
-        shared
-            .lock()
-            .set_rule_named(rule_keys(rule).into_iter().collect());
+        let rule = &rules[i];
         if net_aware(rule) && net.is_none() {
             println!(
                 "[{}] Skipping net-aware check '{}' (connectivity disabled)",
                 rule.id, rule.check
             );
+            i += 1;
             continue;
         }
-        watch.at(format!("checking {} ({})", rule.id, rule.check));
+        // What this rule needs of every layer in its closure, so a layer is merged at
+        // that rather than at the maximum some other rule on it set.  The cache builds
+        // ahead from `needs_of`, see `MergedCache::build_ahead`.
+        shared.lock().set_rule_halos(Some(rule_halos[i].clone()));
         // What the rule's layers would add to the cache, against the room the limit
         // leaves once the cache is emptied: a rule that would need three times that is
         // beyond doubt - the estimate counts every copy and the cache never holds them
@@ -1609,11 +1633,12 @@ fn run_drc_impl(
                 limit.source
             );
             eprintln!("[{}] {message}", rule.id);
-            if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            if trace {
                 let (table, closure) = &rule_halos[i];
+                let cache = shared.lock();
                 let mut terms: Vec<(u64, String)> = closure
                     .iter()
-                    .filter(|k| shared.lock().is_drawn(**k) && !clippable.contains(k))
+                    .filter(|k| cache.is_drawn(**k) && !clippable.contains(k))
                     .map(|k| {
                         let need = table.get(k).copied().unwrap_or(halo_dbu);
                         let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
@@ -1622,8 +1647,8 @@ fn run_drc_impl(
                             (shapes as f64 * f * f) as u64 * (memory::BYTES_PER_COPY / 2),
                             format!(
                                 "{} shapes={shapes} halo={need} cached={:?}",
-                                shared.lock().name_of(*k),
-                                shared.lock().cached_halo(*k)
+                                cache.name_of(*k),
+                                cache.cached_halo(*k)
                             ),
                         )
                     })
@@ -1638,6 +1663,7 @@ fn run_drc_impl(
                 &format!("{} not checked", rule.check),
                 message,
             ));
+            i += 1;
             continue;
         }
         // Room for the rule's working set: what its layers would add beyond what the
@@ -1664,7 +1690,7 @@ fn run_drc_impl(
             if freed > 0 {
                 shared.lock().settle_frees();
                 memory::trim();
-                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                if trace {
                     eprintln!(
                         "room for {}: {:.1} GB estimated against {:.1} GB left, {} copies evicted",
                         rule.id,
@@ -1675,38 +1701,154 @@ fn run_drc_impl(
                 }
             }
         }
-        let t_rule = std::time::Instant::now();
-        let c_rule = cpu_seconds();
-        violations.append(&mut checks::run_rule(
-            rule,
-            &layout,
-            dbu_to_um,
-            &shared,
-            net.as_ref(),
+
+        // The wave: this rule and, after it, the next ones while they are of the same
+        // pass, not among those that run alone, and their layers and working sets fit
+        // beside it under the plan.  The cache is set to the wave's needs at once -
+        // the most any rule of it asks of a layer - so a rule of the wave never finds
+        // a layer built for another one too thin.
+        let mut wave = vec![i];
+        let mut halos = rule_halos[i].clone();
+        let mut named: std::collections::HashSet<(i16, i16)> =
+            rule_keys(rule).into_iter().collect();
+        let mut est_sum = estimate;
+        // A rule's working set while it runs grows with the layers it reads, cached or
+        // not: the boxes, the stitches, the pairs.  Half a copy's planning cost per
+        // copy of its closure, plus the flat reserve, is what a rule of the wave is
+        // charged - four contact rules of a 2 million-shape layer were admitted at
+        // nothing each into 1.4 GB of room, and the run ended at the hard line.
+        let copies: std::collections::HashMap<(i16, i16), usize> =
+            shared.lock().resident_layers().into_iter().collect();
+        let working_set = |k: usize| -> u64 {
+            rule_halos[k]
+                .1
+                .iter()
+                .map(|key| copies.get(key).copied().unwrap_or(0) as u64)
+                .sum::<u64>()
+                * (memory::BYTES_PER_COPY / 2)
+                + reserve
+        };
+        let mut room_left = limit.bytes.saturating_sub(memory::rss_bytes());
+        room_left = room_left.saturating_sub(estimate + working_set(i));
+        if !checks::runs_alone(rule) {
+            let mut k = i + 1;
+            while wave.len() < wave_max && k < rules.len() && k != n_net {
+                let next = &rules[k];
+                if checks::runs_alone(next) || (net_aware(next) && net.is_none()) {
+                    break;
+                }
+                let est = rule_estimate_bytes(
+                    &rule_halos[k],
+                    &layout,
+                    &shared.lock(),
+                    &clippable,
+                    tile_dbu,
+                    halo_dbu,
+                );
+                let need = est + working_set(k);
+                if trace {
+                    eprintln!(
+                        "admit {}: est {:.2} GB, working set {:.2} GB, room {:.2} GB{}",
+                        next.id,
+                        memory::gb(est),
+                        memory::gb(working_set(k)),
+                        memory::gb(room_left),
+                        if need > room_left { ": no" } else { "" }
+                    );
+                }
+                if need > room_left {
+                    break;
+                }
+                room_left -= need;
+                est_sum += est;
+                for (key, h) in &rule_halos[k].0 {
+                    let e = halos.0.entry(*key).or_insert(*h);
+                    *e = (*e).max(*h);
+                }
+                halos.1.extend(rule_halos[k].1.iter().copied());
+                named.extend(rule_keys(next));
+                wave.push(k);
+                k += 1;
+            }
+        }
+        let last = *wave.last().expect("a wave has its first rule");
+        if wave.len() > 1 {
+            shared.lock().set_rule_halos(Some(halos));
+        }
+        shared.lock().set_rule_named(named);
+        watch.at(format!(
+            "checking {}",
+            wave.iter()
+                .map(|&k| format!("{} ({})", rules[k].id, rules[k].check))
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
-        if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
-            eprintln!(
-                "rule {} {} {:.1}s cpu={:.1}s rss={:.1}GB est={:.1}GB cache={}",
-                rule.id,
-                rule.check,
-                t_rule.elapsed().as_secs_f64(),
-                cpu_seconds() - c_rule,
-                rss_gb(),
-                memory::gb(estimate),
-                shared.lock().resident_summary()
-            );
+        let t_wave = std::time::Instant::now();
+        let c_wave = cpu_seconds();
+        let h_wave = shared.held_seconds();
+        // The rules of a wave run on threads of their own, not on rayon's workers: a
+        // worker that holds the cache's lock and waits on a parallel section steals
+        // other jobs meanwhile - one of another rule, which takes the lock the worker
+        // holds - and the run stops dead.  A plain thread waits without stealing.
+        let results: Vec<Vec<Violation>> = if wave.len() == 1 {
+            vec![checks::run_rule(
+                rule,
+                &layout,
+                dbu_to_um,
+                &shared,
+                net.as_ref(),
+            )]
+        } else {
+            std::thread::scope(|scope| {
+                let handles: Vec<_> = wave
+                    .iter()
+                    .map(|&k| {
+                        let (rules, layout, shared, net) = (&rules, &layout, &shared, net.as_ref());
+                        scope.spawn(move || {
+                            checks::run_rule(&rules[k], layout, dbu_to_um, shared, net)
+                        })
+                    })
+                    .collect();
+                handles
+                    .into_iter()
+                    .map(|h| h.join().expect("a rule's thread panicked"))
+                    .collect()
+            })
+        };
+        let (wall, cpu) = (t_wave.elapsed().as_secs_f64(), cpu_seconds() - c_wave);
+        let held = shared.held_seconds() - h_wave;
+        for (n, found) in wave.iter().zip(results) {
+            violations.extend(found);
+            if trace {
+                let r = &rules[*n];
+                eprintln!(
+                    "rule {} {} {wall:.1}s cpu={cpu:.1}s lock={held:.1}s rss={:.1}GB est={:.1}GB wave={} cache={}",
+                    r.id,
+                    r.check,
+                    rss_gb(),
+                    memory::gb(if *n == i { estimate } else { est_sum }),
+                    wave.len(),
+                    shared.lock().resident_summary()
+                );
+            }
         }
 
         let t_plan = std::time::Instant::now();
-        for key in &rule_halos[i].1 {
-            let future = future_need[key][i];
+        let mut done: Vec<(i16, i16)> = wave
+            .iter()
+            .flat_map(|&k| rule_halos[k].1.iter().copied())
+            .collect();
+        done.sort_unstable();
+        done.dedup();
+        for key in &done {
+            let future = future_need[key][last];
             // Dropped when nothing later needs it, or when it is far fatter than
             // anything later needs - the same ratio the rebuild uses, so a copy a
             // little fatter than the next rule's reach serves it rather than being
             // merged again at 14% fewer copies.
             let cached = shared.lock().cached_halo(*key);
             if future < 0 {
-                if cached.is_some() && std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                if cached.is_some() && trace {
                     eprintln!(
                         "evict {} cached={:?} future={future}",
                         shared.lock().name_of(*key),
@@ -1715,7 +1857,7 @@ fn run_drc_impl(
                 }
                 shared.lock().evict(key.0, key.1);
             } else if cached.is_some_and(|h| h > future * 4) {
-                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                if trace {
                     eprintln!(
                         "evict {} fatter than {}: cached={:?} future={future}",
                         shared.lock().name_of(*key),
@@ -1731,18 +1873,18 @@ fn run_drc_impl(
         // million shapes each that is a hundred million copies, fifty gigabytes, for
         // a rule reading one of them.  Over budget, the layers read again latest go
         // first, and come back for the cost of one merge when their rule arrives.
-        // Over the plan after this rule - the reserve was short of its working set -
+        // Over the plan after this wave - the reserve was short of its working set -
         // the cache gives the overshoot back, evicted just below.
         let rss = memory::rss_bytes();
         if rss > limit.bytes && shared.lock().resident_polys() > 0 {
             let over = ((rss - limit.bytes) / memory::BYTES_PER_COPY) as usize;
             budget = budget.saturating_sub(over);
             shared.lock().set_budget(budget);
-            if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+            if trace {
                 eprintln!(
                     "over the plan by {:.1} GB after {}: cache budget {:.1} GB",
                     memory::gb(rss - limit.bytes),
-                    rule.id,
+                    rules[last].id,
                     memory::gb(budget as u64 * memory::BYTES_PER_COPY)
                 );
             }
@@ -1750,7 +1892,7 @@ fn run_drc_impl(
         if shared.lock().resident_polys() > budget {
             let mut resident = shared.lock().resident_layers();
             resident.sort_by_key(|(key, _)| {
-                std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
+                std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[last]))
             });
             // The variants set aside go first, then whole layers.
             for (key, _) in &resident {
@@ -1763,11 +1905,11 @@ fn run_drc_impl(
                 if shared.lock().resident_polys() <= budget {
                     break;
                 }
-                if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+                if trace {
                     eprintln!(
                         "evict {} over budget: {polys} copies, next use at rule {:?}",
                         shared.lock().name_of(key),
-                        next_use.get(&key).map(|v| v[i])
+                        next_use.get(&key).map(|v| v[last])
                     );
                 }
                 shared.lock().evict(key.0, key.1);
@@ -1780,12 +1922,13 @@ fn run_drc_impl(
             shared.lock().settle_frees();
             memory::trim();
         }
-        if std::env::var("GDSCHECK_RULE_TRACE").is_ok() {
+        if trace {
             let plan = t_plan.elapsed().as_secs_f64();
             if plan >= 0.05 {
-                eprintln!("plan {} {plan:.2}s", rule.id);
+                eprintln!("plan {} {plan:.2}s", rules[last].id);
             }
         }
+        i = last + 1;
     }
     shared.lock().set_rule_halos(None);
 

@@ -7143,12 +7143,57 @@ impl MergedCache {
 /// the cache's own, with `&self`; the rule loop's bookkeeping takes [`Self::lock`].
 pub struct SharedCache {
     inner: std::sync::Mutex<MergedCache>,
+    /// The pool a build runs on while the lock is held.  A build is parallel inside,
+    /// and a thread of the global pool that waits on a parallel section of its own
+    /// steals other jobs meanwhile - among them a job of another rule that takes this
+    /// lock, which the thread already holds: the run stops dead.  On a pool of its
+    /// own the holder waits without stealing, and no job of that pool takes the lock.
+    builds: rayon::ThreadPool,
+    /// Nanoseconds the lock was held for builds, summed: the trace reads it per rule,
+    /// since a rule whose time is under the lock is one no wave can overlap.
+    held: std::sync::atomic::AtomicU64,
 }
 
 impl SharedCache {
     pub fn new(cache: MergedCache) -> Self {
+        let builds = rayon::ThreadPoolBuilder::new()
+            .num_threads(rayon::current_num_threads())
+            .thread_name(|i| format!("gdscheck-build-{i}"))
+            .build()
+            .expect("a thread pool for the cache's builds");
         SharedCache {
             inner: std::sync::Mutex::new(cache),
+            builds,
+            held: std::sync::atomic::AtomicU64::new(0),
+        }
+    }
+
+    /// Seconds the lock has been held for builds so far.
+    pub fn held_seconds(&self) -> f64 {
+        self.held.load(std::sync::atomic::Ordering::Relaxed) as f64 * 1e-9
+    }
+
+    /// Under the lock, on the build pool.  A caller that is itself a rayon worker (a
+    /// check's tile job, a test run from a parallel iterator) must not wait for the
+    /// build in place: a worker waiting on another pool's job steals from its own pool
+    /// meanwhile, and a stolen job that takes this lock stops the run dead.  Such a
+    /// caller waits on a plain thread instead, which steals nothing.
+    fn building<T: Send>(&self, f: impl FnOnce(&mut MergedCache) -> T + Send) -> T {
+        let build = move || {
+            let mut guard = self.lock();
+            let t = std::time::Instant::now();
+            let cache: &mut MergedCache = &mut guard;
+            let out = self.builds.install(move || f(cache));
+            self.held.fetch_add(
+                t.elapsed().as_nanos() as u64,
+                std::sync::atomic::Ordering::Relaxed,
+            );
+            out
+        };
+        if rayon::current_thread_index().is_none() {
+            build()
+        } else {
+            std::thread::scope(|s| s.spawn(build).join().expect("a build's thread panicked"))
         }
     }
 
@@ -7162,11 +7207,11 @@ impl SharedCache {
     }
 
     pub fn ensure(&self, layout: &FlatLayout, layer: i16, datatype: i16) {
-        self.lock().ensure(layout, layer, datatype);
+        self.building(|c| c.ensure(layout, layer, datatype));
     }
 
     pub fn ensure_at(&self, layout: &FlatLayout, layer: i16, datatype: i16, want: i32) {
-        self.lock().ensure_at(layout, layer, datatype, want);
+        self.building(|c| c.ensure_at(layout, layer, datatype, want));
     }
 
     pub fn tiles(&self, layer: i16, datatype: i16) -> Arc<TileMap> {
@@ -7216,7 +7261,7 @@ impl SharedCache {
     }
 
     pub fn ensure_edges(&self, layout: &FlatLayout, key: (i16, i16)) {
-        self.lock().ensure_edges(layout, key);
+        self.building(|c| c.ensure_edges(layout, key));
     }
 
     pub fn edges(&self, key: (i16, i16)) -> Arc<EdgeTileMap> {
@@ -7228,15 +7273,15 @@ impl SharedCache {
     }
 
     pub fn regions(&self, layout: &FlatLayout, layer: i16, datatype: i16) -> Arc<Vec<Region>> {
-        self.lock().regions(layout, layer, datatype)
+        self.building(|c| c.regions(layout, layer, datatype))
     }
 
     pub fn regions_cut(&self, layout: &FlatLayout, layer: i16, datatype: i16) -> Vec<Region> {
-        self.lock().regions_cut(layout, layer, datatype)
+        self.building(|c| c.regions_cut(layout, layer, datatype))
     }
 
     pub fn kin(&self, layer: i16, datatype: i16, touching: bool) -> Arc<IndexedRegions> {
-        self.lock().kin(layer, datatype, touching)
+        self.building(|c| c.kin(layer, datatype, touching))
     }
 
     pub fn plate_regions(
@@ -7246,8 +7291,7 @@ impl SharedCache {
         feature: (i16, i16),
         erode_radius: f64,
     ) -> Vec<PlateInfo> {
-        self.lock()
-            .plate_regions(layout, metal, feature, erode_radius)
+        self.building(|c| c.plate_regions(layout, metal, feature, erode_radius))
     }
 
     pub fn max_space_gaps(
@@ -7259,8 +7303,7 @@ impl SharedCache {
         within: Option<((i16, i16), f64)>,
         round: bool,
     ) -> Vec<(f64, f64)> {
-        self.lock()
-            .max_space_gaps(layout, a, b, value, within, round)
+        self.building(|c| c.max_space_gaps(layout, a, b, value, within, round))
     }
 
     pub fn max_space_unreached(
@@ -7272,8 +7315,7 @@ impl SharedCache {
         within: Option<((i16, i16), f64)>,
         round: bool,
     ) -> Vec<(f64, f64)> {
-        self.lock()
-            .max_space_unreached(layout, a, b, value, within, round)
+        self.building(|c| c.max_space_unreached(layout, a, b, value, within, round))
     }
 
     pub fn evict(&self, layer: i16, datatype: i16) {
