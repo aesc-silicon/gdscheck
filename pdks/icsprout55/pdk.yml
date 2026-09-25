@@ -5925,7 +5925,7 @@ layers:
     gds_datatype: 12
   - name: SRINGBLK
     gds_layer: 354
-    gds_datatype: 12
+    gds_datatype: 13
   - name: LOGO
     gds_layer: 355
     gds_datatype: 12
