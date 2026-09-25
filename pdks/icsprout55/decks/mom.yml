@@ -95,7 +95,7 @@ rules:
       abutting: report
   - id: MOM-S.1
     check: min_space
-    layers: [MOMMET5, VIA5NoMom]
+    layers: [MOMMET5, T4V2NoMom]
     value: 0.11
     params:
       abutting: report
@@ -107,103 +107,7 @@ rules:
       op: overlap
   - id: MOM-R.1
     check: forbidden
-    layers: [MET5mom, VIA5]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET6, VIA5NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET6, VIA6NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET6mom, VIA5]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET6mom, VIA6]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET7, VIA6NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET7, VIA7NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET7mom, VIA6]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET7mom, VIA7]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET8, VIA7NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET8, T2V1NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET8, T4V1NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-S.1
-    check: min_space
-    layers: [MOMMET8, T8V1NoMom]
-    value: 0.11
-    params:
-      abutting: report
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET8mom, VIA7]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET8mom, T2V1]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET8mom, T4V1]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MOM-R.1
-    check: forbidden
-    layers: [MET8mom, T8V1]
+    layers: [MET5mom, T4V2]
     value: 0.0
     params:
       op: overlap

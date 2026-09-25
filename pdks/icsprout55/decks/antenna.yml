@@ -94,103 +94,7 @@ rules:
       diode_1_net_of: ACTSD
   - id: AR.4
     check: antenna_ratio
-    layers: [VIA5]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [VIA6]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [VIA7]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [T2V1]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [T2V2]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [T4V1]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
     layers: [T4V2]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [T8V1]
-    value: 20.0
-    params:
-      diode: without
-      diode_area: 1e-06
-    layer_params:
-      gate: GATE
-      gate_net_of: POLY
-      diode_1: ACTSD
-      diode_1_net_of: ACTSD
-  - id: AR.4
-    check: antenna_ratio
-    layers: [T8V2]
     value: 20.0
     params:
       diode: without
@@ -202,7 +106,7 @@ rules:
       diode_1_net_of: ACTSD
   - id: AR.5
     check: antenna_ratio
-    layers: [MET1, MET2, MET3, MET4, MET5, MET6, MET7, MET8, T2M1, T2M2, T4M1, T4M2, T8M1, T8M2]
+    layers: [MET1, MET2, MET3, MET4, MET5, T4M2]
     value: 5000.0
     params:
       diode: without
@@ -214,7 +118,7 @@ rules:
       diode_1_net_of: ACTSD
   - id: AR.5
     check: antenna_ratio
-    layers: [MET1, MET2, MET3, MET4, MET5, MET6, MET7, MET8, T2M1, T2M2, T4M1, T4M2, T8M1, T8M2]
+    layers: [MET1, MET2, MET3, MET4, MET5, T4M2]
     value: 1000.0
     params:
       diode: without
@@ -226,7 +130,7 @@ rules:
       diode_1_net_of: ACTSD
   - id: AR.6
     check: antenna_ratio
-    layers: [VIA1, VIA2, VIA3, VIA4, VIA5, VIA6, VIA7, T2V1, T2V2, T4V1, T4V2, T8V1, T8V2]
+    layers: [VIA1, VIA2, VIA3, VIA4, T4V2]
     value: 50.0
     params:
       diode: without

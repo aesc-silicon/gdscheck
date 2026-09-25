@@ -17,7 +17,7 @@ rules:
     value: 5
   - id: CB-En.1
     check: forbidden
-    layers: [CB, T8M2, T4M2, T2M2]
+    layers: [CB, T4M2]
     value: 0.0
     params:
       op: uncovered
@@ -29,19 +29,7 @@ rules:
       op: uncovered
   - id: CB-En.2
     check: min_enclosure
-    layers: [T8M2, CBOnT8M2]
-    value: 1.5
-    params:
-      metric: euclidian
-  - id: CB-En.2
-    check: min_enclosure
-    layers: [T4M2, CBOnT4M2]
-    value: 1.5
-    params:
-      metric: euclidian
-  - id: CB-En.2
-    check: min_enclosure
-    layers: [T2M2, CBOnT2M2]
+    layers: [T4M2, CB]
     value: 1.5
     params:
       metric: euclidian
