@@ -904,9 +904,10 @@ virtual_layers:
     layers: [GatPolyRes, Rsil]
   # Rsil.c, "RES extension over GatPoly 0.00": the RES reaches the poly's long edges.
   # The poly outside the RES is the two heads and, where the RES stops short of a long
-  # edge, a strip along it: the heads are the poly's full width (Rsil.a's 0.50 and up),
-  # the strip is thin, and an opening by just under a quarter micron keeps the one and
-  # not the other.
+  # edge, a strip along it.  A head holds its contacts, so it is at least Rsil.b's 0.12
+  # + a Cont's 0.16 + Cnt.c's 0.07 = 0.35 deep (the pcell's heads are exactly that) and
+  # the poly's width across; an opening by just under half of 0.35 keeps the heads and
+  # not a thinner strip.
   - name: RsilPolyOutsideRes
     op: difference
     mode: lazy
@@ -914,7 +915,7 @@ virtual_layers:
   - name: RsilPolyHeads
     op: open
     mode: lazy
-    radius: 0.245
+    radius: 0.1725
     layers: [RsilPolyOutsideRes]
   - name: RsilPolyStrips
     op: difference

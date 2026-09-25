@@ -801,6 +801,20 @@ fn rsil_c_h(p: &P) {
     e.extend(res(39.0, 2.0, [0.0, 0.0, 0.0, 0.05]).build(p));
     e.extend(res(1000.0, 1000.0, [0.0, 0.0, 0.0, -0.05]).build(p));
     write("Rsil.c.h2", e);
+
+    // h3: the pcell's wide rsil (the CSA design's, w 20, l 1): body on PolyRes, heads
+    // 0.35 deep - Rsil.b's 0.12 + the Cont + Cnt.c's 0.07 - and 20 across: clean; the
+    // same with the RES 0.05 short of the top edge fires.
+    let wide = |x, m: M4| {
+        let mut q = R::new(Kind::Rsil, x, 2.0, 20.0, 1.0);
+        q.head = 0.35;
+        q.polyres = true;
+        q.block = m;
+        q
+    };
+    let mut e = wide(2.0, m4(0.0)).build(p);
+    e.extend(wide(6.0, [0.0, 0.0, 0.0, -0.05]).build(p));
+    write("Rsil.c.h3", e);
 }
 
 // ---------------------------------------------------------------------------

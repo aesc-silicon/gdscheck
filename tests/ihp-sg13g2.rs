@@ -3077,6 +3077,9 @@ const DECK_RESISTOR: &str = "resistor";
 #[case::rsil_c_h1("resistor/Rsil.c.h1.gds.gz", "TOP", vec!["Rsil.c"; 3], vec![])]
 // The inset across x = 20 and at (1000, 1000) (2); the outset across x = 40 is clean.
 #[case::rsil_c_h2("resistor/Rsil.c.h2.gds.gz", "TOP", vec!["Rsil.c"; 2], vec![])]
+// The pcell's wide rsil (w 20, l 1; the CSA design's): heads 0.35 deep - Rsil.b + Cont +
+// Cnt.c - are heads, not strips: clean; the RES 0.05 short of its top edge fires.
+#[case::rsil_c_h3("resistor/Rsil.c.h3.gds.gz", "TOP", vec!["Rsil.c"], vec![])]
 // Rsil.d: pSD 0.175 below the body, 0.12/0.12 from the head's corner (0.170), abutting
 // the head (finding 2), an Rppd's pSD 0.175 from the head, and pSD 0.175 below a
 // resistor with no EXTBlock (finding 3); 0.18, 0.13/0.13 (0.184) and 0.175 from a plain
