@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+name: Feature request
+description: Something gdscheck should do, or do differently
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A rule that is missing from a PDK, a check the engine lacks, a flag, an output
+        format, a workflow that could be smoother - anything goes.  Say what you are trying
+        to do; the shape of the feature can follow from that.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The task or the situation, in your words.  What gets in the way today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help?
+      description: |
+        A sketch is enough: a flag, a deck rule, a line of output, a reference to how another
+        tool does it.  If it is a design rule, name the manual and the section.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - A PDK's rules (a deck, a suite, a derived layer)
+        - The engine (a check, a measurement, a parameter)
+        - The command line, output or report
+        - Performance or memory
+        - Documentation
+        - Something else
+    validations:
+      required: false
+
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: An example layout, a link, what you tried instead.
+    validations:
+      required: false

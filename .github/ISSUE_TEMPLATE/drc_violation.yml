@@ -20,6 +20,9 @@ body:
       options:
         - ihp-sg13g2
         - ihp-sg13cmos5l
+        - gf180mcuD
+        - gf180mcuA
+        - a PDK of my own (say which below)
     validations:
       required: true
 
