@@ -27,8 +27,9 @@ merge cache and divided by the area the scope names.
    (a seal ring is a frame) is read as what it rings: its holes are filled first, so the
    die is the area inside the frame and not the frame's own material.
 ``scope: window``
-   "Any ``window`` × ``window`` µm area": the windows slide over the die a merge tile at
-   a time (20 µm by default) from the die's corner, and one more is laid against each
+   "Any ``window`` × ``window`` µm area": the windows step over the die by ``step``
+   from the die's corner - without one they slide a merge tile at a time (20 µm by
+   default) - and one more is laid against each
    far edge, so every part of the die lies in some whole window and no window is a
    clipped remainder. The grid runs over the ``boundary`` layer's bounding box when the
    rule names one, else the chip's raw bounding box, so the windows are laid the same
@@ -70,6 +71,10 @@ Parameters
    ``chip`` (default), ``window`` or ``region``.
 ``window``
    The tile size in µm, square; required with ``scope: window``.
+``step``
+   With ``scope: window``: how far apart the windows are laid, in µm. IHP's deck and
+   the sign-off runset step by half a window; without it the windows slide a merge
+   tile at a time, which finds what falls between theirs.
 ``min_size``
    With ``scope: region``: the span in µm a base region's widest spot must exceed to
    be checked at all. Defaults to ``35.0``.
@@ -119,6 +124,7 @@ Examples
       params:
         scope: window
         window: 800.0
+        step: 400.0
       layer_params:
         boundary: EdgeSeal.boundary  # density is only meaningful inside the seal ring
     - id: Slt.i

@@ -32,7 +32,7 @@ Parameters
 ----------
 
 As :doc:`min_density`: ``scope`` (``chip``, ``window``, ``region``), ``window``,
-``min_size`` and ``layer_params: boundary``.
+``step``, ``min_size`` and ``layer_params: boundary``.
 
 
 Violation markers

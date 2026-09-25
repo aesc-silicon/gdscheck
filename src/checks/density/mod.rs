@@ -262,6 +262,17 @@ pub fn run(
         },
         Scope::Region => unreachable!(),
     };
+    let step_um = match rule.num("step") {
+        None => None,
+        Some(s) if s > 0.0 && window_um.is_some() => Some(s),
+        Some(_) => {
+            eprintln!(
+                "[{}] {name}: `step` is a positive distance in µm, and only with `scope: window`",
+                rule.id
+            );
+            return vec![];
+        }
+    };
     match window_um {
         None => println!(
             "[{}] Checking {name} {} {:.2}% on layer(s) [{layer_names}]",
@@ -386,15 +397,17 @@ pub fn run(
         )];
     };
 
-    // "Any window x window area": the windows slide over the die a merge tile at a
-    // time, from the die's corner, and one more is laid against each far edge, so
-    // every part of the die is in some whole window and no window is a clipped
-    // remainder - a 200 µm strip read as a window of its own reported the density of
-    // what happened to lie there, and a hole a step off the grid was in no window at
-    // all.  The coverage is summed once per tile core and the windows on the tile grid
-    // are read off a summed-area table; the edge-anchored ones are clipped exactly.
-    // Overlapping violating windows are one violation, reported at the worst of them.
+    // "Any window x window area": the windows step over the die from its corner, and
+    // one more is laid against each far edge, so every part of the die is in some
+    // whole window and no window is a clipped remainder - a 200 µm strip read as a
+    // window of its own reported the density of what happened to lie there.  The step
+    // is the rule's `step` - IHP's deck and the sign-off runset step by half a window
+    // - or, without one, a merge tile, which finds what falls between their windows.
+    // The coverage is summed once per tile core and the windows on the tile grid are
+    // read off a summed-area table; the others are clipped exactly.  Overlapping
+    // violating windows are one violation, reported at the worst of them.
     let win = (window_um / dbu_to_um).round() as i64;
+    let step = step_um.map(|s| ((s / dbu_to_um).round() as i64).max(1));
     let (bx0, by0, bx1, by1) = boundary.unwrap_or(chip);
     let per_tile: HashMap<(i32, i32), f64> = maps
         .iter()
@@ -434,18 +447,26 @@ pub fn run(
         sat[iy1 * (nx + 1) + ix1] - sat[iy0 * (nx + 1) + ix1] - sat[iy1 * (nx + 1) + ix0]
             + sat[iy0 * (nx + 1) + ix0]
     };
-    // Window origins: every tile line from the die's first, as long as the window
-    // stays in the die, then the die's far edge less a window.
+    // Window origins: every step from the die's corner - every tile line from the die's
+    // first without a step - as long as the window stays in the die, then the die's far
+    // edge less a window.  An origin on a tile line is read off the table.
     let origins = |lo: i64, hi: i64, t0: i64| -> Vec<(i64, bool)> {
         if hi - lo <= win {
             return vec![(lo, false)];
         }
-        let mut v: Vec<(i64, bool)> = (0..)
-            .map(|k| (t0 + k) * tile)
-            .skip_while(|&o| o < lo)
-            .take_while(|&o| o + win <= hi)
-            .map(|o| (o, true))
-            .collect();
+        let mut v: Vec<(i64, bool)> = match step {
+            Some(s) => (0..)
+                .map(|k| lo + k * s)
+                .take_while(|&o| o + win <= hi)
+                .map(|o| (o, o.rem_euclid(tile) == 0))
+                .collect(),
+            None => (0..)
+                .map(|k| (t0 + k) * tile)
+                .skip_while(|&o| o < lo)
+                .take_while(|&o| o + win <= hi)
+                .map(|o| (o, true))
+                .collect(),
+        };
         if v.last().is_none_or(|&(o, _)| o + win < hi) {
             v.push((hi - win, false));
         }

@@ -230,6 +230,33 @@ fn a_partial_window_is_measured_against_what_is_there() {
     assert_eq!(density_of(&v[0]), 16.0);
 }
 
+/// A `step` lays the windows that far apart from the die's corner, as IHP's deck and the
+/// sign-off runset do: a 70 µm gap in A at 40..110 across a 200 µm die fills the sliding
+/// window at 40 (30 %), while the 50 µm steps at 0, 50 and 100 see 60 of it at most
+/// (40 %).
+#[test]
+fn a_step_lays_the_windows_apart() {
+    let lay = layout(vec![
+        brect(FRAME, 0, 0, 200_000, 100_000),
+        brect(A, 0, 0, 40_000, 100_000),
+        brect(A, 110_000, 0, 200_000, 100_000),
+    ]);
+    let m = cache();
+    let go = |value: f64, step: Option<f64>| {
+        let mut p = vec![("window", 100.0)];
+        p.extend(boundary(FRAME));
+        p.extend(step.map(|s| ("step", s)));
+        run(Kind::Min, &windowed(rule(&[A], value, &p)), &lay, DBU, &m)
+    };
+    let v = go(35.0, None);
+    assert_eq!(v.len(), 1, "{v:?}");
+    assert_eq!(density_of(&v[0]), 30.0);
+    assert!(go(35.0, Some(50.0)).is_empty());
+    let v = go(45.0, Some(50.0));
+    assert_eq!(v.len(), 1, "{v:?}");
+    assert_eq!(density_of(&v[0]), 40.0);
+}
+
 /// A rule without a window, or with a boundary nobody drew, says so or falls back.
 #[test]
 fn a_malformed_or_unbounded_rule() {
