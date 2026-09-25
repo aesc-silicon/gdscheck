@@ -163,47 +163,51 @@ decks:
     description: Antenna ratios (gates without protection ACT)
 
 connectivity:
-  - connector: CT
+  # ORDERED as the antenna runset connects: an antenna rule reads the net partway up
+  # the stack (its own step, or a level), so the steps up to RDL are its levels.
+  - connector: CTConn
     layers: [POLY]
-  - connector: CT
+  - connector: CTConn
     layers: [ACTSD]
-  - connector: NPPickup
-    layers: [NW1, NW1Core, NW1IO, ACTSD]
-  - connector: DNW
-    layers: [NW1]
-  - connector: CT
-    layers: [MET1]
-  - connector: VIA1
-    layers: [MET1]
-  - connector: VIA1
-    layers: [MET2]
-  - connector: VIA2
-    layers: [MET2]
-  - connector: VIA2
-    layers: [MET3]
-  - connector: VIA3
-    layers: [MET3]
-  - connector: VIA3
-    layers: [MET4]
-  - connector: VIA4
-    layers: [MET4]
-  - connector: VIA4
-    layers: [MET5]
-  - connector: T4V2
-    layers: [MET5]
-  - connector: T4V2
-    layers: [T4M2]
-  - connector: RV
-    layers: [T4M2]
-  - connector: RV
+  - connector: CTConn
+    layers: [MET1Conn]
+  - connector: VIA1Conn
+    layers: [MET1Conn]
+  - connector: VIA1Conn
+    layers: [MET2Conn]
+  - connector: VIA2Conn
+    layers: [MET2Conn]
+  - connector: VIA2Conn
+    layers: [MET3Conn]
+  - connector: VIA3Conn
+    layers: [MET3Conn]
+  - connector: VIA3Conn
+    layers: [MET4Conn]
+  - connector: VIA4Conn
+    layers: [MET4Conn]
+  - connector: VIA4Conn
+    layers: [MET5Conn]
+  - connector: T4V2Conn
+    layers: [MET5Conn]
+  - connector: T4V2Conn
+    layers: [T4M2Conn]
+  - connector: RDV
+    layers: [T4M2Conn]
+  - connector: RDV
     layers: [RDL]
-  - connector: CB
-    layers: [T4M2]
-  - connector: CB
+  # DRC only, after every antenna level: pads, wells, and the layers net-gated DRC
+  # rules look their nets up on. A layer such a rule reads must be listed here.
+  - connector: RDV
     layers: [ALPAD]
-  - connector: RDL
-    layers: [ALPAD]
-  - connector: CT
+  - connector: RDLonALPAD
+    layers: [RDL, ALPAD]
+  - connector: NW1TapConn
+    layers: [NW1, ACTSD]
+  - connector: NW1
+    layers: [NW1Core, NW1IO]
+  - connector: NW1onDNW
+    layers: [NW1, DNW]
+  - connector: CTConn
     layers: [CTNoSRAM]
 
 virtual_layers:
@@ -1319,6 +1323,86 @@ virtual_layers:
   # --- review D: derived layers ---
   # --- review E: derived layers ---
   # --- review F: derived layers ---
+  # The connect graph's conductors and vias as the runsets read them: bars join the
+  # cuts, slots leave the metals.
+  - name: CTConn
+    op: union
+    mode: lazy
+    layers: [CT, CTbar]
+  - name: MET1Conn
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: MET2Conn
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: MET3Conn
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: MET4Conn
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: MET5Conn
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: T4M2Conn
+    op: difference
+    mode: lazy
+    layers: [T4M2, T4M2slot]
+  - name: VIA1Conn
+    op: union
+    mode: lazy
+    layers: [VIA1, VIA1bar]
+  - name: VIA2Conn
+    op: union
+    mode: lazy
+    layers: [VIA2, VIA2bar]
+  - name: VIA3Conn
+    op: union
+    mode: lazy
+    layers: [VIA3, VIA3bar]
+  - name: VIA4Conn
+    op: union
+    mode: lazy
+    layers: [VIA4, VIA4bar]
+  - name: T4V2Conn
+    op: union
+    mode: lazy
+    layers: [T4V2, T4V2bar]
+  - name: RDV
+    op: union
+    mode: lazy
+    layers: [RV, CB]
+  # Joins a well to the deep well it sits in, looked up inside both.
+  - name: NW1onDNW
+    op: intersection
+    mode: lazy
+    layers: [NW1, DNW]
+  # The antenna runset's GATE: a channel with source/drain beside it.
+  - name: AntGate
+    op: interacting
+    mode: lazy
+    layers: [GATE, ACTSD]
+  - name: AntGate18
+    op: intersection
+    mode: lazy
+    layers: [AntGate, DGOX]
+  - name: AntGate1825
+    op: intersection
+    mode: lazy
+    layers: [AntGate, IOOX]
+  - name: ACTImp
+    op: union
+    mode: lazy
+    layers: [NPACT, PPACT]
+  - name: AntSD
+    op: difference
+    mode: lazy
+    layers: [ACTImp, POLY]
   # --- review G: derived layers ---
   - name: CTAll
     op: union
@@ -1464,6 +1548,16 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [ESDHoleInner, ESD]
+  - name: RDLonALPAD
+    op: intersection
+    mode: lazy
+    layers: [RDL, ALPAD]
+  # A well tap beside the gate it may carry: a tap spanning a channel (an n-type
+  # varactor) is looked up on the diffusion, not under the poly.
+  - name: NW1TapConn
+    op: difference
+    mode: lazy
+    layers: [NPPickup, POLY]
   - name: NW1resSTI
     op: overlapping
     mode: lazy
