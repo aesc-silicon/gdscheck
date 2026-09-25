@@ -26,6 +26,7 @@ mod passiv;
 mod pin;
 mod psd;
 mod pwellblock;
+mod recommended;
 mod resistor;
 mod salblock;
 mod sdiod;
@@ -77,4 +78,5 @@ pub fn generate(pdk: &PdkConfig) {
     mim::generate(pdk);
     connectivity::generate(pdk);
     forbidden::generate(pdk);
+    recommended::generate(pdk);
 }

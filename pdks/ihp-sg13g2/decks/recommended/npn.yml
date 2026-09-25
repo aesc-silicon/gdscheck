@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: npn13G2.bR
+    check: max_count
+    layers: [EmitG2]
+    value: 4000
+  - id: npn13G2L.cR
+    check: max_count
+    layers: [EmitG2L]
+    value: 800
+  - id: npn13G2V.cR
+    check: max_count
+    layers: [EmitG2VAny]
+    value: 800

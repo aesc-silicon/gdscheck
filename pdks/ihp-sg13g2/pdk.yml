@@ -21,6 +21,9 @@ suites:
   - name: antenna
     path: suites/antenna.yml
     description: Antenna checks only
+  - name: recommended
+    path: suites/recommended.yml
+    description: Recommended (*R) rules - advisory, not in main
 
 decks:
   - name: offgrid
@@ -38,6 +41,9 @@ decks:
   - name: pad
     path: decks/pad.yml
     description: Bond pads
+  - name: pad_recommended
+    path: decks/recommended/pad.yml
+    description: Bond pads, recommended
 
   - name: activ
     path: decks/activ.yml
@@ -75,6 +81,9 @@ decks:
   - name: npn
     path: decks/npn.yml
     description: Bipolar npn HBT (npnG2, npn13G2/L/V)
+  - name: npn_recommended
+    path: decks/recommended/npn.yml
+    description: npn13G2/L/V emitter counts per chip, recommended
   - name: sdiod
     path: decks/sdiod.yml
     description: Schottky diode (nBuLay/PWell:block/nSD:block/SalBlock ContBar)
@@ -129,6 +138,9 @@ decks:
   - name: topmetal2
     path: decks/topmetal2.yml
     description: Top metal 2
+  - name: topmetal2_recommended
+    path: decks/recommended/topmetal2.yml
+    description: Top metal 2 wide-line space, recommended
   - name: passiv
     path: decks/passiv.yml
     description: Passivation
@@ -147,6 +159,9 @@ decks:
   - name: mim
     path: decks/mim.yml
     description: MIM capacitor
+  - name: mim_recommended
+    path: decks/recommended/mim.yml
+    description: MIM area per chip, recommended
 
 connectivity:
   - connector: Cont
@@ -1081,6 +1096,14 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [EmWind, TransG2V]
+  - name: EmWindAny
+    op: union
+    mode: lazy
+    layers: [EmWind, EmWiHV]
+  - name: EmitG2VAny
+    op: overlapping
+    mode: lazy
+    layers: [EmWindAny, TransG2V]
 
   # Section 6.7: the diode is a ContBar *enclosed by* the stack - whole inside it - and
   # the nBuLay is section 4.2's, drawn or generated.
@@ -1416,6 +1439,44 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [dfpad, TopMetal2]
+
+  # Recommended pad rules (pad_recommended deck).
+  - name: PassivDfpadGrownDR
+    op: grow_round
+    slack: 0.005
+    mode: lazy
+    radius: 24.995
+    layers: [PassivDfpad]
+  - name: PadDRBad
+    op: intersection
+    mode: lazy
+    layers: [PassivDfpadGrownDR, SealActiv]
+  - name: PassivDfpadGrownD1R
+    op: grow_round
+    slack: 0.005
+    mode: lazy
+    radius: 11.195
+    layers: [PassivDfpad]
+  - name: PadD1RBad
+    op: intersection
+    mode: lazy
+    layers: [PassivDfpadGrownD1R, ActivNoSealring]
+  - name: TopMetal1Dfpad
+    op: intersection
+    mode: lazy
+    layers: [TopMetal1, dfpad]
+  - name: GateUnderPad
+    op: intersection
+    mode: lazy
+    layers: [Gate, PassivDfpad]
+  - name: MIMUnderPad
+    op: intersection
+    mode: lazy
+    layers: [MIM, PassivDfpad]
+  - name: TopVia2UnderPad
+    op: intersection
+    mode: lazy
+    layers: [TopVia2, PassivDfpad]
 
   # The NFET gate of section 4.2: GatPoly over N+Activ, N+ by drawn nSD or by default
   # (Activ under neither pSD nor nSD:block), as IHP's deck reads it.

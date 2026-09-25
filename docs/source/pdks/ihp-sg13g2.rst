@@ -12,7 +12,7 @@ Overview
 The bundled ``ihp-sg13g2`` PDK covers IHP's open-source SG13G2 SiGe BiCMOS process:
 the full front-end device set (isolated NMOS, bipolar npn HBT, Schottky diodes,
 resistors), the M1-M5/TopMetal1-2 back-end stack with vias, latch-up, metal slotting,
-seal-ring, bond-pad and the §7.1 antenna rule family. Ships three suites:
+seal-ring, bond-pad and the §7.1 antenna rule family. Ships six suites:
 
 .. list-table::
    :header-rows: 1
@@ -31,6 +31,9 @@ seal-ring, bond-pad and the §7.1 antenna rule family. Ships three suites:
      - Dummy-fill density checks only.
    * - ``antenna``
      - Antenna checks only (§7.1, ``Ant.a``–``Ant.i``). Needs net extraction.
+   * - ``recommended``
+     - The recommended (``*R``) rules only — see *Recommended rules* below. Not part of
+       ``main``.
 
 Cross-checked throughout development against IHP's own KLayout reference decks (the
 per-topic ``.lydrc`` scripts and the combined "maximal" deck) run in a container, and
@@ -109,15 +112,49 @@ the moment a deck changes.
 Deliberately skipped rules
 ----------------------------
 
-* **Recommended (``*R``) rules** — e.g. ``Pad.aR/bR/dR/d1R/eR/fR/gR/jR/kR``, the
-  resistor-family recommended variants, ``npn*.a/f`` (definitional, not independently
-  checkable rules) — are advisory in the process documentation, not DRC-enforced, and are
-  out of scope.
+* ``npnG2.a``/``npnG2.f`` are definitions, not independently checkable rules.
+* ``Pad.eR``/``Pad.fR`` (recommended pad exit width and length) — see *Recommended
+  rules*.
 * ``Padb.e``/``Padc.e`` (bond-pad pitch) are not separate rules: pitch is exactly opening
   size plus spacing (verified numerically against the PDK's own pad table), and the
   process documentation states pitch is "not checked during DRC."
 * ``Pad.m`` (SBumpPad/CuPillarPad exclusivity) has no rule-deck number at all — it's a
   KLayout-tooling-only check, not implemented.
+
+
+Recommended rules
+-----------------
+
+The manual's recommended rules are advisory: a layout may break them and still be
+manufactured. They live in their own decks under ``decks/recommended/`` and run only
+through the ``recommended`` suite (or ``--deck``), so they never mix with ``main``'s
+violations.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 70
+
+   * - Deck
+     - Rules
+   * - ``pad_recommended``
+     - ``Pad.aR``, ``Pad.bR``, ``Pad.dR``, ``Pad.d1R``, ``Pad.gR``, ``Pad.jR``,
+       ``Pad.kR``.
+   * - ``topmetal2_recommended``
+     - ``TM2.bR``.
+   * - ``mim_recommended``
+     - ``MIM.gR``.
+   * - ``npn_recommended``
+     - ``npn13G2.bR``, ``npn13G2L.cR``, ``npn13G2V.cR`` (:doc:`../checks/max_count`).
+
+Not implemented: ``Pad.eR``/``Pad.fR``, the width and length of a metal where it leaves
+the pad (KLayout checks ``Pad.fR`` alone, by extending the exit edges; gdscheck has no
+edge-to-region extension yet).
+
+``Pad.dR``/``Pad.d1R`` grow the pad opening with round corners and look for the seal's
+Activ or the chip's Activ in reach, rather than measuring a space: a 25 µm space halo on
+Activ does not fit in memory on a full chip. ``Pad.gR`` follows the manual, TopMetal1
+within dfpad, where KLayout encloses TopVia2 in Metal5. ``npn13G2V.cR`` counts emitters
+drawn on EmWiHV (as IHP's pcell draws them) as well as EmWind.
 
 
 Documented divergences from the KLayout deck
