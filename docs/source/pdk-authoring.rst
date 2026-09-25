@@ -33,9 +33,7 @@ Anatomy of pdk.yml
        description: Metal 2
 
    virtual_layers:
-     - name: Pad
-       op: union
-       layers: [Passiv, Passiv.sbump, Passiv.pillar, dfpad]
+     Pad: Passiv or Passiv.sbump or Passiv.pillar or dfpad
 
    connectivity:
      - connector: Cont
@@ -125,23 +123,16 @@ which live solely in the deck.
 Virtual layers
 --------------
 
-``virtual_layers:`` declares derived layers computed from drawn (or other virtual) ones —
-see :doc:`virtual-ops` for the full operator reference and the eager/lazy evaluation
-trade-off. Each entry needs ``name``, ``op`` and ``layers`` (the sources); ``mode: lazy``,
-``radius`` (for ``close``/``open``/``grow`` and the directional
-``grow_x``/``grow_y``/``shrink_x``/``shrink_y``), ``text`` (for ``with_text``) and
-``min``/``max`` (for ``with_bbox_min``/``with_bbox_max``) are optional, op-specific. All
-distances are in µm. A virtual layer is assigned a synthetic GDS layer number
-automatically (starting at 30000) and can be referenced by rules exactly like a drawn
-layer.
-
-
-``edge_layers:`` declares derived layers whose elements are boundary *segments* rather
-than regions — needed by rules that measure a piece of a boundary, such as a transistor's
-channel width. Each entry takes ``name``, ``op`` and ``layers``; ``min``/``max`` carry the
-op's bounds, in µm for the length filters and degrees for the angle ones. They share the
-synthetic layer-number range with ``virtual_layers`` and are referenced by rules the same
-way. See :doc:`virtual-ops`.
+``virtual_layers:`` declares derived layers, each a name and the sentence that makes it
+from drawn or other derived layers — ``poly_otp: poly2_drawn and otp_mk``,
+``nat4_gate: poly_nat_lv grow 0.5 inside ngate``, ``channel: SourceDrain edges and
+(GatPoly edges)``. A sentence reads from left to right, parentheses group, values follow
+their word and bounds are ``min``/``max``; see :doc:`virtual-ops` for the words. A region
+and an edge layer are told apart by the words used, so both live in this one block. Every
+derived layer is assigned a synthetic GDS layer number automatically (from 30000, in the
+order declared) and is referenced by rules exactly like a drawn layer. Whether a layer is
+built per tile in the merge cache or materialised in the layout follows from the checks
+that read it, and is not declared.
 
 
 The connectivity graph
@@ -189,8 +180,8 @@ Deriving a process with extends
 ``extends`` (a path relative to this file, or a bare process name for the base beside
 it — ``extends: ihp-sg13g2`` reads as ``../ihp-sg13g2/pdk.yml``) inherits the base PDK's
 ``layers`` and ``virtual_layers`` — this file's own entries are appended after them, and a
-``virtual_layers`` entry with the same ``name`` as one in the base *replaces* it (the
-child's definition wins). Everything else — ``decks``, ``suites``, ``connectivity`` — is
+``virtual_layers`` entry under the same name as one in the base *replaces* it (the
+child's sentence wins). Everything else — ``decks``, ``suites``, ``connectivity`` — is
 never inherited; a derived process states its own deck list and connect graph explicitly,
 even if it reuses most of the base's rules. One level only: the base file may not itself
 ``extend`` another.
@@ -228,8 +219,9 @@ length. It is its own block because a layer name and a mode word look alike, and
 this block is resolved against the PDK's layers; each entry arrives in the check as
 ``<name>`` and ``<name>_dt``.
 
-``text:`` is a separate, sibling field for the handful of checks that need a text/label
-pattern — :doc:`checks/forbidden_unless_labeled` is the only current user.
+``text:`` is a separate, sibling field for a check that needs a text/label pattern: the
+label that exempts a region from a :doc:`checks/forbidden`, together with a ``label``
+layer param naming the text layer.
 
 
 Validating a new PDK

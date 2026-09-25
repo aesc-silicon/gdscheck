@@ -208,45 +208,18 @@ connectivity:
 virtual_layers:
   # The 3LM stack.  These four names are what every top-of-stack rule is written
   # against, so overriding them here re-points the whole family at once.
-  - name: top_metal
-    op: union
-    mode: lazy
-    layers: [metal3]
-  - name: topmin1_metal
-    op: union
-    mode: lazy
-    layers: [metal2]
-  - name: top_via
-    op: union
-    mode: lazy
-    layers: [via2]
-  - name: topmin1_via
-    op: union
-    mode: lazy
-    layers: [via1]
+  top_metal: metal3
+  topmin1_metal: metal2
+  top_via: via2
+  topmin1_via: via1
   # MIM.9 measures via spacing over the top plate on the vias *clipped* to it, where
   # option B selects the vias lying wholly inside it.
-  - name: top_via_and_fusetop
-    op: intersection
-    mode: lazy
-    layers: [top_via, fusetop]
+  top_via_and_fusetop: top_via and fusetop
   # MT30.1b: a line is "long" if any of its own edges runs 1000 um or more.
-  - name: top_metal_long_line
-    op: interacting
-    mode: lazy
-    layers: [top_metal, top_metal_long_edges]
+  top_metal_long_line: top_metal interacting top_metal_long_edges
   # MT30.5 forbids a via outside the top metal outright, which no enclosure margin can
   # measure - there is nothing to measure between.
-  - name: top_via_not_in_top_metal
-    op: not_inside
-    mode: lazy
-    layers: [top_via, top_metal]
+  top_via_not_in_top_metal: top_via not_inside top_metal
 
-edge_layers:
-  - name: top_metal.edges
-    op: edges
-    layers: [top_metal]
-  - name: top_metal_long_edges
-    op: with_length
-    min: 1000.0
-    layers: [top_metal.edges]
+  top_metal.edges: top_metal edges
+  top_metal_long_edges: top_metal.edges with_length min 1000.0
