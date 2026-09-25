@@ -12,6 +12,7 @@
 //! - [`enclosure`]: the margin of one region inside another.
 //! - [`shape`]: a region's own extents, edges, corners, holes, vertices and grid.
 //! - [`area`]: a region's area.
+//! - [`count`]: how many regions of a layer the chip holds.
 //! - [`density`]: the coverage of layers over an area.
 //! - [`net`]: what only the connect graph can answer.
 //! - [`residual`]: what a rule forbids outright.
@@ -21,6 +22,7 @@
 //! the tile drivers the families share and [`params`] the readers of a rule's params.
 
 pub mod area;
+pub mod count;
 pub mod density;
 pub mod edge_distance;
 pub mod enclosure;
@@ -146,6 +148,9 @@ pub fn run_rule(
         "min_area" => area::run(area::Kind::Min, rule, layout, dbu_to_um, merged, conn),
         "max_area" => area::run(area::Kind::Max, rule, layout, dbu_to_um, merged, conn),
         "exact_area" => area::run(area::Kind::Exact, rule, layout, dbu_to_um, merged, conn),
+        "min_count" => count::run(count::Kind::Min, rule, layout, dbu_to_um, merged),
+        "max_count" => count::run(count::Kind::Max, rule, layout, dbu_to_um, merged),
+        "exact_count" => count::run(count::Kind::Exact, rule, layout, dbu_to_um, merged),
         // Density: the coverage of layers over the chip, a window or a region.
         "min_density" => density::run(density::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_density" => density::run(density::Kind::Max, rule, layout, dbu_to_um, merged),

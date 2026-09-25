@@ -12,6 +12,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
 
    antenna_ratio
    exact_area
+   exact_count
    exact_dim
    exact_edge_length
    exact_gate_length
@@ -20,6 +21,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    forbidden
    forbidden_unless_labeled
    max_area
+   max_count
    max_density
    max_dim
    max_edge_length
@@ -32,6 +34,7 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    max_space
    max_width
    min_area
+   min_count
    min_density
    min_dim
    min_edge_length
