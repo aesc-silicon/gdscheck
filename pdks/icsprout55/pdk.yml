@@ -148,16 +148,9 @@ decks:
   - name: efuse
     path: decks/efuse.yml
     description: eFuse
-  # --- review A: new decks ---
-  # --- review B: new decks ---
-  # --- review C: new decks ---
-  # --- review D: new decks ---
-  # --- review E: new decks ---
   - name: sealring
     path: decks/sealring.yml
     description: Seal ring (chip-level only)
-  # --- review F: new decks ---
-  # --- review G: new decks ---
   - name: esddev
     path: decks/esddev.yml
     description: 3.3V ESD protection NMOS and PMOS
@@ -558,14 +551,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [ACTdm, ACTdmOk]
-  - name: ACTdmAtNW1
-    op: overlapping
-    mode: lazy
-    layers: [ACTdm, NW1]
-  - name: ACTdmCutsNW1
-    op: not_inside
-    mode: lazy
-    layers: [ACTdmAtNW1, NW1]
   - name: POLYdmRect
     op: rectangle
     mode: lazy
@@ -614,30 +599,10 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [POLYdm, POLYdmOk]
-  - name: POLYdmAtNW1
-    op: overlapping
-    mode: lazy
-    layers: [POLYdm, NW1]
-  - name: POLYdmCutsNW1
-    op: not_inside
-    mode: lazy
-    layers: [POLYdmAtNW1, NW1]
   - name: GATE
     op: intersection
     mode: lazy
     layers: [POLY, ACT]
-  - name: POLYonSTI
-    op: difference
-    mode: lazy
-    layers: [POLY, ACT]
-  - name: SABxPOLY
-    op: overlapping
-    mode: lazy
-    layers: [SAB, POLY]
-  - name: SABNoESD
-    op: difference
-    mode: lazy
-    layers: [SAB, ESDIOE]
   - name: NPACT
     op: intersection
     mode: lazy
@@ -662,18 +627,10 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [PPACT, NW1]
-  - name: MOSACT
-    op: overlapping
-    mode: lazy
-    layers: [ACT, POLY]
   - name: ACTNoPickup
     op: difference
     mode: lazy
     layers: [ACT, NPPickup, PPPickup]
-  - name: ACTOutSRAM
-    op: not_overlapping
-    mode: lazy
-    layers: [ACT, SRAMALL]
   - name: IOOX
     op: union
     mode: lazy
@@ -682,10 +639,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [GATE, DGOX, TGOX]
-  - name: GATEIO
-    op: intersection
-    mode: lazy
-    layers: [GATE, IOOX]
   - name: GATEDG
     op: intersection
     mode: lazy
@@ -694,34 +647,10 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GATE, TGOX]
-  - name: GATETGUD
-    op: intersection
-    mode: lazy
-    layers: [GATETG, UD]
-  - name: GATETGOD
-    op: intersection
-    mode: lazy
-    layers: [GATETG, OD]
-  - name: GATETGPlain
-    op: difference
-    mode: lazy
-    layers: [GATETG, UD, OD]
-  - name: GATETGODN
-    op: intersection
-    mode: lazy
-    layers: [GATETGOD, NP]
-  - name: GATETGODP
-    op: intersection
-    mode: lazy
-    layers: [GATETGOD, PP]
   - name: ACTInTGOX
     op: inside
     mode: lazy
     layers: [ACT, TGOX]
-  - name: NW1TGOX
-    op: intersection
-    mode: lazy
-    layers: [NW1, TGOX]
   - name: NW1xTGOX
     op: interacting
     mode: lazy
@@ -730,115 +659,22 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [NW1, DNW]
-  - name: NPACTChk
-    op: difference
-    mode: lazy
-    layers: [NPACT, LDMOS, NW1res]
   - name: NW1NoRes
     op: not_interacting
     mode: lazy
     layers: [NW1, NW1res]
-  - name: NPACTAtNW1
-    op: overlapping
-    mode: lazy
-    layers: [NPACTChk, NW1NoRes]
-  - name: NPACTCutsNW1
-    op: not_inside
-    mode: lazy
-    layers: [NPACTAtNW1, NW1NoRes]
   - name: ACTSAB
     op: intersection
     mode: lazy
     layers: [ACT, SAB]
-  - name: VT3
-    op: union
-    mode: lazy
-    layers: [NVT3, PVT3]
-  - name: ULLDAlone
-    op: not_interacting
-    mode: lazy
-    layers: [ULLD, VT3]
-  - name: MOSACTAtDGOX
-    op: overlapping
-    mode: lazy
-    layers: [MOSACT, DGOX]
-  - name: MOSACTCutsDGOX
-    op: not_inside
-    mode: lazy
-    layers: [MOSACTAtDGOX, DGOX]
-  - name: GATEAtDGOX
-    op: overlapping
-    mode: lazy
-    layers: [GATE, DGOX]
-  - name: GATECutsDGOX
-    op: not_inside
-    mode: lazy
-    layers: [GATEAtDGOX, DGOX]
-  - name: MOSACTAtTGOX
-    op: overlapping
-    mode: lazy
-    layers: [MOSACT, TGOX]
-  - name: MOSACTCutsTGOX
-    op: not_inside
-    mode: lazy
-    layers: [MOSACTAtTGOX, TGOX]
-  - name: GATEAtTGOX
-    op: overlapping
-    mode: lazy
-    layers: [GATE, TGOX]
-  - name: GATECutsTGOX
-    op: not_inside
-    mode: lazy
-    layers: [GATEAtTGOX, TGOX]
-  - name: POLYNoInd
-    op: difference
-    mode: lazy
-    layers: [POLY, INDALL]
-  - name: POLYNoFuse
-    op: difference
-    mode: lazy
-    layers: [POLY, FUSEALL, EFUSEALL]
   - name: GATENoInd
     op: difference
     mode: lazy
     layers: [GATE, INDALL]
-  - name: GATETGNoInd
-    op: difference
-    mode: lazy
-    layers: [GATETG, INDALL]
-  - name: POLYInSAB
-    op: intersection
-    mode: lazy
-    layers: [POLY, SAB]
-  - name: POLYInsideACT
-    op: inside
-    mode: lazy
-    layers: [POLY, ACT]
-  - name: GATEForBend
-    op: difference
-    mode: lazy
-    layers: [GATE, INDALL, SRAMALL]
-  - name: GATEForBendOpen
-    op: open
-    mode: lazy
-    layers: [GATEForBend]
-    radius: 0.006
-  - name: GATEBendChk
-    op: overlapping
-    mode: lazy
-    layers: [GATEForBend, GATEForBendOpen]
-  - name: NPACTOutSRAM
-    op: intersection
-    mode: lazy
-    layers: [ACTOutSRAM, NP]
   - name: NPACTButted
     op: interacting
     mode: lazy
     layers: [NPACT, PPACT]
-  - name: PPACTOutSRAM
-    op: intersection
-    mode: lazy
-    layers: [ACTOutSRAM, PP]
   - name: PPACTButted
     op: interacting
     mode: lazy
@@ -859,26 +695,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [CT, SRAMALL]
-  - name: NW1NoTap
-    op: not_interacting
-    mode: lazy
-    layers: [NW1, NPACT]
-  - name: TPW
-    op: difference
-    mode: lazy
-    layers: [DNW, NW1, PSUB]
-  - name: TPWxTGOX
-    op: interacting
-    mode: lazy
-    layers: [TPW, TGOX]
-  - name: PPACTwithCT
-    op: interacting
-    mode: lazy
-    layers: [PPACT, CT]
-  - name: TPWNoTap
-    op: not_interacting
-    mode: lazy
-    layers: [TPW, PPACTwithCT]
   - name: GATENat
     op: intersection
     mode: lazy
@@ -895,26 +711,10 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GATENat, TGOX]
-  - name: ACTNat
-    op: inside
-    mode: lazy
-    layers: [ACT, PSUB]
-  - name: ACTNatNoInd
-    op: difference
-    mode: lazy
-    layers: [ACTNat, INDALL]
-  - name: PSUBNoInd
-    op: difference
-    mode: lazy
-    layers: [PSUB, INDALL]
   - name: POLYNat
     op: overlapping
     mode: lazy
     layers: [POLY, PSUB]
-  - name: GATENoDG
-    op: difference
-    mode: lazy
-    layers: [GATE, DGOX]
   - name: NPPP
     op: union
     mode: lazy
@@ -943,11 +743,6 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [NW1, NW1res]
-  - name: NW1RSTI
-    op: not_inside
-    mode: lazy
-    layers: [NW1R, ACT]
-  # --- review A: derived layers ---
   # PW is the chip minus (NW1 or PSUB); near a DNW is all the DNW rules need of it.
   - name: DNWHalo
     op: grow
@@ -1248,7 +1043,6 @@ virtual_layers:
     op: inside
     mode: lazy
     layers: [GATE, TGOX]
-  # --- review B: derived layers ---
   # Runset GATE: a poly-on-active piece whose two sides are each a contacted S/D or
   # one shared with a second gate (GATE1), or any poly on active in LDMOS (GATE2).
   - name: ACTGated
@@ -2074,7 +1868,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [PGATEDev, PGATEDevChkWhole]
-  # --- review C: derived layers ---
   # The runset's CT: square contacts and bars.
   - name: CTAll
     op: union
@@ -2096,40 +1889,6 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [GRIDAll, SRAMALL, EFUSEALL]
-  # Device gate as the runset derives it: a gate between two source/drain pieces,
-  # each contacted or shared with a second gate, plus LDMOS gates.
-  - name: ACTxGATE
-    op: interacting
-    mode: lazy
-    layers: [ACT, GATE]
-  - name: SDPiece
-    op: difference
-    mode: lazy
-    layers: [ACTxGATE, GATE]
-  - name: SDPieceTwoGates
-    op: interacting
-    mode: lazy
-    layers: [SDPiece, GATE]
-    min: 2
-    max: 2
-  - name: SDPieceCT
-    op: interacting
-    mode: lazy
-    layers: [SDPiece, CTAll]
-  - name: SDPieceOk
-    op: union
-    mode: lazy
-    layers: [SDPieceTwoGates, SDPieceCT]
-  - name: GATEBetweenSD
-    op: interacting
-    mode: lazy
-    layers: [GATE, SDPieceOk]
-    min: 2
-    max: 2
-  - name: GATELDMOS
-    op: intersection
-    mode: lazy
-    layers: [GATE, LDMOS]
   - name: POLYxGATEDevCore
     op: interacting
     mode: lazy
@@ -3069,21 +2828,6 @@ virtual_layers:
     mode: lazy
     layers: [MOMLVS1, MOMLVS1]
     text: momcap15
-  - name: MOMLVS1Cap16
-    op: with_text
-    mode: lazy
-    layers: [MOMLVS1, MOMLVS1]
-    text: momcap16
-  - name: MOMLVS1Cap17
-    op: with_text
-    mode: lazy
-    layers: [MOMLVS1, MOMLVS1]
-    text: momcap17
-  - name: MOMLVS1Cap18
-    op: with_text
-    mode: lazy
-    layers: [MOMLVS1, MOMLVS1]
-    text: momcap18
   - name: MOMLVS1Cap23
     op: with_text
     mode: lazy
@@ -3704,7 +3448,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MOMLVS1Stack45, MOMLVS1Stack45Cap]
-  # --- review D: derived layers ---
   - name: VIA1Net
     op: union
     mode: lazy
@@ -4703,7 +4446,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [T4M2slot, T4M2slotOk]
-  # --- review E: derived layers ---
   - name: T4M2Solid
     op: difference
     mode: lazy
@@ -5875,7 +5617,6 @@ virtual_layers:
     op: not_inside
     mode: lazy
     layers: [SRVIA4SqAtOuter, SRMET4Outer]
-  # --- review F: derived layers ---
   # The connect graph's conductors and vias as the runsets read them: bars join the
   # cuts, slots leave the metals.
   - name: CTConn
@@ -5952,7 +5693,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [ACTImp, POLY]
-  # --- review G: derived layers ---
   - name: ESDCT
     op: intersection
     mode: lazy
@@ -6103,13 +5843,8 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [NPPickup, POLY]
-  - name: NW1resSTI
-    op: overlapping
-    mode: lazy
-    layers: [NW1res, NW1RSTI]
 
 edge_layers:
-  # --- review G: edge layers ---
   - name: ESDGATE.edges
     op: edges
     layers: [ESDGATE]
@@ -6139,7 +5874,6 @@ edge_layers:
   - name: ESDNGATEHVL
     op: and
     layers: [ESDNGATEHV.edges, ESDACT.edges]
-  # --- review C: edge layers ---
   - name: ACT.edges
     op: edges
     layers: [ACT]
@@ -6292,7 +6026,6 @@ edge_layers:
   - name: NWStiEn1Bad
     op: not_interacting_edges
     layers: [ACTInNWRSTICut, NWStiEn1SharedMid]
-  # --- review B: edge layers ---
   # Channel widths: the gate walls on the poly (runset GATE_*_W).
   - name: GATEDevCore.edges
     op: edges
@@ -6343,7 +6076,6 @@ edge_layers:
   - name: SABonACT
     op: and
     layers: [SAB.edges, ACT.edges]
-  # --- review A: edge layers ---
   - name: DNW.edges
     op: edges
     layers: [DNW]
