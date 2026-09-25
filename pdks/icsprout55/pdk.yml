@@ -15,42 +15,81 @@ decks:
   - name: met1
     path: decks/met1.yml
     description: Metal1, 1x
+  - name: via1
+    path: decks/via1.yml
+    description: Via1, 1x
   - name: met2
     path: decks/met2.yml
     description: Metal2, 1x
+  - name: via2
+    path: decks/via2.yml
+    description: Via2, 1x
   - name: met3
     path: decks/met3.yml
     description: Metal3, 1x
+  - name: via3
+    path: decks/via3.yml
+    description: Via3, 1x
   - name: met4
     path: decks/met4.yml
     description: Metal4, 1x
+  - name: via4
+    path: decks/via4.yml
+    description: Via4, 1x
   - name: met5
     path: decks/met5.yml
     description: Metal5, 1x
+  - name: via5
+    path: decks/via5.yml
+    description: Via5, 1x
   - name: met6
     path: decks/met6.yml
     description: Metal6, 1x
+  - name: via6
+    path: decks/via6.yml
+    description: Via6, 1x
   - name: met7
     path: decks/met7.yml
     description: Metal7, 1x
+  - name: via7
+    path: decks/via7.yml
+    description: Via7, 1x
   - name: met8
     path: decks/met8.yml
     description: Metal8, 1x
+  - name: t2v1
+    path: decks/t2v1.yml
+    description: T2V1, 2x top via 1
   - name: t2m1
     path: decks/t2m1.yml
     description: T2M1, 2x top metal 1
+  - name: t2v2
+    path: decks/t2v2.yml
+    description: T2V2, 2x top via 2
   - name: t2m2
     path: decks/t2m2.yml
     description: T2M2, 2x top metal 2
+  - name: t4v1
+    path: decks/t4v1.yml
+    description: T4V1, 4x top via 1
   - name: t4m1
     path: decks/t4m1.yml
     description: T4M1, 4x top metal 1
+  - name: t4v2
+    path: decks/t4v2.yml
+    description: T4V2, 4x top via 2
   - name: t4m2
     path: decks/t4m2.yml
     description: T4M2, 4x top metal 2
+  - name: t8v1
+    path: decks/t8v1.yml
+    description: T8V1, 8x top via 1
   - name: t8m1
     path: decks/t8m1.yml
     description: T8M1, ultra-thick top metal 1
+  - name: t8v2
+    path: decks/t8v2.yml
+    description: T8V2, 8x top via 2
   - name: t8m2
     path: decks/t8m2.yml
     description: T8M2, ultra-thick top metal 2
@@ -472,6 +511,66 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MET8dm, MET8dmOk]
+  - name: METALL
+    op: union
+    mode: lazy
+    layers: [MET1, MET2, MET3, MET4, MET5, MET6, MET7, MET8]
+  - name: VIA1Sq
+    op: difference
+    mode: lazy
+    layers: [VIA1, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: VIA2Sq
+    op: difference
+    mode: lazy
+    layers: [VIA2, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: VIA3Sq
+    op: difference
+    mode: lazy
+    layers: [VIA3, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: VIA4Sq
+    op: difference
+    mode: lazy
+    layers: [VIA4, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: VIA5Sq
+    op: difference
+    mode: lazy
+    layers: [VIA5, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: VIA6Sq
+    op: difference
+    mode: lazy
+    layers: [VIA6, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: VIA7Sq
+    op: difference
+    mode: lazy
+    layers: [VIA7, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
+  - name: T2V1Sq
+    op: difference
+    mode: lazy
+    layers: [T2V1, GRBLK, SRINGBLK]
+  - name: T2V2Sq
+    op: difference
+    mode: lazy
+    layers: [T2V2, GRBLK, SRINGBLK]
+  - name: T4V1Sq
+    op: difference
+    mode: lazy
+    layers: [T4V1, GRBLK, SRINGBLK]
+  - name: T4V2Sq
+    op: difference
+    mode: lazy
+    layers: [T4V2, GRBLK, SRINGBLK]
+  - name: T8V1Sq
+    op: difference
+    mode: lazy
+    layers: [T8V1, GRBLK, SRINGBLK]
+  - name: T8V2Sq
+    op: difference
+    mode: lazy
+    layers: [T8V2, GRBLK, SRINGBLK]
+  - name: T2M1orT4M1
+    op: union
+    mode: lazy
+    layers: [T2M1, T4M1]
   - name: T2M1NoInd
     op: difference
     mode: lazy

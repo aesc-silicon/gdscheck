@@ -5,16 +5,29 @@
 # The full run: import every per-layer deck with no rule restriction.
 include:
   - deck: met1
+  - deck: via1
   - deck: met2
+  - deck: via2
   - deck: met3
+  - deck: via3
   - deck: met4
+  - deck: via4
   - deck: met5
+  - deck: via5
   - deck: met6
+  - deck: via6
   - deck: met7
+  - deck: via7
   - deck: met8
+  - deck: t2v1
   - deck: t2m1
+  - deck: t2v2
   - deck: t2m2
+  - deck: t4v1
   - deck: t4m1
+  - deck: t4v2
   - deck: t4m2
+  - deck: t8v1
   - deck: t8m1
+  - deck: t8v2
   - deck: t8m2

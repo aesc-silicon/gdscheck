@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: VIA5-W.1
+    check: exact_width
+    layers: [VIA5Sq]
+    value: 0.09
+  - id: VIA5-W.2
+    check: min_width
+    layers: [VIA5bar]
+    value: 0.09
+  - id: VIA5-W.2
+    check: max_width
+    layers: [VIA5bar]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: VIA5-S.1
+    check: min_space
+    layers: [VIA5]
+    value: 0.11
+  - id: VIA5-En.1
+    check: forbidden
+    layers: [VIA5, MET5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: VIA5-En.3
+    check: forbidden
+    layers: [VIA5, MET6]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: VIA5-En.5a
+    check: min_enclosure
+    layers: [MET6, VIA5]
+    value: 0.005
+    params:
+      metric: euclidian
+  - id: VIA5-R.5
+    check: no_angle
+    layers: [VIA5]
+    value: 0.0
