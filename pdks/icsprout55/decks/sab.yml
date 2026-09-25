@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: SAB-W.1
+    check: min_width
+    layers: [SAB]
+    value: 0.42
+  - id: SAB-S.1
+    check: min_space
+    layers: [SAB]
+    value: 0.42
+  - id: SAB-S.1
+    check: min_notch
+    layers: [SAB]
+    value: 0.42
+  - id: SAB-S.2
+    check: min_space
+    layers: [SABxPOLY, SAB]
+    value: 0.44
+  - id: SAB-S.3
+    check: min_space
+    layers: [SAB, ACT]
+    value: 0.21
+    params:
+      abutting: report
+  - id: SAB-S.4
+    check: min_space
+    layers: [SABNoESD, GATE]
+    value: 0.36
+    params:
+      abutting: report
+  - id: SAB-S.4
+    check: forbidden
+    layers: [SABNoESD, GATE]
+    value: 0.0
+    params:
+      op: overlap
+  - id: SAB-S.5
+    check: min_space
+    layers: [SAB, POLYonSTI]
+    value: 0.3
+    params:
+      abutting: report
+  - id: SAB-S.6
+    check: min_space
+    layers: [SAB, CT]
+    value: 0.21
+    params:
+      abutting: report
+  - id: SAB-Ex.1
+    check: min_enclosure
+    layers: [ACT, SAB]
+    value: 0.21
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: SAB-Ex.2
+    check: min_enclosure
+    layers: [SAB, ACT]
+    value: 0.21
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: SAB-Ex.3
+    check: min_enclosure
+    layers: [SAB, POLYonSTI]
+    value: 0.21
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: SAB-A.1
+    check: min_area
+    layers: [SAB]
+    value: 0.8
+    params:
+      touching: separate
+  - id: SAB-A.2
+    check: min_area
+    layers: [SAB]
+    value: 0.8
+    params:
+      scope: hole

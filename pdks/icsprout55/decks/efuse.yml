@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: EFUSE-1c
+    check: forbidden
+    layers: [EFUSEALL, FUSEALL]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: EFUSE-2c
+    check: forbidden
+    layers: [POEFUSEBLK, EFUSEALL]
+    value: 0.0
+    params:
+      op: uncovered

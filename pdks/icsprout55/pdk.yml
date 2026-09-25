@@ -10,8 +10,26 @@ suites:
   - name: main
     path: suites/main.yml
     description: Full DRC - every per-layer deck
+  - name: block
+    path: suites/block.yml
+    description: An IP block - main without the chip-edge rules
 
 decks:
+  - name: chipedge
+    path: decks/chipedge.yml
+    description: Chip edge (chip-level only)
+  - name: esd
+    path: decks/esd.yml
+    description: ESD implant
+  - name: sab
+    path: decks/sab.yml
+    description: Salicide block
+  - name: actdm
+    path: decks/actdm.yml
+    description: Dummy active
+  - name: polydm
+    path: decks/polydm.yml
+    description: Dummy poly
   - name: met1
     path: decks/met1.yml
     description: Metal1, 1x
@@ -93,6 +111,15 @@ decks:
   - name: t8m2
     path: decks/t8m2.yml
     description: T8M2, ultra-thick top metal 2
+  - name: slot
+    path: decks/slot.yml
+    description: Metal slots
+  - name: mom
+    path: decks/mom.yml
+    description: MOM capacitor
+  - name: efuse
+    path: decks/efuse.yml
+    description: eFuse
 
 virtual_layers:
   - name: MET1NoInd
@@ -875,6 +902,392 @@ virtual_layers:
     op: not_inside
     mode: lazy
     layers: [T8M2AtInd, INDALL]
+  - name: ACTdmRect
+    op: rectangle
+    mode: lazy
+    layers: [ACTdm]
+  - name: ACTdm3x3Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [ACTdmRect]
+    min: 3
+    max: 3.001
+  - name: ACTdm3x3
+    op: with_bbox_max
+    mode: lazy
+    layers: [ACTdm3x3Short]
+    min: 3
+    max: 3.001
+  - name: ACTdm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [ACTdmRect]
+    min: 1
+    max: 1.001
+  - name: ACTdm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [ACTdm1x1Short]
+    min: 1
+    max: 1.001
+  - name: ACTdmSmShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [ACTdmRect]
+    min: 0.467
+    max: 0.468
+  - name: ACTdmSm
+    op: with_bbox_max
+    mode: lazy
+    layers: [ACTdmSmShort]
+    min: 0.467
+    max: 0.468
+  - name: ACTdmOk
+    op: union
+    mode: lazy
+    layers: [ACTdm3x3, ACTdm1x1, ACTdmSm]
+  - name: ACTdmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [ACTdm, ACTdmOk]
+  - name: ACTdmAtNW1
+    op: overlapping
+    mode: lazy
+    layers: [ACTdm, NW1]
+  - name: ACTdmCutsNW1
+    op: not_inside
+    mode: lazy
+    layers: [ACTdmAtNW1, NW1]
+  - name: POLYdmRect
+    op: rectangle
+    mode: lazy
+    layers: [POLYdm]
+  - name: POLYdm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [POLYdmRect]
+    min: 2.4
+    max: 2.401
+  - name: POLYdm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [POLYdm2x2Short]
+    min: 2.4
+    max: 2.401
+  - name: POLYdm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [POLYdmRect]
+    min: 0.92
+    max: 0.921
+  - name: POLYdm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [POLYdm1x1Short]
+    min: 0.92
+    max: 0.921
+  - name: POLYdmSmShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [POLYdmRect]
+    min: 0.381
+    max: 0.382
+  - name: POLYdmSm
+    op: with_bbox_max
+    mode: lazy
+    layers: [POLYdmSmShort]
+    min: 0.381
+    max: 0.382
+  - name: POLYdmOk
+    op: union
+    mode: lazy
+    layers: [POLYdm2x2, POLYdm1x1, POLYdmSm]
+  - name: POLYdmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [POLYdm, POLYdmOk]
+  - name: POLYdmAtNW1
+    op: overlapping
+    mode: lazy
+    layers: [POLYdm, NW1]
+  - name: POLYdmCutsNW1
+    op: not_inside
+    mode: lazy
+    layers: [POLYdmAtNW1, NW1]
+  - name: GATE
+    op: intersection
+    mode: lazy
+    layers: [POLY, ACT]
+  - name: POLYonSTI
+    op: difference
+    mode: lazy
+    layers: [POLY, ACT]
+  - name: SABxPOLY
+    op: overlapping
+    mode: lazy
+    layers: [SAB, POLY]
+  - name: SABNoESD
+    op: difference
+    mode: lazy
+    layers: [SAB, ESDIOE]
+  - name: TopMetalSlot
+    op: union
+    mode: lazy
+    layers: [T2M2slot, T4M2slot, T8M2slot]
+  - name: METmomAll
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET2mom, MET3mom, MET4mom, MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVSNoMom
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1, METmomAll]
+  - name: MOMMET1
+    op: intersection
+    mode: lazy
+    layers: [MET1, MET1mom, MOMLVS1]
+  - name: VIA1NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA1, MOMLVS1]
+  - name: MOMMET2
+    op: intersection
+    mode: lazy
+    layers: [MET2, MET2mom, MOMLVS1]
+  - name: VIA2NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA2, MOMLVS1]
+  - name: MOMMET3
+    op: intersection
+    mode: lazy
+    layers: [MET3, MET3mom, MOMLVS1]
+  - name: VIA3NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA3, MOMLVS1]
+  - name: MOMMET4
+    op: intersection
+    mode: lazy
+    layers: [MET4, MET4mom, MOMLVS1]
+  - name: VIA4NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA4, MOMLVS1]
+  - name: MOMMET5
+    op: intersection
+    mode: lazy
+    layers: [MET5, MET5mom, MOMLVS1]
+  - name: VIA5NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA5, MOMLVS1]
+  - name: MOMMET6
+    op: intersection
+    mode: lazy
+    layers: [MET6, MET6mom, MOMLVS1]
+  - name: VIA6NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA6, MOMLVS1]
+  - name: MOMMET7
+    op: intersection
+    mode: lazy
+    layers: [MET7, MET7mom, MOMLVS1]
+  - name: VIA7NoMom
+    op: difference
+    mode: lazy
+    layers: [VIA7, MOMLVS1]
+  - name: MOMMET8
+    op: intersection
+    mode: lazy
+    layers: [MET8, MET8mom, MOMLVS1]
+  - name: T2V1NoMom
+    op: difference
+    mode: lazy
+    layers: [T2V1, MOMLVS1]
+  - name: T4V1NoMom
+    op: difference
+    mode: lazy
+    layers: [T4V1, MOMLVS1]
+  - name: T8V1NoMom
+    op: difference
+    mode: lazy
+    layers: [T8V1, MOMLVS1]
+  - name: ChipIn0p37x
+    op: shrink_x
+    mode: lazy
+    layers: [CHIPBLK]
+    radius: 0.37
+  - name: ChipIn0p37
+    op: shrink_y
+    mode: lazy
+    layers: [ChipIn0p37x]
+    radius: 0.37
+  - name: ChipIn6x
+    op: shrink_x
+    mode: lazy
+    layers: [CHIPBLK]
+    radius: 6
+  - name: ChipIn6
+    op: shrink_y
+    mode: lazy
+    layers: [ChipIn6x]
+    radius: 6
+  - name: ChipIn1p5x
+    op: shrink_x
+    mode: lazy
+    layers: [CHIPBLK]
+    radius: 1.5
+  - name: ChipIn1p5
+    op: shrink_y
+    mode: lazy
+    layers: [ChipIn1p5x]
+    radius: 1.5
+  - name: ACTInSR
+    op: intersection
+    mode: lazy
+    layers: [ACT, SRINGBLK]
+  - name: PPInSR
+    op: intersection
+    mode: lazy
+    layers: [PP, SRINGBLK]
+  - name: CTInSR
+    op: intersection
+    mode: lazy
+    layers: [CT, SRINGBLK]
+  - name: MET1InSR
+    op: intersection
+    mode: lazy
+    layers: [MET1, SRINGBLK]
+  - name: MET2InSR
+    op: intersection
+    mode: lazy
+    layers: [MET2, SRINGBLK]
+  - name: MET3InSR
+    op: intersection
+    mode: lazy
+    layers: [MET3, SRINGBLK]
+  - name: MET4InSR
+    op: intersection
+    mode: lazy
+    layers: [MET4, SRINGBLK]
+  - name: MET5InSR
+    op: intersection
+    mode: lazy
+    layers: [MET5, SRINGBLK]
+  - name: MET6InSR
+    op: intersection
+    mode: lazy
+    layers: [MET6, SRINGBLK]
+  - name: MET7InSR
+    op: intersection
+    mode: lazy
+    layers: [MET7, SRINGBLK]
+  - name: MET8InSR
+    op: intersection
+    mode: lazy
+    layers: [MET8, SRINGBLK]
+  - name: VIA1InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA1, SRINGBLK]
+  - name: VIA1barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA1bar, SRINGBLK]
+  - name: VIA2InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA2, SRINGBLK]
+  - name: VIA2barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA2bar, SRINGBLK]
+  - name: VIA3InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA3, SRINGBLK]
+  - name: VIA3barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA3bar, SRINGBLK]
+  - name: VIA4InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA4, SRINGBLK]
+  - name: VIA4barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA4bar, SRINGBLK]
+  - name: VIA5InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA5, SRINGBLK]
+  - name: VIA5barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA5bar, SRINGBLK]
+  - name: VIA6InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA6, SRINGBLK]
+  - name: VIA6barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA6bar, SRINGBLK]
+  - name: VIA7InSR
+    op: intersection
+    mode: lazy
+    layers: [VIA7, SRINGBLK]
+  - name: VIA7barInSR
+    op: intersection
+    mode: lazy
+    layers: [VIA7bar, SRINGBLK]
+  - name: T2V1InSR
+    op: intersection
+    mode: lazy
+    layers: [T2V1, SRINGBLK]
+  - name: T2V1barInSR
+    op: intersection
+    mode: lazy
+    layers: [T2V1bar, SRINGBLK]
+  - name: T2M1InSR
+    op: intersection
+    mode: lazy
+    layers: [T2M1, SRINGBLK]
+  - name: T4V2InSR
+    op: intersection
+    mode: lazy
+    layers: [T4V2, SRINGBLK]
+  - name: T4V2barInSR
+    op: intersection
+    mode: lazy
+    layers: [T4V2bar, SRINGBLK]
+  - name: T4M2InSR
+    op: intersection
+    mode: lazy
+    layers: [T4M2, SRINGBLK]
+  - name: T8V1InSR
+    op: intersection
+    mode: lazy
+    layers: [T8V1, SRINGBLK]
+  - name: T8V1barInSR
+    op: intersection
+    mode: lazy
+    layers: [T8V1bar, SRINGBLK]
+  - name: T8M1InSR
+    op: intersection
+    mode: lazy
+    layers: [T8M1, SRINGBLK]
+  - name: RVInSR
+    op: intersection
+    mode: lazy
+    layers: [RV, SRINGBLK]
+  - name: RDLInSR
+    op: intersection
+    mode: lazy
+    layers: [RDL, SRINGBLK]
 
 layers:
   - name: ACT

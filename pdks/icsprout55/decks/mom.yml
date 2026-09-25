@@ -1,0 +1,219 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET1, VIA1NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET1mom, VIA1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET2, VIA1NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET2, VIA2NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET2mom, VIA1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET2mom, VIA2]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET3, VIA2NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET3, VIA3NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET3mom, VIA2]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET3mom, VIA3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET4, VIA3NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET4, VIA4NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET4mom, VIA3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET4mom, VIA4]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET5, VIA4NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET5, VIA5NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET5mom, VIA4]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET5mom, VIA5]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET6, VIA5NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET6, VIA6NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET6mom, VIA5]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET6mom, VIA6]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET7, VIA6NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET7, VIA7NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET7mom, VIA6]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET7mom, VIA7]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET8, VIA7NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET8, T2V1NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET8, T4V1NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMMET8, T8V1NoMom]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET8mom, VIA7]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET8mom, T2V1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET8mom, T4V1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [MET8mom, T8V1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.2
+    check: forbidden
+    layers: [METmomAll, MOMLVS1]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVSNoMom]
+    value: 0.0

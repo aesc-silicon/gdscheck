@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# The full run: import every per-layer deck with no rule restriction.
+# main without the chip-level rules (CHIPEDGE-R.4), for an IP block.
 include:
-  - deck: chipedge
   - deck: esd
   - deck: sab
   - deck: actdm

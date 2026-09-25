@@ -1,0 +1,611 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [DNW, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [ACT, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [NW1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [PSUB, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [ULLD, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [NVT3, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [PVT3, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [NVT1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [PVT1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [TGOX, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [DGOX, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [POLY, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [NP, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [PP, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [SAB, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [CT, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET3, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET4, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET5, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET6, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET7, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET8, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA3, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA4, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA5, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA6, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [VIA7, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T2V1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T2M1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T2V2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T2M2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T4V1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T4M1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T4V2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T4M2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T8V1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T8M1, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T8V2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T8M2, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [CB, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [RV, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [RDL, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [ALPAD, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [COVER, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [ACTdm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [POLYdm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET1dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET2dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET3dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET4dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET5dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET6dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET7dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [MET8dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T2M1dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T2M2dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T4M1dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T4M2dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T8M1dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.1
+    check: forbidden
+    layers: [T8M2dm, ChipIn0p37, SRINGBLK, SRBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.2
+    check: forbidden
+    layers: [DNW, ChipIn6]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [ACTInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [PPInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [CTInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET1InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET2InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET3InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET4InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET5InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET6InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET7InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [MET8InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA1InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA1barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA2InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA2barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA3InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA3barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA4InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA4barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA5InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA5barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA6InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA6barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA7InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [VIA7barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T2V1InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T2V1barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T2M1InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T4V2InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T4V2barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T4M2InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T8V1InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T8V1barInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [T8M1InSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [RVInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CHIPEDGE-En.3
+    check: forbidden
+    layers: [RDLInSR, ChipIn1p5]
+    value: 0.0
+    params:
+      op: uncovered
