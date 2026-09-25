@@ -1449,6 +1449,264 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [Passiv, dfpad]
+  # Pad.fR, "Min. recommended Metal(n), TopMetal1, TopMetal2 exit length 7.00": a metal
+  # on a pad leaves the dfpad and runs on for 7.0 as wide as it left.  The exit is the
+  # metal outside the dfpad; its foot the 0.005 of it against the dfpad's side, swept
+  # straight out to 7.0 (IHP's `edges.and(dfpad).extended(in: 7.0)`); what of the sweep
+  # the exit does not cover is short.  The sweep runs along x from the dfpad's left and
+  # right sides and along y from its top and bottom, so it reads an upright dfpad.
+  - name: PadOpening
+    op: intersection
+    mode: lazy
+    layers: [PassivDfpad, TopMetal2]
+  - name: DfpadGrowX
+    op: grow_x
+    radius: 0.005
+    mode: lazy
+    layers: [dfpad]
+  - name: DfpadGrowY
+    op: grow_y
+    radius: 0.005
+    mode: lazy
+    layers: [dfpad]
+  - name: M1PadExit
+    op: difference
+    mode: lazy
+    layers: [M1AtPad, dfpad]
+  - name: M1AtPad
+    op: interacting
+    mode: lazy
+    layers: [Metal1, PadOpening]
+  - name: M1PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [M1PadExit, DfpadGrowX]
+  - name: M1PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [M1PadExit, DfpadGrowY]
+  - name: M1PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [M1PadExitFootX]
+  - name: M1PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [M1PadExitFootY]
+  - name: M1PadExitShort
+    op: difference
+    mode: lazy
+    layers: [M1PadExitSweep, dfpad, M1PadExit]
+  - name: M1PadExitSweep
+    op: union
+    mode: lazy
+    layers: [M1PadExitSweepX, M1PadExitSweepY]
+  - name: M2PadExit
+    op: difference
+    mode: lazy
+    layers: [M2AtPad, dfpad]
+  - name: M2AtPad
+    op: interacting
+    mode: lazy
+    layers: [Metal2, PadOpening]
+  - name: M2PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [M2PadExit, DfpadGrowX]
+  - name: M2PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [M2PadExit, DfpadGrowY]
+  - name: M2PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [M2PadExitFootX]
+  - name: M2PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [M2PadExitFootY]
+  - name: M2PadExitShort
+    op: difference
+    mode: lazy
+    layers: [M2PadExitSweep, dfpad, M2PadExit]
+  - name: M2PadExitSweep
+    op: union
+    mode: lazy
+    layers: [M2PadExitSweepX, M2PadExitSweepY]
+  - name: M3PadExit
+    op: difference
+    mode: lazy
+    layers: [M3AtPad, dfpad]
+  - name: M3AtPad
+    op: interacting
+    mode: lazy
+    layers: [Metal3, PadOpening]
+  - name: M3PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [M3PadExit, DfpadGrowX]
+  - name: M3PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [M3PadExit, DfpadGrowY]
+  - name: M3PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [M3PadExitFootX]
+  - name: M3PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [M3PadExitFootY]
+  - name: M3PadExitShort
+    op: difference
+    mode: lazy
+    layers: [M3PadExitSweep, dfpad, M3PadExit]
+  - name: M3PadExitSweep
+    op: union
+    mode: lazy
+    layers: [M3PadExitSweepX, M3PadExitSweepY]
+  - name: M4PadExit
+    op: difference
+    mode: lazy
+    layers: [M4AtPad, dfpad]
+  - name: M4AtPad
+    op: interacting
+    mode: lazy
+    layers: [Metal4, PadOpening]
+  - name: M4PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [M4PadExit, DfpadGrowX]
+  - name: M4PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [M4PadExit, DfpadGrowY]
+  - name: M4PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [M4PadExitFootX]
+  - name: M4PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [M4PadExitFootY]
+  - name: M4PadExitShort
+    op: difference
+    mode: lazy
+    layers: [M4PadExitSweep, dfpad, M4PadExit]
+  - name: M4PadExitSweep
+    op: union
+    mode: lazy
+    layers: [M4PadExitSweepX, M4PadExitSweepY]
+  - name: M5PadExit
+    op: difference
+    mode: lazy
+    layers: [M5AtPad, dfpad]
+  - name: M5AtPad
+    op: interacting
+    mode: lazy
+    layers: [Metal5, PadOpening]
+  - name: M5PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [M5PadExit, DfpadGrowX]
+  - name: M5PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [M5PadExit, DfpadGrowY]
+  - name: M5PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [M5PadExitFootX]
+  - name: M5PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [M5PadExitFootY]
+  - name: M5PadExitShort
+    op: difference
+    mode: lazy
+    layers: [M5PadExitSweep, dfpad, M5PadExit]
+  - name: M5PadExitSweep
+    op: union
+    mode: lazy
+    layers: [M5PadExitSweepX, M5PadExitSweepY]
+  - name: TM1PadExit
+    op: difference
+    mode: lazy
+    layers: [TM1AtPad, dfpad]
+  - name: TM1AtPad
+    op: interacting
+    mode: lazy
+    layers: [TopMetal1, PadOpening]
+  - name: TM1PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [TM1PadExit, DfpadGrowX]
+  - name: TM1PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [TM1PadExit, DfpadGrowY]
+  - name: TM1PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [TM1PadExitFootX]
+  - name: TM1PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [TM1PadExitFootY]
+  - name: TM1PadExitShort
+    op: difference
+    mode: lazy
+    layers: [TM1PadExitSweep, dfpad, TM1PadExit]
+  - name: TM1PadExitSweep
+    op: union
+    mode: lazy
+    layers: [TM1PadExitSweepX, TM1PadExitSweepY]
+  - name: TM2PadExit
+    op: difference
+    mode: lazy
+    layers: [TM2AtPad, dfpad]
+  - name: TM2AtPad
+    op: interacting
+    mode: lazy
+    layers: [TopMetal2, PadOpening]
+  - name: TM2PadExitFootX
+    op: intersection
+    mode: lazy
+    layers: [TM2PadExit, DfpadGrowX]
+  - name: TM2PadExitFootY
+    op: intersection
+    mode: lazy
+    layers: [TM2PadExit, DfpadGrowY]
+  - name: TM2PadExitSweepX
+    op: grow_x
+    radius: 6.995
+    mode: lazy
+    layers: [TM2PadExitFootX]
+  - name: TM2PadExitSweepY
+    op: grow_y
+    radius: 6.995
+    mode: lazy
+    layers: [TM2PadExitFootY]
+  - name: TM2PadExitShort
+    op: difference
+    mode: lazy
+    layers: [TM2PadExitSweep, dfpad, TM2PadExit]
+  - name: TM2PadExitSweep
+    op: union
+    mode: lazy
+    layers: [TM2PadExitSweepX, TM2PadExitSweepY]
   - name: DfpadNoTopMetal2
     op: difference
     mode: lazy

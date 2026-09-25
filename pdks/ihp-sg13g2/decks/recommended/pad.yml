@@ -19,6 +19,34 @@ rules:
     check: forbidden
     layers: [PadD1RBad]
     value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [M1PadExitShort]
+    value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [M2PadExitShort]
+    value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [M3PadExitShort]
+    value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [M4PadExitShort]
+    value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [M5PadExitShort]
+    value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [TM1PadExitShort]
+    value: 0.0
+  - id: Pad.fR
+    check: forbidden
+    layers: [TM2PadExitShort]
+    value: 0.0
   - id: Pad.gR
     check: min_enclosure
     layers: [TopMetal1Dfpad, TopVia2]
