@@ -11,58 +11,58 @@ rules:
     check: min_space
     layers: [PP]
     value: 0.18
+    params:
+      length: 0.0
   - id: PP-S.1
     check: min_notch
     layers: [PP]
     value: 0.18
   - id: PP-S.2
     check: min_space
-    layers: [PP, NPACTpw]
+    layers: [PP, NPACTpwFree]
     value: 0.12
+    layer_params:
+      gap_outside: SRAMALL
   - id: PP-S.3
     check: min_space
-    layers: [PP, NPPickup]
+    layers: [PP, NPPickupFree]
     value: 0.02
+  - id: PP-S.4
+    check: forbidden
+    layers: [NPPPACTChk]
+    value: 0.0
   - id: PP-S.5
     check: min_space
-    layers: [PP, POLY]
+    layers: [POLYinNPACT, PP.edges]
     value: 0.3
   - id: PP-En.1
     check: min_enclosure
-    layers: [PP, ACTOutSRAM]
+    layers: [PP, PPEn1In]
     value: 0.02
     params:
       metric: euclidian
       interacting_only: 1
   - id: PP-En.2
     check: min_enclosure
-    layers: [PP, PPACTOutSRAM]
+    layers: [PPinNW, PPEn2In]
     value: 0.12
     params:
       metric: euclidian
       interacting_only: 1
-      skip_coincident: 1
   - id: PP-En.3
     check: min_enclosure
-    layers: [PP, GATE]
+    layers: [PP, POLYField3Chk]
     value: 0.15
-    params:
-      metric: euclidian
-      interacting_only: 1
-  - id: PP-Ex.1
-    check: min_enclosure
-    layers: [PP, POLY]
-    value: 0.16
     params:
       metric: euclidian
       interacting_only: 1
   - id: PP-O.1
     check: min_overlap
-    layers: [PP, ACT]
+    layers: [PP, ACTNoTouchPP]
     value: 0.12
   - id: PP-A.1
     check: min_area
-    layers: [PP]
+    layers: [PPNotInSRAM]
     value: 0.12
     params:
       touching: separate
@@ -74,7 +74,7 @@ rules:
       scope: hole
   - id: PP-A.3
     check: min_area
-    layers: [PPACTButted]
+    layers: [PPTapButted]
     value: 0.04
     params:
       touching: separate
@@ -84,3 +84,7 @@ rules:
     value: 0.0
     params:
       op: overlap
+  - id: PP-R.3
+    check: forbidden
+    layers: [NPPPButtUnsil]
+    value: 0.0

@@ -949,6 +949,831 @@ virtual_layers:
     layers: [NW1R, ACT]
   # --- review A: derived layers ---
   # --- review B: derived layers ---
+  # Runset GATE: a poly-on-active piece whose two sides are each a contacted S/D or
+  # one shared with a second gate (GATE1), or any poly on active in LDMOS (GATE2).
+  - name: ACTGated
+    op: interacting
+    mode: lazy
+    layers: [ACT, GATE]
+  - name: ACTGatedSD
+    op: difference
+    mode: lazy
+    layers: [ACTGated, POLY]
+  - name: ACTSDShared
+    op: interacting
+    min: 2
+    max: 2
+    mode: lazy
+    layers: [ACTGatedSD, GATE]
+  - name: CTorBar
+    op: union
+    mode: lazy
+    layers: [CT, CTbar]
+  - name: ACTSDContacted
+    op: interacting
+    mode: lazy
+    layers: [ACTGatedSD, CTorBar]
+  - name: ACTSDTerm
+    op: union
+    mode: lazy
+    layers: [ACTSDShared, ACTSDContacted]
+  - name: GATEDevPair
+    op: interacting
+    min: 2
+    max: 2
+    mode: lazy
+    layers: [GATE, ACTSDTerm]
+  - name: GATEDevLD
+    op: intersection
+    mode: lazy
+    layers: [GATE, LDMOS]
+  - name: GATEDev
+    op: union
+    mode: lazy
+    layers: [GATEDevPair, GATEDevLD]
+  - name: GATEDevCore
+    op: difference
+    mode: lazy
+    layers: [GATEDev, DGOX, TGOX]
+  - name: GATEDevDG
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, DGOX]
+  - name: GATEDevIO1
+    op: difference
+    mode: lazy
+    layers: [GATEDevDG, TGOX]
+  - name: GATEDevTG
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, TGOX]
+  - name: GATEDevIO2
+    op: difference
+    mode: lazy
+    layers: [GATEDevTG, DGOX]
+  - name: GATEDevNoSAB
+    op: difference
+    mode: lazy
+    layers: [GATEDev, SAB]
+  - name: SRAMorIND
+    op: union
+    mode: lazy
+    layers: [SRAMALL, INDALL]
+  # X not_inside M, built as X minus its regions that lie wholly in M: a
+  # piece of X AND M that touches no piece of X NOT M is a whole region.
+  - name: ACTNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [ACT, SRAMALL]
+  - name: ACTNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [ACT, SRAMALL]
+  - name: ACTNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNotInSRAMPart, ACTNotInSRAMRest]
+  - name: ACTNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [ACT, ACTNotInSRAMWhole]
+  - name: NPACTOutNW1
+    op: not_overlapping
+    mode: lazy
+    layers: [NPACT, NW1]
+  - name: NPACTInPW
+    op: not_overlapping
+    mode: lazy
+    layers: [NPACTOutNW1, PSUB]
+  - name: NPACTInTGOX
+    op: inside
+    mode: lazy
+    layers: [NPACT, TGOX]
+  # NW1 that holds part of a DNW boundary (the runset's NW_DNW).
+  - name: NW1DNWRingPart
+    op: intersection
+    mode: lazy
+    layers: [NW1DNW, DNW]
+  - name: NW1DNWRingRest
+    op: difference
+    mode: lazy
+    layers: [NW1DNW, DNW]
+  - name: NW1DNWRingWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NW1DNWRingPart, NW1DNWRingRest]
+  - name: NW1DNWRing
+    op: difference
+    mode: lazy
+    layers: [NW1DNW, NW1DNWRingWhole]
+  - name: PPPickupNoPSUB
+    op: difference
+    mode: lazy
+    layers: [PPPickup, PSUB]
+  - name: PPPickupS8Part
+    op: intersection
+    mode: lazy
+    layers: [PPPickupNoPSUB, LDMOS]
+  - name: PPPickupS8Rest
+    op: difference
+    mode: lazy
+    layers: [PPPickupNoPSUB, LDMOS]
+  - name: PPPickupS8Whole
+    op: not_interacting
+    mode: lazy
+    layers: [PPPickupS8Part, PPPickupS8Rest]
+  - name: PPPickupS8
+    op: difference
+    mode: lazy
+    layers: [PPPickupNoPSUB, PPPickupS8Whole]
+  - name: NPACTNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [NPACT, SRAMALL]
+  - name: NPACTNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [NPACT, SRAMALL]
+  - name: NPACTNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPACTNotInSRAMPart, NPACTNotInSRAMRest]
+  - name: NPACTNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [NPACT, NPACTNotInSRAMWhole]
+  - name: PPACTNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [PPACT, SRAMALL]
+  - name: PPACTNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [PPACT, SRAMALL]
+  - name: PPACTNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPACTNotInSRAMPart, PPACTNotInSRAMRest]
+  - name: PPACTNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [PPACT, PPACTNotInSRAMWhole]
+  - name: ACTNoImp
+    op: difference
+    mode: lazy
+    layers: [ACT, NP, PP]
+  - name: ACTNoImpChk
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNoImp, NW1res]
+  - name: ACTwithDm
+    op: union
+    mode: lazy
+    layers: [ACT, ACTdm]
+  - name: POLYNotInACTwithDmPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, ACTwithDm]
+  - name: POLYNotInACTwithDmRest
+    op: difference
+    mode: lazy
+    layers: [POLY, ACTwithDm]
+  - name: POLYNotInACTwithDmWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInACTwithDmPart, POLYNotInACTwithDmRest]
+  - name: POLYNotInACTwithDm
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInACTwithDmWhole]
+  - name: POLYNotInSRAMIndPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, SRAMorIND]
+  - name: POLYNotInSRAMIndRest
+    op: difference
+    mode: lazy
+    layers: [POLY, SRAMorIND]
+  - name: POLYNotInSRAMIndWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInSRAMIndPart, POLYNotInSRAMIndRest]
+  - name: POLYNotInSRAMInd
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInSRAMIndWhole]
+  - name: ACTSDwCT
+    op: interacting
+    mode: lazy
+    layers: [ACTSD, CTorBar]
+  - name: GATETGNP
+    op: intersection
+    mode: lazy
+    layers: [GATETG, NP]
+  - name: GATETGPP
+    op: intersection
+    mode: lazy
+    layers: [GATETG, PP]
+  - name: ACTwithDmEF
+    op: union
+    mode: lazy
+    layers: [ACTwithDm, EFUSEALL]
+  - name: POLYS6BentPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, ACTwithDmEF]
+  - name: POLYS6BentRest
+    op: difference
+    mode: lazy
+    layers: [POLY, ACTwithDmEF]
+  - name: POLYS6BentWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYS6BentPart, POLYS6BentRest]
+  - name: POLYS6Bent
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYS6BentWhole]
+  - name: POLYNotInEFPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, EFUSEALL]
+  - name: POLYNotInEFRest
+    op: difference
+    mode: lazy
+    layers: [POLY, EFUSEALL]
+  - name: POLYNotInEFWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInEFPart, POLYNotInEFRest]
+  - name: POLYNotInEF
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInEFWhole]
+  - name: FUSEorEF
+    op: union
+    mode: lazy
+    layers: [FUSEALL, EFUSEALL]
+  - name: POLYS11Excl
+    op: union
+    mode: lazy
+    layers: [ACTwithDm, SRAMorIND]
+  - name: POLYAtSAB
+    op: overlapping
+    mode: lazy
+    layers: [POLY, SAB]
+  # The ACT edges on an LDMOSSTI edge do not bound POLY-Ex.1.
+  - name: ACTwLDSTI
+    op: union
+    mode: lazy
+    layers: [ACT, LDMOSSTI]
+  - name: ACTNoSRAMLDPart
+    op: intersection
+    mode: lazy
+    layers: [ACTNotInSRAM, LDMOS]
+  - name: ACTNoSRAMLDRest
+    op: difference
+    mode: lazy
+    layers: [ACTNotInSRAM, LDMOS]
+  - name: ACTNoSRAMLDWhole
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNoSRAMLDPart, ACTNoSRAMLDRest]
+  - name: ACTNoSRAMLD
+    op: difference
+    mode: lazy
+    layers: [ACTNotInSRAM, ACTNoSRAMLDWhole]
+  - name: POLYNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, SRAMALL]
+  - name: POLYNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [POLY, SRAMALL]
+  - name: POLYNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInSRAMPart, POLYNotInSRAMRest]
+  - name: POLYNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInSRAMWhole]
+  # (PO AND AA) WITH WIDTH > 0.01
+  - name: GATEOpenR1
+    op: open
+    radius: 0.005
+    mode: lazy
+    layers: [GATE]
+  - name: GATER1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEOpenR1, SRAMorIND]
+  - name: GATER1ChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEOpenR1, SRAMorIND]
+  - name: GATER1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATER1ChkPart, GATER1ChkRest]
+  - name: GATER1Chk
+    op: difference
+    mode: lazy
+    layers: [GATEOpenR1, GATER1ChkWhole]
+  - name: GATER1Bad
+    op: not_rectangle
+    mode: lazy
+    layers: [GATER1Chk]
+  - name: POLYwCT
+    op: interacting
+    mode: lazy
+    layers: [POLY, CTorBar]
+  - name: HRPBLKPoly
+    op: interacting
+    mode: lazy
+    layers: [POLY, HRPBLK]
+  - name: HRPBLKEnds
+    op: difference
+    mode: lazy
+    layers: [HRPBLKPoly, HRPBLK]
+  - name: HRPEndsGrown
+    op: grow
+    radius: 0.3
+    mode: lazy
+    layers: [HRPBLKEnds]
+  - name: HRPMark
+    op: union
+    mode: lazy
+    layers: [HRPBLK, HRP]
+  - name: POLYAtHRP
+    op: interacting
+    mode: lazy
+    layers: [POLY, HRPMark]
+  - name: POLYHRPMid
+    op: difference
+    mode: lazy
+    layers: [POLYAtHRP, HRPEndsGrown]
+  - name: POLYR2Bare
+    op: difference
+    mode: lazy
+    layers: [POLYwCT, POLYHRPMid, PP, NP]
+  - name: POLYR2NoMom
+    op: not_interacting
+    mode: lazy
+    layers: [POLYR2Bare, MOMLVS1]
+  - name: POLYR2ChkPart
+    op: intersection
+    mode: lazy
+    layers: [POLYR2NoMom, SRAMALL]
+  - name: POLYR2ChkRest
+    op: difference
+    mode: lazy
+    layers: [POLYR2NoMom, SRAMALL]
+  - name: POLYR2ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYR2ChkPart, POLYR2ChkRest]
+  - name: POLYR2Chk
+    op: difference
+    mode: lazy
+    layers: [POLYR2NoMom, POLYR2ChkWhole]
+  - name: NW1WithRes
+    op: interacting
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: PPACTnwFree
+    op: not_interacting
+    mode: lazy
+    layers: [PPACTnw, NP]
+  - name: PPPickupFree
+    op: not_interacting
+    mode: lazy
+    layers: [PPPickup, NP]
+  - name: NPACTpwFree
+    op: not_interacting
+    mode: lazy
+    layers: [NPACTpw, PP]
+  - name: NPPickupFree
+    op: not_interacting
+    mode: lazy
+    layers: [NPPickup, PP]
+  - name: NPPPACT
+    op: intersection
+    mode: lazy
+    layers: [NPACT, PP]
+  - name: NPPPACTChkPart
+    op: intersection
+    mode: lazy
+    layers: [NPPPACT, SRAMALL]
+  - name: NPPPACTChkRest
+    op: difference
+    mode: lazy
+    layers: [NPPPACT, SRAMALL]
+  - name: NPPPACTChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPPPACTChkPart, NPPPACTChkRest]
+  - name: NPPPACTChk
+    op: difference
+    mode: lazy
+    layers: [NPPPACT, NPPPACTChkWhole]
+  - name: NPOverNWRes
+    op: interacting
+    mode: lazy
+    layers: [NP, NW1WithRes]
+  - name: ACTNPEn1
+    op: difference
+    mode: lazy
+    layers: [ACT, NPOverNWRes]
+  - name: ACTNPEn1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [ACTNPEn1, SRAMALL]
+  - name: ACTNPEn1ChkRest
+    op: difference
+    mode: lazy
+    layers: [ACTNPEn1, SRAMALL]
+  - name: ACTNPEn1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNPEn1ChkPart, ACTNPEn1ChkRest]
+  - name: ACTNPEn1Chk
+    op: difference
+    mode: lazy
+    layers: [ACTNPEn1, ACTNPEn1ChkWhole]
+  # NP-En/PP-En skip the active edges on the other implant's edge (a butted tap): a
+  # sliver of that implant along the active joins it, so such an edge is inside.
+  - name: ACTNPEn1Grow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [ACTNPEn1Chk]
+  - name: PPAtACTNPEn1
+    op: intersection
+    mode: lazy
+    layers: [PP, ACTNPEn1Grow]
+  - name: NPEn1In
+    op: union
+    mode: lazy
+    layers: [ACTNPEn1Chk, PPAtACTNPEn1]
+  - name: PPTapEn1
+    op: not_interacting
+    mode: lazy
+    layers: [PPPickup, NW1WithRes]
+  - name: PPTapEn1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [PPTapEn1, SRAMALL]
+  - name: PPTapEn1ChkRest
+    op: difference
+    mode: lazy
+    layers: [PPTapEn1, SRAMALL]
+  - name: PPTapEn1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPTapEn1ChkPart, PPTapEn1ChkRest]
+  - name: PPTapEn1Chk
+    op: difference
+    mode: lazy
+    layers: [PPTapEn1, PPTapEn1ChkWhole]
+  - name: PPTapEn1Grow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [PPTapEn1Chk]
+  - name: NPAtPPTap
+    op: intersection
+    mode: lazy
+    layers: [NP, PPTapEn1Grow]
+  - name: PPEn1In
+    op: union
+    mode: lazy
+    layers: [PPTapEn1Chk, NPAtPPTap]
+  - name: NPinPW
+    op: difference
+    mode: lazy
+    layers: [NP, NW1, PSUB]
+  - name: NPACTNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NPACT, NW1WithRes]
+  - name: NPACTNoNWRChkPart
+    op: intersection
+    mode: lazy
+    layers: [NPACTNoNWR, SRAMALL]
+  - name: NPACTNoNWRChkRest
+    op: difference
+    mode: lazy
+    layers: [NPACTNoNWR, SRAMALL]
+  - name: NPACTNoNWRChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPACTNoNWRChkPart, NPACTNoNWRChkRest]
+  - name: NPACTNoNWRChk
+    op: difference
+    mode: lazy
+    layers: [NPACTNoNWR, NPACTNoNWRChkWhole]
+  - name: NPACTNoNWRGrow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [NPACTNoNWRChk]
+  - name: PPAtNPACT
+    op: intersection
+    mode: lazy
+    layers: [PP, NPACTNoNWRGrow]
+  - name: NPEn2In
+    op: union
+    mode: lazy
+    layers: [NPACTNoNWRChk, PPAtNPACT]
+  - name: PPinNW
+    op: intersection
+    mode: lazy
+    layers: [PP, NW1]
+  - name: PPACTNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [PPACT, NW1WithRes]
+  - name: PPACTNoNWRChkPart
+    op: intersection
+    mode: lazy
+    layers: [PPACTNoNWR, SRAMALL]
+  - name: PPACTNoNWRChkRest
+    op: difference
+    mode: lazy
+    layers: [PPACTNoNWR, SRAMALL]
+  - name: PPACTNoNWRChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPACTNoNWRChkPart, PPACTNoNWRChkRest]
+  - name: PPACTNoNWRChk
+    op: difference
+    mode: lazy
+    layers: [PPACTNoNWR, PPACTNoNWRChkWhole]
+  - name: PPACTNoNWRGrow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [PPACTNoNWRChk]
+  - name: NPAtPPACT
+    op: intersection
+    mode: lazy
+    layers: [NP, PPACTNoNWRGrow]
+  - name: PPEn2In
+    op: union
+    mode: lazy
+    layers: [PPACTNoNWRChk, NPAtPPACT]
+  # Field poly off the resistors; a piece reaching both NP and PP is out of NP-En.3/PP-En.3.
+  - name: POLYField3
+    op: difference
+    mode: lazy
+    layers: [POLY, ACT, POLYres, HRPBLK]
+  - name: POLYField3N
+    op: interacting
+    mode: lazy
+    layers: [POLYField3, NP]
+  - name: POLYField3Cut
+    op: interacting
+    mode: lazy
+    layers: [POLYField3N, PP]
+  - name: POLYField3Keep
+    op: difference
+    mode: lazy
+    layers: [POLYField3, POLYField3Cut]
+  - name: POLYField3ChkPart
+    op: intersection
+    mode: lazy
+    layers: [POLYField3Keep, SRAMALL]
+  - name: POLYField3ChkRest
+    op: difference
+    mode: lazy
+    layers: [POLYField3Keep, SRAMALL]
+  - name: POLYField3ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYField3ChkPart, POLYField3ChkRest]
+  - name: POLYField3Chk
+    op: difference
+    mode: lazy
+    layers: [POLYField3Keep, POLYField3ChkWhole]
+  - name: NPNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [NP, SRAMALL]
+  - name: NPNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [NP, SRAMALL]
+  - name: NPNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPNotInSRAMPart, NPNotInSRAMRest]
+  - name: NPNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [NP, NPNotInSRAMWhole]
+  - name: PPNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [PP, SRAMALL]
+  - name: PPNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [PP, SRAMALL]
+  - name: PPNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPNotInSRAMPart, PPNotInSRAMRest]
+  - name: PPNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [PP, PPNotInSRAMWhole]
+  - name: NPTapButted
+    op: interacting
+    mode: lazy
+    layers: [NPPickup, PPACTnw]
+  - name: PPTapButted
+    op: interacting
+    mode: lazy
+    layers: [PPPickup, NPACTpw]
+  - name: ACTTouchPPEdge
+    op: interacting
+    mode: lazy
+    layers: [ACT, ACTonPPEdge]
+  - name: ACTNoTouchPP
+    op: difference
+    mode: lazy
+    layers: [ACT, ACTTouchPPEdge]
+  - name: SABACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, SAB]
+  - name: SABPOLY
+    op: intersection
+    mode: lazy
+    layers: [POLY, SAB]
+  - name: SABACTPOLY
+    op: union
+    mode: lazy
+    layers: [SABACT, SABPOLY]
+  - name: SABAtPOLY
+    op: interacting
+    mode: lazy
+    layers: [SAB, POLY]
+  - name: SABS2Gap
+    op: separation_below
+    max: 0.44
+    mode: lazy
+    layers: [SABAtPOLY, SAB]
+  - name: SABS2GapPO
+    op: interacting
+    mode: lazy
+    layers: [SABS2Gap, POLY]
+  - name: SABS2GapAA
+    op: interacting
+    mode: lazy
+    layers: [SABS2Gap, ACT]
+  - name: SABS2Viol
+    op: union
+    mode: lazy
+    layers: [SABS2GapPO, SABS2GapAA]
+  - name: SABxGATE
+    op: intersection
+    mode: lazy
+    layers: [SAB, GATEDev]
+  # SAB-S.4 waives a SAB that covers some gate by exactly 0.06 from its S/D side.
+  - name: SABxGATERect
+    op: rectangle
+    mode: lazy
+    layers: [SABxGATE]
+  - name: SABxGATE60
+    op: with_bbox_min
+    min: 0.06
+    max: 0.061
+    mode: lazy
+    layers: [SABxGATERect]
+  - name: SABGATE60
+    op: interacting
+    mode: lazy
+    layers: [SABxGATE60, GATEDevNoSAB]
+  - name: SABWith60
+    op: interacting
+    mode: lazy
+    layers: [SAB, SABGATE60]
+  - name: SABNo60
+    op: difference
+    mode: lazy
+    layers: [SAB, SABWith60]
+  - name: SABS4Ovl
+    op: intersection
+    mode: lazy
+    layers: [SABNo60, GATEDev]
+  - name: SABS4ChkPart
+    op: intersection
+    mode: lazy
+    layers: [SABS4Ovl, ESDIOE]
+  - name: SABS4ChkRest
+    op: difference
+    mode: lazy
+    layers: [SABS4Ovl, ESDIOE]
+  - name: SABS4ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [SABS4ChkPart, SABS4ChkRest]
+  - name: SABS4Chk
+    op: difference
+    mode: lazy
+    layers: [SABS4Ovl, SABS4ChkWhole]
+  - name: SABR2ChkPart
+    op: intersection
+    mode: lazy
+    layers: [SABxGATE, ESDIOE]
+  - name: SABR2ChkRest
+    op: difference
+    mode: lazy
+    layers: [SABxGATE, ESDIOE]
+  - name: SABR2ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [SABR2ChkPart, SABR2ChkRest]
+  - name: SABR2Chk
+    op: difference
+    mode: lazy
+    layers: [SABxGATE, SABR2ChkWhole]
+  - name: POLYField5
+    op: difference
+    mode: lazy
+    layers: [POLY, ACT, ACTdm]
+  # Gates off SRAMALL for the channel-width and NP-S.5 edges.
+  - name: GATEDevCoreChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEDevCore, SRAMALL]
+  - name: GATEDevCoreChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEDevCore, SRAMALL]
+  - name: GATEDevCoreChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATEDevCoreChkPart, GATEDevCoreChkRest]
+  - name: GATEDevCoreChk
+    op: difference
+    mode: lazy
+    layers: [GATEDevCore, GATEDevCoreChkWhole]
+  - name: GATEDevIO1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEDevIO1, SRAMALL]
+  - name: GATEDevIO1ChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO1, SRAMALL]
+  - name: GATEDevIO1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATEDevIO1ChkPart, GATEDevIO1ChkRest]
+  - name: GATEDevIO1Chk
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO1, GATEDevIO1ChkWhole]
+  - name: GATEDevIO2ChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEDevIO2, SRAMALL]
+  - name: GATEDevIO2ChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO2, SRAMALL]
+  - name: GATEDevIO2ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATEDevIO2ChkPart, GATEDevIO2ChkRest]
+  - name: GATEDevIO2Chk
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO2, GATEDevIO2ChkWhole]
+  - name: PGATEDev
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, PP]
+  - name: PGATEDevChkPart
+    op: intersection
+    mode: lazy
+    layers: [PGATEDev, SRAMALL]
+  - name: PGATEDevChkRest
+    op: difference
+    mode: lazy
+    layers: [PGATEDev, SRAMALL]
+  - name: PGATEDevChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PGATEDevChkPart, PGATEDevChkRest]
+  - name: PGATEDevChk
+    op: difference
+    mode: lazy
+    layers: [PGATEDev, PGATEDevChkWhole]
   # --- review C: derived layers ---
   # The runset's CT: square contacts and bars.
   - name: CTAll
@@ -1005,30 +1830,6 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GATE, LDMOS]
-  - name: GATEDev
-    op: union
-    mode: lazy
-    layers: [GATEBetweenSD, GATELDMOS]
-  - name: GATEDevCore
-    op: difference
-    mode: lazy
-    layers: [GATEDev, DGOX, TGOX]
-  - name: GATEDevDG
-    op: intersection
-    mode: lazy
-    layers: [GATEDev, DGOX]
-  - name: GATEDevIO1
-    op: difference
-    mode: lazy
-    layers: [GATEDevDG, TGOX]
-  - name: GATEDevTG
-    op: intersection
-    mode: lazy
-    layers: [GATEDev, TGOX]
-  - name: GATEDevIO2
-    op: difference
-    mode: lazy
-    layers: [GATEDevTG, DGOX]
   - name: POLYxGATEDevCore
     op: interacting
     mode: lazy
@@ -5195,6 +5996,57 @@ edge_layers:
   - name: NWStiEn1Bad
     op: not_interacting_edges
     layers: [ACTInNWRSTICut, NWStiEn1SharedMid]
+  # --- review B: edge layers ---
+  # Channel widths: the gate walls on the poly (runset GATE_*_W).
+  - name: GATEDevCore.edges
+    op: edges
+    layers: [GATEDevCoreChk]
+  - name: GATEDevCoreW
+    op: and
+    layers: [GATEDevCore.edges, POLY.edges]
+  - name: GATEDevIO1.edges
+    op: edges
+    layers: [GATEDevIO1Chk]
+  - name: GATEDevIO1W
+    op: and
+    layers: [GATEDevIO1.edges, POLY.edges]
+  - name: GATEDevIO2.edges
+    op: edges
+    layers: [GATEDevIO2Chk]
+  - name: GATEDevIO2W
+    op: and
+    layers: [GATEDevIO2.edges, POLY.edges]
+  # NP-S.5: a PMOS gate's walls on its poly; PP-S.5: the poly walls on N+ACT.
+  - name: PGATEDev.edges
+    op: edges
+    layers: [PGATEDevChk]
+  - name: PGATEDevW
+    op: and
+    layers: [PGATEDev.edges, POLY.edges]
+  - name: POLYinNPACT
+    op: inside_part
+    layers: [POLY.edges, NPACTNotInSRAM]
+  - name: NP.edges
+    op: edges
+    layers: [NP]
+  - name: PP.edges
+    op: edges
+    layers: [PP]
+  - name: ACTonPPEdge
+    op: and
+    layers: [ACT.edges, PP.edges]
+  - name: NPPPButt
+    op: and
+    layers: [NP.edges, PP.edges]
+  - name: NPPPButtUnsil
+    op: inside_part
+    layers: [NPPPButt, SABACTPOLY]
+  - name: SABonPOLY
+    op: and
+    layers: [SAB.edges, POLY.edges]
+  - name: SABonACT
+    op: and
+    layers: [SAB.edges, ACT.edges]
 
 layers:
   - name: ACT

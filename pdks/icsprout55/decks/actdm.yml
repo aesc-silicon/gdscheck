@@ -9,15 +9,15 @@ rules:
     value: 0.0
   - id: ACTdm-S.1
     check: min_space
-    layers: [ACTdm3x3, ACTdm]
+    layers: [ACTdm3x3]
     value: 2
   - id: ACTdm-S.2
     check: min_space
-    layers: [ACTdm1x1, ACTdm]
+    layers: [ACTdm1x1]
     value: 0.6
   - id: ACTdm-S.3
     check: min_space
-    layers: [ACTdmSm, ACTdm]
+    layers: [ACTdmSm]
     value: 0.28
   - id: ACTdm-S.4
     check: min_space
@@ -56,82 +56,36 @@ rules:
     params:
       interacting_only: 1
       metric: euclidian
-  - id: ACTdm-S.6
-    check: forbidden
-    layers: [ACTdmCutsNW1]
-    value: 0.0
   - id: ACTdm-S.7
     check: min_space
-    layers: [ACTdm, EFUSEALL]
+    layers: [ACTdm, FUSEALL]
     value: 2
     params:
       abutting: report
-  - id: ACTdm-S.7
-    check: forbidden
-    layers: [ACTdm, EFUSEALL]
-    value: 0.0
-    params:
-      op: overlap
   - id: ACTdm-S.8
     check: min_space
     layers: [ACTdm, NW1res]
     value: 0.6
     params:
       abutting: report
-  - id: ACTdm-S.8
-    check: forbidden
-    layers: [ACTdm, NW1res]
-    value: 0.0
-    params:
-      op: overlap
   - id: ACTdm-S.9
     check: min_space
     layers: [ACTdm, LOGO]
     value: 0.1
     params:
       abutting: report
-  - id: ACTdm-S.9
-    check: forbidden
-    layers: [ACTdm, LOGO]
-    value: 0.0
-    params:
-      op: overlap
   - id: ACTdm-S.10
     check: min_space
     layers: [ACTdm, INDALL]
     value: 2
     params:
       abutting: report
-  - id: ACTdm-S.10
-    check: forbidden
-    layers: [ACTdm, INDALL]
-    value: 0.0
-    params:
-      op: overlap
-  - id: ACTdm-S.12
+  - id: ACTdm-S.11
     check: min_space
-    layers: [ACTdm, ACTdmb]
-    value: 2
+    layers: [ACTdm, CHIPBLK]
+    value: 0.6
     params:
       abutting: report
-  - id: ACTdm-S.12
-    check: forbidden
-    layers: [ACTdm, ACTdmb]
-    value: 0.0
-    params:
-      op: overlap
-  - id: ACTdm-S.13
-    check: min_space
-    layers: [ACTdm, DMYBLK]
-    value: 2
-    params:
-      abutting: report
-  - id: ACTdm-S.13
-    check: forbidden
-    layers: [ACTdm, DMYBLK]
-    value: 0.0
-    params:
-      op: overlap
   - id: ACTdm-S.11
     check: min_enclosure
     layers: [CHIPBLK, ACTdm]
@@ -139,9 +93,21 @@ rules:
     params:
       interacting_only: 1
       metric: euclidian
+  - id: ACTdm-S.12
+    check: min_space
+    layers: [ACTdm, ACTdmb]
+    value: 2
+    params:
+      abutting: report
+  - id: ACTdm-S.13
+    check: min_space
+    layers: [ACTdm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
   - id: ACTdm-R.1
     check: forbidden
-    layers: [ACTdm, CT]
+    layers: [ACTdm, CTorBar]
     value: 0.0
     params:
       op: overlap

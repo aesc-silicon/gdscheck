@@ -9,15 +9,15 @@ rules:
     value: 0.0
   - id: POLYdm-S.1
     check: min_space
-    layers: [POLYdm2x2, POLYdm]
+    layers: [POLYdm2x2]
     value: 2.6
   - id: POLYdm-S.2
     check: min_space
-    layers: [POLYdm1x1, POLYdm]
+    layers: [POLYdm1x1]
     value: 0.68
   - id: POLYdm-S.3
     check: min_space
-    layers: [POLYdmSm, POLYdm]
+    layers: [POLYdmSm]
     value: 0.36
   - id: POLYdm-S.4
     check: min_space
@@ -56,80 +56,52 @@ rules:
     params:
       interacting_only: 1
       metric: euclidian
-  - id: POLYdm-S.6
-    check: forbidden
-    layers: [POLYdmCutsNW1]
-    value: 0.0
   - id: POLYdm-S.7
     check: min_space
     layers: [POLYdm, NW1res]
     value: 0.6
     params:
       abutting: report
-  - id: POLYdm-S.7
-    check: forbidden
-    layers: [POLYdm, NW1res]
-    value: 0.0
-    params:
-      op: overlap
   - id: POLYdm-S.8
     check: min_space
     layers: [POLYdm, LOGO]
     value: 0.1
     params:
       abutting: report
-  - id: POLYdm-S.8
-    check: forbidden
-    layers: [POLYdm, LOGO]
-    value: 0.0
-    params:
-      op: overlap
   - id: POLYdm-S.9
     check: min_space
     layers: [POLYdm, INDALL]
     value: 2
     params:
       abutting: report
-  - id: POLYdm-S.9
-    check: forbidden
-    layers: [POLYdm, INDALL]
-    value: 0.0
-    params:
-      op: overlap
-  - id: POLYdm-S.11
+  - id: POLYdm-S.10
     check: min_space
-    layers: [POLYdm, POLYdmb]
-    value: 2
+    layers: [POLYdm, CHIPBLK]
+    value: 0.6
     params:
       abutting: report
-  - id: POLYdm-S.11
-    check: forbidden
-    layers: [POLYdm, POLYdmb]
-    value: 0.0
-    params:
-      op: overlap
-  - id: POLYdm-S.12
-    check: min_space
-    layers: [POLYdm, DMYBLK]
-    value: 2
-    params:
-      abutting: report
-  - id: POLYdm-S.12
-    check: forbidden
-    layers: [POLYdm, DMYBLK]
-    value: 0.0
-    params:
-      op: overlap
   - id: POLYdm-S.10
     check: min_enclosure
     layers: [CHIPBLK, POLYdm]
-    value: 0.6
+    value: 0.3
     params:
       interacting_only: 1
       metric: euclidian
+  - id: POLYdm-S.11
+    check: min_space
+    layers: [POLYdm, POLYdmb]
+    value: 2
+    params:
+      abutting: report
+  - id: POLYdm-S.12
+    check: min_space
+    layers: [POLYdm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
   - id: POLYdm-R.1
     check: forbidden
-    layers: [POLYdm, CT]
+    layers: [POLYdm, CTorBar]
     value: 0.0
     params:
       op: overlap

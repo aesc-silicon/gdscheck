@@ -14,21 +14,33 @@ rules:
     params:
       angle: bent
   - id: ACT-W.3a
-    check: min_gate_length
-    layers: [ACT, GATECore]
+    check: min_edge_length
+    layers: [GATEDevCoreW]
     value: 0.12
   - id: ACT-W.3b
-    check: min_gate_length
-    layers: [ACT, GATEIO]
+    check: min_edge_length
+    layers: [GATEDevIO1W]
+    value: 0.21
+  - id: ACT-W.3b
+    check: min_edge_length
+    layers: [GATEDevIO2W]
     value: 0.21
   - id: ACT-S.1
     check: min_space
     layers: [ACT]
     value: 0.11
+    layer_params:
+      gap_outside: SRAMALL
+  - id: ACT-S.1
+    check: min_notch
+    layers: [ACTNotInSRAM]
+    value: 0.11
   - id: ACT-S.1a
     check: min_space
     layers: [ACTInTGOX, ACT]
     value: 0.16
+    layer_params:
+      gap_outside: SRAMALL
   - id: ACT-S.2
     check: min_space
     layers: [ACT]
@@ -36,64 +48,76 @@ rules:
     params:
       width: 0.2
       length: 0.299
+    layer_params:
+      gap_outside: SRAMALL
   - id: ACT-S.3
     check: min_space
     layers: [ACT]
     value: 0.18
     params:
       angle: bent
-  - id: ACT-S.4
+  - id: ACT-S.3
     check: min_notch
     layers: [ACT]
     value: 0.18
+    params:
+      angle: bent
   - id: ACT-S.5
     check: min_space
-    layers: [NW1, NPACT]
+    layers: [NW1NoRes, NPACTInPW]
     value: 0.15
     params:
       abutting: report
+    layer_params:
+      gap_outside: SRAMALL
   - id: ACT-S.6
     check: min_space
-    layers: [NW1TGOX, NPACT]
+    layers: [NW1NoRes, NPACTInTGOX]
     value: 0.31
     params:
       abutting: report
+    layer_params:
+      gap_outside: SRAMALL
   - id: ACT-S.7
     check: min_space
-    layers: [NW1DNW, NPACT]
+    layers: [NW1DNWRing, NPACT]
     value: 0.32
     params:
       abutting: report
+    layer_params:
+      gap_outside: DNW
   - id: ACT-S.8
     check: min_space
-    layers: [NW1, PPPickup]
+    layers: [NW1, PPPickupS8]
     value: 0.15
     params:
       abutting: report
+    layer_params:
+      gap_outside: SRAMALL
   - id: ACT-En.1
     check: min_enclosure
-    layers: [NW1, NPACT]
+    layers: [NW1NoRes, NPACTNotInSRAM]
     value: 0.15
     params:
       metric: euclidian
       interacting_only: 1
   - id: ACT-En.2
     check: min_enclosure
-    layers: [NW1, PPACT]
+    layers: [NW1, PPACTNotInSRAM]
     value: 0.15
     params:
       metric: euclidian
       interacting_only: 1
   - id: ACT-En.2a
     check: min_enclosure
-    layers: [NW1xTGOX, PPACT]
+    layers: [NW1xTGOX, PPACTNotInSRAM]
     value: 0.31
     params:
       metric: euclidian
       interacting_only: 1
   - id: ACT-A.1
     check: min_area
-    layers: [ACT]
+    layers: [ACTNotInSRAM]
     value: 0.0384
     params:
       touching: separate
@@ -110,8 +134,6 @@ rules:
     params:
       scope: window
       window: 100.0
-    layer_params:
-      boundary: CHIPBLK
   - id: ACT-D.1
     check: max_density
     layers: [ACT, ACTdm]
@@ -119,27 +141,15 @@ rules:
     params:
       scope: window
       window: 100.0
-    layer_params:
-      boundary: CHIPBLK
   - id: ACT-D.4
     check: min_density
     layers: [ACT, ACTdm]
     value: 25.0
-    layer_params:
-      boundary: CHIPBLK
   - id: ACT-D.4
     check: max_density
     layers: [ACT, ACTdm]
     value: 75.0
-    layer_params:
-      boundary: CHIPBLK
   - id: ACT-R.1
     check: forbidden
-    layers: [ACT, NP, PP, NW1res]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: ACT-R.3
-    check: forbidden
-    layers: [NPACTCutsNW1]
+    layers: [ACTNoImpChk]
     value: 0.0

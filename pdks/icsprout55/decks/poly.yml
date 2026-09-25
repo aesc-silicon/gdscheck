@@ -15,35 +15,35 @@ rules:
     check: min_gate_length
     layers: [POLY, GATEDG]
     value: 0.2
-  - id: POLY-W.2c
+    layer_params:
+      outside: SRAMALL
+  - id: POLY-W.2d
     check: min_gate_length
-    layers: [POLY, GATETGPlain]
-    value: 0.28
-  - id: POLY-W.2e
+    layers: [POLY, GATETGNP]
+    value: 0.38
+    layer_params:
+      outside: SRAMALL
+  - id: POLY-W.2d
     check: min_gate_length
-    layers: [POLY, GATETGUD]
-    value: 0.22
-  - id: POLY-W.2f
-    check: min_gate_length
-    layers: [POLY, GATETGODN]
-    value: 0.5
-  - id: POLY-W.2f
-    check: min_gate_length
-    layers: [POLY, GATETGODP]
-    value: 0.4
+    layers: [POLY, GATETGPP]
+    value: 0.38
+    layer_params:
+      outside: SRAMALL
   - id: POLY-W.3
     check: min_width
-    layers: [POLY]
+    layers: [POLYNotInACTwithDm]
     value: 0.18
     params:
       angle: bent
   - id: POLY-S.1
     check: min_space
-    layers: [POLYNoInd]
+    layers: [POLY]
     value: 0.12
+    layer_params:
+      gap_outside: SRAMorIND
   - id: POLY-S.1
     check: min_notch
-    layers: [POLYNoInd]
+    layers: [POLYNotInSRAMInd]
     value: 0.12
   - id: POLY-S.2
     check: min_space
@@ -59,48 +59,52 @@ rules:
     layer_params:
       gap_outside: POLY
   - id: POLY-S.5
-    check: min_space
-    layers: [GATETGNoInd]
+    check: min_gate_length
+    layers: [ACTSDwCT, GATETG]
     value: 0.24
     layer_params:
-      gap_outside: POLY
+      outside: SRAMorIND
   - id: POLY-S.6
     check: min_space
-    layers: [POLYNoFuse]
+    layers: [POLYS6Bent, POLYNotInEF]
     value: 0.18
     params:
       angle: bent
+    layer_params:
+      gap_outside: FUSEorEF
   - id: POLY-S.11
     check: min_space
     layers: [ACT, POLY]
     value: 0.05
     params:
       pairs: any
+    layer_params:
+      gap_outside: POLYS11Excl
   - id: POLY-S.12
     check: min_space
-    layers: [POLYInSAB]
+    layers: [POLYAtSAB]
+    value: 0.25
+    params:
+      length: 0.0
+  - id: POLY-S.12
+    check: min_notch
+    layers: [POLYAtSAB]
     value: 0.25
   - id: POLY-Ex.1
     check: min_enclosure
-    layers: [ACT, POLY]
+    layers: [ACTwLDSTI, POLYNotInSRAMInd]
     value: 0.11
     params:
-      metric: euclidian
       interacting_only: 1
   - id: POLY-Ex.2
     check: min_enclosure
-    layers: [POLY, ACT]
+    layers: [POLY, ACTNoSRAMLD]
     value: 0.14
     params:
-      metric: euclidian
       interacting_only: 1
-  - id: POLY-Ex.2
-    check: forbidden
-    layers: [POLYInsideACT]
-    value: 0.0
   - id: POLY-A.1
     check: min_area
-    layers: [POLY]
+    layers: [POLYNotInSRAM]
     value: 0.04
     params:
       touching: separate
@@ -114,14 +118,10 @@ rules:
     check: min_density
     layers: [POLY, POLYdm]
     value: 14.0
-    layer_params:
-      boundary: CHIPBLK
   - id: POLY-D.1
     check: max_density
     layers: [POLY, POLYdm]
     value: 40.0
-    layer_params:
-      boundary: CHIPBLK
   - id: POLY-D.2
     check: min_density
     layers: [POLY, POLYdm]
@@ -129,8 +129,6 @@ rules:
     params:
       scope: window
       window: 100.0
-    layer_params:
-      boundary: CHIPBLK
   - id: POLY-D.2
     check: max_density
     layers: [POLY, POLYdm]
@@ -138,15 +136,11 @@ rules:
     params:
       scope: window
       window: 100.0
-    layer_params:
-      boundary: CHIPBLK
   - id: POLY-R.1
-    check: no_angle
-    layers: [GATEBendChk]
+    check: forbidden
+    layers: [GATER1Bad]
     value: 0.0
   - id: POLY-R.2
     check: forbidden
-    layers: [GATE, NP, PP]
+    layers: [POLYR2Chk]
     value: 0.0
-    params:
-      op: uncovered

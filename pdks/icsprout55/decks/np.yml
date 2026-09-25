@@ -11,48 +11,48 @@ rules:
     check: min_space
     layers: [NP]
     value: 0.18
+    params:
+      length: 0.0
   - id: NP-S.1
     check: min_notch
     layers: [NP]
     value: 0.18
   - id: NP-S.2
     check: min_space
-    layers: [NP, PPACTnw]
+    layers: [NP, PPACTnwFree]
     value: 0.12
+    layer_params:
+      gap_outside: SRAMALL
   - id: NP-S.3
     check: min_space
-    layers: [NP, PPPickup]
+    layers: [NP, PPPickupFree]
     value: 0.02
+  - id: NP-S.4
+    check: forbidden
+    layers: [NPPPACTChk]
+    value: 0.0
   - id: NP-S.5
     check: min_space
-    layers: [NP, POLY]
+    layers: [PGATEDevW, NP.edges]
     value: 0.3
   - id: NP-En.1
     check: min_enclosure
-    layers: [NP, ACTOutSRAM]
+    layers: [NP, NPEn1In]
     value: 0.02
     params:
       metric: euclidian
       interacting_only: 1
   - id: NP-En.2
     check: min_enclosure
-    layers: [NP, NPACTOutSRAM]
+    layers: [NPinPW, NPEn2In]
     value: 0.12
     params:
       metric: euclidian
       interacting_only: 1
-      skip_coincident: 1
   - id: NP-En.3
     check: min_enclosure
-    layers: [NP, GATE]
+    layers: [NP, POLYField3Chk]
     value: 0.15
-    params:
-      metric: euclidian
-      interacting_only: 1
-  - id: NP-Ex.1
-    check: min_enclosure
-    layers: [NP, POLY]
-    value: 0.16
     params:
       metric: euclidian
       interacting_only: 1
@@ -62,7 +62,7 @@ rules:
     value: 0.12
   - id: NP-A.1
     check: min_area
-    layers: [NP]
+    layers: [NPNotInSRAM]
     value: 0.12
     params:
       touching: separate
@@ -74,7 +74,7 @@ rules:
       scope: hole
   - id: NP-A.3
     check: min_area
-    layers: [NPACTButted]
+    layers: [NPTapButted]
     value: 0.04
     params:
       touching: separate
