@@ -3,62 +3,116 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 name: Bug report
-description: Report a problem with gdscheck that isn't a DRC violation (crash, build issue, wrong CLI output, etc.)
+description: A crash, a run that is killed or never ends, wrong CLI output, a build problem
 title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        For a wrong, missing, or misplaced DRC violation, please use the
-        **DRC violation report** template instead — it asks for the fields
-        needed to reproduce that kind of issue.
+        For a wrong, missing or misplaced DRC violation use the **DRC violation report**
+        template instead; for something gdscheck should do but does not, the **Feature
+        request**.  Everything below helps, the log and the sizes most: a run that is
+        killed or slow is almost always about the machine's memory and the design's size,
+        and those two blocks answer that before anyone asks.
 
   - type: input
     id: version
     attributes:
       label: gdscheck version
-      description: Output of `gdscheck --version`, or the git commit/tag you built from.
-      placeholder: e.g. gdscheck 0.1.1 (commit 9915050)
+      description: Output of `gdscheck --version`, or the git commit you built from.
+      placeholder: e.g. gdscheck 0.1.2 (commit d1bac98)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: process
+    attributes:
+      label: Process / PDK
+      options:
+        - ihp-sg13g2
+        - ihp-sg13cmos5l
+        - gf180mcuD
+        - gf180mcuA
+        - a PDK of my own (say which below)
     validations:
       required: true
 
   - type: textarea
-    id: description
+    id: command
+    attributes:
+      label: Command line
+      description: The full invocation, flags included (`--suite`/`--deck`, `--threads`, `--memory`, `--tile`, ...).
+      render: shell
+      placeholder: |
+        gdscheck run --input design.gds.gz --process gf180mcuD --suite main --topcell TOP --report report.lyrdb
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
     attributes:
       label: What happened?
-      description: A clear description of the bug.
+      description: What you saw, and what you expected instead.
     validations:
       required: true
 
   - type: textarea
-    id: repro
+    id: machine
     attributes:
-      label: Steps to reproduce
-      description: Command(s) run, and any input files needed to trigger it.
+      label: Machine
+      description: |
+        CPU (model, cores/threads), memory (total, and any limit the run was under: a container,
+        a `systemd-run` scope, a CI runner), OS, and whether swap is configured.
+        On Linux: `lscpu | grep -E 'Model name|^CPU\(s\)'`, `free -h`, `cat /etc/os-release | head -2`,
+        `swapon --show`; inside a container also `cat /sys/fs/cgroup/memory.max`.
+      render: shell
+      placeholder: |
+        Model name: AMD Ryzen 9 7950X    CPU(s): 32
+        Mem: 64Gi total    Swap: 8Gi
+        Ubuntu 24.04, in Docker with memory.max = 12884901888
+    validations:
+      required: true
+
+  - type: textarea
+    id: design
+    attributes:
+      label: Design size
+      description: |
+        The GDS file's size, and what `gdscheck stats` prints for the same `--process`,
+        `--suite`/`--deck`, `--topcell` and `--input` (the shapes per layer and the memory plan).
+        If the design can be shared, attach it - a small layout that reproduces the problem is
+        worth more than everything else on this form.
+      render: shell
+      placeholder: |
+        design.gds.gz: 14 MB
+        Layers flattened for 1007 rules (18775831 shapes):
+               5175961  via3 (40/0)
+               4423762  contact (33/0)
+               ...
+        Memory: planning within 11.0 GB (cgroup limit 12.9 GB), 2.5 GB resident with the layout flattened
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        The run's complete output, stdout and stderr, from the first line to the last -
+        `gdscheck run ... > run.log 2>&1`.  The `Memory:` line, every `not checked` and the
+        final `Status:` line are what matter for a memory problem; for a crash, the panic
+        message and, if you can, `RUST_BACKTRACE=1`.  For a run that is slow or was killed,
+        a second run with `GDSCHECK_RULE_TRACE=1` says which rule it was on and what it held.
+        Attach the file if it is long.
       render: shell
     validations:
       required: true
 
   - type: textarea
-    id: expected
+    id: more
     attributes:
-      label: Expected behavior
-    validations:
-      required: false
-
-  - type: textarea
-    id: logs
-    attributes:
-      label: Output / error / stack trace
-      render: shell
-    validations:
-      required: false
-
-  - type: textarea
-    id: environment
-    attributes:
-      label: Environment
-      description: OS, and how you installed/built gdscheck (release binary, `cargo build`, etc.)
+      label: Anything else
+      description: How gdscheck was built or installed, a `.lyrdb` report, what you tried already.
     validations:
       required: false
