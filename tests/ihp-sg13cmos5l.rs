@@ -255,3 +255,20 @@ fn test_cmos5l(
     let path = format!("{C5L_DATA}/{gds}");
     assert_eq!(drc(C5L, &path, deck, &ignore), expected);
 }
+
+// The recommended pad rules.  Those CMOS5L shares with SG13G2 run on SG13G2's fixtures
+// (the MIM under the Pad.jR pad is not a device here, only the gate is); Pad.gR and
+// Pad.kR read TopVia1 on Metal4 and have their own.
+#[rstest]
+#[case::pad_ar(G2_DATA, "Pad.aR", vec!["Pad.aR"; 6])]
+#[case::pad_br(G2_DATA, "Pad.bR", vec!["Pad.bR"; 2])]
+#[case::pad_dr(G2_DATA, "Pad.dR", vec!["Pad.dR"; 2])]
+#[case::pad_d1r(G2_DATA, "Pad.d1R", vec!["Pad.d1R", "Pad.d1R", "Pad.d1R", "Pad.dR"])]
+#[case::pad_jr(G2_DATA, "Pad.jR", vec!["Pad.jR", "Pad.d1R"])]
+#[case::pad_gr(C5L_DATA, "Pad.gR", vec!["Pad.gR"])]
+#[case::pad_kr(C5L_DATA, "Pad.kR", vec!["Pad.kR"])]
+fn test_pad_recommended(#[case] data: &str, #[case] name: &str, #[case] mut expected: Vec<&str>) {
+    expected.sort();
+    let path = format!("{data}/recommended/pad/{name}.gds.gz");
+    assert_eq!(drc(C5L, &path, "pad_recommended", &[]), expected);
+}

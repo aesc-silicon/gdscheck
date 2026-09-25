@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The foundry's recommended (*R) rules: advisory, kept out of main and core.
+include:
+  - deck: pad_recommended
