@@ -29,7 +29,7 @@ rules:
       abutting: report
   - id: DGOX-S.3
     check: min_space
-    layers: [DGOX, GATE]
+    layers: [DGOX, GATEDev]
     value: 0.32
     params:
       abutting: report

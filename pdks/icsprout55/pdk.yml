@@ -698,7 +698,7 @@ virtual_layers:
   - name: GATENat
     op: intersection
     mode: lazy
-    layers: [GATE, PSUB]
+    layers: [GATEDev, PSUB]
   - name: GATENatCore
     op: difference
     mode: lazy
@@ -922,7 +922,7 @@ virtual_layers:
   - name: ACTorPOLYDev
     op: interacting
     mode: lazy
-    layers: [ACTorPOLY, GATE]
+    layers: [ACTorPOLY, GATEDev]
   - name: NatDevACTorPOLY
     op: intersection
     mode: lazy
@@ -940,10 +940,6 @@ virtual_layers:
     mode: lazy
     min: 2
     layers: [PSUB, ACTNoIndTouch]
-  - name: GATEio1
-    op: difference
-    mode: lazy
-    layers: [GATEDG, TGOX]
   - name: ACTnoNVT3
     op: difference
     mode: lazy
@@ -1019,7 +1015,7 @@ virtual_layers:
     op: grow_x
     mode: lazy
     radius: 0.2
-    layers: [GATE]
+    layers: [GATEDev]
   - name: GATEAlongXBand
     op: grow_y
     mode: lazy
@@ -1029,7 +1025,7 @@ virtual_layers:
     op: grow_y
     mode: lazy
     radius: 0.2
-    layers: [GATE]
+    layers: [GATEDev]
   - name: GATEAlongYBand
     op: grow_x
     mode: lazy
@@ -1038,11 +1034,11 @@ virtual_layers:
   - name: GATEinDGOX
     op: inside
     mode: lazy
-    layers: [GATE, DGOX]
+    layers: [GATEDev, DGOX]
   - name: GATEinTGOX
     op: inside
     mode: lazy
-    layers: [GATE, TGOX]
+    layers: [GATEDev, TGOX]
   # Runset GATE: a poly-on-active piece whose two sides are each a contacted S/D or
   # one shared with a second gate (GATE1), or any poly on active in LDMOS (GATE2).
   - name: ACTGated
@@ -5676,6 +5672,8 @@ virtual_layers:
   - name: AntGate
     op: interacting
     mode: lazy
+    min: 2
+    max: 2
     layers: [GATE, ACTSD]
   - name: AntGate18
     op: intersection
@@ -6104,7 +6102,7 @@ edge_layers:
     layers: [PSUB.edges, DNW.edges]
   - name: GATE.edges
     op: edges
-    layers: [GATE]
+    layers: [GATEDev]
   # GATE_W: the gate's poly walls; their length is the channel width.
   - name: GATEW.edges
     op: and
@@ -6114,7 +6112,7 @@ edge_layers:
     layers: [GATEW.edges, PSUB]
   - name: GATECore.edges
     op: edges
-    layers: [GATECore]
+    layers: [GATEDevCore]
   - name: GATECoreOnACT.edges
     op: and
     layers: [GATECore.edges, ACT.edges]
@@ -6127,7 +6125,7 @@ edge_layers:
     layers: [GATECoreL.edges, PSUB]
   - name: GATEio1.edges
     op: edges
-    layers: [GATEio1]
+    layers: [GATEDevIO1]
   - name: GATEio1OnACT.edges
     op: and
     layers: [GATEio1.edges, ACT.edges]
@@ -6519,6 +6517,9 @@ layers:
   - name: POLYbar
     gds_layer: 41
     gds_datatype: 7
+  - name: NPD
+    gds_layer: 43
+    gds_datatype: 1
   - name: RES3TPOLY
     gds_layer: 329
     gds_datatype: 12
@@ -6989,7 +6990,7 @@ layers:
     gds_datatype: 1
   - name: T8V2bar
     gds_layer: 115
-    gds_datatype: 13
+    gds_datatype: 7
   - name: CB
     gds_layer: 121
     gds_datatype: 1
@@ -7026,6 +7027,12 @@ layers:
   - name: TMIM
     gds_layer: 141
     gds_datatype: 1
+  - name: IO
+    gds_layer: 150
+    gds_datatype: 12
+  - name: CORE
+    gds_layer: 151
+    gds_datatype: 12
   - name: SRAMALL
     gds_layer: 171
     gds_datatype: 12
@@ -7206,15 +7213,12 @@ layers:
   - name: TTXT
     gds_layer: 386
     gds_datatype: 12
-  - name: SUBTXT
+  - name: NW1CAP
     gds_layer: 387
     gds_datatype: 12
   - name: WELTXT
     gds_layer: 388
     gds_datatype: 12
-  - name: GRID
-    gds_layer: 179
-    gds_datatype: 40
   - name: FRAME
     gds_layer: 183
     gds_datatype: 4

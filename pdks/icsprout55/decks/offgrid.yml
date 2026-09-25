@@ -59,6 +59,10 @@ rules:
     check: offgrid
     layers: [POLY, POLYdm, POLYdmb, POLYres, POLYopcblk, POLYtxt, POLYbar]
     value: 0.001
+  - id: NPD.offgrid
+    check: offgrid
+    layers: [NPD]
+    value: 0.001
   - id: RES3TPOLY.offgrid
     check: offgrid
     layers: [RES3TPOLY]
@@ -230,6 +234,14 @@ rules:
   - id: TMIM.offgrid
     check: offgrid
     layers: [TMIM]
+    value: 0.001
+  - id: IO.offgrid
+    check: offgrid
+    layers: [IO]
+    value: 0.001
+  - id: CORE.offgrid
+    check: offgrid
+    layers: [CORE]
     value: 0.001
   - id: SRAMALL.offgrid
     check: offgrid
@@ -471,17 +483,13 @@ rules:
     check: offgrid
     layers: [TTXT]
     value: 0.001
-  - id: SUBTXT.offgrid
+  - id: NW1CAP.offgrid
     check: offgrid
-    layers: [SUBTXT]
+    layers: [NW1CAP]
     value: 0.001
   - id: WELTXT.offgrid
     check: offgrid
     layers: [WELTXT]
-    value: 0.001
-  - id: GRID.offgrid
-    check: offgrid
-    layers: [GRID]
     value: 0.001
   - id: FRAME.offgrid
     check: offgrid

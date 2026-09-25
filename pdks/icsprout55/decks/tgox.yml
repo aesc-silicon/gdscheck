@@ -23,7 +23,7 @@ rules:
       abutting: report
   - id: TGOX-S.3
     check: min_space
-    layers: [TGOX, GATE]
+    layers: [TGOX, GATEDev]
     value: 0.32
     params:
       abutting: report
