@@ -5,8 +5,20 @@
 # The full run: import every per-layer deck with no rule restriction.
 include:
   - deck: chipedge
+  - deck: act
+  - deck: nvt1
+  - deck: nvt3
+  - deck: pvt1
+  - deck: pvt3
+  - deck: ulld
+  - deck: dgox
+  - deck: tgox
+  - deck: poly
+  - deck: np
+  - deck: pp
   - deck: esd
   - deck: sab
+  - deck: ct
   - deck: actdm
   - deck: polydm
   - deck: met1

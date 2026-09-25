@@ -18,12 +18,48 @@ decks:
   - name: chipedge
     path: decks/chipedge.yml
     description: Chip edge (chip-level only)
+  - name: act
+    path: decks/act.yml
+    description: Active area
+  - name: nvt1
+    path: decks/nvt1.yml
+    description: Low-Vt NMOS implant
+  - name: nvt3
+    path: decks/nvt3.yml
+    description: High-Vt NMOS implant
+  - name: pvt1
+    path: decks/pvt1.yml
+    description: Low-Vt PMOS implant
+  - name: pvt3
+    path: decks/pvt3.yml
+    description: High-Vt PMOS implant
+  - name: ulld
+    path: decks/ulld.yml
+    description: 0.9V ultra-low-leakage marker
+  - name: dgox
+    path: decks/dgox.yml
+    description: 1.8V dual-gate oxide
+  - name: tgox
+    path: decks/tgox.yml
+    description: 2.5V/3.3V triple-gate oxide
+  - name: poly
+    path: decks/poly.yml
+    description: Poly
+  - name: np
+    path: decks/np.yml
+    description: N+ implant
+  - name: pp
+    path: decks/pp.yml
+    description: P+ implant
   - name: esd
     path: decks/esd.yml
     description: ESD implant
   - name: sab
     path: decks/sab.yml
     description: Salicide block
+  - name: ct
+    path: decks/ct.yml
+    description: Contact
   - name: actdm
     path: decks/actdm.yml
     description: Dummy active
@@ -1288,6 +1324,247 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [RDL, SRINGBLK]
+  - name: NPACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, NP]
+  - name: PPACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, PP]
+  - name: NPPickup
+    op: intersection
+    mode: lazy
+    layers: [NPACT, NW1]
+  - name: PPPickup
+    op: difference
+    mode: lazy
+    layers: [PPACT, NW1]
+  - name: NPACTpw
+    op: difference
+    mode: lazy
+    layers: [NPACT, NW1]
+  - name: PPACTnw
+    op: intersection
+    mode: lazy
+    layers: [PPACT, NW1]
+  - name: MOSACT
+    op: overlapping
+    mode: lazy
+    layers: [ACT, POLY]
+  - name: ACTNoPickup
+    op: difference
+    mode: lazy
+    layers: [ACT, NPPickup, PPPickup]
+  - name: ACTOutSRAM
+    op: not_overlapping
+    mode: lazy
+    layers: [ACT, SRAMALL]
+  - name: IOOX
+    op: union
+    mode: lazy
+    layers: [DGOX, TGOX]
+  - name: GATECore
+    op: difference
+    mode: lazy
+    layers: [GATE, DGOX, TGOX]
+  - name: GATEIO
+    op: intersection
+    mode: lazy
+    layers: [GATE, IOOX]
+  - name: GATEDG
+    op: intersection
+    mode: lazy
+    layers: [GATE, DGOX]
+  - name: GATETG
+    op: intersection
+    mode: lazy
+    layers: [GATE, TGOX]
+  - name: GATETGUD
+    op: intersection
+    mode: lazy
+    layers: [GATETG, UD]
+  - name: GATETGOD
+    op: intersection
+    mode: lazy
+    layers: [GATETG, OD]
+  - name: GATETGPlain
+    op: difference
+    mode: lazy
+    layers: [GATETG, UD, OD]
+  - name: GATETGODN
+    op: intersection
+    mode: lazy
+    layers: [GATETGOD, NP]
+  - name: GATETGODP
+    op: intersection
+    mode: lazy
+    layers: [GATETGOD, PP]
+  - name: ACTInTGOX
+    op: inside
+    mode: lazy
+    layers: [ACT, TGOX]
+  - name: NW1TGOX
+    op: intersection
+    mode: lazy
+    layers: [NW1, TGOX]
+  - name: NW1xTGOX
+    op: interacting
+    mode: lazy
+    layers: [NW1, TGOX]
+  - name: NW1DNW
+    op: overlapping
+    mode: lazy
+    layers: [NW1, DNW]
+  - name: NPACTChk
+    op: difference
+    mode: lazy
+    layers: [NPACT, LDMOS, NW1res]
+  - name: NPACTAtNW1
+    op: overlapping
+    mode: lazy
+    layers: [NPACTChk, NW1]
+  - name: NPACTCutsNW1
+    op: not_inside
+    mode: lazy
+    layers: [NPACTAtNW1, NW1]
+  - name: ACTSAB
+    op: intersection
+    mode: lazy
+    layers: [ACT, SAB]
+  - name: VT3
+    op: union
+    mode: lazy
+    layers: [NVT3, PVT3]
+  - name: ULLDAlone
+    op: not_interacting
+    mode: lazy
+    layers: [ULLD, VT3]
+  - name: MOSACTAtDGOX
+    op: overlapping
+    mode: lazy
+    layers: [MOSACT, DGOX]
+  - name: MOSACTCutsDGOX
+    op: not_inside
+    mode: lazy
+    layers: [MOSACTAtDGOX, DGOX]
+  - name: GATEAtDGOX
+    op: overlapping
+    mode: lazy
+    layers: [GATE, DGOX]
+  - name: GATECutsDGOX
+    op: not_inside
+    mode: lazy
+    layers: [GATEAtDGOX, DGOX]
+  - name: MOSACTAtTGOX
+    op: overlapping
+    mode: lazy
+    layers: [MOSACT, TGOX]
+  - name: MOSACTCutsTGOX
+    op: not_inside
+    mode: lazy
+    layers: [MOSACTAtTGOX, TGOX]
+  - name: GATEAtTGOX
+    op: overlapping
+    mode: lazy
+    layers: [GATE, TGOX]
+  - name: GATECutsTGOX
+    op: not_inside
+    mode: lazy
+    layers: [GATEAtTGOX, TGOX]
+  - name: POLYNoInd
+    op: difference
+    mode: lazy
+    layers: [POLY, INDALL]
+  - name: POLYNoFuse
+    op: difference
+    mode: lazy
+    layers: [POLY, FUSEALL, EFUSEALL]
+  - name: GATENoInd
+    op: difference
+    mode: lazy
+    layers: [GATE, INDALL]
+  - name: GATETGNoInd
+    op: difference
+    mode: lazy
+    layers: [GATETG, INDALL]
+  - name: POLYInSAB
+    op: intersection
+    mode: lazy
+    layers: [POLY, SAB]
+  - name: POLYInsideACT
+    op: inside
+    mode: lazy
+    layers: [POLY, ACT]
+  - name: GATEForBend
+    op: difference
+    mode: lazy
+    layers: [GATE, INDALL, SRAMALL]
+  - name: GATEForBendOpen
+    op: open
+    mode: lazy
+    layers: [GATEForBend]
+    radius: 0.006
+  - name: GATEBendChk
+    op: overlapping
+    mode: lazy
+    layers: [GATEForBend, GATEForBendOpen]
+  - name: NPACTOutSRAM
+    op: intersection
+    mode: lazy
+    layers: [ACTOutSRAM, NP]
+  - name: NPACTButted
+    op: interacting
+    mode: lazy
+    layers: [NPACT, PPACT]
+  - name: PPACTOutSRAM
+    op: intersection
+    mode: lazy
+    layers: [ACTOutSRAM, PP]
+  - name: PPACTButted
+    op: interacting
+    mode: lazy
+    layers: [PPACT, NPACT]
+  - name: CTSq
+    op: difference
+    mode: lazy
+    layers: [CT, SRAMALL, FUSEALL, EFUSEALL, SRINGBLK]
+  - name: CTbarChk
+    op: difference
+    mode: lazy
+    layers: [CTbar, SRAMALL, FUSEALL, EFUSEALL, SRINGBLK]
+  - name: CTonACT
+    op: overlapping
+    mode: lazy
+    layers: [CT, ACT]
+  - name: CTonPOLY
+    op: overlapping
+    mode: lazy
+    layers: [CT, POLY]
+  - name: CTonACTCore
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonACT, IOOX]
+  - name: CTonACTIO
+    op: overlapping
+    mode: lazy
+    layers: [CTonACT, IOOX]
+  - name: CTAtNP
+    op: overlapping
+    mode: lazy
+    layers: [CTonACT, NP]
+  - name: CTCutsNP
+    op: not_inside
+    mode: lazy
+    layers: [CTAtNP, NP]
+  - name: CTAtPP
+    op: overlapping
+    mode: lazy
+    layers: [CTonACT, PP]
+  - name: CTCutsPP
+    op: not_inside
+    mode: lazy
+    layers: [CTAtPP, PP]
 
 layers:
   - name: ACT

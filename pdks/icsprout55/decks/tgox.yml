@@ -1,0 +1,106 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: TGOX-W.1
+    check: min_width
+    layers: [TGOX]
+    value: 0.47
+  - id: TGOX-S.1
+    check: min_space
+    layers: [TGOX]
+    value: 0.47
+  - id: TGOX-S.1
+    check: min_notch
+    layers: [TGOX]
+    value: 0.47
+  - id: TGOX-S.2
+    check: min_space
+    layers: [TGOX, MOSACT]
+    value: 0.25
+    params:
+      abutting: report
+  - id: TGOX-S.2
+    check: forbidden
+    layers: [MOSACTCutsTGOX]
+    value: 0.0
+  - id: TGOX-S.3
+    check: min_space
+    layers: [TGOX, POLY]
+    value: 0.32
+    params:
+      abutting: report
+  - id: TGOX-S.3
+    check: forbidden
+    layers: [GATECutsTGOX]
+    value: 0.0
+  - id: TGOX-S.4
+    check: min_space
+    layers: [TGOX, NW1]
+    value: 0.47
+  - id: TGOX-S.5
+    check: min_space
+    layers: [TGOX, PSUB]
+    value: 0.47
+  - id: TGOX-En.1
+    check: min_enclosure
+    layers: [TGOX, ACTNoPickup]
+    value: 0.25
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: TGOX-En.2
+    check: min_enclosure
+    layers: [TGOX, ACT]
+    value: 0.25
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: POLY
+  - id: TGOX-En.3
+    check: min_enclosure
+    layers: [TGOX, POLY]
+    value: 0.32
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: ACT
+  - id: TGOX-Ex.1
+    check: min_enclosure
+    layers: [NW1, TGOX]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: TGOX-Ex.2
+    check: min_enclosure
+    layers: [TGOX, NW1]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: TGOX-Ex.3
+    check: min_enclosure
+    layers: [TGOX, PSUB]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: TGOX-O.1
+    check: min_overlap
+    layers: [TGOX, NW1]
+    value: 0.47
+  - id: TGOX-O.2
+    check: min_overlap
+    layers: [TGOX, PSUB]
+    value: 0.47
+  - id: TGOX-S.6
+    check: min_space
+    layers: [TGOX, DGOX]
+    value: 0.47

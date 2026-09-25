@@ -1,0 +1,145 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ACT-W.1
+    check: min_width
+    layers: [ACT]
+    value: 0.08
+  - id: ACT-W.2
+    check: min_width
+    layers: [ACT]
+    value: 0.18
+    params:
+      angle: bent
+  - id: ACT-W.3a
+    check: min_gate_length
+    layers: [ACT, GATECore]
+    value: 0.12
+  - id: ACT-W.3b
+    check: min_gate_length
+    layers: [ACT, GATEIO]
+    value: 0.21
+  - id: ACT-S.1
+    check: min_space
+    layers: [ACT]
+    value: 0.11
+  - id: ACT-S.1a
+    check: min_space
+    layers: [ACTInTGOX, ACT]
+    value: 0.16
+  - id: ACT-S.2
+    check: min_space
+    layers: [ACT]
+    value: 0.125
+    params:
+      width: 0.2
+      length: 0.299
+  - id: ACT-S.3
+    check: min_space
+    layers: [ACT]
+    value: 0.18
+    params:
+      angle: bent
+  - id: ACT-S.4
+    check: min_notch
+    layers: [ACT]
+    value: 0.18
+  - id: ACT-S.5
+    check: min_space
+    layers: [NW1, NPACT]
+    value: 0.15
+    params:
+      abutting: report
+  - id: ACT-S.6
+    check: min_space
+    layers: [NW1TGOX, NPACT]
+    value: 0.31
+    params:
+      abutting: report
+  - id: ACT-S.7
+    check: min_space
+    layers: [NW1DNW, NPACT]
+    value: 0.32
+    params:
+      abutting: report
+  - id: ACT-S.8
+    check: min_space
+    layers: [NW1, PPPickup]
+    value: 0.15
+    params:
+      abutting: report
+  - id: ACT-En.1
+    check: min_enclosure
+    layers: [NW1, NPACT]
+    value: 0.15
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACT-En.2
+    check: min_enclosure
+    layers: [NW1, PPACT]
+    value: 0.15
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACT-En.2a
+    check: min_enclosure
+    layers: [NW1xTGOX, PPACT]
+    value: 0.31
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACT-A.1
+    check: min_area
+    layers: [ACT]
+    value: 0.0384
+    params:
+      touching: separate
+  - id: ACT-A.2
+    check: min_area
+    layers: [ACT]
+    value: 0.08
+    params:
+      scope: hole
+  - id: ACT-D.1
+    check: min_density
+    layers: [ACT, ACTdm]
+    value: 20.0
+    params:
+      scope: window
+      window: 100.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: ACT-D.1
+    check: max_density
+    layers: [ACT, ACTdm]
+    value: 80.0
+    params:
+      scope: window
+      window: 100.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: ACT-D.4
+    check: min_density
+    layers: [ACT, ACTdm]
+    value: 25.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: ACT-D.4
+    check: max_density
+    layers: [ACT, ACTdm]
+    value: 75.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: ACT-R.1
+    check: forbidden
+    layers: [ACT, NP, PP, NW1res]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: ACT-R.3
+    check: forbidden
+    layers: [NPACTCutsNW1]
+    value: 0.0

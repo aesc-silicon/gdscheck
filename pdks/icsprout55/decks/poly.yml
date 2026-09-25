@@ -1,0 +1,152 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: POLY-W.1
+    check: min_width
+    layers: [POLY]
+    value: 0.06
+  - id: POLY-W.2a
+    check: min_gate_length
+    layers: [POLY, GATECore]
+    value: 0.06
+  - id: POLY-W.2b
+    check: min_gate_length
+    layers: [POLY, GATEDG]
+    value: 0.2
+  - id: POLY-W.2c
+    check: min_gate_length
+    layers: [POLY, GATETGPlain]
+    value: 0.28
+  - id: POLY-W.2e
+    check: min_gate_length
+    layers: [POLY, GATETGUD]
+    value: 0.22
+  - id: POLY-W.2f
+    check: min_gate_length
+    layers: [POLY, GATETGODN]
+    value: 0.5
+  - id: POLY-W.2f
+    check: min_gate_length
+    layers: [POLY, GATETGODP]
+    value: 0.4
+  - id: POLY-W.3
+    check: min_width
+    layers: [POLY]
+    value: 0.18
+    params:
+      angle: bent
+  - id: POLY-S.1
+    check: min_space
+    layers: [POLYNoInd]
+    value: 0.12
+  - id: POLY-S.1
+    check: min_notch
+    layers: [POLYNoInd]
+    value: 0.12
+  - id: POLY-S.2
+    check: min_space
+    layers: [POLY]
+    value: 0.18
+    params:
+      width: 0.13
+      length: 0.18
+  - id: POLY-S.3
+    check: min_space
+    layers: [GATENoInd]
+    value: 0.13
+    layer_params:
+      gap_outside: POLY
+  - id: POLY-S.5
+    check: min_space
+    layers: [GATETGNoInd]
+    value: 0.24
+    layer_params:
+      gap_outside: POLY
+  - id: POLY-S.6
+    check: min_space
+    layers: [POLYNoFuse]
+    value: 0.18
+    params:
+      angle: bent
+  - id: POLY-S.11
+    check: min_space
+    layers: [ACT, POLY]
+    value: 0.05
+    params:
+      pairs: any
+  - id: POLY-S.12
+    check: min_space
+    layers: [POLYInSAB]
+    value: 0.25
+  - id: POLY-Ex.1
+    check: min_enclosure
+    layers: [ACT, POLY]
+    value: 0.11
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: POLY-Ex.2
+    check: min_enclosure
+    layers: [POLY, ACT]
+    value: 0.14
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: POLY-Ex.2
+    check: forbidden
+    layers: [POLYInsideACT]
+    value: 0.0
+  - id: POLY-A.1
+    check: min_area
+    layers: [POLY]
+    value: 0.04
+    params:
+      touching: separate
+  - id: POLY-A.2
+    check: min_area
+    layers: [POLY]
+    value: 0.09
+    params:
+      scope: hole
+  - id: POLY-D.1
+    check: min_density
+    layers: [POLY, POLYdm]
+    value: 14.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: POLY-D.1
+    check: max_density
+    layers: [POLY, POLYdm]
+    value: 40.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: POLY-D.2
+    check: min_density
+    layers: [POLY, POLYdm]
+    value: 20.0
+    params:
+      scope: window
+      window: 100.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: POLY-D.2
+    check: max_density
+    layers: [POLY, POLYdm]
+    value: 65.0
+    params:
+      scope: window
+      window: 100.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: POLY-R.1
+    check: no_angle
+    layers: [GATEBendChk]
+    value: 0.0
+  - id: POLY-R.2
+    check: forbidden
+    layers: [GATE, NP, PP]
+    value: 0.0
+    params:
+      op: uncovered

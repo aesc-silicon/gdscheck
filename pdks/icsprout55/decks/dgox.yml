@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: DGOX-W.1
+    check: min_width
+    layers: [DGOX]
+    value: 0.47
+  - id: DGOX-S.1
+    check: min_space
+    layers: [DGOX]
+    value: 0.47
+  - id: DGOX-S.1
+    check: min_notch
+    layers: [DGOX]
+    value: 0.47
+  - id: DGOX-S.2
+    check: min_space
+    layers: [DGOX, MOSACT]
+    value: 0.25
+    params:
+      abutting: report
+  - id: DGOX-S.2
+    check: forbidden
+    layers: [MOSACTCutsDGOX]
+    value: 0.0
+  - id: DGOX-S.3
+    check: min_space
+    layers: [DGOX, POLY]
+    value: 0.32
+    params:
+      abutting: report
+  - id: DGOX-S.3
+    check: forbidden
+    layers: [GATECutsDGOX]
+    value: 0.0
+  - id: DGOX-S.4
+    check: min_space
+    layers: [DGOX, NW1]
+    value: 0.47
+  - id: DGOX-S.5
+    check: min_space
+    layers: [DGOX, PSUB]
+    value: 0.47
+  - id: DGOX-En.1
+    check: min_enclosure
+    layers: [DGOX, ACTNoPickup]
+    value: 0.25
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: DGOX-En.2
+    check: min_enclosure
+    layers: [DGOX, ACT]
+    value: 0.25
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: POLY
+  - id: DGOX-En.3
+    check: min_enclosure
+    layers: [DGOX, POLY]
+    value: 0.32
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: ACT
+  - id: DGOX-Ex.1
+    check: min_enclosure
+    layers: [NW1, DGOX]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: DGOX-Ex.2
+    check: min_enclosure
+    layers: [DGOX, NW1]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: DGOX-Ex.3
+    check: min_enclosure
+    layers: [DGOX, PSUB]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: DGOX-O.1
+    check: min_overlap
+    layers: [DGOX, NW1]
+    value: 0.47
+  - id: DGOX-O.2
+    check: min_overlap
+    layers: [DGOX, PSUB]
+    value: 0.47

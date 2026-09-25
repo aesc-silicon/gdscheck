@@ -1,0 +1,103 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: CT-W.1
+    check: exact_width
+    layers: [CTSq]
+    value: 0.09
+  - id: CT-W.2
+    check: min_width
+    layers: [CTbarChk]
+    value: 0.09
+  - id: CT-W.2
+    check: max_width
+    layers: [CTbarChk]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: CT-S.1
+    check: min_space
+    layers: [CT]
+    value: 0.11
+  - id: CT-S.3
+    check: min_space
+    layers: [ACT, CTonPOLY]
+    value: 0.065
+    params:
+      abutting: report
+  - id: CT-S.4
+    check: min_space
+    layers: [POLY, CTonACTCore]
+    value: 0.055
+    params:
+      abutting: report
+  - id: CT-S.5
+    check: min_space
+    layers: [POLY, CTonACTIO]
+    value: 0.09
+    params:
+      abutting: report
+  - id: CT-S.6
+    check: min_enclosure
+    layers: [NP, CTonACT]
+    value: 0.06
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CT-S.6
+    check: forbidden
+    layers: [CTCutsNP]
+    value: 0.0
+  - id: CT-S.6
+    check: min_enclosure
+    layers: [PP, CTonACT]
+    value: 0.06
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CT-S.6
+    check: forbidden
+    layers: [CTCutsPP]
+    value: 0.0
+  - id: CT-En.1
+    check: forbidden
+    layers: [CT, ACT, POLY]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CT-En.2a
+    check: min_enclosure
+    layers: [ACT, CTonACT]
+    value: 0.015
+    params:
+      metric: euclidian
+  - id: CT-En.3a
+    check: min_enclosure
+    layers: [POLY, CTonPOLY]
+    value: 0.01
+    params:
+      metric: euclidian
+  - id: CT-En.4a
+    check: forbidden
+    layers: [CT, MET1]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: CT-R.1
+    check: forbidden
+    layers: [CT, GATE]
+    value: 0.0
+    params:
+      op: overlap
+  - id: CT-R.2
+    check: forbidden
+    layers: [CT, SAB]
+    value: 0.0
+    params:
+      op: touching
+  - id: CT-R.3
+    check: no_angle
+    layers: [CT]
+    value: 0.0

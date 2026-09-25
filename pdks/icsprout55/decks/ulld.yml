@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ULLD-W.1
+    check: min_width
+    layers: [ULLD]
+    value: 0.18
+  - id: ULLD-S.1
+    check: min_space
+    layers: [ULLD]
+    value: 0.18
+  - id: ULLD-S.1
+    check: min_notch
+    layers: [ULLD]
+    value: 0.18
+  - id: ULLD-S.2
+    check: min_space
+    layers: [ULLD, ACT]
+    value: 0.02
+    params:
+      abutting: report
+  - id: ULLD-S.4
+    check: min_space
+    layers: [ULLD, NPACT]
+    value: 0.055
+    params:
+      abutting: report
+  - id: ULLD-Ex.1
+    check: min_enclosure
+    layers: [ULLD, ACT]
+    value: 0.02
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ULLD-Ex.2
+    check: min_enclosure
+    layers: [ULLD, GATE]
+    value: 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: ACT
+  - id: ULLD-A.1
+    check: min_area
+    layers: [ULLD]
+    value: 0.18
+    params:
+      touching: separate
+  - id: ULLD-A.2
+    check: min_area
+    layers: [ULLD]
+    value: 0.18
+    params:
+      scope: hole
+  - id: ULLD-R.1
+    check: forbidden
+    layers: [ULLD, PSUB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ULLD-R.1
+    check: forbidden
+    layers: [ULLD, DGOX]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ULLD-R.1
+    check: forbidden
+    layers: [ULLD, TGOX]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ULLD-R.2
+    check: forbidden
+    layers: [ULLDAlone]
+    value: 0.0

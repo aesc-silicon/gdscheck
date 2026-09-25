@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: NP-W.1
+    check: min_width
+    layers: [NP]
+    value: 0.18
+  - id: NP-S.1
+    check: min_space
+    layers: [NP]
+    value: 0.18
+  - id: NP-S.1
+    check: min_notch
+    layers: [NP]
+    value: 0.18
+  - id: NP-S.2
+    check: min_space
+    layers: [NP, PPACTnw]
+    value: 0.12
+  - id: NP-S.3
+    check: min_space
+    layers: [NP, PPPickup]
+    value: 0.02
+  - id: NP-S.5
+    check: min_space
+    layers: [NP, POLY]
+    value: 0.3
+  - id: NP-En.1
+    check: min_enclosure
+    layers: [NP, ACTOutSRAM]
+    value: 0.02
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NP-En.2
+    check: min_enclosure
+    layers: [NP, NPACTOutSRAM]
+    value: 0.12
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: NP-En.3
+    check: min_enclosure
+    layers: [NP, GATE]
+    value: 0.15
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NP-Ex.1
+    check: min_enclosure
+    layers: [NP, POLY]
+    value: 0.16
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NP-O.1
+    check: min_overlap
+    layers: [NP, ACT]
+    value: 0.12
+  - id: NP-A.1
+    check: min_area
+    layers: [NP]
+    value: 0.12
+    params:
+      touching: separate
+  - id: NP-A.2
+    check: min_area
+    layers: [NP]
+    value: 0.12
+    params:
+      scope: hole
+  - id: NP-A.3
+    check: min_area
+    layers: [NPACTButted]
+    value: 0.04
+    params:
+      touching: separate

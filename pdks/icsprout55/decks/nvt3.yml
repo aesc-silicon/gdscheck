@@ -1,0 +1,83 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: NVT3-W.1
+    check: min_width
+    layers: [NVT3]
+    value: 0.18
+  - id: NVT3-S.1
+    check: min_space
+    layers: [NVT3]
+    value: 0.18
+  - id: NVT3-S.1
+    check: min_notch
+    layers: [NVT3]
+    value: 0.18
+  - id: NVT3-S.4
+    check: min_space
+    layers: [NVT3, ACTSAB]
+    value: 0.21
+    params:
+      abutting: report
+  - id: NVT3-Ex.1
+    check: min_enclosure
+    layers: [NVT3, GATE]
+    value: 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: ACT
+  - id: NVT3-Ex.2
+    check: min_enclosure
+    layers: [NVT3, ACT]
+    value: 0.15
+    params:
+      metric: euclidian
+      interacting_only: 1
+    layer_params:
+      over: POLY
+  - id: NVT3-A.1
+    check: min_area
+    layers: [NVT3]
+    value: 0.18
+    params:
+      touching: separate
+  - id: NVT3-A.2
+    check: min_area
+    layers: [NVT3]
+    value: 0.18
+    params:
+      scope: hole
+  - id: NVT3-R.1
+    check: forbidden
+    layers: [NVT3, PSUB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NVT3-R.1
+    check: forbidden
+    layers: [NVT3, NVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NVT3-R.1
+    check: forbidden
+    layers: [NVT3, DGOX]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NVT3-R.1
+    check: forbidden
+    layers: [NVT3, TGOX]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NVT3-R.1
+    check: forbidden
+    layers: [NVT3, PPACT]
+    value: 0.0
+    params:
+      op: overlap
