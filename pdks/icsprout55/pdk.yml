@@ -155,6 +155,9 @@ decks:
   # --- review E: new decks ---
   # --- review F: new decks ---
   # --- review G: new decks ---
+  - name: esddev
+    path: decks/esddev.yml
+    description: 3.3V ESD protection NMOS and PMOS
   - name: antenna
     path: decks/antenna.yml
     description: Antenna ratios (gates without protection ACT)
@@ -1317,10 +1320,186 @@ virtual_layers:
   # --- review E: derived layers ---
   # --- review F: derived layers ---
   # --- review G: derived layers ---
+  - name: CTAll
+    op: union
+    mode: lazy
+    layers: [CT, CTbar]
+  - name: ESDCT
+    op: intersection
+    mode: lazy
+    layers: [CTAll, ESDIOE]
+  - name: ESDGATE
+    op: intersection
+    mode: lazy
+    layers: [GATE, ESDIOE]
+  - name: ESDNACT
+    op: intersection
+    mode: lazy
+    layers: [NPACT, ESDIOE]
+  - name: ESDPACT
+    op: intersection
+    mode: lazy
+    layers: [PPACT, ESDIOE]
+  - name: ESDNMOS
+    op: covering
+    mode: lazy
+    layers: [ESDNACT, ESDGATE]
+  - name: ESDPMOS
+    op: covering
+    mode: lazy
+    layers: [ESDPACT, ESDGATE]
+  - name: ESDNSD
+    op: difference
+    mode: lazy
+    layers: [ESDNMOS, ESDGATE]
+  - name: ESDPSD
+    op: difference
+    mode: lazy
+    layers: [ESDPMOS, ESDGATE]
+  - name: ESDSAB
+    op: intersection
+    mode: lazy
+    layers: [SAB, ESDIOE]
+  - name: ESDNSDSal
+    op: difference
+    mode: lazy
+    layers: [ESDNSD, ESDSAB]
+  - name: ESDPSDSal
+    op: difference
+    mode: lazy
+    layers: [ESDPSD, ESDSAB]
+  # ESD MOS source: salicided S/D touching the gate; drain: salicided S/D the SAB
+  # keeps off the gate.
+  - name: ESDNS
+    op: interacting
+    mode: lazy
+    layers: [ESDNSDSal, ESDGATE]
+  - name: ESDND
+    op: not_interacting
+    mode: lazy
+    layers: [ESDNSDSal, ESDGATE]
+  - name: ESDPS
+    op: interacting
+    mode: lazy
+    layers: [ESDPSDSal, ESDGATE]
+  - name: ESDPD
+    op: not_interacting
+    mode: lazy
+    layers: [ESDPSDSal, ESDGATE]
+  - name: ESDNDrainSD
+    op: interacting
+    mode: lazy
+    layers: [ESDNSD, ESDND]
+  - name: ESDNDrain
+    op: interacting
+    mode: lazy
+    layers: [ESDNDrainSD, ESDCT]
+  - name: ESDPDrainSD
+    op: interacting
+    mode: lazy
+    layers: [ESDPSD, ESDPD]
+  - name: ESDPDrain
+    op: interacting
+    mode: lazy
+    layers: [ESDPDrainSD, ESDCT]
+  - name: ESDMOSS
+    op: union
+    mode: lazy
+    layers: [ESDNS, ESDPS]
+  - name: ESDMOSD
+    op: union
+    mode: lazy
+    layers: [ESDND, ESDPD]
+  # The drain opening: a hole of the ESD SAB with no SAB in it (HOLES INNER EMPTY).
+  - name: ESDSABHoles
+    op: holes
+    mode: lazy
+    layers: [ESDSAB]
+  - name: ESDSABHole
+    op: not_covering
+    mode: lazy
+    layers: [ESDSABHoles, ESDSAB]
+  - name: ESDSABHO
+    op: union
+    mode: lazy
+    layers: [ESDSABHole, ESDMOSD]
+  - name: ESDCTS
+    op: not_overlapping
+    mode: lazy
+    layers: [ESDCT, ESDSABHO]
+  - name: ESDCTD
+    op: inside
+    mode: lazy
+    layers: [ESDCT, ESDSABHO]
+  - name: ESDGATEPOLY
+    op: covering
+    mode: lazy
+    layers: [POLY, ESDGATE]
+  - name: ESDACT
+    op: covering
+    mode: lazy
+    layers: [ACT, ESDGATE]
+  - name: ESDNGATETG
+    op: intersection
+    mode: lazy
+    layers: [ESDGATE, ESDNACT, TGOX]
+  - name: ESDNGATEHV
+    op: difference
+    mode: lazy
+    layers: [ESDNGATETG, DGOX]
+  # ESD-A.2: the innermost holes of ESD, less the ESD inside them.
+  - name: ESDHoles
+    op: holes
+    mode: lazy
+    layers: [ESD]
+  - name: ESDWithHoles
+    op: with_holes
+    mode: lazy
+    layers: [ESD]
+  - name: ESDHoleInner
+    op: not_covering
+    mode: lazy
+    layers: [ESDHoles, ESDWithHoles]
+  - name: ESDHoleEmpty
+    op: difference
+    mode: lazy
+    layers: [ESDHoleInner, ESD]
   - name: NW1resSTI
     op: overlapping
     mode: lazy
     layers: [NW1res, NW1RSTI]
+
+edge_layers:
+  # --- review G: edge layers ---
+  - name: ESDGATE.edges
+    op: edges
+    layers: [ESDGATE]
+  - name: ESDGATEPOLY.edges
+    op: edges
+    layers: [ESDGATEPOLY]
+  - name: ESDNGATE.edges
+    op: inside_part
+    layers: [ESDGATE.edges, ESDNMOS]
+  - name: ESDPGATE.edges
+    op: inside_part
+    layers: [ESDGATE.edges, ESDPMOS]
+  # ESD gate edges along the poly: the finger (channel) width.
+  - name: ESDNGATEW
+    op: and
+    layers: [ESDNGATE.edges, ESDGATEPOLY.edges]
+  - name: ESDPGATEW
+    op: and
+    layers: [ESDPGATE.edges, ESDGATEPOLY.edges]
+  - name: ESDNGATEHV.edges
+    op: edges
+    layers: [ESDNGATEHV]
+  - name: ESDACT.edges
+    op: edges
+    layers: [ESDACT]
+  # 3.3V ESD NMOS gate edges along the active: the channel length.
+  - name: ESDNGATEHVL
+    op: and
+    layers: [ESDNGATEHV.edges, ESDACT.edges]
 
 layers:
   - name: ACT

@@ -23,7 +23,7 @@ rules:
       touching: separate
   - id: ESD-A.2
     check: min_area
-    layers: [ESD]
+    layers: [ESDHoleEmpty]
     value: 0.6
     params:
-      scope: hole
+      touching: separate
