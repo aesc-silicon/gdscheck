@@ -460,7 +460,7 @@ virtual_layers:
   - name: ActivOrGatPoly
     op: union
     mode: lazy
-    layers: [Activ, GatPoly]
+    layers: [Activ, GatPoly, PolyRes]
 
   - name: ContSquare
     op: square

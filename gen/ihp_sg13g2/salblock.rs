@@ -256,4 +256,20 @@ fn hardening(pdk: &PdkConfig) {
         .expect("failed to create output directory");
     let p = P::new(pdk);
     salblock(&p);
+    sal_d_polyres(&p, layer(pdk, "PolyRes"));
+}
+
+/// Sal.d.h6 - an rppd as sg13g2_Clamp_N20N0D draws it: the body on PolyRes under the
+/// block, the GatPoly heads abutting the block's edges.  Head and body are one poly, so
+/// the heads are related (clean); a GatPoly 0.195 above the second one's block fires.
+fn sal_d_polyres(p: &P, polyres: (i16, i16)) {
+    let mut e = Vec::new();
+    for x in [2.0, 10.0] {
+        e.push(rect(p.sal, x, 1.8, x + 3.54, 2.7));
+        e.push(rect(polyres, x, 2.0, x + 3.54, 2.5));
+        e.push(rect(p.gp, x - 0.43, 2.0, x, 2.5));
+        e.push(rect(p.gp, x + 3.54, 2.0, x + 3.97, 2.5));
+    }
+    e.push(rect(p.gp, 11.0, 2.895, 12.0, 3.395));
+    p.write("salblock", "Sal.d.h6", e);
 }

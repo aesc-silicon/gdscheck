@@ -849,6 +849,9 @@ const DECK_SAL: &str = "salblock";
 // The U-shaped Activ with one arm under the block is an overlapping pair whose other arm
 // faces the block: not read (both tools; finding 11, the debatable half).
 #[case::sal_d_h5("salblock/Sal.d.h5.gds.gz", "TOP", vec!["Sal.d"; 2], vec![])]
+// An rppd whose GatPoly heads abut the block and join its PolyRes body is clean (IHP's
+// GatPoly_res; sg13g2_Clamp_N20N0D); a GatPoly 0.195 above a block fires.
+#[case::sal_d_h6("salblock/Sal.d.h6.gds.gz", "TOP", vec!["Sal.d"], vec![])]
 // A Cont 0.195 from a block, 0.198 corner to corner, a Cont abutting the block, a Cont
 // crossing the block's edge (finding 1) and a bar 0.195 away fire; 0.2, 0.205 corner to
 // corner and a Cont inside the block are clean.
