@@ -29,7 +29,7 @@ rules:
     value: 0.02
   - id: NP-S.4
     check: forbidden
-    layers: [NPPPACTChk]
+    layers: [NPandPPACTChk]
     value: 0.0
   - id: NP-S.5
     check: min_space

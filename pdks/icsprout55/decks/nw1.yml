@@ -5,40 +5,52 @@
 rules:
   - id: NW1-W.1
     check: min_width
-    layers: [NW1]
+    layers: [NW1NotInSRAM]
     value: 0.47
   - id: NW1-S.1
     check: min_space
-    layers: [NW1]
+    layers: [NW1CoreCut]
     value: 0.47
+    layer_params:
+      gap_outside: NW1inRes
   - id: NW1-S.1
     check: min_notch
-    layers: [NW1]
+    layers: [NW1CoreCut]
     value: 0.47
   - id: NW1-S.2
     check: min_space
-    layers: [NW1Core]
+    layers: [NW1CoreCut]
     value: 1.0
     params:
       net: different
+    layer_params:
+      gap_outside: NW1inRes
   - id: NW1-S.3
     check: min_space
-    layers: [NW1Core, NW1IO]
+    layers: [NW1CoreCut, NW1IOCut]
     value: 1.2
     params:
       net: different
   - id: NW1-S.4
     check: min_space
-    layers: [NW1IO]
+    layers: [NW1IOCut]
     value: 0.47
     params:
       net: same
+    layer_params:
+      gap_outside: NW1inRes
+  - id: NW1-S.4
+    check: min_notch
+    layers: [NW1IOCut]
+    value: 0.47
   - id: NW1-S.5
     check: min_space
-    layers: [NW1IO]
+    layers: [NW1IOCut]
     value: 1.2
     params:
       net: different
+    layer_params:
+      gap_outside: NW1inRes
   - id: NW1-A.1
     check: min_area
     layers: [NW1]
@@ -53,5 +65,5 @@ rules:
       scope: hole
   - id: NW1-R.1
     check: forbidden
-    layers: [NW1NoTap]
+    layers: [NW1Floating]
     value: 0.0

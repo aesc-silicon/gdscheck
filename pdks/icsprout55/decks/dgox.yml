@@ -17,24 +17,22 @@ rules:
     value: 0.47
   - id: DGOX-S.2
     check: min_space
-    layers: [DGOX, MOSACT]
+    layers: [DGOX, MOSAA]
     value: 0.25
     params:
       abutting: report
   - id: DGOX-S.2
-    check: forbidden
-    layers: [MOSACTCutsDGOX]
-    value: 0.0
-  - id: DGOX-S.3
     check: min_space
-    layers: [DGOX, POLY]
-    value: 0.32
+    layers: [DGOX, AALDMOS]
+    value: 0.25
     params:
       abutting: report
   - id: DGOX-S.3
-    check: forbidden
-    layers: [GATECutsDGOX]
-    value: 0.0
+    check: min_space
+    layers: [DGOX, GATE]
+    value: 0.32
+    params:
+      abutting: report
   - id: DGOX-S.4
     check: min_space
     layers: [DGOX, NW1]
@@ -52,22 +50,12 @@ rules:
       interacting_only: 1
   - id: DGOX-En.2
     check: min_enclosure
-    layers: [DGOX, ACT]
+    layers: [DGOX.edges, MOSsideDGOX.edges]
     value: 0.25
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: POLY
   - id: DGOX-En.3
     check: min_enclosure
-    layers: [DGOX, POLY]
+    layers: [DGOX.edges, GATEW.edges]
     value: 0.32
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: ACT
   - id: DGOX-Ex.1
     check: min_enclosure
     layers: [NW1, DGOX]

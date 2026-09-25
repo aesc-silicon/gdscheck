@@ -9,36 +9,28 @@ rules:
     value: 0.18
   - id: NVT1-S.1
     check: min_space
-    layers: [NVT1]
+    layers: [NVT1.edges, NVT1.edges]
     value: 0.18
-  - id: NVT1-S.1
-    check: min_notch
-    layers: [NVT1]
+  - id: NVT1-S.2
+    check: min_space
+    layers: [POLYinACTnoNVT1.edges, NVT1.edges]
     value: 0.18
+  - id: NVT1-S.3
+    check: min_space
+    layers: [ACTside.edges, NVT1.edges]
+    value: 0.15
   - id: NVT1-S.4
     check: min_space
-    layers: [NVT1, ACTSAB]
+    layers: [ACTSABoutNVT1.edges, NVT1.edges]
     value: 0.21
-    params:
-      abutting: report
   - id: NVT1-Ex.1
     check: min_enclosure
-    layers: [NVT1, GATE]
+    layers: [NVT1.edges, POLYinNPACTxNVT1.edges]
     value: 0.18
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: ACT
   - id: NVT1-Ex.2
     check: min_enclosure
-    layers: [NVT1, ACT]
+    layers: [NVT1.edges, NPACTxNVT1side.edges]
     value: 0.15
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: POLY
   - id: NVT1-A.1
     check: min_area
     layers: [NVT1]
@@ -59,6 +51,12 @@ rules:
       op: overlap
   - id: NVT1-R.1
     check: forbidden
+    layers: [NVT1, PPACTnw]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NVT1-R.1
+    check: forbidden
     layers: [NVT1, DGOX]
     value: 0.0
     params:
@@ -66,12 +64,6 @@ rules:
   - id: NVT1-R.1
     check: forbidden
     layers: [NVT1, TGOX]
-    value: 0.0
-    params:
-      op: overlap
-  - id: NVT1-R.1
-    check: forbidden
-    layers: [NVT1, PPACT]
     value: 0.0
     params:
       op: overlap

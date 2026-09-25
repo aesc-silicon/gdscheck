@@ -207,7 +207,7 @@ connectivity:
   - connector: NW1TapConn
     layers: [NW1, ACTSD]
   - connector: NW1
-    layers: [NW1Core, NW1IO]
+    layers: [NW1Core, NW1IO, NW1CoreCut, NW1IOCut]
   - connector: NW1onDNW
     layers: [NW1, DNW]
   - connector: CTConn
@@ -948,6 +948,306 @@ virtual_layers:
     mode: lazy
     layers: [NW1R, ACT]
   # --- review A: derived layers ---
+  # PW is the chip minus (NW1 or PSUB); near a DNW is all the DNW rules need of it.
+  - name: DNWHalo
+    op: grow
+    mode: lazy
+    radius: 1.5
+    layers: [DNW]
+  - name: PWNearDNW
+    op: difference
+    mode: lazy
+    layers: [DNWHalo, NW1, PSUB]
+  # TPW (PW inside DNW), clipped to the DNW: the same regions wherever DNW-En.1 holds.
+  - name: TPWell
+    op: difference
+    mode: lazy
+    layers: [DNW, NW1, PSUB]
+  - name: PWUnderIOOX
+    op: intersection
+    mode: lazy
+    layers: [PWNearDNW, IOOX]
+  - name: CTonPPPickup
+    op: interacting
+    mode: lazy
+    layers: [CT, PPPickup]
+  - name: TPWellFloating
+    op: not_interacting
+    mode: lazy
+    layers: [TPWell, CTonPPPickup]
+  # Where NW1 and DNW overlap: a connector whose every point lies in both (report A).
+  - name: NW1onDNW
+    op: intersection
+    mode: lazy
+    layers: [NW1, DNW]
+  - name: NSDOutNW1
+    op: difference
+    mode: lazy
+    layers: [NPACT, POLY, NW1]
+  - name: NW1inRes
+    op: intersection
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: NW1Cut
+    op: difference
+    mode: lazy
+    layers: [NW1, NW1res]
+  # The runset's LVNW0 and MVNW0 or HVNW0: the wells without their resistor parts.
+  - name: NW1CoreCut
+    op: intersection
+    mode: lazy
+    layers: [NW1Cut, NW1Core]
+  - name: NW1IOCut
+    op: intersection
+    mode: lazy
+    layers: [NW1Cut, NW1IO]
+  - name: NW1NotInSRAM
+    op: not_inside
+    mode: lazy
+    layers: [NW1, SRAMALL]
+  - name: NTapWithCT
+    op: covering
+    mode: lazy
+    layers: [NPPickup, CT]
+  - name: NW1Floating
+    op: not_interacting
+    mode: lazy
+    layers: [NW1, NTapWithCT]
+  # The runset's MOS: the N+ and P+ gates and the source/drain pieces touching them.
+  - name: PMOSGate
+    op: intersection
+    mode: lazy
+    layers: [PPACT, POLY]
+  - name: PPACTNoPoly
+    op: difference
+    mode: lazy
+    layers: [PPACT, POLY]
+  - name: PMOSSD
+    op: interacting
+    mode: lazy
+    layers: [PPACTNoPoly, PMOSGate]
+  - name: NMOSGate
+    op: intersection
+    mode: lazy
+    layers: [NPACT, POLY]
+  - name: NPACTNoPoly
+    op: difference
+    mode: lazy
+    layers: [NPACT, POLY]
+  - name: NMOSSD
+    op: interacting
+    mode: lazy
+    layers: [NPACTNoPoly, NMOSGate]
+  - name: NMOSAA
+    op: union
+    mode: lazy
+    layers: [NMOSGate, NMOSSD]
+  - name: MOSAA
+    op: union
+    mode: lazy
+    layers: [PMOSGate, PMOSSD, NMOSGate, NMOSSD]
+  # The runset's AA_LDMOS.
+  - name: LDPACT
+    op: intersection
+    mode: lazy
+    layers: [PPACT, LDMOS]
+  - name: LDNACT
+    op: intersection
+    mode: lazy
+    layers: [NPACT, LDMOS]
+  - name: LDPACTGated
+    op: interacting
+    mode: lazy
+    layers: [LDPACT, POLY]
+  - name: LDNACTGated
+    op: interacting
+    mode: lazy
+    layers: [LDNACT, POLY]
+  - name: LDPACTBare
+    op: not_interacting
+    mode: lazy
+    layers: [LDPACT, POLY]
+  - name: LDNACTBare
+    op: not_interacting
+    mode: lazy
+    layers: [LDNACT, POLY]
+  - name: LDPACTAtSTI
+    op: interacting
+    mode: lazy
+    layers: [LDPACTBare, LDMOSSTI]
+  - name: LDNACTAtSTI
+    op: interacting
+    mode: lazy
+    layers: [LDNACTBare, LDMOSSTI]
+  - name: LDPDrain
+    op: not_overlapping
+    mode: lazy
+    layers: [LDPACTAtSTI, LDMOSSTI]
+  - name: LDNDrain
+    op: not_overlapping
+    mode: lazy
+    layers: [LDNACTAtSTI, LDMOSSTI]
+  - name: AALDMOS
+    op: union
+    mode: lazy
+    layers: [LDPACTGated, LDNACTGated, LDPDrain, LDNDrain]
+  - name: NatNMOS
+    op: intersection
+    mode: lazy
+    layers: [NMOSAA, PSUB]
+  - name: NatNMOSSized
+    op: grow
+    mode: lazy
+    radius: 0.285
+    layers: [NatNMOS]
+  - name: PSUBwithNatNMOS
+    op: interacting
+    mode: lazy
+    layers: [PSUB, NatNMOS]
+  - name: ACTinPSUB
+    op: intersection
+    mode: lazy
+    layers: [ACT, PSUB]
+  - name: ACTinPSUBNoInd
+    op: not_inside
+    mode: lazy
+    layers: [ACTinPSUB, INDALL]
+  - name: PPonPSUB
+    op: intersection
+    mode: lazy
+    layers: [PP, PSUB]
+  - name: PPonPSUBNoInd
+    op: not_inside
+    mode: lazy
+    layers: [PPonPSUB, INDALL]
+  - name: ACTorPOLY
+    op: union
+    mode: lazy
+    layers: [ACT, POLY]
+  - name: ACTorPOLYDev
+    op: interacting
+    mode: lazy
+    layers: [ACTorPOLY, GATE]
+  - name: NatDevACTorPOLY
+    op: intersection
+    mode: lazy
+    layers: [ACTorPOLYDev, PSUB]
+  - name: PPonNatDev
+    op: interacting
+    mode: lazy
+    layers: [PPonPSUBNoInd, NatDevACTorPOLY]
+  - name: ACTNoIndTouch
+    op: not_interacting
+    mode: lazy
+    layers: [ACT, INDALL]
+  - name: PSUBMultiACT
+    op: interacting
+    mode: lazy
+    min: 2
+    layers: [PSUB, ACTNoIndTouch]
+  - name: GATEio1
+    op: difference
+    mode: lazy
+    layers: [GATEDG, TGOX]
+  - name: ACTnoNVT3
+    op: difference
+    mode: lazy
+    layers: [ACT, NVT3]
+  - name: NPACTxNVT3
+    op: intersection
+    mode: lazy
+    layers: [NPACT, NVT3]
+  - name: PPACTxPVT3
+    op: intersection
+    mode: lazy
+    layers: [PPACT, PVT3]
+  - name: NPACTxNVT1
+    op: intersection
+    mode: lazy
+    layers: [NPACT, NVT1]
+  - name: PPACTxPVT1
+    op: intersection
+    mode: lazy
+    layers: [PPACT, PVT1]
+  - name: NPACTnoNVT1
+    op: difference
+    mode: lazy
+    layers: [NPACT, NVT1]
+  - name: PPACTnoNVT1
+    op: difference
+    mode: lazy
+    layers: [PPACT, NVT1]
+  - name: NPACTnoPVT1
+    op: difference
+    mode: lazy
+    layers: [NPACT, PVT1]
+  - name: PPACTnoPVT1
+    op: difference
+    mode: lazy
+    layers: [PPACT, PVT1]
+  - name: ACTSABoutNVT3
+    op: not_inside
+    mode: lazy
+    layers: [ACTSAB, NVT3]
+  - name: ACTSABoutPVT3
+    op: not_inside
+    mode: lazy
+    layers: [ACTSAB, PVT3]
+  - name: ACTSABoutNVT1
+    op: not_inside
+    mode: lazy
+    layers: [ACTSAB, NVT1]
+  - name: NVT3NotInSRAM
+    op: not_inside
+    mode: lazy
+    layers: [NVT3, SRAMALL]
+  - name: PVT3NotInSRAM
+    op: not_inside
+    mode: lazy
+    layers: [PVT3, SRAMALL]
+  - name: ULLDnoNVT3
+    op: not_interacting
+    mode: lazy
+    layers: [ULLD, NVT3]
+  - name: ULLDnoPVT3
+    op: not_interacting
+    mode: lazy
+    layers: [ULLD, PVT3]
+  # The runset's local AA of the ULLD rules: PACT or NACT.
+  - name: NPPPACT
+    op: union
+    mode: lazy
+    layers: [NPACT, PPACT]
+  # Bands reaching 0.2 along a gate's AA-end edges (ULLD-Ex.3a): x for gates whose
+  # AA-end edges run along x, y for the others; the hair takes in the edge itself.
+  - name: GATEAlongX
+    op: grow_x
+    mode: lazy
+    radius: 0.2
+    layers: [GATE]
+  - name: GATEAlongXBand
+    op: grow_y
+    mode: lazy
+    radius: 0.001
+    layers: [GATEAlongX]
+  - name: GATEAlongY
+    op: grow_y
+    mode: lazy
+    radius: 0.2
+    layers: [GATE]
+  - name: GATEAlongYBand
+    op: grow_x
+    mode: lazy
+    radius: 0.001
+    layers: [GATEAlongY]
+  - name: GATEinDGOX
+    op: inside
+    mode: lazy
+    layers: [GATE, DGOX]
+  - name: GATEinTGOX
+    op: inside
+    mode: lazy
+    layers: [GATE, TGOX]
   # --- review B: derived layers ---
   # Runset GATE: a poly-on-active piece whose two sides are each a contacted S/D or
   # one shared with a second gate (GATE1), or any poly on active in LDMOS (GATE2).
@@ -1358,26 +1658,26 @@ virtual_layers:
     op: not_interacting
     mode: lazy
     layers: [NPPickup, PP]
-  - name: NPPPACT
+  - name: NPandPPACT
     op: intersection
     mode: lazy
     layers: [NPACT, PP]
-  - name: NPPPACTChkPart
+  - name: NPandPPACTChkPart
     op: intersection
     mode: lazy
-    layers: [NPPPACT, SRAMALL]
-  - name: NPPPACTChkRest
+    layers: [NPandPPACT, SRAMALL]
+  - name: NPandPPACTChkRest
     op: difference
     mode: lazy
-    layers: [NPPPACT, SRAMALL]
-  - name: NPPPACTChkWhole
+    layers: [NPandPPACT, SRAMALL]
+  - name: NPandPPACTChkWhole
     op: not_interacting
     mode: lazy
-    layers: [NPPPACTChkPart, NPPPACTChkRest]
-  - name: NPPPACTChk
+    layers: [NPandPPACTChkPart, NPandPPACTChkRest]
+  - name: NPandPPACTChk
     op: difference
     mode: lazy
-    layers: [NPPPACT, NPPPACTChkWhole]
+    layers: [NPandPPACT, NPandPPACTChkWhole]
   - name: NPOverNWRes
     op: interacting
     mode: lazy
@@ -5631,10 +5931,6 @@ virtual_layers:
     mode: lazy
     layers: [RV, CB]
   # Joins a well to the deep well it sits in, looked up inside both.
-  - name: NW1onDNW
-    op: intersection
-    mode: lazy
-    layers: [NW1, DNW]
   # The antenna runset's GATE: a channel with source/drain beside it.
   - name: AntGate
     op: interacting
@@ -6047,6 +6343,373 @@ edge_layers:
   - name: SABonACT
     op: and
     layers: [SAB.edges, ACT.edges]
+  # --- review A: edge layers ---
+  - name: DNW.edges
+    op: edges
+    layers: [DNW]
+  - name: DNWinNW1.edges
+    op: inside_part
+    layers: [DNW.edges, NW1]
+  - name: DNWinNW1Strict.edges
+    op: not
+    layers: [DNWinNW1.edges, NW1.edges]
+  # DNW-En.1: the DNW boundary not strictly inside NW1 (outside or coincident).
+  - name: DNWnotInNW1.edges
+    op: not
+    layers: [DNW.edges, DNWinNW1Strict.edges]
+  - name: DNWoutNW1All.edges
+    op: outside_part
+    layers: [DNW.edges, NW1]
+  # DNW-R.1: the DNW boundary outside NW1, coincident stretches excluded.
+  - name: DNWoutNW1.edges
+    op: not
+    layers: [DNWoutNW1All.edges, NW1.edges]
+  - name: PSUB.edges
+    op: edges
+    layers: [PSUB]
+  - name: PSUBonDNW.edges
+    op: and
+    layers: [PSUB.edges, DNW.edges]
+  - name: GATE.edges
+    op: edges
+    layers: [GATE]
+  # GATE_W: the gate's poly walls; their length is the channel width.
+  - name: GATEW.edges
+    op: and
+    layers: [GATE.edges, POLY.edges]
+  - name: GATEWNat.edges
+    op: interacting
+    layers: [GATEW.edges, PSUB]
+  - name: GATECore.edges
+    op: edges
+    layers: [GATECore]
+  - name: GATECoreOnACT.edges
+    op: and
+    layers: [GATECore.edges, ACT.edges]
+  # GATE_core_L: the core gate's active walls; their length is the channel length.
+  - name: GATECoreL.edges
+    op: not
+    layers: [GATECoreOnACT.edges, POLY.edges]
+  - name: GATECoreLNat.edges
+    op: interacting
+    layers: [GATECoreL.edges, PSUB]
+  - name: GATEio1.edges
+    op: edges
+    layers: [GATEio1]
+  - name: GATEio1OnACT.edges
+    op: and
+    layers: [GATEio1.edges, ACT.edges]
+  - name: GATEio1L.edges
+    op: not
+    layers: [GATEio1OnACT.edges, POLY.edges]
+  - name: GATEio1LNat.edges
+    op: interacting
+    layers: [GATEio1L.edges, PSUB]
+  # AA INSIDE EDGE PO: the active walls under the poly, boundary stretches excluded.
+  - name: ACTinPOLYAll.edges
+    op: inside_part
+    layers: [ACT.edges, POLY]
+  - name: ACTinPOLY.edges
+    op: not
+    layers: [ACTinPOLYAll.edges, POLY.edges]
+  - name: NPACT.edges
+    op: edges
+    layers: [NPACT]
+  - name: PPACT.edges
+    op: edges
+    layers: [PPACT]
+  # (NACT or PACT) TOUCH EDGE (AA INSIDE EDGE PO): the implanted active's walls that
+  # run along a gate's end.  TOUCH EDGE is read as sharing a stretch: the shared
+  # stretches, their middles, and the whole walls holding them.
+  - name: NPACTinPOLY.edges
+    op: and
+    layers: [NPACT.edges, ACTinPOLY.edges]
+  - name: NPACTinPOLYmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPACTinPOLY.edges]
+  - name: NPACTside.edges
+    op: interacting_edges
+    layers: [NPACT.edges, NPACTinPOLYmid.edges]
+  - name: PPACTinPOLY.edges
+    op: and
+    layers: [PPACT.edges, ACTinPOLY.edges]
+  - name: PPACTinPOLYmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [PPACTinPOLY.edges]
+  - name: PPACTside.edges
+    op: interacting_edges
+    layers: [PPACT.edges, PPACTinPOLYmid.edges]
+  - name: ACTside.edges
+    op: or
+    layers: [NPACTside.edges, PPACTside.edges]
+  - name: ACTsideNoSRAM.edges
+    op: outside_part
+    layers: [ACTside.edges, SRAMALL]
+  # PO INSIDE EDGE AA: the poly walls inside the active, boundary stretches excluded.
+  - name: POLYinACTAll.edges
+    op: inside_part
+    layers: [POLY.edges, ACT]
+  - name: POLYinACT.edges
+    op: not
+    layers: [POLYinACTAll.edges, ACT.edges]
+  - name: GATEwall.edges
+    op: and
+    layers: [POLYinACT.edges, GATE.edges]
+  - name: NVT3.edges
+    op: edges
+    layers: [NVT3]
+  - name: PVT3.edges
+    op: edges
+    layers: [PVT3]
+  - name: NVT1.edges
+    op: edges
+    layers: [NVT1]
+  - name: PVT1.edges
+    op: edges
+    layers: [PVT1]
+  - name: ULLD.edges
+    op: edges
+    layers: [ULLD]
+  - name: DGOX.edges
+    op: edges
+    layers: [DGOX]
+  - name: TGOX.edges
+    op: edges
+    layers: [TGOX]
+  # NVT3-S.2: gate walls on active outside NVT3.
+  - name: ACTnoNVT3.edges
+    op: edges
+    layers: [ACTnoNVT3]
+  - name: POLYinACTnoNVT3All.edges
+    op: inside_part
+    layers: [POLY.edges, ACTnoNVT3]
+  - name: POLYinACTnoNVT3.edges
+    op: not
+    layers: [POLYinACTnoNVT3All.edges, ACTnoNVT3.edges]
+  - name: GATEwallNoNVT3.edges
+    op: and
+    layers: [POLYinACTnoNVT3.edges, GATE.edges]
+  # NVT3-Ex.1 / PVT3-Ex.1: gate walls on N+ (P+) active inside NVT3 (PVT3).
+  - name: NPACTxNVT3.edges
+    op: edges
+    layers: [NPACTxNVT3]
+  - name: POLYinNPACTxNVT3All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTxNVT3]
+  - name: POLYinNPACTxNVT3.edges
+    op: not
+    layers: [POLYinNPACTxNVT3All.edges, NPACTxNVT3.edges]
+  - name: GATEwallNVT3.edges
+    op: and
+    layers: [POLYinNPACTxNVT3.edges, GATE.edges]
+  - name: PPACTxPVT3.edges
+    op: edges
+    layers: [PPACTxPVT3]
+  - name: POLYinPPACTxPVT3All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTxPVT3]
+  - name: POLYinPPACTxPVT3.edges
+    op: not
+    layers: [POLYinPPACTxPVT3All.edges, PPACTxPVT3.edges]
+  - name: GATEwallPVT3.edges
+    op: and
+    layers: [POLYinPPACTxPVT3.edges, GATE.edges]
+  # NVT1-Ex.1 / PVT1-Ex.1: poly walls on N+ (P+) active inside NVT1 (PVT1).
+  - name: NPACTxNVT1.edges
+    op: edges
+    layers: [NPACTxNVT1]
+  - name: POLYinNPACTxNVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTxNVT1]
+  - name: POLYinNPACTxNVT1.edges
+    op: not
+    layers: [POLYinNPACTxNVT1All.edges, NPACTxNVT1.edges]
+  - name: PPACTxPVT1.edges
+    op: edges
+    layers: [PPACTxPVT1]
+  - name: POLYinPPACTxPVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTxPVT1]
+  - name: POLYinPPACTxPVT1.edges
+    op: not
+    layers: [POLYinPPACTxPVT1All.edges, PPACTxPVT1.edges]
+  # NVT1-S.2 / PVT1-S.2: poly walls on N+ or P+ active outside NVT1 (PVT1).
+  - name: NPACTnoNVT1.edges
+    op: edges
+    layers: [NPACTnoNVT1]
+  - name: POLYinNPACTnoNVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTnoNVT1]
+  - name: POLYinNPACTnoNVT1.edges
+    op: not
+    layers: [POLYinNPACTnoNVT1All.edges, NPACTnoNVT1.edges]
+  - name: PPACTnoNVT1.edges
+    op: edges
+    layers: [PPACTnoNVT1]
+  - name: POLYinPPACTnoNVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTnoNVT1]
+  - name: POLYinPPACTnoNVT1.edges
+    op: not
+    layers: [POLYinPPACTnoNVT1All.edges, PPACTnoNVT1.edges]
+  - name: POLYinACTnoNVT1.edges
+    op: or
+    layers: [POLYinNPACTnoNVT1.edges, POLYinPPACTnoNVT1.edges]
+  - name: NPACTnoPVT1.edges
+    op: edges
+    layers: [NPACTnoPVT1]
+  - name: POLYinNPACTnoPVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTnoPVT1]
+  - name: POLYinNPACTnoPVT1.edges
+    op: not
+    layers: [POLYinNPACTnoPVT1All.edges, NPACTnoPVT1.edges]
+  - name: PPACTnoPVT1.edges
+    op: edges
+    layers: [PPACTnoPVT1]
+  - name: POLYinPPACTnoPVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTnoPVT1]
+  - name: POLYinPPACTnoPVT1.edges
+    op: not
+    layers: [POLYinPPACTnoPVT1All.edges, PPACTnoPVT1.edges]
+  - name: POLYinACTnoPVT1.edges
+    op: or
+    layers: [POLYinNPACTnoPVT1.edges, POLYinPPACTnoPVT1.edges]
+  # Ex.2: the Vt-covered implanted active's walls that touch a gate.
+  - name: NPACTxNVT3onGATE.edges
+    op: and
+    layers: [NPACTxNVT3.edges, GATE.edges]
+  - name: NPACTxNVT3onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPACTxNVT3onGATE.edges]
+  - name: NPACTxNVT3side.edges
+    op: interacting_edges
+    layers: [NPACTxNVT3.edges, NPACTxNVT3onGATEmid.edges]
+  - name: NPACTxNVT3sideNoSRAM.edges
+    op: outside_part
+    layers: [NPACTxNVT3side.edges, SRAMALL]
+  - name: PPACTxPVT3onGATE.edges
+    op: and
+    layers: [PPACTxPVT3.edges, GATE.edges]
+  - name: PPACTxPVT3onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [PPACTxPVT3onGATE.edges]
+  - name: PPACTxPVT3side.edges
+    op: interacting_edges
+    layers: [PPACTxPVT3.edges, PPACTxPVT3onGATEmid.edges]
+  - name: PPACTxPVT3sideNoSRAM.edges
+    op: outside_part
+    layers: [PPACTxPVT3side.edges, SRAMALL]
+  - name: NPACTxNVT1onGATE.edges
+    op: and
+    layers: [NPACTxNVT1.edges, GATE.edges]
+  - name: NPACTxNVT1onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPACTxNVT1onGATE.edges]
+  - name: NPACTxNVT1side.edges
+    op: interacting_edges
+    layers: [NPACTxNVT1.edges, NPACTxNVT1onGATEmid.edges]
+  - name: PPACTxPVT1onGATE.edges
+    op: and
+    layers: [PPACTxPVT1.edges, GATE.edges]
+  - name: PPACTxPVT1onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [PPACTxPVT1onGATE.edges]
+  - name: PPACTxPVT1side.edges
+    op: interacting_edges
+    layers: [PPACTxPVT1.edges, PPACTxPVT1onGATEmid.edges]
+  # S.4: non-salicided active not inside the implant.
+  - name: ACTSABoutNVT3.edges
+    op: edges
+    layers: [ACTSABoutNVT3]
+  - name: ACTSABoutPVT3.edges
+    op: edges
+    layers: [ACTSABoutPVT3]
+  - name: ACTSABoutNVT1.edges
+    op: edges
+    layers: [ACTSABoutNVT1]
+  # ULLD: the runset's local AA is PACT or NACT.
+  - name: NPPPACT.edges
+    op: edges
+    layers: [NPPPACT]
+  - name: POLYinNPPPACTAll.edges
+    op: inside_part
+    layers: [POLY.edges, NPPPACT]
+  - name: POLYinNPPPACT.edges
+    op: not
+    layers: [POLYinNPPPACTAll.edges, NPPPACT.edges]
+  - name: NPPPACTinPOLYAll.edges
+    op: inside_part
+    layers: [NPPPACT.edges, POLY]
+  - name: NPPPACTinPOLY.edges
+    op: not
+    layers: [NPPPACTinPOLYAll.edges, POLY.edges]
+  - name: NPPPACTinPOLYmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPPPACTinPOLY.edges]
+  - name: NPPPACTside.edges
+    op: interacting_edges
+    layers: [NPPPACT.edges, NPPPACTinPOLYmid.edges]
+  - name: NPPPACTsideX.edges
+    op: with_angle
+    min: 0
+    max: 1
+    layers: [NPPPACTside.edges]
+  - name: NPPPACTsideY.edges
+    op: with_angle
+    min: 90
+    max: 91
+    layers: [NPPPACTside.edges]
+  - name: NPPPACTsideNearX.edges
+    op: inside_part
+    layers: [NPPPACTsideX.edges, GATEAlongXBand]
+  - name: NPPPACTsideNearY.edges
+    op: inside_part
+    layers: [NPPPACTsideY.edges, GATEAlongYBand]
+  - name: NPPPACTsideNear.edges
+    op: or
+    layers: [NPPPACTsideNearX.edges, NPPPACTsideNearY.edges]
+  - name: NPPPACTsideFar.edges
+    op: not
+    layers: [NPPPACTside.edges, NPPPACTsideNear.edges]
+  # DGOX-En.2 / TGOX-En.2: MOS walls touching a gate inside the oxide.
+  - name: MOSAA.edges
+    op: edges
+    layers: [MOSAA]
+  - name: GATEinDGOX.edges
+    op: edges
+    layers: [GATEinDGOX]
+  - name: MOSonGATEinDGOX.edges
+    op: and
+    layers: [MOSAA.edges, GATEinDGOX.edges]
+  - name: MOSonGATEinDGOXmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [MOSonGATEinDGOX.edges]
+  - name: MOSsideDGOX.edges
+    op: interacting_edges
+    layers: [MOSAA.edges, MOSonGATEinDGOXmid.edges]
+  - name: GATEinTGOX.edges
+    op: edges
+    layers: [GATEinTGOX]
+  - name: MOSonGATEinTGOX.edges
+    op: and
+    layers: [MOSAA.edges, GATEinTGOX.edges]
+  - name: MOSonGATEinTGOXmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [MOSonGATEinTGOX.edges]
+  - name: MOSsideTGOX.edges
+    op: interacting_edges
+    layers: [MOSAA.edges, MOSonGATEinTGOXmid.edges]
 
 layers:
   - name: ACT

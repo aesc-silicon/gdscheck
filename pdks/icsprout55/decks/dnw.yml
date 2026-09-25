@@ -23,15 +23,23 @@ rules:
       net: different
   - id: DNW-S.3
     check: min_space
-    layers: [TPW]
+    layers: [TPWell, PWNearDNW]
+    value: 0.8
+    layer_params:
+      gap_outside: LDMOS
+  - id: DNW-S.3
+    check: min_notch
+    layers: [TPWell]
     value: 0.8
   - id: DNW-S.4
     check: min_space
-    layers: [TPWxTGOX, TPW]
+    layers: [PWUnderIOOX, TPWell]
     value: 1.2
+    layer_params:
+      gap_outside: LDMOS
   - id: DNW-S.5
     check: min_space
-    layers: [DNW, NPACTpw]
+    layers: [DNW, NSDOutNW1]
     value: 1.6
     params:
       abutting: report
@@ -42,9 +50,14 @@ rules:
     params:
       metric: euclidian
       interacting_only: 1
+      skip_coincident: 1
+  - id: DNW-En.1
+    check: forbidden
+    layers: [DNWnotInNW1.edges]
+    value: 0.0
   - id: DNW-En.2
     check: min_enclosure
-    layers: [DNW, NPACT]
+    layers: [DNW, NPACTpw]
     value: 0.55
     params:
       metric: euclidian
@@ -53,7 +66,11 @@ rules:
     check: min_overlap
     layers: [NW1, DNW]
     value: 0.4
+  - id: DNW-R.1
+    check: forbidden
+    layers: [DNWoutNW1.edges]
+    value: 0.0
   - id: DNW-R.3
     check: forbidden
-    layers: [TPWNoTap]
+    layers: [TPWellFloating]
     value: 0.0

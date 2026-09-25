@@ -9,30 +9,24 @@ rules:
     value: 0.18
   - id: PVT1-S.1
     check: min_space
-    layers: [PVT1]
+    layers: [PVT1.edges, PVT1.edges]
     value: 0.18
-  - id: PVT1-S.1
-    check: min_notch
-    layers: [PVT1]
+  - id: PVT1-S.2
+    check: min_space
+    layers: [POLYinACTnoPVT1.edges, PVT1.edges]
     value: 0.18
+  - id: PVT1-S.3
+    check: min_space
+    layers: [ACTside.edges, PVT1.edges]
+    value: 0.15
   - id: PVT1-Ex.1
     check: min_enclosure
-    layers: [PVT1, GATE]
+    layers: [PVT1.edges, POLYinPPACTxPVT1.edges]
     value: 0.18
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: ACT
   - id: PVT1-Ex.2
     check: min_enclosure
-    layers: [PVT1, ACT]
+    layers: [PVT1.edges, PPACTxPVT1side.edges]
     value: 0.15
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: POLY
   - id: PVT1-A.1
     check: min_area
     layers: [PVT1]

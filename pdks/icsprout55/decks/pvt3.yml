@@ -9,39 +9,31 @@ rules:
     value: 0.18
   - id: PVT3-S.1
     check: min_space
-    layers: [PVT3]
+    layers: [PVT3.edges, PVT3.edges]
     value: 0.18
-  - id: PVT3-S.1
-    check: min_notch
-    layers: [PVT3]
+  - id: PVT3-S.2
+    check: min_space
+    layers: [GATEwall.edges, PVT3.edges]
     value: 0.18
+  - id: PVT3-S.3
+    check: min_space
+    layers: [ACTsideNoSRAM.edges, PVT3.edges]
+    value: 0.15
   - id: PVT3-S.4
     check: min_space
-    layers: [PVT3, ACTSAB]
+    layers: [ACTSABoutPVT3.edges, PVT3.edges]
     value: 0.21
-    params:
-      abutting: report
   - id: PVT3-Ex.1
     check: min_enclosure
-    layers: [PVT3, GATE]
+    layers: [PVT3.edges, GATEwallPVT3.edges]
     value: 0.18
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: ACT
   - id: PVT3-Ex.2
     check: min_enclosure
-    layers: [PVT3, ACT]
+    layers: [PVT3.edges, PPACTxPVT3sideNoSRAM.edges]
     value: 0.15
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: POLY
   - id: PVT3-A.1
     check: min_area
-    layers: [PVT3]
+    layers: [PVT3NotInSRAM]
     value: 0.18
     params:
       touching: separate
@@ -54,6 +46,12 @@ rules:
   - id: PVT3-R.1
     check: forbidden
     layers: [PVT3, PSUB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: PVT3-R.1
+    check: forbidden
+    layers: [PVT3, NPACTpw]
     value: 0.0
     params:
       op: overlap
@@ -72,12 +70,6 @@ rules:
   - id: PVT3-R.1
     check: forbidden
     layers: [PVT3, TGOX]
-    value: 0.0
-    params:
-      op: overlap
-  - id: PVT3-R.1
-    check: forbidden
-    layers: [PVT3, NPACT]
     value: 0.0
     params:
       op: overlap

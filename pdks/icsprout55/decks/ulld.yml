@@ -27,6 +27,14 @@ rules:
     value: 0.055
     params:
       abutting: report
+  - id: ULLD-S.5
+    check: min_space
+    layers: [POLYinNPPPACT.edges, ULLD.edges]
+    value: 0.18
+  - id: ULLD-S.6
+    check: min_space
+    layers: [NPPPACTside.edges, ULLD.edges]
+    value: 0.15
   - id: ULLD-Ex.1
     check: min_enclosure
     layers: [ULLD, ACT]
@@ -36,13 +44,16 @@ rules:
       interacting_only: 1
   - id: ULLD-Ex.2
     check: min_enclosure
-    layers: [ULLD, GATE]
+    layers: [ULLD.edges, POLYinNPPPACT.edges]
     value: 0.18
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: ACT
+  - id: ULLD-Ex.3a
+    check: min_enclosure
+    layers: [ULLD.edges, NPPPACTsideNear.edges]
+    value: 0.15
+  - id: ULLD-Ex.3b
+    check: min_enclosure
+    layers: [ULLD.edges, NPPPACTsideFar.edges]
+    value: 0.12
   - id: ULLD-A.1
     check: min_area
     layers: [ULLD]
@@ -75,5 +86,9 @@ rules:
       op: overlap
   - id: ULLD-R.2
     check: forbidden
-    layers: [ULLDAlone]
+    layers: [ULLDnoNVT3]
+    value: 0.0
+  - id: ULLD-R.2
+    check: forbidden
+    layers: [ULLDnoPVT3]
     value: 0.0

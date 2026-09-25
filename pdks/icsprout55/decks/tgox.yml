@@ -17,24 +17,16 @@ rules:
     value: 0.47
   - id: TGOX-S.2
     check: min_space
-    layers: [TGOX, MOSACT]
+    layers: [TGOX, MOSAA]
     value: 0.25
     params:
       abutting: report
-  - id: TGOX-S.2
-    check: forbidden
-    layers: [MOSACTCutsTGOX]
-    value: 0.0
   - id: TGOX-S.3
     check: min_space
-    layers: [TGOX, POLY]
+    layers: [TGOX, GATE]
     value: 0.32
     params:
       abutting: report
-  - id: TGOX-S.3
-    check: forbidden
-    layers: [GATECutsTGOX]
-    value: 0.0
   - id: TGOX-S.4
     check: min_space
     layers: [TGOX, NW1]
@@ -43,31 +35,43 @@ rules:
     check: min_space
     layers: [TGOX, PSUB]
     value: 0.47
+    params:
+      abutting: report
+  - id: TGOX-S.6
+    check: min_space
+    layers: [TGOX, DGOX]
+    value: 0.47
+    params:
+      abutting: report
+  - id: TGOX-S.6
+    check: min_enclosure
+    layers: [DGOX, TGOX]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: TGOX-S.6
+    check: min_enclosure
+    layers: [TGOX, DGOX]
+    value: 0.47
+    params:
+      metric: euclidian
+      interacting_only: 1
   - id: TGOX-En.1
     check: min_enclosure
-    layers: [TGOX, ACTNoPickup]
+    layers: [TGOX, MOSAA]
     value: 0.25
     params:
       metric: euclidian
       interacting_only: 1
   - id: TGOX-En.2
     check: min_enclosure
-    layers: [TGOX, ACT]
+    layers: [TGOX.edges, MOSsideTGOX.edges]
     value: 0.25
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: POLY
   - id: TGOX-En.3
     check: min_enclosure
-    layers: [TGOX, POLY]
+    layers: [TGOX.edges, GATEW.edges]
     value: 0.32
-    params:
-      metric: euclidian
-      interacting_only: 1
-    layer_params:
-      over: ACT
   - id: TGOX-Ex.1
     check: min_enclosure
     layers: [NW1, TGOX]
@@ -99,8 +103,4 @@ rules:
   - id: TGOX-O.2
     check: min_overlap
     layers: [TGOX, PSUB]
-    value: 0.47
-  - id: TGOX-S.6
-    check: min_space
-    layers: [TGOX, DGOX]
     value: 0.47
