@@ -22,6 +22,9 @@ suites:
   - name: antenna
     path: suites/antenna.yml
     description: Antenna checks only
+  - name: recommended
+    path: suites/recommended.yml
+    description: Recommended (*R) rules - advisory, not in main
 
 decks:
   - name: offgrid
@@ -39,6 +42,9 @@ decks:
   - name: pad
     path: decks/pad.yml
     description: Pad dimensions (pads on TopMetal1)
+  - name: pad_recommended
+    path: decks/recommended/pad.yml
+    description: Bond pads, recommended
   - name: activ
     path: ../ihp-sg13g2/decks/activ.yml
     description: Active area
@@ -149,3 +155,11 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [dfpad, TopMetal1]
+  - name: Metal4Dfpad
+    op: intersection
+    mode: lazy
+    layers: [Metal4, dfpad]
+  - name: TopVia1UnderPad
+    op: intersection
+    mode: lazy
+    layers: [TopVia1, PassivDfpad]

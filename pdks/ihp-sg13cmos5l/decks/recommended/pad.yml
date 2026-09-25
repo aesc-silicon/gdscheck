@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: Pad.aR
+    check: min_width
+    layers: [PassivDfpad]
+    value: 30.00
+  - id: Pad.bR
+    check: min_space
+    layers: [PassivDfpad]
+    value: 8.40
+  - id: Pad.dR
+    check: forbidden
+    layers: [PadDRBad]
+    value: 0.0
+  - id: Pad.d1R
+    check: forbidden
+    layers: [PadD1RBad]
+    value: 0.0
+  - id: Pad.gR
+    check: min_enclosure
+    layers: [Metal4Dfpad, TopVia1]
+    value: 1.40
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: Pad.jR
+    check: forbidden
+    layers: [GateUnderPad]
+    value: 0.0
+  - id: Pad.kR
+    check: forbidden
+    layers: [TopVia1UnderPad]
+    value: 0.0

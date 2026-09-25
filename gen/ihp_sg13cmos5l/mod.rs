@@ -27,6 +27,7 @@ pub fn generate(pdk: &PdkConfig) {
     forbidden(pdk);
     cnt_digi(pdk);
     nw_f1_digi(pdk);
+    pad_gr_kr(pdk);
 }
 
 fn dir(sub: &str) -> String {
@@ -195,4 +196,31 @@ fn nw_f1_digi(pdk: &PdkConfig) {
         &format!("{}/NW.f1.digi.gds.gz", dir("nwell")),
         library("TOP", elems),
     );
+}
+
+/// Pad.gR / Pad.kR, where CMOS5L's pad via is TopVia1 on Metal4.  A dfpad 60 wide round
+/// a 30 opening, Metal4 over the whole dfpad.  Pad.gR: a via 1.395 inside the dfpad
+/// edge fires, 1.4 is clean.  Pad.kR: a via under the opening fires, one beside it is
+/// clean.
+fn pad_gr_kr(pdk: &PdkConfig) {
+    let o = OFFSET;
+    let (tv1, m4) = (layer(pdk, "TopVia1"), layer(pdk, "Metal4"));
+    let via = |x: f64, y: f64| rect(tv1, x, y, x + 0.9, y + 0.9);
+    let pad = |x: f64| {
+        vec![
+            rect(layer(pdk, "dfpad"), x, o, x + 60.0, o + 60.0),
+            rect(layer(pdk, "Passiv"), x + 15.0, o + 15.0, x + 45.0, o + 45.0),
+            rect(layer(pdk, "TopMetal1"), x, o, x + 60.0, o + 60.0),
+            rect(m4, x, o, x + 60.0, o + 60.0),
+        ]
+    };
+    let mut e = pad(o);
+    e.push(via(o + 1.395, o + 30.0));
+    e.push(via(o + 60.0 - 1.4 - 0.9, o + 30.0));
+    let d = dir("recommended/pad");
+    write_gz(&format!("{d}/Pad.gR.gds.gz"), library("TOP", e));
+    let mut e = pad(o);
+    e.push(via(o + 30.0, o + 30.0));
+    e.push(via(o + 5.0, o + 5.0));
+    write_gz(&format!("{d}/Pad.kR.gds.gz"), library("TOP", e));
 }
