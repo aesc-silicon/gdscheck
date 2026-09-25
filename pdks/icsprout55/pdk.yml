@@ -635,54 +635,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [SAB, ESDIOE]
-  - name: METmomAll
-    op: union
-    mode: lazy
-    layers: [MET1mom, MET2mom, MET3mom, MET4mom, MET5mom]
-  - name: MOMLVSNoMom
-    op: not_overlapping
-    mode: lazy
-    layers: [MOMLVS1, METmomAll]
-  - name: MOMMET1
-    op: intersection
-    mode: lazy
-    layers: [MET1, MET1mom, MOMLVS1]
-  - name: VIA1NoMom
-    op: difference
-    mode: lazy
-    layers: [VIA1, MOMLVS1]
-  - name: MOMMET2
-    op: intersection
-    mode: lazy
-    layers: [MET2, MET2mom, MOMLVS1]
-  - name: VIA2NoMom
-    op: difference
-    mode: lazy
-    layers: [VIA2, MOMLVS1]
-  - name: MOMMET3
-    op: intersection
-    mode: lazy
-    layers: [MET3, MET3mom, MOMLVS1]
-  - name: VIA3NoMom
-    op: difference
-    mode: lazy
-    layers: [VIA3, MOMLVS1]
-  - name: MOMMET4
-    op: intersection
-    mode: lazy
-    layers: [MET4, MET4mom, MOMLVS1]
-  - name: VIA4NoMom
-    op: difference
-    mode: lazy
-    layers: [VIA4, MOMLVS1]
-  - name: MOMMET5
-    op: intersection
-    mode: lazy
-    layers: [MET5, MET5mom, MOMLVS1]
-  - name: T4V2NoMom
-    op: difference
-    mode: lazy
-    layers: [T4V2, MOMLVS1]
   - name: ChipIn0p37x
     op: shrink_x
     mode: lazy
@@ -1062,46 +1014,6 @@ virtual_layers:
     op: interacting
     mode: lazy
     layers: [PPACT, NPACT]
-  - name: CTSq
-    op: difference
-    mode: lazy
-    layers: [CT, SRAMALL, FUSEALL, EFUSEALL, SRINGBLK]
-  - name: CTbarChk
-    op: difference
-    mode: lazy
-    layers: [CTbar, SRAMALL, FUSEALL, EFUSEALL, SRINGBLK]
-  - name: CTonACT
-    op: overlapping
-    mode: lazy
-    layers: [CT, ACT]
-  - name: CTonPOLY
-    op: overlapping
-    mode: lazy
-    layers: [CT, POLY]
-  - name: CTonACTCore
-    op: not_overlapping
-    mode: lazy
-    layers: [CTonACT, IOOX]
-  - name: CTonACTIO
-    op: overlapping
-    mode: lazy
-    layers: [CTonACT, IOOX]
-  - name: CTAtNP
-    op: overlapping
-    mode: lazy
-    layers: [CTonACT, NP]
-  - name: CTCutsNP
-    op: not_inside
-    mode: lazy
-    layers: [CTAtNP, NP]
-  - name: CTAtPP
-    op: overlapping
-    mode: lazy
-    layers: [CTonACT, PP]
-  - name: CTCutsPP
-    op: not_inside
-    mode: lazy
-    layers: [CTAtPP, PP]
   - name: ACTSD
     op: difference
     mode: lazy
@@ -1225,58 +1137,14 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [RPO, SAB]
-  - name: RPON
-    op: intersection
-    mode: lazy
-    layers: [RPO, NP]
-  - name: RPOP
-    op: intersection
-    mode: lazy
-    layers: [RPO, PP]
-  - name: RHR
-    op: intersection
-    mode: lazy
-    layers: [POLY, HRP]
-  - name: POLYMOS
-    op: overlapping
-    mode: lazy
-    layers: [POLY, ACT]
   - name: NW1R
     op: intersection
     mode: lazy
     layers: [NW1, NW1res]
-  - name: NW1RACT
-    op: inside
-    mode: lazy
-    layers: [NW1R, ACT]
   - name: NW1RSTI
     op: not_inside
     mode: lazy
     layers: [NW1R, ACT]
-  - name: ACTNW1RACT
-    op: overlapping
-    mode: lazy
-    layers: [ACT, NW1RACT]
-  - name: CTNW1RACT
-    op: overlapping
-    mode: lazy
-    layers: [CT, ACTNW1RACT]
-  - name: NW1RSTIWell
-    op: overlapping
-    mode: lazy
-    layers: [NW1, NW1RSTI]
-  - name: ACTNW1RSTI
-    op: overlapping
-    mode: lazy
-    layers: [ACT, NW1RSTIWell]
-  - name: CTNW1RSTI
-    op: overlapping
-    mode: lazy
-    layers: [CT, ACTNW1RSTI]
-  - name: ACTNotNW1RSTI
-    op: not_overlapping
-    mode: lazy
-    layers: [ACT, NW1RSTIWell]
   # --- review A: derived layers ---
   # --- review B: derived layers ---
   # --- review C: derived layers ---
