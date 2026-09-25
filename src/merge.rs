@@ -28,8 +28,8 @@ use i_overlay::float::single::SingleFloatOverlay;
 // Re-exported: `MergedPoly`'s contours are made of these, so the type is already part of
 // this module's surface - only its name was missing.
 pub use i_overlay::i_float::int::point::IntPoint;
-use i_overlay::mesh::outline::offset::OutlineOffset;
-use i_overlay::mesh::style::{LineJoin, OutlineStyle};
+use i_overlay::mesh::float::outline::offset::OutlineOffset;
+use i_overlay::mesh::float::style::{LineJoin, OutlineStyle};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -94,6 +94,7 @@ fn offset(d: f64) -> OutlineStyle<f64> {
         outer_offset: d,
         inner_offset: d,
         join: LineJoin::Miter(std::f64::consts::FRAC_PI_2),
+        ..Default::default()
     }
 }
 
@@ -101,12 +102,16 @@ fn offset(d: f64) -> OutlineStyle<f64> {
 /// corners, so every point of it lies within `d` of the box.  A reach measured as a
 /// distance in any direction wants this and not the square - KLayout's own decks
 /// approximate it with an octagon (GF180's DF.13 sizes `ntap` by half a micron at a
-/// time with `octagon_limit`, "to approximate a circle").
+/// time with `octagon_limit`, "to approximate a circle").  The arc is in steps of 0.01π,
+/// the finest the outline takes: a chord sits `d·(1 - cos(step/2))` inside the circle,
+/// 2.5 nm at 20 µm, where steps of a quarter radian put it 0.16 µm inside and a tap
+/// 19.997 µm off on the diagonal read as out of reach.
 fn offset_round(d: f64) -> OutlineStyle<f64> {
     OutlineStyle {
         outer_offset: d,
         inner_offset: d,
-        join: LineJoin::Round(0.25),
+        join: LineJoin::Round(0.01 * std::f64::consts::PI),
+        ..Default::default()
     }
 }
 
@@ -342,6 +347,7 @@ pub fn grow_round_by(polys: &[MergedPoly], radius: f64, margin: f64) -> Vec<Merg
         outer_offset: radius + margin,
         inner_offset: radius + margin,
         join: LineJoin::Round(0.01 * std::f64::consts::PI),
+        ..Default::default()
     };
     shapes_to_merged(tile_shapes(polys).outline(&style))
 }
