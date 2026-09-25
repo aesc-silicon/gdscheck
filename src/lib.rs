@@ -287,6 +287,10 @@ pub fn parse_virtual_op(
             radius_dbu()?,
             slack.map_or(0, |m| (m / dbu_to_um).round() as i32),
         ),
+        "grow_round" => GrowRound(
+            radius_dbu()?,
+            slack.map_or(0, |m| (m / dbu_to_um).round() as i32),
+        ),
         "shrink" => Shrink(radius_dbu()?),
         "grow_x" => GrowX(radius_dbu()?),
         "grow_y" => GrowY(radius_dbu()?),
@@ -520,7 +524,9 @@ fn propagate_virtual_halos(
             // With its slack: a grow of nothing but the slack reaches a grid step past
             // its source, and a source cut at the tile line one step short of a shape
             // it was meant to overlap left the shape unselected in the tile beyond.
-            merge::VirtualOp::Grow(r, slack) => (*r + *slack, *r + *slack),
+            merge::VirtualOp::Grow(r, slack) | merge::VirtualOp::GrowRound(r, slack) => {
+                (*r + *slack, *r + *slack)
+            }
             // A directional size reads geometry up to `r` away along its axis only -
             // an erode dilates the complement by that much, a dilate the shape.  An
             // isotropic erode reads the same distance in every direction.
@@ -805,6 +811,7 @@ fn clippable_layers(
                 | O::Covering(_, _)
                 | O::NotCovering(_, _)
                 | O::Grow(_, _)
+                | O::GrowRound(_, _)
                 | O::GrowX(_)
                 | O::GrowY(_)
                 | O::Shrink(_)

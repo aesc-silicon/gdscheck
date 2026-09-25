@@ -124,6 +124,18 @@ Lazy only. One-directional morphological dilation by ``radius`` µm (the def's `
 field). Only grows outward — pair with ``not_interacting``/``interacting`` downstream if
 you need the grown reach purely as a proximity test.
 
+Corners stay square, as KLayout's ``sized`` keeps them, so a box's reach along its
+diagonal is √2 × ``radius``.
+
+
+``grow_round``
+--------------
+
+Lazy only. ``grow`` with round corners (arcs of 0.01π segments): everything within
+``radius`` of the source in any direction, the reach a Euclidean space rule measures.
+Anchoring a long-reach space rule on the sparse layer this way — grow the pad opening,
+then intersect with Activ — avoids giving the dense layer a halo of the full value.
+
 
 ``close``
 ---------
