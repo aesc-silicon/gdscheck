@@ -9,7 +9,7 @@ rules:
     value: 0.21
   - id: HRP-W.2
     check: min_width
-    layers: [RHR]
+    layers: [POLYxPOHRPBody]
     value: 2
   - id: HRP-S.1
     check: min_space
@@ -21,21 +21,46 @@ rules:
     value: 0.21
   - id: HRP-S.2
     check: min_space
-    layers: [HRP, POLYMOS]
+    layers: [HRP, POLYxGATEDev]
     value: 0.16
     params:
       abutting: report
+  - id: HRP-S.3
+    check: forbidden
+    layers: [CTonHRPS3Bad]
+    value: 0.0
   - id: HRP-En.1
     check: min_enclosure
-    layers: [HRP, POLY]
+    layers: [HRP, POHRPBody]
     value: 0.2
     params:
       metric: euclidian
-      interacting_only: 1
   - id: HRP-Ex.1
     check: min_enclosure
-    layers: [SAB, RHR]
+    layers: [SAB, POLYxPOHRPBody]
     value: 0.22
     params:
       metric: euclidian
       interacting_only: 1
+  - id: HRP-O.1
+    check: min_overlap
+    layers: [SABxPOHRPBody, PP]
+    value: 0.3
+  - id: HRP-R.1
+    check: forbidden
+    layers: [NPPP, HRPPolyMid]
+    value: 0.0
+    params:
+      op: overlap
+  - id: HRP-R.2
+    check: forbidden
+    layers: [SABxHRPonPOLY, HPRonPOLY]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: HRP-R.2
+    check: forbidden
+    layers: [HPRonPOLY, SABxHRPonPOLY]
+    value: 0.0
+    params:
+      op: uncovered

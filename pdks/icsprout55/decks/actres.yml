@@ -4,93 +4,61 @@
 
 rules:
   - id: ACTres-W.1
-    check: min_width
-    layers: [RACTns]
+    check: min_edge_length
+    layers: [RACTnsCut]
     value: 0.4
   - id: ACTres-S.1
     check: min_space
-    layers: [RACTns, NP]
+    layers: [AAResSAB, NPNoACTres]
     value: 0.18
     params:
       abutting: report
   - id: ACTres-S.1
     check: min_space
-    layers: [RACTns, PP]
+    layers: [AAResSAB, PPNoACTres]
     value: 0.18
     params:
       abutting: report
   - id: ACTres-S.1
     check: min_space
-    layers: [RACTns, NVT1]
+    layers: [AAResSAB, NVT3NoACTres]
     value: 0.18
     params:
       abutting: report
   - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, PVT3NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, NVT1NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, PVT1NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, ESDNoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, HRPNoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.2
     check: forbidden
-    layers: [RACTns, NVT1]
+    layers: [CTonAAResS2Bad]
     value: 0.0
-    params:
-      op: overlap
-  - id: ACTres-S.1
-    check: min_space
-    layers: [RACTns, PVT1]
-    value: 0.18
-    params:
-      abutting: report
-  - id: ACTres-S.1
-    check: forbidden
-    layers: [RACTns, PVT1]
-    value: 0.0
-    params:
-      op: overlap
-  - id: ACTres-S.1
-    check: min_space
-    layers: [RACTns, NVT3]
-    value: 0.18
-    params:
-      abutting: report
-  - id: ACTres-S.1
-    check: forbidden
-    layers: [RACTns, NVT3]
-    value: 0.0
-    params:
-      op: overlap
-  - id: ACTres-S.1
-    check: min_space
-    layers: [RACTns, PVT3]
-    value: 0.18
-    params:
-      abutting: report
-  - id: ACTres-S.1
-    check: forbidden
-    layers: [RACTns, PVT3]
-    value: 0.0
-    params:
-      op: overlap
-  - id: ACTres-S.1
-    check: min_space
-    layers: [RACTns, HRP]
-    value: 0.18
-    params:
-      abutting: report
-  - id: ACTres-S.1
-    check: forbidden
-    layers: [RACTns, HRP]
-    value: 0.0
-    params:
-      op: overlap
-  - id: ACTres-S.1
-    check: min_space
-    layers: [RACTns, ESD]
-    value: 0.18
-    params:
-      abutting: report
-  - id: ACTres-S.1
-    check: forbidden
-    layers: [RACTns, ESD]
-    value: 0.0
-    params:
-      op: overlap
   - id: ACTres-En.1
     check: min_enclosure
     layers: [NPPP, RACT]
@@ -100,14 +68,14 @@ rules:
       interacting_only: 1
   - id: ACTres-Ex.1
     check: min_enclosure
-    layers: [ACTres, ACT]
+    layers: [ACTres, AAResSAB]
     value: 0.2
     params:
       metric: euclidian
       interacting_only: 1
   - id: ACTres-R.1
     check: forbidden
-    layers: [RACT, NP, PP]
+    layers: [AAResxSAB, NP, PP]
     value: 0.0
     params:
       op: uncovered
@@ -117,3 +85,7 @@ rules:
     value: 0.0
     params:
       op: uncovered
+  - id: ACTres-R.4
+    check: forbidden
+    layers: [ACTresR4Bad]
+    value: 0.0

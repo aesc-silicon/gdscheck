@@ -4,81 +4,80 @@
 
 rules:
   - id: POLYres-W.1
-    check: min_width
-    layers: [RPOns]
+    check: min_edge_length
+    layers: [RPOnsCut]
     value: 0.4
   - id: POLYres-S.1a
     check: min_space
-    layers: [RPON, PP]
-    value: 0.18
-    params:
-      abutting: report
-  - id: POLYres-S.1a
-    check: min_space
-    layers: [RPON, NPR]
-    value: 0.18
-    params:
-      abutting: report
-  - id: POLYres-S.1a
-    check: min_space
-    layers: [RPON, HRP]
-    value: 0.18
-    params:
-      abutting: report
-  - id: POLYres-S.1a
-    check: min_space
-    layers: [RPON, ESD]
+    layers: [POResSAB, PPNoPOLYres]
     value: 0.18
     params:
       abutting: report
   - id: POLYres-S.1b
     check: min_space
-    layers: [RPOP, NP]
+    layers: [POResSAB, NPNoPOLYres]
     value: 0.18
     params:
       abutting: report
-  - id: POLYres-S.1b
+  - id: POLYres-S.1
     check: min_space
-    layers: [RPOP, NPR]
+    layers: [POResSAB, ESDNoPOLYres]
     value: 0.18
     params:
       abutting: report
-  - id: POLYres-S.1b
+  - id: POLYres-S.1
     check: min_space
-    layers: [RPOP, HRP]
+    layers: [POResSAB, HRPNoPOLYres]
     value: 0.18
     params:
       abutting: report
-  - id: POLYres-S.1b
+  - id: POLYres-S.1
     check: min_space
-    layers: [RPOP, ESD]
+    layers: [POResSAB, NPRNoPOLYres]
     value: 0.18
     params:
       abutting: report
+  - id: POLYres-S.2
+    check: forbidden
+    layers: [CTonPOResS2Bad]
+    value: 0.0
   - id: POLYres-En.1
     check: min_enclosure
-    layers: [NPPP, RPO]
+    layers: [NP, RPO]
+    value: 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: POLYres-En.1
+    check: min_enclosure
+    layers: [PP, RPO]
     value: 0.18
     params:
       metric: euclidian
       interacting_only: 1
   - id: POLYres-Ex.1
     check: min_enclosure
-    layers: [POLYres, POLY]
+    layers: [POLYres, POResSAB]
     value: 0.2
     params:
       metric: euclidian
       interacting_only: 1
+    layer_params:
+      over: POResSABSide
   - id: POLYres-Ex.2
     check: min_enclosure
-    layers: [SAB, RPO]
+    layers: [SAB, PORes]
     value: 0.2
     params:
       metric: euclidian
       interacting_only: 1
   - id: POLYres-R.1
     check: forbidden
-    layers: [RPOns, NP, PP]
+    layers: [POResxSAB, NP, PP]
     value: 0.0
     params:
       op: uncovered
+  - id: POLYres-R.3
+    check: forbidden
+    layers: [POLYresR3Bad]
+    value: 0.0
