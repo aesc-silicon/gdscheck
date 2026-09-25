@@ -1023,6 +1023,10 @@ const DECK_NBL: &str = "nbulay";
 // another 5.0 away (finding 7, decided); reaching to 3.2, and a block adjoining no nBuLay,
 // are clean.
 #[case::nbl_c_h9("nbulay/NBL.c.h9.gds.gz", "TOP", vec!["NBL.c"], vec![])]
+// The generated nBuLay is its well's net: h7's two 6 × 6 wells 1.15 apart with their N+
+// taps strapped are clean; untied, NBL.c and the two NBL.d fire (the CSA design's
+// rfpmosHV pairs, clean in Calibre and KLayout).
+#[case::nbl_c_h10("nbulay/NBL.c.h10.gds.gz", "TOP", vec!["NBL.c", "NBL.d", "NBL.d"], vec![])]
 // A well 2.195 from an nBuLay, 2.199 corner to corner, an nBuLay diamond tip at 2.195
 // and a chamfer 2.199 from the well's corner; 2.2, 2.206 and 0.1 in x with 2.2 in y are clean.
 #[case::nbl_d_h1("nbulay/NBL.d.h1.gds.gz", "TOP", vec!["NBL.d"; 4], vec![])]

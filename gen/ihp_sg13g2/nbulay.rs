@@ -284,6 +284,23 @@ fn nbulay(p: &P) {
     ];
     p.write(deck, "NBL.c.h7", e);
 
+    // NBL.c.h10 - the generated nBuLay is its well's net: two 6 × 6 wells 1.15 apart
+    // (NBL.c.h7's pair) whose N+ taps are strapped on Metal1 are one net - clean; the
+    // same pair untied fires NBL.c and NBL.d as in h7 (rfpmosHV in the CSA design).
+    let mut e = Vec::new();
+    for (x, tied) in [(2.0, true), (20.0, false)] {
+        e.push(rect(p.nw, x, 2.0, x + 6.0, 8.0));
+        e.push(rect(p.nw, x + 7.15, 2.0, x + 13.15, 8.0));
+        let taps = [(x + 3.0, 5.0), (x + 10.15, 5.0)];
+        for &(cx, cy) in &taps {
+            e.extend(tap(p.activ, p.cont, cx, cy, 0.40));
+        }
+        if tied {
+            e.push(strap(p.m1, &taps));
+        }
+    }
+    p.write(deck, "NBL.c.h10", e);
+
     // NBL.d - PWell width between nBuLay and NWell (different net) 2.20.  The kit with a
     // 2 × 2 bare well as the fixed box.
     let nwell = |x0: f64, y0: f64, x1: f64, y1: f64| vec![rect(p.nw, x0, y0, x1, y1)];

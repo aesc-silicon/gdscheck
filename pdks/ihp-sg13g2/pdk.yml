@@ -196,7 +196,7 @@ connectivity:
     layers: [TopMetal2]
   - connector: NActivInNWell
     layers: [NWell, NWellMergedNoSRAM, NWellExt, ActivSD]
-  - connector: NWellNBuLay
+  - connector: NWellNBuLayDerived
     layers: [nBuLay, nBuLayMerged, nBuLayRegions, nBuLayRegionsExt, NWell, NWellExt]
 
 virtual_layers:
@@ -1167,6 +1167,12 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [NWell, nBuLay]
+  # The well and its nBuLay are one net, the generated nBuLay too: it lies inside the
+  # well it is grown from and is no island of its own (NBL.c/d's "different net").
+  - name: NWellNBuLayDerived
+    op: intersection
+    mode: lazy
+    layers: [NWell, nBuLayDerived]
   # Section 6.5: "these rules will only be tested inside a closed ring of NWell AND
   # nBuLay" - the Iso-PWell-Activ is the one lying in such a ring's hole, and nmosi.d's
   # ring is the one whose hole holds an Iso-PWell-Activ.
