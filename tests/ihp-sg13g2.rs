@@ -2468,9 +2468,9 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2fil_a1("topmetal2/TM2Fil.a1.gds.gz", "TOP", vec!["TM2Fil.a1"; 2], vec!["TM2.c", "TM2.d"])]
 #[case::tm2fil_b("topmetal2/TM2Fil.b.gds.gz", "TOP", vec!["TM2Fil.b"; 2], vec!["TM2.c", "TM2.d"])]
 #[case::tm2fil_d("topmetal2/TM2Fil.d.gds.gz", "TOP", vec!["TM2Fil.d"; 2], vec!["TM2.c", "TM2.d"])]
-#[case::tm2_br_fail("topmetal2/TM2.bR.fail.gds.gz", "TOP", vec!["TM2.bR"], vec!["TM2.c", "TM2.d"])]
-#[case::tm2_br_ok("topmetal2/TM2.bR.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
-#[case::tm2_br_ind("topmetal2/TM2.bR.ind.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_fail("recommended/topmetal2/TM2.bR.fail.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_ok("recommended/topmetal2/TM2.bR.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_ind("recommended/topmetal2/TM2.bR.ind.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 2.00 is clean.
 #[case::tm2_a_h1("topmetal2/TM2.a.h1.gds.gz", "TOP", vec!["TM2.a"; 10], vec!["TM2.c", "TM2.d"])]
@@ -2564,31 +2564,31 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2fil_d_h7("topmetal2/TM2Fil.d.h7.gds.gz", "TOP", vec!["TM2Fil.d"; 2], vec!["TM2.c", "TM2.d"])]
 // TM2.bR: a 5.005 line beside a 2 line at gap 4 over 60, two 6 lines at 4.995 over 60, two
 // 6 lines at 4 over 50.005 fire; a 6/2 pair over 50.0 and a 5.0/2 pair over 60 are clean.
-#[case::tm2_br_h1("topmetal2/TM2.bR.h1.gds.gz", "TOP", vec!["TM2.bR"; 3], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h1("recommended/topmetal2/TM2.bR.h1.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // The run is the overlap: 50.005 fires, 50.0 and a 20 µm neighbour do not.
-#[case::tm2_br_h2("topmetal2/TM2.bR.h2.gds.gz", "TOP", vec!["TM2.bR"; 1], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h2("recommended/topmetal2/TM2.bR.h2.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // Beside a 6 line 60 long: a neighbour whose facing wall steps 4/4.5 at mid-height, one
 // with a 0.005 nick (a TM2.b notch of 0.5 as well), one drawn as two abutting 30 µm boxes,
 // a 6 line drawn as two 3 strips beside a 2 line: four runs of 60 under 5 (report, finding
 // 5) - the run is the joined stretch of every facing wall under the value, the manual's
 // "lines", where KLayout's per-edge projection sees two 30s at the step and the nick.
-#[case::tm2_br_h3("topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h3("recommended/topmetal2/TM2.bR.h3.gds.gz", "TOP", vec!["TM2.b"], vec!["TM2.c", "TM2.d"])]
 // Two 6-wide 45° strips 60 side by side at 3.999 and the figure's plate beside a 2 line at
 // 4 fire; 5.003, a T (run 2) and a strip crossing at 45° are clean.
-#[case::tm2_br_h4("topmetal2/TM2.bR.h4.gds.gz", "TOP", vec!["TM2.bR"; 2], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h4("recommended/topmetal2/TM2.bR.h4.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // IND over 5 µm of a 60 run leaves 55 (fires); over 20 it leaves 40 (clean, report, finding
 // 8); a wide line within IND beside a narrow one outside is not checked.
-#[case::tm2_br_h5("topmetal2/TM2.bR.h5.gds.gz", "TOP", vec!["TM2.bR"; 1], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h5("recommended/topmetal2/TM2.bR.h5.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // Two 6 lines 1.995 apart over 60: TM2.b and TM2.bR both.
-#[case::tm2_br_h6("topmetal2/TM2.bR.h6.gds.gz", "TOP", vec!["TM2.b", "TM2.bR"], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h6("recommended/topmetal2/TM2.bR.h6.gds.gz", "TOP", vec!["TM2.b"], vec!["TM2.c", "TM2.d"])]
 // Five 50.005 runs starting at x = 0, 20, 19.995, 7 and 40; a 50.0 run from 20 is clean.
-#[case::tm2_br_h9("topmetal2/TM2.bR.h9.gds.gz", "TOP", vec!["TM2.bR"; 5], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h9("recommended/topmetal2/TM2.bR.h9.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // A 4 line 6 wide over 55 of its 60 beside a 4 line at gap 4 fires (report, finding 9);
 // 6 wide over 20 (far or near side) does not; a 300 µm pair and a pair at (1000, 1000).
-#[case::tm2_br_h10("topmetal2/TM2.bR.h10.gds.gz", "TOP", vec!["TM2.bR"; 3], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h10("recommended/topmetal2/TM2.bR.h10.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // h3's stepped, nicked and two-box neighbours again as 2 lines beside 6 lines (the pairing
 // KLayout's shielded check sees): three runs of 60 under 5, plus the nick's TM2.b notch.
-#[case::tm2_br_h11("topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.bR", "TM2.bR", "TM2.bR", "TM2.b"], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_h11("recommended/topmetal2/TM2.bR.h11.gds.gz", "TOP", vec!["TM2.b"], vec!["TM2.c", "TM2.d"])]
 fn test_topmetal2(
     #[case] gds: &str,
     #[case] topcell: &str,
@@ -3698,7 +3698,7 @@ const DECK_MIM: &str = "mim";
 #[case("mim/MIM.gds.gz", "TOP",
     vec!["MIM.a", "MIM.a", "MIM.a", "MIM.a", "MIM.b", "MIM.d", "MIM.d", "MIM.d", "MIM.f", "MIM.h"],
     vec![])]
-#[case("mim/MIM.gR.gds.gz", "TOP", vec!["MIM.gR"], vec![])]
+#[case("recommended/mim/MIM.gR.gds.gz", "TOP", vec![], vec![])]
 // Hardening (hardening/reports/ihp-sg13g2/pad.md).  MIM.a counts one marker per wall,
 // MIM.b one per pair, MIM.c/MIM.d one per under-enclosed shape (adjacent short walls one
 // run) or per wall, MIM.f/MIM.g/MIM.h one per device.  MIM.a: 1.135 in x and in y, a 45°
@@ -3737,6 +3737,44 @@ fn test_mim(
 ) {
     expected.sort();
     assert_eq!(drc(PDK_IHP, DECK_MIM, gds, topcell, &ignore), expected);
+}
+
+// --- Recommended (*R) rules ---
+
+#[rstest]
+// Pad.aR counts one marker per wall: a 29.995 square (four) and a 29.995 bar (two).
+#[case::pad_ar("pad_recommended", "recommended/pad/Pad.aR.gds.gz", vec!["Pad.aR"; 6])]
+#[case::pad_br("pad_recommended", "recommended/pad/Pad.bR.gds.gz", vec!["Pad.bR"; 2])]
+#[case::pad_dr("pad_recommended", "recommended/pad/Pad.dR.gds.gz", vec!["Pad.dR"; 2])]
+// The seal's Activ at 11 is Pad.dR's, not Pad.d1R's.
+#[case::pad_d1r("pad_recommended", "recommended/pad/Pad.d1R.gds.gz", vec!["Pad.d1R", "Pad.d1R", "Pad.d1R", "Pad.dR"])]
+#[case::pad_gr("pad_recommended", "recommended/pad/Pad.gR.gds.gz", vec!["Pad.gR"; 2])]
+// The Activ of the gate under the opening is Pad.d1R's too; the other gate's is 14.9 away.
+#[case::pad_jr("pad_recommended", "recommended/pad/Pad.jR.gds.gz", vec!["Pad.jR", "Pad.jR", "Pad.d1R"])]
+#[case::pad_kr("pad_recommended", "recommended/pad/Pad.kR.gds.gz", vec!["Pad.kR"; 2])]
+#[case::npn13g2_br("npn_recommended", "recommended/npn/npn13G2.bR.gds.gz", vec!["npn13G2.bR"])]
+#[case::npn13g2_br_ok("npn_recommended", "recommended/npn/npn13G2.bR.ok.gds.gz", vec![])]
+#[case::npn13g2l_cr("npn_recommended", "recommended/npn/npn13G2L.cR.gds.gz", vec!["npn13G2L.cR"])]
+#[case::npn13g2l_cr_ok("npn_recommended", "recommended/npn/npn13G2L.cR.ok.gds.gz", vec![])]
+#[case::npn13g2v_cr("npn_recommended", "recommended/npn/npn13G2V.cR.gds.gz", vec!["npn13G2V.cR"])]
+#[case::npn13g2v_cr_ok("npn_recommended", "recommended/npn/npn13G2V.cR.ok.gds.gz", vec![])]
+#[case::npn_mixed("npn_recommended", "recommended/npn/npn13G2.mixed.gds.gz", vec!["npn13G2L.cR"])]
+#[case::tm2_br_fail("topmetal2_recommended", "recommended/topmetal2/TM2.bR.fail.gds.gz", vec!["TM2.bR"])]
+#[case::tm2_br_ok("topmetal2_recommended", "recommended/topmetal2/TM2.bR.gds.gz", vec![])]
+#[case::tm2_br_ind("topmetal2_recommended", "recommended/topmetal2/TM2.bR.ind.gds.gz", vec![])]
+#[case::tm2_br_h1("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h1.gds.gz", vec!["TM2.bR"; 3])]
+#[case::tm2_br_h2("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h2.gds.gz", vec!["TM2.bR"])]
+#[case::tm2_br_h3("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h3.gds.gz", vec!["TM2.bR"; 4])]
+#[case::tm2_br_h4("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h4.gds.gz", vec!["TM2.bR"; 2])]
+#[case::tm2_br_h5("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h5.gds.gz", vec!["TM2.bR"])]
+#[case::tm2_br_h6("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h6.gds.gz", vec!["TM2.bR"])]
+#[case::tm2_br_h9("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h9.gds.gz", vec!["TM2.bR"; 5])]
+#[case::tm2_br_h10("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h10.gds.gz", vec!["TM2.bR"; 3])]
+#[case::tm2_br_h11("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h11.gds.gz", vec!["TM2.bR"; 3])]
+#[case::mim_gr("mim_recommended", "recommended/mim/MIM.gR.gds.gz", vec!["MIM.gR"])]
+fn test_recommended(#[case] deck: &str, #[case] gds: &str, #[case] mut expected: Vec<&str>) {
+    expected.sort();
+    assert_eq!(drc(PDK_IHP, deck, gds, "TOP", &[]), expected);
 }
 
 // --- forbidden ---

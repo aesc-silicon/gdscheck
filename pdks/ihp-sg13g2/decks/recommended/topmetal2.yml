@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: TM2.bR
+    check: min_space
+    layers: [TopMetal2NotIND]
+    value: 5.00
+    params:
+      width: 5.00
+      length: 50.00

@@ -9,9 +9,12 @@ use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/ihp-sg13g2/mim";
+/// MIM.gR is recommended: its fixture sits with the recommended decks'.
+const MIM_GR: &str = "tests/data/ihp-sg13g2/recommended/mim";
 
 pub fn generate(pdk: &PdkConfig) {
     std::fs::create_dir_all(DIR).expect("failed to create output directory");
+    std::fs::create_dir_all(MIM_GR).expect("failed to create output directory");
     mim_all(pdk);
     mim_gr(pdk);
 
@@ -37,7 +40,7 @@ fn mim_gr(pdk: &PdkConfig) {
             ));
         }
     }
-    write_gz(&format!("{DIR}/MIM.gR.gds.gz"), library("TOP", e));
+    write_gz(&format!("{MIM_GR}/MIM.gR.gds.gz"), library("TOP", e));
 }
 
 /// A MIM cap at `(x, y)`, `w`×`h` µm: Metal5 bottom plate enclosing by 0.70, a TopVia1 at

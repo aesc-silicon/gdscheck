@@ -29,7 +29,8 @@ pub fn generate(pdk: &PdkConfig) {
         tmfil_d(pdk, index, &dir);
 
         if index == 2 {
-            tm2_br(pdk, &dir);
+            std::fs::create_dir_all(TM2_BR).expect("failed to create output directory");
+            tm2_br(pdk, TM2_BR);
         }
     }
 
@@ -213,6 +214,9 @@ fn tm2_br(pdk: &PdkConfig, dir: &str) {
 const SQRT2: f64 = std::f64::consts::SQRT_2;
 
 /// Layers and values of one deck.
+/// TM2.bR is recommended: its fixtures sit with the recommended decks'.
+const TM2_BR: &str = "tests/data/ihp-sg13g2/recommended/topmetal2";
+
 struct L {
     n: i32,
     dir: String,
@@ -402,7 +406,10 @@ fn hardening(pdk: &PdkConfig) {
         tmfil_c_h(&l);
         tmfil_d_h(&l);
     }
-    tm2_br_h(&L::new(pdk, 2));
+    tm2_br_h(&L {
+        dir: TM2_BR.to_string(),
+        ..L::new(pdk, 2)
+    });
 }
 
 // --- TM<n>.a: min. TopMetal width (1.64 / 2.00) ---
