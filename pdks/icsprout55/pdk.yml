@@ -211,10 +211,6 @@ connectivity:
     layers: [CTNoSRAM]
 
 virtual_layers:
-  - name: MET1NoInd
-    op: difference
-    mode: lazy
-    layers: [MET1, INDALL]
   - name: MET1dmRect
     op: rectangle
     mode: lazy
@@ -263,10 +259,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MET1dm, MET1dmOk]
-  - name: MET2NoInd
-    op: difference
-    mode: lazy
-    layers: [MET2, INDALL]
   - name: MET2dmRect
     op: rectangle
     mode: lazy
@@ -315,10 +307,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MET2dm, MET2dmOk]
-  - name: MET3NoInd
-    op: difference
-    mode: lazy
-    layers: [MET3, INDALL]
   - name: MET3dmRect
     op: rectangle
     mode: lazy
@@ -367,10 +355,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MET3dm, MET3dmOk]
-  - name: MET4NoInd
-    op: difference
-    mode: lazy
-    layers: [MET4, INDALL]
   - name: MET4dmRect
     op: rectangle
     mode: lazy
@@ -419,10 +403,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MET4dm, MET4dmOk]
-  - name: MET5NoInd
-    op: difference
-    mode: lazy
-    layers: [MET5, INDALL]
   - name: MET5dmRect
     op: rectangle
     mode: lazy
@@ -471,34 +451,6 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [MET5dm, MET5dmOk]
-  - name: VIA1Sq
-    op: difference
-    mode: lazy
-    layers: [VIA1, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
-  - name: VIA2Sq
-    op: difference
-    mode: lazy
-    layers: [VIA2, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
-  - name: VIA3Sq
-    op: difference
-    mode: lazy
-    layers: [VIA3, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
-  - name: VIA4Sq
-    op: difference
-    mode: lazy
-    layers: [VIA4, SRAMALL, FUSEALL, EFUSEALL, GRBLK, SRINGBLK]
-  - name: T4V2Sq
-    op: difference
-    mode: lazy
-    layers: [T4V2, GRBLK, SRINGBLK]
-  - name: T4M2NoInd
-    op: difference
-    mode: lazy
-    layers: [T4M2, INDALL]
-  - name: T4M2NoPadInd
-    op: difference
-    mode: lazy
-    layers: [T4M2, DEUPAD, INDALL]
   - name: T4M2dmRect
     op: rectangle
     mode: lazy
@@ -1321,6 +1273,992 @@ virtual_layers:
   # --- review B: derived layers ---
   # --- review C: derived layers ---
   # --- review D: derived layers ---
+  - name: GRBLKorSRING
+    op: union
+    mode: lazy
+    layers: [GRBLK, SRINGBLK]
+  - name: SRAMorFUSE
+    op: union
+    mode: lazy
+    layers: [SRAMALL, EFUSEALL, FUSEALL]
+  - name: SRAMorSRING
+    op: union
+    mode: lazy
+    layers: [SRAMALL, SRINGBLK]
+  - name: MET1NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: MET1All
+    op: union
+    mode: lazy
+    layers: [MET1NoSlot, MET1dm]
+  - name: MET1Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET1All]
+  - name: MET1Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET1All]
+  - name: MET1NoSlotNoSRAM
+    op: difference
+    mode: lazy
+    layers: [MET1NoSlot, SRAMALL]
+  - name: MET1Small
+    op: with_area
+    mode: lazy
+    max: 0.042
+    layers: [MET1NoSlot]
+  - name: MET1SmallOutSRAM
+    op: not_inside
+    mode: lazy
+    layers: [MET1Small, SRAMALL]
+  - name: MET1slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET1slot]
+  - name: MET1slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET1slotOkRect]
+  - name: MET1slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET1slotOkShort]
+  - name: MET2NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: MET2All
+    op: union
+    mode: lazy
+    layers: [MET2NoSlot, MET2dm]
+  - name: MET2Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET2All]
+  - name: MET2Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET2All]
+  - name: MET2NoSlotNoSRAM
+    op: difference
+    mode: lazy
+    layers: [MET2NoSlot, SRAMALL]
+  - name: MET2Small
+    op: with_area
+    mode: lazy
+    max: 0.052
+    layers: [MET2NoSlot]
+  - name: MET2SmallOutSRAM
+    op: not_inside
+    mode: lazy
+    layers: [MET2Small, SRAMALL]
+  - name: MET2slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET2slot]
+  - name: MET2slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET2slotOkRect]
+  - name: MET2slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET2slotOkShort]
+  - name: MET3NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: MET3All
+    op: union
+    mode: lazy
+    layers: [MET3NoSlot, MET3dm]
+  - name: MET3Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET3All]
+  - name: MET3Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET3All]
+  - name: MET3slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET3slot]
+  - name: MET3slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET3slotOkRect]
+  - name: MET3slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET3slotOkShort]
+  - name: MET4NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: MET4All
+    op: union
+    mode: lazy
+    layers: [MET4NoSlot, MET4dm]
+  - name: MET4Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET4All]
+  - name: MET4Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET4All]
+  - name: MET4slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET4slot]
+  - name: MET4slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET4slotOkRect]
+  - name: MET4slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET4slotOkShort]
+  - name: MET5NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: MET5All
+    op: union
+    mode: lazy
+    layers: [MET5NoSlot, MET5dm]
+  - name: MET5Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET5All]
+  - name: MET5Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET5All]
+  - name: MET5NoSlotNoPad
+    op: difference
+    mode: lazy
+    layers: [MET5NoSlot, DEUPAD]
+  - name: MET5slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET5slot]
+  - name: MET5slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET5slotOkRect]
+  - name: MET5slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET5slotOkShort]
+  - name: T4M2NoSlot
+    op: difference
+    mode: lazy
+    layers: [T4M2, T4M2slot]
+  - name: T4M2All
+    op: union
+    mode: lazy
+    layers: [T4M2NoSlot, T4M2dm]
+  - name: T4M2Wide2
+    op: open
+    mode: lazy
+    radius: 1.0
+    layers: [T4M2All]
+  - name: T4M2NoSlotNoPad
+    op: difference
+    mode: lazy
+    layers: [T4M2NoSlot, DEUPAD]
+  - name: T4M2Over20
+    op: open
+    mode: lazy
+    radius: 10.0
+    layers: [T4M2NoSlotNoPad]
+  - name: T4M2Over20NoCB
+    op: not_interacting
+    mode: lazy
+    layers: [T4M2Over20, CB]
+  - name: T4M2Over20Chk
+    op: difference
+    mode: lazy
+    layers: [T4M2Over20NoCB, INDALL]
+  - name: T4M2slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [T4M2slot]
+  - name: T4M2slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [T4M2slotOkRect]
+  - name: T4M2slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [T4M2slotOkShort]
+  - name: VIA1SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA1Conn]
+  - name: VIA1SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA1SqRect]
+  - name: VIA1Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA1SqShort]
+  - name: VIA1NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA1Conn, VIA1Sq]
+  - name: VIA1NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA1NotSq, GRBLKorSRING]
+  - name: VIA1barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA1bar, SRAMorFUSE]
+  - name: VIA1Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA1Conn]
+  - name: VIA1Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA1Close]
+  - name: VIA1InArray
+    op: inside
+    mode: lazy
+    layers: [VIA1Conn, VIA1Array]
+  - name: VIA1BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA1Conn]
+  - name: VIA1BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotX04, MET1NoSlot]
+  - name: VIA1BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotX04, VIA1BotX04Out]
+  - name: VIA1BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA1Conn]
+  - name: VIA1BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotY04, MET1NoSlot]
+  - name: VIA1BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotY04, VIA1BotY04Out]
+  - name: VIA1BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA1Conn, VIA1BotX04Bad]
+  - name: VIA1BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotShortX04, VIA1BotY04Bad]
+  - name: VIA1BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA1Conn]
+  - name: VIA1BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotX03, MET1NoSlot]
+  - name: VIA1BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotX03, VIA1BotX03Out]
+  - name: VIA1BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA1Conn]
+  - name: VIA1BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotY03, MET1NoSlot]
+  - name: VIA1BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotY03, VIA1BotY03Out]
+  - name: VIA1Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA1BotX03Bad, VIA1BotY03Bad]
+  - name: VIA1BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotShort04, VIA1Bot03Bad]
+  - name: VIA1BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA1BotEncBad, SRAMorSRING]
+  - name: VIA1TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA1Conn]
+  - name: VIA1TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA1TopX02, MET2NoSlot]
+  - name: VIA1TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1TopX02, VIA1TopX02Out]
+  - name: VIA1TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA1Conn]
+  - name: VIA1TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA1TopY02, MET2NoSlot]
+  - name: VIA1TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1TopY02, VIA1TopY02Out]
+  - name: VIA1TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA1Conn, VIA1TopX02Bad]
+  - name: VIA1TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA1TopShortX02, VIA1TopY02Bad]
+  - name: VIA1NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA1Conn, SRINGBLK]
+  - name: VIA2SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA2Conn]
+  - name: VIA2SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA2SqRect]
+  - name: VIA2Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA2SqShort]
+  - name: VIA2NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA2Conn, VIA2Sq]
+  - name: VIA2NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA2NotSq, GRBLKorSRING]
+  - name: VIA2barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA2bar, SRAMorFUSE]
+  - name: VIA2Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA2Conn]
+  - name: VIA2Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA2Close]
+  - name: VIA2InArray
+    op: inside
+    mode: lazy
+    layers: [VIA2Conn, VIA2Array]
+  - name: VIA2BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA2Conn]
+  - name: VIA2BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotX04, MET2NoSlot]
+  - name: VIA2BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotX04, VIA2BotX04Out]
+  - name: VIA2BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA2Conn]
+  - name: VIA2BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotY04, MET2NoSlot]
+  - name: VIA2BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotY04, VIA2BotY04Out]
+  - name: VIA2BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA2Conn, VIA2BotX04Bad]
+  - name: VIA2BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotShortX04, VIA2BotY04Bad]
+  - name: VIA2BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA2Conn]
+  - name: VIA2BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotX03, MET2NoSlot]
+  - name: VIA2BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotX03, VIA2BotX03Out]
+  - name: VIA2BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA2Conn]
+  - name: VIA2BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotY03, MET2NoSlot]
+  - name: VIA2BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotY03, VIA2BotY03Out]
+  - name: VIA2Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA2BotX03Bad, VIA2BotY03Bad]
+  - name: VIA2BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotShort04, VIA2Bot03Bad]
+  - name: VIA2BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA2BotEncBad, SRAMorSRING]
+  - name: VIA2TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA2Conn]
+  - name: VIA2TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA2TopX02, MET3NoSlot]
+  - name: VIA2TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2TopX02, VIA2TopX02Out]
+  - name: VIA2TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA2Conn]
+  - name: VIA2TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA2TopY02, MET3NoSlot]
+  - name: VIA2TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2TopY02, VIA2TopY02Out]
+  - name: VIA2TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA2Conn, VIA2TopX02Bad]
+  - name: VIA2TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA2TopShortX02, VIA2TopY02Bad]
+  - name: VIA2NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA2Conn, SRINGBLK]
+  - name: VIA3SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA3Conn]
+  - name: VIA3SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA3SqRect]
+  - name: VIA3Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA3SqShort]
+  - name: VIA3NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA3Conn, VIA3Sq]
+  - name: VIA3NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA3NotSq, GRBLKorSRING]
+  - name: VIA3barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA3bar, SRAMorFUSE]
+  - name: VIA3Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA3Conn]
+  - name: VIA3Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA3Close]
+  - name: VIA3InArray
+    op: inside
+    mode: lazy
+    layers: [VIA3Conn, VIA3Array]
+  - name: VIA3BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA3Conn]
+  - name: VIA3BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotX04, MET3NoSlot]
+  - name: VIA3BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotX04, VIA3BotX04Out]
+  - name: VIA3BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA3Conn]
+  - name: VIA3BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotY04, MET3NoSlot]
+  - name: VIA3BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotY04, VIA3BotY04Out]
+  - name: VIA3BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA3Conn, VIA3BotX04Bad]
+  - name: VIA3BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotShortX04, VIA3BotY04Bad]
+  - name: VIA3BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA3Conn]
+  - name: VIA3BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotX03, MET3NoSlot]
+  - name: VIA3BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotX03, VIA3BotX03Out]
+  - name: VIA3BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA3Conn]
+  - name: VIA3BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotY03, MET3NoSlot]
+  - name: VIA3BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotY03, VIA3BotY03Out]
+  - name: VIA3Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA3BotX03Bad, VIA3BotY03Bad]
+  - name: VIA3BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotShort04, VIA3Bot03Bad]
+  - name: VIA3BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA3BotEncBad, SRAMorSRING]
+  - name: VIA3TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA3Conn]
+  - name: VIA3TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA3TopX02, MET4NoSlot]
+  - name: VIA3TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3TopX02, VIA3TopX02Out]
+  - name: VIA3TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA3Conn]
+  - name: VIA3TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA3TopY02, MET4NoSlot]
+  - name: VIA3TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3TopY02, VIA3TopY02Out]
+  - name: VIA3TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA3Conn, VIA3TopX02Bad]
+  - name: VIA3TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA3TopShortX02, VIA3TopY02Bad]
+  - name: VIA3NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA3Conn, SRINGBLK]
+  - name: VIA4SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA4Conn]
+  - name: VIA4SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA4SqRect]
+  - name: VIA4Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA4SqShort]
+  - name: VIA4NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA4Conn, VIA4Sq]
+  - name: VIA4NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA4NotSq, GRBLKorSRING]
+  - name: VIA4barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA4bar, SRAMorFUSE]
+  - name: VIA4Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA4Conn]
+  - name: VIA4Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA4Close]
+  - name: VIA4InArray
+    op: inside
+    mode: lazy
+    layers: [VIA4Conn, VIA4Array]
+  - name: VIA4BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA4Conn]
+  - name: VIA4BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotX04, MET4NoSlot]
+  - name: VIA4BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotX04, VIA4BotX04Out]
+  - name: VIA4BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA4Conn]
+  - name: VIA4BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotY04, MET4NoSlot]
+  - name: VIA4BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotY04, VIA4BotY04Out]
+  - name: VIA4BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA4Conn, VIA4BotX04Bad]
+  - name: VIA4BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotShortX04, VIA4BotY04Bad]
+  - name: VIA4BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA4Conn]
+  - name: VIA4BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotX03, MET4NoSlot]
+  - name: VIA4BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotX03, VIA4BotX03Out]
+  - name: VIA4BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA4Conn]
+  - name: VIA4BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotY03, MET4NoSlot]
+  - name: VIA4BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotY03, VIA4BotY03Out]
+  - name: VIA4Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA4BotX03Bad, VIA4BotY03Bad]
+  - name: VIA4BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotShort04, VIA4Bot03Bad]
+  - name: VIA4BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA4BotEncBad, SRAMorSRING]
+  - name: VIA4TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA4Conn]
+  - name: VIA4TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA4TopX02, MET5NoSlot]
+  - name: VIA4TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4TopX02, VIA4TopX02Out]
+  - name: VIA4TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA4Conn]
+  - name: VIA4TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA4TopY02, MET5NoSlot]
+  - name: VIA4TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4TopY02, VIA4TopY02Out]
+  - name: VIA4TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA4Conn, VIA4TopX02Bad]
+  - name: VIA4TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA4TopShortX02, VIA4TopY02Bad]
+  - name: VIA4NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA4Conn, SRINGBLK]
+  - name: T4V2All
+    op: union
+    mode: lazy
+    layers: [T4V2, T4V2bar]
+  - name: T4V2SqRect
+    op: rectangle
+    mode: lazy
+    layers: [T4V2All]
+  - name: T4V2SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2SqRect]
+  - name: T4V2Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2SqShort]
+  - name: T4V2NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [T4V2All, T4V2Sq]
+  - name: T4V2NotSqOut
+    op: difference
+    mode: lazy
+    layers: [T4V2NotSq, GRBLKorSRING]
+  - name: T4V2InGrid
+    op: intersection
+    mode: lazy
+    layers: [T4V2All, GRBLKorSRING]
+  - name: T4V2InGridSqRect
+    op: rectangle
+    mode: lazy
+    layers: [T4V2InGrid]
+  - name: T4V2InGridSqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2InGridSqRect]
+  - name: T4V2InGridSq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2InGridSqShort]
+  - name: T4V2InGridNotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [T4V2InGridSqRect, T4V2InGridSq]
+  - name: T4V2InGridNotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [T4V2InGridNotSq, SRINGBLK]
+  - name: T4V2Close
+    op: close
+    mode: lazy
+    radius: 0.28
+    layers: [T4V2All]
+  - name: T4V2Array
+    op: open
+    mode: lazy
+    radius: 0.855
+    layers: [T4V2Close]
+  - name: T4V2InArray
+    op: inside
+    mode: lazy
+    layers: [T4V2All, T4V2Array]
+  - name: T4V2BotX05
+    op: grow_x
+    mode: lazy
+    radius: 0.05
+    layers: [T4V2All]
+  - name: T4V2BotX05Out
+    op: difference
+    mode: lazy
+    layers: [T4V2BotX05, MET5NoSlot]
+  - name: T4V2BotX05Bad
+    op: overlapping
+    mode: lazy
+    layers: [T4V2BotX05, T4V2BotX05Out]
+  - name: T4V2BotY05
+    op: grow_y
+    mode: lazy
+    radius: 0.05
+    layers: [T4V2All]
+  - name: T4V2BotY05Out
+    op: difference
+    mode: lazy
+    layers: [T4V2BotY05, MET5NoSlot]
+  - name: T4V2BotY05Bad
+    op: overlapping
+    mode: lazy
+    layers: [T4V2BotY05, T4V2BotY05Out]
+  - name: T4V2BotShortX05
+    op: overlapping
+    mode: lazy
+    layers: [T4V2All, T4V2BotX05Bad]
+  - name: T4V2BotShort05
+    op: overlapping
+    mode: lazy
+    layers: [T4V2BotShortX05, T4V2BotY05Bad]
+  - name: T4V2NoSR
+    op: not_inside
+    mode: lazy
+    layers: [T4V2All, SRINGBLK]
+  - name: MET1slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET1slot, MET1slotOk]
+  - name: MET2slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET2slot, MET2slotOk]
+  - name: MET3slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET3slot, MET3slotOk]
+  - name: MET4slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET4slot, MET4slotOk]
+  - name: MET5slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET5slot, MET5slotOk]
+  - name: T4M2slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M2slot, T4M2slotOk]
   # --- review E: derived layers ---
   # --- review F: derived layers ---
   # The connect graph's conductors and vias as the runsets read them: bars join the

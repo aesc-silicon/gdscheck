@@ -5,57 +5,55 @@
 rules:
   - id: MET2-W.1
     check: min_width
-    layers: [MET2]
+    layers: [MET2NoSlot]
     value: 0.1
   - id: MET2-W.1
     check: max_width
-    layers: [MET2]
+    layers: [MET2NoSlot]
     value: 12
     params:
       span: narrowest
   - id: MET2-W.2
     check: min_width
-    layers: [MET2]
+    layers: [MET2NoSlot]
     value: 0.19
     params:
       angle: bent
   - id: MET2-S.1
     check: min_space
-    layers: [MET2NoInd]
+    layers: [MET2NoSlotNoSRAM]
     value: 0.1
   - id: MET2-S.1
     check: min_notch
-    layers: [MET2NoInd]
+    layers: [MET2NoSlotNoSRAM]
     value: 0.1
   - id: MET2-S.2
     check: min_space
-    layers: [MET2]
+    layers: [MET2Wide0p42, MET2All]
     value: 0.15
     params:
-      width: 0.42
-      length: 0.42
+      length: 0.419
+      pairs: any
   - id: MET2-S.3
     check: min_space
-    layers: [MET2]
+    layers: [MET2Wide1p5, MET2All]
     value: 0.5
     params:
-      width: 1.5
-      length: 1.5
+      length: 1.499
+      pairs: any
   - id: MET2-S.4
     check: min_space
-    layers: [MET2]
+    layers: [MET2NoSlot]
     value: 0.19
     params:
       angle: bent
   - id: MET2-A.1
-    check: min_area
-    layers: [MET2]
-    value: 0.052
-    params:
-      touching: separate
+    check: forbidden
+    layers: [MET2SmallOutSRAM]
+    value: 0.0
   - id: MET2-A.2
     check: min_area
-    layers: [MET2]
+    layers: [MET2NoSlot]
     value: 0.18
     params:
       scope: hole
@@ -65,45 +63,44 @@ rules:
     value: 0.0
   - id: MET2dm-S.1
     check: min_space
-    layers: [MET2dm2x2, MET2dm]
+    layers: [MET2dm2x2]
     value: 0.8
   - id: MET2dm-S.2
     check: min_space
-    layers: [MET2dm2x2, MET2]
+    layers: [MET2dm2x2, MET2NoSlot]
     value: 10
     params:
       abutting: report
   - id: MET2dm-S.3
     check: min_space
-    layers: [MET2dm1x1, MET2dm]
+    layers: [MET2dm1x1]
     value: 0.3
   - id: MET2dm-S.4
     check: min_space
-    layers: [MET2dm1x1, MET2]
+    layers: [MET2dm1x1, MET2NoSlot]
     value: 3
     params:
       abutting: report
   - id: MET2dm-S.5
     check: min_space
-    layers: [MET2dmBar, MET2dm]
+    layers: [MET2dmBar]
     value: 0.25
   - id: MET2dm-S.6
     check: min_space
-    layers: [MET2dmBar, MET2]
+    layers: [MET2dmBar, MET2NoSlot]
     value: 0.3
     params:
       abutting: report
   - id: MET2dm-S.7
     check: min_space
-    layers: [MET2dm, MET2]
+    layers: [MET2dm, MET2All]
     value: 0.6
     params:
-      width: 1.5
-      length: 1.5
-      abutting: report
+      width: 1.499
+      length: 1.499
   - id: MET2dm-S.8
     check: min_space
-    layers: [MET2dm, MET2]
+    layers: [MET2dm, MET2NoSlot]
     value: 0.4
     params:
       angle: bent
@@ -114,11 +111,12 @@ rules:
     params:
       abutting: report
   - id: MET2dm-S.9
-    check: forbidden
-    layers: [MET2dm, FUSEALL]
-    value: 0.0
+    check: min_enclosure
+    layers: [FUSEALL, MET2dm]
+    value: 3
     params:
-      op: overlap
+      interacting_only: 1
+      metric: euclidian
   - id: MET2dm-S.10
     check: min_space
     layers: [MET2dm, BMIM]
@@ -126,11 +124,12 @@ rules:
     params:
       abutting: report
   - id: MET2dm-S.10
-    check: forbidden
-    layers: [MET2dm, BMIM]
-    value: 0.0
+    check: min_enclosure
+    layers: [BMIM, MET2dm]
+    value: 2
     params:
-      op: overlap
+      interacting_only: 1
+      metric: euclidian
   - id: MET2dm-S.11
     check: min_space
     layers: [MET2dm, LOGO]
@@ -138,11 +137,12 @@ rules:
     params:
       abutting: report
   - id: MET2dm-S.11
-    check: forbidden
-    layers: [MET2dm, LOGO]
-    value: 0.0
+    check: min_enclosure
+    layers: [LOGO, MET2dm]
+    value: 0.1
     params:
-      op: overlap
+      interacting_only: 1
+      metric: euclidian
   - id: MET2dm-S.12
     check: min_space
     layers: [MET2dm, INDALL]
@@ -150,35 +150,18 @@ rules:
     params:
       abutting: report
   - id: MET2dm-S.12
-    check: forbidden
-    layers: [MET2dm, INDALL]
-    value: 0.0
+    check: min_enclosure
+    layers: [INDALL, MET2dm]
+    value: 3
     params:
-      op: overlap
-  - id: MET2dm-S.14
+      interacting_only: 1
+      metric: euclidian
+  - id: MET2dm-S.13
     check: min_space
-    layers: [MET2dm, MET2dmb]
-    value: 2
+    layers: [MET2dm, CHIPBLK]
+    value: 2.5
     params:
       abutting: report
-  - id: MET2dm-S.14
-    check: forbidden
-    layers: [MET2dm, MET2dmb]
-    value: 0.0
-    params:
-      op: overlap
-  - id: MET2dm-S.15
-    check: min_space
-    layers: [MET2dm, DMYBLK]
-    value: 2
-    params:
-      abutting: report
-  - id: MET2dm-S.15
-    check: forbidden
-    layers: [MET2dm, DMYBLK]
-    value: 0.0
-    params:
-      op: overlap
   - id: MET2dm-S.13
     check: min_enclosure
     layers: [CHIPBLK, MET2dm]
@@ -186,3 +169,15 @@ rules:
     params:
       interacting_only: 1
       metric: euclidian
+  - id: MET2dm-S.14
+    check: min_space
+    layers: [MET2dm, MET2dmb]
+    value: 2
+    params:
+      abutting: report
+  - id: MET2dm-S.15
+    check: min_space
+    layers: [MET2dm, DMYBLK]
+    value: 2
+    params:
+      abutting: report

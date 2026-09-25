@@ -4,9 +4,13 @@
 
 rules:
   - id: T4V2-W.1
-    check: exact_width
-    layers: [T4V2Sq]
-    value: 0.36
+    check: forbidden
+    layers: [T4V2NotSqOut]
+    value: 0.0
+  - id: T4V2-W.1
+    check: forbidden
+    layers: [T4V2InGridNotSqChk]
+    value: 0.0
   - id: T4V2-W.2
     check: min_width
     layers: [T4V2bar]
@@ -19,42 +23,55 @@ rules:
       span: narrowest
   - id: T4V2-S.1
     check: min_space
-    layers: [T4V2]
+    layers: [T4V2All]
+    value: 0.34
+  - id: T4V2-S.1
+    check: min_notch
+    layers: [T4V2All]
     value: 0.34
   - id: T4V2-S.2
     check: min_space
-    layers: [T4V2]
+    layers: [T4V2InArray]
     value: 0.5
-    params:
-      rows: 2
-      cols: 2
-      axes: 2
-      pitch: 0.56
   - id: T4V2-En.1
     check: forbidden
-    layers: [T4V2, MET5]
+    layers: [T4V2All, MET5NoSlot]
     value: 0.0
     params:
       op: uncovered
   - id: T4V2-En.2
     check: min_enclosure
-    layers: [MET5, T4V2]
+    layers: [MET5NoSlot, T4V2All]
     value: 0.01
     params:
       metric: euclidian
+  - id: T4V2-En.3
+    check: forbidden
+    layers: [T4V2BotShort05]
+    value: 0.0
   - id: T4V2-En.5
     check: forbidden
-    layers: [T4V2, T4M2]
+    layers: [T4V2All, T4M2NoSlot]
     value: 0.0
     params:
       op: uncovered
   - id: T4V2-En.6
     check: min_enclosure
-    layers: [T4M2, T4V2]
+    layers: [T4M2NoSlot, T4V2All]
     value: 0.02
     params:
       metric: euclidian
   - id: T4V2-R.3
     check: no_angle
-    layers: [T4V2]
+    layers: [T4V2NoSR]
     value: 0.0
+    params:
+      angle: 45
+      tolerance: 0.000001
+  - id: T4V2-R.3
+    check: no_angle
+    layers: [T4V2NoSR]
+    value: 0.0
+    params:
+      angle: 135
+      tolerance: 0.000001

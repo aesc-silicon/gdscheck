@@ -5,37 +5,36 @@
 rules:
   - id: T4M2-W.1
     check: min_width
-    layers: [T4M2]
+    layers: [T4M2NoSlot]
     value: 0.4
   - id: T4M2-W.1
-    check: max_width
-    layers: [T4M2NoPadInd]
-    value: 20
-    params:
-      span: narrowest
+    check: forbidden
+    layers: [T4M2Over20Chk]
+    value: 0.0
   - id: T4M2-S.1
     check: min_space
-    layers: [T4M2NoInd]
+    layers: [T4M2NoSlot]
     value: 0.4
   - id: T4M2-S.1
     check: min_notch
-    layers: [T4M2NoInd]
+    layers: [T4M2NoSlot]
     value: 0.4
   - id: T4M2-S.2
     check: min_space
-    layers: [T4M2]
+    layers: [T4M2Wide2, T4M2All]
     value: 0.5
     params:
       length: 1.999
+      pairs: any
   - id: T4M2-A.1
     check: min_area
-    layers: [T4M2]
+    layers: [T4M2NoSlot]
     value: 0.4
     params:
       touching: separate
   - id: T4M2-A.2
     check: min_area
-    layers: [T4M2]
+    layers: [T4M2NoSlot]
     value: 0.6
     params:
       scope: hole
@@ -45,42 +44,59 @@ rules:
     value: 0.0
   - id: T4M2dm-S.1
     check: min_space
-    layers: [T4M2dm2x2, T4M2dm]
+    layers: [T4M2dm2x2]
     value: 0.8
+    layer_params:
+      gap_outside: INDALL
   - id: T4M2dm-S.2
     check: min_space
-    layers: [T4M2dm2x2, T4M2]
+    layers: [T4M2dm2x2, T4M2NoSlot]
     value: 10
     params:
       abutting: report
+    layer_params:
+      gap_outside: INDALL
   - id: T4M2dm-S.3
     check: min_space
-    layers: [T4M2dm1x1, T4M2dm]
+    layers: [T4M2dm1x1]
     value: 0.4
+    layer_params:
+      gap_outside: INDALL
   - id: T4M2dm-S.4
     check: min_space
-    layers: [T4M2dm1x1, T4M2]
+    layers: [T4M2dm1x1, T4M2NoSlot]
     value: 0.6
     params:
       abutting: report
+    layer_params:
+      gap_outside: INDALL
   - id: T4M2dm-S.5
     check: min_space
-    layers: [T4M2dmBar, T4M2dm]
+    layers: [T4M2dmBar]
     value: 0.4
+    layer_params:
+      gap_outside: INDALL
   - id: T4M2dm-S.6
     check: min_space
-    layers: [T4M2dmBar, T4M2]
+    layers: [T4M2dmBar, T4M2NoSlot]
     value: 0.6
     params:
       abutting: report
+    layer_params:
+      gap_outside: INDALL
   - id: T4M2dm-S.7
     check: min_space
-    layers: [T4M2dm, T4M2]
+    layers: [T4M2dm, T4M2All]
     value: 0.6
     params:
-      width: 1.5
-      length: 1.5
-      abutting: report
+      width: 1.499
+      length: 1.499
+  - id: T4M2dm-S.8
+    check: min_space
+    layers: [T4M2dm, T4M2NoSlot]
+    value: 0.4
+    params:
+      angle: bent
   - id: T4M2dm-S.9
     check: min_space
     layers: [T4M2dm, FUSEALL]
@@ -88,11 +104,12 @@ rules:
     params:
       abutting: report
   - id: T4M2dm-S.9
-    check: forbidden
-    layers: [T4M2dm, FUSEALL]
-    value: 0.0
+    check: min_enclosure
+    layers: [FUSEALL, T4M2dm]
+    value: 3
     params:
-      op: overlap
+      interacting_only: 1
+      metric: euclidian
   - id: T4M2dm-S.10
     check: min_space
     layers: [T4M2dm, BMIM]
@@ -100,11 +117,12 @@ rules:
     params:
       abutting: report
   - id: T4M2dm-S.10
-    check: forbidden
-    layers: [T4M2dm, BMIM]
-    value: 0.0
+    check: min_enclosure
+    layers: [BMIM, T4M2dm]
+    value: 2
     params:
-      op: overlap
+      interacting_only: 1
+      metric: euclidian
   - id: T4M2dm-S.11
     check: min_space
     layers: [T4M2dm, LOGO]
@@ -112,11 +130,12 @@ rules:
     params:
       abutting: report
   - id: T4M2dm-S.11
-    check: forbidden
-    layers: [T4M2dm, LOGO]
-    value: 0.0
+    check: min_enclosure
+    layers: [LOGO, T4M2dm]
+    value: 0.1
     params:
-      op: overlap
+      interacting_only: 1
+      metric: euclidian
   - id: T4M2dm-S.12
     check: min_space
     layers: [T4M2dm, INDALL]
@@ -124,35 +143,18 @@ rules:
     params:
       abutting: report
   - id: T4M2dm-S.12
-    check: forbidden
-    layers: [T4M2dm, INDALL]
-    value: 0.0
+    check: min_enclosure
+    layers: [INDALL, T4M2dm]
+    value: 3
     params:
-      op: overlap
-  - id: T4M2dm-S.14
+      interacting_only: 1
+      metric: euclidian
+  - id: T4M2dm-S.13
     check: min_space
-    layers: [T4M2dm, T4M2dmb]
-    value: 2
+    layers: [T4M2dm, CHIPBLK]
+    value: 2.5
     params:
       abutting: report
-  - id: T4M2dm-S.14
-    check: forbidden
-    layers: [T4M2dm, T4M2dmb]
-    value: 0.0
-    params:
-      op: overlap
-  - id: T4M2dm-S.15
-    check: min_space
-    layers: [T4M2dm, DMYBLK]
-    value: 2
-    params:
-      abutting: report
-  - id: T4M2dm-S.15
-    check: forbidden
-    layers: [T4M2dm, DMYBLK]
-    value: 0.0
-    params:
-      op: overlap
   - id: T4M2dm-S.13
     check: min_enclosure
     layers: [CHIPBLK, T4M2dm]
@@ -160,3 +162,15 @@ rules:
     params:
       interacting_only: 1
       metric: euclidian
+  - id: T4M2dm-S.14
+    check: min_space
+    layers: [T4M2dm, T4M2dmb]
+    value: 2
+    params:
+      abutting: report
+  - id: T4M2dm-S.15
+    check: min_space
+    layers: [T4M2dm, DMYBLK]
+    value: 2
+    params:
+      abutting: report

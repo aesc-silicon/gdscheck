@@ -4,42 +4,75 @@
 
 rules:
   - id: VIA1-W.1
-    check: exact_width
-    layers: [VIA1Sq]
-    value: 0.09
+    check: forbidden
+    layers: [VIA1NotSqChk]
+    value: 0.0
   - id: VIA1-W.2
     check: min_width
-    layers: [VIA1bar]
+    layers: [VIA1barInSRAM]
     value: 0.09
   - id: VIA1-W.2
     check: max_width
-    layers: [VIA1bar]
+    layers: [VIA1barInSRAM]
     value: 0.09
     params:
       span: narrowest
   - id: VIA1-S.1
     check: min_space
-    layers: [VIA1]
+    layers: [VIA1Conn]
     value: 0.11
+  - id: VIA1-S.1
+    check: min_notch
+    layers: [VIA1Conn]
+    value: 0.11
+  - id: VIA1-S.2
+    check: min_space
+    layers: [VIA1InArray]
+    value: 0.13
+  - id: VIA1-S.3
+    check: min_space
+    layers: [VIA1Conn]
+    value: 0.13
+    params:
+      length: 0
+      net: different
   - id: VIA1-En.1
     check: forbidden
-    layers: [VIA1, MET1]
+    layers: [VIA1Conn, MET1NoSlot]
     value: 0.0
     params:
       op: uncovered
+  - id: VIA1-En.2b
+    check: forbidden
+    layers: [VIA1BotEncChk]
+    value: 0.0
   - id: VIA1-En.3
     check: forbidden
-    layers: [VIA1, MET2]
+    layers: [VIA1Conn, MET2NoSlot]
     value: 0.0
     params:
       op: uncovered
   - id: VIA1-En.5a
     check: min_enclosure
-    layers: [MET2, VIA1]
+    layers: [MET2NoSlot, VIA1Conn]
     value: 0.005
     params:
       metric: euclidian
+  - id: VIA1-En.5b
+    check: forbidden
+    layers: [VIA1TopShort02]
+    value: 0.0
   - id: VIA1-R.5
     check: no_angle
-    layers: [VIA1]
+    layers: [VIA1NoSR]
     value: 0.0
+    params:
+      angle: 45
+      tolerance: 0.000001
+  - id: VIA1-R.5
+    check: no_angle
+    layers: [VIA1NoSR]
+    value: 0.0
+    params:
+      angle: 135
+      tolerance: 0.000001

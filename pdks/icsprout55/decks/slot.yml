@@ -4,88 +4,106 @@
 
 rules:
   - id: SL-W.1
-    check: min_width
-    layers: [MET1slot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [MET1slot]
-    value: 4.5
+    check: forbidden
+    layers: [MET1slotBad]
+    value: 0.0
   - id: SL-S.1
     check: min_space
     layers: [MET1slot]
     value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET1slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET1slot, CB]
+    value: 0.0
+    params:
+      op: overlap
   - id: SL-W.1
-    check: min_width
+    check: forbidden
+    layers: [MET2slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
     layers: [MET2slot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [MET2slot]
-    value: 4.5
+    value: 3
   - id: SL-S.1
-    check: min_space
+    check: min_notch
     layers: [MET2slot]
     value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET2slot, CB]
+    value: 0.0
+    params:
+      op: overlap
   - id: SL-W.1
-    check: min_width
-    layers: [MET3slot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [MET3slot]
-    value: 4.5
+    check: forbidden
+    layers: [MET3slotBad]
+    value: 0.0
   - id: SL-S.1
     check: min_space
     layers: [MET3slot]
     value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET3slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET3slot, CB]
+    value: 0.0
+    params:
+      op: overlap
   - id: SL-W.1
-    check: min_width
-    layers: [MET4slot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [MET4slot]
-    value: 4.5
+    check: forbidden
+    layers: [MET4slotBad]
+    value: 0.0
   - id: SL-S.1
     check: min_space
     layers: [MET4slot]
     value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET4slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET4slot, CB]
+    value: 0.0
+    params:
+      op: overlap
   - id: SL-W.1
-    check: min_width
-    layers: [MET5slot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [MET5slot]
-    value: 4.5
+    check: forbidden
+    layers: [MET5slotBad]
+    value: 0.0
   - id: SL-S.1
     check: min_space
     layers: [MET5slot]
     value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET5slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET5slot, CB]
+    value: 0.0
+    params:
+      op: overlap
   - id: SL-W.1
-    check: min_width
-    layers: [T4M2slot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [T4M2slot]
-    value: 4.5
+    check: forbidden
+    layers: [T4M2slotBad]
+    value: 0.0
   - id: SL-S.1
     check: min_space
     layers: [T4M2slot]
     value: 3
-  - id: SL-W.1
-    check: min_width
-    layers: [ALPADslot]
-    value: 2
-  - id: SL-L.1
-    check: min_length
-    layers: [ALPADslot]
-    value: 4.5
   - id: SL-S.1
-    check: min_space
-    layers: [ALPADslot]
+    check: min_notch
+    layers: [T4M2slot]
     value: 3
   - id: SL-R.1
     check: forbidden
