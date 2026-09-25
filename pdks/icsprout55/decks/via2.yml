@@ -31,7 +31,7 @@ rules:
     value: 0.13
   - id: VIA2-S.3
     check: min_space
-    layers: [VIA2Conn]
+    layers: [VIA2Net]
     value: 0.13
     params:
       length: 0

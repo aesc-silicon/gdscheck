@@ -209,6 +209,14 @@ connectivity:
     layers: [NW1, DNW]
   - connector: CTConn
     layers: [CTNoSRAM]
+  - connector: VIA1Conn
+    layers: [VIA1Net]
+  - connector: VIA2Conn
+    layers: [VIA2Net]
+  - connector: VIA3Conn
+    layers: [VIA3Net]
+  - connector: VIA4Conn
+    layers: [VIA4Net]
 
 virtual_layers:
   - name: MET1dmRect
@@ -1273,6 +1281,22 @@ virtual_layers:
   # --- review B: derived layers ---
   # --- review C: derived layers ---
   # --- review D: derived layers ---
+  - name: VIA1Net
+    op: union
+    mode: lazy
+    layers: [VIA1, VIA1bar]
+  - name: VIA2Net
+    op: union
+    mode: lazy
+    layers: [VIA2, VIA2bar]
+  - name: VIA3Net
+    op: union
+    mode: lazy
+    layers: [VIA3, VIA3bar]
+  - name: VIA4Net
+    op: union
+    mode: lazy
+    layers: [VIA4, VIA4bar]
   - name: GRBLKorSRING
     op: union
     mode: lazy
