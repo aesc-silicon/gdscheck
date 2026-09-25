@@ -1,0 +1,785 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Drawn (65nm) values; the fab shrinks the GDS by 0.9 at mask making.
+name: ICsprout 55nm
+version: "0.1"
+
+decks: []
+
+layers:
+  - name: ACT
+    gds_layer: 2
+    gds_datatype: 1
+  - name: ACTdm
+    gds_layer: 2
+    gds_datatype: 2
+  - name: ACTdmb
+    gds_layer: 2
+    gds_datatype: 3
+  - name: ACTres
+    gds_layer: 2
+    gds_datatype: 4
+  - name: ACTopcblk
+    gds_layer: 2
+    gds_datatype: 5
+  - name: DNW
+    gds_layer: 7
+    gds_datatype: 1
+  - name: NW1
+    gds_layer: 9
+    gds_datatype: 1
+  - name: NW1res
+    gds_layer: 9
+    gds_datatype: 4
+  - name: PSUB
+    gds_layer: 261
+    gds_datatype: 12
+  - name: ULLD
+    gds_layer: 152
+    gds_datatype: 12
+  - name: NVT1
+    gds_layer: 17
+    gds_datatype: 1
+  - name: PVT1
+    gds_layer: 18
+    gds_datatype: 1
+  - name: NVT3
+    gds_layer: 21
+    gds_datatype: 1
+  - name: PVT3
+    gds_layer: 22
+    gds_datatype: 1
+  - name: DGOX
+    gds_layer: 27
+    gds_datatype: 1
+  - name: TGOX
+    gds_layer: 28
+    gds_datatype: 1
+  - name: UD
+    gds_layer: 153
+    gds_datatype: 12
+  - name: OD
+    gds_layer: 154
+    gds_datatype: 12
+  - name: POLY
+    gds_layer: 41
+    gds_datatype: 1
+  - name: POLYdm
+    gds_layer: 41
+    gds_datatype: 2
+  - name: POLYdmb
+    gds_layer: 41
+    gds_datatype: 3
+  - name: POLYres
+    gds_layer: 41
+    gds_datatype: 4
+  - name: POLYopcblk
+    gds_layer: 41
+    gds_datatype: 5
+  - name: POLYtxt
+    gds_layer: 41
+    gds_datatype: 6
+  - name: POLYbar
+    gds_layer: 41
+    gds_datatype: 7
+  - name: RES3TPOLY
+    gds_layer: 329
+    gds_datatype: 12
+  - name: NPR
+    gds_layer: 384
+    gds_datatype: 12
+  - name: HRP
+    gds_layer: 54
+    gds_datatype: 1
+  - name: HRPBLK
+    gds_layer: 385
+    gds_datatype: 12
+  - name: NP
+    gds_layer: 52
+    gds_datatype: 1
+  - name: PP
+    gds_layer: 53
+    gds_datatype: 1
+  - name: ESD
+    gds_layer: 55
+    gds_datatype: 1
+  - name: SAB
+    gds_layer: 71
+    gds_datatype: 1
+  - name: CT
+    gds_layer: 72
+    gds_datatype: 1
+  - name: CTopcblk
+    gds_layer: 72
+    gds_datatype: 5
+  - name: CTbar
+    gds_layer: 72
+    gds_datatype: 7
+  - name: MET1
+    gds_layer: 81
+    gds_datatype: 1
+  - name: MET1dm
+    gds_layer: 81
+    gds_datatype: 2
+  - name: MET1dmb
+    gds_layer: 81
+    gds_datatype: 3
+  - name: MET1res
+    gds_layer: 81
+    gds_datatype: 4
+  - name: MET1opcblk
+    gds_layer: 81
+    gds_datatype: 5
+  - name: MET1txt
+    gds_layer: 81
+    gds_datatype: 6
+  - name: MET1slot
+    gds_layer: 81
+    gds_datatype: 8
+  - name: MET1slotblk
+    gds_layer: 81
+    gds_datatype: 9
+  - name: MET1mom
+    gds_layer: 81
+    gds_datatype: 10
+  - name: MET2
+    gds_layer: 82
+    gds_datatype: 1
+  - name: MET2dm
+    gds_layer: 82
+    gds_datatype: 2
+  - name: MET2dmb
+    gds_layer: 82
+    gds_datatype: 3
+  - name: MET2res
+    gds_layer: 82
+    gds_datatype: 4
+  - name: MET2opcblk
+    gds_layer: 82
+    gds_datatype: 5
+  - name: MET2txt
+    gds_layer: 82
+    gds_datatype: 6
+  - name: MET2slot
+    gds_layer: 82
+    gds_datatype: 8
+  - name: MET2slotblk
+    gds_layer: 82
+    gds_datatype: 9
+  - name: MET2mom
+    gds_layer: 82
+    gds_datatype: 10
+  - name: MET3
+    gds_layer: 83
+    gds_datatype: 1
+  - name: MET3dm
+    gds_layer: 83
+    gds_datatype: 2
+  - name: MET3dmb
+    gds_layer: 83
+    gds_datatype: 3
+  - name: MET3res
+    gds_layer: 83
+    gds_datatype: 4
+  - name: MET3opcblk
+    gds_layer: 83
+    gds_datatype: 5
+  - name: MET3txt
+    gds_layer: 83
+    gds_datatype: 6
+  - name: MET3slot
+    gds_layer: 83
+    gds_datatype: 8
+  - name: MET3slotblk
+    gds_layer: 83
+    gds_datatype: 9
+  - name: MET3mom
+    gds_layer: 83
+    gds_datatype: 10
+  - name: MET4
+    gds_layer: 84
+    gds_datatype: 1
+  - name: MET4dm
+    gds_layer: 84
+    gds_datatype: 2
+  - name: MET4dmb
+    gds_layer: 84
+    gds_datatype: 3
+  - name: MET4res
+    gds_layer: 84
+    gds_datatype: 4
+  - name: MET4opcblk
+    gds_layer: 84
+    gds_datatype: 5
+  - name: MET4txt
+    gds_layer: 84
+    gds_datatype: 6
+  - name: MET4slot
+    gds_layer: 84
+    gds_datatype: 8
+  - name: MET4slotblk
+    gds_layer: 84
+    gds_datatype: 9
+  - name: MET4mom
+    gds_layer: 84
+    gds_datatype: 10
+  - name: MET5
+    gds_layer: 85
+    gds_datatype: 1
+  - name: MET5dm
+    gds_layer: 85
+    gds_datatype: 2
+  - name: MET5dmb
+    gds_layer: 85
+    gds_datatype: 3
+  - name: MET5res
+    gds_layer: 85
+    gds_datatype: 4
+  - name: MET5opcblk
+    gds_layer: 85
+    gds_datatype: 5
+  - name: MET5txt
+    gds_layer: 85
+    gds_datatype: 6
+  - name: MET5slot
+    gds_layer: 85
+    gds_datatype: 8
+  - name: MET5slotblk
+    gds_layer: 85
+    gds_datatype: 9
+  - name: MET5mom
+    gds_layer: 85
+    gds_datatype: 10
+  - name: MET6
+    gds_layer: 86
+    gds_datatype: 1
+  - name: MET6dm
+    gds_layer: 86
+    gds_datatype: 2
+  - name: MET6dmb
+    gds_layer: 86
+    gds_datatype: 3
+  - name: MET6res
+    gds_layer: 86
+    gds_datatype: 4
+  - name: MET6opcblk
+    gds_layer: 86
+    gds_datatype: 5
+  - name: MET6txt
+    gds_layer: 86
+    gds_datatype: 6
+  - name: MET6slot
+    gds_layer: 86
+    gds_datatype: 8
+  - name: MET6slotblk
+    gds_layer: 86
+    gds_datatype: 9
+  - name: MET6mom
+    gds_layer: 86
+    gds_datatype: 10
+  - name: MET7
+    gds_layer: 87
+    gds_datatype: 1
+  - name: MET7dm
+    gds_layer: 87
+    gds_datatype: 2
+  - name: MET7dmb
+    gds_layer: 87
+    gds_datatype: 3
+  - name: MET7res
+    gds_layer: 87
+    gds_datatype: 4
+  - name: MET7opcblk
+    gds_layer: 87
+    gds_datatype: 5
+  - name: MET7txt
+    gds_layer: 87
+    gds_datatype: 6
+  - name: MET7slot
+    gds_layer: 87
+    gds_datatype: 8
+  - name: MET7slotblk
+    gds_layer: 87
+    gds_datatype: 9
+  - name: MET7mom
+    gds_layer: 87
+    gds_datatype: 10
+  - name: MET8
+    gds_layer: 88
+    gds_datatype: 1
+  - name: MET8dm
+    gds_layer: 88
+    gds_datatype: 2
+  - name: MET8dmb
+    gds_layer: 88
+    gds_datatype: 3
+  - name: MET8res
+    gds_layer: 88
+    gds_datatype: 4
+  - name: MET8opcblk
+    gds_layer: 88
+    gds_datatype: 5
+  - name: MET8txt
+    gds_layer: 88
+    gds_datatype: 6
+  - name: MET8slot
+    gds_layer: 88
+    gds_datatype: 8
+  - name: MET8slotblk
+    gds_layer: 88
+    gds_datatype: 9
+  - name: MET8mom
+    gds_layer: 88
+    gds_datatype: 10
+  - name: VIA1
+    gds_layer: 91
+    gds_datatype: 1
+  - name: VIA1bar
+    gds_layer: 91
+    gds_datatype: 7
+  - name: VIA2
+    gds_layer: 92
+    gds_datatype: 1
+  - name: VIA2bar
+    gds_layer: 92
+    gds_datatype: 7
+  - name: VIA3
+    gds_layer: 93
+    gds_datatype: 1
+  - name: VIA3bar
+    gds_layer: 93
+    gds_datatype: 7
+  - name: VIA4
+    gds_layer: 94
+    gds_datatype: 1
+  - name: VIA4bar
+    gds_layer: 94
+    gds_datatype: 7
+  - name: VIA5
+    gds_layer: 95
+    gds_datatype: 1
+  - name: VIA5bar
+    gds_layer: 95
+    gds_datatype: 7
+  - name: VIA6
+    gds_layer: 96
+    gds_datatype: 1
+  - name: VIA6bar
+    gds_layer: 96
+    gds_datatype: 7
+  - name: VIA7
+    gds_layer: 97
+    gds_datatype: 1
+  - name: VIA7bar
+    gds_layer: 97
+    gds_datatype: 7
+  - name: T2M1
+    gds_layer: 100
+    gds_datatype: 1
+  - name: T2M1dm
+    gds_layer: 100
+    gds_datatype: 2
+  - name: T2M1dmb
+    gds_layer: 100
+    gds_datatype: 3
+  - name: T2M1res
+    gds_layer: 100
+    gds_datatype: 4
+  - name: T2M1opcblk
+    gds_layer: 100
+    gds_datatype: 5
+  - name: T2M1txt
+    gds_layer: 100
+    gds_datatype: 6
+  - name: T2M1slot
+    gds_layer: 100
+    gds_datatype: 8
+  - name: T2M1slotblk
+    gds_layer: 100
+    gds_datatype: 9
+  - name: T2M2
+    gds_layer: 101
+    gds_datatype: 1
+  - name: T2M2dm
+    gds_layer: 101
+    gds_datatype: 2
+  - name: T2M2dmb
+    gds_layer: 101
+    gds_datatype: 3
+  - name: T2M2res
+    gds_layer: 101
+    gds_datatype: 4
+  - name: T2M2opcblk
+    gds_layer: 101
+    gds_datatype: 5
+  - name: T2M2txt
+    gds_layer: 101
+    gds_datatype: 6
+  - name: T2M2slot
+    gds_layer: 101
+    gds_datatype: 8
+  - name: T2M2slotblk
+    gds_layer: 101
+    gds_datatype: 9
+  - name: T4M1
+    gds_layer: 102
+    gds_datatype: 1
+  - name: T4M1dm
+    gds_layer: 102
+    gds_datatype: 2
+  - name: T4M1dmb
+    gds_layer: 102
+    gds_datatype: 3
+  - name: T4M1res
+    gds_layer: 102
+    gds_datatype: 4
+  - name: T4M1opcblk
+    gds_layer: 102
+    gds_datatype: 5
+  - name: T4M1txt
+    gds_layer: 102
+    gds_datatype: 6
+  - name: T4M1slot
+    gds_layer: 102
+    gds_datatype: 8
+  - name: T4M1slotblk
+    gds_layer: 102
+    gds_datatype: 9
+  - name: T4M2
+    gds_layer: 103
+    gds_datatype: 1
+  - name: T4M2dm
+    gds_layer: 103
+    gds_datatype: 2
+  - name: T4M2dmb
+    gds_layer: 103
+    gds_datatype: 3
+  - name: T4M2res
+    gds_layer: 103
+    gds_datatype: 4
+  - name: T4M2opcblk
+    gds_layer: 103
+    gds_datatype: 5
+  - name: T4M2txt
+    gds_layer: 103
+    gds_datatype: 6
+  - name: T4M2slot
+    gds_layer: 103
+    gds_datatype: 8
+  - name: T4M2slotblk
+    gds_layer: 103
+    gds_datatype: 9
+  - name: T8M1
+    gds_layer: 104
+    gds_datatype: 1
+  - name: T8M1dm
+    gds_layer: 104
+    gds_datatype: 2
+  - name: T8M1dmb
+    gds_layer: 104
+    gds_datatype: 3
+  - name: T8M1res
+    gds_layer: 104
+    gds_datatype: 4
+  - name: T8M1opcblk
+    gds_layer: 104
+    gds_datatype: 5
+  - name: T8M1txt
+    gds_layer: 104
+    gds_datatype: 6
+  - name: T8M1slot
+    gds_layer: 104
+    gds_datatype: 8
+  - name: T8M1slotblk
+    gds_layer: 104
+    gds_datatype: 9
+  - name: T8M2
+    gds_layer: 105
+    gds_datatype: 1
+  - name: T8M2dm
+    gds_layer: 105
+    gds_datatype: 2
+  - name: T8M2dmb
+    gds_layer: 105
+    gds_datatype: 3
+  - name: T8M2res
+    gds_layer: 105
+    gds_datatype: 4
+  - name: T8M2opcblk
+    gds_layer: 105
+    gds_datatype: 5
+  - name: T8M2txt
+    gds_layer: 105
+    gds_datatype: 6
+  - name: T8M2slot
+    gds_layer: 105
+    gds_datatype: 8
+  - name: T8M2slotblk
+    gds_layer: 105
+    gds_datatype: 9
+  - name: T2V1
+    gds_layer: 110
+    gds_datatype: 1
+  - name: T2V1bar
+    gds_layer: 110
+    gds_datatype: 7
+  - name: T2V2
+    gds_layer: 111
+    gds_datatype: 1
+  - name: T2V2bar
+    gds_layer: 111
+    gds_datatype: 7
+  - name: T4V1
+    gds_layer: 112
+    gds_datatype: 1
+  - name: T4V1bar
+    gds_layer: 112
+    gds_datatype: 7
+  - name: T4V2
+    gds_layer: 113
+    gds_datatype: 1
+  - name: T4V2bar
+    gds_layer: 113
+    gds_datatype: 7
+  - name: T8V1
+    gds_layer: 114
+    gds_datatype: 1
+  - name: T8V1bar
+    gds_layer: 114
+    gds_datatype: 7
+  - name: T8V2
+    gds_layer: 115
+    gds_datatype: 1
+  - name: T8V2bar
+    gds_layer: 115
+    gds_datatype: 13
+  - name: CB
+    gds_layer: 121
+    gds_datatype: 1
+  - name: CBtxt
+    gds_layer: 121
+    gds_datatype: 6
+  - name: RV
+    gds_layer: 120
+    gds_datatype: 1
+  - name: RDL
+    gds_layer: 123
+    gds_datatype: 1
+  - name: ALPAD
+    gds_layer: 122
+    gds_datatype: 1
+  - name: ALPADres
+    gds_layer: 122
+    gds_datatype: 4
+  - name: ALPADtxt
+    gds_layer: 122
+    gds_datatype: 6
+  - name: ALPADslot
+    gds_layer: 122
+    gds_datatype: 8
+  - name: ALPADslotblk
+    gds_layer: 122
+    gds_datatype: 9
+  - name: COVER
+    gds_layer: 124
+    gds_datatype: 1
+  - name: BMIM
+    gds_layer: 140
+    gds_datatype: 1
+  - name: TMIM
+    gds_layer: 141
+    gds_datatype: 1
+  - name: SRAMALL
+    gds_layer: 171
+    gds_datatype: 12
+  - name: SRAMPG
+    gds_layer: 172
+    gds_datatype: 12
+  - name: SRAM6THD
+    gds_layer: 173
+    gds_datatype: 12
+  - name: SRAM6THS
+    gds_layer: 174
+    gds_datatype: 12
+  - name: SRAM8THD
+    gds_layer: 176
+    gds_datatype: 12
+  - name: SRAM8THS
+    gds_layer: 177
+    gds_datatype: 12
+  - name: DIODE
+    gds_layer: 191
+    gds_datatype: 12
+  - name: VARA
+    gds_layer: 192
+    gds_datatype: 12
+  - name: VARAM
+    gds_layer: 193
+    gds_datatype: 12
+  - name: VARAJ
+    gds_layer: 194
+    gds_datatype: 12
+  - name: BJT
+    gds_layer: 195
+    gds_datatype: 12
+  - name: ESDIOT
+    gds_layer: 231
+    gds_datatype: 12
+  - name: ESDIOE
+    gds_layer: 232
+    gds_datatype: 12
+  - name: RFALL
+    gds_layer: 241
+    gds_datatype: 12
+  - name: RFD
+    gds_layer: 242
+    gds_datatype: 12
+  - name: RFTER
+    gds_layer: 243
+    gds_datatype: 12
+  - name: CAP
+    gds_layer: 271
+    gds_datatype: 12
+  - name: MOMCAP
+    gds_layer: 281
+    gds_datatype: 12
+  - name: MOMTER
+    gds_layer: 282
+    gds_datatype: 12
+  - name: FUTR
+    gds_layer: 291
+    gds_datatype: 12
+  - name: FUSEALL
+    gds_layer: 292
+    gds_datatype: 12
+  - name: EFUSEALL
+    gds_layer: 293
+    gds_datatype: 12
+  - name: POEFUSEBLK
+    gds_layer: 294
+    gds_datatype: 12
+  - name: INDDMY
+    gds_layer: 301
+    gds_datatype: 12
+  - name: INDALL
+    gds_layer: 302
+    gds_datatype: 12
+  - name: INDVIA
+    gds_layer: 303
+    gds_datatype: 12
+  - name: NOLVS
+    gds_layer: 311
+    gds_datatype: 12
+  - name: MOSMF
+    gds_layer: 312
+    gds_datatype: 12
+  - name: SUBCKTLVS
+    gds_layer: 313
+    gds_datatype: 12
+  - name: RESCKTLVS
+    gds_layer: 314
+    gds_datatype: 12
+  - name: MOSCKTLVS
+    gds_layer: 315
+    gds_datatype: 12
+  - name: LATCHUP
+    gds_layer: 316
+    gds_datatype: 12
+  - name: RFSDLVS
+    gds_layer: 317
+    gds_datatype: 12
+  - name: RF5TERLVS
+    gds_layer: 318
+    gds_datatype: 12
+  - name: RF6TERLVS
+    gds_layer: 319
+    gds_datatype: 12
+  - name: VARAJMRK
+    gds_layer: 320
+    gds_datatype: 12
+  - name: LDMOSSTI
+    gds_layer: 321
+    gds_datatype: 12
+  - name: FUSEDRC
+    gds_layer: 322
+    gds_datatype: 12
+  - name: MOMLVS1
+    gds_layer: 323
+    gds_datatype: 12
+  - name: MOMLVS2
+    gds_layer: 324
+    gds_datatype: 12
+  - name: MOMLVS3
+    gds_layer: 325
+    gds_datatype: 12
+  - name: MOMLVS4
+    gds_layer: 326
+    gds_datatype: 12
+  - name: MOMLVS5
+    gds_layer: 327
+    gds_datatype: 12
+  - name: MOMLVS6
+    gds_layer: 328
+    gds_datatype: 12
+  - name: LDMOS
+    gds_layer: 211
+    gds_datatype: 12
+  - name: CHIPBLK
+    gds_layer: 351
+    gds_datatype: 12
+  - name: SRBLK
+    gds_layer: 352
+    gds_datatype: 12
+  - name: GRBLK
+    gds_layer: 353
+    gds_datatype: 12
+  - name: SRINGBLK
+    gds_layer: 354
+    gds_datatype: 12
+  - name: LOGO
+    gds_layer: 355
+    gds_datatype: 12
+  - name: NOSHRINK
+    gds_layer: 356
+    gds_datatype: 12
+  - name: NODRC
+    gds_layer: 357
+    gds_datatype: 12
+  - name: OPCBLKALL
+    gds_layer: 358
+    gds_datatype: 12
+  - name: DMYBLK
+    gds_layer: 359
+    gds_datatype: 12
+  - name: NOEBBLK
+    gds_layer: 360
+    gds_datatype: 12
+  - name: METBLK
+    gds_layer: 361
+    gds_datatype: 12
+  - name: DEUPAD
+    gds_layer: 381
+    gds_datatype: 12
+  - name: VDD
+    gds_layer: 382
+    gds_datatype: 12
+  - name: VSS
+    gds_layer: 383
+    gds_datatype: 12
+  - name: TTXT
+    gds_layer: 386
+    gds_datatype: 12
+  - name: SUBTXT
+    gds_layer: 387
+    gds_datatype: 12
+  - name: WELTXT
+    gds_layer: 388
+    gds_datatype: 12
+  - name: GRID
+    gds_layer: 179
+    gds_datatype: 40
+  - name: FRAME
+    gds_layer: 183
+    gds_datatype: 4
