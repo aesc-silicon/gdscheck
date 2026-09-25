@@ -1,0 +1,247 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: NW1res_ACT-W.1
+    check: min_width
+    layers: [NW1RACT]
+    value: 1.8
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, NP]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, PP]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, ULLD]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, ULLD]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, NVT3]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, NVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, PVT3]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, PVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, NVT1]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, NVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, PVT1]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, PVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, NPR]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, NPR]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, HRP]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, HRP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NW1RACT, ESD]
+    value: 0.6
+  - id: NW1res_ACT-S.1
+    check: forbidden
+    layers: [NW1RACT, ESD]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_ACT-S.3
+    check: min_space
+    layers: [NW1RACT, NW1]
+    value: 1.2
+  - id: NW1res_ACT-En.1
+    check: min_enclosure
+    layers: [ACT, NW1RACT]
+    value: 0.9
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-En.2
+    check: min_enclosure
+    layers: [SAB, ACTNW1RACT]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-En.4
+    check: min_enclosure
+    layers: [NW1, CTNW1RACT]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-Ex.1
+    check: min_enclosure
+    layers: [NW1res, ACTNW1RACT]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-R.1
+    check: forbidden
+    layers: [NW1RACT, SAB, NP]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: NW1res_STI-W.1
+    check: min_width
+    layers: [NW1RSTI]
+    value: 1.8
+  - id: NW1res_STI-S.1
+    check: min_space
+    layers: [NW1RSTI, ACTNotNW1RSTI]
+    value: 0.5
+  - id: NW1res_STI-S.3
+    check: min_space
+    layers: [NW1RSTI, NW1]
+    value: 1.2
+  - id: NW1res_STI-En.2
+    check: min_enclosure
+    layers: [NP, ACTNW1RSTI]
+    value: 0.38
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-En.3
+    check: min_enclosure
+    layers: [NW1, CTNW1RSTI]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-Ex.1
+    check: min_enclosure
+    layers: [NW1res, NW1RSTIWell]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-Ex.2
+    check: min_enclosure
+    layers: [ACTNW1RSTI, NW1RSTIWell]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-R.1
+    check: forbidden
+    layers: [NW1RSTI, SAB, ACT]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, ACTdm]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, POLYdm]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, PP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, ULLD]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, NVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, PVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, NVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, PVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, NPR]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, HRP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resSTI, ESD]
+    value: 0.0
+    params:
+      op: overlap

@@ -21,6 +21,10 @@ include:
   - deck: esd
   - deck: sab
   - deck: ct
+  - deck: actres
+  - deck: polyres
+  - deck: hrp
+  - deck: nw1res
   - deck: actdm
   - deck: polydm
   - deck: met1

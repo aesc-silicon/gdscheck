@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: POLYres-W.1
+    check: min_width
+    layers: [RPOns]
+    value: 0.4
+  - id: POLYres-S.1a
+    check: min_space
+    layers: [RPON, PP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1a
+    check: min_space
+    layers: [RPON, NPR]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1a
+    check: min_space
+    layers: [RPON, HRP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1a
+    check: min_space
+    layers: [RPON, ESD]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1b
+    check: min_space
+    layers: [RPOP, NP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1b
+    check: min_space
+    layers: [RPOP, NPR]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1b
+    check: min_space
+    layers: [RPOP, HRP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-S.1b
+    check: min_space
+    layers: [RPOP, ESD]
+    value: 0.18
+    params:
+      abutting: report
+  - id: POLYres-En.1
+    check: min_enclosure
+    layers: [NPPP, RPO]
+    value: 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: POLYres-Ex.1
+    check: min_enclosure
+    layers: [POLYres, POLY]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: POLYres-Ex.2
+    check: min_enclosure
+    layers: [SAB, RPO]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: POLYres-R.1
+    check: forbidden
+    layers: [RPOns, NP, PP]
+    value: 0.0
+    params:
+      op: uncovered

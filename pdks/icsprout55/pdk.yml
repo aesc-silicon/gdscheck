@@ -69,6 +69,18 @@ decks:
   - name: ct
     path: decks/ct.yml
     description: Contact
+  - name: actres
+    path: decks/actres.yml
+    description: Active resistor
+  - name: polyres
+    path: decks/polyres.yml
+    description: Poly resistor
+  - name: hrp
+    path: decks/hrp.yml
+    description: High-resistance poly resistor
+  - name: nw1res
+    path: decks/nw1res.yml
+    description: N-well resistors, under ACT and under STI
   - name: actdm
     path: decks/actdm.yml
     description: Dummy active
@@ -1645,14 +1657,18 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [NPACT, LDMOS, NW1res]
+  - name: NW1NoRes
+    op: not_interacting
+    mode: lazy
+    layers: [NW1, NW1res]
   - name: NPACTAtNW1
     op: overlapping
     mode: lazy
-    layers: [NPACTChk, NW1]
+    layers: [NPACTChk, NW1NoRes]
   - name: NPACTCutsNW1
     op: not_inside
     mode: lazy
-    layers: [NPACTAtNW1, NW1]
+    layers: [NPACTAtNW1, NW1NoRes]
   - name: ACTSAB
     op: intersection
     mode: lazy
@@ -2409,6 +2425,86 @@ virtual_layers:
     mode: lazy
     layers: [AL]
     min: 35.001
+  - name: NPPP
+    op: union
+    mode: lazy
+    layers: [NP, PP]
+  - name: RACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, ACTres]
+  - name: RACTns
+    op: intersection
+    mode: lazy
+    layers: [RACT, SAB]
+  - name: RACTnsP
+    op: intersection
+    mode: lazy
+    layers: [RACTns, PP]
+  - name: RPO
+    op: intersection
+    mode: lazy
+    layers: [POLY, POLYres]
+  - name: RPOns
+    op: intersection
+    mode: lazy
+    layers: [RPO, SAB]
+  - name: RPON
+    op: intersection
+    mode: lazy
+    layers: [RPO, NP]
+  - name: RPOP
+    op: intersection
+    mode: lazy
+    layers: [RPO, PP]
+  - name: RHR
+    op: intersection
+    mode: lazy
+    layers: [POLY, HRP]
+  - name: POLYMOS
+    op: overlapping
+    mode: lazy
+    layers: [POLY, ACT]
+  - name: NW1R
+    op: intersection
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: NW1RACT
+    op: inside
+    mode: lazy
+    layers: [NW1R, ACT]
+  - name: NW1RSTI
+    op: not_inside
+    mode: lazy
+    layers: [NW1R, ACT]
+  - name: ACTNW1RACT
+    op: overlapping
+    mode: lazy
+    layers: [ACT, NW1RACT]
+  - name: CTNW1RACT
+    op: overlapping
+    mode: lazy
+    layers: [CT, ACTNW1RACT]
+  - name: NW1RSTIWell
+    op: overlapping
+    mode: lazy
+    layers: [NW1, NW1RSTI]
+  - name: ACTNW1RSTI
+    op: overlapping
+    mode: lazy
+    layers: [ACT, NW1RSTIWell]
+  - name: CTNW1RSTI
+    op: overlapping
+    mode: lazy
+    layers: [CT, ACTNW1RSTI]
+  - name: ACTNotNW1RSTI
+    op: not_overlapping
+    mode: lazy
+    layers: [ACT, NW1RSTIWell]
+  - name: NW1resSTI
+    op: overlapping
+    mode: lazy
+    layers: [NW1res, NW1RSTI]
 
 layers:
   - name: ACT

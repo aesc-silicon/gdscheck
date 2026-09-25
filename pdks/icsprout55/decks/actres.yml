@@ -1,0 +1,119 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ACTres-W.1
+    check: min_width
+    layers: [RACTns]
+    value: 0.4
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, NP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, PP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, NVT1]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: forbidden
+    layers: [RACTns, NVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, PVT1]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: forbidden
+    layers: [RACTns, PVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, NVT3]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: forbidden
+    layers: [RACTns, NVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, PVT3]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: forbidden
+    layers: [RACTns, PVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, HRP]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: forbidden
+    layers: [RACTns, HRP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTres-S.1
+    check: min_space
+    layers: [RACTns, ESD]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: forbidden
+    layers: [RACTns, ESD]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTres-En.1
+    check: min_enclosure
+    layers: [NPPP, RACT]
+    value: 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACTres-Ex.1
+    check: min_enclosure
+    layers: [ACTres, ACT]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACTres-R.1
+    check: forbidden
+    layers: [RACT, NP, PP]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: ACTres-R.2
+    check: forbidden
+    layers: [RACTnsP, NW1]
+    value: 0.0
+    params:
+      op: uncovered

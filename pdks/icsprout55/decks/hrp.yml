@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: HRP-W.1
+    check: min_width
+    layers: [HRP]
+    value: 0.21
+  - id: HRP-W.2
+    check: min_width
+    layers: [RHR]
+    value: 2
+  - id: HRP-S.1
+    check: min_space
+    layers: [HRP]
+    value: 0.21
+  - id: HRP-S.1
+    check: min_notch
+    layers: [HRP]
+    value: 0.21
+  - id: HRP-S.2
+    check: min_space
+    layers: [HRP, POLYMOS]
+    value: 0.16
+    params:
+      abutting: report
+  - id: HRP-En.1
+    check: min_enclosure
+    layers: [HRP, POLY]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: HRP-Ex.1
+    check: min_enclosure
+    layers: [SAB, RHR]
+    value: 0.22
+    params:
+      metric: euclidian
+      interacting_only: 1
