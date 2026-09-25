@@ -148,6 +148,13 @@ decks:
   - name: efuse
     path: decks/efuse.yml
     description: eFuse
+  # --- review A: new decks ---
+  # --- review B: new decks ---
+  # --- review C: new decks ---
+  # --- review D: new decks ---
+  # --- review E: new decks ---
+  # --- review F: new decks ---
+  # --- review G: new decks ---
   - name: antenna
     path: decks/antenna.yml
     description: Antenna ratios (gates without protection ACT)
@@ -1303,6 +1310,13 @@ virtual_layers:
     op: not_overlapping
     mode: lazy
     layers: [ACT, NW1RSTIWell]
+  # --- review A: derived layers ---
+  # --- review B: derived layers ---
+  # --- review C: derived layers ---
+  # --- review D: derived layers ---
+  # --- review E: derived layers ---
+  # --- review F: derived layers ---
+  # --- review G: derived layers ---
   - name: NW1resSTI
     op: overlapping
     mode: lazy
