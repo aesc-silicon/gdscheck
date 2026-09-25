@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ESD-W.1
+    check: min_width
+    layers: [ESD]
+    value: 0.47
+  - id: ESD-S.1
+    check: min_space
+    layers: [ESD]
+    value: 0.47
+  - id: ESD-S.1
+    check: min_notch
+    layers: [ESD]
+    value: 0.47
+  - id: ESD-A.1
+    check: min_area
+    layers: [ESD]
+    value: 0.6
+    params:
+      touching: separate
+  - id: ESD-A.2
+    check: min_area
+    layers: [ESDHoleEmpty]
+    value: 0.6
+    params:
+      touching: separate

@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ACTdm-W.1
+    check: forbidden
+    layers: [ACTdmBad]
+    value: 0.0
+  - id: ACTdm-S.1
+    check: min_space
+    layers: [ACTdm3x3]
+    value: 2
+  - id: ACTdm-S.2
+    check: min_space
+    layers: [ACTdm1x1]
+    value: 0.6
+  - id: ACTdm-S.3
+    check: min_space
+    layers: [ACTdmSm]
+    value: 0.28
+  - id: ACTdm-S.4
+    check: min_space
+    layers: [ACTdm, ACT]
+    value: 1.6
+    params:
+      abutting: report
+  - id: ACTdm-S.4
+    check: forbidden
+    layers: [ACTdm, ACT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTdm-S.5
+    check: min_space
+    layers: [ACTdm, POLY]
+    value: 1.6
+    params:
+      abutting: report
+  - id: ACTdm-S.5
+    check: forbidden
+    layers: [ACTdm, POLY]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ACTdm-S.6
+    check: min_space
+    layers: [ACTdm, NW1]
+    value: 0.3
+    params:
+      abutting: report
+  - id: ACTdm-S.6
+    check: min_enclosure
+    layers: [NW1, ACTdm]
+    value: 0.3
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: ACTdm-S.7
+    check: min_space
+    layers: [ACTdm, FUSEALL]
+    value: 2
+    params:
+      abutting: report
+  - id: ACTdm-S.8
+    check: min_space
+    layers: [ACTdm, NW1res]
+    value: 0.6
+    params:
+      abutting: report
+  - id: ACTdm-S.9
+    check: min_space
+    layers: [ACTdm, LOGO]
+    value: 0.1
+    params:
+      abutting: report
+  - id: ACTdm-S.10
+    check: min_space
+    layers: [ACTdm, INDALL]
+    value: 2
+    params:
+      abutting: report
+  - id: ACTdm-S.11
+    check: min_space
+    layers: [ACTdm, CHIPBLK]
+    value: 0.6
+    params:
+      abutting: report
+  - id: ACTdm-S.11
+    check: min_enclosure
+    layers: [CHIPBLK, ACTdm]
+    value: 0.6
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: ACTdm-S.12
+    check: min_space
+    layers: [ACTdm, ACTdmb]
+    value: 2
+    params:
+      abutting: report
+  - id: ACTdm-S.13
+    check: min_space
+    layers: [ACTdm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
+  - id: ACTdm-R.1
+    check: forbidden
+    layers: [ACTdm, CTorBar]
+    value: 0.0
+    params:
+      op: overlap

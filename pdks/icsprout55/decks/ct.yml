@@ -1,0 +1,141 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: CT-W.1
+    check: forbidden
+    layers: [CTW1Bad, CTW1GRIDBad, CTW1EFUSEBad, CTW1SRAMBad]
+    value: 0.0
+  - id: CT-W.2
+    check: min_width
+    layers: [CTbarNoSRAMEF]
+    value: 0.09
+  - id: CT-W.2
+    check: max_width
+    layers: [CTbarNoSRAMEF]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: CT-S.1
+    check: min_space
+    layers: [CTAll]
+    value: 0.11
+    layer_params:
+      gap_outside: SRAMALL
+  - id: CT-S.1a
+    check: min_space
+    layers: [CTInArray]
+    value: 0.14
+  - id: CT-S.2
+    check: min_space
+    layers: [CTNoSRAM]
+    value: 0.12
+    params:
+      net: different
+  - id: CT-S.3
+    check: min_space
+    layers: [ACT, CTonPOLYPart]
+    value: 0.065
+    params:
+      abutting: report
+  - id: CT-S.4
+    check: min_space
+    layers: [POLYxGATEDevCore, CTonACTPart]
+    value: 0.055
+    params:
+      abutting: report
+    layer_params:
+      gap_outside: SRAMALL
+  - id: CT-S.5
+    check: min_space
+    layers: [GATEDevIO1, CTonACTPartDG]
+    value: 0.09
+    params:
+      abutting: report
+  - id: CT-S.5
+    check: min_space
+    layers: [GATEDevIO2, CTonACTPartTG]
+    value: 0.09
+    params:
+      abutting: report
+  - id: CT-S.6
+    check: forbidden
+    layers: [CTCutsNPPP]
+    value: 0.0
+  - id: CT-S.6
+    check: min_space
+    layers: [CTAll, PPACTButted]
+    value: 0.06
+    params:
+      abutting: report
+  - id: CT-S.6
+    check: min_space
+    layers: [CTAll, NPACTButted]
+    value: 0.06
+    params:
+      abutting: report
+  - id: CT-En.1
+    check: forbidden
+    layers: [CTNotLandedNoSRAM]
+    value: 0.0
+  - id: CT-En.2a
+    check: min_enclosure
+    layers: [ACT, CTxACTNoSRAM]
+    value: 0.015
+    params:
+      metric: euclidian
+  - id: CT-En.2b
+    check: forbidden
+    layers: [CTEn2bBad]
+    value: 0.0
+  - id: CT-En.3a
+    check: min_enclosure
+    layers: [POLY, CTxPOLYNoSRAM]
+    value: 0.01
+    params:
+      metric: euclidian
+  - id: CT-En.3b
+    check: forbidden
+    layers: [CTEn3bBad]
+    value: 0.0
+  - id: CT-En.4a
+    check: forbidden
+    layers: [CTNotOnM1NoSRAM, CTNoM1InSRAM]
+    value: 0.0
+  - id: CT-En.4b
+    check: forbidden
+    layers: [CTEn4bBad]
+    value: 0.0
+  - id: CT-En.4d
+    check: min_enclosure
+    layers: [M1NoSlot, CTonM1Wide1]
+    value: 0.04
+    params:
+      metric: euclidian
+  - id: CT-R.1
+    check: forbidden
+    layers: [CTonGATEDevNoSRAM]
+    value: 0.0
+  - id: CT-R.2
+    check: forbidden
+    layers: [CTxSABNoSRAMEF]
+    value: 0.0
+  - id: CT-R.3
+    check: no_angle
+    layers: [CTNoSR]
+    value: 0.0
+    params:
+      angle: 45
+      tolerance: 0.000001
+  - id: CT-R.3
+    check: no_angle
+    layers: [CTNoSR]
+    value: 0.0
+    params:
+      angle: 135
+      tolerance: 0.000001
+  - id: CT-R.5
+    check: forbidden
+    layers: [NTAPxNSDNoCT, PTAPxPSDNoCT, NTAPTouchPSDNoCT, PTAPTouchNSDNoCT]
+    value: 0.0

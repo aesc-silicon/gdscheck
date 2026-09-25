@@ -1,0 +1,51 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: RDL-W.1
+    check: min_width
+    layers: [RDL]
+    value: 3
+  - id: RDL-W.1
+    check: max_width
+    layers: [RDLNoInd]
+    value: 35
+    params:
+      span: narrowest
+  - id: RDL-S.1
+    check: min_space
+    layers: [AL]
+    value: 2
+  - id: RDL-S.1
+    check: min_notch
+    layers: [AL]
+    value: 2
+  - id: RDL-S.2
+    check: min_space
+    layers: [ALBig10, AL]
+    value: 3
+  - id: RDL-S.2
+    check: min_notch
+    layers: [ALBig10]
+    value: 3
+  - id: RDL-S.3
+    check: min_space
+    layers: [ALBig35, AL]
+    value: 5
+  - id: RDL-S.3
+    check: min_notch
+    layers: [ALBig35]
+    value: 5
+  - id: RDL-En.1
+    check: forbidden
+    layers: [COVER, AL]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: RDL-En.2
+    check: forbidden
+    layers: [CB, ALPAD]
+    value: 0.0
+    params:
+      op: uncovered

@@ -247,7 +247,10 @@ fn every_mode_word_is_one_its_check_knows() {
         ("diode", &["with", "without"]),
         ("metric", &["euclidian", "square", "sidewall"]),
         ("net", &["same", "different", "connected"]),
-        ("op", &["apart", "beyond", "overlap", "uncovered"]),
+        (
+            "op",
+            &["apart", "beyond", "overlap", "touching", "uncovered"],
+        ),
         ("pairs", &["disjoint", "overlapping", "any"]),
         ("reach", &["round"]),
         (

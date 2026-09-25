@@ -1,0 +1,383 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA1All, MET1mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA1All, MET2mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA2All, MET2mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA2All, MET3mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA3All, MET3mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA3All, MET4mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA4All, MET4mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [VIA4All, MET5mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-R.1
+    check: forbidden
+    layers: [T4V2All, MET5mom]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM1, VIA1OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM2, VIA1OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM2, VIA2OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM3, VIA2OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM3, VIA3OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM4, VIA3OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM4, VIA4OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM5, VIA4OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-S.1
+    check: min_space
+    layers: [MOMM5, T4V2OutMOMLVS1]
+    value: 0.11
+    params:
+      abutting: report
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MET1momWrongCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MET2momWrongCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MET3momWrongCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MET4momWrongCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MET5momWrongCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap12NoM1, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap12NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap13NoM1, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap13NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap13NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap14NoM1, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap14NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap14NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap14NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap15NoM1, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap15NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap15NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap15NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap15NoM5, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap23NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap23NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap24NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap24NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap24NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap25NoM2, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap25NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap25NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap25NoM5, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap34NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap34NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap35NoM3, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap35NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap35NoM5, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap45NoM4, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Cap45NoM5, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack12NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack13NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack14NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack15NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack23NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack24NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack25NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack34NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack35NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: MOM-R.2
+    check: forbidden
+    layers: [MOMLVS1Stack45NoCap, SRINGBLK]
+    value: 0.0
+    params:
+      op: uncovered

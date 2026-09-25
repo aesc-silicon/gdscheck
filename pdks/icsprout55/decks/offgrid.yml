@@ -1,0 +1,497 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ACT.offgrid
+    check: offgrid
+    layers: [ACT, ACTdm, ACTdmb, ACTres, ACTopcblk]
+    value: 0.001
+  - id: DNW.offgrid
+    check: offgrid
+    layers: [DNW]
+    value: 0.001
+  - id: NW1.offgrid
+    check: offgrid
+    layers: [NW1, NW1res]
+    value: 0.001
+  - id: PSUB.offgrid
+    check: offgrid
+    layers: [PSUB]
+    value: 0.001
+  - id: ULLD.offgrid
+    check: offgrid
+    layers: [ULLD]
+    value: 0.001
+  - id: NVT1.offgrid
+    check: offgrid
+    layers: [NVT1]
+    value: 0.001
+  - id: PVT1.offgrid
+    check: offgrid
+    layers: [PVT1]
+    value: 0.001
+  - id: NVT3.offgrid
+    check: offgrid
+    layers: [NVT3]
+    value: 0.001
+  - id: PVT3.offgrid
+    check: offgrid
+    layers: [PVT3]
+    value: 0.001
+  - id: DGOX.offgrid
+    check: offgrid
+    layers: [DGOX]
+    value: 0.001
+  - id: TGOX.offgrid
+    check: offgrid
+    layers: [TGOX]
+    value: 0.001
+  - id: UD.offgrid
+    check: offgrid
+    layers: [UD]
+    value: 0.001
+  - id: OD.offgrid
+    check: offgrid
+    layers: [OD]
+    value: 0.001
+  - id: POLY.offgrid
+    check: offgrid
+    layers: [POLY, POLYdm, POLYdmb, POLYres, POLYopcblk, POLYtxt, POLYbar]
+    value: 0.001
+  - id: NPD.offgrid
+    check: offgrid
+    layers: [NPD]
+    value: 0.001
+  - id: RES3TPOLY.offgrid
+    check: offgrid
+    layers: [RES3TPOLY]
+    value: 0.001
+  - id: NPR.offgrid
+    check: offgrid
+    layers: [NPR]
+    value: 0.001
+  - id: HRP.offgrid
+    check: offgrid
+    layers: [HRP]
+    value: 0.001
+  - id: HRPBLK.offgrid
+    check: offgrid
+    layers: [HRPBLK]
+    value: 0.001
+  - id: NP.offgrid
+    check: offgrid
+    layers: [NP]
+    value: 0.001
+  - id: PP.offgrid
+    check: offgrid
+    layers: [PP]
+    value: 0.001
+  - id: ESD.offgrid
+    check: offgrid
+    layers: [ESD]
+    value: 0.001
+  - id: SAB.offgrid
+    check: offgrid
+    layers: [SAB]
+    value: 0.001
+  - id: CT.offgrid
+    check: offgrid
+    layers: [CT, CTopcblk, CTbar]
+    value: 0.001
+  - id: MET1.offgrid
+    check: offgrid
+    layers: [MET1, MET1dm, MET1dmb, MET1res, MET1opcblk, MET1txt, MET1slot, MET1slotblk, MET1mom]
+    value: 0.001
+  - id: MET2.offgrid
+    check: offgrid
+    layers: [MET2, MET2dm, MET2dmb, MET2res, MET2opcblk, MET2txt, MET2slot, MET2slotblk, MET2mom]
+    value: 0.001
+  - id: MET3.offgrid
+    check: offgrid
+    layers: [MET3, MET3dm, MET3dmb, MET3res, MET3opcblk, MET3txt, MET3slot, MET3slotblk, MET3mom]
+    value: 0.001
+  - id: MET4.offgrid
+    check: offgrid
+    layers: [MET4, MET4dm, MET4dmb, MET4res, MET4opcblk, MET4txt, MET4slot, MET4slotblk, MET4mom]
+    value: 0.001
+  - id: MET5.offgrid
+    check: offgrid
+    layers: [MET5, MET5dm, MET5dmb, MET5res, MET5opcblk, MET5txt, MET5slot, MET5slotblk, MET5mom]
+    value: 0.001
+  - id: MET6.offgrid
+    check: offgrid
+    layers: [MET6, MET6dm, MET6dmb, MET6res, MET6opcblk, MET6txt, MET6slot, MET6slotblk, MET6mom]
+    value: 0.001
+  - id: MET7.offgrid
+    check: offgrid
+    layers: [MET7, MET7dm, MET7dmb, MET7res, MET7opcblk, MET7txt, MET7slot, MET7slotblk, MET7mom]
+    value: 0.001
+  - id: MET8.offgrid
+    check: offgrid
+    layers: [MET8, MET8dm, MET8dmb, MET8res, MET8opcblk, MET8txt, MET8slot, MET8slotblk, MET8mom]
+    value: 0.001
+  - id: VIA1.offgrid
+    check: offgrid
+    layers: [VIA1, VIA1bar]
+    value: 0.001
+  - id: VIA2.offgrid
+    check: offgrid
+    layers: [VIA2, VIA2bar]
+    value: 0.001
+  - id: VIA3.offgrid
+    check: offgrid
+    layers: [VIA3, VIA3bar]
+    value: 0.001
+  - id: VIA4.offgrid
+    check: offgrid
+    layers: [VIA4, VIA4bar]
+    value: 0.001
+  - id: VIA5.offgrid
+    check: offgrid
+    layers: [VIA5, VIA5bar]
+    value: 0.001
+  - id: VIA6.offgrid
+    check: offgrid
+    layers: [VIA6, VIA6bar]
+    value: 0.001
+  - id: VIA7.offgrid
+    check: offgrid
+    layers: [VIA7, VIA7bar]
+    value: 0.001
+  - id: T2M1.offgrid
+    check: offgrid
+    layers: [T2M1, T2M1dm, T2M1dmb, T2M1res, T2M1opcblk, T2M1txt, T2M1slot, T2M1slotblk]
+    value: 0.001
+  - id: T2M2.offgrid
+    check: offgrid
+    layers: [T2M2, T2M2dm, T2M2dmb, T2M2res, T2M2opcblk, T2M2txt, T2M2slot, T2M2slotblk]
+    value: 0.001
+  - id: T4M1.offgrid
+    check: offgrid
+    layers: [T4M1, T4M1dm, T4M1dmb, T4M1res, T4M1opcblk, T4M1txt, T4M1slot, T4M1slotblk]
+    value: 0.001
+  - id: T4M2.offgrid
+    check: offgrid
+    layers: [T4M2, T4M2dm, T4M2dmb, T4M2res, T4M2opcblk, T4M2txt, T4M2slot, T4M2slotblk]
+    value: 0.001
+  - id: T8M1.offgrid
+    check: offgrid
+    layers: [T8M1, T8M1dm, T8M1dmb, T8M1res, T8M1opcblk, T8M1txt, T8M1slot, T8M1slotblk]
+    value: 0.001
+  - id: T8M2.offgrid
+    check: offgrid
+    layers: [T8M2, T8M2dm, T8M2dmb, T8M2res, T8M2opcblk, T8M2txt, T8M2slot, T8M2slotblk]
+    value: 0.001
+  - id: T2V1.offgrid
+    check: offgrid
+    layers: [T2V1, T2V1bar]
+    value: 0.001
+  - id: T2V2.offgrid
+    check: offgrid
+    layers: [T2V2, T2V2bar]
+    value: 0.001
+  - id: T4V1.offgrid
+    check: offgrid
+    layers: [T4V1, T4V1bar]
+    value: 0.001
+  - id: T4V2.offgrid
+    check: offgrid
+    layers: [T4V2, T4V2bar]
+    value: 0.001
+  - id: T8V1.offgrid
+    check: offgrid
+    layers: [T8V1, T8V1bar]
+    value: 0.001
+  - id: T8V2.offgrid
+    check: offgrid
+    layers: [T8V2, T8V2bar]
+    value: 0.001
+  - id: CB.offgrid
+    check: offgrid
+    layers: [CB, CBtxt]
+    value: 0.001
+  - id: RV.offgrid
+    check: offgrid
+    layers: [RV]
+    value: 0.001
+  - id: RDL.offgrid
+    check: offgrid
+    layers: [RDL]
+    value: 0.001
+  - id: ALPAD.offgrid
+    check: offgrid
+    layers: [ALPAD, ALPADres, ALPADtxt, ALPADslot, ALPADslotblk]
+    value: 0.001
+  - id: COVER.offgrid
+    check: offgrid
+    layers: [COVER]
+    value: 0.001
+  - id: BMIM.offgrid
+    check: offgrid
+    layers: [BMIM]
+    value: 0.001
+  - id: TMIM.offgrid
+    check: offgrid
+    layers: [TMIM]
+    value: 0.001
+  - id: IO.offgrid
+    check: offgrid
+    layers: [IO]
+    value: 0.001
+  - id: CORE.offgrid
+    check: offgrid
+    layers: [CORE]
+    value: 0.001
+  - id: SRAMALL.offgrid
+    check: offgrid
+    layers: [SRAMALL]
+    value: 0.001
+  - id: SRAMPG.offgrid
+    check: offgrid
+    layers: [SRAMPG]
+    value: 0.001
+  - id: SRAM6THD.offgrid
+    check: offgrid
+    layers: [SRAM6THD]
+    value: 0.001
+  - id: SRAM6THS.offgrid
+    check: offgrid
+    layers: [SRAM6THS]
+    value: 0.001
+  - id: SRAM8THD.offgrid
+    check: offgrid
+    layers: [SRAM8THD]
+    value: 0.001
+  - id: SRAM8THS.offgrid
+    check: offgrid
+    layers: [SRAM8THS]
+    value: 0.001
+  - id: DIODE.offgrid
+    check: offgrid
+    layers: [DIODE]
+    value: 0.001
+  - id: VARA.offgrid
+    check: offgrid
+    layers: [VARA]
+    value: 0.001
+  - id: VARAM.offgrid
+    check: offgrid
+    layers: [VARAM]
+    value: 0.001
+  - id: VARAJ.offgrid
+    check: offgrid
+    layers: [VARAJ]
+    value: 0.001
+  - id: BJT.offgrid
+    check: offgrid
+    layers: [BJT]
+    value: 0.001
+  - id: ESDIOT.offgrid
+    check: offgrid
+    layers: [ESDIOT]
+    value: 0.001
+  - id: ESDIOE.offgrid
+    check: offgrid
+    layers: [ESDIOE]
+    value: 0.001
+  - id: RFALL.offgrid
+    check: offgrid
+    layers: [RFALL]
+    value: 0.001
+  - id: RFD.offgrid
+    check: offgrid
+    layers: [RFD]
+    value: 0.001
+  - id: RFTER.offgrid
+    check: offgrid
+    layers: [RFTER]
+    value: 0.001
+  - id: CAP.offgrid
+    check: offgrid
+    layers: [CAP]
+    value: 0.001
+  - id: MOMCAP.offgrid
+    check: offgrid
+    layers: [MOMCAP]
+    value: 0.001
+  - id: MOMTER.offgrid
+    check: offgrid
+    layers: [MOMTER]
+    value: 0.001
+  - id: FUTR.offgrid
+    check: offgrid
+    layers: [FUTR]
+    value: 0.001
+  - id: FUSEALL.offgrid
+    check: offgrid
+    layers: [FUSEALL]
+    value: 0.001
+  - id: EFUSEALL.offgrid
+    check: offgrid
+    layers: [EFUSEALL]
+    value: 0.001
+  - id: POEFUSEBLK.offgrid
+    check: offgrid
+    layers: [POEFUSEBLK]
+    value: 0.001
+  - id: INDDMY.offgrid
+    check: offgrid
+    layers: [INDDMY]
+    value: 0.001
+  - id: INDALL.offgrid
+    check: offgrid
+    layers: [INDALL]
+    value: 0.001
+  - id: INDVIA.offgrid
+    check: offgrid
+    layers: [INDVIA]
+    value: 0.001
+  - id: NOLVS.offgrid
+    check: offgrid
+    layers: [NOLVS]
+    value: 0.001
+  - id: MOSMF.offgrid
+    check: offgrid
+    layers: [MOSMF]
+    value: 0.001
+  - id: SUBCKTLVS.offgrid
+    check: offgrid
+    layers: [SUBCKTLVS]
+    value: 0.001
+  - id: RESCKTLVS.offgrid
+    check: offgrid
+    layers: [RESCKTLVS]
+    value: 0.001
+  - id: MOSCKTLVS.offgrid
+    check: offgrid
+    layers: [MOSCKTLVS]
+    value: 0.001
+  - id: LATCHUP.offgrid
+    check: offgrid
+    layers: [LATCHUP]
+    value: 0.001
+  - id: RFSDLVS.offgrid
+    check: offgrid
+    layers: [RFSDLVS]
+    value: 0.001
+  - id: RF5TERLVS.offgrid
+    check: offgrid
+    layers: [RF5TERLVS]
+    value: 0.001
+  - id: RF6TERLVS.offgrid
+    check: offgrid
+    layers: [RF6TERLVS]
+    value: 0.001
+  - id: VARAJMRK.offgrid
+    check: offgrid
+    layers: [VARAJMRK]
+    value: 0.001
+  - id: LDMOSSTI.offgrid
+    check: offgrid
+    layers: [LDMOSSTI]
+    value: 0.001
+  - id: FUSEDRC.offgrid
+    check: offgrid
+    layers: [FUSEDRC]
+    value: 0.001
+  - id: MOMLVS1.offgrid
+    check: offgrid
+    layers: [MOMLVS1]
+    value: 0.001
+  - id: MOMLVS2.offgrid
+    check: offgrid
+    layers: [MOMLVS2]
+    value: 0.001
+  - id: MOMLVS3.offgrid
+    check: offgrid
+    layers: [MOMLVS3]
+    value: 0.001
+  - id: MOMLVS4.offgrid
+    check: offgrid
+    layers: [MOMLVS4]
+    value: 0.001
+  - id: MOMLVS5.offgrid
+    check: offgrid
+    layers: [MOMLVS5]
+    value: 0.001
+  - id: MOMLVS6.offgrid
+    check: offgrid
+    layers: [MOMLVS6]
+    value: 0.001
+  - id: LDMOS.offgrid
+    check: offgrid
+    layers: [LDMOS]
+    value: 0.001
+  - id: CHIPBLK.offgrid
+    check: offgrid
+    layers: [CHIPBLK]
+    value: 0.001
+  - id: SRBLK.offgrid
+    check: offgrid
+    layers: [SRBLK]
+    value: 0.001
+  - id: GRBLK.offgrid
+    check: offgrid
+    layers: [GRBLK]
+    value: 0.001
+  - id: SRINGBLK.offgrid
+    check: offgrid
+    layers: [SRINGBLK]
+    value: 0.001
+  - id: LOGO.offgrid
+    check: offgrid
+    layers: [LOGO]
+    value: 0.001
+  - id: NOSHRINK.offgrid
+    check: offgrid
+    layers: [NOSHRINK]
+    value: 0.001
+  - id: NODRC.offgrid
+    check: offgrid
+    layers: [NODRC]
+    value: 0.001
+  - id: OPCBLKALL.offgrid
+    check: offgrid
+    layers: [OPCBLKALL]
+    value: 0.001
+  - id: DMYBLK.offgrid
+    check: offgrid
+    layers: [DMYBLK]
+    value: 0.001
+  - id: NOEBBLK.offgrid
+    check: offgrid
+    layers: [NOEBBLK]
+    value: 0.001
+  - id: METBLK.offgrid
+    check: offgrid
+    layers: [METBLK]
+    value: 0.001
+  - id: DEUPAD.offgrid
+    check: offgrid
+    layers: [DEUPAD]
+    value: 0.001
+  - id: VDD.offgrid
+    check: offgrid
+    layers: [VDD]
+    value: 0.001
+  - id: VSS.offgrid
+    check: offgrid
+    layers: [VSS]
+    value: 0.001
+  - id: TTXT.offgrid
+    check: offgrid
+    layers: [TTXT]
+    value: 0.001
+  - id: NW1CAP.offgrid
+    check: offgrid
+    layers: [NW1CAP]
+    value: 0.001
+  - id: WELTXT.offgrid
+    check: offgrid
+    layers: [WELTXT]
+    value: 0.001
+  - id: FRAME.offgrid
+    check: offgrid
+    layers: [FRAME]
+    value: 0.001

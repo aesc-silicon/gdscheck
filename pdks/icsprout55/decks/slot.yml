@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: SL-W.1
+    check: forbidden
+    layers: [MET1slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
+    layers: [MET1slot]
+    value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET1slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET1slot, CB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: SL-W.1
+    check: forbidden
+    layers: [MET2slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
+    layers: [MET2slot]
+    value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET2slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET2slot, CB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: SL-W.1
+    check: forbidden
+    layers: [MET3slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
+    layers: [MET3slot]
+    value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET3slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET3slot, CB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: SL-W.1
+    check: forbidden
+    layers: [MET4slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
+    layers: [MET4slot]
+    value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET4slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET4slot, CB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: SL-W.1
+    check: forbidden
+    layers: [MET5slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
+    layers: [MET5slot]
+    value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [MET5slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [MET5slot, CB]
+    value: 0.0
+    params:
+      op: overlap
+  - id: SL-W.1
+    check: forbidden
+    layers: [T4M2slotBad]
+    value: 0.0
+  - id: SL-S.1
+    check: min_space
+    layers: [T4M2slot]
+    value: 3
+  - id: SL-S.1
+    check: min_notch
+    layers: [T4M2slot]
+    value: 3
+  - id: SL-R.1
+    check: forbidden
+    layers: [T4M2slot, CB]
+    value: 0.0
+    params:
+      op: overlap

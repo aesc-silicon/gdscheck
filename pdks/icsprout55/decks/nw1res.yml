@@ -1,0 +1,273 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: NW1res_ACT-W.1
+    check: min_edge_length
+    layers: [NWResAABodyCut]
+    value: 1.8
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, NW1NoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, NVT3NoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, PVT3NoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, NVT1NoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, PVT1NoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, NPNoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, PPNoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, NPRNoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, ESDNoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.1
+    check: min_space
+    layers: [NWRxSABHoles, HRPNoNWR]
+    value: 0.6
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.2
+    check: forbidden
+    layers: [NWResS2Bad]
+    value: 0.0
+  - id: NW1res_ACT-S.3
+    check: min_space
+    layers: [NWR, NW1]
+    value: 1.2
+    params:
+      abutting: report
+  - id: NW1res_ACT-S.4
+    check: forbidden
+    layers: [NWResS4Bad]
+    value: 0.0
+  - id: NW1res_ACT-En.1
+    check: min_enclosure
+    layers: [ACTcovNWResAABody, NWResAABody]
+    value: 0.9
+    params:
+      metric: euclidian
+  - id: NW1res_ACT-En.2
+    check: min_enclosure
+    layers: [SABFilled, ACTcovNWResAABody]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-En.3
+    check: min_enclosure
+    layers: [SABHoles, NWR]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-En.3
+    check: min_enclosure
+    layers: [SABRing, NWR]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-En.3
+    check: forbidden
+    layers: [NWRxSABHolesBare]
+    value: 0.0
+  - id: NW1res_ACT-En.4
+    check: min_enclosure
+    layers: [NW1covNWResAABody, CTInSABHoles]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-Ex.1
+    check: min_enclosure
+    layers: [NW1resxSAB, ACT]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_ACT-O.1
+    check: min_width
+    layers: [NPonSABxNWRes]
+    value: 0.38
+  - id: NW1res_ACT-R.1
+    check: forbidden
+    layers: [SABFilledNoNW1R]
+    value: 0.0
+  - id: NW1res_ACT-R.2
+    check: forbidden
+    layers: [NW1RNotRect]
+    value: 0.0
+  - id: NW1res_ACT-R.4
+    check: forbidden
+    layers: [NWResAAMultiNW1, NWResAAMultiNP, NWResAAOneNP, NWResAAMultiHoles]
+    value: 0.0
+  - id: NW1res_STI-W.1
+    check: min_edge_length
+    layers: [NW1RNoSABCut]
+    value: 1.8
+  - id: NW1res_STI-S.1
+    check: min_space
+    layers: [NWRSTI, ACT]
+    value: 0.5
+    params:
+      abutting: report
+  - id: NW1res_STI-S.2
+    check: forbidden
+    layers: [NW1R, ACTxNWRSTI]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-S.3
+    check: min_space
+    layers: [NWRSTI, NW1]
+    value: 1.2
+    params:
+      abutting: report
+  - id: NW1res_STI-En.1
+    check: forbidden
+    layers: [NWStiEn1Bad]
+    value: 0.0
+  - id: NW1res_STI-En.2
+    check: min_enclosure
+    layers: [NPxNWRSTI, ACTonNWRSTI]
+    value: 0.38
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-En.3
+    check: min_enclosure
+    layers: [NWRSTI, CTAll]
+    value: 0.28
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-Ex.1
+    check: min_enclosure
+    layers: [NW1res, NW1]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: NW1res_STI-Ex.2
+    check: min_enclosure
+    layers: [ACTxNWRSTI, NWRSTI]
+    value: 0.28
+    params:
+      interacting_only: 1
+  - id: NW1res_STI-R.1
+    check: forbidden
+    layers: [NW1RNoSAB, ACTNoCT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resxNP, ACTdm]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1resxNP, POLYdm]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, NVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, ULLD]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, PVT3]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, NVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, PVT1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, PP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, NPR]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, ESD]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.2
+    check: forbidden
+    layers: [NW1res, HRP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: NW1res_STI-R.3
+    check: forbidden
+    layers: [NW1RNotRect]
+    value: 0.0

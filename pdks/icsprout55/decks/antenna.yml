@@ -1,0 +1,166 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: AR.1
+    check: antenna_ratio
+    layers: [POLY]
+    value: 250.0
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      level_before: CTConn
+  - id: AR.2
+    check: antenna_ratio
+    layers: [POLY]
+    value: 500.0
+    params:
+      metric: sidewall
+      thickness: 0.1
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      level_before: CTConn
+  - id: AR.3
+    check: antenna_ratio
+    layers: [CTConn]
+    value: 10.0
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      level_before: ACTSD
+  - id: AR.4
+    check: antenna_ratio
+    layers: [VIA1Conn]
+    value: 20.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.4
+    check: antenna_ratio
+    layers: [VIA2Conn]
+    value: 20.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.4
+    check: antenna_ratio
+    layers: [VIA3Conn]
+    value: 20.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.4
+    check: antenna_ratio
+    layers: [VIA4Conn]
+    value: 20.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.4
+    check: antenna_ratio
+    layers: [T4V2Conn]
+    value: 20.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.5
+    check: antenna_ratio
+    layers: [MET1Conn, MET2Conn, MET3Conn, MET4Conn, MET5Conn, T4M2Conn]
+    value: 5000.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.5
+    check: antenna_ratio
+    layers: [MET1Conn, MET2Conn, MET3Conn, MET4Conn, MET5Conn, T4M2Conn]
+    value: 1000.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate18
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.6
+    check: antenna_ratio
+    layers: [VIA1Conn, VIA2Conn, VIA3Conn, VIA4Conn, T4V2Conn]
+    value: 50.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.7
+    check: antenna_ratio
+    layers: [RDV]
+    value: 20.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate1825
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.7
+    check: antenna_ratio
+    layers: [RDV]
+    value: 200.0
+    params:
+      diode: without
+      diode_area: 1e-06
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD
+  - id: AR.8
+    check: antenna_ratio
+    layers: [RDL]
+    value: 1000.0
+    params:
+      diode: without
+      diode_area: 1e-06
+      metric: sidewall
+      thickness: 1.595
+    layer_params:
+      gate: AntGate
+      gate_net_of: POLY
+      diode_1: AntSD
+      diode_1_net_of: ACTSD

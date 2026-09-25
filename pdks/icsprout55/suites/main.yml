@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The full run: import every per-layer deck with no rule restriction.
+include:
+  - deck: offgrid
+  - deck: chipedge
+  - deck: dnw
+  - deck: nw1
+  - deck: psub
+  - deck: act
+  - deck: nvt1
+  - deck: nvt3
+  - deck: pvt1
+  - deck: pvt3
+  - deck: ulld
+  - deck: dgox
+  - deck: tgox
+  - deck: poly
+  - deck: np
+  - deck: pp
+  - deck: esd
+  - deck: sab
+  - deck: ct
+  - deck: actres
+  - deck: polyres
+  - deck: hrp
+  - deck: nw1res
+  - deck: actdm
+  - deck: polydm
+  - deck: met1
+  - deck: via1
+  - deck: met2
+  - deck: via2
+  - deck: met3
+  - deck: via3
+  - deck: met4
+  - deck: via4
+  - deck: met5
+  - deck: t4v2
+  - deck: t4m2
+  - deck: rv
+  - deck: cb
+  - deck: rdl
+  - deck: cover
+  - deck: deupad
+  - deck: slot
+  - deck: mom
+  - deck: efuse
+  - deck: antenna
+  - deck: sealring
+  - deck: esddev

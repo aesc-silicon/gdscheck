@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ACTres-W.1
+    check: min_edge_length
+    layers: [RACTnsCut]
+    value: 0.4
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, NPNoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, PPNoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, NVT3NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, PVT3NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, NVT1NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, PVT1NoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, ESDNoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.1
+    check: min_space
+    layers: [AAResSAB, HRPNoACTres]
+    value: 0.18
+    params:
+      abutting: report
+  - id: ACTres-S.2
+    check: forbidden
+    layers: [CTonAAResS2Bad]
+    value: 0.0
+  - id: ACTres-En.1
+    check: min_enclosure
+    layers: [NPPP, RACT]
+    value: 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACTres-Ex.1
+    check: min_enclosure
+    layers: [ACTres, AAResSAB]
+    value: 0.2
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ACTres-R.1
+    check: forbidden
+    layers: [AAResxSAB, NP, PP]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: ACTres-R.2
+    check: forbidden
+    layers: [RACTnsP, NW1]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: ACTres-R.4
+    check: forbidden
+    layers: [ACTresR4Bad]
+    value: 0.0
