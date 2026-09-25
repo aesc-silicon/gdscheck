@@ -4,6 +4,9 @@
 
 # main without the chip-level rules (CHIPEDGE-R.4), for an IP block.
 include:
+  - deck: dnw
+  - deck: nw1
+  - deck: psub
   - deck: act
   - deck: nvt1
   - deck: nvt3
@@ -50,3 +53,4 @@ include:
   - deck: slot
   - deck: mom
   - deck: efuse
+  - deck: antenna

@@ -5,6 +5,9 @@
 # The full run: import every per-layer deck with no rule restriction.
 include:
   - deck: chipedge
+  - deck: dnw
+  - deck: nw1
+  - deck: psub
   - deck: act
   - deck: nvt1
   - deck: nvt3
@@ -51,3 +54,4 @@ include:
   - deck: slot
   - deck: mom
   - deck: efuse
+  - deck: antenna

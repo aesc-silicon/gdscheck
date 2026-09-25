@@ -101,3 +101,9 @@ rules:
     check: no_angle
     layers: [CT]
     value: 0.0
+  - id: CT-S.2
+    check: min_space
+    layers: [CTNoSRAM]
+    value: 0.12
+    params:
+      net: different

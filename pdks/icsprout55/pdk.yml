@@ -18,6 +18,15 @@ decks:
   - name: chipedge
     path: decks/chipedge.yml
     description: Chip edge (chip-level only)
+  - name: dnw
+    path: decks/dnw.yml
+    description: Deep N-well
+  - name: nw1
+    path: decks/nw1.yml
+    description: N-well
+  - name: psub
+    path: decks/psub.yml
+    description: Native NMOS block
   - name: act
     path: decks/act.yml
     description: Active area
@@ -156,6 +165,207 @@ decks:
   - name: efuse
     path: decks/efuse.yml
     description: eFuse
+  - name: antenna
+    path: decks/antenna.yml
+    description: Antenna ratios (gates without protection ACT)
+
+connectivity:
+  - connector: CT
+    layers: [POLY]
+  - connector: CT
+    layers: [ACTSD]
+  - connector: NPPickup
+    layers: [NW1, NW1Core, NW1IO, ACTSD]
+  - connector: DNW
+    layers: [NW1]
+  - connector: CT
+    layers: [MET1]
+  - connector: VIA1
+    layers: [MET1]
+  - connector: VIA1
+    layers: [MET2]
+  - connector: VIA2
+    layers: [MET2]
+  - connector: VIA2
+    layers: [MET3]
+  - connector: VIA3
+    layers: [MET3]
+  - connector: VIA3
+    layers: [MET4]
+  - connector: VIA4
+    layers: [MET4]
+  - connector: VIA4
+    layers: [MET5]
+  - connector: VIA5
+    layers: [MET5]
+  - connector: VIA5
+    layers: [MET6]
+  - connector: VIA6
+    layers: [MET6]
+  - connector: VIA6
+    layers: [MET7]
+  - connector: VIA7
+    layers: [MET7]
+  - connector: VIA7
+    layers: [MET8]
+  - connector: T2V1OnMET8
+    layers: [MET8, T2V1]
+  - connector: T2V1OnMET7
+    layers: [MET7, T2V1]
+  - connector: T2V1OnMET6
+    layers: [MET6, T2V1]
+  - connector: T2V1OnMET5
+    layers: [MET5, T2V1]
+  - connector: T2V1OnMET4
+    layers: [MET4, T2V1]
+  - connector: T2V1OnMET3
+    layers: [MET3, T2V1]
+  - connector: T2V1OnMET2
+    layers: [MET2, T2V1]
+  - connector: T2V1OnMET1
+    layers: [MET1, T2V1]
+  - connector: T2V1
+    layers: [T2M1]
+  - connector: T2V2OnT2M1
+    layers: [T2M1, T2V2]
+  - connector: T2V2OnMET8
+    layers: [MET8, T2V2]
+  - connector: T2V2OnMET7
+    layers: [MET7, T2V2]
+  - connector: T2V2OnMET6
+    layers: [MET6, T2V2]
+  - connector: T2V2OnMET5
+    layers: [MET5, T2V2]
+  - connector: T2V2OnMET4
+    layers: [MET4, T2V2]
+  - connector: T2V2OnMET3
+    layers: [MET3, T2V2]
+  - connector: T2V2OnMET2
+    layers: [MET2, T2V2]
+  - connector: T2V2OnMET1
+    layers: [MET1, T2V2]
+  - connector: T2V2
+    layers: [T2M2]
+  - connector: T4V1OnT2M2
+    layers: [T2M2, T4V1]
+  - connector: T4V1OnT2M1
+    layers: [T2M1, T4V1]
+  - connector: T4V1OnMET8
+    layers: [MET8, T4V1]
+  - connector: T4V1OnMET7
+    layers: [MET7, T4V1]
+  - connector: T4V1OnMET6
+    layers: [MET6, T4V1]
+  - connector: T4V1OnMET5
+    layers: [MET5, T4V1]
+  - connector: T4V1OnMET4
+    layers: [MET4, T4V1]
+  - connector: T4V1OnMET3
+    layers: [MET3, T4V1]
+  - connector: T4V1OnMET2
+    layers: [MET2, T4V1]
+  - connector: T4V1OnMET1
+    layers: [MET1, T4V1]
+  - connector: T4V1
+    layers: [T4M1]
+  - connector: T4V2OnT4M1
+    layers: [T4M1, T4V2]
+  - connector: T4V2OnT2M2
+    layers: [T2M2, T4V2]
+  - connector: T4V2OnT2M1
+    layers: [T2M1, T4V2]
+  - connector: T4V2OnMET8
+    layers: [MET8, T4V2]
+  - connector: T4V2OnMET7
+    layers: [MET7, T4V2]
+  - connector: T4V2OnMET6
+    layers: [MET6, T4V2]
+  - connector: T4V2OnMET5
+    layers: [MET5, T4V2]
+  - connector: T4V2OnMET4
+    layers: [MET4, T4V2]
+  - connector: T4V2OnMET3
+    layers: [MET3, T4V2]
+  - connector: T4V2OnMET2
+    layers: [MET2, T4V2]
+  - connector: T4V2OnMET1
+    layers: [MET1, T4V2]
+  - connector: T4V2
+    layers: [T4M2]
+  - connector: T8V1OnT4M2
+    layers: [T4M2, T8V1]
+  - connector: T8V1OnT4M1
+    layers: [T4M1, T8V1]
+  - connector: T8V1OnT2M2
+    layers: [T2M2, T8V1]
+  - connector: T8V1OnT2M1
+    layers: [T2M1, T8V1]
+  - connector: T8V1OnMET8
+    layers: [MET8, T8V1]
+  - connector: T8V1OnMET7
+    layers: [MET7, T8V1]
+  - connector: T8V1OnMET6
+    layers: [MET6, T8V1]
+  - connector: T8V1OnMET5
+    layers: [MET5, T8V1]
+  - connector: T8V1OnMET4
+    layers: [MET4, T8V1]
+  - connector: T8V1OnMET3
+    layers: [MET3, T8V1]
+  - connector: T8V1OnMET2
+    layers: [MET2, T8V1]
+  - connector: T8V1OnMET1
+    layers: [MET1, T8V1]
+  - connector: T8V1
+    layers: [T8M1]
+  - connector: T8V2OnT8M1
+    layers: [T8M1, T8V2]
+  - connector: T8V2OnT4M2
+    layers: [T4M2, T8V2]
+  - connector: T8V2OnT4M1
+    layers: [T4M1, T8V2]
+  - connector: T8V2OnT2M2
+    layers: [T2M2, T8V2]
+  - connector: T8V2OnT2M1
+    layers: [T2M1, T8V2]
+  - connector: T8V2OnMET8
+    layers: [MET8, T8V2]
+  - connector: T8V2OnMET7
+    layers: [MET7, T8V2]
+  - connector: T8V2OnMET6
+    layers: [MET6, T8V2]
+  - connector: T8V2OnMET5
+    layers: [MET5, T8V2]
+  - connector: T8V2OnMET4
+    layers: [MET4, T8V2]
+  - connector: T8V2OnMET3
+    layers: [MET3, T8V2]
+  - connector: T8V2OnMET2
+    layers: [MET2, T8V2]
+  - connector: T8V2OnMET1
+    layers: [MET1, T8V2]
+  - connector: T8V2
+    layers: [T8M2]
+  - connector: RVOnT8M2
+    layers: [T8M2, RV]
+  - connector: RVOnT4M2
+    layers: [T4M2, RV]
+  - connector: RVOnT2M2
+    layers: [T2M2, RV]
+  - connector: RV
+    layers: [RDL]
+  - connector: CBOnT8M2
+    layers: [T8M2, CB]
+  - connector: CBOnT4M2
+    layers: [T4M2, CB]
+  - connector: CBOnT2M2
+    layers: [T2M2, CB]
+  - connector: CB
+    layers: [ALPAD]
+  - connector: RDL
+    layers: [ALPAD]
+  - connector: CT
+    layers: [CTNoSRAM]
 
 virtual_layers:
   - name: MET1NoInd
@@ -1565,6 +1775,598 @@ virtual_layers:
     op: not_inside
     mode: lazy
     layers: [CTAtPP, PP]
+  - name: ACTSD
+    op: difference
+    mode: lazy
+    layers: [ACT, POLY]
+  - name: NW1IO
+    op: overlapping
+    mode: lazy
+    layers: [NW1, IOOX]
+  - name: NW1Core
+    op: not_overlapping
+    mode: lazy
+    layers: [NW1, IOOX]
+  - name: T2V1OnMET8
+    op: intersection
+    mode: lazy
+    layers: [T2V1, MET8]
+  - name: T2V1PastMET8
+    op: difference
+    mode: lazy
+    layers: [T2V1, MET8]
+  - name: T2V1OnMET7
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET8, MET7]
+  - name: T2V1PastMET7
+    op: difference
+    mode: lazy
+    layers: [T2V1PastMET8, MET7]
+  - name: T2V1OnMET6
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET7, MET6]
+  - name: T2V1PastMET6
+    op: difference
+    mode: lazy
+    layers: [T2V1PastMET7, MET6]
+  - name: T2V1OnMET5
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET6, MET5]
+  - name: T2V1PastMET5
+    op: difference
+    mode: lazy
+    layers: [T2V1PastMET6, MET5]
+  - name: T2V1OnMET4
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET5, MET4]
+  - name: T2V1PastMET4
+    op: difference
+    mode: lazy
+    layers: [T2V1PastMET5, MET4]
+  - name: T2V1OnMET3
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET4, MET3]
+  - name: T2V1PastMET3
+    op: difference
+    mode: lazy
+    layers: [T2V1PastMET4, MET3]
+  - name: T2V1OnMET2
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET3, MET2]
+  - name: T2V1PastMET2
+    op: difference
+    mode: lazy
+    layers: [T2V1PastMET3, MET2]
+  - name: T2V1OnMET1
+    op: intersection
+    mode: lazy
+    layers: [T2V1PastMET2, MET1]
+  - name: T2V2OnT2M1
+    op: intersection
+    mode: lazy
+    layers: [T2V2, T2M1]
+  - name: T2V2PastT2M1
+    op: difference
+    mode: lazy
+    layers: [T2V2, T2M1]
+  - name: T2V2OnMET8
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastT2M1, MET8]
+  - name: T2V2PastMET8
+    op: difference
+    mode: lazy
+    layers: [T2V2PastT2M1, MET8]
+  - name: T2V2OnMET7
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET8, MET7]
+  - name: T2V2PastMET7
+    op: difference
+    mode: lazy
+    layers: [T2V2PastMET8, MET7]
+  - name: T2V2OnMET6
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET7, MET6]
+  - name: T2V2PastMET6
+    op: difference
+    mode: lazy
+    layers: [T2V2PastMET7, MET6]
+  - name: T2V2OnMET5
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET6, MET5]
+  - name: T2V2PastMET5
+    op: difference
+    mode: lazy
+    layers: [T2V2PastMET6, MET5]
+  - name: T2V2OnMET4
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET5, MET4]
+  - name: T2V2PastMET4
+    op: difference
+    mode: lazy
+    layers: [T2V2PastMET5, MET4]
+  - name: T2V2OnMET3
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET4, MET3]
+  - name: T2V2PastMET3
+    op: difference
+    mode: lazy
+    layers: [T2V2PastMET4, MET3]
+  - name: T2V2OnMET2
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET3, MET2]
+  - name: T2V2PastMET2
+    op: difference
+    mode: lazy
+    layers: [T2V2PastMET3, MET2]
+  - name: T2V2OnMET1
+    op: intersection
+    mode: lazy
+    layers: [T2V2PastMET2, MET1]
+  - name: T4V1OnT2M2
+    op: intersection
+    mode: lazy
+    layers: [T4V1, T2M2]
+  - name: T4V1PastT2M2
+    op: difference
+    mode: lazy
+    layers: [T4V1, T2M2]
+  - name: T4V1OnT2M1
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastT2M2, T2M1]
+  - name: T4V1PastT2M1
+    op: difference
+    mode: lazy
+    layers: [T4V1PastT2M2, T2M1]
+  - name: T4V1OnMET8
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastT2M1, MET8]
+  - name: T4V1PastMET8
+    op: difference
+    mode: lazy
+    layers: [T4V1PastT2M1, MET8]
+  - name: T4V1OnMET7
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET8, MET7]
+  - name: T4V1PastMET7
+    op: difference
+    mode: lazy
+    layers: [T4V1PastMET8, MET7]
+  - name: T4V1OnMET6
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET7, MET6]
+  - name: T4V1PastMET6
+    op: difference
+    mode: lazy
+    layers: [T4V1PastMET7, MET6]
+  - name: T4V1OnMET5
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET6, MET5]
+  - name: T4V1PastMET5
+    op: difference
+    mode: lazy
+    layers: [T4V1PastMET6, MET5]
+  - name: T4V1OnMET4
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET5, MET4]
+  - name: T4V1PastMET4
+    op: difference
+    mode: lazy
+    layers: [T4V1PastMET5, MET4]
+  - name: T4V1OnMET3
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET4, MET3]
+  - name: T4V1PastMET3
+    op: difference
+    mode: lazy
+    layers: [T4V1PastMET4, MET3]
+  - name: T4V1OnMET2
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET3, MET2]
+  - name: T4V1PastMET2
+    op: difference
+    mode: lazy
+    layers: [T4V1PastMET3, MET2]
+  - name: T4V1OnMET1
+    op: intersection
+    mode: lazy
+    layers: [T4V1PastMET2, MET1]
+  - name: T4V2OnT4M1
+    op: intersection
+    mode: lazy
+    layers: [T4V2, T4M1]
+  - name: T4V2PastT4M1
+    op: difference
+    mode: lazy
+    layers: [T4V2, T4M1]
+  - name: T4V2OnT2M2
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastT4M1, T2M2]
+  - name: T4V2PastT2M2
+    op: difference
+    mode: lazy
+    layers: [T4V2PastT4M1, T2M2]
+  - name: T4V2OnT2M1
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastT2M2, T2M1]
+  - name: T4V2PastT2M1
+    op: difference
+    mode: lazy
+    layers: [T4V2PastT2M2, T2M1]
+  - name: T4V2OnMET8
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastT2M1, MET8]
+  - name: T4V2PastMET8
+    op: difference
+    mode: lazy
+    layers: [T4V2PastT2M1, MET8]
+  - name: T4V2OnMET7
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET8, MET7]
+  - name: T4V2PastMET7
+    op: difference
+    mode: lazy
+    layers: [T4V2PastMET8, MET7]
+  - name: T4V2OnMET6
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET7, MET6]
+  - name: T4V2PastMET6
+    op: difference
+    mode: lazy
+    layers: [T4V2PastMET7, MET6]
+  - name: T4V2OnMET5
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET6, MET5]
+  - name: T4V2PastMET5
+    op: difference
+    mode: lazy
+    layers: [T4V2PastMET6, MET5]
+  - name: T4V2OnMET4
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET5, MET4]
+  - name: T4V2PastMET4
+    op: difference
+    mode: lazy
+    layers: [T4V2PastMET5, MET4]
+  - name: T4V2OnMET3
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET4, MET3]
+  - name: T4V2PastMET3
+    op: difference
+    mode: lazy
+    layers: [T4V2PastMET4, MET3]
+  - name: T4V2OnMET2
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET3, MET2]
+  - name: T4V2PastMET2
+    op: difference
+    mode: lazy
+    layers: [T4V2PastMET3, MET2]
+  - name: T4V2OnMET1
+    op: intersection
+    mode: lazy
+    layers: [T4V2PastMET2, MET1]
+  - name: T8V1OnT4M2
+    op: intersection
+    mode: lazy
+    layers: [T8V1, T4M2]
+  - name: T8V1PastT4M2
+    op: difference
+    mode: lazy
+    layers: [T8V1, T4M2]
+  - name: T8V1OnT4M1
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastT4M2, T4M1]
+  - name: T8V1PastT4M1
+    op: difference
+    mode: lazy
+    layers: [T8V1PastT4M2, T4M1]
+  - name: T8V1OnT2M2
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastT4M1, T2M2]
+  - name: T8V1PastT2M2
+    op: difference
+    mode: lazy
+    layers: [T8V1PastT4M1, T2M2]
+  - name: T8V1OnT2M1
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastT2M2, T2M1]
+  - name: T8V1PastT2M1
+    op: difference
+    mode: lazy
+    layers: [T8V1PastT2M2, T2M1]
+  - name: T8V1OnMET8
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastT2M1, MET8]
+  - name: T8V1PastMET8
+    op: difference
+    mode: lazy
+    layers: [T8V1PastT2M1, MET8]
+  - name: T8V1OnMET7
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET8, MET7]
+  - name: T8V1PastMET7
+    op: difference
+    mode: lazy
+    layers: [T8V1PastMET8, MET7]
+  - name: T8V1OnMET6
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET7, MET6]
+  - name: T8V1PastMET6
+    op: difference
+    mode: lazy
+    layers: [T8V1PastMET7, MET6]
+  - name: T8V1OnMET5
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET6, MET5]
+  - name: T8V1PastMET5
+    op: difference
+    mode: lazy
+    layers: [T8V1PastMET6, MET5]
+  - name: T8V1OnMET4
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET5, MET4]
+  - name: T8V1PastMET4
+    op: difference
+    mode: lazy
+    layers: [T8V1PastMET5, MET4]
+  - name: T8V1OnMET3
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET4, MET3]
+  - name: T8V1PastMET3
+    op: difference
+    mode: lazy
+    layers: [T8V1PastMET4, MET3]
+  - name: T8V1OnMET2
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET3, MET2]
+  - name: T8V1PastMET2
+    op: difference
+    mode: lazy
+    layers: [T8V1PastMET3, MET2]
+  - name: T8V1OnMET1
+    op: intersection
+    mode: lazy
+    layers: [T8V1PastMET2, MET1]
+  - name: T8V2OnT8M1
+    op: intersection
+    mode: lazy
+    layers: [T8V2, T8M1]
+  - name: T8V2PastT8M1
+    op: difference
+    mode: lazy
+    layers: [T8V2, T8M1]
+  - name: T8V2OnT4M2
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastT8M1, T4M2]
+  - name: T8V2PastT4M2
+    op: difference
+    mode: lazy
+    layers: [T8V2PastT8M1, T4M2]
+  - name: T8V2OnT4M1
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastT4M2, T4M1]
+  - name: T8V2PastT4M1
+    op: difference
+    mode: lazy
+    layers: [T8V2PastT4M2, T4M1]
+  - name: T8V2OnT2M2
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastT4M1, T2M2]
+  - name: T8V2PastT2M2
+    op: difference
+    mode: lazy
+    layers: [T8V2PastT4M1, T2M2]
+  - name: T8V2OnT2M1
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastT2M2, T2M1]
+  - name: T8V2PastT2M1
+    op: difference
+    mode: lazy
+    layers: [T8V2PastT2M2, T2M1]
+  - name: T8V2OnMET8
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastT2M1, MET8]
+  - name: T8V2PastMET8
+    op: difference
+    mode: lazy
+    layers: [T8V2PastT2M1, MET8]
+  - name: T8V2OnMET7
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET8, MET7]
+  - name: T8V2PastMET7
+    op: difference
+    mode: lazy
+    layers: [T8V2PastMET8, MET7]
+  - name: T8V2OnMET6
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET7, MET6]
+  - name: T8V2PastMET6
+    op: difference
+    mode: lazy
+    layers: [T8V2PastMET7, MET6]
+  - name: T8V2OnMET5
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET6, MET5]
+  - name: T8V2PastMET5
+    op: difference
+    mode: lazy
+    layers: [T8V2PastMET6, MET5]
+  - name: T8V2OnMET4
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET5, MET4]
+  - name: T8V2PastMET4
+    op: difference
+    mode: lazy
+    layers: [T8V2PastMET5, MET4]
+  - name: T8V2OnMET3
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET4, MET3]
+  - name: T8V2PastMET3
+    op: difference
+    mode: lazy
+    layers: [T8V2PastMET4, MET3]
+  - name: T8V2OnMET2
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET3, MET2]
+  - name: T8V2PastMET2
+    op: difference
+    mode: lazy
+    layers: [T8V2PastMET3, MET2]
+  - name: T8V2OnMET1
+    op: intersection
+    mode: lazy
+    layers: [T8V2PastMET2, MET1]
+  - name: RVOnT8M2
+    op: intersection
+    mode: lazy
+    layers: [RV, T8M2]
+  - name: RVPastT8M2
+    op: difference
+    mode: lazy
+    layers: [RV, T8M2]
+  - name: RVOnT4M2
+    op: intersection
+    mode: lazy
+    layers: [RVPastT8M2, T4M2]
+  - name: RVPastT4M2
+    op: difference
+    mode: lazy
+    layers: [RVPastT8M2, T4M2]
+  - name: RVOnT2M2
+    op: intersection
+    mode: lazy
+    layers: [RVPastT4M2, T2M2]
+  - name: CBOnT8M2
+    op: intersection
+    mode: lazy
+    layers: [CB, T8M2]
+  - name: CBPastT8M2
+    op: difference
+    mode: lazy
+    layers: [CB, T8M2]
+  - name: CBOnT4M2
+    op: intersection
+    mode: lazy
+    layers: [CBPastT8M2, T4M2]
+  - name: CBPastT4M2
+    op: difference
+    mode: lazy
+    layers: [CBPastT8M2, T4M2]
+  - name: CBOnT2M2
+    op: intersection
+    mode: lazy
+    layers: [CBPastT4M2, T2M2]
+  - name: CTNoSRAM
+    op: difference
+    mode: lazy
+    layers: [CT, SRAMALL]
+  - name: NW1NoTap
+    op: not_interacting
+    mode: lazy
+    layers: [NW1, NPACT]
+  - name: TPW
+    op: difference
+    mode: lazy
+    layers: [DNW, NW1, PSUB]
+  - name: TPWxTGOX
+    op: interacting
+    mode: lazy
+    layers: [TPW, TGOX]
+  - name: PPACTwithCT
+    op: interacting
+    mode: lazy
+    layers: [PPACT, CT]
+  - name: TPWNoTap
+    op: not_interacting
+    mode: lazy
+    layers: [TPW, PPACTwithCT]
+  - name: GATENat
+    op: intersection
+    mode: lazy
+    layers: [GATE, PSUB]
+  - name: GATENatCore
+    op: difference
+    mode: lazy
+    layers: [GATENat, DGOX, TGOX]
+  - name: GATENatDG
+    op: intersection
+    mode: lazy
+    layers: [GATENat, DGOX]
+  - name: GATENatTG
+    op: intersection
+    mode: lazy
+    layers: [GATENat, TGOX]
+  - name: ACTNat
+    op: inside
+    mode: lazy
+    layers: [ACT, PSUB]
+  - name: ACTNatNoInd
+    op: difference
+    mode: lazy
+    layers: [ACTNat, INDALL]
+  - name: PSUBNoInd
+    op: difference
+    mode: lazy
+    layers: [PSUB, INDALL]
+  - name: POLYNat
+    op: overlapping
+    mode: lazy
+    layers: [POLY, PSUB]
+  - name: GATENoDG
+    op: difference
+    mode: lazy
+    layers: [GATE, DGOX]
 
 layers:
   - name: ACT
