@@ -1,0 +1,148 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: T8M2-W.1
+    check: min_width
+    layers: [T8M2]
+    value: 1.5
+  - id: T8M2-W.1
+    check: max_width
+    layers: [T8M2NoPadInd]
+    value: 50
+    params:
+      span: narrowest
+  - id: T8M2-S.1
+    check: min_space
+    layers: [T8M2NoInd]
+    value: 1.5
+  - id: T8M2-S.1
+    check: min_notch
+    layers: [T8M2NoInd]
+    value: 1.5
+  - id: T8M2-S.3
+    check: min_space
+    layers: [T8M2Ind, T8M2NoInd]
+    value: 30
+  - id: T8M2-Ex.1
+    check: min_enclosure
+    layers: [INDALL, T8M2Ind]
+    value: 15
+    params:
+      metric: euclidian
+  - id: T8M2-Ex.1
+    check: forbidden
+    layers: [T8M2CutsInd]
+    value: 0.0
+  - id: T8M2-A.1
+    check: min_area
+    layers: [T8M2]
+    value: 6
+    params:
+      touching: separate
+  - id: T8M2-A.2
+    check: min_area
+    layers: [T8M2]
+    value: 6
+    params:
+      scope: hole
+  - id: T8M2-D.2
+    check: max_density
+    layers: [T8M2, T8M2dm]
+    value: 55.0
+    layer_params:
+      boundary: CHIPBLK
+  - id: T8M2dm-W.1
+    check: forbidden
+    layers: [T8M2dmBad]
+    value: 0.0
+  - id: T8M2dm-S.1
+    check: min_space
+    layers: [T8M2dm]
+    value: 2.8
+  - id: T8M2dm-S.2
+    check: min_space
+    layers: [T8M2dm, T8M2]
+    value: 2.8
+    params:
+      abutting: report
+  - id: T8M2dm-S.9
+    check: min_space
+    layers: [T8M2dm, FUSEALL]
+    value: 3
+    params:
+      abutting: report
+  - id: T8M2dm-S.9
+    check: forbidden
+    layers: [T8M2dm, FUSEALL]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T8M2dm-S.10
+    check: min_space
+    layers: [T8M2dm, BMIM]
+    value: 2
+    params:
+      abutting: report
+  - id: T8M2dm-S.10
+    check: forbidden
+    layers: [T8M2dm, BMIM]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T8M2dm-S.11
+    check: min_space
+    layers: [T8M2dm, LOGO]
+    value: 0.1
+    params:
+      abutting: report
+  - id: T8M2dm-S.11
+    check: forbidden
+    layers: [T8M2dm, LOGO]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T8M2dm-S.12
+    check: min_space
+    layers: [T8M2dm, INDALL]
+    value: 3
+    params:
+      abutting: report
+  - id: T8M2dm-S.12
+    check: forbidden
+    layers: [T8M2dm, INDALL]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T8M2dm-S.14
+    check: min_space
+    layers: [T8M2dm, T8M2dmb]
+    value: 2
+    params:
+      abutting: report
+  - id: T8M2dm-S.14
+    check: forbidden
+    layers: [T8M2dm, T8M2dmb]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T8M2dm-S.15
+    check: min_space
+    layers: [T8M2dm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
+  - id: T8M2dm-S.15
+    check: forbidden
+    layers: [T8M2dm, DMYBLK]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T8M2dm-S.13
+    check: min_enclosure
+    layers: [CHIPBLK, T8M2dm]
+    value: 2.5
+    params:
+      interacting_only: 1
+      metric: euclidian

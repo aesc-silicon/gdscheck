@@ -1,0 +1,188 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: MET4-W.1
+    check: min_width
+    layers: [MET4]
+    value: 0.1
+  - id: MET4-W.1
+    check: max_width
+    layers: [MET4]
+    value: 12
+    params:
+      span: narrowest
+  - id: MET4-W.2
+    check: min_width
+    layers: [MET4]
+    value: 0.19
+    params:
+      angle: bent
+  - id: MET4-S.1
+    check: min_space
+    layers: [MET4NoInd]
+    value: 0.1
+  - id: MET4-S.1
+    check: min_notch
+    layers: [MET4NoInd]
+    value: 0.1
+  - id: MET4-S.2
+    check: min_space
+    layers: [MET4]
+    value: 0.15
+    params:
+      width: 0.42
+      length: 0.42
+  - id: MET4-S.3
+    check: min_space
+    layers: [MET4]
+    value: 0.5
+    params:
+      width: 1.5
+      length: 1.5
+  - id: MET4-S.4
+    check: min_space
+    layers: [MET4]
+    value: 0.19
+    params:
+      angle: bent
+  - id: MET4-A.1
+    check: min_area
+    layers: [MET4]
+    value: 0.052
+    params:
+      touching: separate
+  - id: MET4-A.2
+    check: min_area
+    layers: [MET4]
+    value: 0.18
+    params:
+      scope: hole
+  - id: MET4dm-W.1
+    check: forbidden
+    layers: [MET4dmBad]
+    value: 0.0
+  - id: MET4dm-S.1
+    check: min_space
+    layers: [MET4dm2x2, MET4dm]
+    value: 0.8
+  - id: MET4dm-S.2
+    check: min_space
+    layers: [MET4dm2x2, MET4]
+    value: 10
+    params:
+      abutting: report
+  - id: MET4dm-S.3
+    check: min_space
+    layers: [MET4dm1x1, MET4dm]
+    value: 0.3
+  - id: MET4dm-S.4
+    check: min_space
+    layers: [MET4dm1x1, MET4]
+    value: 3
+    params:
+      abutting: report
+  - id: MET4dm-S.5
+    check: min_space
+    layers: [MET4dmBar, MET4dm]
+    value: 0.25
+  - id: MET4dm-S.6
+    check: min_space
+    layers: [MET4dmBar, MET4]
+    value: 0.3
+    params:
+      abutting: report
+  - id: MET4dm-S.7
+    check: min_space
+    layers: [MET4dm, MET4]
+    value: 0.6
+    params:
+      width: 1.5
+      length: 1.5
+      abutting: report
+  - id: MET4dm-S.8
+    check: min_space
+    layers: [MET4dm, MET4]
+    value: 0.4
+    params:
+      angle: bent
+  - id: MET4dm-S.9
+    check: min_space
+    layers: [MET4dm, FUSEALL]
+    value: 3
+    params:
+      abutting: report
+  - id: MET4dm-S.9
+    check: forbidden
+    layers: [MET4dm, FUSEALL]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MET4dm-S.10
+    check: min_space
+    layers: [MET4dm, BMIM]
+    value: 2
+    params:
+      abutting: report
+  - id: MET4dm-S.10
+    check: forbidden
+    layers: [MET4dm, BMIM]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MET4dm-S.11
+    check: min_space
+    layers: [MET4dm, LOGO]
+    value: 0.1
+    params:
+      abutting: report
+  - id: MET4dm-S.11
+    check: forbidden
+    layers: [MET4dm, LOGO]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MET4dm-S.12
+    check: min_space
+    layers: [MET4dm, INDALL]
+    value: 3
+    params:
+      abutting: report
+  - id: MET4dm-S.12
+    check: forbidden
+    layers: [MET4dm, INDALL]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MET4dm-S.14
+    check: min_space
+    layers: [MET4dm, MET4dmb]
+    value: 2
+    params:
+      abutting: report
+  - id: MET4dm-S.14
+    check: forbidden
+    layers: [MET4dm, MET4dmb]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MET4dm-S.15
+    check: min_space
+    layers: [MET4dm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
+  - id: MET4dm-S.15
+    check: forbidden
+    layers: [MET4dm, DMYBLK]
+    value: 0.0
+    params:
+      op: overlap
+  - id: MET4dm-S.13
+    check: min_enclosure
+    layers: [CHIPBLK, MET4dm]
+    value: 2.5
+    params:
+      interacting_only: 1
+      metric: euclidian

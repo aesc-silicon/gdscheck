@@ -6,7 +6,776 @@
 name: ICsprout 55nm
 version: "0.1"
 
-decks: []
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every per-layer deck
+
+decks:
+  - name: met1
+    path: decks/met1.yml
+    description: Metal1, 1x
+  - name: met2
+    path: decks/met2.yml
+    description: Metal2, 1x
+  - name: met3
+    path: decks/met3.yml
+    description: Metal3, 1x
+  - name: met4
+    path: decks/met4.yml
+    description: Metal4, 1x
+  - name: met5
+    path: decks/met5.yml
+    description: Metal5, 1x
+  - name: met6
+    path: decks/met6.yml
+    description: Metal6, 1x
+  - name: met7
+    path: decks/met7.yml
+    description: Metal7, 1x
+  - name: met8
+    path: decks/met8.yml
+    description: Metal8, 1x
+  - name: t2m1
+    path: decks/t2m1.yml
+    description: T2M1, 2x top metal 1
+  - name: t2m2
+    path: decks/t2m2.yml
+    description: T2M2, 2x top metal 2
+  - name: t4m1
+    path: decks/t4m1.yml
+    description: T4M1, 4x top metal 1
+  - name: t4m2
+    path: decks/t4m2.yml
+    description: T4M2, 4x top metal 2
+  - name: t8m1
+    path: decks/t8m1.yml
+    description: T8M1, ultra-thick top metal 1
+  - name: t8m2
+    path: decks/t8m2.yml
+    description: T8M2, ultra-thick top metal 2
+
+virtual_layers:
+  - name: MET1NoInd
+    op: difference
+    mode: lazy
+    layers: [MET1, INDALL]
+  - name: MET1dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET1dm]
+  - name: MET1dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET1dmRect]
+    min: 2
+    max: 2.001
+  - name: MET1dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET1dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET1dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET1dmRect]
+    min: 1
+    max: 1.001
+  - name: MET1dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET1dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET1dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET1dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET1dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET1dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET1dmOk
+    op: union
+    mode: lazy
+    layers: [MET1dm2x2, MET1dm1x1, MET1dmBar]
+  - name: MET1dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET1dm, MET1dmOk]
+  - name: MET2NoInd
+    op: difference
+    mode: lazy
+    layers: [MET2, INDALL]
+  - name: MET2dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET2dm]
+  - name: MET2dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET2dmRect]
+    min: 2
+    max: 2.001
+  - name: MET2dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET2dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET2dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET2dmRect]
+    min: 1
+    max: 1.001
+  - name: MET2dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET2dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET2dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET2dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET2dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET2dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET2dmOk
+    op: union
+    mode: lazy
+    layers: [MET2dm2x2, MET2dm1x1, MET2dmBar]
+  - name: MET2dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET2dm, MET2dmOk]
+  - name: MET3NoInd
+    op: difference
+    mode: lazy
+    layers: [MET3, INDALL]
+  - name: MET3dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET3dm]
+  - name: MET3dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET3dmRect]
+    min: 2
+    max: 2.001
+  - name: MET3dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET3dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET3dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET3dmRect]
+    min: 1
+    max: 1.001
+  - name: MET3dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET3dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET3dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET3dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET3dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET3dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET3dmOk
+    op: union
+    mode: lazy
+    layers: [MET3dm2x2, MET3dm1x1, MET3dmBar]
+  - name: MET3dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET3dm, MET3dmOk]
+  - name: MET4NoInd
+    op: difference
+    mode: lazy
+    layers: [MET4, INDALL]
+  - name: MET4dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET4dm]
+  - name: MET4dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET4dmRect]
+    min: 2
+    max: 2.001
+  - name: MET4dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET4dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET4dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET4dmRect]
+    min: 1
+    max: 1.001
+  - name: MET4dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET4dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET4dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET4dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET4dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET4dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET4dmOk
+    op: union
+    mode: lazy
+    layers: [MET4dm2x2, MET4dm1x1, MET4dmBar]
+  - name: MET4dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET4dm, MET4dmOk]
+  - name: MET5NoInd
+    op: difference
+    mode: lazy
+    layers: [MET5, INDALL]
+  - name: MET5dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET5dm]
+  - name: MET5dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET5dmRect]
+    min: 2
+    max: 2.001
+  - name: MET5dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET5dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET5dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET5dmRect]
+    min: 1
+    max: 1.001
+  - name: MET5dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET5dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET5dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET5dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET5dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET5dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET5dmOk
+    op: union
+    mode: lazy
+    layers: [MET5dm2x2, MET5dm1x1, MET5dmBar]
+  - name: MET5dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET5dm, MET5dmOk]
+  - name: MET6NoInd
+    op: difference
+    mode: lazy
+    layers: [MET6, INDALL]
+  - name: MET6dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET6dm]
+  - name: MET6dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET6dmRect]
+    min: 2
+    max: 2.001
+  - name: MET6dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET6dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET6dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET6dmRect]
+    min: 1
+    max: 1.001
+  - name: MET6dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET6dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET6dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET6dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET6dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET6dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET6dmOk
+    op: union
+    mode: lazy
+    layers: [MET6dm2x2, MET6dm1x1, MET6dmBar]
+  - name: MET6dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET6dm, MET6dmOk]
+  - name: MET7NoInd
+    op: difference
+    mode: lazy
+    layers: [MET7, INDALL]
+  - name: MET7dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET7dm]
+  - name: MET7dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET7dmRect]
+    min: 2
+    max: 2.001
+  - name: MET7dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET7dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET7dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET7dmRect]
+    min: 1
+    max: 1.001
+  - name: MET7dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET7dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET7dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET7dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET7dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET7dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET7dmOk
+    op: union
+    mode: lazy
+    layers: [MET7dm2x2, MET7dm1x1, MET7dmBar]
+  - name: MET7dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET7dm, MET7dmOk]
+  - name: MET8NoInd
+    op: difference
+    mode: lazy
+    layers: [MET8, INDALL]
+  - name: MET8dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET8dm]
+  - name: MET8dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET8dmRect]
+    min: 2
+    max: 2.001
+  - name: MET8dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET8dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET8dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET8dmRect]
+    min: 1
+    max: 1.001
+  - name: MET8dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET8dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET8dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET8dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET8dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET8dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET8dmOk
+    op: union
+    mode: lazy
+    layers: [MET8dm2x2, MET8dm1x1, MET8dmBar]
+  - name: MET8dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET8dm, MET8dmOk]
+  - name: T2M1NoInd
+    op: difference
+    mode: lazy
+    layers: [T2M1, INDALL]
+  - name: T2M1NoPadInd
+    op: difference
+    mode: lazy
+    layers: [T2M1, DEUPAD, INDALL]
+  - name: T2M1dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T2M1dm]
+  - name: T2M1dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T2M1dmRect]
+    min: 2
+    max: 2.001
+  - name: T2M1dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [T2M1dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: T2M1dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T2M1dmRect]
+    min: 1
+    max: 1.001
+  - name: T2M1dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [T2M1dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: T2M1dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T2M1dmRect]
+    min: 0.6
+    max: 0.601
+  - name: T2M1dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [T2M1dmBarShort]
+    min: 1.2
+    max: 1.201
+  - name: T2M1dmOk
+    op: union
+    mode: lazy
+    layers: [T2M1dm2x2, T2M1dm1x1, T2M1dmBar]
+  - name: T2M1dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T2M1dm, T2M1dmOk]
+  - name: T2M2NoInd
+    op: difference
+    mode: lazy
+    layers: [T2M2, INDALL]
+  - name: T2M2NoPadInd
+    op: difference
+    mode: lazy
+    layers: [T2M2, DEUPAD, INDALL]
+  - name: T2M2dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T2M2dm]
+  - name: T2M2dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T2M2dmRect]
+    min: 2
+    max: 2.001
+  - name: T2M2dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [T2M2dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: T2M2dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T2M2dmRect]
+    min: 1
+    max: 1.001
+  - name: T2M2dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [T2M2dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: T2M2dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T2M2dmRect]
+    min: 0.6
+    max: 0.601
+  - name: T2M2dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [T2M2dmBarShort]
+    min: 1.2
+    max: 1.201
+  - name: T2M2dmOk
+    op: union
+    mode: lazy
+    layers: [T2M2dm2x2, T2M2dm1x1, T2M2dmBar]
+  - name: T2M2dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T2M2dm, T2M2dmOk]
+  - name: T4M1NoInd
+    op: difference
+    mode: lazy
+    layers: [T4M1, INDALL]
+  - name: T4M1NoPadInd
+    op: difference
+    mode: lazy
+    layers: [T4M1, DEUPAD, INDALL]
+  - name: T4M1dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T4M1dm]
+  - name: T4M1dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M1dmRect]
+    min: 2
+    max: 2.001
+  - name: T4M1dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M1dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: T4M1dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M1dmRect]
+    min: 1
+    max: 1.001
+  - name: T4M1dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M1dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: T4M1dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M1dmRect]
+    min: 0.6
+    max: 0.601
+  - name: T4M1dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M1dmBarShort]
+    min: 1.2
+    max: 1.201
+  - name: T4M1dmOk
+    op: union
+    mode: lazy
+    layers: [T4M1dm2x2, T4M1dm1x1, T4M1dmBar]
+  - name: T4M1dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M1dm, T4M1dmOk]
+  - name: T4M2NoInd
+    op: difference
+    mode: lazy
+    layers: [T4M2, INDALL]
+  - name: T4M2NoPadInd
+    op: difference
+    mode: lazy
+    layers: [T4M2, DEUPAD, INDALL]
+  - name: T4M2dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T4M2dm]
+  - name: T4M2dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M2dmRect]
+    min: 2
+    max: 2.001
+  - name: T4M2dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M2dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: T4M2dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M2dmRect]
+    min: 1
+    max: 1.001
+  - name: T4M2dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M2dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: T4M2dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M2dmRect]
+    min: 0.6
+    max: 0.601
+  - name: T4M2dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M2dmBarShort]
+    min: 1.2
+    max: 1.201
+  - name: T4M2dmOk
+    op: union
+    mode: lazy
+    layers: [T4M2dm2x2, T4M2dm1x1, T4M2dmBar]
+  - name: T4M2dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M2dm, T4M2dmOk]
+  - name: T8M1NoInd
+    op: difference
+    mode: lazy
+    layers: [T8M1, INDALL]
+  - name: T8M1NoPadInd
+    op: difference
+    mode: lazy
+    layers: [T8M1, DEUPAD, INDALL]
+  - name: T8M1dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T8M1dm]
+  - name: T8M1dmSqShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T8M1dmRect]
+    min: 2.8
+    max: 2.801
+  - name: T8M1dmSq
+    op: with_bbox_max
+    mode: lazy
+    layers: [T8M1dmSqShort]
+    min: 2.8
+    max: 2.801
+  - name: T8M1dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T8M1dm, T8M1dmSq]
+  - name: T8M2NoInd
+    op: difference
+    mode: lazy
+    layers: [T8M2, INDALL]
+  - name: T8M2NoPadInd
+    op: difference
+    mode: lazy
+    layers: [T8M2, DEUPAD, INDALL]
+  - name: T8M2dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T8M2dm]
+  - name: T8M2dmSqShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T8M2dmRect]
+    min: 2.8
+    max: 2.801
+  - name: T8M2dmSq
+    op: with_bbox_max
+    mode: lazy
+    layers: [T8M2dmSqShort]
+    min: 2.8
+    max: 2.801
+  - name: T8M2dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T8M2dm, T8M2dmSq]
+  - name: T8M1Ind
+    op: intersection
+    mode: lazy
+    layers: [T8M1, INDALL]
+  - name: T8M1AtInd
+    op: overlapping
+    mode: lazy
+    layers: [T8M1, INDALL]
+  - name: T8M1CutsInd
+    op: not_inside
+    mode: lazy
+    layers: [T8M1AtInd, INDALL]
+  - name: T8M2Ind
+    op: intersection
+    mode: lazy
+    layers: [T8M2, INDALL]
+  - name: T8M2AtInd
+    op: overlapping
+    mode: lazy
+    layers: [T8M2, INDALL]
+  - name: T8M2CutsInd
+    op: not_inside
+    mode: lazy
+    layers: [T8M2AtInd, INDALL]
 
 layers:
   - name: ACT

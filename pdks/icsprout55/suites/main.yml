@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The full run: import every per-layer deck with no rule restriction.
+include:
+  - deck: met1
+  - deck: met2
+  - deck: met3
+  - deck: met4
+  - deck: met5
+  - deck: met6
+  - deck: met7
+  - deck: met8
+  - deck: t2m1
+  - deck: t2m2
+  - deck: t4m1
+  - deck: t4m2
+  - deck: t8m1
+  - deck: t8m2

@@ -1,0 +1,188 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: T2M2-W.1
+    check: min_width
+    layers: [T2M2]
+    value: 0.2
+  - id: T2M2-W.1
+    check: max_width
+    layers: [T2M2NoPadInd]
+    value: 10
+    params:
+      span: narrowest
+  - id: T2M2-W.2
+    check: min_width
+    layers: [T2M2]
+    value: 0.39
+    params:
+      angle: bent
+  - id: T2M2-S.1
+    check: min_space
+    layers: [T2M2NoInd]
+    value: 0.2
+  - id: T2M2-S.1
+    check: min_notch
+    layers: [T2M2NoInd]
+    value: 0.2
+  - id: T2M2-S.2
+    check: min_space
+    layers: [T2M2]
+    value: 0.24
+    params:
+      width: 0.39
+      length: 1.0
+  - id: T2M2-S.3
+    check: min_space
+    layers: [T2M2]
+    value: 0.5
+    params:
+      width: 1.5
+      length: 1.5
+  - id: T2M2-S.4
+    check: min_space
+    layers: [T2M2]
+    value: 0.39
+    params:
+      angle: bent
+  - id: T2M2-A.1
+    check: min_area
+    layers: [T2M2]
+    value: 0.14
+    params:
+      touching: separate
+  - id: T2M2-A.2
+    check: min_area
+    layers: [T2M2]
+    value: 0.26
+    params:
+      scope: hole
+  - id: T2M2dm-W.1
+    check: forbidden
+    layers: [T2M2dmBad]
+    value: 0.0
+  - id: T2M2dm-S.1
+    check: min_space
+    layers: [T2M2dm2x2, T2M2dm]
+    value: 0.8
+  - id: T2M2dm-S.2
+    check: min_space
+    layers: [T2M2dm2x2, T2M2]
+    value: 10
+    params:
+      abutting: report
+  - id: T2M2dm-S.3
+    check: min_space
+    layers: [T2M2dm1x1, T2M2dm]
+    value: 0.4
+  - id: T2M2dm-S.4
+    check: min_space
+    layers: [T2M2dm1x1, T2M2]
+    value: 0.6
+    params:
+      abutting: report
+  - id: T2M2dm-S.5
+    check: min_space
+    layers: [T2M2dmBar, T2M2dm]
+    value: 0.4
+  - id: T2M2dm-S.6
+    check: min_space
+    layers: [T2M2dmBar, T2M2]
+    value: 0.6
+    params:
+      abutting: report
+  - id: T2M2dm-S.7
+    check: min_space
+    layers: [T2M2dm, T2M2]
+    value: 0.6
+    params:
+      width: 1.5
+      length: 1.5
+      abutting: report
+  - id: T2M2dm-S.8
+    check: min_space
+    layers: [T2M2dm, T2M2]
+    value: 0.4
+    params:
+      angle: bent
+  - id: T2M2dm-S.9
+    check: min_space
+    layers: [T2M2dm, FUSEALL]
+    value: 3
+    params:
+      abutting: report
+  - id: T2M2dm-S.9
+    check: forbidden
+    layers: [T2M2dm, FUSEALL]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T2M2dm-S.10
+    check: min_space
+    layers: [T2M2dm, BMIM]
+    value: 2
+    params:
+      abutting: report
+  - id: T2M2dm-S.10
+    check: forbidden
+    layers: [T2M2dm, BMIM]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T2M2dm-S.11
+    check: min_space
+    layers: [T2M2dm, LOGO]
+    value: 0.1
+    params:
+      abutting: report
+  - id: T2M2dm-S.11
+    check: forbidden
+    layers: [T2M2dm, LOGO]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T2M2dm-S.12
+    check: min_space
+    layers: [T2M2dm, INDALL]
+    value: 3
+    params:
+      abutting: report
+  - id: T2M2dm-S.12
+    check: forbidden
+    layers: [T2M2dm, INDALL]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T2M2dm-S.14
+    check: min_space
+    layers: [T2M2dm, T2M2dmb]
+    value: 2
+    params:
+      abutting: report
+  - id: T2M2dm-S.14
+    check: forbidden
+    layers: [T2M2dm, T2M2dmb]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T2M2dm-S.15
+    check: min_space
+    layers: [T2M2dm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
+  - id: T2M2dm-S.15
+    check: forbidden
+    layers: [T2M2dm, DMYBLK]
+    value: 0.0
+    params:
+      op: overlap
+  - id: T2M2dm-S.13
+    check: min_enclosure
+    layers: [CHIPBLK, T2M2dm]
+    value: 2.5
+    params:
+      interacting_only: 1
+      metric: euclidian
