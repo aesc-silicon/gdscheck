@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: COVER-W.1
+    check: min_width
+    layers: [COVER]
+    value: 40
+  - id: COVER-L.1
+    check: min_length
+    layers: [COVER]
+    value: 65
+  - id: COVER-S.1
+    check: min_space
+    layers: [COVER]
+    value: 5
+  - id: COVER-S.1
+    check: min_notch
+    layers: [COVER]
+    value: 5
+  - id: COVER-En.1
+    check: min_enclosure
+    layers: [ALPAD, COVER]
+    value: 1.5
+    params:
+      metric: euclidian

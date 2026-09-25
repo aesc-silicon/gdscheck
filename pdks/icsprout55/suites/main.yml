@@ -51,6 +51,11 @@ include:
   - deck: t8m1
   - deck: t8v2
   - deck: t8m2
+  - deck: rv
+  - deck: cb
+  - deck: rdl
+  - deck: cover
+  - deck: deupad
   - deck: slot
   - deck: mom
   - deck: efuse

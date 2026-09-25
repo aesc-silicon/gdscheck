@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: DEUPAD-R.2
+    check: forbidden
+    layers: [COVER, DEUPAD]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: DEUPAD-R.5
+    check: forbidden
+    layers: [DEUPAD, ALPADres]
+    value: 0.0
+    params:
+      op: overlap
+  - id: DEUPAD-R.5
+    check: forbidden
+    layers: [DEUPAD, MOMLVS1]
+    value: 0.0
+    params:
+      op: overlap
+  - id: DEUPAD-R.5
+    check: forbidden
+    layers: [DEUPAD, INDALL]
+    value: 0.0
+    params:
+      op: overlap

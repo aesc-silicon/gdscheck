@@ -156,6 +156,21 @@ decks:
   - name: t8m2
     path: decks/t8m2.yml
     description: T8M2, ultra-thick top metal 2
+  - name: rv
+    path: decks/rv.yml
+    description: Re-distribution via
+  - name: cb
+    path: decks/cb.yml
+    description: Passivation 1 opening
+  - name: rdl
+    path: decks/rdl.yml
+    description: Re-distribution layer and aluminium pad
+  - name: cover
+    path: decks/cover.yml
+    description: Passivation 2 opening
+  - name: deupad
+    path: decks/deupad.yml
+    description: Device under pad
   - name: slot
     path: decks/slot.yml
     description: Metal slots
@@ -2367,6 +2382,33 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [GATE, DGOX]
+  - name: RVSq
+    op: difference
+    mode: lazy
+    layers: [RV, SRINGBLK]
+  - name: AL
+    op: union
+    mode: lazy
+    layers: [RDL, ALPAD]
+  - name: ALOpen5x
+    op: shrink_x
+    mode: lazy
+    layers: [AL]
+    radius: 5
+  - name: ALOpen5y
+    op: shrink_y
+    mode: lazy
+    layers: [ALOpen5x]
+    radius: 5
+  - name: ALBig10
+    op: overlapping
+    mode: lazy
+    layers: [AL, ALOpen5y]
+  - name: ALBig35
+    op: with_bbox_max
+    mode: lazy
+    layers: [AL]
+    min: 35.001
 
 layers:
   - name: ACT

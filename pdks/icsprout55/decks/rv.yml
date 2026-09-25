@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: RV-W.1
+    check: exact_width
+    layers: [RVSq]
+    value: 3
+  - id: RV-S.1
+    check: min_space
+    layers: [RV]
+    value: 3
+  - id: RV-S.2
+    check: min_space
+    layers: [RV, CB]
+    value: 6
+  - id: RV-En.1
+    check: forbidden
+    layers: [RV, T8M2, T4M2, T2M2]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: RV-En.2
+    check: min_enclosure
+    layers: [T8M2, RVOnT8M2]
+    value: 1.5
+    params:
+      metric: euclidian
+  - id: RV-En.2
+    check: min_enclosure
+    layers: [T4M2, RVOnT4M2]
+    value: 1.5
+    params:
+      metric: euclidian
+  - id: RV-En.2
+    check: min_enclosure
+    layers: [T2M2, RVOnT2M2]
+    value: 1.5
+    params:
+      metric: euclidian
+  - id: RV-En.3
+    check: forbidden
+    layers: [RV, RDL]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: RV-En.4
+    check: min_enclosure
+    layers: [RDL, RV]
+    value: 1.5
+    params:
+      metric: euclidian
