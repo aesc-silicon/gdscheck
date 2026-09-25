@@ -11,7 +11,7 @@ rules:
       gate: GatPolyOverActiv
       gate_net_of: GatPoly
       antenna_net_of: GatPoly
-      level: Activ
+      level: ActivSD
   - id: Ant.b
     check: antenna_ratio
     layers: [Metal1, Metal2, Metal3, Metal4, TopMetal1]
@@ -22,7 +22,7 @@ rules:
       gate: GatPolyOverActiv
       gate_net_of: GatPoly
       diode_1: AntDiode
-      diode_1_net_of: Activ
+      diode_1_net_of: ActivSD
   - id: Ant.c
     check: antenna_ratio
     layers: [Cont]
@@ -30,7 +30,7 @@ rules:
     layer_params:
       gate: GatPolyOverActiv
       gate_net_of: GatPoly
-      level: Activ
+      level: ActivSD
   - id: Ant.d
     check: antenna_ratio
     layers: [Via1, Via2, Via3, TopVia1]
@@ -41,7 +41,7 @@ rules:
       gate: GatPolyOverActiv
       gate_net_of: GatPoly
       diode_1: AntDiode
-      diode_1_net_of: Activ
+      diode_1_net_of: ActivSD
   - id: Ant.e
     check: antenna_ratio
     layers: [Metal1, Metal2, Metal3, Metal4, TopMetal1]
@@ -52,7 +52,7 @@ rules:
       gate: GatPolyOverActiv
       gate_net_of: GatPoly
       diode_1: AntDiode
-      diode_1_net_of: Activ
+      diode_1_net_of: ActivSD
   - id: Ant.f
     check: antenna_ratio
     layers: [Via1, Via2, Via3, TopVia1]
@@ -63,7 +63,7 @@ rules:
       gate: GatPolyOverActiv
       gate_net_of: GatPoly
       diode_1: AntDiode
-      diode_1_net_of: Activ
+      diode_1_net_of: ActivSD
   - id: Ant.g
     check: min_area
     layers: [AntDantenna, AntDpantenna]
@@ -73,7 +73,7 @@ rules:
     layer_params:
       connected: GatPolyOverActiv
       connected_net_of: GatPoly
-      net_of: Activ
+      net_of: ActivSD
   - id: Ant.h
     check: forbidden_unless_labeled
     layers: [Activ, GatPoly, pSD, nSD.block, Recog.diode, Recog.esd, NWell, PWell.block, nBuLay, TEXT]

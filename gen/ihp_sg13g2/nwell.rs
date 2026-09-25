@@ -4,8 +4,8 @@
 
 use super::{OFFSET, SPACE_DELTA};
 use crate::helpers::{
-    chamfered_tr, diamond, layer, library, min_width_pattern, poly, rect, strap, strip45, tap,
-    write_gz,
+    chamfered_tr, cont_at, diamond, layer, library, min_width_pattern, poly, rect, strap, strip45,
+    tap, write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -489,6 +489,7 @@ fn hardening(pdk: &PdkConfig) {
     nw_a_h(&l);
     nw_b_h(&l);
     nw_b1_h(&l);
+    nw_b1_h9(&l, layer(pdk, "GatPoly"));
     nw_c_h(&l);
     nw_c1_h(&l);
     nw_d_h(&l);
@@ -890,6 +891,35 @@ fn nw_b1_h(l: &L) {
             rect(l.pwb, 9.25, 2.0, 9.75, 4.0), // NW.b1
         ],
     );
+}
+
+/// NW.b1.h9 - a well tied through a transistor is no net with it: wells 1.0 apart, the
+/// left one's tap strapped on Metal1 to the drain of a pMOS in the right one, whose
+/// source is strapped to the right well's tap.  Source and drain are one Activ under the
+/// gate, but no net: NW.b1 fires (res_fb_* in the CSA design, as Calibre has it).  The
+/// same pair with the strap on the source instead is one net: clean.
+fn nw_b1_h9(l: &L, gp: (i16, i16)) {
+    let mut e = Vec::new();
+    for (x, on_drain) in [(0.0, true), (12.0, false)] {
+        let col = if on_drain { 8.5 } else { 7.1 };
+        e.push(rect(l.nw, x + 2.0, 2.0, x + 5.0, 6.0));
+        e.push(rect(l.nw, x + 6.0, 2.0, x + 10.0, 6.0));
+        e.extend(l.pact(x + 7.0, 3.0, x + 9.0, 3.6));
+        e.push(rect(gp, x + 7.9, 2.6, x + 8.1, 4.0));
+        e.push(cont_at(l.cont, x + 7.3, 3.3));
+        e.push(cont_at(l.cont, x + 8.7, 3.3));
+        e.extend(tap(l.activ, l.cont, x + 3.5, 4.0, 0.40));
+        e.extend(tap(l.activ, l.cont, x + 8.0, 5.0, 0.40));
+        // The source up to the right well's tap.
+        e.push(rect(l.m1, x + 7.1, 3.1, x + 7.5, 5.2));
+        e.push(rect(l.m1, x + 7.1, 4.8, x + 8.2, 5.2));
+        // The left well's tap down, across below the wells and up to the drain (or the
+        // source).
+        e.push(rect(l.m1, x + 3.3, 1.0, x + 3.7, 4.2));
+        e.push(rect(l.m1, x + 3.3, 1.0, x + col + 0.4, 1.4));
+        e.push(rect(l.m1, x + col, 1.0, x + col + 0.4, 3.5));
+    }
+    write("NW.b1.h9", e);
 }
 
 // --- NW.c: min. NWell enclosure of P+Activ not inside ThickGateOx 0.31 ---

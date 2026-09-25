@@ -1223,6 +1223,10 @@ const DECK_NW: &str = "nwell";
 // PWell:block filling a 1.00 gap leaves no PWell between the wells (section 4.2), so
 // NW.b1 has nothing to measure; a 0.50 block strip leaves 0.25 of PWell either side → fires.
 #[case::nw_b1_h8("nwell/NW.b1.h8.gds.gz", "TOP", vec!["NW.b1"], vec![])]
+// A well strapped to the drain of a pMOS in the other, whose source is strapped to that
+// well: source and drain are no net through the gate, NW.b1 fires (the CSA design's
+// res_fb_*, as Calibre); strapped to the source instead, one net and clean.
+#[case::nw_b1_h9("nwell/NW.b1.h9.gds.gz", "TOP", vec!["NW.b1"], vec![])]
 // A 0.305 margin and parallel chamfers 0.304 apart fire; the 0.311 chamfers are clean.
 // A chamfer or a 45° wall passing 0.269 from the Activ's *corner* fires: the margin is
 // the closest approach, whatever the angle (euclidian, decided 2026-09-21) - report, finding 10.

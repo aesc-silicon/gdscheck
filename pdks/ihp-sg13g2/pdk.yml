@@ -167,7 +167,7 @@ connectivity:
   - connector: Cont
     layers: [GatPoly]
   - connector: Cont
-    layers: [Activ]
+    layers: [ActivSD]
   - connector: Cont
     layers: [Metal1]
   - connector: Via1
@@ -195,7 +195,7 @@ connectivity:
   - connector: TopVia2
     layers: [TopMetal2]
   - connector: NActivInNWell
-    layers: [NWell, NWellMergedNoSRAM, NWellExt, Activ]
+    layers: [NWell, NWellMergedNoSRAM, NWellExt, ActivSD]
   - connector: NWellNBuLay
     layers: [nBuLay, nBuLayMerged, nBuLayRegions, nBuLayRegionsExt, NWell, NWellExt]
 
@@ -565,6 +565,13 @@ virtual_layers:
     op: union
     mode: lazy
     layers: [NsdActiv, ActivDefaultN]
+  # The Activ the nets run through: a transistor's source and drain are cut apart at
+  # its gate, so a well is no net with the drain its pMOS drives (NW.b1's "different
+  # net", as the sign-off runset reads it).
+  - name: ActivSD
+    op: difference
+    mode: lazy
+    layers: [Activ, GatPoly]
   - name: NActivInNWell
     op: intersection
     mode: lazy

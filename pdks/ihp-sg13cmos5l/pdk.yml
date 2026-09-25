@@ -128,7 +128,7 @@ connectivity:
   - connector: Cont
     layers: [GatPoly]
   - connector: Cont
-    layers: [Activ]
+    layers: [ActivSD]
   - connector: Cont
     layers: [Metal1]
   - connector: Via1
@@ -148,7 +148,7 @@ connectivity:
   - connector: TopVia1
     layers: [TopMetal1]
   - connector: NActivInNWell
-    layers: [NWell, NWellMergedNoSRAM, NWellExt, Activ]
+    layers: [NWell, NWellMergedNoSRAM, NWellExt, ActivSD]
 
 virtual_layers:
   - name: DfpadNoTopMetal1
