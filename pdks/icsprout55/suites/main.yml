@@ -54,6 +54,7 @@ include:
   # --- review C: new decks ---
   # --- review D: new decks ---
   # --- review E: new decks ---
+  - deck: sealring
   # --- review F: new decks ---
   # --- review G: new decks ---
   - deck: esddev

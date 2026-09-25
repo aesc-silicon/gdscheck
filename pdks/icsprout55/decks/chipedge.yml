@@ -4,608 +4,726 @@
 
 rules:
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [DNW, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, DNW]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [ACT, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, ACT]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [NW1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, NW1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [PSUB, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, PSUB]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [ULLD, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, NVT3]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [NVT3, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, PVT3]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [PVT3, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, NVT1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [NVT1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, PVT1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [PVT1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, DGOX]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [TGOX, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, TGOX]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [DGOX, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, POLY]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [POLY, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, NP]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [NP, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, PP]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [PP, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, NPR]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [SAB, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, HRP]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [CT, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, ESD]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, SAB]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, CT]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET3, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, CTbar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET4, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET5, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET6, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET3]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET7, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET4]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET8, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET5]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET6]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET7]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA3, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET8]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA4, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA5, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA6, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA3]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [VIA7, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA4]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T2V1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA5]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T2M1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA6]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T2V2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA7]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T2M2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA1bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T4V1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA2bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T4M1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA3bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T4V2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA4bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T4M2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA5bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T8V1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA6bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T8M1, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, VIA7bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T8V2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4V1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T8M2, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4V2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [CB, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4V1bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [RV, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4V2bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [RDL, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4M1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [ALPAD, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4M2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [COVER, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T2V1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [ACTdm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T2V2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [POLYdm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T2V1bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET1dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T2V2bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET2dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T2M1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET3dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T2M2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET4dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T8V1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET5dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T8V2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET6dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T8V1bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET7dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T8V2bar]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [MET8dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T8M1]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T2M1dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T8M2]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T2M2dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, CB]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T4M1dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, RV]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T4M2dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, COVER]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T8M1dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, RDL]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.1
-    check: forbidden
-    layers: [T8M2dm, ChipIn0p37, SRINGBLK, SRBLK]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, FUTR]
+    value: 0.37
     params:
-      op: uncovered
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, ACTdm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, POLYdm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET3dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET4dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET5dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET6dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET7dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET8dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4M1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4M2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2M1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2M2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8M1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8M2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
   - id: CHIPEDGE-En.2
-    check: forbidden
-    layers: [DNW, ChipIn6]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, DNW]
+    value: 6
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [ACTInSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET1InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [PPInSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET2InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [CTInSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET3InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET1InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET4InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET2InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET5InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET3InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET6InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET4InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET7InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET5InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, MET8InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET6InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4M1InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET7InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, T4M2InSR]
+    value: 1.5
     params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1
   - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [MET8InSR, ChipIn1p5]
-    value: 0.0
+    check: min_enclosure
+    layers: [ChipEdge, RDLInSR]
+    value: 1.5
     params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA1InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA1barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA2InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA2barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA3InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA3barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA4InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA4barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA5InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA5barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA6InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA6barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA7InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [VIA7barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T2V1InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T2V1barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T2M1InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T4V2InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T4V2barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T4M2InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T8V1InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T8V1barInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [T8M1InSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [RVInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
-  - id: CHIPEDGE-En.3
-    check: forbidden
-    layers: [RDLInSR, ChipIn1p5]
-    value: 0.0
-    params:
-      op: uncovered
+      metric: euclidian
+      interacting_only: 1

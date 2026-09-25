@@ -4,26 +4,26 @@
 
 rules:
   - id: RV-W.1
-    check: exact_width
-    layers: [RVSq]
-    value: 3
+    check: forbidden
+    layers: [RVSqBad]
+    value: 0.0
   - id: RV-S.1
     check: min_space
-    layers: [RV]
+    layers: [RVNoFuse]
+    value: 3
+  - id: RV-S.1
+    check: min_notch
+    layers: [RVNoFuse]
     value: 3
   - id: RV-S.2
     check: min_space
     layers: [RV, CB]
     value: 6
-  - id: RV-En.1
-    check: forbidden
-    layers: [RV, T4M2]
-    value: 0.0
-    params:
-      op: uncovered
+    layer_params:
+      gap_outside: INDALL
   - id: RV-En.2
     check: min_enclosure
-    layers: [T4M2, RV]
+    layers: [T4M2Solid, RVEnMet]
     value: 1.5
     params:
       metric: euclidian
@@ -35,7 +35,7 @@ rules:
       op: uncovered
   - id: RV-En.4
     check: min_enclosure
-    layers: [RDL, RV]
+    layers: [RDL, RVEnRDL]
     value: 1.5
     params:
       metric: euclidian

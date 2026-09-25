@@ -153,6 +153,9 @@ decks:
   # --- review C: new decks ---
   # --- review D: new decks ---
   # --- review E: new decks ---
+  - name: sealring
+    path: decks/sealring.yml
+    description: Seal ring (chip-level only)
   # --- review F: new decks ---
   # --- review G: new decks ---
   - name: esddev
@@ -635,180 +638,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [SAB, ESDIOE]
-  - name: ChipIn0p37x
-    op: shrink_x
-    mode: lazy
-    layers: [CHIPBLK]
-    radius: 0.37
-  - name: ChipIn0p37
-    op: shrink_y
-    mode: lazy
-    layers: [ChipIn0p37x]
-    radius: 0.37
-  - name: ChipIn6x
-    op: shrink_x
-    mode: lazy
-    layers: [CHIPBLK]
-    radius: 6
-  - name: ChipIn6
-    op: shrink_y
-    mode: lazy
-    layers: [ChipIn6x]
-    radius: 6
-  - name: ChipIn1p5x
-    op: shrink_x
-    mode: lazy
-    layers: [CHIPBLK]
-    radius: 1.5
-  - name: ChipIn1p5
-    op: shrink_y
-    mode: lazy
-    layers: [ChipIn1p5x]
-    radius: 1.5
-  - name: ACTInSR
-    op: intersection
-    mode: lazy
-    layers: [ACT, SRINGBLK]
-  - name: PPInSR
-    op: intersection
-    mode: lazy
-    layers: [PP, SRINGBLK]
-  - name: CTInSR
-    op: intersection
-    mode: lazy
-    layers: [CT, SRINGBLK]
-  - name: MET1InSR
-    op: intersection
-    mode: lazy
-    layers: [MET1, SRINGBLK]
-  - name: MET2InSR
-    op: intersection
-    mode: lazy
-    layers: [MET2, SRINGBLK]
-  - name: MET3InSR
-    op: intersection
-    mode: lazy
-    layers: [MET3, SRINGBLK]
-  - name: MET4InSR
-    op: intersection
-    mode: lazy
-    layers: [MET4, SRINGBLK]
-  - name: MET5InSR
-    op: intersection
-    mode: lazy
-    layers: [MET5, SRINGBLK]
-  - name: MET6InSR
-    op: intersection
-    mode: lazy
-    layers: [MET6, SRINGBLK]
-  - name: MET7InSR
-    op: intersection
-    mode: lazy
-    layers: [MET7, SRINGBLK]
-  - name: MET8InSR
-    op: intersection
-    mode: lazy
-    layers: [MET8, SRINGBLK]
-  - name: VIA1InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA1, SRINGBLK]
-  - name: VIA1barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA1bar, SRINGBLK]
-  - name: VIA2InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA2, SRINGBLK]
-  - name: VIA2barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA2bar, SRINGBLK]
-  - name: VIA3InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA3, SRINGBLK]
-  - name: VIA3barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA3bar, SRINGBLK]
-  - name: VIA4InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA4, SRINGBLK]
-  - name: VIA4barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA4bar, SRINGBLK]
-  - name: VIA5InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA5, SRINGBLK]
-  - name: VIA5barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA5bar, SRINGBLK]
-  - name: VIA6InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA6, SRINGBLK]
-  - name: VIA6barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA6bar, SRINGBLK]
-  - name: VIA7InSR
-    op: intersection
-    mode: lazy
-    layers: [VIA7, SRINGBLK]
-  - name: VIA7barInSR
-    op: intersection
-    mode: lazy
-    layers: [VIA7bar, SRINGBLK]
-  - name: T2V1InSR
-    op: intersection
-    mode: lazy
-    layers: [T2V1, SRINGBLK]
-  - name: T2V1barInSR
-    op: intersection
-    mode: lazy
-    layers: [T2V1bar, SRINGBLK]
-  - name: T2M1InSR
-    op: intersection
-    mode: lazy
-    layers: [T2M1, SRINGBLK]
-  - name: T4V2InSR
-    op: intersection
-    mode: lazy
-    layers: [T4V2, SRINGBLK]
-  - name: T4V2barInSR
-    op: intersection
-    mode: lazy
-    layers: [T4V2bar, SRINGBLK]
-  - name: T4M2InSR
-    op: intersection
-    mode: lazy
-    layers: [T4M2, SRINGBLK]
-  - name: T8V1InSR
-    op: intersection
-    mode: lazy
-    layers: [T8V1, SRINGBLK]
-  - name: T8V1barInSR
-    op: intersection
-    mode: lazy
-    layers: [T8V1bar, SRINGBLK]
-  - name: T8M1InSR
-    op: intersection
-    mode: lazy
-    layers: [T8M1, SRINGBLK]
-  - name: RVInSR
-    op: intersection
-    mode: lazy
-    layers: [RV, SRINGBLK]
-  - name: RDLInSR
-    op: intersection
-    mode: lazy
-    layers: [RDL, SRINGBLK]
   - name: NPACT
     op: intersection
     mode: lazy
@@ -1086,33 +915,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [GATE, DGOX]
-  - name: RVSq
-    op: difference
-    mode: lazy
-    layers: [RV, SRINGBLK]
-  - name: AL
-    op: union
-    mode: lazy
-    layers: [RDL, ALPAD]
-  - name: ALOpen5x
-    op: shrink_x
-    mode: lazy
-    layers: [AL]
-    radius: 5
-  - name: ALOpen5y
-    op: shrink_y
-    mode: lazy
-    layers: [ALOpen5x]
-    radius: 5
-  - name: ALBig10
-    op: overlapping
-    mode: lazy
-    layers: [AL, ALOpen5y]
-  - name: ALBig35
-    op: with_bbox_max
-    mode: lazy
-    layers: [AL]
-    min: 35.001
   - name: NPPP
     op: union
     mode: lazy
@@ -3801,6 +3603,1177 @@ virtual_layers:
     mode: lazy
     layers: [T4M2slot, T4M2slotOk]
   # --- review E: derived layers ---
+  - name: T4M2Solid
+    op: difference
+    mode: lazy
+    layers: [T4M2, T4M2slot]
+  - name: MET1Solid
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: MET2Solid
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: MET3Solid
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: MET4Solid
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: MET5Solid
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: SRGrid
+    op: union
+    mode: lazy
+    layers: [GRBLK, SRINGBLK]
+  # RV of an RDL laser fuse: in an empty RDL ring over FUTR, or on the ring in SRGrid.
+  - name: RDLHole
+    op: holes
+    mode: lazy
+    layers: [RDL]
+  - name: RDLHoleSpace
+    op: difference
+    mode: lazy
+    layers: [RDLHole, RDL]
+  - name: RDLHoleRing
+    op: with_holes
+    mode: lazy
+    layers: [RDLHoleSpace]
+  - name: RDLHoleInner
+    op: difference
+    mode: lazy
+    layers: [RDLHoleSpace, RDLHoleRing]
+  - name: RDLFuseHole
+    op: interacting
+    mode: lazy
+    layers: [RDLHoleInner, FUTR]
+  - name: RVInFuseHole
+    op: inside
+    mode: lazy
+    layers: [RV, RDLFuseHole]
+  - name: RDLFuseRing
+    op: interacting
+    mode: lazy
+    layers: [RDL, RDLFuseHole]
+  - name: RDLFuseGrid
+    op: intersection
+    mode: lazy
+    layers: [RDLFuseRing, SRGrid]
+  - name: RVAtFuseGrid
+    op: interacting
+    mode: lazy
+    layers: [RV, RDLFuseGrid]
+  - name: RVFuse
+    op: union
+    mode: lazy
+    layers: [RVInFuseHole, RVAtFuseGrid]
+  - name: RVNoFuse
+    op: difference
+    mode: lazy
+    layers: [RV, RVFuse]
+  - name: RVSq
+    op: difference
+    mode: lazy
+    layers: [RVNoFuse, SRGrid]
+  - name: RVSqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [RVSq]
+  - name: RVSqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [RVSq]
+    max: 3
+  - name: RVSqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [RVSq]
+    min: 3.001
+  - name: RVSqBad
+    op: union
+    mode: lazy
+    layers: [RVSqCurved, RVSqNarrow, RVSqLong]
+  - name: RVEnMetSkip
+    op: union
+    mode: lazy
+    layers: [LOGO, SRGrid]
+  - name: RVEnMet
+    op: not_inside
+    mode: lazy
+    layers: [RVNoFuse, RVEnMetSkip]
+  - name: RVEnRDLSkip
+    op: union
+    mode: lazy
+    layers: [LOGO, SRGrid, FUTR]
+  - name: RVEnRDL
+    op: not_inside
+    mode: lazy
+    layers: [RVNoFuse, RVEnRDLSkip]
+  # ALPA of the runset: CB sized by 1.5, RDL and ALPAD.
+  - name: CBGrow
+    op: grow
+    mode: lazy
+    layers: [CB]
+    radius: 1.5
+  - name: AL
+    op: union
+    mode: lazy
+    layers: [CBGrow, RDL, ALPAD]
+  - name: ALOpen5x
+    op: shrink_x
+    mode: lazy
+    layers: [AL]
+    radius: 5
+  - name: ALOpen5y
+    op: shrink_y
+    mode: lazy
+    layers: [ALOpen5x]
+    radius: 5
+  - name: ALBig10
+    op: overlapping
+    mode: lazy
+    layers: [AL, ALOpen5y]
+  - name: ALOpen17p5x
+    op: shrink_x
+    mode: lazy
+    layers: [AL]
+    radius: 17.5
+  - name: ALOpen17p5y
+    op: shrink_y
+    mode: lazy
+    layers: [ALOpen17p5x]
+    radius: 17.5
+  - name: ALBig35
+    op: overlapping
+    mode: lazy
+    layers: [AL, ALOpen17p5y]
+  - name: RDLNoInd
+    op: not_inside
+    mode: lazy
+    layers: [RDL, INDALL]
+  - name: COVERSkip
+    op: union
+    mode: lazy
+    layers: [SRBLK, SRINGBLK]
+  - name: COVERChk
+    op: not_inside
+    mode: lazy
+    layers: [COVER, COVERSkip]
+  # COVER-L.1: a 40 x 65 rectangle fits; exact on a rectangle, 1 nm short on other shapes.
+  - name: COVERRect
+    op: rectangle
+    mode: lazy
+    layers: [COVERChk]
+  - name: COVERRectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [COVERRect]
+    min: 40
+  - name: COVERRectOk
+    op: with_bbox_max
+    mode: lazy
+    layers: [COVERRectWide]
+    min: 65
+  - name: COVERCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [COVERChk]
+  - name: COVERFitAx
+    op: shrink_x
+    mode: lazy
+    layers: [COVERCurved]
+    radius: 19.999
+  - name: COVERFitA
+    op: shrink_y
+    mode: lazy
+    layers: [COVERFitAx]
+    radius: 32.499
+  - name: COVERFitBx
+    op: shrink_x
+    mode: lazy
+    layers: [COVERCurved]
+    radius: 32.499
+  - name: COVERFitB
+    op: shrink_y
+    mode: lazy
+    layers: [COVERFitBx]
+    radius: 19.999
+  - name: COVERFit
+    op: union
+    mode: lazy
+    layers: [COVERFitA, COVERFitB]
+  - name: COVERCurvedOk
+    op: overlapping
+    mode: lazy
+    layers: [COVERCurved, COVERFit]
+  - name: COVEROk
+    op: union
+    mode: lazy
+    layers: [COVERRectOk, COVERCurvedOk]
+  - name: COVERShort
+    op: difference
+    mode: lazy
+    layers: [COVERChk, COVEROk]
+  # COVER-S.2: the metal pad under a COVER, slots filled, opened by 21.499.
+  - name: MET1PadHole
+    op: holes
+    mode: lazy
+    layers: [MET1]
+  - name: MET1PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET1PadHole, MET1]
+  - name: MET1PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET1PadSlot0, COVER]
+  - name: MET1PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET1, COVER]
+  - name: MET1PadRaw
+    op: union
+    mode: lazy
+    layers: [MET1PadMet, MET1PadSlot]
+  - name: MET1Pad
+    op: open
+    mode: lazy
+    layers: [MET1PadRaw]
+    radius: 21.499
+  - name: MET2PadHole
+    op: holes
+    mode: lazy
+    layers: [MET2]
+  - name: MET2PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET2PadHole, MET2]
+  - name: MET2PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET2PadSlot0, COVER]
+  - name: MET2PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET2, COVER]
+  - name: MET2PadRaw
+    op: union
+    mode: lazy
+    layers: [MET2PadMet, MET2PadSlot]
+  - name: MET2Pad
+    op: open
+    mode: lazy
+    layers: [MET2PadRaw]
+    radius: 21.499
+  - name: MET3PadHole
+    op: holes
+    mode: lazy
+    layers: [MET3]
+  - name: MET3PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET3PadHole, MET3]
+  - name: MET3PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET3PadSlot0, COVER]
+  - name: MET3PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET3, COVER]
+  - name: MET3PadRaw
+    op: union
+    mode: lazy
+    layers: [MET3PadMet, MET3PadSlot]
+  - name: MET3Pad
+    op: open
+    mode: lazy
+    layers: [MET3PadRaw]
+    radius: 21.499
+  - name: MET4PadHole
+    op: holes
+    mode: lazy
+    layers: [MET4]
+  - name: MET4PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET4PadHole, MET4]
+  - name: MET4PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET4PadSlot0, COVER]
+  - name: MET4PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET4, COVER]
+  - name: MET4PadRaw
+    op: union
+    mode: lazy
+    layers: [MET4PadMet, MET4PadSlot]
+  - name: MET4Pad
+    op: open
+    mode: lazy
+    layers: [MET4PadRaw]
+    radius: 21.499
+  - name: MET5PadHole
+    op: holes
+    mode: lazy
+    layers: [MET5]
+  - name: MET5PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET5PadHole, MET5]
+  - name: MET5PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET5PadSlot0, COVER]
+  - name: MET5PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET5, COVER]
+  - name: MET5PadRaw
+    op: union
+    mode: lazy
+    layers: [MET5PadMet, MET5PadSlot]
+  - name: MET5Pad
+    op: open
+    mode: lazy
+    layers: [MET5PadRaw]
+    radius: 21.499
+  - name: T4M2PadHole
+    op: holes
+    mode: lazy
+    layers: [T4M2]
+  - name: T4M2PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M2PadHole, T4M2]
+  - name: T4M2PadSlot
+    op: interacting
+    mode: lazy
+    layers: [T4M2PadSlot0, COVER]
+  - name: T4M2PadMet
+    op: interacting
+    mode: lazy
+    layers: [T4M2Solid, COVER]
+  - name: T4M2PadRaw
+    op: union
+    mode: lazy
+    layers: [T4M2PadMet, T4M2PadSlot]
+  - name: T4M2Pad
+    op: open
+    mode: lazy
+    layers: [T4M2PadRaw]
+    radius: 21.499
+  - name: DupMD
+    op: union
+    mode: lazy
+    layers: [CB, COVER]
+  - name: DupMDAtPad
+    op: interacting
+    mode: lazy
+    layers: [DupMD, DEUPAD]
+  - name: DupPad
+    op: intersection
+    mode: lazy
+    layers: [DEUPAD, DupMD]
+  - name: DupT4M2Res
+    op: intersection
+    mode: lazy
+    layers: [T4M2res, T4M2Solid]
+  - name: DupMET5Res
+    op: intersection
+    mode: lazy
+    layers: [MET5res, MET5Solid]
+  # DEUPAD-R.7: a T4V2 with another within 0.51 is in an array.
+  - name: T4V2Reach
+    op: grow
+    mode: lazy
+    layers: [T4V2All]
+    radius: 0.255
+  - name: T4V2Cluster
+    op: covering
+    mode: lazy
+    layers: [T4V2Reach, T4V2All]
+    min: 2
+  - name: T4V2PadArray
+    op: overlapping
+    mode: lazy
+    layers: [T4V2All, T4V2Cluster]
+  - name: DupNoArray
+    op: not_interacting
+    mode: lazy
+    layers: [DupPad, T4V2PadArray]
+  # CHIPEDGE of the runset: CHIPBLK with its holes filled.
+  - name: ChipEdgeHole
+    op: holes
+    mode: lazy
+    layers: [CHIPBLK]
+  - name: ChipEdge
+    op: union
+    mode: lazy
+    layers: [CHIPBLK, ChipEdgeHole]
+  - name: ChipEdgeNoSR
+    op: difference
+    mode: lazy
+    layers: [ChipEdge, SRINGBLK]
+  - name: MET1InSR
+    op: intersection
+    mode: lazy
+    layers: [MET1, SRINGBLK]
+  - name: MET2InSR
+    op: intersection
+    mode: lazy
+    layers: [MET2, SRINGBLK]
+  - name: MET3InSR
+    op: intersection
+    mode: lazy
+    layers: [MET3, SRINGBLK]
+  - name: MET4InSR
+    op: intersection
+    mode: lazy
+    layers: [MET4, SRINGBLK]
+  - name: MET5InSR
+    op: intersection
+    mode: lazy
+    layers: [MET5, SRINGBLK]
+  - name: MET6InSR
+    op: intersection
+    mode: lazy
+    layers: [MET6, SRINGBLK]
+  - name: MET7InSR
+    op: intersection
+    mode: lazy
+    layers: [MET7, SRINGBLK]
+  - name: MET8InSR
+    op: intersection
+    mode: lazy
+    layers: [MET8, SRINGBLK]
+  - name: T4M1InSR
+    op: intersection
+    mode: lazy
+    layers: [T4M1, SRINGBLK]
+  - name: T4M2InSR
+    op: intersection
+    mode: lazy
+    layers: [T4M2, SRINGBLK]
+  - name: RDLInSR
+    op: intersection
+    mode: lazy
+    layers: [RDL, SRINGBLK]
+  # Seal ring: the outer ring touches one hole and lies in no hole, the inner ring lies
+  # in the outer one's hole.
+  - name: SRMET1
+    op: intersection
+    mode: lazy
+    layers: [MET1Solid, SRINGBLK]
+  - name: SRMET1Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET1]
+  - name: SRMET1OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET1, SRMET1Hole]
+    min: 1
+    max: 1
+  - name: SRMET1Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET1OneHole, SRMET1Hole]
+  - name: SRMET1Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET1, SRMET1Hole]
+  - name: SRMET1OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET1Outer]
+  - name: SRMET1InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET1Inner]
+  - name: SRMET1Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET1OuterHole, SRMET1InnerHole, SRMET1Inner]
+  - name: SRMET2
+    op: intersection
+    mode: lazy
+    layers: [MET2Solid, SRINGBLK]
+  - name: SRMET2Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET2]
+  - name: SRMET2OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET2, SRMET2Hole]
+    min: 1
+    max: 1
+  - name: SRMET2Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET2OneHole, SRMET2Hole]
+  - name: SRMET2Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET2, SRMET2Hole]
+  - name: SRMET2OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET2Outer]
+  - name: SRMET2InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET2Inner]
+  - name: SRMET2Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET2OuterHole, SRMET2InnerHole, SRMET2Inner]
+  - name: SRMET3
+    op: intersection
+    mode: lazy
+    layers: [MET3Solid, SRINGBLK]
+  - name: SRMET3Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET3]
+  - name: SRMET3OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET3, SRMET3Hole]
+    min: 1
+    max: 1
+  - name: SRMET3Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET3OneHole, SRMET3Hole]
+  - name: SRMET3Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET3, SRMET3Hole]
+  - name: SRMET3OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET3Outer]
+  - name: SRMET3InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET3Inner]
+  - name: SRMET3Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET3OuterHole, SRMET3InnerHole, SRMET3Inner]
+  - name: SRMET4
+    op: intersection
+    mode: lazy
+    layers: [MET4Solid, SRINGBLK]
+  - name: SRMET4Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET4]
+  - name: SRMET4OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET4, SRMET4Hole]
+    min: 1
+    max: 1
+  - name: SRMET4Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET4OneHole, SRMET4Hole]
+  - name: SRMET4Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET4, SRMET4Hole]
+  - name: SRMET4OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET4Outer]
+  - name: SRMET4InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET4Inner]
+  - name: SRMET4Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET4OuterHole, SRMET4InnerHole, SRMET4Inner]
+  - name: SRMET5
+    op: intersection
+    mode: lazy
+    layers: [MET5Solid, SRINGBLK]
+  - name: SRMET5Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET5]
+  - name: SRMET5OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET5, SRMET5Hole]
+    min: 1
+    max: 1
+  - name: SRMET5Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET5OneHole, SRMET5Hole]
+  - name: SRMET5Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET5, SRMET5Hole]
+  - name: SRMET5OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET5Outer]
+  - name: SRMET5InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET5Inner]
+  - name: SRMET5Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET5OuterHole, SRMET5InnerHole, SRMET5Inner]
+  - name: SRT4M2
+    op: intersection
+    mode: lazy
+    layers: [T4M2Solid, SRINGBLK]
+  - name: SRT4M2Hole
+    op: holes
+    mode: lazy
+    layers: [SRT4M2]
+  - name: SRT4M2OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRT4M2, SRT4M2Hole]
+    min: 1
+    max: 1
+  - name: SRT4M2Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRT4M2OneHole, SRT4M2Hole]
+  - name: SRT4M2Inner
+    op: intersection
+    mode: lazy
+    layers: [SRT4M2, SRT4M2Hole]
+  - name: SRT4M2OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRT4M2Outer]
+  - name: SRT4M2InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRT4M2Inner]
+  - name: SRT4M2Gap
+    op: difference
+    mode: lazy
+    layers: [SRT4M2OuterHole, SRT4M2InnerHole, SRT4M2Inner]
+  - name: SRRV
+    op: intersection
+    mode: lazy
+    layers: [RV, SRINGBLK]
+  # Seal-ring cuts: a bar holds a w x l rectangle (1 nm short off a rectangle), the
+  # rest are squares.
+  - name: SRCT
+    op: intersection
+    mode: lazy
+    layers: [CTAll, SRINGBLK]
+  - name: SRCTRect
+    op: rectangle
+    mode: lazy
+    layers: [SRCT]
+  - name: SRCTRectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRCTRect]
+    min: 0.09
+  - name: SRCTBarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRCTRectWide]
+    min: 0.27
+  - name: SRCTCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRCT]
+  - name: SRCTFitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRCTCurved]
+    radius: 0.044
+  - name: SRCTFitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRCTFitAx]
+    radius: 0.134
+  - name: SRCTFitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRCTCurved]
+    radius: 0.134
+  - name: SRCTFitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRCTFitBx]
+    radius: 0.044
+  - name: SRCTFit
+    op: union
+    mode: lazy
+    layers: [SRCTFitA, SRCTFitB]
+  - name: SRCTBarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRCTCurved, SRCTFit]
+  - name: SRCTBar
+    op: union
+    mode: lazy
+    layers: [SRCTBarRect, SRCTBarCurved]
+  - name: SRCTSq
+    op: difference
+    mode: lazy
+    layers: [SRCT, SRCTBar]
+  - name: SRCTSqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRCTSq]
+  - name: SRCTSqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRCTSq]
+    max: 0.09
+  - name: SRCTSqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRCTSq]
+    min: 0.091
+  - name: SRCTSqBad
+    op: union
+    mode: lazy
+    layers: [SRCTSqCurved, SRCTSqNarrow, SRCTSqLong]
+  - name: SRVIA1
+    op: intersection
+    mode: lazy
+    layers: [VIA1All, SRINGBLK]
+  - name: SRVIA1Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA1]
+  - name: SRVIA1RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA1Rect]
+    min: 0.09
+  - name: SRVIA1BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA1RectWide]
+    min: 0.27
+  - name: SRVIA1Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA1]
+  - name: SRVIA1FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA1Curved]
+    radius: 0.044
+  - name: SRVIA1FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA1FitAx]
+    radius: 0.134
+  - name: SRVIA1FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA1Curved]
+    radius: 0.134
+  - name: SRVIA1FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA1FitBx]
+    radius: 0.044
+  - name: SRVIA1Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA1FitA, SRVIA1FitB]
+  - name: SRVIA1BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA1Curved, SRVIA1Fit]
+  - name: SRVIA1Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA1BarRect, SRVIA1BarCurved]
+  - name: SRVIA1Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA1, SRVIA1Bar]
+  - name: SRVIA1SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA1Sq]
+  - name: SRVIA1SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA1Sq]
+    max: 0.09
+  - name: SRVIA1SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA1Sq]
+    min: 0.091
+  - name: SRVIA1SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA1SqCurved, SRVIA1SqNarrow, SRVIA1SqLong]
+  - name: SRVIA2
+    op: intersection
+    mode: lazy
+    layers: [VIA2All, SRINGBLK]
+  - name: SRVIA2Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA2]
+  - name: SRVIA2RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA2Rect]
+    min: 0.09
+  - name: SRVIA2BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA2RectWide]
+    min: 0.27
+  - name: SRVIA2Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA2]
+  - name: SRVIA2FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA2Curved]
+    radius: 0.044
+  - name: SRVIA2FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA2FitAx]
+    radius: 0.134
+  - name: SRVIA2FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA2Curved]
+    radius: 0.134
+  - name: SRVIA2FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA2FitBx]
+    radius: 0.044
+  - name: SRVIA2Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA2FitA, SRVIA2FitB]
+  - name: SRVIA2BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA2Curved, SRVIA2Fit]
+  - name: SRVIA2Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA2BarRect, SRVIA2BarCurved]
+  - name: SRVIA2Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA2, SRVIA2Bar]
+  - name: SRVIA2SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA2Sq]
+  - name: SRVIA2SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA2Sq]
+    max: 0.09
+  - name: SRVIA2SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA2Sq]
+    min: 0.091
+  - name: SRVIA2SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA2SqCurved, SRVIA2SqNarrow, SRVIA2SqLong]
+  - name: SRVIA3
+    op: intersection
+    mode: lazy
+    layers: [VIA3All, SRINGBLK]
+  - name: SRVIA3Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA3]
+  - name: SRVIA3RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA3Rect]
+    min: 0.09
+  - name: SRVIA3BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA3RectWide]
+    min: 0.27
+  - name: SRVIA3Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA3]
+  - name: SRVIA3FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA3Curved]
+    radius: 0.044
+  - name: SRVIA3FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA3FitAx]
+    radius: 0.134
+  - name: SRVIA3FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA3Curved]
+    radius: 0.134
+  - name: SRVIA3FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA3FitBx]
+    radius: 0.044
+  - name: SRVIA3Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA3FitA, SRVIA3FitB]
+  - name: SRVIA3BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA3Curved, SRVIA3Fit]
+  - name: SRVIA3Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA3BarRect, SRVIA3BarCurved]
+  - name: SRVIA3Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA3, SRVIA3Bar]
+  - name: SRVIA3SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA3Sq]
+  - name: SRVIA3SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA3Sq]
+    max: 0.09
+  - name: SRVIA3SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA3Sq]
+    min: 0.091
+  - name: SRVIA3SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA3SqCurved, SRVIA3SqNarrow, SRVIA3SqLong]
+  - name: SRVIA4
+    op: intersection
+    mode: lazy
+    layers: [VIA4All, SRINGBLK]
+  - name: SRVIA4Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA4]
+  - name: SRVIA4RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA4Rect]
+    min: 0.09
+  - name: SRVIA4BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA4RectWide]
+    min: 0.27
+  - name: SRVIA4Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA4]
+  - name: SRVIA4FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA4Curved]
+    radius: 0.044
+  - name: SRVIA4FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA4FitAx]
+    radius: 0.134
+  - name: SRVIA4FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA4Curved]
+    radius: 0.134
+  - name: SRVIA4FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA4FitBx]
+    radius: 0.044
+  - name: SRVIA4Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA4FitA, SRVIA4FitB]
+  - name: SRVIA4BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA4Curved, SRVIA4Fit]
+  - name: SRVIA4Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA4BarRect, SRVIA4BarCurved]
+  - name: SRVIA4Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA4, SRVIA4Bar]
+  - name: SRVIA4SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA4Sq]
+  - name: SRVIA4SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA4Sq]
+    max: 0.09
+  - name: SRVIA4SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA4Sq]
+    min: 0.091
+  - name: SRVIA4SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA4SqCurved, SRVIA4SqNarrow, SRVIA4SqLong]
+  - name: SRT4V2
+    op: intersection
+    mode: lazy
+    layers: [T4V2All, SRINGBLK]
+  - name: SRT4V2Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRT4V2]
+  - name: SRT4V2RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRT4V2Rect]
+    min: 0.36
+  - name: SRT4V2BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRT4V2RectWide]
+    min: 1.08
+  - name: SRT4V2Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRT4V2]
+  - name: SRT4V2FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRT4V2Curved]
+    radius: 0.179
+  - name: SRT4V2FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRT4V2FitAx]
+    radius: 0.539
+  - name: SRT4V2FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRT4V2Curved]
+    radius: 0.539
+  - name: SRT4V2FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRT4V2FitBx]
+    radius: 0.179
+  - name: SRT4V2Fit
+    op: union
+    mode: lazy
+    layers: [SRT4V2FitA, SRT4V2FitB]
+  - name: SRT4V2BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRT4V2Curved, SRT4V2Fit]
+  - name: SRT4V2Bar
+    op: union
+    mode: lazy
+    layers: [SRT4V2BarRect, SRT4V2BarCurved]
+  - name: SRT4V2Sq
+    op: difference
+    mode: lazy
+    layers: [SRT4V2, SRT4V2Bar]
+  - name: SRT4V2SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRT4V2Sq]
+  - name: SRT4V2SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRT4V2Sq]
+    max: 0.36
+  - name: SRT4V2SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRT4V2Sq]
+    min: 0.361
+  - name: SRT4V2SqBad
+    op: union
+    mode: lazy
+    layers: [SRT4V2SqCurved, SRT4V2SqNarrow, SRT4V2SqLong]
+  - name: SRCTSqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRCTSq, SRMET1Outer]
+  - name: SRCTSqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRCTSqAtOuter, SRMET1Outer]
+  - name: SRVIA1SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA1Sq, SRMET1Outer]
+  - name: SRVIA1SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA1SqAtOuter, SRMET1Outer]
+  - name: SRVIA2SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA2Sq, SRMET2Outer]
+  - name: SRVIA2SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA2SqAtOuter, SRMET2Outer]
+  - name: SRVIA3SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA3Sq, SRMET3Outer]
+  - name: SRVIA3SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA3SqAtOuter, SRMET3Outer]
+  - name: SRVIA4SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA4Sq, SRMET4Outer]
+  - name: SRVIA4SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA4SqAtOuter, SRMET4Outer]
   # --- review F: derived layers ---
   # The connect graph's conductors and vias as the runsets read them: bars join the
   # cuts, slots leave the metals.

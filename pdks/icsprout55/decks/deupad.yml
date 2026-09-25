@@ -5,25 +5,61 @@
 rules:
   - id: DEUPAD-R.2
     check: forbidden
-    layers: [COVER, DEUPAD]
+    layers: [DupMDAtPad, DEUPAD]
     value: 0.0
     params:
       op: uncovered
+  - id: DEUPAD-R.3
+    check: forbidden
+    layers: [DupPad, T4M2Solid]
+    value: 0.0
+    params:
+      op: uncovered
+      scope: polygon
+  - id: DEUPAD-R.3
+    check: forbidden
+    layers: [DupPad, MET5Solid]
+    value: 0.0
+    params:
+      op: uncovered
+      scope: polygon
   - id: DEUPAD-R.5
     check: forbidden
-    layers: [DEUPAD, ALPADres]
+    layers: [DupPad, ALPADres]
     value: 0.0
     params:
       op: overlap
   - id: DEUPAD-R.5
     check: forbidden
-    layers: [DEUPAD, MOMLVS1]
+    layers: [DupPad, MOMLVS1]
     value: 0.0
     params:
       op: overlap
   - id: DEUPAD-R.5
     check: forbidden
-    layers: [DEUPAD, INDALL]
+    layers: [DupPad, INDALL]
     value: 0.0
     params:
       op: overlap
+  - id: DEUPAD-R.5
+    check: forbidden
+    layers: [DupPad, DupT4M2Res]
+    value: 0.0
+    params:
+      op: overlap
+  - id: DEUPAD-R.5
+    check: forbidden
+    layers: [DupPad, DupMET5Res]
+    value: 0.0
+    params:
+      op: overlap
+  - id: DEUPAD-R.6
+    check: forbidden
+    layers: [DupPad, VIA4All]
+    value: 0.0
+    params:
+      op: overlap
+  - id: DEUPAD-R.7
+    check: forbidden
+    layers: [DupNoArray]
+    value: 0.0

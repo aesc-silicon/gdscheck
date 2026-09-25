@@ -5,23 +5,72 @@
 rules:
   - id: COVER-W.1
     check: min_width
-    layers: [COVER]
-    value: 40
+    layers: [COVERChk]
+    value: 39.998
   - id: COVER-L.1
-    check: min_length
-    layers: [COVER]
-    value: 65
+    check: forbidden
+    layers: [COVERShort]
+    value: 0.0
   - id: COVER-S.1
     check: min_space
-    layers: [COVER]
-    value: 5
+    layers: [COVERChk]
+    value: 4.998
   - id: COVER-S.1
     check: min_notch
-    layers: [COVER]
-    value: 5
+    layers: [COVERChk]
+    value: 4.998
+  - id: COVER-S.2
+    check: min_space
+    layers: [MET1Pad, MET1]
+    value: 2.5
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: INDALL
+  - id: COVER-S.2
+    check: min_space
+    layers: [MET2Pad, MET2]
+    value: 2.5
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: INDALL
+  - id: COVER-S.2
+    check: min_space
+    layers: [MET3Pad, MET3]
+    value: 2.5
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: INDALL
+  - id: COVER-S.2
+    check: min_space
+    layers: [MET4Pad, MET4]
+    value: 2.5
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: INDALL
+  - id: COVER-S.2
+    check: min_space
+    layers: [MET5Pad, MET5]
+    value: 2.5
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: INDALL
+  - id: COVER-S.2
+    check: min_space
+    layers: [T4M2Pad, T4M2]
+    value: 2.5
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: INDALL
   - id: COVER-En.1
     check: min_enclosure
-    layers: [ALPAD, COVER]
+    layers: [AL, COVER]
     value: 1.5
     params:
       metric: euclidian
+      interacting_only: 1

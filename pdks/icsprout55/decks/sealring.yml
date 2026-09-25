@@ -1,0 +1,271 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: SR.4
+    check: max_width
+    layers: [SRMET1Gap]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.4
+    check: max_width
+    layers: [SRMET2Gap]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.4
+    check: max_width
+    layers: [SRMET3Gap]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.4
+    check: max_width
+    layers: [SRMET4Gap]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.4
+    check: max_width
+    layers: [SRMET5Gap]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.4
+    check: max_width
+    layers: [SRT4M2Gap]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.5
+    check: max_width
+    layers: [SRMET1Outer]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.5
+    check: max_width
+    layers: [SRMET2Outer]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.5
+    check: max_width
+    layers: [SRMET3Outer]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.5
+    check: max_width
+    layers: [SRMET4Outer]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.5
+    check: max_width
+    layers: [SRMET5Outer]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.5
+    check: max_width
+    layers: [SRT4M2Outer]
+    value: 2
+    params:
+      span: narrowest
+  - id: SR.6
+    check: max_width
+    layers: [SRMET1Inner]
+    value: 4
+    params:
+      span: narrowest
+  - id: SR.6
+    check: max_width
+    layers: [SRMET2Inner]
+    value: 4
+    params:
+      span: narrowest
+  - id: SR.6
+    check: max_width
+    layers: [SRMET3Inner]
+    value: 4
+    params:
+      span: narrowest
+  - id: SR.6
+    check: max_width
+    layers: [SRMET4Inner]
+    value: 4
+    params:
+      span: narrowest
+  - id: SR.6
+    check: max_width
+    layers: [SRMET5Inner]
+    value: 4
+    params:
+      span: narrowest
+  - id: SR.6
+    check: max_width
+    layers: [SRT4M2Inner]
+    value: 4
+    params:
+      span: narrowest
+  - id: SR.8
+    check: max_width
+    layers: [RDLInSR]
+    value: 5.5
+    params:
+      span: narrowest
+  - id: SR.10
+    check: max_width
+    layers: [SRRV]
+    value: 3
+    params:
+      span: narrowest
+  - id: SR.11a
+    check: max_width
+    layers: [SRCTBar]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: SR.11b
+    check: max_width
+    layers: [SRVIA1Bar]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: SR.11b
+    check: max_width
+    layers: [SRVIA2Bar]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: SR.11b
+    check: max_width
+    layers: [SRVIA3Bar]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: SR.11b
+    check: max_width
+    layers: [SRVIA4Bar]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: SR.11d
+    check: max_width
+    layers: [SRT4V2Bar]
+    value: 0.36
+    params:
+      span: narrowest
+  - id: SR.13a
+    check: forbidden
+    layers: [SRCTSqBad]
+    value: 0.0
+  - id: SR.13b
+    check: forbidden
+    layers: [SRVIA1SqBad]
+    value: 0.0
+  - id: SR.13c
+    check: forbidden
+    layers: [SRVIA2SqBad]
+    value: 0.0
+  - id: SR.13b
+    check: forbidden
+    layers: [SRVIA3SqBad]
+    value: 0.0
+  - id: SR.13c
+    check: forbidden
+    layers: [SRVIA4SqBad]
+    value: 0.0
+  - id: SR.13e
+    check: forbidden
+    layers: [SRT4V2SqBad]
+    value: 0.0
+  - id: SR.15a
+    check: min_enclosure
+    layers: [SRMET1Outer, SRCTSq]
+    value: 0.405
+    params:
+      interacting_only: 1
+  - id: SR.15a
+    check: forbidden
+    layers: [SRCTSqCutsOuter]
+    value: 0.0
+  - id: SR.15b
+    check: min_enclosure
+    layers: [SRMET1Outer, SRVIA1Sq]
+    value: 0.405
+    params:
+      interacting_only: 1
+  - id: SR.15b
+    check: forbidden
+    layers: [SRVIA1SqCutsOuter]
+    value: 0.0
+  - id: SR.15c
+    check: min_enclosure
+    layers: [SRMET2Outer, SRVIA2Sq]
+    value: 0.405
+    params:
+      interacting_only: 1
+  - id: SR.15c
+    check: forbidden
+    layers: [SRVIA2SqCutsOuter]
+    value: 0.0
+  - id: SR.15b
+    check: min_enclosure
+    layers: [SRMET3Outer, SRVIA3Sq]
+    value: 0.405
+    params:
+      interacting_only: 1
+  - id: SR.15b
+    check: forbidden
+    layers: [SRVIA3SqCutsOuter]
+    value: 0.0
+  - id: SR.15c
+    check: min_enclosure
+    layers: [SRMET4Outer, SRVIA4Sq]
+    value: 0.405
+    params:
+      interacting_only: 1
+  - id: SR.15c
+    check: forbidden
+    layers: [SRVIA4SqCutsOuter]
+    value: 0.0
+  - id: SR.16a
+    check: min_space
+    layers: [SRCTBar, SRCTSq]
+    value: 0.74
+    params:
+      length: 0
+  - id: SR.16b
+    check: min_space
+    layers: [SRVIA1Bar, SRVIA1Sq]
+    value: 0.6
+    params:
+      length: 0
+  - id: SR.16c
+    check: min_space
+    layers: [SRVIA2Bar, SRVIA2Sq]
+    value: 0.6
+    params:
+      length: 0
+  - id: SR.16b
+    check: min_space
+    layers: [SRVIA3Bar, SRVIA3Sq]
+    value: 0.6
+    params:
+      length: 0
+  - id: SR.16c
+    check: min_space
+    layers: [SRVIA4Bar, SRVIA4Sq]
+    value: 0.6
+    params:
+      length: 0
+  - id: SR.16e
+    check: min_space
+    layers: [SRT4V2Bar, SRT4V2Sq]
+    value: 0.6
+    params:
+      length: 0
