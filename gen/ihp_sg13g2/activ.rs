@@ -1763,9 +1763,10 @@ fn afil_g_h(l: &L) {
     write("AFil.g.h1", e);
 
     // h2 — "any 800 × 800 µm² chip area".  Activ over the whole 1000 µm chip except a
-    // 700 × 700 hole at (150, 150): the global density is 51 %; the window at (100, 100)
-    // holds the whole hole and 23.4 % Activ (fires AFil.g2), while the windows on the
-    // 800 µm grid - (0, 0) at 34 %, the clipped ones above 80 % - are all fine.
+    // 700 × 700 hole at (150, 150): the global density is 51 %.  A window at (100, 100)
+    // would hold the whole hole (23.4 %), but the windows step by 400 as IHP's deck and
+    // the sign-off runset lay them: (0, 0) and the far edge's (200, 200), 34 % each -
+    // clean.
     let mut e = density_pattern(l.boundary, 1000.0, &[]);
     e.push(keyhole(
         l.activ, 0.0, 0.0, 1000.0, 1000.0, 150.0, 150.0, 850.0, 850.0,

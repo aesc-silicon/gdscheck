@@ -112,6 +112,7 @@ rules:
     params:
       scope: window
       window: 800.0
+      step: 400.0
     layer_params:
       boundary: EdgeSeal.boundary
   - id: M3Fil.k
@@ -121,5 +122,6 @@ rules:
     params:
       scope: window
       window: 800.0
+      step: 400.0
     layer_params:
       boundary: EdgeSeal.boundary

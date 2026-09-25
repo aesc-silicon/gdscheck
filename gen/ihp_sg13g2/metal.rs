@@ -3698,8 +3698,9 @@ fn mn_density(l: &Ln) {
     l.write(".j.h1", e);
 
     // Fil.h.h1 — a 1000 µm die covered in Metal(n) but for a 700 × 700 hole at (150, 150):
-    // 51 % overall (Mn.j and Mn.k quiet); the 800 window at (100, 100) holds the whole
-    // hole and reads 23.4 % → MnFil.h; no window reaches 75 %.
+    // 51 % overall (Mn.j and Mn.k quiet); a window at (100, 100) would hold the whole
+    // hole (23.4 %), but the windows step by 400 - (0, 0) and (200, 200), 34 % each -
+    // so MnFil.h is quiet; no window reaches 75 %.
     l.write(
         "Fil.h.h1",
         vec![

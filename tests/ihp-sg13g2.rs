@@ -222,11 +222,12 @@ fn dens(extra: &[&'static str]) -> Vec<&'static str> {
 // The same 30 % of stripes on Activ, Activ:filler and Activ.mask is 30 % of Activ, under
 // AFil.g's 35 %; summing the layers reads 90 % and fires g1/g3 instead - report, finding 9.
 #[case::afil_g_h1("activ/AFil.g.h1.gds.gz", "TOP", vec!["AFil.g"], vec!["AFil.a"])]
-// "Any 800 × 800 area": a 700 µm hole at (150, 150) in a full plate leaves 23.4 % in the
-// window at (100, 100) (AFil.g2; the count is the tool's cut of a sliding window) while
-// the windows on the 800 grid are fine; 51 % globally.  The 200 µm strips left over on the
-// 800 grid are no 800 × 800 area and draw no AFil.g3 - report, finding 10.
-#[case::afil_g2_h2("activ/AFil.g2.h2.gds.gz", "TOP", vec!["AFil.g2"], vec![])]
+// "Any 800 × 800 area": a 700 µm hole at (150, 150) in a full plate would leave 23.4 % in
+// a window at (100, 100), but the windows step by 400 as IHP's deck and the sign-off
+// runset lay them - (0, 0) and (200, 200), 34 % each: clean (asicone_202508's M1Fil.h).
+// The 200 µm strips left over on the 800 grid are no 800 × 800 area and draw no AFil.g3 -
+// report, finding 10.
+#[case::afil_g2_h2("activ/AFil.g2.h2.gds.gz", "TOP", vec![], vec![])]
 // A 650 µm hole in a 970-tall plate: 54.75 % globally, every window between 32.8 and 39 %.
 #[case::afil_g2_h3("activ/AFil.g2.h3.gds.gz", "TOP", vec![], vec![])]
 fn test_activ(
@@ -1890,8 +1891,9 @@ fn mn_dens(extra: &[&'static str]) -> Vec<&'static str> {
 #[case::mn_i_h8(".i.h8", vec![".b", ".i"], mn_dens(&[]))]
 // Mn.j: 30 % stripes drawn on all three density layers are 30 % of the die, not 90.
 #[case::mn_j_h1(".j.h1", vec![".j"], vec!["Fil.a2", "Fil.b", "Fil.c"])]
-// MnFil.h: a 700 hole in a 51 % die; the 800 window holding it reads 23.4 %.
-#[case::mnfil_h_h1("Fil.h.h1", vec!["Fil.h"], vec![])]
+// MnFil.h: a 700 hole in a 51 % die; the windows stepping by 400 read 34 %, clean (a
+// window holding the whole hole would read 23.4 %).
+#[case::mnfil_h_h1("Fil.h.h1", vec![], vec![])]
 // MnFil.a1: 0.995 bars (x, y, a union) and a 0.99 diamond fire; 1.0, 1.004 and an L are clean.
 #[case::mnfil_a1_h1("Fil.a1.h1", vec!["Fil.a1"; 10], mn_dens(&[]))]
 // MnFil.a2: a 5.005 × 5.005 square fires (four walls); 5.005 × 5.0, a 3 × 20 bar, an L with

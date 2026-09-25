@@ -122,6 +122,7 @@ rules:
     params:
       scope: window
       window: 800.0
+      step: 400.0
     layer_params:
       boundary: EdgeSeal.boundary
   - id: AFil.g3
@@ -131,6 +132,7 @@ rules:
     params:
       scope: window
       window: 800.0
+      step: 400.0
     layer_params:
       boundary: EdgeSeal.boundary
   - id: AFil.i
