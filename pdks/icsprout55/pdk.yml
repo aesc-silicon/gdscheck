@@ -15,6 +15,9 @@ suites:
     description: An IP block - main without the chip-edge rules
 
 decks:
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Off-grid geometry (1 nm grid)
   - name: chipedge
     path: decks/chipedge.yml
     description: Chip edge (chip-level only)
