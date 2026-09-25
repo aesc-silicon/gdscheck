@@ -3672,10 +3672,6 @@ virtual_layers:
     op: not_inside
     mode: lazy
     layers: [VIA4Conn, SRINGBLK]
-  - name: T4V2All
-    op: union
-    mode: lazy
-    layers: [T4V2, T4V2bar]
   - name: T4V2SqRect
     op: rectangle
     mode: lazy
@@ -3887,10 +3883,6 @@ virtual_layers:
     mode: lazy
     layers: [ACTImp, POLY]
   # --- review G: derived layers ---
-  - name: CTAll
-    op: union
-    mode: lazy
-    layers: [CT, CTbar]
   - name: ESDCT
     op: intersection
     mode: lazy
