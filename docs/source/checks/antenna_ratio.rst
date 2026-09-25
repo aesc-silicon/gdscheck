@@ -54,11 +54,9 @@ Parameters
 
 ``diode``
    Optional. ``with`` or ``without``: which nets the rule is about, by whether a
-   protection diode is tied to them — read level by level, on the net as it is at each
-   level. A diode the net reaches only through a higher metal does not protect the gate
-   while the lower one is etched: ``without`` judges the sum up to the last level the
-   gate is unprotected at, ``with`` the whole sum of a gate protected at the top. The
-   message names the level (``no diode at Metal1``).
+   protection diode is tied to them — read on the final net, as IHP's deck and the
+   sign-off runset read it: a diode the net reaches only through a higher metal puts
+   the whole sum under ``with``.
 
 ``metric``
    Optional. ``area`` (the default) or ``sidewall``, perimeter times ``thickness``.
