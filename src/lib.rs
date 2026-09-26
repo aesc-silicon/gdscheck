@@ -1479,7 +1479,11 @@ fn run_drc_impl(
             conn_merged.register_virtual(spec.key, op, spec.sources, spec.text);
         }
         let c = connectivity::Connectivity::build(&mut conn_merged, &layout, &pdk.connectivity);
+        // Its layers are done with, and the plan below reads the resident set: freed
+        // but kept in glibc's arenas they read as nets.  On FMD_QNC_greyhound_ihp that
+        // was 25 GB of a 64 GB limit, and the checks ran on the rest.
         drop(conn_merged);
+        memory::trim();
         println!("done ({:.1}s)", t.elapsed().as_secs_f64());
         Some(c)
     } else {
