@@ -1302,6 +1302,17 @@ virtual_layers:
     op: overlapping
     mode: lazy
     layers: [GatPoly, GatPolyOverActivTGO]
+  # Gat.b1's "unrelated": figure 5.8 draws b1 between the polys of transistors on
+  # different Activs; fingers on one Activ are Gat.b's.  A poly and the Activ it gates
+  # are one group, so polys on one Activ lie in one region.
+  - name: ActivAtGatPolyHV
+    op: interacting
+    mode: lazy
+    layers: [Activ, GatPolyHV]
+  - name: GatPolyHVByActiv
+    op: union
+    mode: lazy
+    layers: [GatPolyHV, ActivAtGatPolyHV]
   # Gat.f: no 45° or 90° angle in the gate - the gate region is a rectangle, or it is
   # the violation, as IHP's deck reads it.
   - name: GatPolyOverActivNotRect

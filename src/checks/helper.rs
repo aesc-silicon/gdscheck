@@ -159,6 +159,19 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             .collect()
     };
 
+    // The `related_by` region of each copy, when the rule names one.
+    let by_of = |sides: &[Side]| -> Vec<Option<ByRegion>> {
+        if kin.by.is_none() {
+            return Vec::new();
+        }
+        sides
+            .iter()
+            .map(|s| kin.related_region(s.outline.poly()))
+            .collect()
+    };
+    let by_a = by_of(&sa);
+    let by_b = if same_layer { Vec::new() } else { by_of(&sb) };
+
     // What each copy's pair is known by: a report is one per pair of regions, and two
     // tiles seeing different pieces of the same pair name different gaps.  A region the
     // kinship index files has its id; a shape whole inside some core - the same copy
@@ -205,6 +218,12 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                     && !mode.both
                     && kin.overlapping.contains(&(ia, ib))
                 {
+                    continue;
+                }
+            }
+            if !by_a.is_empty() {
+                let other = if same_layer { by_a[j] } else { by_b[j] };
+                if by_a[i].is_some() && by_a[i] == other {
                     continue;
                 }
             }
@@ -519,6 +538,17 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     }
     let gap_map_arc = gap_key.map(|(gl, gd)| merged.tiles(gl, gd));
     let gap_map = gap_map_arc.as_deref();
+    // `related_by`, a layer param: two regions lying in one region of that layer are
+    // related and no pair.  IHP's Gat.b1 is the space between the polys of two 3.3 V
+    // transistors on different Activs; fingers on one Activ are Gat.b's.
+    let by_key = rule.num("related_by").map(|l| {
+        let dt = rule.num("related_by_dt").unwrap_or(0.0);
+        (l as i16, dt as i16)
+    });
+    if let Some((rl, rd)) = by_key {
+        merged.ensure(layout, rl, rd);
+    }
+    let by_arc = by_key.map(|(rl, rd)| (merged.tiles(rl, rd), merged.kin(rl, rd, false)));
     // The zone a tile's copies are exact in: its core grown by the layers' halo.  A
     // copy is the whole shape, but past the zone it may be wrong - a difference layer
     // built in the tile has its subtrahend only within reach - so a gate reading along
@@ -541,6 +571,7 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
     let kin = Kin::of(
         (map_a, kin_a),
         kin_b.map(|k| (map_b, k)),
+        by_arc.as_ref().map(|(m, k)| (&**m, k.clone())),
         tile as i32,
         mode.related,
     );
@@ -627,7 +658,7 @@ pub fn piece_notches(
     let regions = merged.kin(gl, gd, false);
     let map_arc = merged.tiles(gl, gd);
     let map = &*map_arc;
-    let kin = Kin::of((map, regions), None, tile as i32, false);
+    let kin = Kin::of((map, regions), None, None, tile as i32, false);
     let (rid, limit_um) = (rule.id.as_str(), rule.value);
     map.par_iter()
         .filter(|(_, polys)| polys.len() > 1)
@@ -889,6 +920,8 @@ pub struct Kin<'a> {
     tile: i32,
     /// Pairs of regions, one of each layer, that overlap somewhere.
     overlapping: HashSet<(usize, usize)>,
+    /// `related_by`: two regions lying in one region of this layer are related.
+    by: Option<Labeled<'a>>,
 }
 
 /// A layer's stitched regions, as the region of each core piece by its index in the
@@ -947,11 +980,13 @@ impl<'a> Kin<'a> {
     fn of(
         (map_a, kin_a): (&'a TileMap, Arc<crate::merge::IndexedRegions>),
         b: Option<(&'a TileMap, Arc<crate::merge::IndexedRegions>)>,
+        by: Option<(&'a TileMap, Arc<crate::merge::IndexedRegions>)>,
         tile: i32,
         touching: bool,
     ) -> Kin<'a> {
         let a = Labeled::of(map_a, kin_a, tile);
         let b = b.map(|(m, k)| Labeled::of(m, k, tile));
+        let by = by.map(|(m, k)| Labeled::of(m, k, tile));
         // Which regions share area - or, for `abutting: related`, touch anywhere:
         // every core piece of `a` against every core piece of `b` in the same tile,
         // by the boxes first.
@@ -991,7 +1026,43 @@ impl<'a> Kin<'a> {
             b,
             tile,
             overlapping,
+            by,
         }
+    }
+
+    /// The `related_by` region a copy lies in, looked up at a point inside it - which
+    /// every copy is, whole inside some core or not: the stitched region is the same
+    /// in every tile, so the answer does not depend on which tile asks.
+    fn related_region(&self, m: &MergedPoly) -> Option<ByRegion> {
+        let by = self.by.as_ref()?;
+        let (px, py) = crate::merge::inside_point(m);
+        if let Some(r) = region_at(by, px, py, self.tile) {
+            return Some(ByRegion::Filed(r));
+        }
+        // Not filed: a shape whole inside the core of the tile holding the point, one
+        // region of its own, known by its place in that tile's list.
+        let t = self.tile as i64;
+        let key = (
+            (px / t as f64).floor() as i32,
+            (py / t as f64).floor() as i32,
+        );
+        let (x0, y0) = (key.0 as i64 * t, key.1 as i64 * t);
+        let polys = by.map.get(&key)?;
+        polys
+            .iter()
+            .position(|q| {
+                let b = poly_bbox(q);
+                b.0 as i64 > x0
+                    && b.1 as i64 > y0
+                    && (b.2 as i64) < x0 + t
+                    && (b.3 as i64) < y0 + t
+                    && (b.0 as f64) <= px
+                    && px <= b.2 as f64
+                    && (b.1 as f64) <= py
+                    && py <= b.3 as f64
+                    && crate::merge::point_in_merged(px, py, q)
+            })
+            .map(|i| ByRegion::Whole(key, i))
     }
 
     /// The region a copy of `a` is a piece of, if any core piece of it can be found:
@@ -1021,6 +1092,18 @@ fn region_in(l: &Labeled, m: &MergedPoly, tile: i32, core: &Core) -> Option<usiz
         return None;
     }
     let (px, py) = crate::merge::inside_point(m);
+    region_at(l, px, py, tile)
+}
+
+/// A region of a `related_by` layer: a stitched one, or a shape whole inside a core.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum ByRegion {
+    Filed(usize),
+    Whole((i32, i32), usize),
+}
+
+/// The stitched region of `l` holding the point, if any.
+fn region_at(l: &Labeled, px: f64, py: f64, tile: i32) -> Option<usize> {
     let key = (
         (px / tile as f64).floor() as i32,
         (py / tile as f64).floor() as i32,

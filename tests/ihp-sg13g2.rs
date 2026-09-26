@@ -328,7 +328,8 @@ const DECK_GAT: &str = "gatpoly";
 #[case("gatpoly/Gat.b.space.gds.gz", "TOP", vec!["Gat.b", "Gat.b"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.b.notch.gds.gz", "TOP", vec!["Gat.b", "Gat.b"], vec!["GFil.g"])]
 // The 0.3 µm gates under ThickGateOx are 3.3 V NFETs, Gat.a3 at 0.45; ignored here.
-#[case("gatpoly/Gat.b1.gds.gz", "TOP", vec!["Gat.b1"], vec!["GFil.g", "Gat.a3"])]
+// Two 3.3 V fingers 0.2 apart on one Activ are related: Gat.b's 0.18, clean.
+#[case("gatpoly/Gat.b1.gds.gz", "TOP", vec![], vec!["GFil.g", "Gat.a3"])]
 #[case("gatpoly/Gat.c.gds.gz", "TOP", vec!["Gat.c"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.d.gds.gz", "TOP", vec!["Gat.d", "Gat.d"], vec!["GFil.g"])]
 #[case("gatpoly/Gat.e.gds.gz", "TOP", vec!["Gat.e"], vec!["GFil.g"])]
@@ -408,9 +409,10 @@ const DECK_GAT: &str = "gatpoly";
 // Two gate fingers 0.175 apart, a poly 0.175 past a gate's cap, a sliver 0.175 from a bar,
 // two 300 µm bars, a pair at (1000, 1000).
 #[case::gat_b_h7("gatpoly/Gat.b.h7.gds.gz", "TOP", vec!["Gat.b"; 5], vec!["GFil.g", "Gat.a", "Gat.e"])]
-// 3.3 V fingers 0.245 apart fire, 0.25 is clean, 1.2 V fingers at 0.245 are clean, a 3.3 V
-// finger beside one outside the oxide is clean; 0.175 apart is a Gat.b1 and a Gat.b.
-#[case::gat_b1_h1("gatpoly/Gat.b1.h1.gds.gz", "TOP", vec!["Gat.b1", "Gat.b1", "Gat.b"], vec!["GFil.g"])]
+// Fingers on one Activ are related, figure 5.8's b1 is between transistors on different
+// Activs: 3.3 V fingers 0.25 and 0.245 apart, 1.2 V ones and a 3.3 V finger beside one
+// outside the oxide are clean; 0.175 apart is a Gat.b only.
+#[case::gat_b1_h1("gatpoly/Gat.b1.h1.gds.gz", "TOP", vec!["Gat.b"], vec!["GFil.g"])]
 // Gat.b1 is read between the whole polys of 3.3 V transistors, as figure 5.8 draws it
 // (report, finding 8, decided 2026-09-21): two transistors whose polys end 0.245 apart
 // fire; one poly over two Activs 0.245 apart is one poly, related to itself (clean, and
@@ -419,9 +421,13 @@ const DECK_GAT: &str = "gatpoly";
 // A U poly whose legs cross one Activ 0.245 apart is one poly: clean for Gat.b1 (its notch
 // is Gat.b's); a U whose base lies over the Activ is a Gat.f.
 #[case::gat_b1_h3("gatpoly/Gat.b1.h3.gds.gz", "TOP", vec![], vec!["GFil.g", "Gat.f"])]
-// 0.245 finger gaps straddling/ending on x = 20/21/40/42, at (1000, 1000), and two 300 µm
-// gate regions 0.245 apart.
+// Poly ends of two transistors 0.245 apart straddling/ending on x = 20/21/40/42, at
+// (1000, 1000), and two 300 µm polys 0.245 apart gating rows of their own Activs.
 #[case::gat_b1_h4("gatpoly/Gat.b1.h4.gds.gz", "TOP", vec!["Gat.b1"; 7], vec!["GFil.g"])]
+// Separate transistors: 0.25 clean, 0.245 fires, 1.2 V pair and a 3.3 V beside a 1.2 V one
+// clean, 0.175 a Gat.b1 and a Gat.b; a row of three gate plates 0.2 apart on Activs of
+// their own (FMD_QNC_FLDO's ldo_1v2) is two.
+#[case::gat_b1_h5("gatpoly/Gat.b1.h5.gds.gz", "TOP", vec!["Gat.b", "Gat.b1", "Gat.b1", "Gat.b1", "Gat.b1"], vec!["GFil.g"])]
 // 0.175 caps: bottom, both ends (2), a horizontal gate's left, a gate on a 300 µm Activ;
 // 0.18 caps are clean.
 #[case::gat_c_h1("gatpoly/Gat.c.h1.gds.gz", "TOP", vec!["Gat.c"; 5], vec!["GFil.g"])]

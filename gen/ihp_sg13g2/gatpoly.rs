@@ -141,8 +141,7 @@ fn gat_b_notch(pdk: &PdkConfig) {
 }
 
 /// Gat.b1 — two 3.3 V gate fingers (GatPoly over Activ under ThickGateOx) spaced 0.2 µm
-/// (< 0.25, but ≥ 0.18 so the general Gat.b stays clean) → Gat.b1.  No implant, so the NFET/
-/// PFET gate-length rules don't apply.
+/// on one Activ: related, so Gat.b's 0.18 is the rule and both stay clean.
 fn gat_b1(pdk: &PdkConfig) {
     let o = OFFSET;
     let elems = vec![
@@ -1078,12 +1077,11 @@ fn gat_b1_h(l: &L) {
     let hv =
         |x: f64, y: f64, gaps: &[(f64, f64)]| l.fet(x, y, 3.0, 1.0, gaps, 0.3, Imp::Bare, true);
 
-    // h1 — the bound.  Two 3.3 V fingers (0.5 long) 0.25 apart on one Activ are clean,
-    // 0.245 fires; two 1.2 V fingers 0.245 apart are clean (Gat.b is 0.18); a 3.3 V finger
-    // and a finger outside the oxide 0.245 apart are clean (one 3.3 V region only); two
-    // 3.3 V fingers 0.175 apart are a Gat.b1 and a Gat.b.
+    // h1 — fingers on one Activ.  Two 3.3 V fingers (0.5 long) 0.25 and 0.245 apart on
+    // one Activ are related, Gat.b's (0.18): clean; so are two 1.2 V fingers and a 3.3 V
+    // finger beside one outside the oxide; two 3.3 V fingers 0.175 apart are a Gat.b.
     let mut e = hv(2.0, 2.0, &[(0.5, 0.5), (1.25, 0.5)]); // clean
-    e.extend(hv(7.0, 2.0, &[(0.5, 0.5), (1.245, 0.5)])); // Gat.b1
+    e.extend(hv(7.0, 2.0, &[(0.5, 0.5), (1.245, 0.5)])); // clean, one Activ
     e.extend(l.fet(
         12.0,
         2.0,
@@ -1105,7 +1103,7 @@ fn gat_b1_h(l: &L) {
         false,
     ));
     e.push(rect(l.tgo, 1.6, 5.3, 3.0, 7.7)); // oxide over the first finger only → clean
-    e.extend(hv(7.0, 6.0, &[(0.5, 0.5), (1.175, 0.5)])); // Gat.b1 + Gat.b
+    e.extend(hv(7.0, 6.0, &[(0.5, 0.5), (1.175, 0.5)])); // Gat.b
     write("Gat.b1.h1", e);
 
     // h2 — the figure.  Two separate 3.3 V transistors whose gate polys end 0.245 apart
@@ -1171,20 +1169,63 @@ fn gat_b1_h(l: &L) {
         ],
     );
 
-    // h4 — tile lines, far, long.  0.245 finger gaps straddling x = 20, ending on 20,
-    // straddling 21, 40 and 42; a pair at (1000, 1000); two 300 µm gate regions 0.245
-    // apart (polys along a 300 × 1.5 Activ).
-    let mut e = hv(18.5, 2.0, &[(0.9, 0.5), (1.645, 0.5)]); // 19.9 | 20.145
-    e.extend(hv(18.5, 6.0, &[(0.755, 0.5), (1.5, 0.5)])); // ..19.755 | 20..
-    e.extend(hv(19.5, 10.0, &[(0.9, 0.5), (1.645, 0.5)])); // 20.9 | 21.145
-    e.extend(hv(38.5, 2.0, &[(0.9, 0.5), (1.645, 0.5)]));
-    e.extend(hv(40.5, 6.0, &[(0.9, 0.5), (1.645, 0.5)]));
-    e.extend(hv(1000.0, 1000.0, &[(0.5, 0.5), (1.245, 0.5)]));
-    e.push(rect(l.activ, 2.0, 14.0, 302.0, 15.5));
-    e.push(rect(gp, 1.7, 14.2, 302.3, 14.7));
-    e.push(rect(gp, 1.7, 14.945, 302.3, 15.445));
-    e.push(rect(l.tgo, 1.2, 13.5, 302.8, 16.0));
+    // Two 3.3 V transistors side by side, as figure 5.8 draws them: each on an Activ of
+    // its own (1 × 2), their gate polys (0.5 long, 0.3 past the Activ) ending `g` apart,
+    // the first poly's end at x + 1.3.  `tgo` puts the oxide over the first, the second
+    // or both.
+    let pair = |x: f64, y: f64, g: f64, tgo: (bool, bool)| -> Vec<GdsElement> {
+        let x2 = x + 1.6 + g;
+        let mut e = vec![
+            rect(l.activ, x, y, x + 1.0, y + 2.0),
+            rect(gp, x - 0.3, y + 0.75, x + 1.3, y + 1.25),
+            rect(l.activ, x2, y, x2 + 1.0, y + 2.0),
+            rect(gp, x2 - 0.3, y + 0.75, x2 + 1.3, y + 1.25),
+        ];
+        if tgo.0 {
+            e.push(rect(l.tgo, x - 0.7, y - 0.4, x + 1.3 + g * 0.5, y + 2.4));
+        }
+        if tgo.1 {
+            e.push(rect(l.tgo, x + 1.3 + g * 0.5, y - 0.4, x2 + 1.7, y + 2.4));
+        }
+        e
+    };
+    let both = (true, true);
+
+    // h4 — tile lines, far, long.  Poly ends 0.245 apart straddling x = 20, the first
+    // ending on 20, straddling 21, 40 and 42; a pair at (1000, 1000); two 300 µm polys
+    // 0.245 apart, each gating a row of its own Activs.
+    let mut e = pair(18.6, 2.0, 0.245, both); // 19.9 | 20.145
+    e.extend(pair(18.7, 6.0, 0.245, both)); // ..20 | 20.245
+    e.extend(pair(19.6, 10.0, 0.245, both)); // 20.9 | 21.145
+    e.extend(pair(38.6, 2.0, 0.245, both));
+    e.extend(pair(40.6, 6.0, 0.245, both));
+    e.extend(pair(1000.0, 1000.0, 0.245, both));
+    e.push(rect(gp, 1.7, 20.2, 302.3, 20.7));
+    e.push(rect(gp, 1.7, 20.945, 302.3, 21.445));
+    for k in 0..15 {
+        let x = 10.0 + 20.0 * k as f64;
+        e.push(rect(l.activ, x, 19.5, x + 2.0, 20.8)); // under the lower poly
+        e.push(rect(l.activ, x + 10.0, 20.845, x + 12.0, 22.2)); // under the upper one
+    }
+    e.push(rect(l.tgo, 1.2, 19.0, 302.8, 22.7));
     write("Gat.b1.h4", e);
+
+    // h5 — separate transistors.  Poly ends 0.25 apart are clean, 0.245 fire; two 1.2 V
+    // transistors at 0.245 are clean (Gat.b); a 3.3 V one beside a 1.2 V one is clean;
+    // 0.175 is a Gat.b1 and a Gat.b.  A row of three gate plates 0.2 apart, each on its
+    // own Activ (FMD_QNC_FLDO's ldo_1v2): two Gat.b1.
+    let mut e = pair(2.0, 2.0, 0.25, both); // clean
+    e.extend(pair(8.0, 2.0, 0.245, both)); // Gat.b1
+    e.extend(pair(14.0, 2.0, 0.245, (false, false))); // clean, 1.2 V
+    e.extend(pair(20.0, 2.0, 0.245, (true, false))); // clean, one 3.3 V
+    e.extend(pair(26.0, 2.0, 0.175, both)); // Gat.b1 + Gat.b
+    for k in 0..3 {
+        let x = 2.0 + 1.94 * k as f64;
+        e.push(rect(l.activ, x + 0.37, 6.34, x + 1.37, 9.02));
+        e.push(rect(gp, x, 6.68, x + 1.74, 8.68));
+    }
+    e.push(rect(l.tgo, 1.6, 5.9, 8.0, 9.4)); // 2 × Gat.b1
+    write("Gat.b1.h5", e);
 }
 
 // --- Gat.c: min. GatPoly extension over Activ (end cap) 0.18 ---

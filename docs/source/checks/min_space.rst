@@ -141,6 +141,14 @@ Parameters
    ``PWB.c``'s), while a block strip in the middle of the gap leaves PWell either side
    and the pair stands. IHP's KLayout deck clips the markers to PWell the same way.
 
+``related_by``
+   Optional layer param (under ``layer_params``). Two regions lying in one region of
+   that layer are related and no pair. IHP ``Gat.b1`` is the space between the gate
+   polys of 3.3 V transistors on different Activs - figure 5.8 draws it between two
+   transistors, while fingers on one Activ are ``Gat.b``'s - and names the union of
+   the polys and the Activ they gate, so polys on one Activ lie in one of its regions.
+   The region is looked up at a point inside each shape, the same in every tile.
+
 ``rows`` / ``cols``
    Optional, "more than N", either one defaulting to ``3``. The rule is then about the
    vias packed into an array larger than ``rows`` × ``cols``, which etch and fill

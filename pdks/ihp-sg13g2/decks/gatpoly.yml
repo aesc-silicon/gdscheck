@@ -35,6 +35,8 @@ rules:
     check: min_space
     layers: [GatPolyHV]
     value: 0.25
+    layer_params:
+      related_by: GatPolyHVByActiv
   - id: Gat.c
     check: min_enclosure
     layers: [GatPolyNoSRAM, Activ]
