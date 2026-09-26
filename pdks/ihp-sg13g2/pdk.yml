@@ -163,6 +163,15 @@ decks:
     path: decks/recommended/mim.yml
     description: MIM area per chip, recommended
 
+# Cells checked as delivered.  A violation of the listed rules whose marker lies inside
+# a placed instance of one is reported, but as waived.  IHP's SRAM macros put Via1 at
+# Metal1 corners in their bit cells with 0.01/0.015 of Metal1 round it, under V1.c1's
+# 0.05 endcap.
+waivers:
+  - cells: ["RM_IHPSG13_*"]
+    rules: [V1.c1]
+    reason: IHP SRAM macro, qualified as delivered
+
 connectivity:
   - connector: Cont
     layers: [GatPoly]
