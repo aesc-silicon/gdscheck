@@ -121,6 +121,10 @@ rules:
     value: 1.10
     params:
       abutting: report
+  - id: GFil.d
+    check: forbidden
+    layers: [GatPolyFillerOverGFilD]
+    value: 0.0
   - id: GFil.e
     check: min_space
     layers: [GatPoly.filler, NWell]

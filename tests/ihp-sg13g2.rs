@@ -480,11 +480,10 @@ const DECK_GAT: &str = "gatpoly";
 #[case::gfil_d_h1("gatpoly/GFil.d.h1.gds.gz", "TOP", vec!["GFil.d"; 12], vec!["GFil.g"])]
 // A filler abutting an Activ (space 0.00, `abutting: report`), 1.095 across x = 20 and
 // 40, a gap ending on 20, a corner pair near (20, 14), one at (1000, 1000), a 300 µm pair;
-// a filler overlapping a pSD, under a pSD or overlapping a GatPoly shares area and is no
-// pair, as KLayout has it (report, finding 5) - the pSD one, two boxes of one height
-// overlapping by 0.2, read as a corner touch and a space of nothing until that overlap
-// was seen.
-#[case::gfil_d_h2("gatpoly/GFil.d.h2.gds.gz", "TOP", vec!["GFil.d"; 7], vec!["GFil.g", "GFil.a"])]
+// a filler overlapping a pSD, under a pSD or overlapping a GatPoly is at no distance and
+// fires too (report, finding 5; KLayout's `sep` is silent on them, Calibre is not:
+// FMD_QNC_greyhound_ihp's corner fillers over the diagonal pSD).
+#[case::gfil_d_h2("gatpoly/GFil.d.h2.gds.gz", "TOP", vec!["GFil.d"; 10], vec!["GFil.g", "GFil.a"])]
 // To NWell and to nBuLay: 1.095 and 1.089 fire, 1.10 and 1.103 are clean; a filler 1.6
 // from a 5 × 5 well is 2.6 from the nBuLay section 4.2 generates 1.0 inside it (clean),
 // one 1.5 from a 2-wide well has no nBuLay near it (clean).

@@ -1337,6 +1337,16 @@ virtual_layers:
     op: inside
     mode: lazy
     layers: [GatPoly.filler, Activ.filler]
+  # GFil.d: a filler overlapping one of the layers is at no distance from it - no pair
+  # a space reads.
+  - name: GFilDLayers
+    op: union
+    mode: lazy
+    layers: [Activ, GatPoly, Cont, pSD, nSD.block, SalBlock]
+  - name: GatPolyFillerOverGFilD
+    op: intersection
+    mode: lazy
+    layers: [GatPoly.filler, GFilDLayers]
 
   # "NWell regions separated by less than 0.62 will be merged": a close of 0.309 a side
   # bridges 0.615 and leaves 0.62, the next grid step, two regions.
