@@ -11,7 +11,8 @@
 //! span, a pinch is one point.
 
 use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, write_gz,
+    chamfered_tr, diamond, filleted, flat_array, layer, library, poly, rect, ref_array, strip45,
+    write_gz,
 };
 use gdscheck::pdk::PdkConfig;
 
@@ -377,5 +378,40 @@ pub fn generate(pdk: &PdkConfig) {
             strip45(outer, 2.0, 2.0, 212.0, 0.49),
             strip45(outer, 2.0, 220.0, 2.0, 0.005),
         ],
+    );
+
+    // Rounded corners, drawn in six 15° steps as a logo's letters are: an L 2 µm wide
+    // across the tile lines at 40, its outer corners rounded by 0.8 and its inner corner
+    // by 0.5.  Two steps of one corner run the same way round it, and the span between
+    // their ends is a chord, not a width.  W.min: 0.  The same L 0.495 wide, rounded by
+    // 0.2 and 0.1: the legs' walls, and at each rounded end every step against the wall
+    // across, as the end narrows to its tip.  W.min: 30.
+    let l_stroke = |x: f64, y: f64, w: f64| {
+        [
+            (x, y),
+            (x + 10.0, y),
+            (x + 10.0, y + w),
+            (x + w, y + w),
+            (x + w, y + 10.0),
+            (x, y + 10.0),
+        ]
+    };
+    write(
+        "round_wide",
+        vec![filleted(
+            outer,
+            &l_stroke(35.0, 35.0, 2.0),
+            |i| if i == 3 { 0.5 } else { 0.8 },
+            6,
+        )],
+    );
+    write(
+        "round_thin",
+        vec![filleted(
+            outer,
+            &l_stroke(35.0, 35.0, 0.495),
+            |i| if i == 3 { 0.1 } else { 0.2 },
+            6,
+        )],
     );
 }

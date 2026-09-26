@@ -1119,6 +1119,15 @@ fn mixed_widths(
             }));
 
         for (q0, q1, (nax, nay)) in axis {
+            // The two edges run against each other, more than a right angle apart as the
+            // ring goes - material on the left of both, so the axis edge runs along
+            // (nay, -nax).  Two edges of one rounded corner run the same way round it,
+            // and the span between their ends is the chord across the corner, not a
+            // width: a logo's letters drawn in short oblique steps read a hundred of
+            // them.  KLayout's angle limit drops the same pairs.
+            if dx * nay - dy * nax >= 0 {
+                continue;
+            }
             let c = seg_seg_closest_sq(a, b, q0, q1);
             if c.num == 0 || !limit.broken_by_sq(c.num, c.den) {
                 continue;

@@ -36,6 +36,50 @@ pub fn poly(layer: (i16, i16), pts: &[(f64, f64)]) -> GdsElement {
     })
 }
 
+/// A rectilinear polygon with each corner rounded into an arc of `r(i)` µm (0 leaves it
+/// sharp) drawn in `steps` straight segments, the way a logo's letters or a round pad
+/// come out of a drawing tool: every corner turns through a run of short oblique
+/// edges.  A corner is the vertex `i` of `pts`, in drawing order.
+pub fn filleted(
+    layer: (i16, i16),
+    pts: &[(f64, f64)],
+    r: impl Fn(usize) -> f64,
+    steps: usize,
+) -> GdsElement {
+    let n = pts.len();
+    let unit = |a: (f64, f64), b: (f64, f64)| {
+        let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+        let l = dx.hypot(dy);
+        (dx / l, dy / l)
+    };
+    let mut out = Vec::new();
+    for i in 0..n {
+        let p = pts[i];
+        let rr = r(i);
+        if rr <= 0.0 {
+            out.push(p);
+            continue;
+        }
+        let d1 = unit(pts[(i + n - 1) % n], p);
+        let d2 = unit(p, pts[(i + 1) % n]);
+        // The arc's centre sits r back along the way in and r on along the way out; it
+        // runs from the tangent point on the way in to the one on the way out.
+        let c = (p.0 - d1.0 * rr + d2.0 * rr, p.1 - d1.1 * rr + d2.1 * rr);
+        for k in 0..=steps {
+            let t = std::f64::consts::FRAC_PI_2 * k as f64 / steps as f64;
+            let (s, co) = t.sin_cos();
+            let q = (
+                c.0 + rr * (-d2.0 * co + d1.0 * s),
+                c.1 + rr * (-d2.1 * co + d1.1 * s),
+            );
+            // On the 5 nm grid, as a drawing tool writes it.
+            out.push(((q.0 * 200.0).round() / 200.0, (q.1 * 200.0).round() / 200.0));
+        }
+    }
+    out.dedup();
+    poly(layer, &out)
+}
+
 /// A text label at (x, y) µm on the given layer/texttype.
 pub fn text(layer: (i16, i16), string: &str, x: f64, y: f64) -> GdsElement {
     GdsElement::GdsTextElem(GdsTextElem {

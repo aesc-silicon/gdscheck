@@ -225,7 +225,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::nplus(
     "nplus", "nplus.gds.gz", "7_10_Nplus",
-    &[("NP.1", 395), ("NP.10", 7), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 8), ("NP.5b", 66), ("NP.5ci", 8), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 7), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 8)]
+    &[("NP.1", 394), ("NP.10", 7), ("NP.11", 10), ("NP.12", 1), ("NP.2", 86), ("NP.3a", 9), ("NP.3bi", 10), ("NP.3bii", 4), ("NP.3ci", 15), ("NP.3cii", 4), ("NP.3d", 2), ("NP.3e", 2), ("NP.4a", 4), ("NP.4b", 1), ("NP.5a", 8), ("NP.5b", 66), ("NP.5ci", 8), ("NP.5cii", 3), ("NP.5di", 7), ("NP.5dii", 9), ("NP.6", 72), ("NP.7", 7), ("NP.8a", 121), ("NP.8b", 2), ("NP.9", 8)]
 )]
 #[case::metaltop(
     "metaltop", "metaltop.gds.gz", "metaltop",
@@ -233,7 +233,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::pplus(
     "pplus", "pplus.gds.gz", "7_11_Pplus",
-    &[("PP.1", 395), ("PP.10", 5), ("PP.11", 8), ("PP.12", 1), ("PP.2", 86), ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 8), ("PP.5b", 71), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33), ("PP.6", 72), ("PP.7", 7), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 6)]
+    &[("PP.1", 394), ("PP.10", 5), ("PP.11", 8), ("PP.12", 1), ("PP.2", 86), ("PP.3a", 21), ("PP.3bi", 4), ("PP.3bii", 11), ("PP.3ci", 4), ("PP.3cii", 10), ("PP.3d", 2), ("PP.3e", 2), ("PP.4a", 4), ("PP.4b", 1), ("PP.5a", 8), ("PP.5b", 71), ("PP.5ci", 6), ("PP.5cii", 9), ("PP.5di", 8), ("PP.5dii", 33), ("PP.6", 72), ("PP.7", 7), ("PP.8a", 121), ("PP.8b", 2), ("PP.9", 6)]
 )]
 #[case::metal1(
     "metal", "metal1.gds.gz", "metal1",

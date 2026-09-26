@@ -233,6 +233,10 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 ///   long and with 1.018 walls, a Z route's jog and a chamfered L's bend 0.693 across,
 ///   the same across the tile lines, fifty at once, a 300 µm strip and a sliver; 0.707,
 ///   walls of 0.99 and a 0.693 diamond are clean.
+/// - `round_*`: an L with its corners rounded in 15° steps across the tile lines at 40:
+///   2 µm wide it is clean - two steps of one corner are no pair, where they read twenty
+///   chords of 0.2 - and 0.495 wide it fires along its legs and where its rounded ends
+///   narrow.
 #[rstest]
 #[case("bent_bound", "W.bent", 6)]
 #[case("bent_bound", "W.min", 2)]
@@ -241,6 +245,8 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 #[case("bent_array_flat", "W.bent", 100)]
 #[case("bent_array_ref", "W.bent", 100)]
 #[case("bent_extremes", "W.bent", 4)]
+#[case("round_wide", "W.min", 0)]
+#[case("round_thin", "W.min", 30)]
 #[case("bound", "W.min", 10)]
 #[case("bound", "W.max", 4)]
 #[case("bound_45", "W.min", 6)]
@@ -575,6 +581,8 @@ fn space_rules_meet_the_bound_exactly_and_read_their_gates(
 ///   20, 21, 40 and 42, and ring channels straddling 20 and 40: nine whatever the tile.
 /// - `array_flat` / `array_ref`: fifty 0.495 slots flat and as an array reference.
 /// - `extremes`: a 300 µm slot (one notch) and a slot at (1000, 1000).
+/// - `round_*`: an inner corner rounded in 15° steps is no notch (two chords once), a
+///   0.495 slot with a rounded mouth and floor fires along its walls and its floor.
 #[rstest]
 #[case("shapes", "N.min", 8)]
 #[case("tile_lines", "N.min", 9)]
@@ -593,6 +601,8 @@ fn space_rules_meet_the_bound_exactly_and_read_their_gates(
 #[case("bent_short", "N.bent", 0)]
 #[case("len_exact", "N.len", 0)]
 #[case("len_over", "N.len", 1)]
+#[case("round_inner", "N.min", 0)]
+#[case("round_slot", "N.min", 15)]
 fn notch_rules_meet_the_bound_exactly_and_read_their_gates(
     #[case] pattern: &str,
     #[case] rule: &str,

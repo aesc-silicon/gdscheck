@@ -12,7 +12,7 @@
 //! in that frame is `Δa / √2` across, never on the grid, so the two patterns straddle
 //! the value by the nearest even offsets, 0.708 and 0.706 µm.
 
-use crate::helpers::{flat_array, layer, library, poly, rect, ref_array, write_gz};
+use crate::helpers::{filleted, flat_array, layer, library, poly, rect, ref_array, write_gz};
 use gdscheck::pdk::PdkConfig;
 
 const DIR: &str = "tests/data/engine/generated/notch";
@@ -304,5 +304,49 @@ pub fn generate(pdk: &PdkConfig) {
             ),
             slot(1000.0, 1000.0),
         ],
+    );
+
+    // Rounded corners, drawn in six 15° steps: a block's inner corner rounded by 1.0,
+    // across the tile lines at 40 - two steps of one corner are no gap.  N.min: 0.  The
+    // 0.495 slot with its mouth rounded by 0.2 and its floor by 0.1: its walls, and every
+    // step of the floor against the wall across, as the floor narrows it.  N.min: 15.
+    write(
+        "round_inner",
+        vec![filleted(
+            outer,
+            &[
+                (35.0, 35.0),
+                (45.0, 35.0),
+                (45.0, 39.0),
+                (39.0, 39.0),
+                (39.0, 45.0),
+                (35.0, 45.0),
+            ],
+            |i| if i == 3 { 1.0 } else { 0.0 },
+            6,
+        )],
+    );
+    let (x0, y0, x1, y1, sx, w, depth) = (30.0, 30.0, 36.0, 34.0, 32.5, 0.495, 3.0);
+    write(
+        "round_slot",
+        vec![filleted(
+            outer,
+            &[
+                (x0, y0),
+                (x1, y0),
+                (x1, y1),
+                (sx + w, y1),
+                (sx + w, y1 - depth),
+                (sx, y1 - depth),
+                (sx, y1),
+                (x0, y1),
+            ],
+            |i| match i {
+                3 | 6 => 0.2,
+                4 | 5 => 0.1,
+                _ => 0.0,
+            },
+            6,
+        )],
     );
 }
