@@ -644,7 +644,8 @@ const DECK_CNT: &str = "cont";
 #[case::cnt_g1_h5("cont/Cnt.g1.h5.gds.gz", "TOP", vec!["Cnt.g1"; 2], vec![])]
 // pSD margins: 0.09 clean; 0.085 right, all round, right and top, 0.005, 0, and a pSD
 // ending on the Activ edge 0.07 from the Cont fire once each; the pSD edge through the
-// Cont fires Cnt.g2 and, the bare half being on nSD-Activ 0 from pSD, Cnt.g1 (finding 5).
+// Cont fires Cnt.g2 and, the bare half being on nSD-Activ 0 from pSD, Cnt.g1 (finding 5);
+// the same under the SRAM marker is not read (SRAMBlocksTest's bit cells).
 #[case::cnt_g2_h1("cont/Cnt.g2.h1.gds.gz", "TOP",
     [vec!["Cnt.g2"; 7], vec!["Cnt.g1"]].concat(), vec![])]
 // The pSD chamfer 0.085 from the Cont corner fires, 0.092 is clean (euclidian, decided 2026-09-21); pSD

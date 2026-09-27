@@ -186,6 +186,7 @@ struct L {
     m1: (i16, i16),
     digi: (i16, i16),
     nw: (i16, i16),
+    sram: (i16, i16),
 }
 
 impl L {
@@ -200,6 +201,7 @@ impl L {
             m1: layer(pdk, "Metal1"),
             digi: layer(pdk, "DigiBnd"),
             nw: layer(pdk, "NWell"),
+            sram: layer(pdk, "SRAM"),
         }
     }
 
@@ -474,7 +476,8 @@ fn cnt_g2_h(l: &L) {
     // corner) fires; a 0.005 margin and a pSD edge on the Cont edge (0) fire; a pSD
     // ending on the Activ edge 0.07 from the Cont fires (the usual mistake: pSD must
     // reach past Activ); the pSD edge through the Cont's middle fires Cnt.g2 - and, the
-    // uncovered half being on nSD-Activ (section 4.2), Cnt.g1 at 0.
+    // uncovered half being on nSD-Activ (section 4.2), Cnt.g1 at 0.  The same under the
+    // SRAM marker is not read (a bit cell's Conts sit on the implant edge).
     let mut e = vec![];
     e.extend(pc(2.0, 2.0, 0.09, 0.09, 0.09, 0.09));
     e.extend(pc(4.0, 2.0, 0.09, 0.085, 0.09, 0.09));
@@ -485,7 +488,9 @@ fn cnt_g2_h(l: &L) {
     e.extend(l.c_in_m(activ, 14.0, 2.0, 0.07));
     e.push(rect(psd, 13.75, 1.75, 14.15, 2.25)); // ends on the Activ edge: 0.07
     e.extend(pc(16.0, 2.0, 0.09, -0.08, 0.09, 0.09));
-    e.extend(l.plates(&[m1], 1.0, 1.0, 18.0, 3.0));
+    e.extend(pc(18.0, 2.0, 0.09, -0.08, 0.09, 0.09));
+    e.push(rect(l.sram, 17.5, 1.5, 18.5, 2.5));
+    e.extend(l.plates(&[m1], 1.0, 1.0, 19.0, 3.0));
     write("Cnt.g2.h1", e);
 
     // h2 — 45° and merging.  A pSD corner cut along a 45° line 0.085 from the Cont's

@@ -574,15 +574,20 @@ virtual_layers:
     op: inside
     mode: lazy
     layers: [ContOnActivNoSRAM, DigiBnd]
-  # Cnt.g1: the Cont on N+Activ, N+ by drawn nSD or by default (section 4.2).
+  # Cnt.g1: the Cont on N+Activ, N+ by drawn nSD or by default (section 4.2).  Not in
+  # the SRAM marker, as Cnt.c is not: a bit cell's Conts sit on the implant edge.
+  - name: ContSquareNoSRAM
+    op: not_overlapping
+    mode: lazy
+    layers: [ContSquare, SRAM]
   - name: ContOnNsdActiv
     op: intersection
     mode: lazy
-    layers: [ContSquare, NActFull]
+    layers: [ContSquareNoSRAM, NActFull]
   - name: ContOnPsdActiv
     op: intersection
     mode: lazy
-    layers: [ContSquare, Activ, pSD]
+    layers: [ContSquareNoSRAM, Activ, pSD]
 
   - name: ContBarOnGatPoly
     op: intersection
