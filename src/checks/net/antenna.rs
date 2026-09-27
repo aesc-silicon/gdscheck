@@ -98,7 +98,7 @@ fn diode_area_per_net(
             .map(|chunk| {
                 let mut per: HashMap<usize, f64> = HashMap::new();
                 for r in chunk {
-                    if let Some(net) = part.net_at(conn, dnet, r.marker.0, r.marker.1) {
+                    if let Some(net) = part.net_at(conn, dnet, r.anchor.0, r.anchor.1) {
                         *per.entry(net).or_default() += r.area_dbu * d2;
                     }
                 }
@@ -220,7 +220,7 @@ pub fn run(
         .regions(layout, gate.0, gate.1)
         .par_iter()
         .filter_map(|r| {
-            conn.node_at(gate_net, r.marker.0, r.marker.1)
+            conn.node_at(gate_net, r.anchor.0, r.anchor.1)
                 .map(|n| (r.area_dbu * d2, r.marker, n))
         })
         .collect();
@@ -324,7 +324,7 @@ pub fn run(
                     .map(|chunk| {
                         let mut per: HashMap<usize, f64> = HashMap::new();
                         for r in chunk {
-                            if let Some(net) = part.net_at(conn, ant_net, r.marker.0, r.marker.1) {
+                            if let Some(net) = part.net_at(conn, ant_net, r.anchor.0, r.anchor.1) {
                                 sum_nets(&mut per, net, metric(r));
                             }
                         }

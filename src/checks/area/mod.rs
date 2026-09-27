@@ -262,7 +262,7 @@ pub fn run_scoped(
                     };
                     let mut nets = HashSet::new();
                     for r in merged.regions(layout, c.layer.0, c.layer.1).to_vec() {
-                        if let Some(net) = conn.net_at(c.layer_net_of, r.marker.0, r.marker.1) {
+                        if let Some(net) = conn.net_at(c.layer_net_of, r.anchor.0, r.anchor.1) {
                             nets.insert(net);
                         }
                     }
@@ -296,7 +296,7 @@ pub fn run_scoped(
                     if let Some((nets, net_of)) = &gate {
                         let conn = conn.expect("checked above");
                         let lookup = net_of.unwrap_or(key);
-                        let Some(net) = conn.net_at(lookup, r.marker.0, r.marker.1) else {
+                        let Some(net) = conn.net_at(lookup, r.anchor.0, r.anchor.1) else {
                             continue; // on no net: not connected to anything
                         };
                         if !nets.contains(&net) {

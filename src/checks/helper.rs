@@ -93,7 +93,10 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
     let limit = Limit::at_least(value, dbu_to_um);
     // Each region keeps its DBU marker: a point *on* the shape, not its centroid - a
     // net-aware gate resolves the net by looking the marker up, and a ring's centroid
-    // sits in its hole, where in GF180's DN.2b fixture an unrelated island sits.
+    // sits in its hole, where in GF180's DN.2b fixture an unrelated island sits.  A U's
+    // vertex average sits in its opening just the same: FMD_QNC_Lumos's levelup draws a
+    // U-shaped well round a well of another net, and NW.b1 read the U on that net in
+    // every tile whose copy of the U had its average there.
     //
     // Whether a merged piece is real material or a shaving the merge left behind.  A
     // 45° wall is drawn with a one-nanometre chamfer at each corner, and rounding that
@@ -122,7 +125,7 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                     dbu_to_um,
                     cell: std::cell::OnceCell::new(),
                 },
-                marker: representative_point(m),
+                marker: crate::merge::inside_point(m),
                 material: crate::merge::merged_area_dbu(m) >= SHAVING_DBU2,
                 index,
             })

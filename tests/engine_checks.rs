@@ -552,6 +552,8 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 #[case("net_apart", "S.same", 0)]
 #[case("net_apart", "S.diff", 1)]
 #[case("net_apart", "S.min", 1)]
+#[case("net_u_island", "S.diff", 1)]
+#[case("net_u_island", "S.same", 0)]
 fn space_rules_meet_the_bound_exactly_and_read_their_gates(
     #[case] pattern: &str,
     #[case] rule: &str,

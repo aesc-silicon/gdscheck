@@ -168,6 +168,29 @@ pub fn generate(pdk: &PdkConfig) {
     write("net_bridged", v);
     write("net_apart", squares());
 
+    // A U of Outer, open at the top, with an island 0.25 inside its opening, on no net
+    // with it.  The U's vertex average (32, 32.2) lies in the island: a net looked up
+    // there read the U on the island's net and the pair as one.  S.diff 1, S.same 0.
+    write(
+        "net_u_island",
+        vec![
+            poly(
+                outer,
+                &[
+                    (30.0, 30.0),
+                    (34.0, 30.0),
+                    (34.0, 34.0),
+                    (33.2, 34.0),
+                    (33.2, 30.8),
+                    (30.8, 30.8),
+                    (30.8, 34.0),
+                    (30.0, 34.0),
+                ],
+            ),
+            rect(outer, 31.05, 31.05, 32.95, 33.5),
+        ],
+    );
+
     // --- The hardening patterns: what a rule manual's space asks of any layer, drawn
     // once here for every deck of every PDK (hardening/SPEC.md, "Where a pattern
     // belongs").  S.min is 0.5; a violation is one pair.
