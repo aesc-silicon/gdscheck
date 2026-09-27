@@ -2952,12 +2952,18 @@ impl Outline<'_> {
 }
 
 /// Whether a 45° wall of `a` lies within `limit` DBU of `b`: the bend has to be at the
-/// gap, not somewhere else on a long net.
+/// gap, not somewhere else on a long net.  A 45° wall runs as far across as along, to a
+/// DBU - a boolean rounds a cut 45° wall's end to the grid.  A wall at another angle is
+/// no bend these rules know: the manual allows metal at 0, 45 and 90 degrees only, and
+/// such a wall is the angle rule's (`<layer>.angle45`).
 pub fn has_diagonal_within(a: &Outline, b: &Outline, limit: i64) -> bool {
     let lim = Limit::AtLeast(limit);
     a.segs
         .iter()
-        .filter(|&&(p, q)| p.0 != q.0 && p.1 != q.1)
+        .filter(|&&(p, q)| {
+            let (dx, dy) = ((q.0 - p.0).abs(), (q.1 - p.1).abs());
+            dx != 0 && dy != 0 && (dx - dy).abs() <= 1
+        })
         .any(|&(p, q)| {
             b.segs.iter().any(|&(r, s)| {
                 let c = seg_seg_closest_sq(p, q, r, s);
@@ -3822,6 +3828,25 @@ mod space_tests {
         let far = rect(-800, 0, -500, 1000);
         assert!(has_diagonal_within(&oa, &Outline::new(&near), 600));
         assert!(!has_diagonal_within(&oa, &Outline::new(&far), 600));
+        // A wall at 26.6° is no 45° bend; one a DBU off 45° is.
+        let slant = |d: i32| MergedPoly {
+            outer: [(0, 0), (1000, 0), (1000, 500), (500, 500 + d), (0, 500 + d)]
+                .iter()
+                .map(|&(x, y)| IntPoint::new(x, y))
+                .collect(),
+            holes: vec![],
+        };
+        let above = rect(0, 1200, 1000, 1500);
+        assert!(!has_diagonal_within(
+            &Outline::new(&slant(250)),
+            &Outline::new(&above),
+            600
+        ));
+        assert!(has_diagonal_within(
+            &Outline::new(&slant(501)),
+            &Outline::new(&above),
+            600
+        ));
     }
 
     /// Shared area is a vertex strictly inside, a nesting with coincident walls, or a
