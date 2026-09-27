@@ -719,8 +719,8 @@ fn nw_b_h(l: &L) {
     );
 
     // h9 — nets.  Two wells 0.50 apart tied to different Metal1 nets and two 0.50 apart
-    // tied to one net: the manual says regions closer than 0.62 will be merged, so both
-    // pairs violate NW.b regardless of net (KLayout's driver calls the first NW.b1).
+    // tied to one net: both pairs violate NW.b regardless of net, and the first is NW.b1
+    // too - merging the two wells would short their nets (KLayout's driver, Calibre).
     let mut e = vec![
         rect(nw, 2.0, 2.0, 3.0, 3.0),
         rect(nw, 3.5, 2.0, 4.5, 3.0),

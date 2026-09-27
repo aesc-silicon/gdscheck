@@ -81,9 +81,10 @@ Parameters
    below the small minimum is below the large one too, and the companion rule reports
    it. That relies on the rules being written as a pair, which is how they come.
 
-   If the rule's layer is a *merged* derived layer (a ``close``, as with NW.b1's
-   ``NWellMergedNoSRAM``), put that merged layer in the connect graph rather than the
-   drawn layer: a merged region's marker can land in a gap the close filled in.
+   If the rule's layer is a *merged* derived layer (a ``close``), put that merged
+   layer in the connect graph beside the drawn one, so every region resolves - and
+   mind that the merge then joins the nets of what it bridges: a rule about two nets
+   too close to merge reads the drawn layer instead, as IHP's NW.b1 does.
 
 ``width`` / ``length``
    Optional, µm, alone or together. The rule then applies only where some pair of facing
@@ -234,10 +235,12 @@ Examples
 
     - id: NW.b1
       check: min_space
-      layers: [NWellMergedNoSRAM]
+      layers: [NWell]
       value: 1.80
       params:
         net: different
+      layer_params:
+        gap_outside: NWellOrPWellBlkOrSRAM
 
     - id: V1.b1
       check: min_space

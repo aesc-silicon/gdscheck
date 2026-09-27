@@ -17,12 +17,12 @@ rules:
     value: 0.62
   - id: NW.b1
     check: min_space
-    layers: [NWellMergedNoSRAM]
+    layers: [NWell]
     value: 1.80
     params:
       net: different
     layer_params:
-      gap_outside: NWellOrPWellBlk
+      gap_outside: NWellOrPWellBlkOrSRAM
   - id: NW.c
     check: min_enclosure
     layers: [NWell, PsdActivInNWellNoTGONoSRAM]

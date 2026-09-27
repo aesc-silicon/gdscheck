@@ -1157,12 +1157,12 @@ const DECK_NW: &str = "nwell";
 
 #[rstest]
 #[case::nw_a("nwell/NW.a.gds.gz", "TOP", vec!["NW.a"; 4], vec![])]
-// 0.50 gap fires NW.b; the exactly-0.62 gap is NW.b's limit and stays two regions
-// ("separated by less than this value will be merged"), so on no common net it is
-// NW.b1's.  KLayout reads both pairs as NW.b1.
-#[case::nw_b("nwell/NW.b.gds.gz", "TOP", vec!["NW.b", "NW.b1"], vec![])]
-// The 0.50 "merged" pair now also legitimately draws the new NW.b — ignored here.
-#[case::nw_b1("nwell/NW.b1.gds.gz", "TOP", vec!["NW.b1"], vec!["NW.b"])]
+// 0.50 gap fires NW.b; the exactly-0.62 gap is NW.b's limit.  Both pairs are on no common
+// net - the wells are bare, and a merge of wells under 0.62 is no connection - so both are
+// NW.b1's too, as KLayout reads them.
+#[case::nw_b("nwell/NW.b.gds.gz", "TOP", vec!["NW.b", "NW.b1", "NW.b1"], vec![])]
+// The 0.50 pair also draws NW.b - ignored here - and is on no common net: NW.b1 twice.
+#[case::nw_b1("nwell/NW.b1.gds.gz", "TOP", vec!["NW.b1"; 2], vec!["NW.b"])]
 // Same-net regression (GitHub report): two NWell pairs, both at a 1.00 µm gap.  Only the
 // bare pair is different-net; the second pair's wells are shorted by an N+Activ tie →
 // Cont → Metal1 strap → Cont → tie, so NW.b1 must fire exactly once.  Currently fires
@@ -1212,10 +1212,12 @@ const DECK_NW: &str = "nwell";
 // Overlapping, abutting and gridded boxes each 0.615 from a third box: one each.
 #[case::nw_b_h4("nwell/NW.b.h4.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.b1"])]
 // A 0.005 sliver 0.615 from a box, two 300 µm bars 0.615 apart, a pair at (1000, 1000).
-#[case::nw_b_h8("nwell/NW.b.h8.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.a"])]
-// Two wells 0.50 apart on different Metal1 nets and two on one net: closer than 0.62 they
-// merge, so both pairs are NW.b whatever the net (KLayout calls the first NW.b1).
-#[case::nw_b_h9("nwell/NW.b.h9.gds.gz", "TOP", vec!["NW.b"; 2], vec![])]
+// Bare wells under 1.80 apart also draw NW.b1.
+#[case::nw_b_h8("nwell/NW.b.h8.gds.gz", "TOP", vec!["NW.b"; 3], vec!["NW.a", "NW.b1"])]
+// Two wells 0.50 apart on different Metal1 nets and two on one net: both pairs are NW.b,
+// and the first is NW.b1 as well - the mask merges wells under 0.62, which shorts two
+// nets, not joins them (KLayout; Calibre on FMD_QNC_psoc-soc's abutted SRAM macros).
+#[case::nw_b_h9("nwell/NW.b.h9.gds.gz", "TOP", vec!["NW.b", "NW.b", "NW.b1"], vec![])]
 // Bare wells: gaps 0.62 (NW.b's limit - not merged, so NW.b1 applies), 0.625, 1.795 and
 // diagonals 1.27/1.27 (1.796), 1.20/1.20 (1.697), 0.90/0.90 (1.273) fire; 1.80 and
 // 1.28/1.28 (1.810) are clean.  The merge used to take the exact-0.62 gap and to bevel

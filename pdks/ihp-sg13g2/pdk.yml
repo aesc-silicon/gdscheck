@@ -204,7 +204,7 @@ connectivity:
   - connector: TopVia2
     layers: [TopMetal2]
   - connector: NActivInNWell
-    layers: [NWell, NWellMergedNoSRAM, NWellExt, ActivSD]
+    layers: [NWell, NWellExt, ActivSD]
   - connector: NWellNBuLayDerived
     layers: [nBuLay, nBuLayMerged, nBuLayRegions, nBuLayRegionsExt, NWell, NWellExt]
 
@@ -1161,6 +1161,10 @@ virtual_layers:
     mode: lazy
     layers: [NWellTieStandalone, SchottkyDevice]
 
+  - name: NWellOrPWellBlkOrSRAM
+    op: union
+    mode: lazy
+    layers: [NWellOrPWellBlk, SRAM]
   - name: NWellOrPWellBlk
     op: union
     mode: lazy
@@ -1359,11 +1363,6 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [NWell, SRAM]
-  - name: NWellMergedNoSRAM
-    op: close
-    mode: lazy
-    radius: 0.309
-    layers: [NWellNoSRAM]
   - name: PsdActivInNWellNoTGONoSRAM
     op: not_overlapping
     mode: lazy

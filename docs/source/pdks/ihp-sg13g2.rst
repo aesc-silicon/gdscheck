@@ -194,11 +194,12 @@ KLayout script, where the two disagree:
   ``NActivInNWell`` connect step ties a well to the tap sitting in it (and from there
   through Cont to Metal1), so wells strapped together no longer read as different-net.
   It has to be N+Activ rather than plain ``Activ``: P+Activ in an NWell is a PMOS
-  source/drain, which must not tie the well to the diffusion net. ``NWellMergedNoSRAM``
-  is in the connect graph beside ``NWell`` because the rule is checked on the merged
-  layer, whose marker can land in a gap the ``close`` filled in — inside the merged
-  layer, but outside any drawn NWell. That ``close`` still stands in for wells
-  physically merged by diffusion, below the NW.b minimum. Note this makes NW.b1 a net-aware rule, so the
+  source/drain, which must not tie the well to the diffusion net. NW.b1 is read on the
+  drawn NWell, not on wells merged below NW.b's 0.62: a merge of wells on two nets
+  shorts them, and that is the case the rule exists for - FMD_QNC_psoc-soc abuts two
+  SRAM macros whose wells, on two supplies, are 0.40 apart. Gaps inside the SRAM
+  marker are not read (``gap_outside``), as the pSD and well rules are not read in the
+  bit cells. Note this makes NW.b1 a net-aware rule, so the
   ``core`` suite now runs net extraction; ``--no-connectivity`` skips it (and NW.b1).
   Both well steps are appended after the metal stack: an antenna level names the layer
   whose first connect step it reads through, and a step added at the end changes no
