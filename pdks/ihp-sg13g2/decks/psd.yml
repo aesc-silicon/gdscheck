@@ -61,19 +61,13 @@ rules:
     params:
       touching: separate
   - id: pSD.i
-    check: min_enclosure
-    layers: [pSDNoSRAM, GatPolyOverPsdActivNoTGO]
-    value: 0.30
-    params:
-      metric: euclidian
-      interacting_only: 1
+    check: forbidden
+    layers: [PsdIShort]
+    value: 0.0
   - id: pSD.i1
-    check: min_enclosure
-    layers: [pSDNoSRAM, GatPolyOverPsdActivTGO]
-    value: 0.40
-    params:
-      metric: euclidian
-      interacting_only: 1
+    check: forbidden
+    layers: [PsdI1Short]
+    value: 0.0
   - id: pSD.j
     check: min_space
     layers: [pSDNoSRAM, GatPolyOverNsdActivNoTGO]

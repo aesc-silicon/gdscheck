@@ -1806,6 +1806,100 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [GatPolyOverPsdActiv, ThickGateOx]
+  # pSD.i/i1, "Min. pSD enclosure of PFET gate": figure 5.10's `i` runs from the gate's
+  # side over the source and drain.  Across the gate's width the pSD past the Activ is
+  # pSD.c's, as IHP's own pmosHV draws it (0.22 past the Activ, under 0.40).  A gate's
+  # channel runs the way its sides meet source/drain Activ; the gate grown that way by
+  # the value and not covered by pSD is short.  Not under the SRAM marker, where the
+  # pSD rules are not read (pSDNoSRAM).
+  - name: PsdISideX
+    op: grow_x
+    radius: 0.005
+    mode: lazy
+    layers: [GatPolyOverPsdActivNoTGO]
+  - name: PsdISideY
+    op: grow_y
+    radius: 0.005
+    mode: lazy
+    layers: [GatPolyOverPsdActivNoTGO]
+  - name: PsdISdX
+    op: intersection
+    mode: lazy
+    layers: [PsdISideX, ActivSD]
+  - name: PsdISdY
+    op: intersection
+    mode: lazy
+    layers: [PsdISideY, ActivSD]
+  - name: PsdIGateChX
+    op: interacting
+    mode: lazy
+    layers: [GatPolyOverPsdActivNoTGO, PsdISdX]
+  - name: PsdIGateChY
+    op: interacting
+    mode: lazy
+    layers: [GatPolyOverPsdActivNoTGO, PsdISdY]
+  - name: PsdIReachX
+    op: grow_x
+    radius: 0.30
+    mode: lazy
+    layers: [PsdIGateChX]
+  - name: PsdIReachY
+    op: grow_y
+    radius: 0.30
+    mode: lazy
+    layers: [PsdIGateChY]
+  - name: PsdIReach
+    op: union
+    mode: lazy
+    layers: [PsdIReachX, PsdIReachY]
+  - name: PsdIShort
+    op: difference
+    mode: lazy
+    layers: [PsdIReach, pSDNoSRAM, SRAM]
+  - name: PsdI1SideX
+    op: grow_x
+    radius: 0.005
+    mode: lazy
+    layers: [GatPolyOverPsdActivTGO]
+  - name: PsdI1SideY
+    op: grow_y
+    radius: 0.005
+    mode: lazy
+    layers: [GatPolyOverPsdActivTGO]
+  - name: PsdI1SdX
+    op: intersection
+    mode: lazy
+    layers: [PsdI1SideX, ActivSD]
+  - name: PsdI1SdY
+    op: intersection
+    mode: lazy
+    layers: [PsdI1SideY, ActivSD]
+  - name: PsdI1GateChX
+    op: interacting
+    mode: lazy
+    layers: [GatPolyOverPsdActivTGO, PsdI1SdX]
+  - name: PsdI1GateChY
+    op: interacting
+    mode: lazy
+    layers: [GatPolyOverPsdActivTGO, PsdI1SdY]
+  - name: PsdI1ReachX
+    op: grow_x
+    radius: 0.40
+    mode: lazy
+    layers: [PsdI1GateChX]
+  - name: PsdI1ReachY
+    op: grow_y
+    radius: 0.40
+    mode: lazy
+    layers: [PsdI1GateChY]
+  - name: PsdI1Reach
+    op: union
+    mode: lazy
+    layers: [PsdI1ReachX, PsdI1ReachY]
+  - name: PsdI1Short
+    op: difference
+    mode: lazy
+    layers: [PsdI1Reach, pSDNoSRAM, SRAM]
 
   - name: Metal1NoExempt
     op: difference

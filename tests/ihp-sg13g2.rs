@@ -2994,14 +2994,17 @@ const DECK_PSD: &str = "psd";
 // standalone P+ tap form no abutted tie (report, finding 10); the 0.30 × 0.295 P+ parts
 // are pSD.e as both tools read the overlap - the P+ part's width (report, finding 11).
 #[case::psd_g_h1("psd/pSD.g.h1.gds.gz", "TOP", [vec!["pSD.g"; 4], vec!["pSD.e"; 2]].concat(), vec![])]
-// PFETs with 0.295 left, right, both (two walls) and 0.295 in the width direction (two
-// walls) fire pSD.i; 0.30 all round is clean; 3.3 V PFETs with 0.395 left, 0.395 right
-// (the pSD reaching out of the oxide) and 0.395 in the width direction (two walls) fire
-// pSD.i1.
-#[case::psd_i_h1("psd/pSD.i.h1.gds.gz", "TOP", vec!["pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i1", "pSD.i1", "pSD.i1", "pSD.i1"], vec![])]
-// A chamfer 0.295 from the gate's corner, a pSD and an Activ drawn as two boxes with 0.295,
-// and 0.295 on and across x = 20/21/40/42 fire.
-#[case::psd_i_h2("psd/pSD.i.h2.gds.gz", "TOP", vec!["pSD.i"; 6], vec![])]
+// PFETs with 0.295 left, right and both (one per side) fire pSD.i; 0.30 all round is
+// clean, and so is 0.295 in the width direction - the channel's direction is the rule's,
+// across the gate's width the pSD past the Activ is pSD.c's (IHP's pmosHV keeps 0.22
+// there).  3.3 V PFETs with 0.395 left and 0.395 right (the pSD reaching out of the
+// oxide) fire pSD.i1; 0.395 in the width direction is clean.  A PFET with 0.295 under
+// the SRAM marker is not read (FMD_QNC_picosoc_ac_controller's bit cells).
+#[case::psd_i_h1("psd/pSD.i.h1.gds.gz", "TOP", vec!["pSD.i", "pSD.i", "pSD.i", "pSD.i", "pSD.i1", "pSD.i1"], vec![])]
+// A pSD and an Activ drawn as two boxes with 0.295, and 0.295 on and across x =
+// 20/21/40/42 fire; a chamfer 0.293 from the gate's corner past the Activ is in the width
+// direction and clean.
+#[case::psd_i_h2("psd/pSD.i.h2.gds.gz", "TOP", vec!["pSD.i"; 5], vec![])]
 // A pSD abutting the Activ's end 0.295 from the gate's side, one 0.295 below the Activ over
 // the poly's cap, one 0.295 below the Activ with the poly's end 0.115 away, and one 0.295
 // from an N-gate in an NWell fire pSD.j; a 3.3 V NFET with 0.395 fires pSD.j1; 0.30, an

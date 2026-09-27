@@ -316,6 +316,7 @@ pub(super) struct L {
     pub(super) sal: (i16, i16),
     pub(super) res: (i16, i16),
     pub(super) ext: (i16, i16),
+    pub(super) sram: (i16, i16),
 }
 
 impl L {
@@ -333,6 +334,7 @@ impl L {
             sal: layer(pdk, "SalBlock"),
             res: layer(pdk, "RES"),
             ext: layer(pdk, "EXTBlock"),
+            sram: layer(pdk, "SRAM"),
         }
     }
 }
@@ -857,15 +859,15 @@ fn psd_g_h(l: &L) {
 }
 
 /// pSD.i and pSD.i1, "Min. pSD enclosure of PFET gate not inside / inside ThickGateOx
-/// 0.30 / 0.40", in every direction: IHP's own inverter keeps its pSD 0.315 past the
-/// PFET's Activ, where the gate's width edge lies (figure 5.10's `c` is drawn at 0.18
-/// there, but a figure).
+/// 0.30 / 0.40", in the channel's direction: figure 5.10's `i` runs from the gate's side,
+/// and across the gate's width the pSD past the Activ is `c`'s - IHP's own pmosHV keeps
+/// 0.22 there, under pSD.i1's 0.40.
 fn psd_i(l: &L) {
     // h1 (one well under all): 0.30 either side and 0.30 past the Activ in the width
-    // direction is clean; 0.295 left, right, both, and 0.295 in the width direction fire;
-    // a 3.3 V PFET with 0.395 on the left (its pSD inside the oxide), one whose pSD reaches
-    // out of the oxide with 0.395 on the right, and one with 0.395 in the width direction
-    // fire pSD.i1.
+    // direction is clean; 0.295 left, right and both fire, 0.295 in the width direction
+    // is clean; a 3.3 V PFET with 0.395 on the left (its pSD inside the oxide) and one
+    // whose pSD reaches out of the oxide with 0.395 on the right fire pSD.i1, one with
+    // 0.395 in the width direction is clean.
     let mut e = vec![rect(l.nw, 0.0, 0.0, 24.0, 13.0)];
     e.extend(l.pfet(2.0, 2.0, 0.12, 0.12, 0.2, 0.5, 0.18, 0.18, 0.30));
     e.extend(l.pfet(6.0, 2.0, 0.115, 0.12, 0.2, 0.5, 0.18, 0.18, 0.30));
@@ -878,12 +880,15 @@ fn psd_i(l: &L) {
     e.push(rect(l.tgo, 11.5, 5.4, 13.4, 7.6));
     e.extend(l.pfet(2.0, 10.0, 0.22, 0.22, 0.45, 0.5, 0.18, 0.18, 0.395));
     e.push(rect(l.tgo, 1.5, 9.4, 3.4, 11.6));
+    // 0.295 both sides under the SRAM marker, where pSD is not read: clean.
+    e.extend(l.pfet(18.0, 2.0, 0.115, 0.115, 0.2, 0.5, 0.18, 0.18, 0.30));
+    e.push(rect(l.sram, 17.5, 1.5, 19.5, 3.5));
     write("psd", "pSD.i.h1", e);
 
     // h2 (one well under all): a pSD's chamfered corner 0.293 from the gate's corner (the
-    // walls 0.30 and 0.30, the Activ's corner 0.21) fires; a pSD and an Activ each drawn as
-    // two boxes with 0.295 fire; 0.295 with the pSD's edge on x = 20, straddling 21, on 40
-    // and straddling 42 fire.
+    // walls 0.30 and 0.30, the Activ's corner 0.21) lies past the Activ, across the gate's
+    // width, and is clean; a pSD and an Activ each drawn as two boxes with 0.295 fire;
+    // 0.295 with the pSD's edge on x = 20, straddling 21, on 40 and straddling 42 fire.
     let mut e = vec![
         rect(l.nw, 0.0, 0.0, 46.0, 12.0),
         rect(l.act, 2.0, 2.0, 2.44, 3.0),
