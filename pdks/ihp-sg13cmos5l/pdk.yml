@@ -30,6 +30,9 @@ decks:
   - name: offgrid
     path: ../ihp-sg13g2/decks/offgrid.yml
     description: Grid rules
+  - name: angle
+    path: ../ihp-sg13g2/decks/angle.yml
+    description: Edge angles and acute corners
   - name: forbidden
     path: decks/forbidden.yml
     description: Forbidden layers (incl. the CMOS5L-prohibited G2 layers)

@@ -29,6 +29,9 @@ decks:
   - name: offgrid
     path: decks/offgrid.yml
     description: Off-grid geometry (5 nm grid)
+  - name: angle
+    path: decks/angle.yml
+    description: Edge angles and acute corners
   - name: forbidden
     path: decks/forbidden.yml
     description: Forbidden layers
@@ -209,6 +212,76 @@ connectivity:
     layers: [nBuLay, nBuLayMerged, nBuLayRegions, nBuLayRegionsExt, NWell, NWellExt]
 
 virtual_layers:
+  # 3.1: the edge-angle rules pass over circles, as IHP's deck does - a round shape is
+  # drawn in straight steps no angle rule can hold.
+  - name: GatPolyNotCircle
+    op: not_circle
+    mode: lazy
+    layers: [GatPoly]
+  - name: ActivNotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Activ]
+  - name: Metal1NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Metal1]
+  - name: Metal2NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Metal2]
+  - name: Metal3NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Metal3]
+  - name: Metal4NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Metal4]
+  - name: Metal5NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Metal5]
+  - name: TopMetal1NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [TopMetal1]
+  - name: TopMetal2NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [TopMetal2]
+  - name: ContNotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Cont]
+  - name: Via1NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Via1]
+  - name: Via2NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Via2]
+  - name: Via3NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Via3]
+  - name: Via4NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Via4]
+  - name: VmimNotCircle
+    op: not_circle
+    mode: lazy
+    layers: [Vmim]
+  - name: TopVia1NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [TopVia1]
+  - name: TopVia2NotCircle
+    op: not_circle
+    mode: lazy
+    layers: [TopVia2]
   - name: Pad
     op: union
     layers:

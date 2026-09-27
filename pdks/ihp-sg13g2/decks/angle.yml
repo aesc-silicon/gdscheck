@@ -1,0 +1,897 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# 3.1 Grid rules: edge angles and acute corners.
+rules:
+  - id: GatPoly.angle45
+    check: no_angle
+    layers: [GatPolyNotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Activ.angle45
+    check: no_angle
+    layers: [ActivNotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Metal1.angle45
+    check: no_angle
+    layers: [Metal1NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Metal2.angle45
+    check: no_angle
+    layers: [Metal2NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Metal3.angle45
+    check: no_angle
+    layers: [Metal3NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Metal4.angle45
+    check: no_angle
+    layers: [Metal4NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Metal5.angle45
+    check: no_angle
+    layers: [Metal5NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: TopMetal1.angle45
+    check: no_angle
+    layers: [TopMetal1NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: TopMetal2.angle45
+    check: no_angle
+    layers: [TopMetal2NotCircle]
+    value: 0.0
+    params:
+      step: 45
+  - id: Cont.angle90
+    check: no_angle
+    layers: [ContNotCircle]
+    value: 0.0
+  - id: Via1.angle90
+    check: no_angle
+    layers: [Via1NotCircle]
+    value: 0.0
+  - id: Via2.angle90
+    check: no_angle
+    layers: [Via2NotCircle]
+    value: 0.0
+  - id: Via3.angle90
+    check: no_angle
+    layers: [Via3NotCircle]
+    value: 0.0
+  - id: Via4.angle90
+    check: no_angle
+    layers: [Via4NotCircle]
+    value: 0.0
+  - id: Vmim.angle90
+    check: no_angle
+    layers: [VmimNotCircle]
+    value: 0.0
+  - id: TopVia1.angle90
+    check: no_angle
+    layers: [TopVia1NotCircle]
+    value: 0.0
+  - id: TopVia2.angle90
+    check: no_angle
+    layers: [TopVia2NotCircle]
+    value: 0.0
+  - id: Activ.acute
+    check: no_corner
+    layers: [Activ]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Activ.acute
+    check: no_corner
+    layers: [Activ.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Activ.acute
+    check: no_corner
+    layers: [Activ.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: GatPoly.acute
+    check: no_corner
+    layers: [GatPoly]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: GatPoly.acute
+    check: no_corner
+    layers: [GatPoly.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PolyRes.acute
+    check: no_corner
+    layers: [PolyRes]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Cont.acute
+    check: no_corner
+    layers: [Cont]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: nSD.acute
+    check: no_corner
+    layers: [nSD]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: nSD.acute
+    check: no_corner
+    layers: [nSD.block]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: pSD.acute
+    check: no_corner
+    layers: [pSD]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: SalBlock.acute
+    check: no_corner
+    layers: [SalBlock]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: ThickGateOx.acute
+    check: no_corner
+    layers: [ThickGateOx]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: NLDB.acute
+    check: no_corner
+    layers: [NLDB]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PLDB.acute
+    check: no_corner
+    layers: [PLDB]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: NLDD.acute
+    check: no_corner
+    layers: [NLDD]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PLDD.acute
+    check: no_corner
+    layers: [PLDD]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: NExt.acute
+    check: no_corner
+    layers: [NExt]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PExt.acute
+    check: no_corner
+    layers: [PExt]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: NExtHV.acute
+    check: no_corner
+    layers: [NExtHV]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PExtHV.acute
+    check: no_corner
+    layers: [PExtHV]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: EXTBlock.acute
+    check: no_corner
+    layers: [EXTBlock]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: NWell.acute
+    check: no_corner
+    layers: [NWell]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PWell.acute
+    check: no_corner
+    layers: [PWell]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PWell.acute
+    check: no_corner
+    layers: [PWell.block]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: nBuLay.acute
+    check: no_corner
+    layers: [nBuLay]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: nBuLay.acute
+    check: no_corner
+    layers: [nBuLay.block]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: nBuLayCut.acute
+    check: no_corner
+    layers: [nBuLayCut]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: isoNWell.acute
+    check: no_corner
+    layers: [isoNWell]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: INLDPWL.acute
+    check: no_corner
+    layers: [INLDPWL]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: IC.acute
+    check: no_corner
+    layers: [IC]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Substrate.acute
+    check: no_corner
+    layers: [Substrate]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal1.acute
+    check: no_corner
+    layers: [Metal1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal1.acute
+    check: no_corner
+    layers: [Metal1.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal1.acute
+    check: no_corner
+    layers: [Metal1.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal1.acute
+    check: no_corner
+    layers: [Metal1.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal2.acute
+    check: no_corner
+    layers: [Metal2]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal2.acute
+    check: no_corner
+    layers: [Metal2.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal2.acute
+    check: no_corner
+    layers: [Metal2.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal2.acute
+    check: no_corner
+    layers: [Metal2.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal3.acute
+    check: no_corner
+    layers: [Metal3]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal3.acute
+    check: no_corner
+    layers: [Metal3.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal3.acute
+    check: no_corner
+    layers: [Metal3.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal3.acute
+    check: no_corner
+    layers: [Metal3.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal4.acute
+    check: no_corner
+    layers: [Metal4]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal4.acute
+    check: no_corner
+    layers: [Metal4.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal4.acute
+    check: no_corner
+    layers: [Metal4.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal4.acute
+    check: no_corner
+    layers: [Metal4.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal5.acute
+    check: no_corner
+    layers: [Metal5]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal5.acute
+    check: no_corner
+    layers: [Metal5.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal5.acute
+    check: no_corner
+    layers: [Metal5.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Metal5.acute
+    check: no_corner
+    layers: [Metal5.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Via1.acute
+    check: no_corner
+    layers: [Via1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Via2.acute
+    check: no_corner
+    layers: [Via2]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Via3.acute
+    check: no_corner
+    layers: [Via3]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Via4.acute
+    check: no_corner
+    layers: [Via4]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: MIM.acute
+    check: no_corner
+    layers: [MIM]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Vmim.acute
+    check: no_corner
+    layers: [Vmim]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopVia1.acute
+    check: no_corner
+    layers: [TopVia1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal1.acute
+    check: no_corner
+    layers: [TopMetal1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal1.acute
+    check: no_corner
+    layers: [TopMetal1.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal1.acute
+    check: no_corner
+    layers: [TopMetal1.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal1.acute
+    check: no_corner
+    layers: [TopMetal1.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopVia2.acute
+    check: no_corner
+    layers: [TopVia2]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal2.acute
+    check: no_corner
+    layers: [TopMetal2]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal2.acute
+    check: no_corner
+    layers: [TopMetal2.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal2.acute
+    check: no_corner
+    layers: [TopMetal2.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: TopMetal2.acute
+    check: no_corner
+    layers: [TopMetal2.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Passiv.acute
+    check: no_corner
+    layers: [Passiv]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Passiv.acute
+    check: no_corner
+    layers: [Passiv.pillar]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Passiv.acute
+    check: no_corner
+    layers: [Passiv.sbump]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Passiv.acute
+    check: no_corner
+    layers: [Passiv.pdl]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: AntMetal1.acute
+    check: no_corner
+    layers: [AntMetal1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BackMetal1.acute
+    check: no_corner
+    layers: [BackMetal1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BackMetal1.acute
+    check: no_corner
+    layers: [BackMetal1.mask]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BackMetal1.acute
+    check: no_corner
+    layers: [BackMetal1.filler]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BackMetal1.acute
+    check: no_corner
+    layers: [BackMetal1.slit]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BackPassiv.acute
+    check: no_corner
+    layers: [BackPassiv]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: AlCuStop.acute
+    check: no_corner
+    layers: [AlCuStop]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: DeepVia.acute
+    check: no_corner
+    layers: [DeepVia]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: LBE.acute
+    check: no_corner
+    layers: [LBE]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BiWind.acute
+    check: no_corner
+    layers: [BiWind]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PEmWind.acute
+    check: no_corner
+    layers: [PEmWind]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: BasPoly.acute
+    check: no_corner
+    layers: [BasPoly]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: EmWind.acute
+    check: no_corner
+    layers: [EmWind]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: EmWiHV.acute
+    check: no_corner
+    layers: [EmWiHV]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: EmPoly.acute
+    check: no_corner
+    layers: [EmPoly]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PEmPoly.acute
+    check: no_corner
+    layers: [PEmPoly]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: PBiWind.acute
+    check: no_corner
+    layers: [PBiWind]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: DeepCo.acute
+    check: no_corner
+    layers: [DeepCo]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: ColOpen.acute
+    check: no_corner
+    layers: [ColOpen]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: ColWind.acute
+    check: no_corner
+    layers: [ColWind]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: CtrGat.acute
+    check: no_corner
+    layers: [CtrGat]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: LDMOS.acute
+    check: no_corner
+    layers: [LDMOS]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: FBE.acute
+    check: no_corner
+    layers: [FBE]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: FGEtch.acute
+    check: no_corner
+    layers: [FGEtch]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: FGImp.acute
+    check: no_corner
+    layers: [FGImp]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: FLM.acute
+    check: no_corner
+    layers: [FLM]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: HafniumOx.acute
+    check: no_corner
+    layers: [HafniumOx]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: ThinFilmRes.acute
+    check: no_corner
+    layers: [ThinFilmRes]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: GraphGate.acute
+    check: no_corner
+    layers: [GraphGate]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: MEMPAD.acute
+    check: no_corner
+    layers: [MEMPAD]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: MEMVia.acute
+    check: no_corner
+    layers: [MEMVia]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: RFMEM.acute
+    check: no_corner
+    layers: [RFMEM]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: SNSRing.acute
+    check: no_corner
+    layers: [SNSRing]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Sensor.acute
+    check: no_corner
+    layers: [Sensor]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: SNSArms.acute
+    check: no_corner
+    layers: [SNSArms]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: SNSCMOSVia.acute
+    check: no_corner
+    layers: [SNSCMOSVia]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: SNSBotVia.acute
+    check: no_corner
+    layers: [SNSBotVia]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: SNSTopVia.acute
+    check: no_corner
+    layers: [SNSTopVia]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: prBoundary.acute
+    check: no_corner
+    layers: [prBoundary]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Exchange0.acute
+    check: no_corner
+    layers: [Exchange0]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Exchange1.acute
+    check: no_corner
+    layers: [Exchange1]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Exchange2.acute
+    check: no_corner
+    layers: [Exchange2]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Exchange3.acute
+    check: no_corner
+    layers: [Exchange3]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0
+  - id: Exchange4.acute
+    check: no_corner
+    layers: [Exchange4]
+    value: 0.0
+    params:
+      min: 93.001
+      max: 180.0

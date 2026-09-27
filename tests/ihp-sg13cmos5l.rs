@@ -159,6 +159,7 @@ fn shared_decks_are_sg13g2s_as_loaded() {
 fn parity_with_sg13g2_on_shared_decks(
     #[values(
         ("offgrid", "offgrid"),
+        ("angle", "angle"),
         ("pin", "pin"),
         ("lbe", "lbe"),
         ("activ", "activ"),

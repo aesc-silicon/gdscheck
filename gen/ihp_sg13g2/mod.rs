@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 mod activ;
+mod angle;
 mod antenna;
 mod connectivity;
 mod cont;
@@ -47,6 +48,7 @@ pub(super) const SPACE_DELTA: f64 = -0.005;
 pub fn generate(pdk: &PdkConfig) {
     activ::generate(pdk);
     offgrid::generate(pdk);
+    angle::generate(pdk);
     tgo::generate(pdk);
     gatpoly::generate(pdk);
     cont::generate(pdk);

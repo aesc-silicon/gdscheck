@@ -3945,6 +3945,81 @@ fn test_offgrid_hardening(#[case] name: &str, #[case] count: usize) {
     );
 }
 
+// --- angle (section 3.1) ---
+//
+// `gen/ihp_sg13g2/angle.rs`: per layer, a 26.6° wall where 0/45/90 is allowed, a 45° wall
+// where 0/90 is, and corners of 45° and 86° where 87° is the least (88° is clean).  The
+// acute rules cover the offgrid layers.
+
+const DECK_ANGLE: &str = "angle";
+
+const ANGLE45_LAYERS: &[&str] = &[
+    "GatPoly",
+    "Activ",
+    "Metal1",
+    "Metal2",
+    "Metal3",
+    "Metal4",
+    "Metal5",
+    "TopMetal1",
+    "TopMetal2",
+];
+
+const ANGLE90_LAYERS: &[&str] = &[
+    "Cont", "Via1", "Via2", "Via3", "Via4", "Vmim", "TopVia1", "TopVia2",
+];
+
+#[test]
+fn test_angle() {
+    for name in ANGLE45_LAYERS {
+        let id = format!("{name}.angle45");
+        let gds = format!("angle/{id}.gds.gz");
+        assert_eq!(
+            drc(PDK_IHP, DECK_ANGLE, &gds, "TOP", &[]),
+            vec![id.as_str()],
+            "{id}"
+        );
+    }
+    for name in ANGLE90_LAYERS {
+        let id = format!("{name}.angle90");
+        let gds = format!("angle/{id}.gds.gz");
+        assert_eq!(
+            drc(PDK_IHP, DECK_ANGLE, &gds, "TOP", &[]),
+            vec![id.as_str()],
+            "{id}"
+        );
+    }
+    for name in OFFGRID_LAYERS {
+        let id = format!("{name}.acute");
+        let gds = format!("angle/{id}.gds.gz");
+        // The triangle's 45° wall is a cut layer's angle90, the leaning walls a metal's
+        // angle45: the fixture is about the corners.
+        let other = [format!("{name}.angle45"), format!("{name}.angle90")];
+        let ignore: Vec<&str> = other.iter().map(String::as_str).collect();
+        assert_eq!(
+            drc(PDK_IHP, DECK_ANGLE, &gds, "TOP", &ignore),
+            vec![id.as_str(); 3],
+            "{id}"
+        );
+    }
+}
+
+// A wall rising 0.5 over 40 across x = 20 and 40 is one marker at every tile size; a
+// round 70 µm pad (a 64-gon), a regular octagon and a diamond at (1000, 1000) are clean.
+#[test]
+fn test_angle_hardening() {
+    assert_eq!(
+        drc(
+            PDK_IHP,
+            DECK_ANGLE,
+            "angle/Metal2.angle45.h1.gds.gz",
+            "TOP",
+            &[]
+        ),
+        vec!["Metal2.angle45"]
+    );
+}
+
 #[test]
 fn test_offgrid() {
     for name in OFFGRID_LAYERS {

@@ -16,7 +16,7 @@ const OFF: f64 = 0.003;
 /// Primary drawn layer of each offgrid rule (rule id is `<layer>.offgrid`).  Each
 /// fixture places one off-grid shape on this layer, so exactly that rule fires —
 /// twice, since the shifted right edge has two off-grid vertices.
-const LAYERS: &[&str] = &[
+pub(super) const LAYERS: &[&str] = &[
     // Front-end: poly / active / implants
     "Activ",
     "GatPoly",

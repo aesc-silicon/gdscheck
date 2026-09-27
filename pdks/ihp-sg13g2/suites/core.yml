@@ -8,6 +8,7 @@
 # on the missing fill.  The excluded ids on each deck below mirror `density.yml`.
 include:
   - deck: offgrid
+  - deck: angle
   - deck: forbidden
   - deck: pin
   - deck: lbe
