@@ -2492,6 +2492,7 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_br_fail("recommended/topmetal2/TM2.bR.fail.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_ok("recommended/topmetal2/TM2.bR.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_br_ind("recommended/topmetal2/TM2.bR.ind.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
+#[case::tm2_br_seal("recommended/topmetal2/TM2.bR.seal.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 2.00 is clean.
 #[case::tm2_a_h1("topmetal2/TM2.a.h1.gds.gz", "TOP", vec!["TM2.a"; 10], vec!["TM2.c", "TM2.d"])]
@@ -3796,6 +3797,7 @@ fn test_mim(
 #[case::tm2_br_fail("topmetal2_recommended", "recommended/topmetal2/TM2.bR.fail.gds.gz", vec!["TM2.bR"])]
 #[case::tm2_br_ok("topmetal2_recommended", "recommended/topmetal2/TM2.bR.gds.gz", vec![])]
 #[case::tm2_br_ind("topmetal2_recommended", "recommended/topmetal2/TM2.bR.ind.gds.gz", vec![])]
+#[case::tm2_br_seal("topmetal2_recommended", "recommended/topmetal2/TM2.bR.seal.gds.gz", vec![])]
 #[case::tm2_br_h1("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h1.gds.gz", vec!["TM2.bR"; 3])]
 #[case::tm2_br_h2("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h2.gds.gz", vec!["TM2.bR"])]
 #[case::tm2_br_h3("topmetal2_recommended", "recommended/topmetal2/TM2.bR.h3.gds.gz", vec!["TM2.bR"; 4])]

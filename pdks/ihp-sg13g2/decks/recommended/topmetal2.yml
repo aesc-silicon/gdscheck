@@ -5,7 +5,7 @@
 rules:
   - id: TM2.bR
     check: min_space
-    layers: [TopMetal2NotIND]
+    layers: [TopMetal2NotINDNoSealring]
     value: 5.00
     params:
       width: 5.00

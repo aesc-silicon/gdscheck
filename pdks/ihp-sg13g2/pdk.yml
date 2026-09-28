@@ -538,6 +538,10 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [TopMetal2, IND]
+  - name: TopMetal2NotINDNoSealring
+    op: difference
+    mode: lazy
+    layers: [TopMetal2, IND, EdgeSeal]
 
   - name: ActivOrGatPoly
     op: union

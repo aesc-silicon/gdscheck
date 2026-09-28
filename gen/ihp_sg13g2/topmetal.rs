@@ -207,6 +207,16 @@ fn tm2_br(pdk: &PdkConfig, dir: &str) {
         rect(ind, -5.0, -5.0, 21.0, 65.0),
     ];
     write_gz(&format!("{dir}/TM2.bR.ind.gds.gz"), library("TOP", exempt));
+
+    // Seal-exempt: the failing geometry with one line in the EdgeSeal, as a pad's
+    // TopMetal2 sits 2.6 from the seal ring's: section 6.10 checks no metal rule there.
+    let seal = layer(pdk, "EdgeSeal");
+    let sealed = vec![
+        rect(m, 0.0, 0.0, 6.0, 60.0),
+        rect(m, 10.0, 0.0, 16.0, 60.0),
+        rect(seal, -5.0, -5.0, 6.0, 65.0),
+    ];
+    write_gz(&format!("{dir}/TM2.bR.seal.gds.gz"), library("TOP", sealed));
 }
 
 // --- Hardening (hardening/SPEC.md) -------------------------------------------
