@@ -17,7 +17,7 @@ rules:
     value: 0.31
   - id: pSD.c
     check: min_enclosure
-    layers: [pSD, ActivInNWell]
+    layers: [pSD, ActivInNWellNoVaricap]
     value: 0.18
     params:
       metric: euclidian
@@ -42,7 +42,7 @@ rules:
     value: 0.03
   - id: pSD.e
     check: forbidden
-    layers: [TieTooNarrow]
+    layers: [TieTooNarrowNoVaricap]
     value: 0.0
   - id: pSD.f
     check: forbidden

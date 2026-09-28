@@ -9,19 +9,19 @@ rules:
     value: 0.13
   - id: Gat.a1
     check: min_gate_length
-    layers: [GatPoly, GatPolyOverNsdActivNoTGO]
+    layers: [GatPoly, GatPolyOverNsdActivNoTGONoVaricap]
     value: 0.13
   - id: Gat.a2
     check: min_gate_length
-    layers: [GatPoly, GatPolyOverPsdActivNoTGO]
+    layers: [GatPoly, GatPolyOverPsdActivNoTGONoVaricap]
     value: 0.13
   - id: Gat.a3
     check: min_gate_length
-    layers: [GatPoly, GatPolyOverNsdActivTGO]
+    layers: [GatPoly, GatPolyOverNsdActivTGONoVaricap]
     value: 0.45
   - id: Gat.a4
     check: min_gate_length
-    layers: [GatPoly, GatPolyOverPsdActivTGO]
+    layers: [GatPoly, GatPolyOverPsdActivTGONoVaricap]
     value: 0.40
   - id: Gat.b
     check: min_space

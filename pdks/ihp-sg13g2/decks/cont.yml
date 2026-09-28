@@ -38,13 +38,13 @@ rules:
       metric: euclidian
   - id: Cnt.e
     check: min_space
-    layers: [ContOnGatPoly, Activ]
+    layers: [ContOnGatPolyNoVaricap, Activ]
     value: 0.14
     params:
       abutting: report
   - id: Cnt.f
     check: min_space
-    layers: [ContOnActiv, GatPoly]
+    layers: [ContOnActivNoVaricap, GatPoly]
     value: 0.11
     params:
       abutting: report
@@ -74,7 +74,7 @@ rules:
       op: uncovered
   - id: Cnt.j
     check: forbidden
-    layers: [ContOnGatPoly, Activ]
+    layers: [ContOnGatPolyNoVaricap, Activ]
     value: 0.0
     params:
       op: overlap

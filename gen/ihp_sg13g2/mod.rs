@@ -36,6 +36,7 @@ mod slit;
 mod tgo;
 mod topmetal;
 mod topvia;
+mod varicap;
 mod via;
 
 use gdscheck::pdk::PdkConfig;
@@ -81,4 +82,5 @@ pub fn generate(pdk: &PdkConfig) {
     connectivity::generate(pdk);
     forbidden::generate(pdk);
     recommended::generate(pdk);
+    varicap::generate(pdk);
 }

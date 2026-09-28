@@ -39,7 +39,7 @@ rules:
       abutting: related
   - id: NBL.f
     check: min_space
-    layers: [nBuLay, PsdActiv]
+    layers: [nBuLayNoVaricap, PsdActiv]
     value: 0.50
     params:
       abutting: related

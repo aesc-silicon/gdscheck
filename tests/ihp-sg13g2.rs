@@ -4033,3 +4033,25 @@ fn test_offgrid() {
         );
     }
 }
+
+// --- SVaricap ---
+
+// IHP's SVaricap pcell at its defaults, labelled "SVaricap" on its Activ's edge, is clean
+// as in IHP's KLayout deck; its gate poly is no MOS gate even unlabelled (Gat.a3/a4,
+// pSD.i/i1).  Without the label the rules the varicap is exempt from fire.
+#[rstest]
+#[case(DECK_CNT, [vec!["Cnt.e"; 4], vec!["Cnt.j"; 20]].concat())]
+#[case(DECK_GAT, vec!["Gat.f"; 2])]
+#[case(DECK_NBL, vec!["NBL.f"; 2])]
+#[case(DECK_NW, [vec!["NW.c1"; 2], vec!["NW.e1"; 4]].concat())]
+#[case(DECK_PSD, [vec!["pSD.c"; 4], vec!["pSD.e"; 2]].concat())]
+fn test_svaricap(#[case] deck: &str, #[case] unlabelled: Vec<&str>) {
+    let run = |gds: &str| -> Vec<String> {
+        drc(PDK_IHP, deck, gds, "TOP", &[])
+            .into_iter()
+            .filter(|id| !id.contains("Fil."))
+            .collect()
+    };
+    assert!(run("varicap/SVaricap.gds.gz").is_empty(), "{deck}");
+    assert_eq!(run("varicap/SVaricap.nolabel.gds.gz"), unlabelled, "{deck}");
+}

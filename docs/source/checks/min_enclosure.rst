@@ -179,7 +179,7 @@ Example
 
     - id: Cnt.c
       check: min_enclosure
-      layers: [Activ, ContOnActivNoSRAM]
+      layers: [Activ, ContOnActivNoSRAMVaricap]
       value: 0.07
 
 .. code-block:: yaml

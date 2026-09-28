@@ -557,37 +557,46 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [ContSquare, GatPoly]
+  - name: ContOnGatPolyNoVaricap
+    op: not_overlapping
+    mode: lazy
+    layers: [ContOnGatPoly, SVaricap]
   - name: ContOnActiv
     op: intersection
     mode: lazy
     layers: [ContSquare, Activ]
-  - name: ContOnActivNoSRAM
+  - name: ContOnActivNoSRAMVaricap
     op: not_overlapping
     mode: lazy
-    layers: [ContOnActiv, SRAM]
+    layers: [ContOnActiv, SRAMOrSVaricap]
+  - name: ContOnActivNoVaricap
+    op: not_overlapping
+    mode: lazy
+    layers: [ContOnActiv, SVaricap]
   # Cnt.c: 0.07 in the analog flow, 0.05 inside DigiBnd (section 8.1.2).
   - name: ContOnActivAna
     op: not_inside
     mode: lazy
-    layers: [ContOnActivNoSRAM, DigiBnd]
+    layers: [ContOnActivNoSRAMVaricap, DigiBnd]
   - name: ContOnActivDig
     op: inside
     mode: lazy
-    layers: [ContOnActivNoSRAM, DigiBnd]
+    layers: [ContOnActivNoSRAMVaricap, DigiBnd]
   # Cnt.g1: the Cont on N+Activ, N+ by drawn nSD or by default (section 4.2).  Not in
-  # the SRAM marker, as Cnt.c is not: a bit cell's Conts sit on the implant edge.
-  - name: ContSquareNoSRAM
+  # the SRAM marker or an SVaricap, as Cnt.c is not: a bit cell's Conts sit on the
+  # implant edge.
+  - name: ContSquareNoSRAMVaricap
     op: not_overlapping
     mode: lazy
-    layers: [ContSquare, SRAM]
+    layers: [ContSquare, SRAMOrSVaricap]
   - name: ContOnNsdActiv
     op: intersection
     mode: lazy
-    layers: [ContSquareNoSRAM, NActFull]
+    layers: [ContSquareNoSRAMVaricap, NActFull]
   - name: ContOnPsdActiv
     op: intersection
     mode: lazy
-    layers: [ContSquareNoSRAM, Activ, pSD]
+    layers: [ContSquareNoSRAMVaricap, Activ, pSD]
 
   - name: ContBarOnGatPoly
     op: intersection
@@ -1164,6 +1173,63 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [GatPoly, SRAM]
+  # IHP's SVaricap pcell, as IHP's decks recognise it: an Activ under a gate on NWell and
+  # nBuLay, labelled "SVaricap", and the NWell round it.  Its contacts, gates and
+  # implants are drawn to the device's own rules; the decks leave it out of the ones
+  # below that it breaks by design.
+  - name: SVaricapGate
+    op: intersection
+    mode: lazy
+    layers: [GatPolyOverNsdActiv, NWell, nBuLay]
+  - name: SVaricapPoly
+    op: overlapping
+    mode: lazy
+    layers: [GatPoly, SVaricapGate]
+  - name: SVaricapActiv
+    op: overlapping
+    mode: lazy
+    layers: [Activ, SVaricapGate]
+  - name: SVaricapRecog
+    op: with_text
+    mode: lazy
+    layers: [SVaricapActiv, TEXT]
+    text: "SVaricap"
+  - name: SVaricap
+    op: overlapping
+    mode: lazy
+    layers: [NWell, SVaricapRecog]
+  - name: SRAMOrSVaricap
+    op: union
+    mode: lazy
+    layers: [SRAM, SVaricap]
+  - name: ActivInNWellNoVaricap
+    op: not_overlapping
+    mode: lazy
+    layers: [ActivInNWell, SVaricap]
+  - name: TieTooNarrowNoVaricap
+    op: not_overlapping
+    mode: lazy
+    layers: [TieTooNarrow, SVaricap]
+  - name: NWellNoVaricap
+    op: difference
+    mode: lazy
+    layers: [NWell, SVaricap]
+  - name: nBuLayNoVaricap
+    op: difference
+    mode: lazy
+    layers: [nBuLay, SVaricap]
+  - name: PsdActivInNWellTGOAnaNoDevice
+    op: not_overlapping
+    mode: lazy
+    layers: [PsdActivInNWellTGOAnaNoSchottky, SVaricap]
+  - name: PsdActivInNWellTGODigNoVaricap
+    op: not_overlapping
+    mode: lazy
+    layers: [PsdActivInNWellTGODig, SVaricap]
+  - name: NWellTieTGOAnaNoDevice
+    op: not_overlapping
+    mode: lazy
+    layers: [NWellTieTGOAnaNoSchottky, SVaricap]
   - name: TransG2
     op: with_text
     mode: lazy
@@ -1406,10 +1472,14 @@ virtual_layers:
     layers: [GatPolyHV, ActivAtGatPolyHV]
   # Gat.f: no 45° or 90° angle in the gate - the gate region is a rectangle, or it is
   # the violation, as IHP's deck reads it.
+  - name: GatPolyOverActivNoVaricap
+    op: not_overlapping
+    mode: lazy
+    layers: [GatPolyOverActiv, SVaricap]
   - name: GatPolyOverActivNotRect
     op: not_rectangle
     mode: lazy
-    layers: [GatPolyOverActiv]
+    layers: [GatPolyOverActivNoVaricap]
   # Gat.c, GFil.j: a poly lying whole inside the active has no end cap at all.
   - name: GatPolyInsideActiv
     op: inside
@@ -1441,10 +1511,10 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [NWell, SRAM]
-  - name: PsdActivInNWellNoTGONoSRAM
+  - name: PsdActivInNWellNoTGONoSRAMVaricap
     op: not_overlapping
     mode: lazy
-    layers: [PsdActivInNWellNoTGO, SRAM]
+    layers: [PsdActivInNWellNoTGO, SRAMOrSVaricap]
   # NBL.b: "merge if less than 1.50" - two nBuLay exactly 1.50 apart stay two (NBL.c's).
   - name: nBuLayMerged
     op: close
@@ -1867,10 +1937,18 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GatPolyOverNsdActiv, ThickGateOx]
+  - name: GatPolyOverNsdActivTGONoVaricap
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverNsdActivTGO, SVaricapPoly]
   - name: GatPolyOverNsdActivNoTGO
     op: difference
     mode: lazy
     layers: [GatPolyOverNsdActiv, ThickGateOx]
+  - name: GatPolyOverNsdActivNoTGONoVaricap
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverNsdActivNoTGO, SVaricapPoly]
   - name: GatPolyOverPsdActiv
     op: intersection
     mode: lazy
@@ -1879,10 +1957,18 @@ virtual_layers:
     op: intersection
     mode: lazy
     layers: [GatPolyOverPsdActiv, ThickGateOx]
+  - name: GatPolyOverPsdActivTGONoVaricap
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverPsdActivTGO, SVaricapPoly]
   - name: GatPolyOverPsdActivNoTGO
     op: difference
     mode: lazy
     layers: [GatPolyOverPsdActiv, ThickGateOx]
+  - name: GatPolyOverPsdActivNoTGONoVaricap
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverPsdActivNoTGO, SVaricapPoly]
   # pSD.i/i1, "Min. pSD enclosure of PFET gate": figure 5.10's `i` runs from the gate's
   # side over the source and drain.  Across the gate's width the pSD past the Activ is
   # pSD.c's, as IHP's own pmosHV draws it (0.22 past the Activ, under 0.40).  A gate's
@@ -1893,12 +1979,12 @@ virtual_layers:
     op: grow_x
     radius: 0.005
     mode: lazy
-    layers: [GatPolyOverPsdActivNoTGO]
+    layers: [GatPolyOverPsdActivNoTGONoVaricap]
   - name: PsdISideY
     op: grow_y
     radius: 0.005
     mode: lazy
-    layers: [GatPolyOverPsdActivNoTGO]
+    layers: [GatPolyOverPsdActivNoTGONoVaricap]
   - name: PsdISdX
     op: intersection
     mode: lazy
@@ -1910,11 +1996,11 @@ virtual_layers:
   - name: PsdIGateChX
     op: interacting
     mode: lazy
-    layers: [GatPolyOverPsdActivNoTGO, PsdISdX]
+    layers: [GatPolyOverPsdActivNoTGONoVaricap, PsdISdX]
   - name: PsdIGateChY
     op: interacting
     mode: lazy
-    layers: [GatPolyOverPsdActivNoTGO, PsdISdY]
+    layers: [GatPolyOverPsdActivNoTGONoVaricap, PsdISdY]
   - name: PsdIReachX
     op: grow_x
     radius: 0.30
@@ -1937,12 +2023,12 @@ virtual_layers:
     op: grow_x
     radius: 0.005
     mode: lazy
-    layers: [GatPolyOverPsdActivTGO]
+    layers: [GatPolyOverPsdActivTGONoVaricap]
   - name: PsdI1SideY
     op: grow_y
     radius: 0.005
     mode: lazy
-    layers: [GatPolyOverPsdActivTGO]
+    layers: [GatPolyOverPsdActivTGONoVaricap]
   - name: PsdI1SdX
     op: intersection
     mode: lazy
@@ -1954,11 +2040,11 @@ virtual_layers:
   - name: PsdI1GateChX
     op: interacting
     mode: lazy
-    layers: [GatPolyOverPsdActivTGO, PsdI1SdX]
+    layers: [GatPolyOverPsdActivTGONoVaricap, PsdI1SdX]
   - name: PsdI1GateChY
     op: interacting
     mode: lazy
-    layers: [GatPolyOverPsdActivTGO, PsdI1SdY]
+    layers: [GatPolyOverPsdActivTGONoVaricap, PsdI1SdY]
   - name: PsdI1ReachX
     op: grow_x
     radius: 0.40

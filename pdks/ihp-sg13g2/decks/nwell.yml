@@ -25,19 +25,19 @@ rules:
       gap_outside: NWellOrPWellBlkOrSRAM
   - id: NW.c
     check: min_enclosure
-    layers: [NWell, PsdActivInNWellNoTGONoSRAM]
+    layers: [NWell, PsdActivInNWellNoTGONoSRAMVaricap]
     value: 0.31
     params:
       metric: euclidian
   - id: NW.c1
     check: min_enclosure
-    layers: [NWell, PsdActivInNWellTGOAnaNoSchottky]
+    layers: [NWell, PsdActivInNWellTGOAnaNoDevice]
     value: 0.62
     params:
       metric: euclidian
   - id: NW.c1.dig
     check: min_enclosure
-    layers: [NWell, PsdActivInNWellTGODig]
+    layers: [NWell, PsdActivInNWellTGODigNoVaricap]
     value: 0.31
     params:
       metric: euclidian
@@ -67,7 +67,7 @@ rules:
       metric: euclidian
   - id: NW.e1
     check: min_enclosure
-    layers: [NWell, NWellTieTGOAnaNoSchottky]
+    layers: [NWell, NWellTieTGOAnaNoDevice]
     value: 0.62
     params:
       metric: euclidian
@@ -79,13 +79,13 @@ rules:
       metric: euclidian
   - id: NW.f
     check: min_space
-    layers: [NWell, SubstrateTieNoTGO]
+    layers: [NWellNoVaricap, SubstrateTieNoTGO]
     value: 0.24
   - id: NW.f1
     check: min_space
-    layers: [NWell, SubstrateTieTGOAna]
+    layers: [NWellNoVaricap, SubstrateTieTGOAna]
     value: 0.62
   - id: NW.f1.dig
     check: min_space
-    layers: [NWell, SubstrateTieTGODig]
+    layers: [NWellNoVaricap, SubstrateTieTGODig]
     value: 0.24
