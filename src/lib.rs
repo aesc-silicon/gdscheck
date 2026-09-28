@@ -2010,19 +2010,28 @@ fn run_drc_impl(
     // the violations arrive shuffled; the *set* is deterministic and the order is not.
     // Sorting here makes two reports of one layout diffable, which is what anyone
     // comparing a fix against a baseline needs.
-    violations.sort_by(|a, b| {
-        let key = |v: &violation::Violation| {
-            let (x, y, x2, y2) = match v.geometry {
-                violation::ViolationGeometry::Point { x, y } => (x, y, x, y),
-                violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => (x1, y1, x2, y2),
-                violation::ViolationGeometry::None => (0.0, 0.0, 0.0, 0.0),
-            };
-            (v.rule_id.clone(), x, y, x2, y2, v.message.clone())
+    // Compared by reference and in parallel: the key used to be built with the rule id
+    // and message cloned for every comparison, and 270 000 violations on
+    // FMD_QNC_greyhound_ihp took half a minute on one core.  The sort is stable, so the
+    // order is what it was.
+    {
+        use rayon::slice::ParallelSliceMut;
+        let corners = |v: &violation::Violation| match v.geometry {
+            violation::ViolationGeometry::Point { x, y } => (x, y, x, y),
+            violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => (x1, y1, x2, y2),
+            violation::ViolationGeometry::None => (0.0, 0.0, 0.0, 0.0),
         };
-        key(a)
-            .partial_cmp(&key(b))
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+        violations.par_sort_by(|a, b| {
+            a.rule_id
+                .cmp(&b.rule_id)
+                .then_with(|| {
+                    corners(a)
+                        .partial_cmp(&corners(b))
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .then_with(|| a.message.cmp(&b.message))
+        });
+    }
     // A violation sitting exactly on a tile line is claimed by both tiles that share it -
     // see `Core::owns`, which would rather report one twice than let the tile that cannot
     // see it silence the tile that can.  Sorted, those two are adjacent and identical.
@@ -2030,19 +2039,38 @@ fn run_drc_impl(
         a.rule_id == b.rule_id && a.message == b.message && a.geometry == b.geometry
     });
     // A marker inside a placed instance of a cell the PDK waives for its rule is kept
-    // and marked, so the report still shows it and the summary counts it apart.
+    // and marked, so the report still shows it and the summary counts it apart.  The
+    // instances are filed in a grid of their boxes, and a marker asks the ones in its
+    // cell - the first in the list that holds it and covers its rule, as before: every
+    // marker against every instance was the rest of that half minute.
     let instances = layout.waived_instances();
     if !instances.is_empty() {
-        for v in &mut violations {
+        use rayon::prelude::*;
+        const CELL_UM: f64 = 50.0;
+        let cell = (CELL_UM / dbu_to_um).max(1.0);
+        let bin = |v: f64| (v / cell).floor() as i64;
+        let mut grid: std::collections::HashMap<(i64, i64), Vec<usize>> =
+            std::collections::HashMap::new();
+        for (i, inst) in instances.iter().enumerate() {
+            for bx in bin(inst.x0 as f64)..=bin(inst.x1 as f64) {
+                for by in bin(inst.y0 as f64)..=bin(inst.y1 as f64) {
+                    grid.entry((bx, by)).or_default().push(i);
+                }
+            }
+        }
+        violations.par_iter_mut().for_each(|v| {
             let (x, y) = match v.geometry {
                 violation::ViolationGeometry::Point { x, y } => (x, y),
                 violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
                     ((x1 + x2) * 0.5, (y1 + y2) * 0.5)
                 }
-                violation::ViolationGeometry::None => continue,
+                violation::ViolationGeometry::None => return,
             };
             let (px, py) = (x / dbu_to_um, y / dbu_to_um);
-            let hit = instances.iter().find(|inst| {
+            let Some(candidates) = grid.get(&(bin(px), bin(py))) else {
+                return;
+            };
+            let hit = candidates.iter().map(|&i| &instances[i]).find(|inst| {
                 px >= inst.x0 as f64
                     && px <= inst.x1 as f64
                     && py >= inst.y0 as f64
@@ -2057,7 +2085,7 @@ fn run_drc_impl(
                     format!("{}: {reason}", inst.cell)
                 });
             }
-        }
+        });
     }
     phase.end("sort+dedup");
     Ok(violations)
