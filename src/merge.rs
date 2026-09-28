@@ -5457,7 +5457,7 @@ fn build_text_selection_tiles(cand: &TileMap, pts: &[(f64, f64)], tile_dbu: i32)
     let mut hit = vec![false; labeled.regions.len()];
     for polys in labeled.by_tile.values() {
         for (poly, rid) in polys {
-            if !hit[*rid] && pts.iter().any(|&(x, y)| point_in_merged(x, y, poly)) {
+            if !hit[*rid] && pts.iter().any(|&(x, y)| point_on_or_in_merged(x, y, poly)) {
                 hit[*rid] = true;
             }
         }
@@ -5489,6 +5489,26 @@ pub fn select_with_point(a: &[MergedPoly], points: &[(f64, f64)], keep: bool) ->
         .filter(|ap| points.iter().any(|&(x, y)| point_in_merged(x, y, ap)) == keep)
         .cloned()
         .collect()
+}
+
+/// [`point_in_merged`], or on one of its walls: a label on a shape's edge interacts
+/// with it, as KLayout's `interacting` reads it - IHP's SVaricap pcell puts its label
+/// on the Activ's edge.
+fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
+    let on = |ring: &[IntPoint]| {
+        let n = ring.len();
+        (0..n).any(|i| {
+            let (a, b) = (ring[i], ring[(i + 1) % n]);
+            let (ax, ay, bx, by) = (a.x as f64, a.y as f64, b.x as f64, b.y as f64);
+            let cross = (bx - ax) * (py - ay) - (by - ay) * (px - ax);
+            cross.abs() <= 0.5 * (bx - ax).hypot(by - ay)
+                && px >= ax.min(bx) - 0.5
+                && px <= ax.max(bx) + 0.5
+                && py >= ay.min(by) - 0.5
+                && py <= ay.max(by) + 0.5
+        })
+    };
+    point_in_merged(px, py, m) || on(&m.outer) || m.holes.iter().any(|h| on(h))
 }
 
 pub fn point_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
@@ -7379,6 +7399,24 @@ mod tests {
         // And a tile still claims nothing outside itself.
         assert!(!lower.owns(50.0, 200.5));
         assert!(!lower.owns(-0.5, 50.0));
+    }
+
+    /// A label on a wall, a hole's included, is on the shape; one a DBU off it outside
+    /// is not.
+    #[test]
+    fn a_label_on_a_wall_is_on_the_shape() {
+        let ring = |pts: &[(i32, i32)]| pts.iter().map(|&(x, y)| IntPoint { x, y }).collect();
+        let m = MergedPoly {
+            outer: ring(&[(0, 0), (100, 0), (100, 100), (0, 100)]),
+            holes: vec![ring(&[(40, 40), (40, 60), (60, 60), (60, 40)])],
+        };
+        assert!(point_on_or_in_merged(0.0, 35.0, &m));
+        assert!(point_on_or_in_merged(100.0, 100.0, &m));
+        assert!(point_on_or_in_merged(50.0, 60.0, &m));
+        assert!(point_on_or_in_merged(20.0, 20.0, &m));
+        assert!(!point_on_or_in_merged(-1.0, 35.0, &m));
+        assert!(!point_on_or_in_merged(50.0, 50.0, &m));
+        assert!(!point_on_or_in_merged(0.0, 101.0, &m));
     }
 
     fn edge(ax: i32, ay: i32, bx: i32, by: i32) -> Edge {
