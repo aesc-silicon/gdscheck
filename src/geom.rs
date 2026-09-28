@@ -3385,6 +3385,15 @@ pub fn margin_pairs(
                 if vx * d.1 - vy * d.0 <= 0 {
                     continue;
                 }
+                // An outer wall reached inside the inner shape runs through it: it
+                // crosses the shape there and encloses nothing.  The corner of IHP's
+                // SVaricap, where its poly's bar ends in the Activ's body 0.15 above the
+                // root of a tab, read as a Gat.c margin of 0.150 across the two inside
+                // corners.
+                let q = (c.on_b.0.round() as i64, c.on_b.1.round() as i64);
+                if inner.strictly_contains(q) {
+                    continue;
+                }
                 let dist = (c.num as f64 / c.den as f64).sqrt();
                 let (wx, wy) = ((c.on_b.0 - c.on_a.0) / dist, (c.on_b.1 - c.on_a.1) / dist);
                 pairs.push(MarginPair {

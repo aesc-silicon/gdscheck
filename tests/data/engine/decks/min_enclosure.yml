@@ -68,6 +68,13 @@ rules:
     value: 0.5
     params:
       interacting_only: 1
+  - id: ENC.ext_eucl
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      interacting_only: 1
+      metric: euclidian
   - id: ENC.max_ext
     check: max_enclosure
     layers: [Outer, Inner]

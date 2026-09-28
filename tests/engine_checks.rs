@@ -755,6 +755,8 @@ fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
 #[case("ext_exact", "ENC.max_ext", 0)]
 #[case("ext_under", "ENC.ext", 1)]
 #[case("ext_over", "ENC.ext", 0)]
+#[case("ext_crossing", "ENC.ext_eucl", 0)]
+#[case("ext_crossing", "ENC.ext", 0)]
 #[case("ext_over", "ENC.max_ext", 1)]
 fn enclosure_bounds_and_sides_meet_the_bound_exactly(
     #[case] pattern: &str,

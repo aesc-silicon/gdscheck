@@ -429,6 +429,43 @@ pub fn generate(pdk: &PdkConfig) {
     e.extend(ext(1000.0, 1000.0, 0.495));
     write("ext_tile_lines".into(), e);
 
+    // An Inner body crossing an Outer bar, a tab hanging from it under the bar, and a
+    // finger of Outer rising from the bar into the body: IHP's SVaricap, its poly's bar
+    // over the Activ's tabs.  The bar's top runs inside the body; its corner at the
+    // finger lies 0.30 from the tab's root, a closest approach across the body, which
+    // is no margin.  Every margin of the part inside the bar is 0.6 or more: ENC.ext_eucl 0.
+    write(
+        "ext_crossing".into(),
+        vec![
+            poly(
+                outer,
+                &[
+                    (3.0, 1.6),
+                    (9.0, 1.6),
+                    (9.0, 2.5),
+                    (6.78, 2.5),
+                    (6.78, 5.0),
+                    (5.98, 5.0),
+                    (5.98, 2.5),
+                    (3.0, 2.5),
+                ],
+            ),
+            poly(
+                inner,
+                &[
+                    (1.0, 2.2),
+                    (5.985, 2.2),
+                    (5.985, 1.2),
+                    (6.225, 1.2),
+                    (6.225, 2.2),
+                    (11.0, 2.2),
+                    (11.0, 6.0),
+                    (1.0, 6.0),
+                ],
+            ),
+        ],
+    );
+
     // Small and long.  A 0.005 × 0.4 sliver of Inner with 0.495 on its left; a 300 µm
     // bar of Inner in an Outer with 0.5 all round but 0.495 at its far end; one with
     // 0.5 all round is clean.  ENC.proj: 2; ENC.eucl: 2.
