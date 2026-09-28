@@ -2372,6 +2372,9 @@ const DECK_TM1: &str = "topmetal1";
 #[case::tm1fil_d("topmetal1/TM1Fil.d.gds.gz", "TOP", vec!["TM1Fil.d"; 2], vec!["TM1.c", "TM1.d"])]
 // Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM1.a: 1.635 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 1.64 is clean.
+// Inside an EdgeSeal a bar and a gap 0.005 under the bound are not checked (section
+// 6.10); outside, and where a bar crosses the seal's edge, the bar fires: two walls each.
+#[case::tm1_seal_h1("topmetal1/TM1.seal.h1.gds.gz", "TOP", vec!["TM1.a"; 4], vec!["TM1.c", "TM1.d"])]
 #[case::tm1_a_h1("topmetal1/TM1.a.h1.gds.gz", "TOP", vec!["TM1.a"; 10], vec!["TM1.c", "TM1.d"])]
 // Unions one step narrow (overlap, slices, one ring side, an island) fire once each; the
 // unions at the width and a gridded bar are clean.
@@ -2495,6 +2498,9 @@ const DECK_TM2: &str = "topmetal2";
 #[case::tm2_br_seal("recommended/topmetal2/TM2.bR.seal.gds.gz", "TOP", vec![], vec!["TM2.c", "TM2.d"])]
 // Hardening (hardening/reports/ihp-sg13g2/topmetal.md).  TM2.a: 1.995 bars in x and y, a
 // 300 µm bar, a 0.005 sliver, a bar at (1000, 1000): two markers each; 2.00 is clean.
+// Inside an EdgeSeal a bar and a gap 0.005 under the bound are not checked (section
+// 6.10); outside, and where a bar crosses the seal's edge, the bar fires: two walls each.
+#[case::tm2_seal_h1("topmetal2/TM2.seal.h1.gds.gz", "TOP", vec!["TM2.a"; 4], vec!["TM2.c", "TM2.d"])]
 #[case::tm2_a_h1("topmetal2/TM2.a.h1.gds.gz", "TOP", vec!["TM2.a"; 10], vec!["TM2.c", "TM2.d"])]
 // Unions one step narrow (overlap, slices, one ring side, an island) fire once each; the
 // unions at the width and a gridded bar are clean.

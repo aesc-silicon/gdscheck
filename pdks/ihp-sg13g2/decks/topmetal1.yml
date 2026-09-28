@@ -5,15 +5,15 @@
 rules:
   - id: TM1.a
     check: min_width
-    layers: [TopMetal1]
+    layers: [TopMetal1NoSealring]
     value: 1.64
   - id: TM1.b
     check: min_space
-    layers: [TopMetal1]
+    layers: [TopMetal1NoSealring]
     value: 1.64
   - id: TM1.b
     check: min_notch
-    layers: [TopMetal1]
+    layers: [TopMetal1NoSealring]
     value: 1.64
   - id: TM1.c
     check: min_density

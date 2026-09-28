@@ -234,6 +234,7 @@ struct L {
     fil: (i16, i16),
     mask: (i16, i16),
     boundary: (i16, i16),
+    seal: (i16, i16),
     trans: (i16, i16),
     ind: (i16, i16),
     via: (i16, i16),
@@ -256,6 +257,7 @@ impl L {
             fil: layer(pdk, &format!("TopMetal{n}.filler")),
             mask: layer(pdk, &format!("TopMetal{n}.mask")),
             boundary: layer(pdk, "EdgeSeal.boundary"),
+            seal: layer(pdk, "EdgeSeal"),
             trans: layer(pdk, "TRANS"),
             ind: layer(pdk, "IND"),
             via,
@@ -415,11 +417,32 @@ fn hardening(pdk: &PdkConfig) {
         tmfil_b_h(&l);
         tmfil_c_h(&l);
         tmfil_d_h(&l);
+        tm_seal_h(&l);
     }
     tm2_br_h(&L {
         dir: TM2_BR.to_string(),
         ..L::new(pdk, 2)
     });
+}
+
+// --- TM<n>.a/b in the EdgeSeal: section 6.10 checks no metal rule there ---
+
+fn tm_seal_h(l: &L) {
+    let (m, w) = (l.met, l.w);
+    let wm = g(w - 0.005);
+    // h1 - inside an EdgeSeal 2..30: a bar 0.005 under the width and two boxes 0.005
+    // under the space, none of it checked.  Outside, a bar 0.005 under the width fires
+    // (two walls); one crossing the seal's edge is that bar outside the seal as far as
+    // it sticks out and fires too.  TM<n>.a four.
+    let e = vec![
+        rect(l.seal, 2.0, 2.0, 30.0, 30.0),
+        rect(m, 4.0, 4.0, 4.0 + wm, 14.0),
+        rect(m, 10.0, 4.0, 14.0, 8.0),
+        rect(m, 14.0 + wm, 4.0, 18.0 + wm, 8.0),
+        rect(m, 40.0, 4.0, 40.0 + wm, 14.0),
+        rect(m, 26.0, 20.0, 26.0 + wm, 40.0),
+    ];
+    l.write(&format!("TM{}.seal.h1", l.n), e);
 }
 
 // --- TM<n>.a: min. TopMetal width (1.64 / 2.00) ---

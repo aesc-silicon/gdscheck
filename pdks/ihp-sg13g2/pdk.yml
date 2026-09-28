@@ -534,6 +534,14 @@ virtual_layers:
     op: inside_ring
     layers: [Passiv, EdgeSeal]
 
+  - name: TopMetal1NoSealring
+    op: difference
+    mode: lazy
+    layers: [TopMetal1, EdgeSeal]
+  - name: TopMetal2NoSealring
+    op: difference
+    mode: lazy
+    layers: [TopMetal2, EdgeSeal]
   - name: TopMetal2NotIND
     op: difference
     mode: lazy
