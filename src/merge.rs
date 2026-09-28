@@ -6030,6 +6030,39 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
         .collect()
 }
 
+/// [`build_tiled_merge`] over the tiles in `only` and no others: a layer's copies
+/// where a much smaller layer lies, for a boolean that can have output nowhere else.
+fn build_tiled_merge_in(
+    boundaries: &[GdsBoundary],
+    tile_dbu: i32,
+    halo_dbu: i32,
+    only: &HashSet<(i32, i32)>,
+) -> TileMap {
+    let tile = tile_dbu.max(1) as i64;
+    let halo = halo_dbu.max(0) as i64;
+    let mut buckets: HashMap<(i32, i32), Vec<&GdsBoundary>> = HashMap::new();
+    for b in boundaries {
+        let Some((x0, y0, x1, y1)) = bbox_of(b) else {
+            continue;
+        };
+        let tx0 = (x0 as i64 - halo).div_euclid(tile) as i32;
+        let tx1 = (x1 as i64 + halo).div_euclid(tile) as i32;
+        let ty0 = (y0 as i64 - halo).div_euclid(tile) as i32;
+        let ty1 = (y1 as i64 + halo).div_euclid(tile) as i32;
+        for ty in ty0..=ty1 {
+            for tx in tx0..=tx1 {
+                if only.contains(&(tx, ty)) {
+                    buckets.entry((tx, ty)).or_default().push(b);
+                }
+            }
+        }
+    }
+    buckets
+        .into_par_iter()
+        .map(|(key, shapes)| (key, merge_refs(&shapes)))
+        .collect()
+}
+
 /// Lazily-built, per-layer tiled merge shared across all checks in a run.
 ///
 /// Every layer tiles on the same global grid, so tile `(tx, ty)` covers the same
@@ -6870,6 +6903,75 @@ impl MergedCache {
                         && layout.get(src.0, src.1).is_empty()
                 })
                 .map(|(i, _)| i);
+            // An intersection with a layer a thousand times smaller than the others has
+            // output only where that one lies: the seal ring's contacts are the chip's
+            // contacts in the ring's tiles, and merging all forty-six million of them
+            // at the ring rules' reach was most of Seal.a-d on FMD_QNC_greyhound_ihp.
+            // The small layer is built as ever; the others, unless the cache holds
+            // them, are merged in its tiles only and not kept.
+            if empty_source.is_none() && def.op == VirtualOp::Intersection {
+                let drawn = def
+                    .sources
+                    .iter()
+                    .all(|s| self.is_drawn(*s) && !self.is_edge_layer(*s));
+                let counts: Vec<usize> = def
+                    .sources
+                    .iter()
+                    .map(|s| layout.get(s.0, s.1).len())
+                    .collect();
+                let small = (0..counts.len()).min_by_key(|&i| counts[i]);
+                let worth = small.is_some_and(|m| {
+                    (0..counts.len()).any(|i| {
+                        i != m
+                            && !self.layers.contains_key(&def.sources[i])
+                            && counts[m].saturating_mul(1000) <= counts[i]
+                    })
+                });
+                if drawn && worth {
+                    let m = small.expect("worth has one");
+                    let t0 = std::time::Instant::now();
+                    let (sg, sd) = def.sources[m];
+                    self.ensure(layout, sg, sd);
+                    let only: HashSet<(i32, i32)> =
+                        self.layers[&(sg, sd)].keys().copied().collect();
+                    let mut maps: Vec<Arc<TileMap>> = Vec::new();
+                    let mut halos: Vec<i32> = Vec::new();
+                    for (i, &src) in def.sources.iter().enumerate() {
+                        let cached = self.layer_halo.get(&src).is_some_and(|&h| h >= want)
+                            && self.layers.contains_key(&src);
+                        if i == m || cached {
+                            maps.push(Arc::clone(&self.layers[&src]));
+                            halos.push(self.layer_halo.get(&src).copied().unwrap_or(want));
+                        } else {
+                            maps.push(Arc::new(build_tiled_merge_in(
+                                layout.get(src.0, src.1),
+                                self.tile_dbu,
+                                want,
+                                &only,
+                            )));
+                            halos.push(want);
+                        }
+                    }
+                    let src_copies: usize = maps
+                        .iter()
+                        .map(|t| t.values().map(|v| v.len()).sum::<usize>())
+                        .sum();
+                    let refs: Vec<&TileMap> = maps.iter().map(|m| &**m).collect();
+                    let tiles = build_virtual_tiles(def.op, &refs);
+                    let lo = halos.iter().copied().min().unwrap_or(want);
+                    let tiles = trim_beyond_zone(tiles, self.tile_dbu, lo);
+                    if trace {
+                        eprintln!(
+                            "virtual {} op=Intersection in {} tiles of {} src_copies={src_copies}",
+                            self.name_of(key),
+                            only.len(),
+                            self.name_of((sg, sd))
+                        );
+                    }
+                    self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
+                    return;
+                }
+            }
             // A selector's filter may be an *edge* layer rather than a polygon one -
             // GF180's PRES.9a keeps the RES_MK markings whose boundary does not follow
             // the resistor's - so those sources are built as edges, not merged.
