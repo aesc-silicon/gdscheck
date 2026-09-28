@@ -1218,6 +1218,14 @@ virtual_layers:
     op: difference
     mode: lazy
     layers: [nBuLay, SVaricap]
+  - name: GatPolyOverNsdActivNoTGONoSVaricap
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverNsdActivNoTGO, SVaricap]
+  - name: GatPolyOverNsdActivTGONoSVaricap
+    op: difference
+    mode: lazy
+    layers: [GatPolyOverNsdActivTGO, SVaricap]
   - name: PsdActivInNWellTGOAnaNoDevice
     op: not_overlapping
     mode: lazy

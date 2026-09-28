@@ -3018,6 +3018,10 @@ const DECK_PSD: &str = "psd";
 // A 45° pSD wall 0.295 from the gate's corner, a diamond pSD's corner 0.295 above the
 // gate, and 0.295 on and across x = 20/21/40/42 fire.
 #[case::psd_j_h2("psd/pSD.j.h2.gds.gz", "TOP", vec!["pSD.j"; 6], vec![])]
+// A pSD over half an NFET's gate and one starting on the gate's side fire pSD.j - the
+// gate's N+ part abuts the pSD, a space of nothing (KLayout reads the second) - and over
+// half a 3.3 V NFET's gate pSD.j1; the halves under the pSD are PFET gates short of pSD.
+#[case::psd_j_h5("psd/pSD.j.h5.gds.gz", "TOP", vec!["pSD.i", "pSD.i1", "pSD.j", "pSD.j", "pSD.j1"], vec![])]
 // A 0.2475 hole, a 0.49 hole holding a 0.25 island (0.24 empty; the island's pSD.b set
 // aside; report, finding 12), an L-shaped hole of 0.24, and 0.2475 holes across x = 20, 21
 // and at (1000, 1000) fire; 0.25 is clean.
@@ -4047,7 +4051,7 @@ fn test_offgrid() {
 #[case(DECK_GAT, vec!["Gat.f"; 2])]
 #[case(DECK_NBL, vec!["NBL.f"; 2])]
 #[case(DECK_NW, [vec!["NW.c1"; 2], vec!["NW.e1"; 4]].concat())]
-#[case(DECK_PSD, [vec!["pSD.c"; 4], vec!["pSD.e"; 2]].concat())]
+#[case(DECK_PSD, [vec!["pSD.c"; 4], vec!["pSD.e"; 2], vec!["pSD.j1"; 2]].concat())]
 fn test_svaricap(#[case] deck: &str, #[case] unlabelled: Vec<&str>) {
     let run = |gds: &str| -> Vec<String> {
         drc(PDK_IHP, deck, gds, "TOP", &[])

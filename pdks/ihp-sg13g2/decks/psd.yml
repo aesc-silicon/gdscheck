@@ -70,12 +70,16 @@ rules:
     value: 0.0
   - id: pSD.j
     check: min_space
-    layers: [pSDNoSRAM, GatPolyOverNsdActivNoTGO]
+    layers: [pSDNoSRAM, GatPolyOverNsdActivNoTGONoSVaricap]
     value: 0.30
+    params:
+      abutting: report
   - id: pSD.j1
     check: min_space
-    layers: [pSDNoSRAM, GatPolyOverNsdActivTGO]
+    layers: [pSDNoSRAM, GatPolyOverNsdActivTGONoSVaricap]
     value: 0.40
+    params:
+      abutting: report
   - id: pSD.k
     check: min_area
     layers: [pSD]

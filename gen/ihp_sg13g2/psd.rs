@@ -955,6 +955,17 @@ fn psd_j(l: &L) {
     e.push(rect(l.psd, 42.195, 5.5, 43.2, 7.5));
     write("psd", "pSD.j.h2", e);
 
+    // h5: a pSD over half an NFET's gate, one starting on the gate's side, and one over
+    // half a 3.3 V NFET's gate: the gate's N+ part abuts the pSD, a space of nothing.
+    let mut e = l.nfet(2.0, 2.0, 0.5, 0.5, 0.2, 0.3);
+    e.push(rect(l.psd, 2.6, 1.5, 3.8, 3.5));
+    e.extend(l.nfet(6.0, 2.0, 0.5, 0.5, 0.2, 0.3));
+    e.push(rect(l.psd, 6.7, 1.5, 7.8, 3.5));
+    e.extend(l.nfet(14.0, 2.0, 0.5, 0.5, 0.45, 0.3));
+    e.push(rect(l.tgo, 13.73, 1.73, 15.72, 3.27));
+    e.push(rect(l.psd, 14.7, 1.5, 16.2, 3.5));
+    write("psd", "pSD.j.h5", e);
+
     // h3/h4: fifty 0.295 NFETs, flat and as an array.
     let mut cell = l.nfet(0.0, 0.5, 0.5, 0.295, 0.2, 0.3);
     cell.push(rect(l.psd, 0.995, 0.0, 2.0, 2.0));
