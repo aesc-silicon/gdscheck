@@ -2913,6 +2913,22 @@ pub fn merged_area_dbu(m: &MergedPoly) -> f64 {
     (a2 / 2.0).max(0.0)
 }
 
+/// Whether `a` and `b` share area within the box `[x0, x1] × [y0, y1]` (DBU).
+pub fn overlap_within(a: &MergedPoly, b: &MergedPoly, x0: i64, y0: i64, x1: i64, y1: i64) -> bool {
+    let a = clip_to_box(vec![a.clone()], x0, y0, x1, y1);
+    if a.is_empty() {
+        return false;
+    }
+    let common = tile_shapes(&a).overlay(
+        &tile_shapes(std::slice::from_ref(b)),
+        OverlayRule::Intersect,
+        FillRule::NonZero,
+    );
+    shapes_to_merged(common)
+        .iter()
+        .any(|m| merged_area_dbu(m) > 0.0)
+}
+
 /// Centroid (DBU) of a merged region's outer ring (vertex average) — a marker
 /// point for per-region violations.
 pub fn merged_centroid_dbu(m: &MergedPoly) -> (f64, f64) {

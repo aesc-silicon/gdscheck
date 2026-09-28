@@ -443,7 +443,8 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 ///   running for 1 µm with a line 0.3 and 0.305 deep; `both_*` bars of Via wide and
 ///   long, wide and short, narrow and long.
 /// - `net_bridged` is two squares 0.25 apart joined through Via and Inner, `net_apart`
-///   the same two alone.
+///   the same two alone; `net_strip` two plates 0.25 apart across a tile line under
+///   one 18 µm Via, which joins both whichever its anchor lies in.
 ///
 /// The hardening patterns, what a rule manual's space asks of any layer, drawn once for
 /// every deck (hardening/SPEC.md); the counts are read off the drawings in
@@ -554,6 +555,8 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 #[case("net_apart", "S.min", 1)]
 #[case("net_u_island", "S.diff", 1)]
 #[case("net_u_island", "S.same", 0)]
+#[case("net_strip", "S.same", 1)]
+#[case("net_strip", "S.diff", 0)]
 fn space_rules_meet_the_bound_exactly_and_read_their_gates(
     #[case] pattern: &str,
     #[case] rule: &str,

@@ -39,7 +39,7 @@ fn extract(process: &str, fixture: &str) -> (Connectivity, f64) {
     }
 
     (
-        Connectivity::build(&mut cache, &layout, &pdk.connectivity),
+        Connectivity::build(&mut cache, &layout, &pdk.connectivity, dbu_to_um),
         dbu_to_um,
     )
 }

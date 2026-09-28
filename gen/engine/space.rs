@@ -168,6 +168,18 @@ pub fn generate(pdk: &PdkConfig) {
     write("net_bridged", v);
     write("net_apart", squares());
 
+    // Two plates of Outer 0.25 apart either side of the tile line at 20, and one Via
+    // 18 µm long over both: a connector overlapping two regions of a layer it joins
+    // joins them, whichever of them its anchor lies in.  S.same 1, S.diff 0.
+    write(
+        "net_strip",
+        vec![
+            rect(outer, 10.0, 30.0, 19.9, 31.0),
+            rect(outer, 20.15, 30.0, 30.0, 31.0),
+            rect(via, 11.0, 30.3, 29.0, 30.7),
+        ],
+    );
+
     // A U of Outer, open at the top, with an island 0.25 inside its opening, on no net
     // with it.  The U's vertex average (32, 32.2) lies in the island: a net looked up
     // there read the U on the island's net and the pair as one.  S.diff 1, S.same 0.

@@ -29,13 +29,19 @@
 
 use crate::layout::FlatLayout;
 use crate::merge::{
-    LabeledRegions, MergedCache, UnionFind, point_in_merged, stitch_labeled, stitch_regions,
+    LabeledRegions, MergedCache, TileMap, UnionFind, overlap_within, point_in_merged, poly_bbox,
+    stitch_labeled, stitch_labeled_indexed, stitch_regions,
 };
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 pub type LayerKey = (i16, i16);
+
+/// A connector no larger than this on either side (µm) is joined where its anchor lies;
+/// a larger one to every region it overlaps.  A via or a contact lies in one region of
+/// each layer it joins, a tap strip running under a rail does not.
+const POINT_CONNECTOR_UM: f64 = 1.0;
 
 /// A connector layer and the conductor layers it electrically joins where it overlaps
 /// them (e.g. `Cont` joins `Activ`/`GatPoly` to `Metal1`; `Via1` joins `Metal1`/`Metal2`).
@@ -102,12 +108,20 @@ pub struct Connectivity {
     partitions: HashMap<usize, Arc<Partition>>,
     /// Partition over *all* steps (the full net), for net_at / net_count.
     full: Arc<Partition>,
+    /// Per connect step, the pairs of nodes a large connector joins by overlap, beside
+    /// what its anchor joins (see [`overlap_bridges`]).
+    bridges: Vec<Vec<(usize, usize)>>,
 }
 
 impl Connectivity {
     /// Build connectivity for `specs`.  Ensures and reads each referenced layer's merged
     /// tiles from `cache`, so it shares the one tiled merge with the geometric checks.
-    pub fn build(cache: &mut MergedCache, layout: &FlatLayout, specs: &[ConnectSpec]) -> Self {
+    pub fn build(
+        cache: &mut MergedCache,
+        layout: &FlatLayout,
+        specs: &[ConnectSpec],
+        dbu_to_um: f64,
+    ) -> Self {
         let tile_dbu = cache.tile_dbu();
 
         // Every layer that participates: each connector and each conductor it bridges.
@@ -229,6 +243,14 @@ impl Connectivity {
                 (next_base * (specs.len() + 1) * std::mem::size_of::<u32>()) as f64 / 1e9
             );
         }
+        let point_dbu = (POINT_CONNECTOR_UM / dbu_to_um).round() as i32;
+        let bridges: Vec<Vec<(usize, usize)>> = specs
+            .iter()
+            .map(|s| {
+                let tiles = cache.tiles(s.connector.0, s.connector.1);
+                overlap_bridges(&tiles, s, &layers, tile_dbu, point_dbu)
+            })
+            .collect();
         let mut conn = Connectivity {
             tile_dbu,
             layers,
@@ -240,6 +262,7 @@ impl Connectivity {
                 node_net: Vec::new(),
                 net_count: 0,
             }),
+            bridges,
         };
         let t2 = std::time::Instant::now();
         conn.partitions = conn.compute_partitions();
@@ -271,6 +294,7 @@ impl Connectivity {
             specs,
             tile_dbu,
             n_nodes,
+            bridges,
             ..
         } = self;
         let (layers, tile_dbu, n_nodes) = (&*layers, *tile_dbu, *n_nodes);
@@ -326,6 +350,9 @@ impl Connectivity {
                         }
                     }
                 }
+            }
+            for &(a, b) in &bridges[k] {
+                uf.union(a, b);
             }
             cache.insert(k + 1, Arc::new(snapshot(&mut uf, n_nodes)));
             if std::env::var("GDSCHECK_CONN_TRACE").is_ok() {
@@ -430,6 +457,113 @@ impl Connectivity {
     pub fn net_count(&self) -> usize {
         self.full.net_count()
     }
+}
+
+/// What a connector larger than a via joins besides its anchor: the nodes of every
+/// region of the layers it bridges - and of its own, when it is a conductor too - that
+/// it overlaps, joined to each other.  A connector is looked up at one point, which is
+/// right for a via inside one region of each layer and wrong for a tap strip: the fill
+/// cells' N+ under a row's VDD rail on fortalesa_chip, one region 2.7 mm long across
+/// the pieces of Activ the gates cut, had its anchor in a piece no contact reached, and
+/// the row's well never met VDD (NW.b1 against the SRAM macro's well).  Each tile reads
+/// the overlaps within its core, where both layers' copies are exact; a connector
+/// crossing a tile line is one region across its tiles, so what it overlaps in each of
+/// them is joined.
+fn overlap_bridges(
+    tiles: &TileMap,
+    spec: &ConnectSpec,
+    layers: &HashMap<LayerKey, LayerData>,
+    tile_dbu: i32,
+    point_dbu: i32,
+) -> Vec<(usize, usize)> {
+    let t = tile_dbu as i64;
+    let core = |(tx, ty): (i32, i32)| {
+        let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+        (x0, y0, x0 + t, y0 + t)
+    };
+    // The connector's copies larger than a via, with some of them in the core.
+    let large: Vec<((i32, i32), usize)> = tiles
+        .par_iter()
+        .flat_map_iter(|(&tile, polys)| {
+            let (x0, y0, x1, y1) = core(tile);
+            polys
+                .iter()
+                .enumerate()
+                .filter(|(_, p)| {
+                    let (bx0, by0, bx1, by1) = poly_bbox(p);
+                    (bx1 - bx0 > point_dbu || by1 - by0 > point_dbu)
+                        && (bx1 as i64) > x0
+                        && (bx0 as i64) < x1
+                        && (by1 as i64) > y0
+                        && (by0 as i64) < y1
+                })
+                .map(|(i, _)| (tile, i))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    if large.is_empty() {
+        return Vec::new();
+    }
+    // Which region a copy reaching a tile line belongs to, stitched only when one does;
+    // a copy within its core is a region of its own.
+    let crosses = large.iter().any(|&(tile, i)| {
+        let (x0, y0, x1, y1) = core(tile);
+        let (bx0, by0, bx1, by1) = poly_bbox(&tiles[&tile][i]);
+        (bx0 as i64) <= x0 || (by0 as i64) <= y0 || (bx1 as i64) >= x1 || (by1 as i64) >= y1
+    });
+    let region_of: HashMap<((i32, i32), usize), usize> = if crosses {
+        stitch_labeled_indexed(tiles, tile_dbu)
+            .by_tile
+            .into_iter()
+            .flat_map(|(tile, v)| v.into_iter().map(move |(i, r)| ((tile, i), r)))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+    let targets: Vec<&LayerData> = spec
+        .layers
+        .iter()
+        .chain(std::iter::once(&spec.connector))
+        .filter_map(|k| layers.get(k))
+        .collect();
+    // (group, node) for every overlap; a group is a stitched region, or the copy itself.
+    let mut hits: Vec<(usize, usize, usize)> = large
+        .par_iter()
+        .enumerate()
+        .flat_map_iter(|(n, &(tile, i))| {
+            let p = &tiles[&tile][i];
+            let group = match region_of.get(&(tile, i)) {
+                Some(&r) => (0, r),
+                None => (1, n),
+            };
+            let (x0, y0, x1, y1) = core(tile);
+            let (bx0, by0, bx1, by1) = poly_bbox(p);
+            let mut out: Vec<(usize, usize, usize)> = Vec::new();
+            for d in &targets {
+                let Some(pieces) = d.labeled.by_tile.get(&tile) else {
+                    continue;
+                };
+                for (q, r) in pieces {
+                    let (qx0, qy0, qx1, qy1) = poly_bbox(q);
+                    if qx1 <= bx0 || qx0 >= bx1 || qy1 <= by0 || qy0 >= by1 {
+                        continue;
+                    }
+                    if overlap_within(p, q, x0, y0, x1, y1) {
+                        out.push((group.0, group.1, d.base + r));
+                    }
+                }
+            }
+            out
+        })
+        .collect();
+    // Filed in a fixed order, so the union-find - and the net numbers - do not depend
+    // on the order the tiles came back in.
+    hits.sort_unstable();
+    hits.dedup();
+    hits.windows(2)
+        .filter(|w| (w[0].0, w[0].1) == (w[1].0, w[1].1))
+        .map(|w| (w[0].2, w[1].2))
+        .collect()
 }
 
 /// Global node id of the region of `layer` containing `(x, y)`, via the tile index.
