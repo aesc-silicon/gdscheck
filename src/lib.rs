@@ -1517,13 +1517,37 @@ fn run_drc_impl(
             .collect();
         reads.sort_unstable();
         reads.dedup();
-        let c = connectivity::Connectivity::build(
+        let mut c = connectivity::Connectivity::build(
             &mut conn_merged,
             &layout,
             &pdk.connectivity,
             dbu_to_um,
             &reads,
         );
+        // A conductor keeps what a net is looked up by only where a rule looks one up:
+        // on the layers and layer params of the net-aware rules, the antenna rules
+        // aside, which read their regions with their nodes.  The probe keeps them all.
+        if std::env::var("GDSCHECK_NET_AT").is_err() {
+            let mut keep: std::collections::HashSet<(i16, i16)> = std::collections::HashSet::new();
+            for rule in rules
+                .iter()
+                .filter(|r| net_aware(r) && r.check != "antenna_ratio")
+            {
+                keep.extend(
+                    rule.layers
+                        .iter()
+                        .map(|l| (l.gds_layer as i16, l.gds_datatype as i16)),
+                );
+                for (k, l) in &rule.params {
+                    if let (pdk::Param::Num(l), Some(pdk::Param::Num(dt))) =
+                        (l, rule.params.get(&format!("{k}_dt")))
+                    {
+                        keep.insert((*l as i16, *dt as i16));
+                    }
+                }
+            }
+            c.keep_lookups(&keep);
+        }
         // Its layers are done with, and the plan below reads the resident set: freed
         // but kept in glibc's arenas they read as nets.  On FMD_QNC_greyhound_ihp that
         // was 25 GB of a 64 GB limit, and the checks ran on the rest.

@@ -57,6 +57,8 @@ struct LayerData {
     base: usize,
     /// Each region's size, what is kept of `labeled.regions` once the nets are built.
     sizes: Vec<RegionSize>,
+    /// Whether `labeled.by_tile` is kept for point lookups (see [`Connectivity::keep_lookups`]).
+    lookups: bool,
 }
 
 /// A layer that only ever bridges: its regions, and for each the node of a conductor
@@ -302,6 +304,7 @@ impl Connectivity {
                         labeled,
                         base,
                         sizes: Vec::new(),
+                        lookups: true,
                     },
                 );
             } else {
@@ -606,6 +609,21 @@ impl Connectivity {
         self.net_regions.get(&(layer, net)).map(Vec::as_slice)
     }
 
+    /// Drop the point-lookup copies of every conductor not in `keep`.  They are what a
+    /// net is looked up by at a point, and once the nets are built only the rules that
+    /// look one up on a layer need that layer's: an antenna rule reads its regions with
+    /// their nodes, and the metals' copies - on FMD_QNC_greyhound_ihp 1.8 GB of the
+    /// nets' resident set - served nothing after extraction.  A lookup on a layer
+    /// whose copies went is a bug in the caller's `keep`, and ends the run saying so.
+    pub fn keep_lookups(&mut self, keep: &HashSet<LayerKey>) {
+        for (key, d) in self.layers.iter_mut() {
+            if !keep.contains(key) {
+                d.labeled.by_tile = HashMap::new();
+                d.lookups = false;
+            }
+        }
+    }
+
     /// Whether `layer` is in the connect graph at all, as a conductor or a connector.
     pub fn in_graph(&self, layer: LayerKey) -> bool {
         self.layers.contains_key(&layer) || self.connectors.contains_key(&layer)
@@ -783,6 +801,11 @@ fn region_node_at(
     tile_dbu: i32,
 ) -> Option<usize> {
     let data = layers.get(&layer)?;
+    assert!(
+        data.lookups,
+        "net lookup on layer {}/{}, whose lookup copies were dropped after extraction",
+        layer.0, layer.1
+    );
     let t = tile_dbu as f64;
     let tile = ((x / t).floor() as i32, (y / t).floor() as i32);
     let polys = data.labeled.by_tile.get(&tile)?;
