@@ -1537,25 +1537,17 @@ fn run_drc_impl(
                 c.node_at(key, x / dbu_to_um, y / dbu_to_um),
                 c.net_at(key, x / dbu_to_um, y / dbu_to_um)
             );
-            // A connector has no index of its own; list its regions whose marker lies
-            // within 5 µm of the point, and what each bridged layer resolves to there.
+            // A connector has no index of its own: what each layer it bridges resolves
+            // to at the point is what it would join there.
             for spec in pdk.connectivity.iter().filter(|s| s.connector == key) {
-                for r in c.regions_of(key) {
-                    let (mx, my) = (r.marker.0 * dbu_to_um, r.marker.1 * dbu_to_um);
-                    if (mx - x).abs() > 5.0 || (my - y).abs() > 5.0 {
-                        continue;
-                    }
-                    let bridged: Vec<String> = spec
-                        .layers
-                        .iter()
-                        .map(|&lk| format!("{:?}:{:?}", lk, c.node_at(lk, r.marker.0, r.marker.1)))
-                        .collect();
-                    eprintln!(
-                        "  connector region marker=({mx:.3},{my:.3}) area={:.3} um2 bridges {}",
-                        r.area_dbu * dbu_to_um * dbu_to_um,
-                        bridged.join(" ")
-                    );
-                }
+                let bridged: Vec<String> = spec
+                    .layers
+                    .iter()
+                    .map(|&lk| {
+                        format!("{:?}:{:?}", lk, c.node_at(lk, x / dbu_to_um, y / dbu_to_um))
+                    })
+                    .collect();
+                eprintln!("  connector bridges {}", bridged.join(" "));
             }
         }
     }

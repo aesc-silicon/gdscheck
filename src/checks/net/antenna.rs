@@ -289,11 +289,11 @@ pub fn run(
         // the connect graph (the common case — a metal/via/contact), walk its own regions
         // and read each net directly; only a derived antenna layer (e.g. poly-on-field)
         // needs point lookups.
-        let metric = |r: &crate::merge::Region| {
+        let metric = |area_dbu: f64, perimeter_dbu: f64| {
             if by_perimeter {
-                r.perimeter_dbu * dbu_to_um * thickness
+                perimeter_dbu * dbu_to_um * thickness
             } else {
-                r.area_dbu * d2
+                area_dbu * d2
             }
         };
         let mut layer_area: HashMap<usize, f64> = HashMap::new();
@@ -307,7 +307,11 @@ pub fn run(
                         let mut per: HashMap<usize, f64> = HashMap::new();
                         for (i, r) in chunk.iter().enumerate() {
                             if let Some(node) = conn.region_node(lkey, (c << 16) + i) {
-                                sum_nets(&mut per, part.net_of(node), metric(r));
+                                sum_nets(
+                                    &mut per,
+                                    part.net_of(node),
+                                    metric(r.area_dbu, r.perimeter_dbu),
+                                );
                             }
                         }
                         per
@@ -325,7 +329,7 @@ pub fn run(
                         let mut per: HashMap<usize, f64> = HashMap::new();
                         for r in chunk {
                             if let Some(net) = part.net_at(conn, ant_net, r.anchor.0, r.anchor.1) {
-                                sum_nets(&mut per, net, metric(r));
+                                sum_nets(&mut per, net, metric(r.area_dbu, r.perimeter_dbu));
                             }
                         }
                         per

@@ -55,6 +55,8 @@ struct LayerData {
     labeled: LabeledRegions,
     /// Global node id of this layer's region 0; region `r` is node `base + r`.
     base: usize,
+    /// Each region's size, what is kept of `labeled.regions` once the nets are built.
+    sizes: Vec<RegionSize>,
 }
 
 /// A layer that only ever bridges: its regions, and for each the node of a conductor
@@ -62,6 +64,25 @@ struct LayerData {
 struct ConnectorData {
     regions: Vec<crate::merge::Region>,
     attach: Vec<u32>,
+    sizes: Vec<RegionSize>,
+}
+
+/// What a rule reads of a region once the nets are built: its area and perimeter (DBU).
+/// Where it lies was needed to join it and is not kept - a design with forty million
+/// contacts held 1.9 GB of markers for no reader.
+#[derive(Clone, Copy, Debug)]
+pub struct RegionSize {
+    pub area_dbu: f64,
+    pub perimeter_dbu: f64,
+}
+
+impl From<&crate::merge::Region> for RegionSize {
+    fn from(r: &crate::merge::Region) -> Self {
+        RegionSize {
+            area_dbu: r.area_dbu,
+            perimeter_dbu: r.perimeter_dbu,
+        }
+    }
 }
 
 /// A net partition over a prefix of the connect steps: net id per global node.
@@ -221,7 +242,14 @@ impl Connectivity {
             if indexed {
                 let base = next_base;
                 next_base += labeled.regions.len();
-                layers.insert(key, LayerData { labeled, base });
+                layers.insert(
+                    key,
+                    LayerData {
+                        labeled,
+                        base,
+                        sizes: Vec::new(),
+                    },
+                );
             } else {
                 let n = labeled.regions.len();
                 n_connector_regions += n;
@@ -230,6 +258,7 @@ impl Connectivity {
                     ConnectorData {
                         regions: labeled.regions,
                         attach: vec![u32::MAX; n],
+                        sizes: Vec::new(),
                     },
                 );
             }
@@ -266,6 +295,16 @@ impl Connectivity {
         };
         let t2 = std::time::Instant::now();
         conn.partitions = conn.compute_partitions();
+        // The regions were looked up at their anchors to join them; from here on a rule
+        // reads each one's size only.
+        for d in conn.layers.values_mut() {
+            d.sizes = d.labeled.regions.iter().map(RegionSize::from).collect();
+            d.labeled.regions = Vec::new();
+        }
+        for c in conn.connectors.values_mut() {
+            c.sizes = c.regions.iter().map(RegionSize::from).collect();
+            c.regions = Vec::new();
+        }
         if trace {
             eprintln!(
                 "conn partitions built in {:.1}s",
@@ -301,7 +340,17 @@ impl Connectivity {
         let mut uf = UnionFind::new(n_nodes);
         let mut cache = HashMap::new();
         cache.insert(0, Arc::new(snapshot(&mut uf, n_nodes)));
+        // Whether two nets became one: a step joining nothing new leaves the partition
+        // as it was, and shares it instead of holding a copy - on FMD_QNC_greyhound_ihp
+        // half of seventeen steps, 22 million nodes each.
+        let join = |uf: &mut UnionFind, a: usize, b: usize, changed: &mut bool| {
+            if uf.find(a) != uf.find(b) {
+                uf.union(a, b);
+                *changed = true;
+            }
+        };
         for (k, s) in specs.iter().enumerate() {
+            let mut changed = false;
             // The lookups are the work - a point-in-polygon per via per bridged layer,
             // millions of them - and they only read; the unions are cheap and replayed
             // in order, so the result is the same as the serial loop's.
@@ -328,7 +377,7 @@ impl Connectivity {
                     })
                     .collect();
                 for (a, b) in pairs {
-                    uf.union(a, b);
+                    join(&mut uf, a, b, &mut changed);
                 }
             } else if let Some(cd) = connectors.get_mut(&s.connector) {
                 // A connector-only layer joins the nodes it touches to each other.  The
@@ -346,15 +395,20 @@ impl Connectivity {
                         if cd.attach[r] == u32::MAX {
                             cd.attach[r] = n as u32;
                         } else {
-                            uf.union(cd.attach[r] as usize, n);
+                            join(&mut uf, cd.attach[r] as usize, n, &mut changed);
                         }
                     }
                 }
             }
             for &(a, b) in &bridges[k] {
-                uf.union(a, b);
+                join(&mut uf, a, b, &mut changed);
             }
-            cache.insert(k + 1, Arc::new(snapshot(&mut uf, n_nodes)));
+            let part = if changed {
+                Arc::new(snapshot(&mut uf, n_nodes))
+            } else {
+                Arc::clone(&cache[&k])
+            };
+            cache.insert(k + 1, part);
             if std::env::var("GDSCHECK_CONN_TRACE").is_ok() {
                 let rss = std::fs::read_to_string("/proc/self/statm")
                     .ok()
@@ -409,15 +463,15 @@ impl Connectivity {
             .map(|i| i + 1)
     }
 
-    /// Regions (area + marker) of `layer`, as built for connectivity - a conductor's or
+    /// Region sizes (area, perimeter) of `layer`, as built for connectivity - a conductor's or
     /// a connector's.
-    pub fn regions_of(&self, layer: LayerKey) -> &[crate::merge::Region] {
+    pub fn regions_of(&self, layer: LayerKey) -> &[RegionSize] {
         if let Some(d) = self.layers.get(&layer) {
-            return &d.labeled.regions;
+            return &d.sizes;
         }
         self.connectors
             .get(&layer)
-            .map(|c| c.regions.as_slice())
+            .map(|c| c.sizes.as_slice())
             .unwrap_or(&[])
     }
 
