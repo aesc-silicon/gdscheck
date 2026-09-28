@@ -50,6 +50,36 @@ impl FlatLayout {
         &self.waived
     }
 
+    /// Every coordinate times `k`: the layout read in a DBU `k` times finer.  Exact, as
+    /// a multiple of a whole number is one.
+    pub fn scale(&mut self, k: i32) {
+        if k == 1 {
+            return;
+        }
+        use rayon::prelude::*;
+        self.layers.par_iter_mut().for_each(|(_, shapes)| {
+            for s in shapes {
+                for p in &mut s.xy {
+                    p.x *= k;
+                    p.y *= k;
+                }
+            }
+        });
+        for texts in self.texts.values_mut() {
+            for t in texts {
+                t.x *= k;
+                t.y *= k;
+            }
+        }
+        for w in &mut self.waived {
+            w.x0 *= k;
+            w.y0 *= k;
+            w.x1 *= k;
+            w.y1 *= k;
+        }
+        self.bbox = std::sync::OnceLock::new();
+    }
+
     pub fn insert(&mut self, layer: i16, datatype: i16, boundary: GdsBoundary) {
         self.layers
             .entry((layer, datatype))

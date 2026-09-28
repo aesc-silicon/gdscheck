@@ -3094,6 +3094,9 @@ const DECK_RESISTOR: &str = "resistor";
 // The pcell's wide rsil (w 20, l 1; the CSA design's): heads 0.35 deep - Rsil.b + Cont +
 // Cnt.c - are heads, not strips: clean; the RES 0.05 short of its top edge fires.
 #[case::rsil_c_h3("resistor/Rsil.c.h3.gds.gz", "TOP", vec!["Rsil.c"], vec![])]
+// h3 in a 5 nm DBU (FMD_QNC_UWB_Pulse_Generator's): the layout is read in nanometres,
+// so the 0.35 heads stay heads - 0.1725 in 5 nm units opened them away (3).
+#[case::rsil_c_h4("resistor/Rsil.c.h4.gds.gz", "TOP", vec!["Rsil.c"], vec![])]
 // Rsil.d: pSD 0.175 below the body, 0.12/0.12 from the head's corner (0.170), abutting
 // the head (finding 2), an Rppd's pSD 0.175 from the head, and pSD 0.175 below a
 // resistor with no EXTBlock (finding 3); 0.18, 0.13/0.13 (0.184) and 0.175 from a plain

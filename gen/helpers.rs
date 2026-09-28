@@ -613,6 +613,35 @@ pub fn library(topcell: &str, elems: Vec<GdsElement>) -> GdsLibrary {
     lib
 }
 
+/// [`library`] written in a DBU of `nm` nanometres: every coordinate, drawn in
+/// nanometres, divided by `nm` - which must divide it.
+pub fn library_in(topcell: &str, elems: Vec<GdsElement>, nm: i32) -> GdsLibrary {
+    let coarse = |p: &mut GdsPoint| {
+        assert!(
+            p.x % nm == 0 && p.y % nm == 0,
+            "({}, {}) is off the {nm} nm grid",
+            p.x,
+            p.y
+        );
+        p.x /= nm;
+        p.y /= nm;
+    };
+    let elems = elems
+        .into_iter()
+        .map(|mut e| {
+            match &mut e {
+                GdsElement::GdsBoundary(b) => b.xy.iter_mut().for_each(coarse),
+                GdsElement::GdsTextElem(t) => coarse(&mut t.xy),
+                _ => panic!("library_in writes boundaries and texts"),
+            }
+            e
+        })
+        .collect();
+    let mut lib = library(topcell, elems);
+    lib.units = GdsUnits(1e-6, nm as f64 * 1e-9);
+    lib
+}
+
 /// Diamond (45°-rotated square) of half-diagonal `a` centred on `(cx, cy)`; its width
 /// between opposite walls is `a·√2`.
 pub fn diamond(layer: (i16, i16), cx: f64, cy: f64, a: f64) -> GdsElement {

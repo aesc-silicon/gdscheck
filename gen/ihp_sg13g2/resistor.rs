@@ -4,7 +4,8 @@
 
 use super::OFFSET;
 use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, write_gz,
+    chamfered_tr, diamond, flat_array, layer, library, library_in, poly, rect, ref_array, strip45,
+    write_gz,
 };
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
@@ -814,7 +815,11 @@ fn rsil_c_h(p: &P) {
     };
     let mut e = wide(2.0, m4(0.0)).build(p);
     e.extend(wide(6.0, [0.0, 0.0, 0.0, -0.05]).build(p));
-    write("Rsil.c.h3", e);
+    write("Rsil.c.h3", e.clone());
+
+    // h4: h3 in a 5 nm DBU, as FMD_QNC_UWB_Pulse_Generator is drawn.  The heads are
+    // opened by 0.1725 so a 0.35 head stays; 34.5 units there, it opened them away.
+    write_gz(&format!("{DIR}/Rsil.c.h4.gds.gz"), library_in("TOP", e, 5));
 }
 
 // ---------------------------------------------------------------------------

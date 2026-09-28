@@ -157,6 +157,9 @@ fn rss_gb() -> f64 {
 /// Populated as net-aware checks land (e.g. the antenna ratio rules).
 pub const NET_AWARE_CHECKS: &[&str] = &["antenna_ratio", "max_nets_under"];
 
+/// The DBU a layout is read in when it is drawn in a coarser one: a nanometre.
+const NM_DBU_UM: f64 = 0.001;
+
 /// Whether a rule reads the nets: a net-aware check, or any rule gated on `net`.
 pub fn net_aware(rule: &pdk::RuleDefinition) -> bool {
     NET_AWARE_CHECKS.contains(&rule.check.as_str()) || rule.params.contains_key("net")
@@ -1160,7 +1163,23 @@ fn run_drc_impl(
     }
     phase.end("pdk+rules");
 
-    let dbu_to_um = lib.units.1 * 1e6;
+    // A layout drawn in a DBU coarser than a nanometre is read in nanometres.  The
+    // decks' distances sit between two nanometre steps where a bound is strict - Rsil's
+    // heads are opened by 0.1725 so a 0.35 head stays and a 0.345 one goes - and in a
+    // 5 nm DBU no whole number of units falls there: 0.1725 became 0.175 and opened
+    // IHP's own rsil heads away (FMD_QNC_UWB_Pulse_Generator).  Scaled by a whole
+    // factor the geometry is exactly what it was, and every distance means what it
+    // does in the nanometre layouts the decks are written against.
+    let file_dbu_um = lib.units.1 * 1e6;
+    let scale = {
+        let k = (file_dbu_um / NM_DBU_UM).round();
+        if k > 1.0 && (k * NM_DBU_UM - file_dbu_um).abs() < 1e-9 * file_dbu_um {
+            k as i32
+        } else {
+            1
+        }
+    };
+    let dbu_to_um = file_dbu_um / scale as f64;
 
     // Resolve each lazy virtual's op string once (radii converted to DBU); a typo'd
     // op or a missing radius is a config error, not a silently empty layer.
@@ -1252,6 +1271,7 @@ fn run_drc_impl(
 
     watch.at("flattening the layout");
     let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref(), &pdk.waivers);
+    layout.scale(scale);
     phase.end("flatten");
     if options.stats {
         print_stats(&pdk, &layout, &rules, &limit);
