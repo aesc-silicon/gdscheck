@@ -1320,6 +1320,11 @@ fn run_drc_impl(
     // the well and the implants over again: 15 s of antenna rules became 42 min on a
     // 16 GB runner.
     let rule_keys = |rule: &pdk::RuleDefinition| -> Vec<(i16, i16)> {
+        // An antenna rule reads its regions off the nets, read while they were built,
+        // and nothing of the checks' cache.
+        if connectivity && rule.check == "antenna_ratio" && !pdk.connectivity.is_empty() {
+            return Vec::new();
+        }
         let mut keys: Vec<(i16, i16)> = rule
             .layers
             .iter()
@@ -1498,11 +1503,26 @@ fn run_drc_impl(
         for (spec, op) in virtual_defs {
             conn_merged.register_virtual(spec.key, op, spec.sources, spec.text);
         }
+        // What the antenna rules read region by region with its net - gates, diodes,
+        // antenna layers outside the graph - is read here, a layer at a time.
+        let graph: std::collections::HashSet<(i16, i16)> = pdk
+            .connectivity
+            .iter()
+            .flat_map(|s| std::iter::once(s.connector).chain(s.layers.iter().copied()))
+            .collect();
+        let mut reads: Vec<((i16, i16), (i16, i16))> = rules
+            .iter()
+            .filter(|r| r.check == "antenna_ratio")
+            .flat_map(|r| checks::net::antenna::net_reads(r, |k| graph.contains(&k)))
+            .collect();
+        reads.sort_unstable();
+        reads.dedup();
         let c = connectivity::Connectivity::build(
             &mut conn_merged,
             &layout,
             &pdk.connectivity,
             dbu_to_um,
+            &reads,
         );
         // Its layers are done with, and the plan below reads the resident set: freed
         // but kept in glibc's arenas they read as nets.  On FMD_QNC_greyhound_ihp that

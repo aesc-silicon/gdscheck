@@ -79,6 +79,34 @@ fn level(rule: &RuleDefinition, conn: &Connectivity) -> Result<Option<usize>, ()
     }
 }
 
+/// The layers an antenna rule reads region by region, each with the conductor its net
+/// is looked up on: the gate, every diode, and each antenna layer that is not itself in
+/// the connect graph or names the layer its net is read through.  The net extraction
+/// reads them while it builds the nets (see `Connectivity::net_regions`), so the rule
+/// needs nothing of the checks' cache.
+pub fn net_reads(
+    rule: &RuleDefinition,
+    in_graph: impl Fn(LayerKey) -> bool,
+) -> Vec<(LayerKey, LayerKey)> {
+    let mut out = Vec::new();
+    if let Some(gate) = net_key(rule, "gate") {
+        out.push((gate, net_key(rule, "gate_net_of").unwrap_or(gate)));
+    }
+    for k in ["diode_1", "diode_2", "diode_3"] {
+        if let Some(d) = net_key(rule, k) {
+            out.push((d, net_key(rule, &format!("{k}_net_of")).unwrap_or(d)));
+        }
+    }
+    let antenna_net = net_key(rule, "antenna_net_of");
+    for l in &rule.layers {
+        let lkey = key(l);
+        if antenna_net.is_some() || !in_graph(lkey) {
+            out.push((lkey, antenna_net.unwrap_or(lkey)));
+        }
+    }
+    out
+}
+
 /// Diode area (µm²) per net at `part`, summed over every diode layer.  Each layer's net
 /// is resolved through its own base layer, since a derived diode (n+ outside the well,
 /// p+ inside it) is not itself in the connect graph.
@@ -92,6 +120,12 @@ fn diode_area_per_net(
 ) -> HashMap<usize, f64> {
     let mut out: HashMap<usize, f64> = HashMap::new();
     for &(dkey, dnet) in diodes {
+        if let Some(read) = conn.net_regions(dkey, dnet) {
+            for r in read.iter().filter(|r| r.node != u32::MAX) {
+                *out.entry(part.net_of(r.node as usize)).or_default() += r.area_dbu * d2;
+            }
+            continue;
+        }
         let regions = merged.regions(layout, dkey.0, dkey.1).to_vec();
         let per: Vec<HashMap<usize, f64>> = regions
             .par_chunks(1 << 12)
@@ -216,14 +250,21 @@ pub fn run(
     // Gates: area (µm²), marker, and — once — the global node of the GatPoly region each
     // sits on.  The node is partition-independent, so the per-level net is then O(1)
     // (`part.net_of(node)`) with no repeated point lookup.
-    let gates: Vec<(f64, (f64, f64), usize)> = merged
-        .regions(layout, gate.0, gate.1)
-        .par_iter()
-        .filter_map(|r| {
-            conn.node_at(gate_net, r.anchor.0, r.anchor.1)
-                .map(|n| (r.area_dbu * d2, r.marker, n))
-        })
-        .collect();
+    let gates: Vec<(f64, (f64, f64), usize)> = match conn.net_regions(gate, gate_net) {
+        Some(read) => read
+            .iter()
+            .filter(|r| r.node != u32::MAX)
+            .map(|r| (r.area_dbu * d2, r.marker, r.node as usize))
+            .collect(),
+        None => merged
+            .regions(layout, gate.0, gate.1)
+            .par_iter()
+            .filter_map(|r| {
+                conn.node_at(gate_net, r.anchor.0, r.anchor.1)
+                    .map(|n| (r.area_dbu * d2, r.marker, n))
+            })
+            .collect(),
+    };
     if gates.is_empty() {
         return vec![];
     }
@@ -319,8 +360,19 @@ pub fn run(
                     .collect(),
             );
         }
-        if layer_area.is_empty() {
-            let ant_net = antenna_net.unwrap_or(lkey);
+        let ant_net = antenna_net.unwrap_or(lkey);
+        let read = (antenna_net.is_some() || !conn.in_graph(lkey))
+            .then(|| conn.net_regions(lkey, ant_net))
+            .flatten();
+        if let Some(read) = read {
+            for r in read.iter().filter(|r| r.node != u32::MAX) {
+                sum_nets(
+                    &mut layer_area,
+                    part.net_of(r.node as usize),
+                    metric(r.area_dbu, r.perimeter_dbu),
+                );
+            }
+        } else if layer_area.is_empty() {
             let regions = merged.regions(layout, lkey.0, lkey.1).to_vec();
             layer_area = fold(
                 regions

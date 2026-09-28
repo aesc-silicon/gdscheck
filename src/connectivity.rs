@@ -67,6 +67,18 @@ struct ConnectorData {
     sizes: Vec<RegionSize>,
 }
 
+/// A region of a layer a rule reads with the net it lies on - a gate, a diode, an
+/// antenna layer outside the connect graph: its size, its marker (DBU) and the node of
+/// the conductor it is looked up on (`u32::MAX` for none).  Read while the nets are
+/// built, a layer at a time, and kept as this instead of the layer's copies.
+#[derive(Clone, Copy, Debug)]
+pub struct NetRegion {
+    pub area_dbu: f64,
+    pub perimeter_dbu: f64,
+    pub marker: (f64, f64),
+    pub node: u32,
+}
+
 /// What a rule reads of a region once the nets are built: its area and perimeter (DBU).
 /// Where it lies was needed to join it and is not kept - a design with forty million
 /// contacts held 1.9 GB of markers for no reader.
@@ -132,6 +144,9 @@ pub struct Connectivity {
     /// Per connect step, the pairs of nodes a large connector joins by overlap, beside
     /// what its anchor joins (see [`overlap_bridges`]).
     bridges: Vec<Vec<(usize, usize)>>,
+    /// The regions of `(layer, net layer)` read for the rules that asked, each with
+    /// its node (see [`NetRegion`]).
+    net_regions: HashMap<(LayerKey, LayerKey), Vec<NetRegion>>,
 }
 
 impl Connectivity {
@@ -142,6 +157,7 @@ impl Connectivity {
         layout: &FlatLayout,
         specs: &[ConnectSpec],
         dbu_to_um: f64,
+        reads: &[(LayerKey, LayerKey)],
     ) -> Self {
         let tile_dbu = cache.tile_dbu();
 
@@ -329,6 +345,7 @@ impl Connectivity {
                 net_count: 0,
             }),
             bridges,
+            net_regions: HashMap::new(),
         };
         let t2 = std::time::Instant::now();
         conn.partitions = conn.compute_partitions();
@@ -342,6 +359,77 @@ impl Connectivity {
             c.sizes = c.regions.iter().map(RegionSize::from).collect();
             c.regions = Vec::new();
         }
+        // The layers a rule reads region by region with their nets, while the cache
+        // is at hand and the nets are built: an antenna rule's gates and diodes built on the checks' cache were
+        // nine layers and seventy million copies on FMD_QNC_greyhound_ihp, for what is
+        // an area, a marker and a node per region.  Each is built, read and freed in
+        // turn, its sources with it.
+        for &(key, net) in reads {
+            if conn.net_regions.contains_key(&(key, net)) {
+                continue;
+            }
+            cache.ensure(layout, key.0, key.1);
+            // Its sources have done their part once it is built.
+            for (k, _) in cache.resident_layers() {
+                if k != key {
+                    cache.evict(k.0, k.1);
+                }
+            }
+            cache.settle_frees();
+            crate::memory::trim();
+            let tiles = cache.tiles(key.0, key.1);
+            let labeled = stitch_labeled(&tiles, tile_dbu);
+            drop(tiles);
+            // The node is read piece by piece, at a point well inside the piece's part of
+            // its core, where the conductor's copy is exact: a region's anchor can sit
+            // on a tile line, where neither tile's copy of the conductor says it is
+            // inside - 34 638 diodes of FMD_QNC_greyhound_ihp found no net that way.
+            let t = tile_dbu as i64;
+            let mut found: Vec<(usize, u32)> = labeled
+                .by_tile
+                .par_iter()
+                .flat_map_iter(|(&(tx, ty), polys)| {
+                    let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+                    polys
+                        .iter()
+                        .filter_map(|(p, rid)| {
+                            let piece =
+                                crate::merge::clip_to_box(vec![p.clone()], x0, y0, x0 + t, y0 + t);
+                            piece.iter().find_map(|q| {
+                                let (x, y) = crate::merge::inside_point(q);
+                                region_node_at(&conn.layers, net, x, y, tile_dbu)
+                                    .map(|n| (*rid, n as u32))
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect();
+            found.sort_unstable();
+            found.dedup_by_key(|f| f.0);
+            let mut node_of = vec![u32::MAX; labeled.regions.len()];
+            for (rid, n) in found {
+                node_of[rid] = n;
+            }
+            let read: Vec<NetRegion> = labeled
+                .regions
+                .iter()
+                .zip(node_of)
+                .map(|(r, node)| NetRegion {
+                    area_dbu: r.area_dbu,
+                    perimeter_dbu: r.perimeter_dbu,
+                    marker: r.marker,
+                    node,
+                })
+                .collect();
+            drop(labeled);
+            conn.net_regions.insert((key, net), read);
+            for (k, _) in cache.resident_layers() {
+                cache.evict(k.0, k.1);
+            }
+            cache.settle_frees();
+            crate::memory::trim();
+        }
+
         if trace {
             eprintln!(
                 "conn partitions built in {:.1}s",
@@ -510,6 +598,12 @@ impl Connectivity {
             .get(&layer)
             .map(|c| c.sizes.as_slice())
             .unwrap_or(&[])
+    }
+
+    /// The regions of `layer` with the node each lies on through `net`, if the run read
+    /// them while building the nets.
+    pub fn net_regions(&self, layer: LayerKey, net: LayerKey) -> Option<&[NetRegion]> {
+        self.net_regions.get(&(layer, net)).map(Vec::as_slice)
     }
 
     /// Whether `layer` is in the connect graph at all, as a conductor or a connector.
