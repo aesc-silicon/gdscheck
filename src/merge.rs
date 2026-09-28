@@ -7092,6 +7092,44 @@ impl MergedCache {
                     self.insert_virtual(key, def.op, src_copies, tiles, t0, want);
                     return;
                 }
+                // A filter with nothing in it selects nothing: `not_overlapping` and the
+                // like hand the candidate on as it is.  It is the candidate's own map,
+                // shared rather than copied - `ContOnActivNoVaricap` on a design without
+                // a varicap copied forty million contacts, 7 s per build.
+                let src = def.sources[0];
+                let filter_empty = def.sources.get(1).is_none_or(|f| {
+                    self.layers
+                        .get(f)
+                        .is_none_or(|t| t.values().all(|v| v.is_empty()))
+                });
+                let cand_halo = self.layer_halo.get(&src).copied().unwrap_or(0);
+                if filter_empty
+                    && !keep
+                    && count == (None, None)
+                    && !self.clippable.contains(&key)
+                    && cand_halo >= want
+                {
+                    let tiles = Arc::clone(&self.layers[&src]);
+                    let polys = self
+                        .layer_polys
+                        .get(&src)
+                        .copied()
+                        .unwrap_or_else(|| tiles.values().map(|v| v.len()).sum());
+                    if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+                        eprintln!(
+                            "virtual {} op={:?} is {}: its filter holds nothing",
+                            self.name_of(key),
+                            def.op,
+                            self.name_of(src)
+                        );
+                    }
+                    self.layer_polys.insert(key, polys);
+                    self.layers.insert(key, tiles);
+                    self.kin.retain(|(k, _), _| *k != key);
+                    self.layer_halo.insert(key, cand_halo);
+                    self.release_spent_sources(key);
+                    return;
+                }
                 // candidate = source[0], filter = source[1] (empty if absent).
                 let empty = TileMap::new();
                 let cand = &self.layers[&def.sources[0]];
