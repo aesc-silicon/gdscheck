@@ -30,7 +30,7 @@
 use crate::layout::FlatLayout;
 use crate::merge::{
     LabeledRegions, MergedCache, TileMap, UnionFind, overlap_within, point_in_merged, poly_bbox,
-    stitch_labeled, stitch_labeled_indexed, stitch_regions,
+    stitch_labeled, stitch_labeled_indexed, stitch_regions_small,
 };
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -193,7 +193,7 @@ impl Connectivity {
                 stitch_labeled(tiles, tile_dbu)
             } else {
                 LabeledRegions {
-                    regions: stitch_regions(tiles, tile_dbu),
+                    regions: stitch_regions_small(tiles, tile_dbu),
                     by_tile: HashMap::new(),
                 }
             };
@@ -201,39 +201,77 @@ impl Connectivity {
         };
         let (drawn, derived): (Vec<LayerKey>, Vec<LayerKey>) =
             keys.iter().partition(|k| cache.is_drawn(**k));
-        let mut stitched: Vec<(LayerKey, LabeledRegions, f64)> = Vec::new();
-        for &key in &drawn {
-            let t0 = std::time::Instant::now();
-            cache.ensure(layout, key.0, key.1);
-            merge_secs.insert(key, t0.elapsed().as_secs_f64());
-            stitched.push(stitch_one(cache, &key));
-        }
+        let point_dbu = (POINT_CONNECTOR_UM / dbu_to_um).round() as i32;
+        let connector_keys: HashSet<LayerKey> = specs.iter().map(|s| s.connector).collect();
+        let mut large: HashMap<LayerKey, Vec<LargeCopy>> = HashMap::new();
+        // Per layer, for the trace: its halo, tiles and polygon copies.
+        let mut shape: HashMap<LayerKey, (i32, usize, usize)> = HashMap::new();
+        // What a layer leaves behind once stitched: its size for the trace, and the
+        // copies a large connector joins by overlap.
+        let mut keep = |cache: &MergedCache, key: LayerKey| {
+            let tiles_arc = cache.tiles(key.0, key.1);
+            let tiles = &*tiles_arc;
+            shape.insert(
+                key,
+                (
+                    cache.halo_dbu(key.0, key.1),
+                    tiles.len(),
+                    tiles.values().map(|v| v.len()).sum::<usize>(),
+                ),
+            );
+            if connector_keys.contains(&key) {
+                large.insert(key, large_copies(tiles, tile_dbu, point_dbu));
+            }
+        };
+        // The derived layers first, built from their sources and stitched all at once;
+        // then everything the cache holds goes, and each drawn layer is merged, stitched
+        // and freed in turn.  Held all together until the last was stitched, the tiles of
+        // every layer of the graph were the peak of the run: 25 GB over the flattened
+        // layout on FMD_QNC_greyhound_ihp, where the nets they leave are 7.
         for &key in &derived {
             let t0 = std::time::Instant::now();
             cache.ensure(layout, key.0, key.1);
             merge_secs.insert(key, t0.elapsed().as_secs_f64());
         }
         let cache_ref: &MergedCache = cache;
-        stitched.extend(
-            derived
-                .par_iter()
-                .map(|k| stitch_one(cache_ref, k))
-                .collect::<Vec<_>>(),
-        );
+        let derived_stitched: Vec<(LayerKey, LabeledRegions, f64)> = derived
+            .par_iter()
+            .map(|k| stitch_one(cache_ref, k))
+            .collect();
+        for &key in &derived {
+            keep(cache, key);
+        }
+        for (key, _) in cache.resident_layers() {
+            cache.evict(key.0, key.1);
+        }
+        cache.settle_frees();
+        crate::memory::trim();
+
+        let mut stitched: Vec<(LayerKey, LabeledRegions, f64)> = Vec::new();
+        for &key in &drawn {
+            let t0 = std::time::Instant::now();
+            cache.ensure(layout, key.0, key.1);
+            merge_secs.insert(key, t0.elapsed().as_secs_f64());
+            stitched.push(stitch_one(cache, &key));
+            keep(cache, key);
+            cache.evict(key.0, key.1);
+            cache.settle_frees();
+            crate::memory::trim();
+        }
+        stitched.extend(derived_stitched);
         for (key, labeled, t_stitch) in stitched {
             let indexed = conductors.contains(&key);
             if trace {
-                let tiles_arc = cache.tiles(key.0, key.1);
-                let tiles = &*tiles_arc;
+                let (halo, tiles, polys) = shape[&key];
                 eprintln!(
                     "conn {}/{} halo={} indexed={} tiles={} polys={} regions={} \
                      merge={:.1}s stitch={:.1}s",
                     key.0,
                     key.1,
-                    cache.halo_dbu(key.0, key.1),
+                    halo,
                     indexed,
-                    tiles.len(),
-                    tiles.values().map(|v| v.len()).sum::<usize>(),
+                    tiles,
+                    polys,
                     labeled.regions.len(),
                     merge_secs[&key],
                     t_stitch
@@ -272,12 +310,11 @@ impl Connectivity {
                 (next_base * (specs.len() + 1) * std::mem::size_of::<u32>()) as f64 / 1e9
             );
         }
-        let point_dbu = (POINT_CONNECTOR_UM / dbu_to_um).round() as i32;
         let bridges: Vec<Vec<(usize, usize)>> = specs
             .iter()
             .map(|s| {
-                let tiles = cache.tiles(s.connector.0, s.connector.1);
-                overlap_bridges(&tiles, s, &layers, tile_dbu, point_dbu)
+                let copies = large.get(&s.connector).map(Vec::as_slice).unwrap_or(&[]);
+                overlap_bridges(copies, s, &layers, tile_dbu)
             })
             .collect();
         let mut conn = Connectivity {
@@ -524,19 +561,74 @@ impl Connectivity {
 /// crossing a tile line is one region across its tiles, so what it overlaps in each of
 /// them is joined.
 fn overlap_bridges(
-    tiles: &TileMap,
+    copies: &[LargeCopy],
     spec: &ConnectSpec,
     layers: &HashMap<LayerKey, LayerData>,
     tile_dbu: i32,
-    point_dbu: i32,
 ) -> Vec<(usize, usize)> {
+    if copies.is_empty() {
+        return Vec::new();
+    }
+    let t = tile_dbu as i64;
+    let targets: Vec<&LayerData> = spec
+        .layers
+        .iter()
+        .chain(std::iter::once(&spec.connector))
+        .filter_map(|k| layers.get(k))
+        .collect();
+    // (group, node) for every overlap.
+    let mut hits: Vec<(u8, usize, usize)> = copies
+        .par_iter()
+        .flat_map_iter(|c| {
+            let (x0, y0) = (c.tile.0 as i64 * t, c.tile.1 as i64 * t);
+            let (x1, y1) = (x0 + t, y0 + t);
+            let (bx0, by0, bx1, by1) = poly_bbox(&c.poly);
+            let mut out: Vec<(u8, usize, usize)> = Vec::new();
+            for d in &targets {
+                let Some(pieces) = d.labeled.by_tile.get(&c.tile) else {
+                    continue;
+                };
+                for (q, r) in pieces {
+                    let (qx0, qy0, qx1, qy1) = poly_bbox(q);
+                    if qx1 <= bx0 || qx0 >= bx1 || qy1 <= by0 || qy0 >= by1 {
+                        continue;
+                    }
+                    if overlap_within(&c.poly, q, x0, y0, x1, y1) {
+                        out.push((c.group.0, c.group.1, d.base + r));
+                    }
+                }
+            }
+            out
+        })
+        .collect();
+    // Filed in a fixed order, so the union-find - and the net numbers - do not depend
+    // on the order the tiles came back in.
+    hits.sort_unstable();
+    hits.dedup();
+    hits.windows(2)
+        .filter(|w| (w[0].0, w[0].1) == (w[1].0, w[1].1))
+        .map(|w| (w[0].2, w[1].2))
+        .collect()
+}
+
+/// A connector's copy larger than a via with some of it in its tile's core, and the
+/// region it belongs to: a stitched region where the copy reaches a tile line, the
+/// copy itself where it lies within its core.  Kept past the connector's tiles, which
+/// are freed as soon as it is stitched; [`overlap_bridges`] reads them once every
+/// conductor is.
+struct LargeCopy {
+    tile: (i32, i32),
+    poly: crate::merge::MergedPoly,
+    group: (u8, usize),
+}
+
+fn large_copies(tiles: &TileMap, tile_dbu: i32, point_dbu: i32) -> Vec<LargeCopy> {
     let t = tile_dbu as i64;
     let core = |(tx, ty): (i32, i32)| {
         let (x0, y0) = (tx as i64 * t, ty as i64 * t);
         (x0, y0, x0 + t, y0 + t)
     };
-    // The connector's copies larger than a via, with some of them in the core.
-    let large: Vec<((i32, i32), usize)> = tiles
+    let mut large: Vec<((i32, i32), usize)> = tiles
         .par_iter()
         .flat_map_iter(|(&tile, polys)| {
             let (x0, y0, x1, y1) = core(tile);
@@ -558,8 +650,8 @@ fn overlap_bridges(
     if large.is_empty() {
         return Vec::new();
     }
-    // Which region a copy reaching a tile line belongs to, stitched only when one does;
-    // a copy within its core is a region of its own.
+    large.sort_unstable();
+    // Which region a copy reaching a tile line belongs to, stitched only when one does.
     let crosses = large.iter().any(|&(tile, i)| {
         let (x0, y0, x1, y1) = core(tile);
         let (bx0, by0, bx1, by1) = poly_bbox(&tiles[&tile][i]);
@@ -574,49 +666,17 @@ fn overlap_bridges(
     } else {
         HashMap::new()
     };
-    let targets: Vec<&LayerData> = spec
-        .layers
-        .iter()
-        .chain(std::iter::once(&spec.connector))
-        .filter_map(|k| layers.get(k))
-        .collect();
-    // (group, node) for every overlap; a group is a stitched region, or the copy itself.
-    let mut hits: Vec<(usize, usize, usize)> = large
-        .par_iter()
+    large
+        .into_iter()
         .enumerate()
-        .flat_map_iter(|(n, &(tile, i))| {
-            let p = &tiles[&tile][i];
-            let group = match region_of.get(&(tile, i)) {
+        .map(|(n, (tile, i))| LargeCopy {
+            tile,
+            poly: tiles[&tile][i].clone(),
+            group: match region_of.get(&(tile, i)) {
                 Some(&r) => (0, r),
                 None => (1, n),
-            };
-            let (x0, y0, x1, y1) = core(tile);
-            let (bx0, by0, bx1, by1) = poly_bbox(p);
-            let mut out: Vec<(usize, usize, usize)> = Vec::new();
-            for d in &targets {
-                let Some(pieces) = d.labeled.by_tile.get(&tile) else {
-                    continue;
-                };
-                for (q, r) in pieces {
-                    let (qx0, qy0, qx1, qy1) = poly_bbox(q);
-                    if qx1 <= bx0 || qx0 >= bx1 || qy1 <= by0 || qy0 >= by1 {
-                        continue;
-                    }
-                    if overlap_within(p, q, x0, y0, x1, y1) {
-                        out.push((group.0, group.1, d.base + r));
-                    }
-                }
-            }
-            out
+            },
         })
-        .collect();
-    // Filed in a fixed order, so the union-find - and the net numbers - do not depend
-    // on the order the tiles came back in.
-    hits.sort_unstable();
-    hits.dedup();
-    hits.windows(2)
-        .filter(|w| (w[0].0, w[0].1) == (w[1].0, w[1].1))
-        .map(|w| (w[0].2, w[1].2))
         .collect()
 }
 

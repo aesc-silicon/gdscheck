@@ -3345,6 +3345,43 @@ pub fn stitch_regions(tiles: &TileMap, tile_dbu: i32) -> Vec<Region> {
     stitch_impl(tiles, tile_dbu, false).regions
 }
 
+/// [`stitch_regions`] for a layer of small shapes - contacts, vias: only the copies
+/// reaching a tile line are stitched, and a copy lying strictly inside its core is a
+/// region of its own, read off the polygon.  Forty million contacts built a stitching
+/// piece each, seven gigabytes for regions that are nearly all one square; two of them
+/// meeting at a corner inside one core stay two regions, which a lookup at each reads
+/// alike.  The line-crossing regions come first, then each tile's own, tile by tile.
+pub fn stitch_regions_small(tiles: &TileMap, tile_dbu: i32) -> Vec<Region> {
+    let mut regions = stitch_labeled_indexed(tiles, tile_dbu).regions;
+    let t = tile_dbu as i64;
+    let mut keys: Vec<(i32, i32)> = tiles.keys().copied().collect();
+    keys.sort_unstable();
+    let inner: Vec<Vec<Region>> = keys
+        .par_iter()
+        .map(|&(tx, ty)| {
+            let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+            let (x1, y1) = (x0 + t, y0 + t);
+            tiles[&(tx, ty)]
+                .iter()
+                .filter(|p| {
+                    let (bx0, by0, bx1, by1) = poly_bbox(p);
+                    (bx0 as i64) > x0 && (by0 as i64) > y0 && (bx1 as i64) < x1 && (by1 as i64) < y1
+                })
+                .map(|p| Region {
+                    area_dbu: merged_area_dbu(p),
+                    perimeter_dbu: poly_perimeter_in_core(
+                        p, x0 as f64, y0 as f64, x1 as f64, y1 as f64,
+                    ),
+                    marker: representative_point(p),
+                    anchor: inside_point(p),
+                })
+                .collect()
+        })
+        .collect();
+    regions.extend(inner.into_iter().flatten());
+    regions
+}
+
 /// [`stitch_regions`] with two shapes meeting at one point kept two regions.
 pub fn stitch_regions_cut(tiles: &TileMap, tile_dbu: i32) -> Vec<Region> {
     stitch_from(tiles, tile_dbu, Record::None, None, false)
