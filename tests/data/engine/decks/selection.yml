@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# A selection read whole: the enclosure of what of Inner less Diode lies in Outer.
+# SEL.reach builds Inner at a far larger halo than Diode, so a tile's copy of Inner
+# reaches past the Diode that cuts it.
+rules:
+  - id: SEL.enc
+    check: min_enclosure
+    layers: [Outer, InnerBareInOuter]
+    value: 0.24
+    params:
+      metric: euclidian
+  - id: SEL.reach
+    check: min_space
+    layers: [Inner]
+    value: 5.0

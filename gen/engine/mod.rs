@@ -25,6 +25,7 @@ mod net;
 mod notch;
 mod overlap;
 mod residual;
+mod selection;
 mod shape;
 mod space;
 mod width;
@@ -42,6 +43,7 @@ pub fn generate(pdk: &PdkConfig) {
     notch::generate(pdk);
     overlap::generate(pdk);
     residual::generate(pdk);
+    selection::generate(pdk);
     shape::generate(pdk);
     space::generate(pdk);
     width::generate(pdk);

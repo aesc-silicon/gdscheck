@@ -1191,3 +1191,25 @@ fn residual_rules_read_the_coincident_edge_and_their_ops(
         "{pattern}: {rule}"
     );
 }
+
+/// A selection read whole, over a boolean whose sources reach differently far: what of
+/// Inner less Diode lies in Outer, read by an enclosure, with Inner built 5 µm out and
+/// the Diode that cuts its tab 10 µm from the tile owning half the bar.
+///
+/// - `tab`: the bar 3 µm inside, the tab covered from 16 up: enclosed, 0.
+/// - `tab_short`: the bar 0.2 inside the left wall: 1.  A copy carrying the uncut tab
+///   out of the Outer read as "not enclosed" and hid the margin.
+#[rstest]
+#[case("tab", 0)]
+#[case("tab_short", 1)]
+fn a_whole_selection_keeps_only_what_its_boolean_is(
+    #[case] pattern: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("selection", pattern, "SEL.enc"),
+        expected,
+        "{pattern}"
+    );
+    assert_eq!(count("selection", pattern, "SEL.reach"), 0, "{pattern}");
+}

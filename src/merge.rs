@@ -5271,6 +5271,102 @@ fn build_counted_selection_tiles(
     out
 }
 
+/// Each owner's whole copy of a kept region, cut to what the region really is.  A
+/// boolean's copy is exact out to `reach` round its tile's core and past that holds
+/// whatever the tile's sources happened to hold: an Activ reaching further than the
+/// pSD cut from it keeps the tabs the pSD covers (IHP's SVaricap on
+/// FMD_QNC_UWB_Pulse_Generator, whose N+ Activ then poked out of its well and NW.e
+/// read it as not enclosed).  Handed out whole, that copy carried the tabs to every
+/// reader.  Every point of a region lies in the core of the tile that owns it, where
+/// that tile's copy is exact, so a copy reaching past its zone is cut to the union of
+/// the region's core pieces in the tiles it spans.  Nothing is added and no wall is
+/// made up: only material that is not there goes.  A copy within its zone is left as
+/// it is.
+fn exact_copies(
+    by_tile: HashMap<(i32, i32), Vec<(MergedPoly, usize)>>,
+    matches: &[bool],
+    keep: bool,
+    tile_dbu: i32,
+    reach: i32,
+) -> HashMap<(i32, i32), Vec<(MergedPoly, usize)>> {
+    let t = tile_dbu as i64;
+    let core = |(tx, ty): (i32, i32)| {
+        let (x0, y0) = (tx as i64 * t, ty as i64 * t);
+        (x0, y0, x0 + t, y0 + t)
+    };
+    let (r, cores) = (reach.max(0) as i64, &core);
+    let beyond = |tile: (i32, i32), p: &MergedPoly| {
+        let (x0, y0, x1, y1) = cores(tile);
+        let (bx0, by0, bx1, by1) = poly_bbox(p);
+        (bx0 as i64) < x0 - r
+            || (by0 as i64) < y0 - r
+            || (bx1 as i64) > x1 + r
+            || (by1 as i64) > y1 + r
+    };
+    let suspects: HashSet<usize> = by_tile
+        .par_iter()
+        .flat_map_iter(|(tile, polys)| {
+            polys
+                .iter()
+                .filter(|(p, rid)| matches[*rid] == keep && beyond(*tile, p))
+                .map(|(_, rid)| *rid)
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    if suspects.is_empty() {
+        return by_tile;
+    }
+    // The core pieces of the regions to repair, by region and tile.
+    let mut pieces: HashMap<usize, HashMap<(i32, i32), Vec<MergedPoly>>> = HashMap::new();
+    for (tile, polys) in &by_tile {
+        let (x0, y0, x1, y1) = core(*tile);
+        for (p, rid) in polys {
+            if suspects.contains(rid) {
+                let cut = clip_to_box(vec![p.clone()], x0, y0, x1, y1);
+                pieces
+                    .entry(*rid)
+                    .or_default()
+                    .entry(*tile)
+                    .or_default()
+                    .extend(cut);
+            }
+        }
+    }
+    by_tile
+        .into_par_iter()
+        .map(|(tile, polys)| {
+            let fixed: Vec<(MergedPoly, usize)> = polys
+                .into_iter()
+                .flat_map(|(p, rid)| {
+                    if !suspects.contains(&rid) || !beyond(tile, &p) {
+                        return vec![(p, rid)];
+                    }
+                    let (bx0, by0, bx1, by1) = poly_bbox(&p);
+                    let (tx0, ty0) = ((bx0 as i64).div_euclid(t), (by0 as i64).div_euclid(t));
+                    let (tx1, ty1) = ((bx1 as i64).div_euclid(t), (by1 as i64).div_euclid(t));
+                    let own = &pieces[&rid];
+                    let truth: Vec<MergedPoly> = (tx0..=tx1)
+                        .flat_map(|tx| (ty0..=ty1).map(move |ty| (tx as i32, ty as i32)))
+                        .filter_map(|k| own.get(&k))
+                        .flatten()
+                        .cloned()
+                        .collect();
+                    let cut = tile_shapes(&[p]).overlay(
+                        &tile_shapes(&truth),
+                        OverlayRule::Intersect,
+                        FillRule::NonZero,
+                    );
+                    shapes_to_merged(cut)
+                        .into_iter()
+                        .map(|q| (q, rid))
+                        .collect()
+                })
+                .collect();
+            (tile, fixed)
+        })
+        .collect()
+}
+
 fn build_selection_tiles(
     cand: &TileMap,
     filt: &TileMap,
@@ -5278,6 +5374,7 @@ fn build_selection_tiles(
     keep: bool,
     count: Count,
     tile_dbu: i32,
+    trust: Option<i32>,
 ) -> TileMap {
     // An empty filter means no region matches any predicate — `inside` included, since
     // nothing can be contained in nothing.  Short-circuiting here avoids stitching a
@@ -5387,8 +5484,11 @@ fn build_selection_tiles(
     let t_match = t0.elapsed().as_secs_f64();
     let t0 = std::time::Instant::now();
 
-    let mut out: TileMap = labeled
-        .by_tile
+    let by_tile = match trust {
+        Some(reach) => exact_copies(labeled.by_tile, &matches, keep, tile_dbu, reach),
+        None => labeled.by_tile,
+    };
+    let mut out: TileMap = by_tile
         .into_par_iter()
         .filter_map(|(tile, polys)| {
             let kept: Vec<MergedPoly> = polys
@@ -6845,7 +6945,15 @@ impl MergedCache {
                     .get(1)
                     .map(|s| &*self.layers[s])
                     .unwrap_or(&empty);
-                let tiles = build_selection_tiles(cand, filt, kind, keep, count, self.tile_dbu);
+                // A copy handed on whole is only as good as the candidate's copies are
+                // past their zone; a drawn layer's are exact everywhere, a boolean's are
+                // not (`exact_copies`).
+                let trust = (self.whole_chain.contains(&key)
+                    && !self.clippable.contains(&key)
+                    && self.virtual_defs.contains_key(&def.sources[0]))
+                .then(|| self.layer_halo.get(&def.sources[0]).copied().unwrap_or(0));
+                let tiles =
+                    build_selection_tiles(cand, filt, kind, keep, count, self.tile_dbu, trust);
                 // Stitching hands back one whole copy per region per tile that owns a
                 // piece of it, and nothing in the tiles around - so a consumer that reads
                 // across a tile edge, a rule or a boolean alike, is owed the copies back

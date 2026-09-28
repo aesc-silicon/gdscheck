@@ -36,6 +36,8 @@ decks:
     path: decks/residual.yml
   - name: overlap
     path: decks/overlap.yml
+  - name: selection
+    path: decks/selection.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
@@ -60,6 +62,18 @@ layers:
   - name: Text
     gds_layer: 5
     gds_datatype: 0
+
+# Inner less Diode, and what of it lies whole in Outer: a boolean under a selection
+# that an enclosure reads whole.
+virtual_layers:
+  - name: InnerBare
+    op: difference
+    mode: lazy
+    layers: [Inner, Diode]
+  - name: InnerBareInOuter
+    op: inside
+    mode: lazy
+    layers: [InnerBare, Outer]
 
 # The edges of Outer, for a reach rule read per edge.
 edge_layers:
