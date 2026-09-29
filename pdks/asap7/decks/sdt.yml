@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# SDT, the source/drain trench (DRM section 3.8).
+#
+# Not checked: SDT.W.3, the vertical width as a whole multiple of 27 nm; and the vertical
+# overlaps SDT.ACTIVE.OV.1, SDT.LISD.OV.2 and SRAM.SDT.LISD.OV.4,
+# which SDT.ACTIVE.AUX.2, SDT.LISD.AUX.4 and the SDT widths already bound: an SDT whose
+# horizontal edges lie on ACTIVE's, inside LISD, is as tall as the ACTIVE it sits on.
+# SRAM SDT is exempt from ACTIVE edge alignment, so its overlap needs its own check.
+rules:
+  - id: SDT.W.1
+    check: min_width
+    layers: [SDT]
+    value: 0.024
+    params:
+      facing: x
+  - id: SDT.W.2
+    check: min_width
+    layers: [SdtNoSram]
+    value: 0.027
+    params:
+      facing: y
+  - id: SRAM.SDT.W.4
+    check: min_width
+    layers: [SdtSram]
+    value: 0.017
+    params:
+      facing: y
+  - id: SRAM.SDT.ACTIVE.OV.3
+    check: min_width
+    layers: [SdtSramOnActive]
+    value: 0.017
+    params:
+      facing: y
+  - id: SDT.S.1
+    check: min_space
+    layers: [SDT]
+    value: 0.03
+    params:
+      facing: x
+  - id: SDT.S.1
+    check: min_notch
+    layers: [SDT]
+    value: 0.03
+    params:
+      facing: x
+  - id: SDT.GATE.S.2
+    check: min_space
+    layers: [SDT, GATE]
+    value: 0.005
+    params:
+      facing: x
+  - id: SDT.GATE.AUX.1
+    check: forbidden
+    layers: [SdtOnGate]
+    value: 0.0
+  - id: SDT.ACTIVE.AUX.2
+    check: forbidden
+    layers: [SdtHEdgesOffActive]
+    value: 0.0
+  - id: SDT.ACTIVE.AUX.3
+    check: forbidden
+    layers: [SdtOffActive]
+    value: 0.0
+  - id: SDT.LISD.AUX.4
+    check: forbidden
+    layers: [SDT, LISD]
+    value: 0.0
+    params:
+      op: uncovered

@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V3, the via from M3 to M4 (DRM section 3.13).  V1.M1.EN.1's "5 & 2" is read as two
+# rules under one id: 2 nm on a pair of opposite sides, and 5 nm on one side.
+#
+# Not checked: V3.S.3 and V3.S.4 (see V3.S.2).
+rules:
+  - id: V3.W.1
+    check: min_width
+    layers: [V3]
+    value: 0.018
+  - id: V3.S.1
+    check: min_space
+    layers: [V3]
+    value: 0.018
+  # The loosest of the corner-to-corner spacings V3.S.2-4, which differ by
+  # whether each via has a 5 nm M4 end-cap: that is not told apart here, so a
+  # pair between 23 and 30 nm corner to corner is not read.
+  - id: V3.S.2
+    check: min_space
+    layers: [V3]
+    value: 0.023
+    params:
+      facing: none
+  - id: V3.M3.EN.1
+    check: min_enclosure
+    layers: [M3, V3]
+    value: 0.005
+    params:
+      sides: opposite
+  - id: V3.M4.EN.2
+    check: min_enclosure
+    layers: [M4, V3]
+    value: 0.011
+    params:
+      sides: opposite
+  - id: V3.AUX.1
+    check: forbidden
+    layers: [V3, M3]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: V3.AUX.1
+    check: forbidden
+    layers: [V3, M4]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: V3.M4.AUX.2
+    check: max_enclosure
+    layers: [M4, V3]
+    value: 0.0
+    params:
+      sides: opposite

@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# LIG, the gate local interconnect (DRM section 3.10).
+#
+# The LIG-to-LISD and LIG-to-SDT spacings are the manual's "not on the same net" read
+# geometrically: an LIG that overlaps an LISD is joined to it and no pair, and every
+# other pair is measured.
+rules:
+  - id: LIG.W.1
+    check: min_width
+    layers: [LIG]
+    value: 0.016
+  - id: LIG.S.1
+    check: min_space
+    layers: [LIG.long, LIG.long]
+    value: 0.018
+  - id: LIG.S.2
+    check: min_space
+    layers: [LIG.short, LIG.long]
+    value: 0.025
+  - id: LIG.S.3
+    check: min_space
+    layers: [LigNoSram.mid, LigNoSram.mid]
+    value: 0.027
+  - id: LIG.S.4
+    check: min_space
+    layers: [LigNoSram.tiny, LigNoSram.tiny]
+    value: 0.031
+  - id: LIG.S.5
+    check: min_space
+    layers: [LigNoSram.mid, LigNoSram.tiny]
+    value: 0.031
+  - id: LIG.LISD.S.6
+    check: min_space
+    layers: [LIG, LISD]
+    value: 0.014
+  - id: LIG.LISD.S.7
+    check: min_space
+    layers: [LIG, LISD]
+    value: 0.015
+    params:
+      facing: none
+  - id: LIG.SDT.S.8
+    check: min_space
+    layers: [LIG, SDT]
+    value: 0.014
+  - id: LIG.GATE.S.9A
+    check: min_space
+    layers: [LIG, GateNoCut]
+    value: 0.014
+    params:
+      facing: y
+  - id: LIG.GATE.S.9B
+    check: min_space
+    layers: [LIG, GateNoCut]
+    value: 0.017
+    params:
+      facing: x
+  - id: LIG.GATE.S.10
+    check: min_space
+    layers: [LIG, ChannelNoCut]
+    value: 0.005
+  - id: LIG.GCUT.S.11
+    check: min_space
+    layers: [LIG, GCUT]
+    value: 0.005
+    params:
+      facing: y
+  - id: LIG.A.1
+    check: min_area
+    layers: [LIG]
+    value: 0.000324
+  - id: LIG.LISD.A.2
+    check: min_area
+    layers: [LigOnLisd]
+    value: 0.000128
+  - id: LIG.GATE.A.3
+    check: min_area
+    layers: [LigNoSramOnGate]
+    value: 0.00032
+  - id: SRAM.LIG.GATE.A.4
+    check: min_area
+    layers: [LigSramOnGate]
+    value: 0.00024
+  - id: LIG.GATE.AUX.1
+    check: forbidden
+    layers: [LigVEdgesInside]
+    value: 0.0
+  - id: LIG.GATE.AUX.1
+    check: forbidden
+    layers: [LigVEdgesOnGate]
+    value: 0.0
+  - id: SRAM.LIG.AUX.2
+    check: forbidden
+    layers: [LigAbutSram]
+    value: 0.0
+  - id: LIG.GATE.EX.1
+    check: min_enclosure
+    layers: [LigNoSram, GateNoCut]
+    value: 0.001
+    params:
+      facing: x
+      interacting_only: 1
+  - id: LIG.LISD.OV.1
+    check: min_overlap
+    layers: [LIG, LISD]
+    value: 0.008
+  - id: SRAM.LIG.GATE.OV.2
+    check: min_overlap
+    layers: [LigSram, GateNoCut]
+    value: 0.015

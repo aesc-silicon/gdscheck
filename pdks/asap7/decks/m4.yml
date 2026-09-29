@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M4 (DRM section 3.14).  M4 routes horizontally: its width across the track and the space
+# between tracks read the walls facing across y, its length and the tip-to-tip
+# space those facing across x.
+#
+# Not checked: M4.W.3 and M4.W.4, a width that is an even multiple of the minimum;
+# M4.S.4 and M4.S.5, the tip-to-tip space and the run two lines on adjacent tracks share;
+# and M4.AUX.1, M4.AUX.2 and M4.AUX.4, the routing grid and tracks, which the manual
+# places by an offset set per design.
+rules:
+  - id: M4.W.1
+    check: min_width
+    layers: [M4]
+    value: 0.024
+    params:
+      facing: y
+  - id: M4.W.2
+    check: max_width
+    layers: [M4]
+    value: 0.48
+    params:
+      # Apply facing even when the perpendicular dimension is smaller.
+      span: any
+      facing: y
+  - id: M4.W.5
+    check: min_width
+    layers: [M4]
+    value: 0.044
+    params:
+      facing: x
+  - id: M4.S.1
+    check: min_space
+    layers: [M4]
+    value: 0.024
+    params:
+      facing: y
+  - id: M4.S.1
+    check: min_notch
+    layers: [M4]
+    value: 0.024
+    params:
+      facing: y
+  - id: M4.S.2
+    check: min_space
+    layers: [M4]
+    value: 0.04
+    params:
+      facing: x
+  - id: M4.S.2
+    check: min_notch
+    layers: [M4]
+    value: 0.04
+    params:
+      facing: x
+  # Two tips on adjacent tracks that share no run face each other nowhere.
+  - id: M4.S.3
+    check: min_space
+    layers: [M4]
+    value: 0.04
+    params:
+      facing: none
+  - id: M4.AUX.3
+    check: forbidden
+    layers: [M4Bent]
+    value: 0.0

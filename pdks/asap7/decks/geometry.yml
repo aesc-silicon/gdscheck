@@ -1,0 +1,146 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Non-orthogonal shapes (DRM section 3.1): every drawn layer is Manhattan.
+rules:
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [NWELL]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [FIN]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [GATE]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [GCUT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [ACTIVE]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SDT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [NSELECT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [PSELECT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SLVT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [LVT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SRAMVT]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SRAMDRC]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [DUMMY]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [LIG]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [LISD]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V0]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M1]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V1]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M2]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V2]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M3]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V3]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M4]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V4]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M5]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V5]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M6]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V6]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M7]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V7]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M8]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V8]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M9]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V9]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [PAD]
+    value: 0.0
