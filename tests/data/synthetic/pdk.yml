@@ -26,25 +26,19 @@ decks:
     path: decks/deckA.yml
   - name: deckB
     path: decks/deckB.yml
-  # An inside_boundary rule pointed at a lazy virtual layer — must be rejected.
+  # A `forbidden` past a boundary pointed at a lazy virtual layer — must be rejected.
   - name: badlazy
     path: decks/badlazy.yml
 
 virtual_layers:
-  # GlobalDiff is materialised eagerly (compute_virtual_layers); LazyDiff is built
-  # per tile in the merge cache.  Both = LayerA NOT LayerB.
-  - name: GlobalDiff
-    op: difference
-    mode: global
-    layers: [LayerA, LayerB]
-  - name: LazyDiff
-    op: difference
-    mode: lazy
-    layers: [LayerA, LayerB]
+  # Both are LayerA NOT LayerB; which is materialised in the layout and which is built
+  # per tile in the merge cache is decided by the checks that read them.
+  GlobalDiff: LayerA not LayerB
+  LazyDiff: LayerA not LayerB
   # `inside`: LayerA restricted to the area enclosed by the LayerB ring (filled).
-  - name: InsideRing
-    op: inside_ring
-    layers: [LayerA, LayerB]
+  InsideRing: LayerA inside_ring LayerB
+  # A derivation that only exists in the tiled cache: no whole-layout check can read it.
+  Grown: LayerA grow 1.0
 
 layers:
   - name: LayerA

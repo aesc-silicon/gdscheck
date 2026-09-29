@@ -14,7 +14,7 @@ use gdscheck::layout::FlatLayout;
 use gdscheck::merge::{MergedCache, VirtualOp, difference_layers, merged_area_dbu};
 use gdscheck::pdk::PdkConfig;
 use gdscheck::run_drc;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 // ---------------------------------------------------------------------------
 // Hierarchy flattening (src/flatten.rs)
@@ -248,7 +248,10 @@ fn virtual_layers_ops() {
     put(&mut layout, "Passiv.sbump", 100); // coincides with dfpad@100 -> SBumpPad
     put(&mut layout, "Passiv", 300); // for the Pad union only
 
-    pdk.compute_virtual_layers(&mut layout, 0.001);
+    // Only Pad is materialised in the layout; the two pad recognitions stay lazy, as
+    // `eager_layers` would leave them for a deck that reads them per tile.
+    let eager: HashSet<String> = ["Pad"].iter().map(|s| s.to_string()).collect();
+    pdk.compute_virtual_layers(&mut layout, 0.001, &eager);
 
     // Sorted min-x of each shape on a (virtual) layer.
     let minxs = |name: &str| -> Vec<i32> {
@@ -338,7 +341,8 @@ fn lazy_tiled_union_intersection_difference() {
 fn eager_global_difference_materialises_lazy_does_not() {
     let pdk = PdkConfig::load(SYNTH).expect("load synthetic pdk");
     let mut layout = layout_a_b();
-    pdk.compute_virtual_layers(&mut layout, 0.001);
+    let eager: HashSet<String> = ["GlobalDiff".to_string()].into_iter().collect();
+    pdk.compute_virtual_layers(&mut layout, 0.001, &eager);
 
     let gd = pdk.layer("GlobalDiff").expect("GlobalDiff registered");
     let shapes = layout.get(gd.gds_layer as i16, gd.gds_datatype as i16);
@@ -379,7 +383,8 @@ fn inside_ring_op_fills_ring_and_keeps_only_enclosed() {
     layout.insert(1, 0, dbu_rect(1, 0, 40, 40, 50, 50)); // inside  -> kept
     layout.insert(1, 0, dbu_rect(1, 0, 110, 40, 120, 50)); // outside -> dropped
 
-    pdk.compute_virtual_layers(&mut layout, 0.001);
+    let eager: HashSet<String> = ["InsideRing".to_string()].into_iter().collect();
+    pdk.compute_virtual_layers(&mut layout, 0.001, &eager);
 
     let r = pdk.layer("InsideRing").expect("InsideRing registered");
     let shapes = layout.get(r.gds_layer as i16, r.gds_datatype as i16);
@@ -394,14 +399,15 @@ fn inside_ring_op_fills_ring_and_keeps_only_enclosed() {
     );
 }
 
-/// #2 — a lazy virtual layer under a whole-layout check (`forbidden` past a boundary) is
-/// rejected up front (before any GDS is read).
+/// #2 — a whole-layout check (`forbidden` past a boundary) on a layer whose op only
+/// exists in the tiled cache is rejected up front (before any GDS is read), naming the
+/// rule.
 #[test]
-fn lazy_layer_in_whole_layout_check_is_rejected() {
+fn unmaterialisable_layer_in_whole_layout_check_is_rejected() {
     let err = run_drc("unused.gds", SYNTH, &["badlazy"], None, "TOP", true)
-        .expect_err("lazy layer under a whole-layout check must error");
+        .expect_err("a grown layer under a whole-layout check must error");
     assert!(
-        err.contains("lazy virtual layer"),
+        err.contains("BAD.1") && err.contains("`grow`"),
         "unexpected error: {err}"
     );
 }

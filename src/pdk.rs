@@ -199,40 +199,23 @@ pub struct Layer {
     pub gds_datatype: u16,
 }
 
-/// How a virtual layer is evaluated.
-#[derive(Debug, Deserialize, Clone, Copy, Default, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum VirtualMode {
-    /// Materialised globally into the layout up front (default).  Required for
-    /// layers consumed by whole-layout checks such as `forbidden` past a boundary.
-    #[default]
-    Global,
-    /// Built lazily per tile inside the merge cache from its source layers' tiles.
-    /// Avoids a global boolean over a dense layer; use for layers consumed only by
-    /// tiled geometric checks (e.g. `ContNoSealring`).
-    Lazy,
-}
-
-#[derive(Debug, Deserialize, Clone)]
+/// A derived region layer: one operation of a sentence under `virtual_layers:` (see
+/// [`crate::expr`]), lowered to the op and the source names the merge cache builds it
+/// from.
+#[derive(Debug, Clone)]
 pub struct VirtualLayerDef {
     pub name: String,
     pub op: String,
     pub layers: Vec<String>,
-    #[serde(default)]
-    pub mode: VirtualMode,
     /// Distance (µm) for parameterised ops such as `close` (the half-merge radius).
-    #[serde(default)]
     pub radius: Option<f64>,
     /// Text pattern for the `with_text` op (exact match, or prefix if it ends in `*`).
-    #[serde(default)]
     pub text: Option<String>,
     /// Inclusive lower bound (µm) for the `with_bbox_min`/`with_bbox_max` filters;
     /// absent means unbounded below.
-    #[serde(default)]
     pub min: Option<f64>,
     /// Exclusive upper bound (µm) for the `with_bbox_min`/`with_bbox_max` filters;
     /// absent means unbounded above.
-    #[serde(default)]
     pub max: Option<f64>,
     /// Extra reach (µm) for `grow`, beyond its radius.  Absent means none.
     ///
@@ -244,27 +227,24 @@ pub struct VirtualLayerDef {
     /// Wanted nowhere else, and it used to be the default: a band that decides which of
     /// two limits applies, or a region a rule must not reach into, is judged wrong by any
     /// slack at all.  That cost five rules across four decks before the default was
-    /// flipped, each one over-reporting plausibly rather than failing.
-    #[serde(default)]
+    /// flipped, each one over-reporting plausibly rather than failing.  A sentence says
+    /// it with the word `within` in place of `grow`.
     pub slack: Option<f64>,
 }
 
-/// A derived *edge* layer: boundary segments rather than regions.  Declared in
-/// `pdk.yml` under `edge_layers:` and referenced by rules exactly like any other layer.
+/// A derived *edge* layer: boundary segments rather than regions.  One operation of a
+/// sentence whose left side is an edge layer, or `edges`/`width_below` on a region.
 ///
 /// `min`/`max` carry the op's bounds — µm for the length filters, degrees for the angle
 /// ones — and are ignored by the ops that take none.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct EdgeLayerDef {
     pub name: String,
     pub op: String,
     pub layers: Vec<String>,
-    #[serde(default)]
     pub min: Option<f64>,
-    #[serde(default)]
     pub max: Option<f64>,
     /// `centers` only: the middle part to keep, as a fraction of each edge's length.
-    #[serde(default)]
     pub fraction: Option<f64>,
 }
 
@@ -432,8 +412,9 @@ struct PdkRaw {
     pub name: String,
     pub version: String,
     /// Optional base `pdk.yml` (path relative to this file, or a bare process name for
-    /// the base beside it) whose `layers` and `virtual_layers` are inherited — this PDK's own entries are appended after
-    /// them.  Everything else (`decks`, `suites`, `connectivity`) always comes from
+    /// the base beside it) whose `layers` and `virtual_layers` are inherited — this
+    /// PDK's own entries are appended after them, and one under a base name replaces
+    /// the base one.  Everything else (`decks`, `suites`, `connectivity`) always comes from
     /// this file, so a derived process (e.g. SG13CMOS5L extending SG13G2) states its
     /// own deck list and connect graph explicitly while reusing the big layer and
     /// recognition tables.  One level only: the base may not itself extend.
@@ -445,11 +426,10 @@ struct PdkRaw {
     /// Suites import a selection of rules from decks (e.g. `precheck`, `main`).
     #[serde(default)]
     pub suites: Vec<DeckRefRaw>,
+    /// Derived layers, region and edge alike: a name and the sentence that makes it,
+    /// in the order the file gives them.  See [`crate::expr`].
     #[serde(default)]
-    pub virtual_layers: Vec<VirtualLayerDef>,
-    /// Derived edge layers (boundary segments rather than regions).
-    #[serde(default)]
-    pub edge_layers: Vec<EdgeLayerDef>,
+    pub virtual_layers: serde_norway::Mapping,
     /// Electrical connect graph for net extraction (used by net-aware checks).
     #[serde(default)]
     pub connectivity: Vec<ConnectivityRaw>,
@@ -620,33 +600,42 @@ impl PdkConfig {
             let mut waivers = base.waivers;
             waivers.extend(raw.waivers);
             raw.waivers = waivers;
-            // Base virtuals first, the child's appended; a child entry with the same
-            // name *replaces* the base one (keep the last of each name).
-            let mut edges = base.edge_layers;
-            edges.extend(raw.edge_layers);
-            raw.edge_layers = edges;
-            let mut virtuals = base.virtual_layers;
-            virtuals.extend(raw.virtual_layers);
-            virtuals.reverse();
-            let mut seen: HashSet<String> = HashSet::new();
-            virtuals.retain(|v| seen.insert(v.name.clone()));
-            virtuals.reverse();
-            raw.virtual_layers = virtuals;
+            // Base derivations first, the child's appended; a child entry under a base
+            // name *replaces* the base one, in the child's position.
+            let mut merged = base.virtual_layers;
+            for (k, v) in raw.virtual_layers {
+                merged.shift_remove(&k);
+                merged.insert(k, v);
+            }
+            raw.virtual_layers = merged;
         }
 
-        // A name may be declared once. A virtual layer's synthetic number comes from its
-        // position in the list, so a second declaration under the same name leaves the
-        // first one built but unreachable and every rule naming it silently measuring the
-        // other — which is exactly as quiet, and as wrong, as it sounds. (The `extends`
-        // merge above has already collapsed a child's deliberate override of a base
-        // entry, so anything left here is a collision within one file.)
+        // The derived layers, as sentences.  A name may be declared once: a virtual
+        // layer's synthetic number comes from its position, so a second declaration
+        // under the same name would leave the first one built but unreachable and every
+        // rule naming it silently measuring the other.  (YAML itself refuses a key given
+        // twice in one mapping; this catches a sentence named like a drawn layer.)
+        let mut sentences: Vec<(String, String)> = Vec::with_capacity(raw.virtual_layers.len());
+        for (k, v) in &raw.virtual_layers {
+            let (Some(name), Some(sentence)) = (k.as_str(), v.as_str()) else {
+                return Err(format!(
+                    "virtual layer {k:?}: a name and a sentence, as `name: a and b`"
+                )
+                .into());
+            };
+            if crate::expr::is_op_word(name) {
+                return Err(
+                    format!("virtual layer '{name}': `{name}` is an operation word").into(),
+                );
+            }
+            sentences.push((name.to_string(), sentence.to_string()));
+        }
         let mut declared: HashSet<&str> = HashSet::new();
         for name in raw
             .layers
             .iter()
             .map(|l| l.name.as_str())
-            .chain(raw.virtual_layers.iter().map(|v| v.name.as_str()))
-            .chain(raw.edge_layers.iter().map(|e| e.name.as_str()))
+            .chain(sentences.iter().map(|(n, _)| n.as_str()))
         {
             if !declared.insert(name) {
                 return Err(format!("layer '{name}' is declared more than once").into());
@@ -659,30 +648,59 @@ impl PdkConfig {
             .map(|l| (l.name.clone(), l))
             .collect();
 
-        // Register virtual layers in the layer map with synthetic GDS numbers
-        // so that rules can reference them by name just like real layers.
-        for (i, vl) in raw.virtual_layers.iter().enumerate() {
-            layer_map.insert(
-                vl.name.clone(),
-                Layer {
-                    name: vl.name.clone(),
-                    gds_layer: VIRTUAL_LAYER_BASE + i as u16,
-                    gds_datatype: 0,
-                },
-            );
+        // What kind of layer each name is, so a sentence can be typed against the names
+        // it uses - including ones declared after it.  Every drawn layer is a region; a
+        // sentence's kind follows from its words, read with the table so far, and the
+        // passes repeat until a pass changes nothing, so a chain of forward references
+        // settles however long it is.  A sentence that does not type yet is left as a
+        // region for now; the lowering below reports what is really wrong with it.
+        let mut kinds: HashMap<String, crate::expr::Kind> = layer_map
+            .keys()
+            .map(|n| (n.clone(), crate::expr::Kind::Poly))
+            .collect();
+        for (name, _) in &sentences {
+            kinds.insert(name.clone(), crate::expr::Kind::Poly);
         }
-        // Edge layers continue the same synthetic range, so a rule names one exactly as
-        // it names a drawn or virtual layer; the cache decides which kind it is.
-        let edge_base = VIRTUAL_LAYER_BASE + raw.virtual_layers.len() as u16;
-        for (i, el) in raw.edge_layers.iter().enumerate() {
-            layer_map.insert(
-                el.name.clone(),
-                Layer {
-                    name: el.name.clone(),
-                    gds_layer: edge_base + i as u16,
-                    gds_datatype: 0,
-                },
-            );
+        for _ in 0..=sentences.len() {
+            let mut changed = false;
+            for (name, sentence) in &sentences {
+                let lookup = |n: &str| kinds.get(n).copied();
+                let kind = crate::expr::kind_of_sentence(sentence, &lookup)
+                    .unwrap_or(crate::expr::Kind::Poly);
+                if kinds.insert(name.clone(), kind) != Some(kind) {
+                    changed = true;
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+
+        // Lower every sentence to the derived layers it needs, and register each under a
+        // synthetic GDS number in the order lowered, so a rule names one exactly as it
+        // names a drawn layer and the cache decides which kind it is.
+        let mut virtual_layers = Vec::new();
+        let mut edge_layers = Vec::new();
+        let mut next = VIRTUAL_LAYER_BASE;
+        for (name, sentence) in &sentences {
+            let lookup = |n: &str| kinds.get(n).copied();
+            let defs = crate::expr::lower(name, sentence, &lookup)
+                .map_err(|e| format!("virtual layer '{name}': {e}"))?;
+            for def in defs {
+                layer_map.insert(
+                    def.name().to_string(),
+                    Layer {
+                        name: def.name().to_string(),
+                        gds_layer: next,
+                        gds_datatype: 0,
+                    },
+                );
+                next += 1;
+                match def {
+                    crate::expr::Def::Poly(v) => virtual_layers.push(v),
+                    crate::expr::Def::Edge(e) => edge_layers.push(e),
+                }
+            }
         }
 
         // Deck paths stay relative to the PDK; the source resolves them at load.
@@ -731,8 +749,8 @@ impl PdkConfig {
             version: raw.version,
             decks,
             suites,
-            virtual_layers: raw.virtual_layers,
-            edge_layers: raw.edge_layers,
+            virtual_layers,
+            edge_layers,
             connectivity,
             waivers: raw.waivers,
             layer_map,
@@ -747,6 +765,68 @@ impl PdkConfig {
     /// Every layer the PDK names, drawn and derived, by name.
     pub fn layers(&self) -> impl Iterator<Item = (&str, &Layer)> {
         self.layer_map.iter().map(|(n, l)| (n.as_str(), l))
+    }
+
+    /// The virtual layers `rules` need materialised in the layout rather than built per
+    /// tile: the ones a whole-layout check reads (see
+    /// [`crate::checks::reads_layout`]) and the ones whose op has no tiled
+    /// form.  A layer that must be eager but cannot be - its op only exists tiled, or it
+    /// is built from another virtual layer - is an error naming the rule that asked.
+    pub fn eager_layers(&self, rules: &[RuleDefinition]) -> Result<HashSet<String>, String> {
+        let by_name: HashMap<&str, &VirtualLayerDef> = self
+            .virtual_layers
+            .iter()
+            .map(|v| (v.name.as_str(), v))
+            .collect();
+        let mut eager: HashMap<String, String> = HashMap::new();
+        for v in &self.virtual_layers {
+            if v.op == "inside_ring" {
+                eager.insert(v.name.clone(), "its op, inside_ring".into());
+            }
+        }
+        for rule in rules {
+            if !crate::checks::reads_layout(rule) {
+                continue;
+            }
+            for l in rule.layers.iter().chain(rule.ignore.iter()) {
+                if by_name.contains_key(l.name.as_str()) {
+                    eager
+                        .entry(l.name.clone())
+                        .or_insert_with(|| format!("rule {} ({})", rule.id, rule.check));
+                }
+                if self.edge_layers.iter().any(|e| e.name == l.name) {
+                    return Err(format!(
+                        "Rule '{}' ({}) reads the whole layout and names the edge layer \
+                         '{}', which only exists in the tiled cache",
+                        rule.id, rule.check, l.name
+                    ));
+                }
+            }
+        }
+        for (name, why) in &eager {
+            let v = by_name[name.as_str()];
+            if !matches!(
+                v.op.as_str(),
+                "union" | "intersection" | "difference" | "inside_ring" | "close"
+            ) {
+                return Err(format!(
+                    "virtual layer '{name}' must be materialised for {why}, but `{}` only \
+                     exists in the tiled cache",
+                    v.op
+                ));
+            }
+            for src in &v.layers {
+                if by_name.contains_key(src.as_str())
+                    || self.edge_layers.iter().any(|e| &e.name == src)
+                {
+                    return Err(format!(
+                        "virtual layer '{name}' must be materialised for {why}, but it is \
+                         built from the virtual layer '{src}', which is not"
+                    ));
+                }
+            }
+        }
+        Ok(eager.into_keys().collect())
     }
 
     /// Convert a merged region's **outer ring** to a closed `GdsBoundary` on
@@ -781,15 +861,21 @@ impl PdkConfig {
         }
     }
 
-    /// Compute virtual layers from the layout and insert them into the layout.
-    /// Uses only the boundaries already in the layout so virtual layers cannot
-    /// reference each other.
-    pub fn compute_virtual_layers(&self, layout: &mut FlatLayout, dbu_to_um: f64) {
+    /// Materialise the virtual layers named in `eager` into the layout, from the
+    /// boundaries already there.  Every other virtual layer is built per tile in the
+    /// merge cache instead; see [`Self::eager_layers`] for which ones are named here.
+    /// Uses only the boundaries already in the layout, so an eager layer cannot be
+    /// built from another virtual layer.
+    pub fn compute_virtual_layers(
+        &self,
+        layout: &mut FlatLayout,
+        dbu_to_um: f64,
+        eager: &HashSet<String>,
+    ) {
         let mut to_insert: Vec<(i16, i16, GdsBoundary)> = vec![];
 
         for vl_def in &self.virtual_layers {
-            // Lazy layers are built per tile in the merge cache, not materialised here.
-            if vl_def.mode == VirtualMode::Lazy {
+            if !eager.contains(&vl_def.name) {
                 continue;
             }
             let Some(vl_layer) = self.layer_map.get(&vl_def.name) else {
@@ -1031,10 +1117,10 @@ impl PdkConfig {
         out
     }
 
-    /// Lazy (tiled) virtual layers, resolved to GDS numbers: `(synthetic key, op,
-    /// source keys)`.  `run_drc` registers these with the merge cache so they are
-    /// built per tile on demand.  Sources/keys that don't resolve are skipped.
-    pub fn tiled_virtual_layers(&self) -> Vec<TiledVirtualSpec> {
+    /// The virtual layers built per tile in the merge cache - every one not named in
+    /// `eager` - resolved to GDS numbers: `(synthetic key, op, source keys)`.
+    /// Sources/keys that don't resolve are skipped.
+    pub fn tiled_virtual_layers(&self, eager: &HashSet<String>) -> Vec<TiledVirtualSpec> {
         let key = |name: &str| {
             self.layer_map
                 .get(name)
@@ -1042,7 +1128,7 @@ impl PdkConfig {
         };
         let mut out = Vec::new();
         for vl in &self.virtual_layers {
-            if vl.mode != VirtualMode::Lazy {
+            if eager.contains(&vl.name) {
                 continue;
             }
             let Some(vkey) = key(&vl.name) else { continue };

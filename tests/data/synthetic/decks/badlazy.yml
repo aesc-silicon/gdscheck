@@ -7,7 +7,7 @@
 rules:
   - id: BAD.1
     check: forbidden
-    layers: [LazyDiff]
+    layers: [Grown]
     value: 0.0
     params:
       op: beyond

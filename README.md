@@ -179,9 +179,7 @@ decks:
     description: Metal 2
 
 virtual_layers:
-  - name: Pad
-    op: union
-    layers: [Passiv, Passiv.sbump, Passiv.pillar, dfpad]
+  Pad: Passiv or Passiv.sbump or Passiv.pillar or dfpad
 
 layers:
   - name: Metal2

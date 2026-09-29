@@ -154,15 +154,6 @@ connectivity:
     layers: [NWell, NWellExt, ActivSD]
 
 virtual_layers:
-  - name: DfpadNoTopMetal1
-    op: difference
-    mode: lazy
-    layers: [dfpad, TopMetal1]
-  - name: Metal4Dfpad
-    op: intersection
-    mode: lazy
-    layers: [Metal4, dfpad]
-  - name: TopVia1UnderPad
-    op: intersection
-    mode: lazy
-    layers: [TopVia1, PassivDfpad]
+  DfpadNoTopMetal1: dfpad not TopMetal1
+  Metal4Dfpad: Metal4 and dfpad
+  TopVia1UnderPad: TopVia1 and PassivDfpad

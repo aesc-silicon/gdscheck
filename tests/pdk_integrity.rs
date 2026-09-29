@@ -18,8 +18,7 @@
 //! they belong here rather than in any one PDK's test file.
 
 use gdscheck::parse_virtual_op;
-use gdscheck::pdk::{PdkConfig, VirtualMode};
-use std::collections::HashSet;
+use gdscheck::pdk::PdkConfig;
 
 /// A PDK's own `pdk.yml` as raw YAML.  The parsed `PdkConfig` has already discarded the
 /// layer *names* in the connect graph (they are resolved to GDS keys, and unresolvable
@@ -55,76 +54,74 @@ fn every_declared_deck_and_suite_loads() {
     }
 }
 
-/// Every virtual layer's `op` must parse, with whatever `radius`/`min`/`max` the entry
-/// carries. A typo'd op is already a hard error at run time (`run_drc`), but only once a
-/// deck references that layer — assert it up front for all of them.
+/// Every derived layer's `op` must parse, with whatever `radius`/`min`/`max` the
+/// sentence gave it.  The sentence parser has already typed each op against its
+/// operands at load; this asks the merge cache's own parser, which is what runs.
 #[test]
 fn every_virtual_layer_op_parses() {
     for process in processes() {
         let pdk = PdkConfig::for_process(process).unwrap();
         for vl in &pdk.virtual_layers {
-            // Eager ops are dispatched by name in `compute_virtual_layers`, not through
-            // `parse_virtual_op`, so only the lazy ones are checked here.
-            if vl.mode != VirtualMode::Lazy {
-                continue;
+            if vl.op == "inside_ring" {
+                continue; // eager only: dispatched by name in `compute_virtual_layers`
             }
             parse_virtual_op(&vl.op, vl.radius, vl.min, vl.max, vl.slack, 0.001)
                 .unwrap_or_else(|e| panic!("{process}: virtual layer '{}': {e}", vl.name));
         }
-    }
-}
-
-/// Every source layer a virtual layer names must resolve. An unresolved source is
-/// reported to stderr at run time and the layer comes out empty, which reads as "no
-/// violations" rather than as a broken PDK.
-#[test]
-fn every_virtual_layer_source_resolves() {
-    for process in processes() {
-        let pdk = PdkConfig::for_process(process).unwrap();
-        for vl in &pdk.virtual_layers {
-            assert!(
-                pdk.layer(&vl.name).is_some(),
-                "{process}: virtual layer '{}' has no assigned layer number",
-                vl.name
-            );
-            for src in &vl.layers {
-                assert!(
-                    pdk.layer(src).is_some(),
-                    "{process}: virtual layer '{}' names unknown source '{src}'",
-                    vl.name
-                );
-            }
-            assert!(
-                !vl.layers.contains(&vl.name),
-                "{process}: virtual layer '{}' references itself",
-                vl.name
-            );
+        for el in &pdk.edge_layers {
+            gdscheck::parse_edge_op(&el.op, el.min, el.max, el.fraction, 0.001)
+                .unwrap_or_else(|e| panic!("{process}: edge layer '{}': {e}", el.name));
         }
     }
 }
 
-/// A virtual layer chain is only legal when the *consumer* is lazy: eager layers are
-/// materialised from the flattened layout in one pass, so a source that is itself
-/// virtual has not been built yet and contributes nothing.
+/// Every source a derived layer names must resolve, and none may name itself.  The
+/// sentence parser refuses an unknown name at load, so this guards the lowering: an
+/// inner layer it invented has to be registered like any other.
 #[test]
-fn eager_virtual_layers_do_not_chain() {
+fn every_virtual_layer_source_resolves() {
     for process in processes() {
         let pdk = PdkConfig::for_process(process).unwrap();
-        let virtual_names: HashSet<&str> =
-            pdk.virtual_layers.iter().map(|v| v.name.as_str()).collect();
-        for vl in &pdk.virtual_layers {
-            if vl.mode == VirtualMode::Lazy {
-                continue;
-            }
-            for src in &vl.layers {
+        let all: Vec<(&str, &[String])> = pdk
+            .virtual_layers
+            .iter()
+            .map(|v| (v.name.as_str(), v.layers.as_slice()))
+            .chain(
+                pdk.edge_layers
+                    .iter()
+                    .map(|e| (e.name.as_str(), e.layers.as_slice())),
+            )
+            .collect();
+        for (name, layers) in all {
+            assert!(
+                pdk.layer(name).is_some(),
+                "{process}: derived layer '{name}' has no assigned layer number"
+            );
+            for src in layers {
                 assert!(
-                    !virtual_names.contains(src.as_str()),
-                    "{process}: eager virtual layer '{}' sources the virtual layer \
-                     '{src}', which is not materialised yet — mark '{}' `mode: lazy`",
-                    vl.name,
-                    vl.name
+                    pdk.layer(src).is_some(),
+                    "{process}: derived layer '{name}' names unknown source '{src}'"
+                );
+                assert_ne!(
+                    src, name,
+                    "{process}: derived layer '{name}' references itself"
                 );
             }
+        }
+    }
+}
+
+/// Every layer a deck's whole-layout checks read has to be one the layout can hold:
+/// built by an eager op from drawn layers.  `eager_layers` refuses the others with the
+/// rule's name; asked here for every deck so the refusal surfaces before a run does.
+#[test]
+fn every_deck_can_materialise_what_its_whole_layout_checks_read() {
+    for process in processes() {
+        let pdk = PdkConfig::for_process(process).unwrap();
+        for deck in &pdk.decks {
+            let rules = pdk.load_deck(&deck.name).unwrap();
+            pdk.eager_layers(&rules)
+                .unwrap_or_else(|e| panic!("{process}: deck '{}': {e}", deck.name));
         }
     }
 }

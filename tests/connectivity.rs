@@ -20,12 +20,14 @@ fn extract(process: &str, fixture: &str) -> (Connectivity, f64) {
     let dbu_to_um = lib.units.1 * 1e6;
 
     let mut layout = flatten::flatten_to_elems("TOP", &lib, None, &[]);
-    pdk.compute_virtual_layers(&mut layout, dbu_to_um);
+    // No rules here, so only the layers whose op has no tiled form are materialised.
+    let eager = pdk.eager_layers(&[]).expect("eager layers");
+    pdk.compute_virtual_layers(&mut layout, dbu_to_um, &eager);
 
     let tile_dbu = (merge::TILE_UM / dbu_to_um).round() as i32;
     let halo_dbu = (merge::MIN_HALO_UM / dbu_to_um).ceil() as i32;
     let mut cache = merge::MergedCache::new(tile_dbu, halo_dbu, HashMap::new());
-    for spec in pdk.tiled_virtual_layers() {
+    for spec in pdk.tiled_virtual_layers(&eager) {
         let op = parse_virtual_op(
             &spec.op,
             spec.radius,
