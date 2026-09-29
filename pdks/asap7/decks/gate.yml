@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GATE (DRM section 3.4).
+#
+# Not checked: GATE.S.1, the exact 54 nm poly pitch, which is a grid with an offset no
+# check here states; and GATE.AUX.2, a gate discontinuous along its length, which is read
+# from how the drawn shapes were split rather than from the merged layer.
+rules:
+  - id: GATE.W.1
+    check: exact_width
+    layers: [GATE]
+    value: 0.02
+    params:
+      facing: x
+  - id: GATE.W.2
+    check: min_width
+    layers: [GATE]
+    value: 0.04
+    params:
+      facing: y
+  - id: GATE.S.2
+    check: min_space
+    layers: [GATE]
+    value: 0.034
+    params:
+      facing: x
+  - id: GATE.S.2
+    check: min_notch
+    layers: [GATE]
+    value: 0.034
+    params:
+      facing: x
+  # A gate with no other within one pitch, centre to centre, beside it; see
+  # GatePaired in pdk.yml.
+  - id: GATE.S.3
+    check: forbidden
+    layers: [GateSolitary]
+    value: 0.0
+  - id: GATE.AUX.1
+    check: forbidden
+    layers: [GateBent]
+    value: 0.0
+  - id: GATE.ACTIVE.AUX.3
+    check: forbidden
+    layers: [ActiveVEdgesInside]
+    value: 0.0
+  - id: GATE.ACTIVE.AUX.3
+    check: forbidden
+    layers: [ActiveVEdgesOnGate]
+    value: 0.0
+  - id: GATE.ACTIVE.EX.1
+    check: min_enclosure
+    layers: [GateNoCut, Channel]
+    value: 0.004
+    params:
+      facing: y
+  - id: GATE.ACTIVE.EX.2
+    check: min_enclosure
+    layers: [ACTIVE, ChannelNoCut]
+    value: 0.025
+    params:
+      facing: x
+  - id: GATE.ACTIVE.S.4
+    check: min_space
+    layers: [GateNoCutOffActive, ACTIVE]
+    value: 0.009
+    params:
+      facing: x

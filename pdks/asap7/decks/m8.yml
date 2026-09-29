@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M8 (DRM section 3.18).  The width grows with the line's length: a `length` of just under
+# 400, 1200 and 1800 nm binds the wall pairs running at least that far.  The spacings
+# M8.S.1-3 depend on the lengths of the two facing edges and read edge layers (see
+# `virtual_layers` in pdk.yml); M8.S.4-8 on the width of the wider line, the `width` gate
+# set a DBU under each bound so that it reads "at least".
+rules:
+  - id: M8.W.1
+    check: min_width
+    layers: [M8]
+    value: 0.04
+  - id: M8.W.2
+    check: min_width
+    layers: [M8]
+    value: 0.06
+    params:
+      length: 0.39975
+  - id: M8.W.3
+    check: min_width
+    layers: [M8]
+    value: 0.08
+    params:
+      length: 1.19975
+  - id: M8.W.4
+    check: min_width
+    layers: [M8]
+    value: 0.12
+    params:
+      length: 1.79975
+  - id: M8.W.5
+    check: max_width
+    layers: [M8]
+    value: 2.0
+  - id: M8.S.1
+    check: min_space
+    layers: [M8.long, M8.long]
+    value: 0.04
+  - id: M8.S.2
+    check: min_space
+    layers: [M8.short, M8.long]
+    value: 0.043
+  - id: M8.S.3
+    check: min_space
+    layers: [M8.short, M8.short]
+    value: 0.046
+  - id: M8.S.4
+    check: min_space
+    layers: [M8]
+    value: 0.06
+    params:
+      width: 0.05975
+  - id: M8.S.5
+    check: min_space
+    layers: [M8]
+    value: 0.08
+    params:
+      width: 0.07975
+  - id: M8.S.6
+    check: min_space
+    layers: [M8]
+    value: 0.12
+    params:
+      width: 0.11975
+  - id: M8.S.7
+    check: min_space
+    layers: [M8]
+    value: 0.5
+    params:
+      width: 0.49975
+  - id: M8.S.8
+    check: min_space
+    layers: [M8]
+    value: 1.0
+    params:
+      width: 0.99975
+  - id: M8.A.1
+    check: min_area
+    layers: [M8]
+    value: 0.00752
+  - id: M8.L.1
+    check: min_edge_length
+    layers: [M8.edges]
+    value: 0.04

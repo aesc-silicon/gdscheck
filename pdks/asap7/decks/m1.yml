@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M1 (DRM section 3.12).  The side, tip and tip-to-tip spacings read edge layers sorted
+# by length (see `virtual_layers` in pdk.yml); M1.S.6 is the corner-to-corner space, read on
+# the pairs that face each other nowhere under it.
+rules:
+  - id: M1.W.1
+    check: min_width
+    layers: [M1]
+    value: 0.018
+  - id: M1.S.1
+    check: min_space
+    layers: [M1.long, M1.long]
+    value: 0.018
+  - id: M1.S.2
+    check: min_space
+    layers: [M1.short, M1.long]
+    value: 0.025
+  - id: M1.S.3
+    check: min_space
+    layers: [M1.mid, M1.mid]
+    value: 0.027
+  - id: M1.S.4
+    check: min_space
+    layers: [M1.tiny, M1.tiny]
+    value: 0.031
+  - id: M1.S.5
+    check: min_space
+    layers: [M1.mid, M1.tiny]
+    value: 0.031
+  - id: M1.S.6
+    check: min_space
+    layers: [M1]
+    value: 0.02
+    params:
+      facing: none
+  - id: M1.A.1
+    check: min_area
+    layers: [M1]
+    value: 0.000504
