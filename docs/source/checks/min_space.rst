@@ -105,6 +105,15 @@ Parameters
    A run longer than the tile is read on the pair's regions assembled out to
    ``value + length + width`` around the gap, so the answer does not depend on the tile.
 
+``facing``
+   Optional. ``x``: the rule is about pairs with a wall of one facing a wall of the
+   other across x under the value, the two projecting onto each other. That is a
+   horizontal space, KLayout's ``space(v, projection).with_angle(90)``. ``y`` is the
+   vertical one. ``none``: the rule is about pairs that face each other *nowhere* under
+   the value, so that only a corner of one is closer to the other. That is the
+   corner-to-corner space a manual states beside a smaller side-to-side one (ASAP7
+   ``M1.S.6``: 20 nm corner to corner, where lines run 18 nm apart side by side).
+
 ``pairs``
    Optional. ``disjoint`` (the default) measures pairs that share no area at their
    closest approach. ``overlapping`` is for a rule whose two shapes overlap by

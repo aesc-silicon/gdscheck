@@ -195,6 +195,17 @@ pub enum Between {
     Empty,
 }
 
+/// The axis a measurement runs along: a span across two walls facing each other in x -
+/// a horizontal width or gap, between vertical walls - or in y.  A process routing each
+/// layer one way words its rules so ("minimum horizontal width of WELL"), and a rule on
+/// one axis reads the walls facing across that axis and no other: KLayout's
+/// `width(v, projection).with_angle(90)` is [`Axis::X`].
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Axis {
+    X,
+    Y,
+}
+
 /// `x` on the grid: the integer it already is, allowing for the noise a µm-to-DBU
 /// division leaves (0.15 / 0.001 is 149.99999999999997), else `round` applied.
 pub fn on_grid(x: f64, round: fn(f64) -> f64) -> i64 {
@@ -499,7 +510,8 @@ fn complement<T: Copy + PartialOrd>(covered: &[(T, T)], lo: T, hi: T) -> Vec<(T,
 /// lines longer than so much.  Under a [`WallFilter`] the run is the stretch the filter
 /// kept, since that stretch is the thing being measured.  With a run required, the
 /// readings that have none (across a corner, at a pinch, at an acute tip, between a
-/// chamfer and a wall) are off.
+/// chamfer and a wall) are off.  So are they, and the 45° runs, on one `axis`: only the
+/// sweep across that axis runs.
 ///
 /// The arithmetic is exact.  Coordinates are integers, so an axis-aligned span is one,
 /// and an oblique span - a square root - is compared squared, as a ratio of two integers
@@ -516,6 +528,7 @@ pub fn width_pairs(
     oblique_only: bool,
     mixed: bool,
     min_run: i64,
+    axis: Option<Axis>,
 ) -> Vec<(f64, f64, f64, f64, f64)> {
     facing_pairs(
         poly,
@@ -526,6 +539,7 @@ pub fn width_pairs(
         mixed,
         min_run,
         Between::Material,
+        axis,
     )
 }
 
@@ -542,6 +556,7 @@ pub fn notch_pairs(
     oblique_only: bool,
     mixed: bool,
     min_run: i64,
+    axis: Option<Axis>,
 ) -> Vec<(f64, f64, f64, f64, f64)> {
     facing_pairs(
         poly,
@@ -552,6 +567,7 @@ pub fn notch_pairs(
         mixed,
         min_run,
         Between::Empty,
+        axis,
     )
 }
 
@@ -565,9 +581,16 @@ fn facing_pairs(
     mixed: bool,
     min_run: i64,
     between: Between,
+    axis: Option<Axis>,
 ) -> Vec<(f64, f64, f64, f64, f64)> {
     let mut out = Vec::new();
     let empty = between == Between::Empty;
+    // On one axis, only the sweep across it: the other sweep, the 45° runs and the
+    // readings across a corner measure along no single axis.
+    let (along_x, along_y) = (axis != Some(Axis::Y), axis != Some(Axis::X));
+    if axis.is_some() && oblique_only {
+        return out;
+    }
     // A wall pair faces across material when the near wall has it on its far side and
     // the far wall on its near side; across a notch, the other way round.
     let facing = |near_has_far: bool, far_has_far: bool| {
@@ -589,11 +612,11 @@ fn facing_pairs(
         }
         let (cx, cy) = ((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5);
         let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
-        if w > 0 && h > min_run && limit.broken_by(w) && core.owns_from(cx, y0 as f64) {
+        if along_x && w > 0 && h > min_run && limit.broken_by(w) && core.owns_from(cx, y0 as f64) {
             out.push((x0 as f64, y0 as f64, x0 as f64, y1 as f64, w as f64));
             out.push((x1 as f64, y0 as f64, x1 as f64, y1 as f64, w as f64));
         }
-        if h > 0 && w > min_run && limit.broken_by(h) && core.owns_from(x0 as f64, cy) {
+        if along_y && h > 0 && w > min_run && limit.broken_by(h) && core.owns_from(x0 as f64, cy) {
             out.push((x0 as f64, y0 as f64, x1 as f64, y0 as f64, h as f64));
             out.push((x0 as f64, y1 as f64, x1 as f64, y1 as f64, h as f64));
         }
@@ -614,7 +637,11 @@ fn facing_pairs(
         // in the polygon ends a band - is one pair: its stretches are joined before
         // it is reported, so a notch is one report whatever else the polygon's copy
         // in this tile happens to hold.
-        let y_events = sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect());
+        let y_events = if along_x {
+            sorted_unique(vedges.iter().flat_map(|e| [e.ylo, e.yhi]).collect())
+        } else {
+            Vec::new()
+        };
         let mut runs: Vec<(PairKey, Vec<(i64, i64)>)> = Vec::new();
         let mut run_at: HashMap<PairKey, usize> = HashMap::new();
         for w in y_events.windows(2) {
@@ -671,7 +698,11 @@ fn facing_pairs(
         }
 
         // Vertical widths: scan x bands, pair horizontal edges across y.
-        let x_events = sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect());
+        let x_events = if along_y {
+            sorted_unique(hedges.iter().flat_map(|e| [e.xlo, e.xhi]).collect())
+        } else {
+            Vec::new()
+        };
         let mut runs: Vec<(PairKey, Vec<(i64, i64)>)> = Vec::new();
         let mut run_at: HashMap<PairKey, usize> = HashMap::new();
         for w in x_events.windows(2) {
@@ -726,6 +757,9 @@ fn facing_pairs(
         }
     } // end !oblique_only
 
+    if axis.is_some() {
+        return out;
+    }
     if mixed && min_run == 0 {
         mixed_widths(
             &oedges,
@@ -2264,7 +2298,7 @@ mod width_tests {
             x1: 1_000_000,
             y1: 1_000_000,
         };
-        width_pairs(p, core, limit, None, false, true, 0).len()
+        width_pairs(p, core, limit, None, false, true, 0, None).len()
     }
 
     /// 0.15 / 0.001 is 149.99999999999997 in floating point.  That is 150 on the grid,
@@ -2316,7 +2350,18 @@ mod width_tests {
             x1: 1_000_000,
             y1: 1_000_000,
         };
-        let with = |run: i64| width_pairs(&bar, core, Limit::AtLeast(151), None, false, true, run);
+        let with = |run: i64| {
+            width_pairs(
+                &bar,
+                core,
+                Limit::AtLeast(151),
+                None,
+                false,
+                true,
+                run,
+                None,
+            )
+        };
         // Both 150-high stretches beside the stub, two walls each.
         assert_eq!(with(0).len(), 4);
         assert_eq!(with(399).len(), 4);
@@ -2363,7 +2408,7 @@ mod wall_filter_tests {
             x1: 1_000_000,
             y1: 1_000_000,
         };
-        width_pairs(body, core, limit, Some(f), false, false, 0)
+        width_pairs(body, core, limit, Some(f), false, false, 0, None)
     }
 
     /// A poly stripe 300 tall crossing a channel mask 200 wide: the stripe's two long
@@ -2951,6 +2996,41 @@ impl Outline<'_> {
     }
 }
 
+/// Whether a wall of `a` and a wall of `b` face each other across empty ground closer
+/// than `limit` DBU, projecting onto each other - KLayout's `projection` metric - and,
+/// with an `axis`, facing across that axis: vertical walls for [`Axis::X`], horizontal
+/// ones for [`Axis::Y`].  A pair that faces nowhere under the limit is closer only
+/// corner to corner.
+pub fn faces_within(a: &Outline, b: &Outline, limit: i64, axis: Option<Axis>) -> bool {
+    let lim2 = (limit as i128) * (limit as i128);
+    a.segs.iter().any(|&(s0, s1)| {
+        let d = ((s1.0 - s0.0) as i128, (s1.1 - s0.1) as i128);
+        let len2 = d.0 * d.0 + d.1 * d.1;
+        let on_axis = match axis {
+            None => true,
+            Some(Axis::X) => d.0 == 0,
+            Some(Axis::Y) => d.1 == 0,
+        };
+        if len2 == 0 || !on_axis {
+            return false;
+        }
+        let along = |p: (i64, i64)| (p.0 - s0.0) as i128 * d.0 + (p.1 - s0.1) as i128 * d.1;
+        b.segs.iter().any(|&(t0, t1)| {
+            let e = ((t1.0 - t0.0) as i128, (t1.1 - t0.1) as i128);
+            if d.0 * e.0 + d.1 * e.1 >= 0 || !parallel_i(d, e) {
+                return false; // not facing, or not alongside
+            }
+            // `c` is the separation times the length, positive on this wall's empty side.
+            let c = -cross_i(s0, s1, t0);
+            if c <= 0 || c * c >= lim2 * len2 {
+                return false;
+            }
+            let (u0, u1) = (along(t0), along(t1));
+            u0.max(u1).min(len2) > u0.min(u1).max(0)
+        })
+    })
+}
+
 /// Whether a 45° wall of `a` lies within `limit` DBU of `b`: the bend has to be at the
 /// gap, not somewhere else on a long net.  A 45° wall runs as far across as along, to a
 /// DBU - a boolean rounds a cut 45° wall's end to the grid.  A wall at another angle is
@@ -3450,6 +3530,35 @@ pub fn margin_pairs(
         }
     }
     (pairs, saw_coincident)
+}
+
+/// The margin of `inner` within `outer` on its better pair of opposite sides, in DBU: a
+/// via "enclosed on two opposite sides" by a wire, which runs flush along the wire and
+/// needs the margin only at the two ends - or only across it.  The sides facing across
+/// x are the vertical walls, those across y the horizontal ones, each read on its own
+/// facing run (see [`side_margins`]).  A minimum takes the pair whose nearer side has
+/// more room; a maximum, `largest`, the pair whose farther side has less.
+pub fn opposite_margin(inner: &Outline, outer: &Outline, largest: bool) -> i64 {
+    let margins = side_margins(inner, &[outer]);
+    let (mut x, mut y): (Option<f64>, Option<f64>) = (None, None);
+    for (&(a0, a1), &m) in inner.segs.iter().zip(&margins) {
+        let slot = if a0.0 == a1.0 {
+            &mut x
+        } else if a0.1 == a1.1 {
+            &mut y
+        } else {
+            continue;
+        };
+        let pick = |c: f64| if largest { c.max(m) } else { c.min(m) };
+        *slot = Some(slot.map_or(m, pick));
+    }
+    let m = match (x, y) {
+        (Some(x), Some(y)) if largest => x.min(y),
+        (Some(x), Some(y)) => x.max(y),
+        (Some(v), None) | (None, Some(v)) => v,
+        (None, None) => 0.0,
+    };
+    m.round() as i64
 }
 
 /// The endcap margin of `inner` within `outer`: the largest of the four box margins,

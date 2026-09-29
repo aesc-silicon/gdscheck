@@ -9,8 +9,9 @@
 //! pairs it is about.  A plain rule is about every pair.  The gates narrow it: `angle:
 //! bent` to pairs with a 45° wall at the gap, `net: same` or `net: different` to pairs
 //! on one net or on two, `width` and `length` to pairs facing each other along a run
-//! longer than so much with a line wider than so much on at least one side.  The gates
-//! combine, and every one of them asks about the gap itself, not the shapes at large: a
+//! longer than so much with a line wider than so much on at least one side, `facing`
+//! to pairs whose walls face each other across one axis - or, as `none`, nowhere, the
+//! corner-to-corner reading.  The gates combine, and every one of them asks about the gap itself, not the shapes at large: a
 //! long net bent somewhere else, or a wide rail that dips to a narrow tooth, does not
 //! lend the condition to a gap it is not at.
 //!
@@ -36,10 +37,10 @@ pub mod max;
 pub mod notch;
 
 use super::helper::RunCtx;
-use super::params::{NotAWord, bent_only, mode};
+use super::params::{Facing, NotAWord, bent_only, facing, mode};
 use crate::connectivity::{Connectivity, LayerKey};
 use crate::geom::{
-    Limit, Marker, Outline, RunRead, has_diagonal_within, on_grid, parallel_run,
+    Limit, Marker, Outline, RunRead, faces_within, has_diagonal_within, on_grid, parallel_run,
     parallel_run_applies,
 };
 use crate::layout::FlatLayout;
@@ -68,6 +69,9 @@ pub struct Gates {
     /// with a line deeper than `width` µm behind at least one of them.  Either alone
     /// is the other at zero.
     pub run: Option<(f64, f64)>,
+    /// Walls of the two facing each other under the value across one axis, or - as
+    /// [`Facing::Neither`] - facing nowhere under it, so that only a corner is closer.
+    pub facing: Option<Facing>,
 }
 
 impl Gates {
@@ -91,11 +95,17 @@ impl Gates {
         let (width, length) = (rule.num("width"), rule.num("length"));
         let run = (width.is_some() || length.is_some())
             .then(|| (width.unwrap_or(0.0), length.unwrap_or(0.0)));
-        Some(Gates { bent, net, run })
+        let facing = facing(rule, name, true)?;
+        Some(Gates {
+            bent,
+            net,
+            run,
+            facing,
+        })
     }
 
     fn any(self) -> bool {
-        self.bent || self.net.is_some() || self.run.is_some()
+        self.bent || self.net.is_some() || self.run.is_some() || self.facing.is_some()
     }
 }
 
@@ -170,6 +180,15 @@ pub fn run_min_gated(
             if gates.bent && !(has_diagonal_within(a, b, limit) || has_diagonal_within(b, a, limit))
             {
                 return false;
+            }
+            // Facing is symmetric - a wall of one facing a wall of the other - so one
+            // direction reads it.
+            match gates.facing {
+                Some(Facing::Along(axis)) if !faces_within(a, b, limit, Some(axis)) => {
+                    return false;
+                }
+                Some(Facing::Neither) if faces_within(a, b, limit, None) => return false,
+                _ => {}
             }
             if let Some((wide, min_run)) = run
                 && let read = parallel_run(a, b, limit, wide, min_run, Some(ctx.zone))

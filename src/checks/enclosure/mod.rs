@@ -115,8 +115,8 @@ fn run_sides(
     // about a margin being small, and have no reading as a maximum.
     if kind == Kind::Max && matches!(sides, Sides::Adjacent | Sides::LineEnd) {
         eprintln!(
-            "[{}] max_enclosure: sides can be `all` or `any` - `adjacent` and `line_end` \
-             are about a margin falling short",
+            "[{}] max_enclosure: sides can be `all`, `any` or `opposite` - `adjacent` and \
+             `line_end` are about a margin falling short",
             rule.id
         );
         return vec![];

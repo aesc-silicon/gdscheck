@@ -82,6 +82,12 @@ Parameters
       deliberately: an edge-to-contour distance is corner-limited and would understate
       a long endcap run.
 
+   ``opposite``
+      At least one pair of opposite sides: both walls facing across x, or both across y,
+      reach ``value``. This is a via on a wire, flush along it and enclosed at its two
+      ends, or the other way round (ASAP7 ``V2.M2.EN.1``: "on at least two opposite
+      sides"). Each side is read on its own facing run, not off the bounding boxes.
+
    ``adjacent``
       A side enclosed by less than ``trigger`` is allowed only if the sides bordering it
       reach ``value`` (GF180 ``S.CO.6_ii``: a contact may sit flush on one side when the
@@ -94,6 +100,12 @@ Parameters
       layer's own shape: a narrow line's tip pulls back during processing, so metal that
       merely reaches the via on paper may not reach it on silicon. The sidewalls are the
       ordinary rule's business.
+
+``facing``
+   Optional. ``x`` reads only the margins across x (the enclosed shape's vertical
+   walls against the enclosing shape's), ``y`` only those across y. A margin read at an
+   angle is off. ASAP7 asks a horizontal and a vertical extension of one layer past
+   another separately (``NSELECT.ACTIVE.EN.1`` and ``.EN.2``).
 
 ``metric``
    Optional. ``projection`` (the default) pairs each inner edge with the parallel outer

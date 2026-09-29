@@ -32,8 +32,8 @@ A single layer, ``layers[0]``.
 Parameters
 ----------
 
-``angle`` and ``length``
-   As for :doc:`min_width`: ``angle: bent`` restricts the rule to 45° runs, ``length`` to
+``angle``, ``length`` and ``facing``
+   As for :doc:`min_width`: ``facing`` reads the span across one axis alone; ``angle: bent`` restricts the rule to 45° runs, ``length`` to
    wall pairs sharing more than that run.
 
 
