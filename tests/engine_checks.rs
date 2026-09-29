@@ -621,6 +621,60 @@ fn notch_rules_meet_the_bound_exactly_and_read_their_gates(
     assert_eq!(count("notch", pattern, rule), expected, "{pattern}: {rule}");
 }
 
+/// A rule on one axis, and an enclosure on one pair of opposite sides.  The counts are
+/// read off the drawings in `gen/engine/facing.rs`:
+///
+/// - `narrow_*`: a bar 0.4 across one axis and 3 along the other; a width on that axis
+///   reports both walls, on the other nothing.
+/// - `gap_*`: two squares 0.4 apart side by side, stacked, and corner to corner 0.3 off
+///   in each axis; `facing: none` reads only the last, where no wall faces another.
+/// - `notch_*`: a 0.4 slot cut down into a block and one cut in from the side.
+/// - `enc_*`: a via 0.3 in from the sides and 1 from top and bottom, the same turned,
+///   0.3 in all round, and flush with both sides of its wire.  `facing: x` reads the side
+///   walls; `sides: opposite` passes a via with one pair of sides at the value, and its
+///   maximum of nothing passes only the via flush on a pair.
+#[rstest]
+#[case("narrow_x", "W.x", 2)]
+#[case("narrow_x", "W.y", 0)]
+#[case("narrow_y", "W.x", 0)]
+#[case("narrow_y", "W.y", 2)]
+#[case("gap_x", "S.x", 1)]
+#[case("gap_x", "S.y", 0)]
+#[case("gap_x", "S.none", 0)]
+#[case("gap_y", "S.x", 0)]
+#[case("gap_y", "S.y", 1)]
+#[case("gap_y", "S.none", 0)]
+#[case("gap_corner", "S.x", 0)]
+#[case("gap_corner", "S.y", 0)]
+#[case("gap_corner", "S.none", 1)]
+#[case("notch_x", "N.x", 1)]
+#[case("notch_x", "N.y", 0)]
+#[case("notch_y", "N.x", 0)]
+#[case("notch_y", "N.y", 1)]
+#[case("enc_x", "E.x", 2)]
+#[case("enc_x", "E.opp", 0)]
+#[case("enc_x", "E.max_opp", 1)]
+#[case("enc_y", "E.x", 0)]
+#[case("enc_y", "E.opp", 0)]
+#[case("enc_y", "E.max_opp", 1)]
+#[case("enc_short", "E.x", 2)]
+#[case("enc_short", "E.opp", 1)]
+#[case("enc_short", "E.max_opp", 1)]
+#[case("enc_flush", "E.x", 2)]
+#[case("enc_flush", "E.opp", 0)]
+#[case("enc_flush", "E.max_opp", 0)]
+fn facing_rules_read_one_axis_and_opposite_sides_one_pair(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(
+        count("facing", pattern, rule),
+        expected,
+        "{pattern}: {rule}"
+    );
+}
+
 /// The three scopes of a reach rule at the bound, and the reach confined to a layer.
 ///
 /// - `part_*`: a target whose far wall is 20 and 20.005 from the reference.
