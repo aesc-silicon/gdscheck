@@ -1967,6 +1967,34 @@ fn fit_tiles(tiles: &mut TileMap) {
     });
 }
 
+/// What a copy of a layer's polygons takes, in bytes, averaged over the layer: the
+/// polygon itself, a ring or holes it spilled to the heap, and its tile's share of the
+/// tile's own list, header and place in the map.
+fn bytes_per_copy(tiles: &TileMap) -> f64 {
+    let poly = std::mem::size_of::<MergedPoly>();
+    let (bytes, copies) = tiles
+        .par_iter()
+        .map(|(_, t)| {
+            // The map's entry and the shared tile's header and vector.
+            let mut b = 64 + t.capacity() * poly;
+            for m in t.iter() {
+                if m.outer.spilled() {
+                    b += m.outer.capacity() * std::mem::size_of::<IntPoint>() + 16;
+                }
+                if !m.holes.is_empty() {
+                    b += 40 + m.holes.iter().map(|h| h.capacity() * 8 + 40).sum::<usize>();
+                }
+            }
+            (b, t.len())
+        })
+        .reduce(|| (0, 0), |a, b| (a.0 + b.0, a.1 + b.1));
+    if copies == 0 {
+        poly as f64
+    } else {
+        bytes as f64 / copies as f64
+    }
+}
+
 /// A layer's share of the polygon copies it holds: a tile held by `n` layers is an
 /// `n`th of its copies to each.
 fn fair_copies(map: &TileMap) -> usize {
@@ -6284,8 +6312,8 @@ type Variant = (i32, Arc<TileMap>, usize);
 #[derive(Default)]
 struct Frees {
     threads: Vec<std::thread::JoinHandle<()>>,
-    /// Polygon copies on their way out, for the planner's reading of what is resident.
-    polys: usize,
+    /// Bytes on their way out, for the planner's reading of what is resident.
+    bytes: usize,
 }
 
 impl Frees {
@@ -6295,13 +6323,13 @@ impl Frees {
     /// small layout does a hundred of these.
     const INLINE: usize = 100_000;
 
-    fn later<T: Send + 'static>(&mut self, v: T, polys: usize) {
+    fn later<T: Send + 'static>(&mut self, v: T, polys: usize, bytes: usize) {
         if polys < Self::INLINE {
             drop(v);
             return;
         }
         self.threads.retain(|t| !t.is_finished());
-        self.polys += polys;
+        self.bytes += bytes;
         self.threads.push(std::thread::spawn(move || drop(v)));
     }
 
@@ -6309,7 +6337,7 @@ impl Frees {
         for t in self.threads.drain(..) {
             let _ = t.join();
         }
-        self.polys = 0;
+        self.bytes = 0;
     }
 }
 
@@ -6358,6 +6386,10 @@ pub struct MergedCache {
     /// Polygon copies per cached layer, kept at insert so the trace's resident count
     /// is a sum over layers and not a walk over fifty million tiles per rule.
     layer_polys: HashMap<(i16, i16), usize>,
+    /// What a copy of each layer takes, in bytes, measured when the layer was built:
+    /// a contact is one 48-byte polygon, a long wire more for its spilled ring.  Kept
+    /// after the layer goes, for its variants and its next build's estimate.
+    layer_bpc: HashMap<(i16, i16), f64>,
     /// The other builds of a layer, set aside when a rule wanted it at another reach:
     /// each the halo it was built for, its tiles, and its copies.  A rule reads the
     /// thinnest that reaches far enough, so a layer wanted thin between two fat rules
@@ -6368,8 +6400,8 @@ pub struct MergedCache {
     variants: HashMap<(i16, i16), Vec<Variant>>,
     /// The layers being freed on threads of their own; see [`Frees`].
     frees: Frees,
-    /// Polygon copies the run may hold between rules; what a variant is kept and a
-    /// build made ahead against.  `usize::MAX` until the planner sets it.
+    /// Bytes the run may hold between rules; what a variant is kept and a build made
+    /// ahead against.  `usize::MAX` until the planner sets it.
     budget: usize,
     /// The layers the running rule names; see `release_spent_sources`.
     rule_named: HashSet<(i16, i16)>,
@@ -6438,6 +6470,7 @@ impl MergedCache {
             clippable: HashSet::new(),
             names: HashMap::new(),
             layer_polys: HashMap::new(),
+            layer_bpc: HashMap::new(),
             variants: HashMap::new(),
             needs: HashMap::new(),
             frees: Frees::default(),
@@ -6936,7 +6969,7 @@ impl MergedCache {
         self.needs = needs;
     }
 
-    /// The polygon copies the run may hold between rules; see `budget`.
+    /// The bytes the cache may hold between rules; see `budget`.
     pub fn set_budget(&mut self, budget: usize) {
         self.budget = budget;
     }
@@ -7020,7 +7053,7 @@ impl MergedCache {
             // Kept for a later rule while there is room for it; on a machine that is
             // short, the copy in use is all the layer gets, as before there were
             // variants at all.
-            if self.resident_polys() + polys <= self.budget {
+            if self.resident_bytes() + (polys as f64 * self.bpc(key)) as usize <= self.budget {
                 self.variants
                     .entry(key)
                     .or_default()
@@ -7058,7 +7091,7 @@ impl MergedCache {
             return;
         }
         // Building ahead holds more copies for later; only while the budget has room.
-        let want = if self.resident_polys() * 2 <= self.budget {
+        let want = if self.resident_bytes() * 2 <= self.budget {
             self.build_ahead(key, want)
         } else {
             want
@@ -7084,6 +7117,7 @@ impl MergedCache {
                 let cand = &self.layers[&def.sources[0]];
                 let mut tiles = build_text_selection_tiles(cand, &pts, self.tile_dbu);
                 fit_tiles(&mut tiles);
+                self.layer_bpc.insert(key, bytes_per_copy(&tiles));
                 self.layer_polys
                     .insert(key, tiles.values().map(|v| v.len()).sum());
                 self.layers.insert(key, Arc::new(tiles));
@@ -7327,6 +7361,8 @@ impl MergedCache {
                             self.name_of(src)
                         );
                     }
+                    let bpc = self.bpc(src);
+                    self.layer_bpc.insert(key, bpc);
                     self.layer_polys.insert(key, polys);
                     self.layers.insert(key, tiles);
                     self.kin.retain(|(k, _), _| *k != key);
@@ -7437,6 +7473,7 @@ impl MergedCache {
         self.dump_if_asked(key, &tiles);
         let mut tiles = tiles;
         fit_tiles(&mut tiles);
+        self.layer_bpc.insert(key, bytes_per_copy(&tiles));
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, Arc::new(tiles));
@@ -7492,6 +7529,7 @@ impl MergedCache {
                     .collect()
             })
             .unwrap_or_default();
+        self.layer_bpc.insert(key, bytes_per_copy(&tiles));
         let shared = share_equal_tiles(&mut tiles, &sources);
         if shared > 0 && std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
             eprintln!("virtual {} shares {shared} tiles", self.name_of(key));
@@ -7516,7 +7554,7 @@ impl MergedCache {
     /// contacts, the squares among them, those on active, those off the seal ring -
     /// held six copies of ten million contacts at once, of which the rule read one.
     fn release_spent_sources(&mut self, built: (i16, i16)) {
-        if self.resident_polys() <= self.budget {
+        if self.resident_bytes() <= self.budget {
             return;
         }
         let Some(def) = self.virtual_defs.get(&built).cloned() else {
@@ -7542,11 +7580,11 @@ impl MergedCache {
             }
             if std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
                 eprintln!(
-                    "release {} spent for {} ({} copies, resident {})",
+                    "release {} spent for {} ({} copies, resident {} bytes)",
                     self.name_of(src),
                     self.name_of(built),
                     self.layer_polys.get(&src).copied().unwrap_or(0),
-                    self.resident_polys()
+                    self.resident_bytes()
                 );
             }
             self.layer_polys.remove(&src);
@@ -7567,22 +7605,64 @@ impl MergedCache {
     }
 
     /// Polygon copies resident across every cached layer, variants included.
-    pub fn resident_polys(&self) -> usize {
+    pub fn resident_bytes(&self) -> usize {
         self.resident_layers().iter().map(|(_, n)| n).sum()
     }
 
-    /// Every cached layer with its polygon copies, all variants together.  A tile that
-    /// several layers share counts once in all, a share to each: the sum is what is
-    /// resident, and a layer's figure is about what evicting it gives back.
+    /// Every cached layer with its polygon copies, all variants together: what a rule
+    /// reading it walks, for its working set.
+    pub fn resident_copies(&self) -> HashMap<(i16, i16), usize> {
+        let mut by_key = self.layer_polys.clone();
+        for (k, vs) in &self.variants {
+            *by_key.entry(*k).or_default() += vs.iter().map(|(_, _, n)| n).sum::<usize>();
+        }
+        by_key
+    }
+
+    /// What a copy of the layer takes: as measured when it was last built, or the
+    /// figure a small polygon takes.
+    fn bpc(&self, key: (i16, i16)) -> f64 {
+        self.layer_bpc
+            .get(&key)
+            .copied()
+            .unwrap_or(std::mem::size_of::<MergedPoly>() as f64)
+    }
+
+    /// Every cached layer with the bytes it holds, all variants together.  A tile that
+    /// several layers share counts once in all, a share to each, and so does a map two
+    /// layers share whole: the sum is what is resident, and a layer's figure is about
+    /// what evicting it gives back.
     pub fn resident_layers(&self) -> Vec<((i16, i16), usize)> {
+        let mut maps: HashMap<*const TileMap, usize> = HashMap::new();
+        for m in self.layers.values() {
+            *maps.entry(Arc::as_ptr(m)).or_default() += 1;
+        }
         let mut by_key: HashMap<(i16, i16), usize> = self
             .layers
             .iter()
-            .map(|(k, m)| (*k, fair_copies(m)))
+            .map(|(k, m)| {
+                let holders = maps[&Arc::as_ptr(m)] as f64;
+                (
+                    *k,
+                    (fair_copies(m) as f64 * self.bpc(*k) / holders) as usize,
+                )
+            })
             .collect();
         for (k, vs) in &self.variants {
-            *by_key.entry(*k).or_default() +=
-                vs.iter().map(|(_, m, _)| fair_copies(m)).sum::<usize>();
+            *by_key.entry(*k).or_default() += vs
+                .iter()
+                .map(|(_, m, _)| (fair_copies(m) as f64 * self.bpc(*k)) as usize)
+                .sum::<usize>();
+        }
+        // What was stitched from a layer goes with it: its regions and the index of
+        // which piece is which region's, a gigabyte beside a metal's tiles.
+        let region = std::mem::size_of::<Region>();
+        for ((k, _), ix) in &self.kin {
+            let filed: usize = ix.by_tile.values().map(|v| 64 + v.capacity() * 16).sum();
+            *by_key.entry(*k).or_default() += ix.regions.capacity() * region + filed;
+        }
+        for (k, r) in &self.regions {
+            *by_key.entry(*k).or_default() += r.capacity() * region;
         }
         by_key.into_iter().collect()
     }
@@ -7591,15 +7671,17 @@ impl MergedCache {
     /// go over budget: what a later rule wants comes back for the cost of one build,
     /// and the copy in use stays.
     pub fn drop_variants(&mut self, layer: i16, datatype: i16) -> usize {
-        let vs = self.variants.remove(&(layer, datatype));
+        let key = (layer, datatype);
+        let vs = self.variants.remove(&key);
         let n = vs.iter().flatten().map(|(_, _, n)| n).sum();
-        self.frees.later(vs, n);
+        let bytes = (n as f64 * self.bpc(key)) as usize;
+        self.frees.later(vs, n, bytes);
         n
     }
 
-    /// Polygon copies evicted but not yet freed.
-    pub fn pending_free_polys(&self) -> usize {
-        self.frees.polys
+    /// Bytes evicted but not yet freed.
+    pub fn pending_free_bytes(&self) -> usize {
+        self.frees.bytes
     }
 
     /// Wait for every eviction to have freed its memory.
@@ -7612,27 +7694,29 @@ impl MergedCache {
     /// far fatter than the next rule's is slow to read.
     pub fn evict_fatter_than(&mut self, layer: i16, datatype: i16, limit: i32) {
         let key = (layer, datatype);
+        let bpc = self.bpc(key);
         if self.layer_halo.get(&key).is_some_and(|h| *h > limit) {
             let n = self.layer_polys.remove(&key).unwrap_or(0);
-            self.frees.later(self.layers.remove(&key), n);
+            self.frees
+                .later(self.layers.remove(&key), n, (n as f64 * bpc) as usize);
             self.kin.retain(|(k, _), _| *k != key);
             self.layer_halo.remove(&key);
-            self.frees.later(self.regions.remove(&key), 0);
+            self.frees.later(self.regions.remove(&key), 0, 0);
         }
         if let Some(vs) = self.variants.get_mut(&key) {
             let (keep, gone): (Vec<Variant>, Vec<Variant>) = std::mem::take(vs)
                 .into_iter()
                 .partition(|(h, _, _)| *h <= limit);
             let n = gone.iter().map(|(_, _, n)| n).sum();
-            self.frees.later(gone, n);
+            self.frees.later(gone, n, (n as f64 * bpc) as usize);
             *vs = keep;
             if vs.is_empty() {
                 self.variants.remove(&key);
             }
         }
         if self.edge_halo.get(&key).is_some_and(|h| *h > limit) {
-            self.frees.later(self.edge_layers.remove(&key), 0);
-            self.frees.later(self.edge_spans.remove(&key), 0);
+            self.frees.later(self.edge_layers.remove(&key), 0, 0);
+            self.frees.later(self.edge_spans.remove(&key), 0, 0);
             self.edge_halo.remove(&key);
         }
     }
@@ -7655,16 +7739,18 @@ impl MergedCache {
     /// bounding peak memory when a deck touches many layers.
     pub fn evict(&mut self, layer: i16, datatype: i16) {
         let key = (layer, datatype);
+        let bpc = self.bpc(key);
         let n = self.layer_polys.remove(&key).unwrap_or(0);
-        self.frees.later(self.layers.remove(&key), n);
+        self.frees
+            .later(self.layers.remove(&key), n, (n as f64 * bpc) as usize);
         self.kin.retain(|(k, _), _| *k != key);
         self.layer_halo.remove(&key);
         let vs = self.variants.remove(&key);
         let vn = vs.iter().flatten().map(|(_, _, n)| n).sum();
-        self.frees.later(vs, vn);
-        self.frees.later(self.regions.remove(&key), 0);
-        self.frees.later(self.edge_layers.remove(&key), 0);
-        self.frees.later(self.edge_spans.remove(&key), 0);
+        self.frees.later(vs, vn, (vn as f64 * bpc) as usize);
+        self.frees.later(self.regions.remove(&key), 0, 0);
+        self.frees.later(self.edge_layers.remove(&key), 0, 0);
+        self.frees.later(self.edge_spans.remove(&key), 0, 0);
         self.edge_halo.remove(&key);
     }
 

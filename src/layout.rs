@@ -108,6 +108,26 @@ impl Shapes {
         ])
     }
 
+    /// What a merged copy of one of these shapes will take in the merge cache, in
+    /// bytes, averaged: a rectangle is one 48-byte polygon, a polygon of more than four
+    /// vertices that plus its ring on the heap.  An estimate - a merge joins shapes and
+    /// a tile cuts them - for a layer not built yet.
+    pub fn copy_bytes(&self) -> f64 {
+        let poly = 48.0;
+        if self.order.is_empty() {
+            return poly;
+        }
+        let spilled: f64 = self
+            .starts
+            .windows(2)
+            .map(|w| {
+                let n = (w[1] - w[0]).saturating_sub(1);
+                if n > 4 { (n * 8 + 16) as f64 } else { 0.0 }
+            })
+            .sum();
+        poly + spilled / self.order.len() as f64
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = Shape<'_>> + Clone + '_ {
         (0..self.len()).map(|i| self.get(i))
     }

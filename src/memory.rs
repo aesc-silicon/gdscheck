@@ -16,11 +16,17 @@
 
 use std::path::{Path, PathBuf};
 
-/// What one polygon copy in the merge cache is planned at.  Measured on the gf180
-/// reference design at 165-253 bytes over 986 rule steps, with up to 5 GB of the
-/// resident set beyond what the copies account for - a rule's transient working set -
-/// so the plan keeps twice the measured figure as that reserve.
-pub const BYTES_PER_COPY: u64 = 500;
+/// What a rule's working set is charged per polygon copy it reads: its boxes, the
+/// stitches, the pairs it finds.  The copies themselves are measured by the cache;
+/// what a check builds around them is not.  Measured on FMD_QNC_greyhound_ihp's
+/// contact enclosures: M1.c held 2.2 GB beside 52 million copies, 45 bytes each, and
+/// M1.c1, wider, over 3 GB.
+pub const WORKING_SET_PER_COPY: u64 = 64;
+
+/// What a wave charges a rule per cached copy it reads, when deciding whether it runs
+/// beside the wave's others: the figure a copy was planned at before copies were
+/// measured, which kept the heavy rules alone; see the rule loop.
+pub const WAVE_CHARGE_PER_COPY: u64 = 250;
 
 /// A memory limit, and where it came from - said in the run's log, so a run that is
 /// slower or dies for its memory can be read back to the number it planned with.
@@ -213,11 +219,12 @@ pub fn rss_bytes() -> u64 {
         * 4096
 }
 
-/// How many polygon copies the merge cache may hold between rules under `limit` with
+/// How many bytes the merge cache may hold between rules under `limit` with
 /// `resident` bytes already taken by what stays for the whole run - the flattened
-/// layout and the nets.
-pub fn cache_budget_polys(limit: &Limit, resident: u64) -> usize {
-    (limit.bytes.saturating_sub(resident) / BYTES_PER_COPY) as usize
+/// layout and the nets: half of what is left, the other half the reserve for the
+/// rules' working sets, which run beside the cache and are not counted in it.
+pub fn cache_budget_bytes(limit: &Limit, resident: u64) -> usize {
+    (limit.bytes.saturating_sub(resident) / 2) as usize
 }
 
 /// The tightest memory limit set on this process's cgroup or any cgroup above it, from
@@ -333,10 +340,7 @@ mod tests {
             hard: 10 << 30,
             source: "given".into(),
         };
-        assert_eq!(
-            cache_budget_polys(&limit, 7 << 30),
-            ((3u64 << 30) / BYTES_PER_COPY) as usize
-        );
-        assert_eq!(cache_budget_polys(&limit, 11 << 30), 0);
+        assert_eq!(cache_budget_bytes(&limit, 7 << 30), (3usize << 30) / 2);
+        assert_eq!(cache_budget_bytes(&limit, 11 << 30), 0);
     }
 }

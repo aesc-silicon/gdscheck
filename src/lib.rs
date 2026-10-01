@@ -406,20 +406,19 @@ type Reach = (i32, i32);
 /// core; a `grow` only dilates, so 1·r.  The radius part is charged even when no distance
 /// rule reads the virtual - a grow feeding a `forbidden` chain still needs its source
 /// within reach to be right per tile.
-/// How many polygon copies the merge cache may hold between rules: `GDSCHECK_CACHE_POLYS`
-/// when set, else what the run's memory limit leaves after `resident` bytes - the
-/// flattened layout and the nets, which stay for the whole run - at
-/// [`memory::BYTES_PER_COPY`] each.  Planned once the resident part is known, so a
-/// 12 GB container with 7 GB resident plans 3.7 GB of cache, not a quarter of the
-/// machine it happens to run on.
-fn cache_budget_polys(limit: &memory::Limit, resident: u64) -> usize {
-    if let Some(v) = std::env::var("GDSCHECK_CACHE_POLYS")
+/// How many bytes the merge cache may hold between rules: `GDSCHECK_CACHE_BYTES` when
+/// set, else half of what the run's memory limit leaves after `resident` bytes - the
+/// flattened layout and the nets, which stay for the whole run.  Planned once the
+/// resident part is known, so a 12 GB container with 7 GB resident plans 2.5 GB of
+/// cache, not a quarter of the machine it happens to run on.
+fn cache_budget_bytes(limit: &memory::Limit, resident: u64) -> usize {
+    if let Some(v) = std::env::var("GDSCHECK_CACHE_BYTES")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
     {
         return v;
     }
-    memory::cache_budget_polys(limit, resident)
+    memory::cache_budget_bytes(limit, resident)
 }
 
 /// `--stats`: the shapes of every drawn layer the run flattened, largest first, with
@@ -461,8 +460,8 @@ fn print_stats(
 
 /// What building a rule's layers would add to the merge cache, in bytes: every drawn
 /// layer of its closure not cached at the halo it needs, at its shape count times what
-/// the tile and halo multiply it by - a shape lies in `(1 + 2h/t)²` tiles - at the
-/// measured cost of a copy, half the planning figure [`memory::BYTES_PER_COPY`].  A
+/// the tile and halo multiply it by - a shape lies in `(1 + 2h/t)²` tiles - at what a
+/// copy of its shapes takes ([`layout::Shapes::copy_bytes`]).  A
 /// clippable layer is left out: it is built only round the rule's own geometry, not
 /// over the chip.  The derived layers built from the drawn ones are not counted; the
 /// estimate is for telling the rule that is out of the question (a contact layer at a
@@ -485,9 +484,34 @@ fn rule_estimate_bytes(
             if merged.cached_halo(*k).is_some_and(|h| h >= need) {
                 return 0;
             }
-            let shapes = layout.get(k.0, k.1).len() as f64;
+            let shapes = layout.get(k.0, k.1);
             let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
-            (shapes * f * f) as u64 * (memory::BYTES_PER_COPY / 2)
+            (shapes.len() as f64 * f * f * shapes.copy_bytes()) as u64
+        })
+        .sum()
+}
+
+/// The polygon copies building a rule's layers would make: [`rule_estimate_bytes`]'s
+/// layers, counted in copies, for the working set a rule's check builds around them.
+fn rule_copies_to_build(
+    halos: &merge::RuleHalos,
+    layout: &layout::FlatLayout,
+    merged: &merge::MergedCache,
+    clippable: &std::collections::HashSet<(i16, i16)>,
+    tile_dbu: i32,
+    halo_dbu: i32,
+) -> u64 {
+    let (table, closure) = halos;
+    closure
+        .iter()
+        .filter(|k| merged.is_drawn(**k) && !clippable.contains(k))
+        .map(|k| {
+            let need = table.get(k).copied().unwrap_or(halo_dbu);
+            if merged.cached_halo(*k).is_some_and(|h| h >= need) {
+                return 0;
+            }
+            let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
+            (layout.get(k.0, k.1).len() as f64 * f * f) as u64
         })
         .sum()
 }
@@ -1622,7 +1646,7 @@ fn run_drc_impl(
     // cache gets what the limit leaves.  Said in one line, so a run that was slower or
     // died for its memory can be read back to the number it planned with.
     let resident = memory::rss_bytes();
-    let mut budget = cache_budget_polys(&limit, resident);
+    let mut budget = cache_budget_bytes(&limit, resident);
     merged.set_budget(budget);
     if resident >= limit.bytes {
         eprintln!(
@@ -1639,7 +1663,7 @@ fn run_drc_impl(
             memory::gb(limit.bytes),
             limit.source,
             memory::gb(resident),
-            memory::gb(budget as u64 * memory::BYTES_PER_COPY)
+            memory::gb(budget as u64)
         );
     }
 
@@ -1677,12 +1701,12 @@ fn run_drc_impl(
         // The last net-aware rule is done: the nets go, and the cache gets the room.
         if i == n_net && net.take().is_some() {
             memory::trim();
-            budget = cache_budget_polys(&limit, resident_layout);
+            budget = cache_budget_bytes(&limit, resident_layout);
             shared.lock().set_budget(budget);
             if trace {
                 eprintln!(
                     "nets freed after {n_net} rules, cache budget {:.1} GB",
-                    memory::gb(budget as u64 * memory::BYTES_PER_COPY)
+                    memory::gb(budget as u64)
                 );
             }
         }
@@ -1699,11 +1723,12 @@ fn run_drc_impl(
         // that rather than at the maximum some other rule on it set.  The cache builds
         // ahead from `needs_of`, see `MergedCache::build_ahead`.
         shared.lock().set_rule_halos(Some(rule_halos[i].clone()));
-        // What the rule's layers would add to the cache, against the room the limit
-        // leaves once the cache is emptied: a rule that would need three times that is
-        // beyond doubt - the estimate counts every copy and the cache never holds them
-        // all at once - and is not run, since it would be killed, but recorded, so the
-        // report says what it lacks.  A rule short of that runs, under the watch.
+        // What the rule would hold at once: the layers it still has to build, the ones
+        // it reads that are cached already, and its working set - against the hard
+        // line less what the cache cannot give back.  A rule over that is not run,
+        // since the run would end at the hard line and every rule after it with it,
+        // but recorded, so the report says what it lacks.  Estimated, not measured:
+        // the layers to build from their shapes, the working set at so much per copy.
         let estimate = rule_estimate_bytes(
             &rule_halos[i],
             &layout,
@@ -1712,17 +1737,69 @@ fn run_drc_impl(
             tile_dbu,
             halo_dbu,
         );
-        let cached = shared.lock().resident_polys() as u64 * memory::BYTES_PER_COPY;
+        // A rule's working set while it runs grows with the layers it reads, cached or
+        // still to build: the boxes, the stitches, the pairs.  So much per copy of its
+        // closure, plus the flat reserve, is what a rule is charged - four contact
+        // rules of a 2 million-shape layer were admitted at nothing each into 1.4 GB of
+        // room, and the run ended at the hard line; and a rule about to build forty-six
+        // million contacts, charged for none of them, was let start beside a cache it
+        // had no room left for.
+        let copies: std::collections::HashMap<(i16, i16), usize> = shared.lock().resident_copies();
+        let cached_copies = |k: usize| -> u64 {
+            rule_halos[k]
+                .1
+                .iter()
+                .map(|key| copies.get(key).copied().unwrap_or(0) as u64)
+                .sum()
+        };
+        let to_build = |k: usize| -> u64 {
+            rule_copies_to_build(
+                &rule_halos[k],
+                &layout,
+                &shared.lock(),
+                &clippable,
+                tile_dbu,
+                halo_dbu,
+            )
+        };
+        let working_set = |k: usize| -> u64 {
+            (cached_copies(k) + to_build(k)) * memory::WORKING_SET_PER_COPY + reserve
+        };
+        // What a wave charges a rule: every copy it reads or builds, at four times the
+        // working set they make.  More than the memory, on purpose: charged at what
+        // they take, the contact rules of FMD_QNC_greyhound_ihp - each a build under
+        // the cache's lock - ran four to a wave instead of alone and waited on each
+        // other, the main suite 489 s and 512 s where it was 450 s and 455 s.
+        let wave_charge = |k: usize| -> u64 {
+            (cached_copies(k) + to_build(k)) * memory::WAVE_CHARGE_PER_COPY + reserve
+        };
+        // Read the room off memory in use, not memory the last rule's checks freed
+        // and the allocator kept: near the plan that is gigabytes.
+        if memory::rss_bytes() > limit.bytes / 4 * 3 {
+            memory::trim();
+        }
+        let (cached, closure_cached) = {
+            let cache = shared.lock();
+            let layers = cache.resident_layers();
+            let all: u64 = layers.iter().map(|(_, b)| *b as u64).sum();
+            let own: u64 = layers
+                .iter()
+                .filter(|(k, _)| rule_halos[i].1.contains(k))
+                .map(|(_, b)| *b as u64)
+                .sum();
+            (all, own)
+        };
+        let held = estimate + closure_cached + working_set(i);
         let room = limit
-            .bytes
+            .hard
             .saturating_sub(memory::rss_bytes().saturating_sub(cached));
-        if estimate > 3 * room {
+        if held > room {
             let message = format!(
-                "not checked: its layers would take about {:.1} GB of memory and \
+                "not checked: it would hold about {:.1} GB of memory at once and \
                  {:.1} GB were left under the limit of {:.1} GB ({})",
-                memory::gb(estimate),
+                memory::gb(held),
                 memory::gb(room),
-                memory::gb(limit.bytes),
+                memory::gb(limit.hard),
                 limit.source
             );
             eprintln!("[{}] {message}", rule.id);
@@ -1735,9 +1812,10 @@ fn run_drc_impl(
                     .map(|k| {
                         let need = table.get(k).copied().unwrap_or(halo_dbu);
                         let f = 1.0 + 2.0 * need as f64 / tile_dbu as f64;
-                        let shapes = layout.get(k.0, k.1).len();
+                        let raw = layout.get(k.0, k.1);
+                        let shapes = raw.len();
                         (
-                            (shapes as f64 * f * f) as u64 * (memory::BYTES_PER_COPY / 2),
+                            (shapes as f64 * f * f * raw.copy_bytes()) as u64,
                             format!(
                                 "{} shapes={shapes} halo={need} cached={:?}",
                                 cache.name_of(*k),
@@ -1759,24 +1837,25 @@ fn run_drc_impl(
             i += 1;
             continue;
         }
-        // Room for the rule's working set: what its layers would add beyond what the
-        // limit leaves now comes out of the cache first - every layer the rule does not
-        // read goes, latest use first - rather than out of the run.
+        // Room for the rule's layers and its working set: what they would take beyond
+        // what the limit leaves now comes out of the cache first - every layer the rule
+        // does not read goes, latest use first - rather than out of the run.
+        let need = estimate + working_set(i);
         let room_now = limit.bytes.saturating_sub(memory::rss_bytes());
-        if estimate > room_now {
+        if need > room_now {
             let (_, closure) = &rule_halos[i];
             let mut resident = shared.lock().resident_layers();
             resident.sort_by_key(|(key, _)| {
                 std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[i]))
             });
             let mut freed = 0usize;
-            for (key, polys) in resident {
+            for (key, bytes) in resident {
                 if closure.contains(&key) {
                     continue;
                 }
                 shared.lock().evict(key.0, key.1);
-                freed += polys;
-                if (freed as u64) * memory::BYTES_PER_COPY >= estimate - room_now {
+                freed += bytes;
+                if freed as u64 >= need - room_now {
                     break;
                 }
             }
@@ -1785,9 +1864,9 @@ fn run_drc_impl(
                 memory::trim();
                 if trace {
                     eprintln!(
-                        "room for {}: {:.1} GB estimated against {:.1} GB left, {} copies evicted",
+                        "room for {}: {:.1} GB needed against {:.1} GB left, {} bytes evicted",
                         rule.id,
-                        memory::gb(estimate),
+                        memory::gb(need),
                         memory::gb(room_now),
                         freed
                     );
@@ -1805,24 +1884,8 @@ fn run_drc_impl(
         let mut named: std::collections::HashSet<(i16, i16)> =
             rule_keys(rule).into_iter().collect();
         let mut est_sum = estimate;
-        // A rule's working set while it runs grows with the layers it reads, cached or
-        // not: the boxes, the stitches, the pairs.  Half a copy's planning cost per
-        // copy of its closure, plus the flat reserve, is what a rule of the wave is
-        // charged - four contact rules of a 2 million-shape layer were admitted at
-        // nothing each into 1.4 GB of room, and the run ended at the hard line.
-        let copies: std::collections::HashMap<(i16, i16), usize> =
-            shared.lock().resident_layers().into_iter().collect();
-        let working_set = |k: usize| -> u64 {
-            rule_halos[k]
-                .1
-                .iter()
-                .map(|key| copies.get(key).copied().unwrap_or(0) as u64)
-                .sum::<u64>()
-                * (memory::BYTES_PER_COPY / 2)
-                + reserve
-        };
         let mut room_left = limit.bytes.saturating_sub(memory::rss_bytes());
-        room_left = room_left.saturating_sub(estimate + working_set(i));
+        room_left = room_left.saturating_sub(wave_charge(i));
         if !checks::runs_alone(rule) {
             let mut k = i + 1;
             while wave.len() < wave_max && k < rules.len() && k != n_net {
@@ -1838,13 +1901,13 @@ fn run_drc_impl(
                     tile_dbu,
                     halo_dbu,
                 );
-                let need = est + working_set(k);
+                let need = wave_charge(k);
                 if trace {
                     eprintln!(
                         "admit {}: est {:.2} GB, working set {:.2} GB, room {:.2} GB{}",
                         next.id,
                         memory::gb(est),
-                        memory::gb(working_set(k)),
+                        memory::gb(wave_charge(k)),
                         memory::gb(room_left),
                         if need > room_left { ": no" } else { "" }
                     );
@@ -1968,9 +2031,27 @@ fn run_drc_impl(
         // first, and come back for the cost of one merge when their rule arrives.
         // Over the plan after this wave - the reserve was short of its working set -
         // the cache gives the overshoot back, evicted just below.
+        // What the wave's checks freed is the next rule's to take; held in the
+        // allocator's arenas it reads as resident and is not always what the next
+        // rule's allocations land in.  Near the plan it goes back to the system: a
+        // contact rule after another on the same layers went over an 8 GB limit on
+        // the 2 GB its predecessor's working set had left behind.
+        if memory::rss_bytes() > limit.bytes / 4 * 3 {
+            let before = memory::rss_bytes();
+            memory::trim();
+            if trace {
+                eprintln!(
+                    "trim after {}: {:.2} GB to {:.2} GB, cache {:.2} GB",
+                    rules[last].id,
+                    memory::gb(before),
+                    memory::gb(memory::rss_bytes()),
+                    memory::gb(shared.lock().resident_bytes() as u64)
+                );
+            }
+        }
         let rss = memory::rss_bytes();
-        if rss > limit.bytes && shared.lock().resident_polys() > 0 {
-            let over = ((rss - limit.bytes) / memory::BYTES_PER_COPY) as usize;
+        if rss > limit.bytes && shared.lock().resident_bytes() > 0 {
+            let over = (rss - limit.bytes) as usize;
             budget = budget.saturating_sub(over);
             shared.lock().set_budget(budget);
             if trace {
@@ -1978,29 +2059,29 @@ fn run_drc_impl(
                     "over the plan by {:.1} GB after {}: cache budget {:.1} GB",
                     memory::gb(rss - limit.bytes),
                     rules[last].id,
-                    memory::gb(budget as u64 * memory::BYTES_PER_COPY)
+                    memory::gb(budget as u64)
                 );
             }
         }
-        if shared.lock().resident_polys() > budget {
+        if shared.lock().resident_bytes() > budget {
             let mut resident = shared.lock().resident_layers();
             resident.sort_by_key(|(key, _)| {
                 std::cmp::Reverse(next_use.get(key).map_or(usize::MAX, |v| v[last]))
             });
             // The variants set aside go first, then whole layers.
             for (key, _) in &resident {
-                if shared.lock().resident_polys() <= budget {
+                if shared.lock().resident_bytes() <= budget {
                     break;
                 }
                 shared.lock().drop_variants(key.0, key.1);
             }
-            for (key, polys) in resident {
-                if shared.lock().resident_polys() <= budget {
+            for (key, bytes) in resident {
+                if shared.lock().resident_bytes() <= budget {
                     break;
                 }
                 if trace {
                     eprintln!(
-                        "evict {} over budget: {polys} copies, next use at rule {:?}",
+                        "evict {} over budget: {bytes} bytes, next use at rule {:?}",
                         shared.lock().name_of(key),
                         next_use.get(&key).map(|v| v[last])
                     );
@@ -2011,7 +2092,7 @@ fn run_drc_impl(
         // What was let go is freed aside, unless it is a large part of the budget: then
         // the memory has to be back before the next rule builds into it, or a run that
         // fit on a machine of this size before is killed for what it already dropped.
-        if shared.lock().pending_free_polys() > budget / 4 {
+        if shared.lock().pending_free_bytes() > budget / 4 {
             shared.lock().settle_frees();
             memory::trim();
         }
