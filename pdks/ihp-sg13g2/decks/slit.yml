@@ -33,31 +33,31 @@ rules:
     value: 2.80
 
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [Metal1.slit]
     value: 20.00
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [Metal2.slit]
     value: 20.00
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [Metal3.slit]
     value: 20.00
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [Metal4.slit]
     value: 20.00
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [Metal5.slit]
     value: 20.00
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [TopMetal1.slit]
     value: 20.00
   - id: Slt.b
-    check: max_width
+    check: max_edge_length
     layers: [TopMetal2.slit]
     value: 20.00
   - id: Slt.c
