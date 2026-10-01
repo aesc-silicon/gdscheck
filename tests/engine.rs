@@ -10,7 +10,7 @@
 use gds21::{GdsArrayRef, GdsStructRef};
 use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStrans, GdsStruct};
 use gdscheck::flatten::flatten_to_elems;
-use gdscheck::layout::FlatLayout;
+use gdscheck::layout::{FlatLayout, Shape};
 use gdscheck::merge::{MergedCache, VirtualOp, difference_layers, merged_area_dbu};
 use gdscheck::pdk::PdkConfig;
 use gdscheck::run_drc;
@@ -21,9 +21,9 @@ use std::collections::{HashMap, HashSet};
 // ---------------------------------------------------------------------------
 
 /// Axis-aligned bounding box of a boundary, in DBU.
-fn bbox(b: &GdsBoundary) -> (i32, i32, i32, i32) {
-    let xs = b.xy.iter().map(|p| p.x);
-    let ys = b.xy.iter().map(|p| p.y);
+fn bbox(b: Shape) -> (i32, i32, i32, i32) {
+    let xs = b.xy().iter().map(|p| p.x);
+    let ys = b.xy().iter().map(|p| p.y);
     (
         xs.clone().min().unwrap(),
         ys.clone().min().unwrap(),
@@ -259,7 +259,7 @@ fn virtual_layers_ops() {
         let mut v: Vec<i32> = layout
             .get(l.gds_layer as i16, l.gds_datatype as i16)
             .iter()
-            .map(|b| b.xy.iter().map(|p| p.x).min().unwrap())
+            .map(|b| b.xy().iter().map(|p| p.x).min().unwrap())
             .collect();
         v.sort_unstable();
         v

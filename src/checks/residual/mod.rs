@@ -454,13 +454,14 @@ fn beyond(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vio
         .map(|l| (l.gds_layer as i16, l.gds_datatype as i16))
         .collect();
     let mut out = vec![];
-    for b in layout.all_except(key.0, key.1) {
-        if ignore.contains(&(b.layer, b.datatype)) {
+    for ((layer, datatype), b) in layout.all_except(key.0, key.1) {
+        if ignore.contains(&(layer, datatype)) {
             continue;
         }
-        let outside =
-            b.xy.iter()
-                .find(|p| p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1);
+        let outside = b
+            .xy()
+            .iter()
+            .find(|p| p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1);
         if let Some(p) = outside {
             let (vx, vy) = (p.x as f64 * dbu_to_um, p.y as f64 * dbu_to_um);
             out.push(Violation::point(
@@ -468,7 +469,7 @@ fn beyond(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vio
                 "Structure outside boundary",
                 format!(
                     "shape on GDS layer {}/{} outside {} at ({vx:.4}, {vy:.4}) µm",
-                    b.layer, b.datatype, boundary.name
+                    layer, datatype, boundary.name
                 ),
                 vx,
                 vy,

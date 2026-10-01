@@ -905,8 +905,8 @@ impl PdkConfig {
                             continue;
                         }
 
-                        for b in layout.get(src_gds, src_dt) {
-                            let key: Vec<(i32, i32)> = b.xy.iter().map(|p| (p.x, p.y)).collect();
+                        for b in layout.get(src_gds, src_dt).iter() {
+                            let key: Vec<(i32, i32)> = b.xy().iter().map(|p| (p.x, p.y)).collect();
                             if seen_shapes.insert(key) {
                                 to_insert.push((
                                     vl_gds,
@@ -914,7 +914,7 @@ impl PdkConfig {
                                     GdsBoundary {
                                         layer: vl_gds,
                                         datatype: vl_dt,
-                                        xy: b.xy.clone(),
+                                        xy: b.xy().to_vec(),
                                         ..Default::default()
                                     },
                                 ));
@@ -926,7 +926,8 @@ impl PdkConfig {
                     // Geometric AND of the source layers (device recognition,
                     // e.g. CuPillarPad = Passiv.pillar AND dfpad).  If any source
                     // layer is missing or empty, the intersection is empty.
-                    let mut srcs: Vec<&[GdsBoundary]> = Vec::with_capacity(vl_def.layers.len());
+                    let mut srcs: Vec<&crate::layout::Shapes> =
+                        Vec::with_capacity(vl_def.layers.len());
                     let mut ok = true;
                     for src_name in &vl_def.layers {
                         let Some(src) = self.layer_map.get(src_name) else {
@@ -968,7 +969,8 @@ impl PdkConfig {
                     };
                     let base_b = layout.get(base.gds_layer as i16, base.gds_datatype as i16);
 
-                    let mut clips: Vec<&[GdsBoundary]> = Vec::with_capacity(clip_names.len());
+                    let mut clips: Vec<&crate::layout::Shapes> =
+                        Vec::with_capacity(clip_names.len());
                     let mut ok = true;
                     for name in clip_names {
                         let Some(c) = self.layer_map.get(name) else {
@@ -1023,6 +1025,8 @@ impl PdkConfig {
                     .iter()
                     .map(|m| Self::merged_outer_boundary(m, 0, 0, None))
                     .collect();
+                    let ring_solid: crate::layout::Shapes =
+                        ring_solid.iter().map(|b| b.xy.as_slice()).collect();
 
                     let target_b = layout.get(target.gds_layer as i16, target.gds_datatype as i16);
                     for m in crate::merge::intersect_layers(&[target_b, &ring_solid]) {

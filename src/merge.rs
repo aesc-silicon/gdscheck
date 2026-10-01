@@ -19,8 +19,7 @@ use crate::geom::{
     ENCLOSURE_MAX_REACH, EnclosurePair, FacingRun, Limit, closest, enclosure_pairs, facing_runs,
     poly_from_merged, width_pairs,
 };
-use crate::layout::FlatLayout;
-use gds21::GdsBoundary;
+use crate::layout::{FlatLayout, Shape, Shapes};
 use i_overlay::core::fill_rule::FillRule;
 use i_overlay::core::overlay_rule::OverlayRule;
 use i_overlay::float::simplify::SimplifyShape;
@@ -118,14 +117,14 @@ fn offset_round(d: f64) -> OutlineStyle<f64> {
 /// Union the given boundaries into non-overlapping regions at full integer
 /// precision.  Touching and overlapping shapes are dissolved into single
 /// regions; enclosed empty space becomes a hole.
-pub fn merge_boundaries(boundaries: &[GdsBoundary]) -> Vec<MergedPoly> {
+pub fn merge_boundaries(boundaries: &Shapes) -> Vec<MergedPoly> {
     merge_iter(boundaries.iter())
 }
 
-/// Like [`merge_boundaries`] but over a slice of references — used by the tiled
-/// path, where each tile owns references into the shared layer.
-pub fn merge_refs(boundaries: &[&GdsBoundary]) -> Vec<MergedPoly> {
-    merge_iter(boundaries.iter().copied())
+/// Like [`merge_boundaries`] but over some of the shapes, by index — used by the
+/// tiled path, where each tile owns indices into the shared layer.
+fn merge_indexed(boundaries: &Shapes, which: &[u32]) -> Vec<MergedPoly> {
+    merge_iter(which.iter().map(|&i| boundaries.get(i as usize)))
 }
 
 /// Convert GDS boundaries into i_overlay float single-contour shapes.
@@ -141,15 +140,16 @@ pub fn merge_refs(boundaries: &[&GdsBoundary]) -> Vec<MergedPoly> {
 /// MB and tens of GB.  The key is the CCW vertex sequence rotated to its
 /// lexicographically smallest vertex, so duplicates that differ only in start
 /// vertex or winding also collapse.
-fn boundaries_to_shapes<'a>(it: impl Iterator<Item = &'a GdsBoundary>) -> Vec<Vec<Vec<[f64; 2]>>> {
+fn boundaries_to_shapes<'a>(it: impl Iterator<Item = Shape<'a>>) -> Vec<Vec<Vec<[f64; 2]>>> {
     let mut seen: HashSet<Vec<(i32, i32)>> = HashSet::new();
     it.filter_map(|b| {
-        let n = b.xy.len().saturating_sub(1);
+        let xy = b.xy();
+        let n = xy.len().saturating_sub(1);
         if n < 3 {
             return None;
         }
-        let area2 = signed_area2_xy(&b.xy[..n]);
-        let mut pts: Vec<[f64; 2]> = b.xy[..n].iter().map(|p| [p.x as f64, p.y as f64]).collect();
+        let area2 = signed_area2_xy(&xy[..n]);
+        let mut pts: Vec<[f64; 2]> = xy[..n].iter().map(|p| [p.x as f64, p.y as f64]).collect();
         if area2 < 0 {
             pts.reverse();
         }
@@ -213,7 +213,7 @@ fn drop_collinear(pts: Vec<IntPoint>) -> Vec<IntPoint> {
     if out.len() < 3 { pts } else { out }
 }
 
-fn merge_iter<'a>(it: impl Iterator<Item = &'a GdsBoundary>) -> Vec<MergedPoly> {
+fn merge_iter<'a>(it: impl Iterator<Item = Shape<'a>>) -> Vec<MergedPoly> {
     let shapes = boundaries_to_shapes(it);
     if shapes.is_empty() {
         return Vec::new();
@@ -226,7 +226,7 @@ fn merge_iter<'a>(it: impl Iterator<Item = &'a GdsBoundary>) -> Vec<MergedPoly> 
 /// then the layers are intersected pairwise.  Used for device-recognition virtual
 /// layers (e.g. `CuPillarPad = Passiv.pillar AND dfpad`): if any input layer is
 /// empty, the result is empty.
-pub fn intersect_layers(layers: &[&[GdsBoundary]]) -> Vec<MergedPoly> {
+pub fn intersect_layers(layers: &[&Shapes]) -> Vec<MergedPoly> {
     let Some((first, rest)) = layers.split_first() else {
         return Vec::new();
     };
@@ -245,7 +245,7 @@ pub fn intersect_layers(layers: &[&[GdsBoundary]]) -> Vec<MergedPoly> {
 /// `base` and each clip are unioned first, then the clips are subtracted in turn.
 /// Used for subtraction virtual layers (e.g. `ContNoSealring = Cont NOT EdgeSeal`).
 /// Returns merged regions with holes preserved.
-pub fn difference_layers(base: &[GdsBoundary], clips: &[&[GdsBoundary]]) -> Vec<MergedPoly> {
+pub fn difference_layers(base: &Shapes, clips: &[&Shapes]) -> Vec<MergedPoly> {
     let mut acc = boundaries_to_shapes(base.iter()).simplify_shape(FillRule::NonZero);
     for clip in clips {
         if acc.is_empty() {
@@ -5972,12 +5972,12 @@ pub fn analyze_regions(
         .collect()
 }
 
-fn bbox_of(b: &GdsBoundary) -> Option<(i32, i32, i32, i32)> {
+fn bbox_of(b: &Shape) -> Option<(i32, i32, i32, i32)> {
     let mut x0 = i32::MAX;
     let mut y0 = i32::MAX;
     let mut x1 = i32::MIN;
     let mut y1 = i32::MIN;
-    for p in &b.xy {
+    for p in b.xy() {
         x0 = x0.min(p.x);
         y0 = y0.min(p.y);
         x1 = x1.max(p.x);
@@ -5999,13 +5999,13 @@ fn bbox_of(b: &GdsBoundary) -> Option<(i32, i32, i32, i32)> {
 /// for a *local* rule (width/space/notch ≤ halo) each tile's geometry is
 /// identical to a global merge within its core, because both walls of a thin
 /// feature and any shape that would merge with near-core geometry lie in the halo.
-fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -> TileMap {
+fn build_tiled_merge(boundaries: &Shapes, tile_dbu: i32, halo_dbu: i32) -> TileMap {
     let tile = tile_dbu.max(1) as i64;
     let halo = halo_dbu.max(0) as i64;
 
-    let mut buckets: HashMap<(i32, i32), Vec<&GdsBoundary>> = HashMap::new();
-    for b in boundaries {
-        let Some((x0, y0, x1, y1)) = bbox_of(b) else {
+    let mut buckets: HashMap<(i32, i32), Vec<u32>> = HashMap::new();
+    for (i, b) in boundaries.iter().enumerate() {
+        let Some((x0, y0, x1, y1)) = bbox_of(&b) else {
             continue;
         };
         let tx0 = (x0 as i64 - halo).div_euclid(tile) as i32;
@@ -6014,7 +6014,7 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
         let ty1 = (y1 as i64 + halo).div_euclid(tile) as i32;
         for ty in ty0..=ty1 {
             for tx in tx0..=tx1 {
-                buckets.entry((tx, ty)).or_default().push(b);
+                buckets.entry((tx, ty)).or_default().push(i as u32);
             }
         }
     }
@@ -6026,23 +6026,23 @@ fn build_tiled_merge(boundaries: &[GdsBoundary], tile_dbu: i32, halo_dbu: i32) -
     }
     buckets
         .into_par_iter()
-        .map(|(key, shapes)| (key, merge_refs(&shapes)))
+        .map(|(key, which)| (key, merge_indexed(boundaries, &which)))
         .collect()
 }
 
 /// [`build_tiled_merge`] over the tiles in `only` and no others: a layer's copies
 /// where a much smaller layer lies, for a boolean that can have output nowhere else.
 fn build_tiled_merge_in(
-    boundaries: &[GdsBoundary],
+    boundaries: &Shapes,
     tile_dbu: i32,
     halo_dbu: i32,
     only: &HashSet<(i32, i32)>,
 ) -> TileMap {
     let tile = tile_dbu.max(1) as i64;
     let halo = halo_dbu.max(0) as i64;
-    let mut buckets: HashMap<(i32, i32), Vec<&GdsBoundary>> = HashMap::new();
-    for b in boundaries {
-        let Some((x0, y0, x1, y1)) = bbox_of(b) else {
+    let mut buckets: HashMap<(i32, i32), Vec<u32>> = HashMap::new();
+    for (i, b) in boundaries.iter().enumerate() {
+        let Some((x0, y0, x1, y1)) = bbox_of(&b) else {
             continue;
         };
         let tx0 = (x0 as i64 - halo).div_euclid(tile) as i32;
@@ -6052,14 +6052,14 @@ fn build_tiled_merge_in(
         for ty in ty0..=ty1 {
             for tx in tx0..=tx1 {
                 if only.contains(&(tx, ty)) {
-                    buckets.entry((tx, ty)).or_default().push(b);
+                    buckets.entry((tx, ty)).or_default().push(i as u32);
                 }
             }
         }
     }
     buckets
         .into_par_iter()
-        .map(|(key, shapes)| (key, merge_refs(&shapes)))
+        .map(|(key, which)| (key, merge_indexed(boundaries, &which)))
         .collect()
 }
 

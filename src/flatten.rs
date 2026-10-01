@@ -7,7 +7,7 @@
 //! references and applying the accumulated coordinate transformation.
 
 use crate::layout::FlatLayout;
-use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPath, GdsPoint, GdsStrans, GdsStruct};
+use gds21::{GdsElement, GdsLibrary, GdsPath, GdsPoint, GdsStrans, GdsStruct};
 use std::collections::{HashMap, HashSet};
 
 /// Layers to keep while flattening: `None` keeps everything; `Some(set)` keeps
@@ -250,16 +250,7 @@ fn flatten_cell(
             GdsElement::GdsBoundary(b) if wanted(needed, b.layer, b.datatype) => {
                 let new_xy: Vec<GdsPoint> =
                     b.xy.iter().map(|p| transform.apply(p.x, p.y)).collect();
-                out.insert(
-                    b.layer,
-                    b.datatype,
-                    GdsBoundary {
-                        layer: b.layer,
-                        datatype: b.datatype,
-                        xy: new_xy,
-                        ..Default::default()
-                    },
-                );
+                out.insert_xy(b.layer, b.datatype, &new_xy);
             }
             GdsElement::GdsPath(p) if wanted(needed, p.layer, p.datatype) => {
                 add_path(p, transform, out)
@@ -267,16 +258,7 @@ fn flatten_cell(
             GdsElement::GdsBox(b) if wanted(needed, b.layer, b.boxtype) => {
                 // A BOX is a rectangle; BOXTYPE plays the role of the datatype.
                 let xy: Vec<GdsPoint> = b.xy.iter().map(|p| transform.apply(p.x, p.y)).collect();
-                out.insert(
-                    b.layer,
-                    b.boxtype,
-                    GdsBoundary {
-                        layer: b.layer,
-                        datatype: b.boxtype,
-                        xy,
-                        ..Default::default()
-                    },
-                );
+                out.insert_xy(b.layer, b.boxtype, &xy);
             }
             GdsElement::GdsStructRef(sr) => {
                 let child_tr = Transform::from_strans(sr.strans.as_ref(), sr.xy.x, sr.xy.y);
@@ -445,16 +427,7 @@ fn add_path(path: &GdsPath, transform: &Transform, out: &mut FlatLayout) {
         .chain(std::iter::once(&left[0]))
         .map(|&(x, y)| transform.apply(x.round() as i32, y.round() as i32))
         .collect();
-    out.insert(
-        path.layer,
-        path.datatype,
-        GdsBoundary {
-            layer: path.layer,
-            datatype: path.datatype,
-            xy,
-            ..Default::default()
-        },
-    );
+    out.insert_xy(path.layer, path.datatype, &xy);
 }
 
 pub fn flatten_to_elems(
@@ -480,5 +453,6 @@ pub fn flatten_to_elems(
         &mut out,
         &mut waiving,
     );
+    out.shrink_to_fit();
     out
 }

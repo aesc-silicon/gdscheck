@@ -120,10 +120,10 @@ impl Scope {
 /// A box in DBU: `(x0, y0, x1, y1)`.
 pub type Box = (i64, i64, i64, i64);
 
-fn bbox_of<'a>(shapes: impl Iterator<Item = &'a gds21::GdsBoundary>) -> Option<Box> {
+fn bbox_of<'a>(shapes: impl Iterator<Item = crate::layout::Shape<'a>>) -> Option<Box> {
     let mut b = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
     for s in shapes {
-        for p in &s.xy {
+        for p in s.xy() {
             b.0 = b.0.min(p.x as i64);
             b.1 = b.1.min(p.y as i64);
             b.2 = b.2.max(p.x as i64);

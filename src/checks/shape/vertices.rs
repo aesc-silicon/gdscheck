@@ -24,14 +24,15 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
         rule.id, layer.name
     );
     let mut out = Vec::new();
-    for b in super::super::boundaries_on(layout, layer) {
-        let pts = b.xy.len();
-        let closed = pts >= 2 && b.xy[0] == b.xy[pts - 1];
+    for b in super::super::boundaries_on(layout, layer).iter() {
+        let xy = b.xy();
+        let pts = xy.len();
+        let closed = pts >= 2 && xy[0] == xy[pts - 1];
         let n = if closed { pts - 1 } else { pts };
         if n <= limit || pts == 0 {
             continue;
         }
-        let (x, y) = (b.xy[0].x as f64 * dbu_to_um, b.xy[0].y as f64 * dbu_to_um);
+        let (x, y) = (xy[0].x as f64 * dbu_to_um, xy[0].y as f64 * dbu_to_um);
         out.push(Violation::point(
             &rule.id,
             "Vertex count violation",

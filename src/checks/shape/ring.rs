@@ -20,8 +20,9 @@ pub fn run(rule: &RuleDefinition, layout: &FlatLayout, dbu_to_um: f64) -> Vec<Vi
     let polys: Vec<Vec<(f64, f64)>> = boundaries_on(layout, layer)
         .iter()
         .map(|b| {
-            let n = b.xy.len().saturating_sub(1);
-            b.xy[..n]
+            let xy = b.xy();
+            let n = xy.len().saturating_sub(1);
+            xy[..n]
                 .iter()
                 .map(|p| (p.x as f64 * dbu_to_um, p.y as f64 * dbu_to_um))
                 .collect()
