@@ -213,19 +213,29 @@ fn a_pair_across_a_tile_line_is_reported_once() {
     assert!(v.is_empty());
 }
 
-/// A maximum reads the same pair with the bound the other way, and the exact width
-/// reports either dimension that is off.
+/// A maximum read as `span: any` takes the same pair with the bound the other way, and
+/// the exact width reports either dimension that is off.  Read as the narrowest span,
+/// the default, the box is too wide only once a square of the value fits inside it,
+/// and then once.
 #[test]
 fn the_three_bounds_read_one_box() {
     let lay = layout(vec![brect(A, 0, 0, 300, 320)]);
     let m = cache();
     let go = |k: Kind, check: &str, v: f64, m: &SharedCache| {
-        run(k, &rule(check, &[A], v, &[]), &lay, DBU, m).len()
+        let params: &[(&str, Param)] = if k == Kind::Max {
+            &[("span", word("any"))]
+        } else {
+            &[]
+        };
+        run(k, &rule(check, &[A], v, params), &lay, DBU, m).len()
     };
     assert_eq!(go(Kind::Min, "min_width", 0.3, &m), 0);
     assert_eq!(go(Kind::Min, "min_width", 0.31, &m), 2);
     assert_eq!(go(Kind::Max, "max_width", 0.32, &m), 0);
     assert_eq!(go(Kind::Max, "max_width", 0.31, &m), 2);
+    let narrowest = |v: f64| run(Kind::Max, &rule("max_width", &[A], v, &[]), &lay, DBU, &m).len();
+    assert_eq!(narrowest(0.31), 0);
+    assert_eq!(narrowest(0.29), 1);
     assert_eq!(go(Kind::Exact, "exact_width", 0.3, &m), 2);
     assert_eq!(go(Kind::Exact, "exact_width", 0.31, &m), 4);
 }
@@ -241,7 +251,14 @@ fn a_pinch_is_a_minimum_violation_only() {
     let m = cache();
     let v = run(Kind::Min, &rule("min_width", &[A], 0.5, &[]), &lay, DBU, &m);
     assert_eq!((v.len(), points(&v)), (1, 1), "{v:?}");
-    let v = run(Kind::Max, &rule("max_width", &[A], 0.5, &[]), &lay, DBU, &m);
+    let any = [("span", word("any"))];
+    let v = run(
+        Kind::Max,
+        &rule("max_width", &[A], 0.5, &any),
+        &lay,
+        DBU,
+        &m,
+    );
     assert_eq!(points(&v), 0);
     let v = run(
         Kind::Exact,

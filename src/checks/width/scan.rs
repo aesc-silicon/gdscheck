@@ -224,15 +224,15 @@ pub fn run_width(
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
     let tile = merged.tile_dbu() as i64;
-    // `span: narrowest`, for a maximum: a shape is too wide only where its narrowest
-    // dimension exceeds the value - where a value x value square fits inside it -
-    // rather than wherever two facing walls are further apart than that.  A 1 x 300 µm
-    // filler stripe has a width of 1 by the first reading and of 300 by the second.
-    // IHP reads AFil.a, GFil.a and Pad.a1 the first way (an opening by half the value,
-    // what survives is the violation); its metal-filler and LBE maxima are the bounding
-    // box's long side, `max_length`, no width at all.
+    // A maximum reads `span: narrowest` unless told otherwise: a shape is too wide only
+    // where its narrowest dimension exceeds the value - where a value x value square
+    // fits inside it - the opening by half the value that a rule manual's "maximum
+    // width" and KLayout's decks mean.  `span: any` is every pair of facing walls
+    // further apart than the value: a wire's two ends face each other across its
+    // length, so every wire, L, T and cross longer than the value was too wide.
+    let is_max = matches!(limit, Limit::AtMost(_));
     let narrowest = match rule.word("span") {
-        Some("narrowest") if matches!(limit, Limit::AtMost(_)) => true,
+        Some("narrowest") if is_max => true,
         Some("narrowest") => {
             eprintln!(
                 "[{}] {check_name}: `span: narrowest` is a maximum's reading",
@@ -240,7 +240,8 @@ pub fn run_width(
             );
             false
         }
-        Some("any") | None => false,
+        None => is_max,
+        Some("any") => false,
         Some(other) => {
             eprintln!(
                 "[{}] {check_name}: span can be `any` or `narrowest`, not `{other}`",

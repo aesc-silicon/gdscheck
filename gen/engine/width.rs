@@ -98,6 +98,25 @@ pub fn generate(pdk: &PdkConfig) {
     // A block 12 µm across from 34 to 46, over the line at 40 and over W.max's 10 µm,
     // and 8 µm tall, which is not: the two side walls, once.  W.max: 2.
     write("straddle_max", vec![rect(outer, 34.0, 30.0, 46.0, 38.0)]);
+    // W.wide, a maximum read as the narrowest span (the default): 1 µm wires 30 µm long
+    // - a plain one, an L, a T, a cross - are no wider than 1 however long their arms,
+    // and a 10 µm plate is at the bound.  A 10.002 µm plate and a 12 µm one across the
+    // tile line at x = 240 are too wide, once each.  W.wide: 2.
+    write(
+        "wide_shapes",
+        vec![
+            rect(outer, 60.0, 0.0, 61.0, 30.0),
+            rect(outer, 70.0, 0.0, 71.0, 30.0),
+            rect(outer, 70.0, 0.0, 100.0, 1.0),
+            rect(outer, 110.0, 29.0, 140.0, 30.0),
+            rect(outer, 124.5, 0.0, 125.5, 30.0),
+            rect(outer, 150.0, 14.5, 180.0, 15.5),
+            rect(outer, 164.5, 0.0, 165.5, 30.0),
+            rect(outer, 190.0, 0.0, 200.0, 10.0),
+            rect(outer, 210.0, 0.0, 220.002, 10.002),
+            rect(outer, 234.0, 0.0, 246.0, 12.0),
+        ],
+    );
 
     // A 45° bar 0.6 across and 5 µm long: under W.bent's 0.7, over W.min's 0.5.
     // W.bent: 2, W.min: 0.

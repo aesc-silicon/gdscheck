@@ -203,7 +203,10 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 ///
 /// - `straddle_min` is a 0.4 µm bar across the line at x = 40 with its midpoint off the
 ///   line; `straddle_max` a block 12 µm across it and 8 tall, over W.max's 10 in one
-///   dimension only.
+///   dimension only - W.max reads every facing pair (`span: any`).
+/// - `wide_shapes` is W.wide's, a maximum read as the narrowest span: 1 µm wires 30 µm
+///   long - plain, an L, a T, a cross - and a 10 µm plate are clean, a 10.002 µm plate
+///   and a 12 µm one across x = 240 too wide once each.
 /// - `bent_trace` is a 45° bar 0.6 across and 5 long, under W.bent's 0.7 and over
 ///   W.min's 0.5; `bent_short` the same bar 0.8 long, shorter than W.bent's 1 µm run.
 /// - `length_long` and `length_short` are 0.4 µm bars of Inner 6 and 4 µm long either
@@ -259,6 +262,8 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 #[case("straddle_min", "W.min", 2)]
 #[case("straddle_min", "W.max", 0)]
 #[case("straddle_max", "W.max", 2)]
+#[case("straddle_max", "W.wide", 0)]
+#[case("wide_shapes", "W.wide", 2)]
 #[case("straddle_max", "W.min", 0)]
 #[case("bent_trace", "W.bent", 2)]
 #[case("bent_trace", "W.min", 0)]

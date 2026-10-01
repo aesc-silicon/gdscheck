@@ -15,6 +15,12 @@ rules:
     check: max_width
     layers: [Outer]
     value: 10.0
+    params:
+      span: any
+  - id: W.wide
+    check: max_width
+    layers: [Outer]
+    value: 10.0
   - id: W.bent
     check: min_width
     layers: [Outer]
