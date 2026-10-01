@@ -65,8 +65,85 @@ fn canonical_key(pts: &[[f64; 2]]) -> Vec<(i32, i32)> {
 /// convention the geometric checks rely on.
 #[derive(Clone, PartialEq)]
 pub struct MergedPoly {
-    pub outer: Vec<IntPoint>,
-    pub holes: Vec<Vec<IntPoint>>,
+    pub outer: Ring,
+    pub holes: Holes,
+}
+
+/// A ring as a polygon keeps it: in the polygon when it is small enough, whatever room
+/// the vector it came in had.
+pub fn ring(v: Vec<IntPoint>) -> Ring {
+    if v.len() <= 4 {
+        Ring::from_slice(&v)
+    } else {
+        Ring::from_vec(v)
+    }
+}
+
+impl MergedPoly {
+    /// The outer ring, then every hole.
+    pub fn rings(&self) -> impl Iterator<Item = &[IntPoint]> {
+        std::iter::once(self.outer.as_slice()).chain(self.holes.iter().map(Vec::as_slice))
+    }
+}
+
+/// A polygon's outer ring.  Up to four vertices - every contact, via and rectangle,
+/// most of what a cache holds - are kept in the polygon itself: a copy of a contact
+/// was 48 bytes of polygon and another 48 of heap for its four points.
+pub type Ring = smallvec::SmallVec<[IntPoint; 4]>;
+
+/// A polygon's holes, read and written as the `Vec` of rings it holds.  Most polygons
+/// have none, and hold nothing for them but an empty pointer.
+#[derive(Clone, Default, PartialEq)]
+#[allow(clippy::box_collection)] // the box is the point: 8 bytes where a Vec is 24
+pub struct Holes(Option<Box<Vec<Vec<IntPoint>>>>);
+
+static NO_HOLES: Vec<Vec<IntPoint>> = Vec::new();
+
+impl Holes {
+    pub fn new() -> Self {
+        Holes(None)
+    }
+}
+
+impl From<Vec<Vec<IntPoint>>> for Holes {
+    fn from(v: Vec<Vec<IntPoint>>) -> Self {
+        Holes((!v.is_empty()).then(|| Box::new(v)))
+    }
+}
+
+impl FromIterator<Vec<IntPoint>> for Holes {
+    fn from_iter<I: IntoIterator<Item = Vec<IntPoint>>>(it: I) -> Self {
+        Holes::from(it.into_iter().collect::<Vec<_>>())
+    }
+}
+
+impl std::ops::Deref for Holes {
+    type Target = Vec<Vec<IntPoint>>;
+    fn deref(&self) -> &Vec<Vec<IntPoint>> {
+        self.0.as_deref().unwrap_or(&NO_HOLES)
+    }
+}
+
+impl std::ops::DerefMut for Holes {
+    fn deref_mut(&mut self) -> &mut Vec<Vec<IntPoint>> {
+        self.0.get_or_insert_with(Box::default)
+    }
+}
+
+impl IntoIterator for Holes {
+    type Item = Vec<IntPoint>;
+    type IntoIter = std::vec::IntoIter<Vec<IntPoint>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.map(|b| *b).unwrap_or_default().into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Holes {
+    type Item = &'a Vec<IntPoint>;
+    type IntoIter = std::slice::Iter<'a, Vec<IntPoint>>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
 }
 
 /// Twice the signed area of a closed contour (shoelace), in DBU².
@@ -183,7 +260,10 @@ fn shapes_to_merged(shapes: Vec<Vec<Vec<[f64; 2]>>>) -> Vec<MergedPoly> {
             }
             let outer = to_int(shape.remove(0));
             let holes = shape.into_iter().map(to_int).collect();
-            Some(MergedPoly { outer, holes })
+            Some(MergedPoly {
+                outer: ring(outer),
+                holes,
+            })
         })
         .collect()
 }
@@ -572,13 +652,13 @@ fn grown_reference(
                 let (gx0, gy0) = (rx0 as f64 - value, ry0 as f64 - value);
                 let (gx1, gy1) = (rx1 as f64 + value, ry1 as f64 + value);
                 MergedPoly {
-                    outer: vec![
+                    outer: smallvec::smallvec![
                         IntPoint::new(gx0 as i32, gy0 as i32),
                         IntPoint::new(gx1 as i32, gy0 as i32),
                         IntPoint::new(gx1 as i32, gy1 as i32),
                         IntPoint::new(gx0 as i32, gy1 as i32),
                     ],
-                    holes: Vec::new(),
+                    holes: Holes::new(),
                 }
             })
             .collect()
@@ -933,7 +1013,7 @@ fn thin_outlines(polys: Vec<MergedPoly>, eps: f64) -> Vec<MergedPoly> {
     polys
         .into_iter()
         .map(|m| MergedPoly {
-            outer: thin(&m.outer),
+            outer: ring(thin(&m.outer)),
             holes: m.holes.iter().map(|h| thin(h)).collect(),
         })
         .filter(|m| m.outer.len() >= 3)
@@ -1624,8 +1704,8 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
                                 .collect();
                         if ring_area2(&outer_ring).abs() > 0.0 {
                             out.push(MergedPoly {
-                                outer: outer_ring,
-                                holes: Vec::new(),
+                                outer: ring(outer_ring),
+                                holes: Holes::new(),
                             });
                         }
                     }
@@ -1672,8 +1752,8 @@ pub fn compose_tile(op: VirtualOp, sources: &[&[MergedPoly]]) -> Vec<MergedPoly>
                             .collect();
                         if ring_area2(&outer).abs() > 0.0 {
                             out.push(MergedPoly {
-                                outer,
-                                holes: Vec::new(),
+                                outer: ring(outer),
+                                holes: Holes::new(),
                             });
                         }
                     }
@@ -1870,8 +1950,8 @@ fn enclosure_quad(p: &EnclosurePair) -> Option<MergedPoly> {
         .map(|&(x, y)| IntPoint::new(x.round() as i32, y.round() as i32))
         .collect();
     (ring_area2(&outer).abs() > 0.0).then_some(MergedPoly {
-        outer,
-        holes: Vec::new(),
+        outer: ring(outer),
+        holes: Holes::new(),
     })
 }
 
@@ -2190,7 +2270,7 @@ pub type EdgeTileMap = HashMap<(i32, i32), Vec<Edge>>;
 /// Every contour segment of a merged region — outer ring and holes alike.
 pub fn region_edges(m: &MergedPoly) -> Vec<Edge> {
     let mut out = Vec::new();
-    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+    for ring in m.rings() {
         let n = ring.len();
         if n < 3 {
             continue;
@@ -3112,7 +3192,7 @@ fn clipped_seg_len(a: IntPoint, b: IntPoint, x0: f64, y0: f64, x1: f64, y1: f64)
 /// each real edge falls in exactly one core.
 pub fn poly_perimeter_in_core(m: &MergedPoly, x0: f64, y0: f64, x1: f64, y1: f64) -> f64 {
     let mut total = 0.0;
-    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+    for ring in m.rings() {
         let n = ring.len();
         if n < 3 {
             continue;
@@ -4225,14 +4305,12 @@ fn segs_intersect(p: IntPoint, p2: IntPoint, q: IntPoint, q2: IntPoint) -> bool 
 
 /// Every edge of a region's contours (outer ring and holes), as point pairs.
 fn poly_edges(m: &MergedPoly) -> impl Iterator<Item = (IntPoint, IntPoint)> + '_ {
-    std::iter::once(&m.outer)
-        .chain(m.holes.iter())
-        .flat_map(|ring| {
-            ring.iter()
-                .zip(ring.iter().cycle().skip(1))
-                .take(ring.len())
-                .map(|(a, b)| (*a, *b))
-        })
+    m.rings().flat_map(|ring| {
+        ring.iter()
+            .zip(ring.iter().cycle().skip(1))
+            .take(ring.len())
+            .map(|(a, b)| (*a, *b))
+    })
 }
 
 /// Whether two merged polygons overlap **or merely touch** — the KLayout `interacting`
@@ -4525,13 +4603,13 @@ fn build_extents_tiles(cand: &TileMap, tile_dbu: i32) -> TileMap {
     for b in bb.into_iter().flatten() {
         let (x0, y0, x1, y1) = b;
         let poly = MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(x0 as i32, y0 as i32),
                 IntPoint::new(x1 as i32, y0 as i32),
                 IntPoint::new(x1 as i32, y1 as i32),
                 IntPoint::new(x0 as i32, y1 as i32),
             ],
-            holes: Vec::new(),
+            holes: Holes::new(),
         };
         for tx in x0.div_euclid(t)..=x1.div_euclid(t) {
             for ty in y0.div_euclid(t)..=y1.div_euclid(t) {
@@ -4994,7 +5072,7 @@ pub fn region_holes(tiles: &TileMap, tile_dbu: i32) -> Vec<Vec<IntPoint>> {
         .into_par_iter()
         .flat_map_iter(|ps| match ps.as_slice() {
             [] => Vec::new(),
-            [(_, m)] => m.holes.clone(),
+            [(_, m)] => m.holes.to_vec(),
             many => {
                 let block: Vec<MergedPoly> = many
                     .iter()
@@ -5030,8 +5108,8 @@ fn holes_of(m: &MergedPoly) -> Vec<MergedPoly> {
             let mut outer = h.clone();
             outer.reverse();
             MergedPoly {
-                outer,
-                holes: Vec::new(),
+                outer: ring(outer),
+                holes: Holes::new(),
             }
         })
         .collect()
@@ -7820,6 +7898,24 @@ impl SharedCache {
 mod tests {
     use super::*;
 
+    /// A contact's copy is the polygon and nothing else: four points held inline, no
+    /// holes but an empty pointer.  Forty-five million of them on one design.
+    #[test]
+    fn a_small_polygon_is_one_block() {
+        assert_eq!(std::mem::size_of::<MergedPoly>(), 48);
+        let m = MergedPoly {
+            outer: super::ring(vec![
+                IntPoint::new(0, 0),
+                IntPoint::new(10, 0),
+                IntPoint::new(10, 10),
+                IntPoint::new(0, 10),
+            ]),
+            holes: Holes::new(),
+        };
+        assert!(!m.outer.spilled());
+        assert!(m.holes.is_empty());
+    }
+
     /// A violation on a tile line has to be claimed, and by a tile that can see it.
     #[test]
     fn a_point_on_a_tile_line_is_claimed_by_both_its_tiles() {
@@ -7855,7 +7951,7 @@ mod tests {
         let ring = |pts: &[(i32, i32)]| pts.iter().map(|&(x, y)| IntPoint { x, y }).collect();
         let m = MergedPoly {
             outer: ring(&[(0, 0), (100, 0), (100, 100), (0, 100)]),
-            holes: vec![ring(&[(40, 40), (40, 60), (60, 60), (60, 40)])],
+            holes: vec![ring(&[(40, 40), (40, 60), (60, 60), (60, 40)]).to_vec()].into(),
         };
         assert!(point_on_or_in_merged(0.0, 35.0, &m));
         assert!(point_on_or_in_merged(100.0, 100.0, &m));
@@ -7926,13 +8022,13 @@ mod tests {
 
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(x0, y0),
                 IntPoint::new(x1, y0),
                 IntPoint::new(x1, y1),
                 IntPoint::new(x0, y1),
             ],
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -7967,7 +8063,7 @@ mod tests {
     /// L-shape: 100×100 bounding box (square box) but only three quarters filled.
     fn lshape() -> MergedPoly {
         MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(0, 0),
                 IntPoint::new(100, 0),
                 IntPoint::new(100, 50),
@@ -7975,7 +8071,7 @@ mod tests {
                 IntPoint::new(50, 100),
                 IntPoint::new(0, 100),
             ],
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -8019,13 +8115,13 @@ mod pieces_are_a_region {
     use super::*;
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(x0, y0),
                 IntPoint::new(x1, y0),
                 IntPoint::new(x1, y1),
                 IntPoint::new(x0, y1),
             ],
-            holes: Vec::new(),
+            holes: crate::merge::Holes::new(),
         }
     }
     fn area(v: &[MergedPoly]) -> f64 {

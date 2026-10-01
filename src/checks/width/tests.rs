@@ -39,7 +39,7 @@ fn core() -> Core {
 fn poly(pts: &[(i32, i32)]) -> MergedPoly {
     MergedPoly {
         outer: pts.iter().map(|&(x, y)| pt(x, y)).collect(),
-        holes: vec![],
+        holes: crate::merge::Holes::new(),
     }
 }
 
@@ -509,8 +509,8 @@ fn a_malformed_gate_rule_reports_nothing() {
 #[test]
 fn oblique_45_thin_trace_flags_both_walls() {
     let poly = MergedPoly {
-        outer: vec![pt(0, 0), pt(1000, 1000), pt(900, 1100), pt(-100, 100)],
-        holes: vec![],
+        outer: smallvec::smallvec![pt(0, 0), pt(1000, 1000), pt(900, 1100), pt(-100, 100)],
+        holes: crate::merge::Holes::new(),
     };
     let v = scan_widths(
         &poly,
@@ -533,8 +533,8 @@ fn oblique_45_thin_trace_flags_both_walls() {
 #[test]
 fn oblique_45_wide_trace_is_clean() {
     let poly = MergedPoly {
-        outer: vec![pt(0, 0), pt(1000, 1000), pt(0, 2000), pt(-1000, 1000)],
-        holes: vec![],
+        outer: smallvec::smallvec![pt(0, 0), pt(1000, 1000), pt(0, 2000), pt(-1000, 1000)],
+        holes: crate::merge::Holes::new(),
     };
     let v = scan_widths(
         &poly,
@@ -562,14 +562,14 @@ fn oblique_45_wide_trace_is_clean() {
 #[test]
 fn chamfered_corner_narrows_against_the_opposite_wall() {
     let poly = MergedPoly {
-        outer: vec![
+        outer: smallvec::smallvec![
             pt(0, 0),
             pt(1000, 0),
             pt(1000, 2000),
             pt(500, 2000),
             pt(0, 1500),
         ],
-        holes: vec![],
+        holes: crate::merge::Holes::new(),
     };
     let scan = |limit_dbu: i64, mixed: bool| {
         scan_widths(
@@ -607,8 +607,8 @@ fn chamfered_corner_narrows_against_the_opposite_wall() {
 #[test]
 fn max_width_square_flags_four_walls() {
     let poly = MergedPoly {
-        outer: vec![pt(0, 0), pt(200, 0), pt(200, 200), pt(0, 200)],
-        holes: vec![],
+        outer: smallvec::smallvec![pt(0, 0), pt(200, 0), pt(200, 200), pt(0, 200)],
+        holes: crate::merge::Holes::new(),
     };
     let v = scan_widths(
         &poly,

@@ -646,7 +646,7 @@ pub fn run(
                     let dot = d0.0 * d1.0 + d0.1 * d1.1;
                     cross.abs() < 0.5 * ((d0.0 * d0.0 + d0.1 * d0.1).sqrt() + 1.0) && dot < 0.0
                 };
-                let rings = std::iter::once(&whole.outer).chain(whole.holes.iter());
+                let rings = whole.rings();
                 for ring in rings {
                     let n = ring.len();
                     for i in 0..n {
@@ -1225,7 +1225,7 @@ pub fn run(
                 let unioned = crate::merge::union_pieces(owned);
                 let mut segs = Vec::new();
                 for m in &unioned {
-                    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+                    for ring in m.rings() {
                         let n = ring.len();
                         for i in 0..n {
                             let (a, b) = (ring[i], ring[(i + 1) % n]);

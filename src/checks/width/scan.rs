@@ -91,7 +91,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     // a hundred thousand intersections to learn that, on every width rule of the deck.
     let mut at: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
     for (i, p) in polys.iter().enumerate() {
-        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+        for q in p.rings().flatten() {
             let owners = at.entry((q.x, q.y)).or_default();
             if owners.last() != Some(&i) {
                 owners.push(i);
@@ -111,7 +111,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     // Within one polygon: a vertex its own rings visit twice.
     for p in polys {
         let mut count: HashMap<(i32, i32), u32> = HashMap::new();
-        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+        for q in p.rings().flatten() {
             *count.entry((q.x, q.y)).or_default() += 1;
         }
         let mut twice: Vec<_> = count
@@ -133,7 +133,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     let mut edges: Vec<(IntPoint, IntPoint)> = Vec::new();
     let mut by_cell: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
     for p in polys {
-        for ring in std::iter::once(&p.outer).chain(p.holes.iter()) {
+        for ring in p.rings() {
             let n = ring.len();
             for i in 0..n {
                 let (a, b) = (ring[i], ring[(i + 1) % n]);
@@ -153,7 +153,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     let collinear = |u: (i128, i128), v: (i128, i128)| u.0 * v.1 - u.1 * v.0 == 0;
     let mut touched: Vec<(i32, i32)> = Vec::new();
     for p in polys {
-        for ring in std::iter::once(&p.outer).chain(p.holes.iter()) {
+        for ring in p.rings() {
             let n = ring.len();
             for i in 0..n {
                 let v = ring[i];

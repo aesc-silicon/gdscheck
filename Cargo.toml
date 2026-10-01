@@ -72,4 +72,5 @@ flate2 = "1"
 quick-xml = { version = "0.42", features = ["serialize"] }
 rayon = "1"
 libc = "0.2"
+smallvec = { version = "1.13", features = ["union", "const_generics"] }
 i_overlay = "9.0.0"

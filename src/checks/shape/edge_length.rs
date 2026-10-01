@@ -90,7 +90,7 @@ pub fn run(
         for (&(tx, ty), polys) in merged.tiles(key.0, key.1).iter() {
             let core = core_of(tx, ty);
             for m in polys.iter() {
-                for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+                for ring in m.rings() {
                     let n = ring.len();
                     for i in 0..n {
                         let (a, b) = (ring[i], ring[(i + 1) % n]);

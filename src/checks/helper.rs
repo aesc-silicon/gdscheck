@@ -751,7 +751,7 @@ fn covered_by(p: (f64, f64), q: (f64, f64), polys: &[MergedPoly]) -> bool {
     let (dx, dy) = (q.0 - p.0, q.1 - p.1);
     let mut ts: Vec<f64> = vec![0.0, 1.0];
     for m in polys {
-        for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+        for ring in m.rings() {
             let n = ring.len();
             for i in 0..n {
                 let (a, b) = (ring[i], ring[(i + 1) % n]);

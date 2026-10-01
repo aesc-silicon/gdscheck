@@ -247,7 +247,7 @@ impl<'a> WallFilter<'a> {
             obliques: Vec::new(),
         };
         for m in reference {
-            for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+            for ring in m.rings() {
                 let n = ring.len();
                 for i in 0..n {
                     let (a, b) = (ring[i], ring[(i + 1) % n]);
@@ -394,7 +394,7 @@ fn outside_part(
 ) -> Vec<(f64, f64)> {
     let mut cuts = vec![lo, hi];
     for m in region {
-        for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+        for ring in m.rings() {
             let n = ring.len();
             for i in 0..n {
                 let (p, q) = (ring[i], ring[(i + 1) % n]);
@@ -794,7 +794,7 @@ fn acute_corners(
     core: Core,
     push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
 ) {
-    for ring in std::iter::once(&poly.outer).chain(poly.holes.iter()) {
+    for ring in poly.rings() {
         let n = ring.len();
         if n < 3 {
             continue;
@@ -2252,7 +2252,7 @@ mod width_tests {
     fn poly(pts: &[(i32, i32)]) -> MergedPoly {
         MergedPoly {
             outer: pts.iter().map(|&(x, y)| IntPoint::new(x, y)).collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -2347,7 +2347,7 @@ mod wall_filter_tests {
     fn poly(pts: &[(i32, i32)]) -> MergedPoly {
         MergedPoly {
             outer: pts.iter().map(|&(x, y)| IntPoint::new(x, y)).collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -2558,7 +2558,7 @@ fn in_ring(p: (i64, i64), ring: &[IntPoint]) -> bool {
 impl<'a> Outline<'a> {
     pub fn new(poly: &'a MergedPoly) -> Self {
         let mut segs = Vec::new();
-        for ring in std::iter::once(&poly.outer).chain(poly.holes.iter()) {
+        for ring in poly.rings() {
             let n = ring.len();
             if n < 3 {
                 continue;
@@ -2614,8 +2614,8 @@ impl<'a> Outline<'a> {
     }
 
     fn vertices(&self) -> impl Iterator<Item = (i64, i64)> + '_ {
-        std::iter::once(&self.poly.outer)
-            .chain(self.poly.holes.iter())
+        self.poly
+            .rings()
             .flatten()
             .map(|p| (p.x as i64, p.y as i64))
     }
@@ -3697,13 +3697,13 @@ mod space_tests {
 
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(x0, y0),
                 IntPoint::new(x1, y0),
                 IntPoint::new(x1, y1),
                 IntPoint::new(x0, y1),
             ],
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -3809,7 +3809,7 @@ mod space_tests {
             .iter()
             .map(|&(x, y)| IntPoint::new(x, y))
             .collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         };
         let ol = Outline::new(&l);
         // A 0.3 by 0.1 bar over the L's arm, 0.2 above it and 0.5 short of its upright.
@@ -3830,7 +3830,7 @@ mod space_tests {
                 .iter()
                 .map(|&(x, y)| IntPoint::new(x, y))
                 .collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         };
         let oa = Outline::new(&a);
         let near = rect(1200, 0, 1500, 1000);
@@ -3843,7 +3843,7 @@ mod space_tests {
                 .iter()
                 .map(|&(x, y)| IntPoint::new(x, y))
                 .collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         };
         let above = rect(0, 1200, 1000, 1500);
         assert!(!has_diagonal_within(
@@ -3876,7 +3876,7 @@ mod space_tests {
         ));
         let ring = MergedPoly {
             outer: rect(0, 0, 100, 100).outer,
-            holes: vec![rect(30, 30, 70, 70).outer],
+            holes: vec![rect(30, 30, 70, 70).outer.to_vec()].into(),
         };
         let island = rect(40, 40, 60, 60);
         assert!(

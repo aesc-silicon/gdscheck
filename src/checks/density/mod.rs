@@ -36,7 +36,7 @@ mod tests;
 
 use super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
-use crate::merge::{SharedCache, TileMap, clipped_area_dbu};
+use crate::merge::{Holes, SharedCache, TileMap, clipped_area_dbu, ring};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -159,8 +159,8 @@ fn filled_die(die: &TileMap, tile: i64) -> Option<TileMap> {
     let mut out = die.clone();
     for hole in holes {
         let poly = crate::merge::MergedPoly {
-            outer: hole,
-            holes: vec![],
+            outer: ring(hole),
+            holes: Holes::new(),
         };
         let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
         for p in &poly.outer {

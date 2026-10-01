@@ -183,7 +183,7 @@ fn seg_poly_dist(e: (f64, f64, f64, f64), m: &MergedPoly, best_so_far: f64) -> f
         return 0.0;
     }
     let mut best = best_so_far;
-    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+    for ring in m.rings() {
         let n = ring.len();
         for i in 0..n {
             let (p, q) = (&ring[i], &ring[(i + 1) % n]);
@@ -303,13 +303,13 @@ mod tests {
 
     fn square(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(x0, y0),
                 IntPoint::new(x1, y0),
                 IntPoint::new(x1, y1),
                 IntPoint::new(x0, y1),
             ],
-            holes: Vec::new(),
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -347,7 +347,7 @@ mod tests {
         );
         let ring = MergedPoly {
             outer: square(0, 0, 100, 100).outer,
-            holes: vec![square(40, 40, 60, 60).outer],
+            holes: vec![square(40, 40, 60, 60).outer.to_vec()].into(),
         };
         assert_eq!(
             seg_poly_dist((50.0, 50.0, 50.0, 50.0), &ring, f64::INFINITY),

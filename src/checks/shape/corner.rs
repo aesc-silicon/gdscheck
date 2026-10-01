@@ -132,7 +132,7 @@ pub fn run(
             y1: (ty as i64 + 1) * tile,
         };
         for m in polys.iter() {
-            for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+            for ring in m.rings() {
                 let n = ring.len();
                 if n < 3 {
                     continue;
