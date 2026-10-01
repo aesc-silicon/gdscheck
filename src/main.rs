@@ -4,7 +4,7 @@
 
 use clap::{ArgGroup, Parser, Subcommand};
 use gdscheck::pdk::{self, Origin, PdkConfig};
-use gdscheck::{RunOptions, load_gds, report, run_drc_with_options};
+use gdscheck::{RunOptions, load_gds, report, run_drc_owned};
 use rayon::ThreadPoolBuilder;
 use std::path::PathBuf;
 
@@ -377,8 +377,8 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
         memory_limit: args.memory,
         stats: args.stats,
     };
-    let violations = match run_drc_with_options(
-        &lib,
+    let violations = match run_drc_owned(
+        lib,
         &resolved.spec,
         &decks,
         args.suite.as_deref(),

@@ -1041,6 +1041,7 @@ impl Default for RunOptions {
 enum LibSource<'a> {
     Path(&'a str),
     Loaded(&'a GdsLibrary),
+    Owned(GdsLibrary),
 }
 
 /// [`run_drc`] over a library already in memory.  The command line reads the file once
@@ -1062,6 +1063,28 @@ pub fn run_drc_with(
         topcell,
         connectivity,
         &RunOptions::default(),
+    )
+}
+
+/// [`run_drc_with_options`] over a library the run may have: it is dropped once the
+/// layout is flattened, and what the hierarchy held is the run's again.
+pub fn run_drc_owned(
+    lib: GdsLibrary,
+    process: &str,
+    decks: &[&str],
+    suite: Option<&str>,
+    topcell: &str,
+    connectivity: bool,
+    options: &RunOptions,
+) -> Result<Vec<Violation>, String> {
+    run_drc_impl(
+        LibSource::Owned(lib),
+        process,
+        decks,
+        suite,
+        topcell,
+        connectivity,
+        options,
     )
 }
 
@@ -1139,13 +1162,11 @@ fn run_drc_impl(
     let limit = memory::limit(options.memory_limit);
     let watch = memory::Watch::start(limit.clone());
     watch.at("loading the layout");
-    let owned: GdsLibrary;
+    let mut owned: Option<GdsLibrary> = None;
     let lib: &GdsLibrary = match source {
         LibSource::Loaded(l) => l,
-        LibSource::Path(p) => {
-            owned = load_gds(p).map_err(|e| e.to_string())?;
-            &owned
-        }
+        LibSource::Owned(l) => owned.insert(l),
+        LibSource::Path(p) => owned.insert(load_gds(p).map_err(|e| e.to_string())?),
     };
     if !lib.structs.iter().any(|s| s.name == topcell) {
         return Err(format!("Topcell '{topcell}' not found in library"));
@@ -1260,6 +1281,17 @@ fn run_drc_impl(
 
     watch.at("flattening the layout");
     let mut layout = flatten::flatten_to_elems(topcell, lib, needed.as_ref(), &pdk.waivers);
+    // Nothing reads the hierarchy past this point.  Handed back to the system only
+    // when it was large: the plan below reads the resident set, and a trim costs a
+    // walk over every arena, which a thousand small runs side by side - the test
+    // suites - pay over and over for nothing.
+    if let Some(lib) = owned.take() {
+        let large = lib.structs.iter().map(|s| s.elems.len()).sum::<usize>() >= 1_000_000;
+        drop(lib);
+        if large {
+            memory::trim();
+        }
+    }
     layout.scale(scale);
     phase.end("flatten");
     if options.stats {
