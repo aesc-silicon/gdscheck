@@ -588,8 +588,8 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
                 y1: (ty as i64 + 1) * tile,
             };
             let a_polys = &map_a[&(tx, ty)];
-            let b_polys = map_b.get(&(tx, ty)).unwrap_or(&empty);
-            let gap_polys = gap_map.map(|m| m.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]));
+            let b_polys = map_b.get(&(tx, ty)).map(|t| &**t).unwrap_or(&empty);
+            let gap_polys = gap_map.map(|m| m.get(&(tx, ty)).map(|t| t.as_slice()).unwrap_or(&[]));
             let zone = (
                 core.x0 - zone_halo,
                 core.y0 - zone_halo,

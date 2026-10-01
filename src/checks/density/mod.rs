@@ -209,7 +209,7 @@ pub fn coverage_dbu2(maps: &[&TileMap], tile: i64, window: Box) -> f64 {
                     let cy0 = (ty * tile).max(wy0) as f64;
                     let cx1 = ((tx + 1) * tile).min(wx1) as f64;
                     let cy1 = ((ty + 1) * tile).min(wy1) as f64;
-                    for p in polys {
+                    for p in polys.iter() {
                         covered += clipped_area_dbu(p, cx0, cy0, cx1, cy1);
                     }
                 }
@@ -328,7 +328,7 @@ pub fn run(
             .map(|k| {
                 let parts: Vec<&[crate::merge::MergedPoly]> = layer_maps
                     .iter()
-                    .filter_map(|m| m.get(&k).map(Vec::as_slice))
+                    .filter_map(|m| m.get(&k).map(|t| t.as_slice()))
                     .collect();
                 let polys = if parts.len() == 1 {
                     parts[0].to_vec()
@@ -337,6 +337,7 @@ pub fn run(
                 };
                 (k, polys)
             })
+            .map(|(k, v)| (k, crate::merge::Tile::from(v)))
             .collect();
         vec![&union]
     } else {
@@ -360,6 +361,7 @@ pub fn run(
                         ),
                     ))
                 })
+                .map(|(k, v)| (k, crate::merge::Tile::from(v)))
                 .collect();
             vec![&clipped]
         }

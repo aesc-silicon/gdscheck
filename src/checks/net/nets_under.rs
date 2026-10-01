@@ -111,7 +111,7 @@ pub fn run(
             let Some(polys) = net_tiles.get(ptile) else {
                 continue;
             };
-            for np in polys {
+            for np in polys.iter() {
                 let (nx, ny) = crate::merge::inside_point(np);
                 if point_in_merged(nx, ny, piece)
                     && let Some(n) = conn.net_at(net_key, nx, ny)

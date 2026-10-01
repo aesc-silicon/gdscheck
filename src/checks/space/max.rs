@@ -261,7 +261,7 @@ fn run_edges(
                 let Some(polys) = btiles.get(&(tx as i32, ty as i32)) else {
                     continue;
                 };
-                for m in polys {
+                for m in polys.iter() {
                     best = seg_poly_dist(seg, m, best);
                     if best <= limit {
                         break 'tiles; // near enough; the exact distance does not matter

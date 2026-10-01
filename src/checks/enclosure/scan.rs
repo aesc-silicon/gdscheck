@@ -676,7 +676,7 @@ pub fn run(
                     .any(|&w| !real_wall(w));
                 if clipped { Some(None) } else { None }
             };
-            let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
+            let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).map(|t| &**t).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
             // The line-end caps of each enclosing shape of the tile, found once: a
             // track's caps are the same for every via on it, and finding them walks
@@ -687,7 +687,7 @@ pub fn run(
             // What this tile found: the region, the wall and the margin the report is
             // about (none for a report without one), the tile, and the report.
             let mut out: Vec<Report> = Vec::new();
-            let b_tile: &[MergedPoly] = map_b.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]);
+            let b_tile: &[MergedPoly] = map_b.get(&(tx, ty)).map(|t| t.as_slice()).unwrap_or(&[]);
             for (bm, region, index) in b_polys.iter(b_tile) {
                 // Every real wall lies in some tile's core and is read there, so a
                 // tile reads the part of the shape in its core and no more: a piece

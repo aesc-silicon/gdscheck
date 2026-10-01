@@ -80,7 +80,7 @@ pub fn run(
                 y1: (ty as i64 + 1) * tile,
             };
             let mut out = Vec::new();
-            for pm in ps {
+            for pm in ps.iter() {
                 let Some(p) = poly_from_merged(pm, dbu_to_um) else {
                     continue;
                 };

@@ -44,7 +44,7 @@ pub fn run(
                 let (x0, y0) = (tx as i64 * t, ty as i64 * t);
                 let (x1, y1) = ((tx as i64 + 1) * t, (ty as i64 + 1) * t);
                 let mut v = Vec::new();
-                for poly in polys {
+                for poly in polys.iter() {
                     for p in poly.outer.iter().chain(poly.holes.iter().flatten()) {
                         let (x, y) = (p.x as i64, p.y as i64);
                         if x >= x0

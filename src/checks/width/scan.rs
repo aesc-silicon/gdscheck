@@ -369,7 +369,7 @@ fn narrowest_over(
             let (fx0, fy0, fx1, fy1) =
                 (x0 as f64, y0 as f64, (x0 + tile) as f64, (y0 + tile) as f64);
             let mut wide: Vec<MergedPoly> = Vec::new();
-            for poly in polys {
+            for poly in polys.iter() {
                 if crate::merge::clipped_area_dbu(poly, fx0, fy0, fx1, fy1) <= 0.0 {
                     continue;
                 }
@@ -396,6 +396,7 @@ fn narrowest_over(
             let pieces = crate::merge::clip_to_box(wide, x0, y0, x0 + tile, y0 + tile);
             (!pieces.is_empty()).then_some(((tx, ty), pieces))
         })
+        .map(|(k, v)| (k, crate::merge::Tile::from(v)))
         .collect();
     crate::merge::stitch_regions(&opened, tile as i32)
         .into_iter()
@@ -511,11 +512,11 @@ pub fn run_gate(
             let mut out = Vec::new();
             // With no reference here nothing is shared with its boundary, and everything
             // is unshared: an `unshared` rule still measures the body's plain width.
-            let refs = rmap.get(&(tx, ty)).unwrap_or(&none);
+            let refs = rmap.get(&(tx, ty)).map(|t| &**t).unwrap_or(&none);
             if on && refs.is_empty() {
                 return out.into_iter();
             }
-            let excluded = omap.map(|m| m.get(&(tx, ty)).unwrap_or(&none).as_slice());
+            let excluded = omap.map(|m| m.get(&(tx, ty)).map(|t| &**t).unwrap_or(&none).as_slice());
             let walls = WallFilter::new(refs, on, excluded);
             // A pinch is a width of zero at a vertex; it counts where the filter would
             // keep that point.  A bent-only rule reads 45° runs and a vertex has none, and
@@ -538,7 +539,7 @@ pub fn run_gate(
                     ));
                 }
             }
-            for p in polys {
+            for p in polys.iter() {
                 out.extend(scan_widths(
                     p,
                     core,

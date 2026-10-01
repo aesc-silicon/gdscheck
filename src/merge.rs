@@ -816,7 +816,7 @@ pub fn max_space_gaps(
         .par_iter()
         .filter_map(|(&(tx, ty), polys)| {
             let (x0, y0, x1, y1) = core_box(tx, ty, tile_dbu);
-            let pieces = clip_to_box(polys.clone(), x0, y0, x1, y1);
+            let pieces = clip_to_box(polys.to_vec(), x0, y0, x1, y1);
             if pieces.is_empty() {
                 return None;
             }
@@ -859,6 +859,7 @@ pub fn max_space_gaps(
                 .collect();
             (!out.is_empty()).then_some(((tx, ty), out))
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect();
     stitch_regions(&gaps, tile_dbu)
         .into_iter()
@@ -972,7 +973,7 @@ fn confined_reference(
             let wall = assemble_over(within, tile_dbu, (x0 - v, y0 - v, x1 + v, y1 + v));
             let mut reach = compose_tile(
                 VirtualOp::Intersection,
-                &[&clip_to_box(polys.clone(), x0, y0, x1, y1), &wall],
+                &[&clip_to_box(polys.to_vec(), x0, y0, x1, y1), &wall],
             );
             for i in 0..n {
                 if reach.is_empty() {
@@ -1933,12 +1934,25 @@ fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
 
     keys.into_par_iter()
         .filter_map(|key| {
+            // A difference with nothing to take away in this tile is its base, and is
+            // the base's tile: on FMD_QNC_greyhound_ihp `ContNoSealring` was forty-five
+            // million contacts copied from `Cont`, for the seal ring's few tiles.
+            if op == VirtualOp::Difference
+                && rest
+                    .iter()
+                    .all(|m| m.get(&key).is_none_or(|t| t.is_empty()))
+            {
+                return first
+                    .get(&key)
+                    .filter(|t| !t.is_empty())
+                    .map(|t| (key, t.clone()));
+            }
             let per_src: Vec<&[MergedPoly]> = sources
                 .iter()
-                .map(|m| m.get(&key).map(Vec::as_slice).unwrap_or(&[]))
+                .map(|m| m.get(&key).map(|t| t.as_slice()).unwrap_or(&[]))
                 .collect();
             let polys = compose_tile(op, &per_src);
-            (!polys.is_empty()).then_some((key, polys))
+            (!polys.is_empty()).then_some((key, polys.into()))
         })
         .collect()
 }
@@ -2013,7 +2027,58 @@ impl Core {
 }
 
 /// Merged geometry of one layer, indexed by global tile `(tx, ty)`.
-pub type TileMap = HashMap<(i32, i32), Vec<MergedPoly>>;
+pub type TileMap = HashMap<(i32, i32), Tile>;
+
+/// One tile of a layer, shared: a derived layer that leaves a tile as its source has it
+/// holds the source's tile, not a copy of it.  Read as the `Vec` it holds; written to,
+/// it is copied first if anything else holds it.
+#[derive(Clone, Default)]
+pub struct Tile(Arc<Vec<MergedPoly>>);
+
+impl Tile {
+    /// The polygons, taken out - copied only if the tile is shared.
+    pub fn into_vec(self) -> Vec<MergedPoly> {
+        Arc::try_unwrap(self.0).unwrap_or_else(|a| (*a).clone())
+    }
+
+    /// Whether both are the one tile, not two equal ones.
+    pub fn same(&self, other: &Tile) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl From<Vec<MergedPoly>> for Tile {
+    fn from(v: Vec<MergedPoly>) -> Self {
+        Tile(Arc::new(v))
+    }
+}
+
+impl std::ops::Deref for Tile {
+    type Target = Vec<MergedPoly>;
+    fn deref(&self) -> &Vec<MergedPoly> {
+        &self.0
+    }
+}
+
+impl std::ops::DerefMut for Tile {
+    fn deref_mut(&mut self) -> &mut Vec<MergedPoly> {
+        Arc::make_mut(&mut self.0)
+    }
+}
+
+impl AsRef<[MergedPoly]> for Tile {
+    fn as_ref(&self) -> &[MergedPoly] {
+        &self.0
+    }
+}
+
+impl<'a> IntoIterator for &'a Tile {
+    type Item = &'a MergedPoly;
+    type IntoIter = std::slice::Iter<'a, MergedPoly>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
 
 /// A bounding box in DBU: `(x0, y0, x1, y1)`.
 pub type BBoxDbu = (i32, i32, i32, i32);
@@ -4205,9 +4270,10 @@ fn clip_to_cores(tiles: TileMap, tile_dbu: i32) -> TileMap {
         .filter_map(|((tx, ty), polys)| {
             let (x0, y0) = (tx as i64 * t, ty as i64 * t);
             let (x1, y1) = ((tx as i64 + 1) * t, (ty as i64 + 1) * t);
-            let inside = clip_to_box(polys, x0, y0, x1, y1);
+            let inside = clip_to_box(polys.into_vec(), x0, y0, x1, y1);
             (!inside.is_empty()).then_some(((tx, ty), inside))
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -4276,6 +4342,7 @@ fn trim_beyond_zone(tiles: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
                 ((ty as i64 + 1) * t + h) as f64,
             );
             let kept: Vec<MergedPoly> = polys
+                .into_vec()
                 .into_iter()
                 .filter(|p| {
                     let (bx0, by0, bx1, by1) = poly_bbox(p);
@@ -4292,6 +4359,7 @@ fn trim_beyond_zone(tiles: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMap {
                 .collect();
             (!kept.is_empty()).then_some(((tx, ty), kept))
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -4312,11 +4380,11 @@ fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32, clip: boo
         .into_par_iter()
         .map(|((tx, ty), polys)| {
             if !clip {
-                return polys;
+                return polys.into_vec();
             }
             let (x0, y0) = (tx as i64 * tile - halo, ty as i64 * tile - halo);
             let (x1, y1) = ((tx as i64 + 1) * tile + halo, (ty as i64 + 1) * tile + halo);
-            clip_to_box(polys, x0, y0, x1, y1)
+            clip_to_box(polys.into_vec(), x0, y0, x1, y1)
         })
         .collect();
     // Filed owner by owner in parallel, the maps joined after: one core filing eight
@@ -4362,6 +4430,7 @@ fn rebroadcast_halo(core_owned: TileMap, tile_dbu: i32, halo_dbu: i32, clip: boo
             let merged = compose_tile(VirtualOp::Union, &[&polys]);
             (key, merged)
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -4776,6 +4845,7 @@ fn assemble_zone_copies(pieces: TileMap, tile_dbu: i32, halo_dbu: i32) -> TileMa
             };
             Some(((tx, ty), copy))
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -4841,7 +4911,7 @@ fn assemble(
                         cy1.min(y1),
                     ));
                 } else {
-                    block.extend(clip_to_box(ps.clone(), cx0, cy0, cx1, cy1));
+                    block.extend(clip_to_box(ps.to_vec(), cx0, cy0, cx1, cy1));
                 }
             }
         }
@@ -5004,6 +5074,7 @@ fn build_region_filter_tiles(cand: &TileMap, tile_dbu: i32, f: RegionFilter) -> 
                 .collect();
             (!kept.is_empty()).then_some((tile, kept))
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -5217,8 +5288,8 @@ fn build_covering_tiles(
 /// there and nowhere else, and the test in this tile had no copy to meet.  A neighbour's
 /// copy is exact in its core and no further - past it a difference may be missing its
 /// subtrahend - so only the core part is read, and the shared line is in it.
-fn at_the_fence<P>(
-    map: &HashMap<(i32, i32), Vec<P>>,
+fn at_the_fence<P, V: AsRef<[P]>>(
+    map: &HashMap<(i32, i32), V>,
     (tx, ty): (i32, i32),
     t: i64,
     poly: impl Fn(&P) -> &MergedPoly,
@@ -5240,7 +5311,7 @@ fn at_the_fence<P>(
             continue;
         };
         let (nx0, ny0) = (cx0 + ox as i64 * t, cy0 + oy as i64 * t);
-        for item in v {
+        for item in v.as_ref() {
             let (x0, y0, x1, y1) = poly_bbox(poly(item));
             if (x1 as i64) < cx0 || cx1 < x0 as i64 || (y1 as i64) < cy0 || cy1 < y0 as i64 {
                 continue;
@@ -5470,7 +5541,7 @@ fn build_selection_tiles(
     let t = tile_dbu as i64;
     labeled.by_tile.par_iter().for_each(|(tile, polys)| {
         use std::sync::atomic::Ordering::Relaxed;
-        let own = filt.get(tile).unwrap_or(&empty_f);
+        let own = filt.get(tile).map(|t| &**t).unwrap_or(&empty_f);
         let mut fpolys: Vec<&MergedPoly> = own.iter().collect();
         let fence = if kind == SelectionKind::Inside {
             Vec::new()
@@ -5551,6 +5622,7 @@ fn build_selection_tiles(
                 .collect();
             (!kept.is_empty()).then_some((tile, kept))
         })
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect();
     if !keep {
         // The unvisited tiles' core-owned polygons, read tile by tile in parallel and
@@ -5721,7 +5793,7 @@ pub fn analyze_regions(
             let cy0 = (ty as i64 * t) as f64;
             let cx1 = ((tx as i64 + 1) * t) as f64;
             let cy1 = ((ty as i64 + 1) * t) as f64;
-            let feats = feature.get(&(tx, ty)).unwrap_or(&empty);
+            let feats = feature.get(&(tx, ty)).map(|t| &**t).unwrap_or(&empty);
             // Each feature's part within this core, for the metal it lies on.  A
             // feature's area is what lies on the metal: a slit reaching over the
             // plate's edge counts by its part on the plate, and a slit along a bar
@@ -6027,6 +6099,7 @@ fn build_tiled_merge(boundaries: &Shapes, tile_dbu: i32, halo_dbu: i32) -> TileM
     buckets
         .into_par_iter()
         .map(|(key, which)| (key, merge_indexed(boundaries, &which)))
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -6060,6 +6133,7 @@ fn build_tiled_merge_in(
     buckets
         .into_par_iter()
         .map(|(key, which)| (key, merge_indexed(boundaries, &which)))
+        .map(|(k, v)| (k, Tile::from(v)))
         .collect()
 }
 
@@ -6433,7 +6507,7 @@ impl MergedCache {
                             ps.push(std::borrow::Cow::Borrowed(
                                 layers[&src]
                                     .get(&tile)
-                                    .map(Vec::as_slice)
+                                    .map(|t| t.as_slice())
                                     .unwrap_or(&empty_p),
                             ));
                         } else if i < subjects {
@@ -7796,8 +7870,8 @@ mod tests {
     #[test]
     fn stitch_joins_region_across_tile_border() {
         let mut tiles: TileMap = HashMap::new();
-        tiles.insert((0, 0), vec![rect(0, 0, 60_000, 20_000)]);
-        tiles.insert((1, 0), vec![rect(0, 0, 60_000, 20_000)]);
+        tiles.insert((0, 0), vec![rect(0, 0, 60_000, 20_000)].into());
+        tiles.insert((1, 0), vec![rect(0, 0, 60_000, 20_000)].into());
         let regions = stitch_regions(&tiles, 50_000);
         assert_eq!(regions.len(), 1, "spanning region should be one");
         assert!(
@@ -7812,8 +7886,8 @@ mod tests {
     fn stitch_keeps_separate_regions_apart() {
         let mut tiles: TileMap = HashMap::new();
         // Region A entirely in tile 0; region B entirely in tile 1; 10 000 DBU gap.
-        tiles.insert((0, 0), vec![rect(0, 0, 40_000, 20_000)]);
-        tiles.insert((1, 0), vec![rect(60_000, 0, 90_000, 20_000)]);
+        tiles.insert((0, 0), vec![rect(0, 0, 40_000, 20_000)].into());
+        tiles.insert((1, 0), vec![rect(60_000, 0, 90_000, 20_000)].into());
         let regions = stitch_regions(&tiles, 50_000);
         assert_eq!(regions.len(), 2, "separate regions must stay apart");
     }
