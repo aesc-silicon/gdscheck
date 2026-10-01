@@ -63,7 +63,7 @@ fn canonical_key(pts: &[[f64; 2]]) -> Vec<(i32, i32)> {
 /// `outer` is counter-clockwise and each contour in `holes` is clockwise, so the
 /// metal (filled area) lies on the **left** of every directed edge — the
 /// convention the geometric checks rely on.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct MergedPoly {
     pub outer: Vec<IntPoint>,
     pub holes: Vec<Vec<IntPoint>>,
@@ -1875,6 +1875,40 @@ fn enclosure_quad(p: &EnclosurePair) -> Option<MergedPoly> {
     })
 }
 
+/// A layer's share of the polygon copies it holds: a tile held by `n` layers is an
+/// `n`th of its copies to each.
+fn fair_copies(map: &TileMap) -> usize {
+    map.values()
+        .map(|t| t.len() as f64 / t.holders() as f64)
+        .sum::<f64>()
+        .round() as usize
+}
+
+/// Every tile of `out` that came out the same as a source's tile at its place becomes
+/// that tile, shared: a filter that kept all of a tile, a union with one source there,
+/// a selection that took all of it.  Equal, not merely alike - the same polygons in the
+/// same order - so nothing a reader sees changes.  Returns how many were shared.
+fn share_equal_tiles(out: &mut TileMap, sources: &[Arc<TileMap>]) -> usize {
+    if sources.is_empty() {
+        return 0;
+    }
+    out.par_iter_mut()
+        .map(|(key, tile)| {
+            for src in sources {
+                if let Some(s) = src.get(key)
+                    && !s.same(tile)
+                    && s.len() == tile.len()
+                    && **s == **tile
+                {
+                    *tile = s.clone();
+                    return 1;
+                }
+            }
+            0
+        })
+        .sum()
+}
+
 /// Build a lazy virtual layer's tiles from its (already tiled) source layers — one
 /// boolean op per tile, run across tiles in parallel.
 fn build_virtual_tiles(op: VirtualOp, sources: &[&TileMap]) -> TileMap {
@@ -2039,6 +2073,11 @@ impl Tile {
     /// The polygons, taken out - copied only if the tile is shared.
     pub fn into_vec(self) -> Vec<MergedPoly> {
         Arc::try_unwrap(self.0).unwrap_or_else(|a| (*a).clone())
+    }
+
+    /// How many hold this tile: the layers and variants that share it.
+    pub fn holders(&self) -> usize {
+        Arc::strong_count(&self.0)
     }
 
     /// Whether both are the one tile, not two equal ones.
@@ -7348,6 +7387,21 @@ impl MergedCache {
             );
         }
         self.dump_if_asked(key, &tiles);
+        let mut tiles = tiles;
+        let sources: Vec<Arc<TileMap>> = self
+            .virtual_defs
+            .get(&key)
+            .map(|def| {
+                def.sources
+                    .iter()
+                    .filter_map(|s| self.layers.get(s).cloned())
+                    .collect()
+            })
+            .unwrap_or_default();
+        let shared = share_equal_tiles(&mut tiles, &sources);
+        if shared > 0 && std::env::var("GDSCHECK_MERGE_TRACE").is_ok() {
+            eprintln!("virtual {} shares {shared} tiles", self.name_of(key));
+        }
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, Arc::new(tiles));
@@ -7420,19 +7474,21 @@ impl MergedCache {
 
     /// Polygon copies resident across every cached layer, variants included.
     pub fn resident_polys(&self) -> usize {
-        self.layer_polys.values().sum::<usize>()
-            + self
-                .variants
-                .values()
-                .flat_map(|vs| vs.iter().map(|(_, _, n)| n))
-                .sum::<usize>()
+        self.resident_layers().iter().map(|(_, n)| n).sum()
     }
 
-    /// Every cached layer with its polygon copies, all variants together.
+    /// Every cached layer with its polygon copies, all variants together.  A tile that
+    /// several layers share counts once in all, a share to each: the sum is what is
+    /// resident, and a layer's figure is about what evicting it gives back.
     pub fn resident_layers(&self) -> Vec<((i16, i16), usize)> {
-        let mut by_key: HashMap<(i16, i16), usize> = self.layer_polys.clone();
+        let mut by_key: HashMap<(i16, i16), usize> = self
+            .layers
+            .iter()
+            .map(|(k, m)| (*k, fair_copies(m)))
+            .collect();
         for (k, vs) in &self.variants {
-            *by_key.entry(*k).or_default() += vs.iter().map(|(_, _, n)| n).sum::<usize>();
+            *by_key.entry(*k).or_default() +=
+                vs.iter().map(|(_, m, _)| fair_copies(m)).sum::<usize>();
         }
         by_key.into_iter().collect()
     }
