@@ -1875,6 +1875,18 @@ fn enclosure_quad(p: &EnclosurePair) -> Option<MergedPoly> {
     })
 }
 
+/// Every tile held to its polygons: a tile's list is collected through filters that
+/// cannot know its length, and grows by doubling - a third again of a contact layer's
+/// copies in slots that hold nothing, kept for as long as the layer is cached.  A tile
+/// another layer holds too was fitted when that one was cached.
+fn fit_tiles(tiles: &mut TileMap) {
+    tiles.par_iter_mut().for_each(|(_, t)| {
+        if t.holders() == 1 && t.capacity() > t.len() {
+            t.shrink_to_fit();
+        }
+    });
+}
+
 /// A layer's share of the polygon copies it holds: a tile held by `n` layers is an
 /// `n`th of its copies to each.
 fn fair_copies(map: &TileMap) -> usize {
@@ -6992,7 +7004,8 @@ impl MergedCache {
                     })
                     .unwrap_or_default();
                 let cand = &self.layers[&def.sources[0]];
-                let tiles = build_text_selection_tiles(cand, &pts, self.tile_dbu);
+                let mut tiles = build_text_selection_tiles(cand, &pts, self.tile_dbu);
+                fit_tiles(&mut tiles);
                 self.layer_polys
                     .insert(key, tiles.values().map(|v| v.len()).sum());
                 self.layers.insert(key, Arc::new(tiles));
@@ -7344,6 +7357,8 @@ impl MergedCache {
             );
         }
         self.dump_if_asked(key, &tiles);
+        let mut tiles = tiles;
+        fit_tiles(&mut tiles);
         self.layer_polys
             .insert(key, tiles.values().map(|v| v.len()).sum());
         self.layers.insert(key, Arc::new(tiles));
@@ -7388,6 +7403,7 @@ impl MergedCache {
         }
         self.dump_if_asked(key, &tiles);
         let mut tiles = tiles;
+        fit_tiles(&mut tiles);
         let sources: Vec<Arc<TileMap>> = self
             .virtual_defs
             .get(&key)
