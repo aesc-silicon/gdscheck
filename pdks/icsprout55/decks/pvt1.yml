@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: PVT1-W.1
+    check: min_width
+    layers: [PVT1]
+    value: 0.18
+  - id: PVT1-S.1
+    check: min_space
+    layers: [PVT1.edges, PVT1.edges]
+    value: 0.18
+  - id: PVT1-S.2
+    check: min_space
+    layers: [POLYinACTnoPVT1.edges, PVT1.edges]
+    value: 0.18
+  - id: PVT1-S.3
+    check: min_space
+    layers: [ACTside.edges, PVT1.edges]
+    value: 0.15
+  - id: PVT1-Ex.1
+    check: min_enclosure
+    layers: [PVT1.edges, POLYinPPACTxPVT1.edges]
+    value: 0.18
+  - id: PVT1-Ex.2
+    check: min_enclosure
+    layers: [PVT1.edges, PPACTxPVT1side.edges]
+    value: 0.15
+  - id: PVT1-A.1
+    check: min_area
+    layers: [PVT1]
+    value: 0.18
+    params:
+      touching: separate
+  - id: PVT1-A.2
+    check: min_area
+    layers: [PVT1]
+    value: 0.18
+    params:
+      scope: hole
+  - id: PVT1-R.1
+    check: forbidden
+    layers: [PVT1, PSUB]
+    value: 0.0
+    params:
+      op: overlap

@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: DNW-W.1
+    check: min_width
+    layers: [DNW]
+    value: 3
+  - id: DNW-S.1
+    check: min_space
+    layers: [DNW]
+    value: 3.5
+  - id: DNW-S.1
+    check: min_notch
+    layers: [DNW]
+    value: 3.5
+  - id: DNW-S.2a
+    check: min_space
+    layers: [DNW, NW1]
+    value: 2.35
+    params:
+      net: different
+  - id: DNW-S.3
+    check: min_space
+    layers: [TPWell, PWNearDNW]
+    value: 0.8
+    layer_params:
+      gap_outside: LDMOS
+  - id: DNW-S.3
+    check: min_notch
+    layers: [TPWell]
+    value: 0.8
+  - id: DNW-S.4
+    check: min_space
+    layers: [PWUnderIOOX, TPWell]
+    value: 1.2
+    layer_params:
+      gap_outside: LDMOS
+  - id: DNW-S.5
+    check: min_space
+    layers: [DNW, NSDOutNW1]
+    value: 1.6
+    params:
+      abutting: report
+  - id: DNW-En.1
+    check: min_enclosure
+    layers: [NW1, DNW]
+    value: 1
+    params:
+      metric: euclidian
+      interacting_only: 1
+      skip_coincident: 1
+  - id: DNW-En.1
+    check: forbidden
+    layers: [DNWnotInNW1.edges]
+    value: 0.0
+  - id: DNW-En.2
+    check: min_enclosure
+    layers: [DNW, NPACTpw]
+    value: 0.55
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: DNW-O.1
+    check: min_overlap
+    layers: [NW1, DNW]
+    value: 0.4
+  - id: DNW-R.1
+    check: forbidden
+    layers: [DNWoutNW1.edges]
+    value: 0.0
+  - id: DNW-R.3
+    check: forbidden
+    layers: [TPWellFloating]
+    value: 0.0

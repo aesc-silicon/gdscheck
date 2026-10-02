@@ -1,0 +1,90 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: PP-W.1
+    check: min_width
+    layers: [PP]
+    value: 0.18
+  - id: PP-S.1
+    check: min_space
+    layers: [PP]
+    value: 0.18
+    params:
+      length: 0.0
+  - id: PP-S.1
+    check: min_notch
+    layers: [PP]
+    value: 0.18
+  - id: PP-S.2
+    check: min_space
+    layers: [PP, NPACTpwFree]
+    value: 0.12
+    layer_params:
+      gap_outside: SRAMALL
+  - id: PP-S.3
+    check: min_space
+    layers: [PP, NPPickupFree]
+    value: 0.02
+  - id: PP-S.4
+    check: forbidden
+    layers: [NPandPPACTChk]
+    value: 0.0
+  - id: PP-S.5
+    check: min_space
+    layers: [POLYinNPACT, PP.edges]
+    value: 0.3
+  - id: PP-En.1
+    check: min_enclosure
+    layers: [PP, PPEn1In]
+    value: 0.02
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: PP-En.2
+    check: min_enclosure
+    layers: [PPinNW, PPEn2In]
+    value: 0.12
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: PP-En.3
+    check: min_enclosure
+    layers: [PP, POLYField3Chk]
+    value: 0.15
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: PP-O.1
+    check: min_overlap
+    layers: [PP, ACTNoTouchPP]
+    value: 0.12
+  - id: PP-A.1
+    check: min_area
+    layers: [PPNotInSRAM]
+    value: 0.12
+    params:
+      touching: separate
+  - id: PP-A.2
+    check: min_area
+    layers: [PP]
+    value: 0.12
+    params:
+      scope: hole
+  - id: PP-A.3
+    check: min_area
+    layers: [PPTapButted]
+    value: 0.04
+    params:
+      touching: separate
+  - id: PP-R.1
+    check: forbidden
+    layers: [NP, PP]
+    value: 0.0
+    params:
+      op: overlap
+  - id: PP-R.3
+    check: forbidden
+    layers: [NPPPButtUnsil]
+    value: 0.0

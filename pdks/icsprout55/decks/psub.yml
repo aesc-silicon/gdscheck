@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: PSUB-W.1
+    check: min_width
+    layers: [PSUB]
+    value: 0.47
+  - id: PSUB-W.2
+    check: min_edge_length
+    layers: [GATEWNat.edges]
+    value: 0.5
+  - id: PSUB-W.2
+    check: max_edge_length
+    layers: [GATEWNat.edges]
+    value: 100
+  - id: PSUB-W.3a
+    check: min_gate_length
+    layers: [POLYNat, GATENatCore]
+    value: 0.2
+  - id: PSUB-W.3a
+    check: max_edge_length
+    layers: [GATECoreLNat.edges]
+    value: 100
+  - id: PSUB-W.3b
+    check: min_gate_length
+    layers: [POLYNat, GATENatDG]
+    value: 0.8
+  - id: PSUB-W.3b
+    check: max_edge_length
+    layers: [GATEio1LNat.edges]
+    value: 20
+  - id: PSUB-W.3d
+    check: min_gate_length
+    layers: [POLYNat, GATENatTG]
+    value: 1
+  - id: PSUB-S.1
+    check: min_space
+    layers: [PSUB]
+    value: 0.47
+  - id: PSUB-S.1
+    check: min_notch
+    layers: [PSUB]
+    value: 0.47
+  - id: PSUB-S.2
+    check: min_space
+    layers: [PSUB, MOSAA]
+    value: 0.36
+    params:
+      abutting: report
+  - id: PSUB-S.2
+    check: min_space
+    layers: [PSUB, AALDMOS]
+    value: 0.36
+    params:
+      abutting: report
+  - id: PSUB-S.3
+    check: min_space
+    layers: [PSUB, NW1]
+    value: 1.15
+    params:
+      abutting: report
+  - id: PSUB-En.1
+    check: forbidden
+    layers: [PSUBwithNatNMOS, NatNMOSSized]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: PSUB-En.1
+    check: forbidden
+    layers: [NatNMOSSized, PSUBwithNatNMOS]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: PSUB-Ex.1
+    check: min_enclosure
+    layers: [POLY, ACTinPSUBNoInd]
+    value: 0.32
+    params:
+      interacting_only: 1
+  - id: PSUB-A.1
+    check: min_area
+    layers: [PSUB]
+    value: 0.6
+    params:
+      touching: separate
+  - id: PSUB-A.2
+    check: min_area
+    layers: [PSUB]
+    value: 0.6
+    params:
+      scope: hole
+  - id: PSUB-R.1
+    check: forbidden
+    layers: [PSUB, DNW]
+    value: 0.0
+    params:
+      op: overlap
+  - id: PSUB-R.1
+    check: forbidden
+    layers: [PSUBonDNW.edges]
+    value: 0.0
+  - id: PSUB-R.2
+    check: forbidden
+    layers: [PPonNatDev]
+    value: 0.0
+  - id: PSUB-R.3
+    check: forbidden
+    layers: [PSUBMultiACT]
+    value: 0.0

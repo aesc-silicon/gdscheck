@@ -1,0 +1,729 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, DNW]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, ACT]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, NW1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, PSUB]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, NVT3]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, PVT3]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, NVT1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, PVT1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, DGOX]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, TGOX]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, POLY]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, NP]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, PP]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, NPR]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, HRP]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, ESD]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, SAB]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, CT]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, CTbar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET3]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET4]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET5]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET6]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET7]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET8]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA3]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA4]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA5]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA6]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA7]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA1bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA2bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA3bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA4bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA5bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA6bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, VIA7bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4V1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4V2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4V1bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4V2bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4M1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4M2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2V1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2V2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2V1bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2V2bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2M1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2M2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8V1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8V2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8V1bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8V2bar]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8M1]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8M2]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, CB]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, RV]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, COVER]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, RDL]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, FUTR]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, ACTdm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, POLYdm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET3dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET4dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET5dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET6dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET7dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, MET8dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4M1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T4M2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2M1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T2M2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8M1dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.1
+    check: min_enclosure
+    layers: [ChipEdge, T8M2dm]
+    value: 0.37
+    params:
+      interacting_only: 1
+    layer_params:
+      over: ChipEdgeNoSR
+  - id: CHIPEDGE-En.2
+    check: min_enclosure
+    layers: [ChipEdge, DNW]
+    value: 6
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET1InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET2InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET3InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET4InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET5InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET6InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET7InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, MET8InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, T4M1InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, T4M2InSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: CHIPEDGE-En.3
+    check: min_enclosure
+    layers: [ChipEdge, RDLInSR]
+    value: 1.5
+    params:
+      metric: euclidian
+      interacting_only: 1

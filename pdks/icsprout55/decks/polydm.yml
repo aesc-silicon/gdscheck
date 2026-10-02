@@ -1,0 +1,107 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: POLYdm-W.1
+    check: forbidden
+    layers: [POLYdmBad]
+    value: 0.0
+  - id: POLYdm-S.1
+    check: min_space
+    layers: [POLYdm2x2]
+    value: 2.6
+  - id: POLYdm-S.2
+    check: min_space
+    layers: [POLYdm1x1]
+    value: 0.68
+  - id: POLYdm-S.3
+    check: min_space
+    layers: [POLYdmSm]
+    value: 0.36
+  - id: POLYdm-S.4
+    check: min_space
+    layers: [POLYdm, ACT]
+    value: 0.8
+    params:
+      abutting: report
+  - id: POLYdm-S.4
+    check: forbidden
+    layers: [POLYdm, ACT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: POLYdm-S.5
+    check: min_space
+    layers: [POLYdm, POLY]
+    value: 0.8
+    params:
+      abutting: report
+  - id: POLYdm-S.5
+    check: forbidden
+    layers: [POLYdm, POLY]
+    value: 0.0
+    params:
+      op: overlap
+  - id: POLYdm-S.6
+    check: min_space
+    layers: [POLYdm, NW1]
+    value: 0.3
+    params:
+      abutting: report
+  - id: POLYdm-S.6
+    check: min_enclosure
+    layers: [NW1, POLYdm]
+    value: 0.3
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: POLYdm-S.7
+    check: min_space
+    layers: [POLYdm, NW1res]
+    value: 0.6
+    params:
+      abutting: report
+  - id: POLYdm-S.8
+    check: min_space
+    layers: [POLYdm, LOGO]
+    value: 0.1
+    params:
+      abutting: report
+  - id: POLYdm-S.9
+    check: min_space
+    layers: [POLYdm, INDALL]
+    value: 2
+    params:
+      abutting: report
+  - id: POLYdm-S.10
+    check: min_space
+    layers: [POLYdm, CHIPBLK]
+    value: 0.6
+    params:
+      abutting: report
+  - id: POLYdm-S.10
+    check: min_enclosure
+    layers: [CHIPBLK, POLYdm]
+    value: 0.3
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: POLYdm-S.11
+    check: min_space
+    layers: [POLYdm, POLYdmb]
+    value: 2
+    params:
+      abutting: report
+  - id: POLYdm-S.12
+    check: min_space
+    layers: [POLYdm, DMYBLK]
+    value: 2
+    params:
+      abutting: report
+  - id: POLYdm-R.1
+    check: forbidden
+    layers: [POLYdm, CTorBar]
+    value: 0.0
+    params:
+      op: overlap

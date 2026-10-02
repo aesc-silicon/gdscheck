@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: ESDN.1/ESDP.1
+    check: min_enclosure
+    layers: [ESDMOSS, ESDCTS]
+    value: 0.15
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ESDN.2/ESDP.2
+    check: min_space
+    layers: [ESDCTS, ESDGATE]
+    value: 0.15
+    params:
+      abutting: report
+  - id: ESDN.3
+    check: min_edge_length
+    layers: [ESDNGATEHVL]
+    value: 0.5
+  - id: ESDN.4/ESDP.4
+    check: min_overlap
+    layers: [ESDSAB, ESDGATE]
+    value: 0.05
+  - id: ESDN.6/ESDP.6
+    check: min_enclosure
+    layers: [ESDSABHole, ESDCTD]
+    value: 0.21
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ESDN.8
+    check: min_enclosure
+    layers: [ESDNDrain, ESDSABHole]
+    value: 1.0
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ESDP.8
+    check: min_enclosure
+    layers: [ESDPDrain, ESDSABHole]
+    value: 1.0
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ESDN.10
+    check: min_enclosure
+    layers: [ESDNDrain, ESD]
+    value: 0.4
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: ESDN.11
+    check: forbidden
+    layers: [ESD, ESDGATEPOLY]
+    value: 0.0
+    params:
+      op: overlap
+  - id: ESDN.12
+    check: min_edge_length
+    layers: [ESDNGATEW]
+    value: 30
+  - id: ESDN.12
+    check: max_edge_length
+    layers: [ESDNGATEW]
+    value: 40
+  - id: ESDP.9
+    check: min_edge_length
+    layers: [ESDPGATEW]
+    value: 30
+  - id: ESDP.9
+    check: max_edge_length
+    layers: [ESDPGATEW]
+    value: 40

@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: CB-W.1
+    check: min_width
+    layers: [CB]
+    value: 2.999
+  - id: CB-S.1
+    check: min_space
+    layers: [CB]
+    value: 5
+  - id: CB-S.1
+    check: min_notch
+    layers: [CB]
+    value: 5
+  - id: CB-En.2
+    check: min_enclosure
+    layers: [T4M2Solid, CB]
+    value: 1.5
+    params:
+      metric: euclidian

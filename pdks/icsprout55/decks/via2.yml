@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: VIA2-W.1
+    check: forbidden
+    layers: [VIA2NotSqChk]
+    value: 0.0
+  - id: VIA2-W.2
+    check: min_width
+    layers: [VIA2barInSRAM]
+    value: 0.09
+  - id: VIA2-W.2
+    check: max_width
+    layers: [VIA2barInSRAM]
+    value: 0.09
+    params:
+      span: narrowest
+  - id: VIA2-S.1
+    check: min_space
+    layers: [VIA2Conn]
+    value: 0.11
+  - id: VIA2-S.1
+    check: min_notch
+    layers: [VIA2Conn]
+    value: 0.11
+  - id: VIA2-S.2
+    check: min_space
+    layers: [VIA2InArray]
+    value: 0.13
+  - id: VIA2-S.3
+    check: min_space
+    layers: [VIA2Net]
+    value: 0.13
+    params:
+      length: 0
+      net: different
+  - id: VIA2-En.1
+    check: forbidden
+    layers: [VIA2Conn, MET2NoSlot]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: VIA2-En.2b
+    check: forbidden
+    layers: [VIA2BotEncChk]
+    value: 0.0
+  - id: VIA2-En.3
+    check: forbidden
+    layers: [VIA2Conn, MET3NoSlot]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: VIA2-En.5a
+    check: min_enclosure
+    layers: [MET3NoSlot, VIA2Conn]
+    value: 0.005
+    params:
+      metric: euclidian
+  - id: VIA2-En.5b
+    check: forbidden
+    layers: [VIA2TopShort02]
+    value: 0.0
+  - id: VIA2-R.5
+    check: no_angle
+    layers: [VIA2NoSR]
+    value: 0.0
+    params:
+      angle: 45
+      tolerance: 0.000001
+  - id: VIA2-R.5
+    check: no_angle
+    layers: [VIA2NoSR]
+    value: 0.0
+    params:
+      angle: 135
+      tolerance: 0.000001

@@ -1,0 +1,7224 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Drawn (65nm) values; the fab shrinks the GDS by 0.9 at mask making.  Metal option
+# 1P6M_5Ic_1T4Mc, as the tech LEF N551P6M.
+name: ICsprout 55nm
+version: "0.1"
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every per-layer deck
+  - name: block
+    path: suites/block.yml
+    description: An IP block - main without the chip-edge rules
+
+decks:
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Off-grid geometry (1 nm grid)
+  - name: chipedge
+    path: decks/chipedge.yml
+    description: Chip edge (chip-level only)
+  - name: dnw
+    path: decks/dnw.yml
+    description: Deep N-well
+  - name: nw1
+    path: decks/nw1.yml
+    description: N-well
+  - name: psub
+    path: decks/psub.yml
+    description: Native NMOS block
+  - name: act
+    path: decks/act.yml
+    description: Active area
+  - name: nvt1
+    path: decks/nvt1.yml
+    description: Low-Vt NMOS implant
+  - name: nvt3
+    path: decks/nvt3.yml
+    description: High-Vt NMOS implant
+  - name: pvt1
+    path: decks/pvt1.yml
+    description: Low-Vt PMOS implant
+  - name: pvt3
+    path: decks/pvt3.yml
+    description: High-Vt PMOS implant
+  - name: ulld
+    path: decks/ulld.yml
+    description: 0.9V ultra-low-leakage marker
+  - name: dgox
+    path: decks/dgox.yml
+    description: 1.8V dual-gate oxide
+  - name: tgox
+    path: decks/tgox.yml
+    description: 2.5V/3.3V triple-gate oxide
+  - name: poly
+    path: decks/poly.yml
+    description: Poly
+  - name: np
+    path: decks/np.yml
+    description: N+ implant
+  - name: pp
+    path: decks/pp.yml
+    description: P+ implant
+  - name: esd
+    path: decks/esd.yml
+    description: ESD implant
+  - name: sab
+    path: decks/sab.yml
+    description: Salicide block
+  - name: ct
+    path: decks/ct.yml
+    description: Contact
+  - name: actres
+    path: decks/actres.yml
+    description: Active resistor
+  - name: polyres
+    path: decks/polyres.yml
+    description: Poly resistor
+  - name: hrp
+    path: decks/hrp.yml
+    description: High-resistance poly resistor
+  - name: nw1res
+    path: decks/nw1res.yml
+    description: N-well resistors, under ACT and under STI
+  - name: actdm
+    path: decks/actdm.yml
+    description: Dummy active
+  - name: polydm
+    path: decks/polydm.yml
+    description: Dummy poly
+  - name: met1
+    path: decks/met1.yml
+    description: Metal1, 1x
+  - name: via1
+    path: decks/via1.yml
+    description: Via1, 1x
+  - name: met2
+    path: decks/met2.yml
+    description: Metal2, 1x
+  - name: via2
+    path: decks/via2.yml
+    description: Via2, 1x
+  - name: met3
+    path: decks/met3.yml
+    description: Metal3, 1x
+  - name: via3
+    path: decks/via3.yml
+    description: Via3, 1x
+  - name: met4
+    path: decks/met4.yml
+    description: Metal4, 1x
+  - name: via4
+    path: decks/via4.yml
+    description: Via4, 1x
+  - name: met5
+    path: decks/met5.yml
+    description: Metal5, 1x
+  - name: t4v2
+    path: decks/t4v2.yml
+    description: T4V2, 4x top via 2
+  - name: t4m2
+    path: decks/t4m2.yml
+    description: T4M2, 4x top metal 2
+  - name: rv
+    path: decks/rv.yml
+    description: Re-distribution via
+  - name: cb
+    path: decks/cb.yml
+    description: Passivation 1 opening
+  - name: rdl
+    path: decks/rdl.yml
+    description: Re-distribution layer and aluminium pad
+  - name: cover
+    path: decks/cover.yml
+    description: Passivation 2 opening
+  - name: deupad
+    path: decks/deupad.yml
+    description: Device under pad
+  - name: slot
+    path: decks/slot.yml
+    description: Metal slots
+  - name: mom
+    path: decks/mom.yml
+    description: MOM capacitor
+  - name: efuse
+    path: decks/efuse.yml
+    description: eFuse
+  - name: sealring
+    path: decks/sealring.yml
+    description: Seal ring (chip-level only)
+  - name: esddev
+    path: decks/esddev.yml
+    description: 3.3V ESD protection NMOS and PMOS
+  - name: antenna
+    path: decks/antenna.yml
+    description: Antenna ratios (gates without protection ACT)
+
+connectivity:
+  # ORDERED as the antenna runset connects: an antenna rule reads the net partway up
+  # the stack (its own step, or a level), so the steps up to RDL are its levels.
+  - connector: CTConn
+    layers: [POLY]
+  - connector: CTConn
+    layers: [ACTSD]
+  - connector: CTConn
+    layers: [MET1Conn]
+  - connector: VIA1Conn
+    layers: [MET1Conn]
+  - connector: VIA1Conn
+    layers: [MET2Conn]
+  - connector: VIA2Conn
+    layers: [MET2Conn]
+  - connector: VIA2Conn
+    layers: [MET3Conn]
+  - connector: VIA3Conn
+    layers: [MET3Conn]
+  - connector: VIA3Conn
+    layers: [MET4Conn]
+  - connector: VIA4Conn
+    layers: [MET4Conn]
+  - connector: VIA4Conn
+    layers: [MET5Conn]
+  - connector: T4V2Conn
+    layers: [MET5Conn]
+  - connector: T4V2Conn
+    layers: [T4M2Conn]
+  - connector: RDV
+    layers: [T4M2Conn]
+  - connector: RDV
+    layers: [RDL]
+  # DRC only, after every antenna level: pads, wells, and the layers net-gated DRC
+  # rules look their nets up on. A layer such a rule reads must be listed here.
+  - connector: RDV
+    layers: [ALPAD]
+  - connector: RDLonALPAD
+    layers: [RDL, ALPAD]
+  - connector: NW1TapConn
+    layers: [NW1, ACTSD]
+  - connector: NW1
+    layers: [NW1Core, NW1IO, NW1CoreCut, NW1IOCut]
+  - connector: NW1onDNW
+    layers: [NW1, DNW]
+  - connector: CTConn
+    layers: [CTNoSRAM]
+  - connector: VIA1Conn
+    layers: [VIA1Net]
+  - connector: VIA2Conn
+    layers: [VIA2Net]
+  - connector: VIA3Conn
+    layers: [VIA3Net]
+  - connector: VIA4Conn
+    layers: [VIA4Net]
+
+virtual_layers:
+  - name: MET1dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET1dm]
+  - name: MET1dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET1dmRect]
+    min: 2
+    max: 2.001
+  - name: MET1dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET1dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET1dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET1dmRect]
+    min: 1
+    max: 1.001
+  - name: MET1dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET1dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET1dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET1dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET1dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET1dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET1dmOk
+    op: union
+    mode: lazy
+    layers: [MET1dm2x2, MET1dm1x1, MET1dmBar]
+  - name: MET1dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET1dm, MET1dmOk]
+  - name: MET2dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET2dm]
+  - name: MET2dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET2dmRect]
+    min: 2
+    max: 2.001
+  - name: MET2dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET2dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET2dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET2dmRect]
+    min: 1
+    max: 1.001
+  - name: MET2dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET2dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET2dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET2dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET2dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET2dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET2dmOk
+    op: union
+    mode: lazy
+    layers: [MET2dm2x2, MET2dm1x1, MET2dmBar]
+  - name: MET2dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET2dm, MET2dmOk]
+  - name: MET3dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET3dm]
+  - name: MET3dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET3dmRect]
+    min: 2
+    max: 2.001
+  - name: MET3dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET3dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET3dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET3dmRect]
+    min: 1
+    max: 1.001
+  - name: MET3dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET3dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET3dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET3dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET3dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET3dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET3dmOk
+    op: union
+    mode: lazy
+    layers: [MET3dm2x2, MET3dm1x1, MET3dmBar]
+  - name: MET3dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET3dm, MET3dmOk]
+  - name: MET4dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET4dm]
+  - name: MET4dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET4dmRect]
+    min: 2
+    max: 2.001
+  - name: MET4dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET4dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET4dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET4dmRect]
+    min: 1
+    max: 1.001
+  - name: MET4dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET4dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET4dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET4dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET4dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET4dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET4dmOk
+    op: union
+    mode: lazy
+    layers: [MET4dm2x2, MET4dm1x1, MET4dmBar]
+  - name: MET4dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET4dm, MET4dmOk]
+  - name: MET5dmRect
+    op: rectangle
+    mode: lazy
+    layers: [MET5dm]
+  - name: MET5dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET5dmRect]
+    min: 2
+    max: 2.001
+  - name: MET5dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET5dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: MET5dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET5dmRect]
+    min: 1
+    max: 1.001
+  - name: MET5dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET5dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: MET5dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [MET5dmRect]
+    min: 0.22
+    max: 0.221
+  - name: MET5dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [MET5dmBarShort]
+    min: 0.89
+    max: 0.891
+  - name: MET5dmOk
+    op: union
+    mode: lazy
+    layers: [MET5dm2x2, MET5dm1x1, MET5dmBar]
+  - name: MET5dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET5dm, MET5dmOk]
+  - name: T4M2dmRect
+    op: rectangle
+    mode: lazy
+    layers: [T4M2dm]
+  - name: T4M2dm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M2dmRect]
+    min: 2
+    max: 2.001
+  - name: T4M2dm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M2dm2x2Short]
+    min: 2
+    max: 2.001
+  - name: T4M2dm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M2dmRect]
+    min: 1
+    max: 1.001
+  - name: T4M2dm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M2dm1x1Short]
+    min: 1
+    max: 1.001
+  - name: T4M2dmBarShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [T4M2dmRect]
+    min: 0.6
+    max: 0.601
+  - name: T4M2dmBar
+    op: with_bbox_max
+    mode: lazy
+    layers: [T4M2dmBarShort]
+    min: 1.2
+    max: 1.201
+  - name: T4M2dmOk
+    op: union
+    mode: lazy
+    layers: [T4M2dm2x2, T4M2dm1x1, T4M2dmBar]
+  - name: T4M2dmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M2dm, T4M2dmOk]
+  - name: ACTdmRect
+    op: rectangle
+    mode: lazy
+    layers: [ACTdm]
+  - name: ACTdm3x3Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [ACTdmRect]
+    min: 3
+    max: 3.001
+  - name: ACTdm3x3
+    op: with_bbox_max
+    mode: lazy
+    layers: [ACTdm3x3Short]
+    min: 3
+    max: 3.001
+  - name: ACTdm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [ACTdmRect]
+    min: 1
+    max: 1.001
+  - name: ACTdm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [ACTdm1x1Short]
+    min: 1
+    max: 1.001
+  - name: ACTdmSmShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [ACTdmRect]
+    min: 0.467
+    max: 0.468
+  - name: ACTdmSm
+    op: with_bbox_max
+    mode: lazy
+    layers: [ACTdmSmShort]
+    min: 0.467
+    max: 0.468
+  - name: ACTdmOk
+    op: union
+    mode: lazy
+    layers: [ACTdm3x3, ACTdm1x1, ACTdmSm]
+  - name: ACTdmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [ACTdm, ACTdmOk]
+  - name: POLYdmRect
+    op: rectangle
+    mode: lazy
+    layers: [POLYdm]
+  - name: POLYdm2x2Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [POLYdmRect]
+    min: 2.4
+    max: 2.401
+  - name: POLYdm2x2
+    op: with_bbox_max
+    mode: lazy
+    layers: [POLYdm2x2Short]
+    min: 2.4
+    max: 2.401
+  - name: POLYdm1x1Short
+    op: with_bbox_min
+    mode: lazy
+    layers: [POLYdmRect]
+    min: 0.92
+    max: 0.921
+  - name: POLYdm1x1
+    op: with_bbox_max
+    mode: lazy
+    layers: [POLYdm1x1Short]
+    min: 0.92
+    max: 0.921
+  - name: POLYdmSmShort
+    op: with_bbox_min
+    mode: lazy
+    layers: [POLYdmRect]
+    min: 0.381
+    max: 0.382
+  - name: POLYdmSm
+    op: with_bbox_max
+    mode: lazy
+    layers: [POLYdmSmShort]
+    min: 0.381
+    max: 0.382
+  - name: POLYdmOk
+    op: union
+    mode: lazy
+    layers: [POLYdm2x2, POLYdm1x1, POLYdmSm]
+  - name: POLYdmBad
+    op: not_overlapping
+    mode: lazy
+    layers: [POLYdm, POLYdmOk]
+  - name: GATE
+    op: intersection
+    mode: lazy
+    layers: [POLY, ACT]
+  - name: NPACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, NP]
+  - name: PPACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, PP]
+  - name: NPPickup
+    op: intersection
+    mode: lazy
+    layers: [NPACT, NW1]
+  - name: PPPickup
+    op: difference
+    mode: lazy
+    layers: [PPACT, NW1]
+  - name: NPACTpw
+    op: difference
+    mode: lazy
+    layers: [NPACT, NW1]
+  - name: PPACTnw
+    op: intersection
+    mode: lazy
+    layers: [PPACT, NW1]
+  - name: ACTNoPickup
+    op: difference
+    mode: lazy
+    layers: [ACT, NPPickup, PPPickup]
+  - name: IOOX
+    op: union
+    mode: lazy
+    layers: [DGOX, TGOX]
+  - name: GATECore
+    op: difference
+    mode: lazy
+    layers: [GATE, DGOX, TGOX]
+  - name: GATEDG
+    op: intersection
+    mode: lazy
+    layers: [GATE, DGOX]
+  - name: GATETG
+    op: intersection
+    mode: lazy
+    layers: [GATE, TGOX]
+  - name: ACTInTGOX
+    op: inside
+    mode: lazy
+    layers: [ACT, TGOX]
+  - name: NW1xTGOX
+    op: interacting
+    mode: lazy
+    layers: [NW1, TGOX]
+  - name: NW1DNW
+    op: overlapping
+    mode: lazy
+    layers: [NW1, DNW]
+  - name: NW1NoRes
+    op: not_interacting
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: ACTSAB
+    op: intersection
+    mode: lazy
+    layers: [ACT, SAB]
+  - name: GATENoInd
+    op: difference
+    mode: lazy
+    layers: [GATE, INDALL]
+  - name: NPACTButted
+    op: interacting
+    mode: lazy
+    layers: [NPACT, PPACT]
+  - name: PPACTButted
+    op: interacting
+    mode: lazy
+    layers: [PPACT, NPACT]
+  - name: ACTSD
+    op: difference
+    mode: lazy
+    layers: [ACT, POLY]
+  - name: NW1IO
+    op: overlapping
+    mode: lazy
+    layers: [NW1, IOOX]
+  - name: NW1Core
+    op: not_overlapping
+    mode: lazy
+    layers: [NW1, IOOX]
+  - name: CTNoSRAM
+    op: difference
+    mode: lazy
+    layers: [CT, SRAMALL]
+  - name: GATENat
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, PSUB]
+  - name: GATENatCore
+    op: difference
+    mode: lazy
+    layers: [GATENat, DGOX, TGOX]
+  - name: GATENatDG
+    op: intersection
+    mode: lazy
+    layers: [GATENat, DGOX]
+  - name: GATENatTG
+    op: intersection
+    mode: lazy
+    layers: [GATENat, TGOX]
+  - name: POLYNat
+    op: overlapping
+    mode: lazy
+    layers: [POLY, PSUB]
+  - name: NPPP
+    op: union
+    mode: lazy
+    layers: [NP, PP]
+  - name: RACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, ACTres]
+  - name: RACTns
+    op: intersection
+    mode: lazy
+    layers: [RACT, SAB]
+  - name: RACTnsP
+    op: intersection
+    mode: lazy
+    layers: [RACTns, PP]
+  - name: RPO
+    op: intersection
+    mode: lazy
+    layers: [POLY, POLYres]
+  - name: RPOns
+    op: intersection
+    mode: lazy
+    layers: [RPO, SAB]
+  - name: NW1R
+    op: intersection
+    mode: lazy
+    layers: [NW1, NW1res]
+  # PW is the chip minus (NW1 or PSUB); near a DNW is all the DNW rules need of it.
+  - name: DNWHalo
+    op: grow
+    mode: lazy
+    radius: 1.5
+    layers: [DNW]
+  - name: PWNearDNW
+    op: difference
+    mode: lazy
+    layers: [DNWHalo, NW1, PSUB]
+  # TPW (PW inside DNW), clipped to the DNW: the same regions wherever DNW-En.1 holds.
+  - name: TPWell
+    op: difference
+    mode: lazy
+    layers: [DNW, NW1, PSUB]
+  - name: PWUnderIOOX
+    op: intersection
+    mode: lazy
+    layers: [PWNearDNW, IOOX]
+  - name: CTonPPPickup
+    op: interacting
+    mode: lazy
+    layers: [CT, PPPickup]
+  - name: TPWellFloating
+    op: not_interacting
+    mode: lazy
+    layers: [TPWell, CTonPPPickup]
+  # Where NW1 and DNW overlap: a connector whose every point lies in both (report A).
+  - name: NW1onDNW
+    op: intersection
+    mode: lazy
+    layers: [NW1, DNW]
+  - name: NSDOutNW1
+    op: difference
+    mode: lazy
+    layers: [NPACT, POLY, NW1]
+  - name: NW1inRes
+    op: intersection
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: NW1Cut
+    op: difference
+    mode: lazy
+    layers: [NW1, NW1res]
+  # The runset's LVNW0 and MVNW0 or HVNW0: the wells without their resistor parts.
+  - name: NW1CoreCut
+    op: intersection
+    mode: lazy
+    layers: [NW1Cut, NW1Core]
+  - name: NW1IOCut
+    op: intersection
+    mode: lazy
+    layers: [NW1Cut, NW1IO]
+  - name: NW1NotInSRAM
+    op: not_inside
+    mode: lazy
+    layers: [NW1, SRAMALL]
+  - name: NTapWithCT
+    op: covering
+    mode: lazy
+    layers: [NPPickup, CT]
+  - name: NW1Floating
+    op: not_interacting
+    mode: lazy
+    layers: [NW1, NTapWithCT]
+  # The runset's MOS: the N+ and P+ gates and the source/drain pieces touching them.
+  - name: PMOSGate
+    op: intersection
+    mode: lazy
+    layers: [PPACT, POLY]
+  - name: PPACTNoPoly
+    op: difference
+    mode: lazy
+    layers: [PPACT, POLY]
+  - name: PMOSSD
+    op: interacting
+    mode: lazy
+    layers: [PPACTNoPoly, PMOSGate]
+  - name: NMOSGate
+    op: intersection
+    mode: lazy
+    layers: [NPACT, POLY]
+  - name: NPACTNoPoly
+    op: difference
+    mode: lazy
+    layers: [NPACT, POLY]
+  - name: NMOSSD
+    op: interacting
+    mode: lazy
+    layers: [NPACTNoPoly, NMOSGate]
+  - name: NMOSAA
+    op: union
+    mode: lazy
+    layers: [NMOSGate, NMOSSD]
+  - name: MOSAA
+    op: union
+    mode: lazy
+    layers: [PMOSGate, PMOSSD, NMOSGate, NMOSSD]
+  # The runset's AA_LDMOS.
+  - name: LDPACT
+    op: intersection
+    mode: lazy
+    layers: [PPACT, LDMOS]
+  - name: LDNACT
+    op: intersection
+    mode: lazy
+    layers: [NPACT, LDMOS]
+  - name: LDPACTGated
+    op: interacting
+    mode: lazy
+    layers: [LDPACT, POLY]
+  - name: LDNACTGated
+    op: interacting
+    mode: lazy
+    layers: [LDNACT, POLY]
+  - name: LDPACTBare
+    op: not_interacting
+    mode: lazy
+    layers: [LDPACT, POLY]
+  - name: LDNACTBare
+    op: not_interacting
+    mode: lazy
+    layers: [LDNACT, POLY]
+  - name: LDPACTAtSTI
+    op: interacting
+    mode: lazy
+    layers: [LDPACTBare, LDMOSSTI]
+  - name: LDNACTAtSTI
+    op: interacting
+    mode: lazy
+    layers: [LDNACTBare, LDMOSSTI]
+  - name: LDPDrain
+    op: not_overlapping
+    mode: lazy
+    layers: [LDPACTAtSTI, LDMOSSTI]
+  - name: LDNDrain
+    op: not_overlapping
+    mode: lazy
+    layers: [LDNACTAtSTI, LDMOSSTI]
+  - name: AALDMOS
+    op: union
+    mode: lazy
+    layers: [LDPACTGated, LDNACTGated, LDPDrain, LDNDrain]
+  - name: NatNMOS
+    op: intersection
+    mode: lazy
+    layers: [NMOSAA, PSUB]
+  - name: NatNMOSSized
+    op: grow
+    mode: lazy
+    radius: 0.285
+    layers: [NatNMOS]
+  - name: PSUBwithNatNMOS
+    op: interacting
+    mode: lazy
+    layers: [PSUB, NatNMOS]
+  - name: ACTinPSUB
+    op: intersection
+    mode: lazy
+    layers: [ACT, PSUB]
+  - name: ACTinPSUBNoInd
+    op: not_inside
+    mode: lazy
+    layers: [ACTinPSUB, INDALL]
+  - name: PPonPSUB
+    op: intersection
+    mode: lazy
+    layers: [PP, PSUB]
+  - name: PPonPSUBNoInd
+    op: not_inside
+    mode: lazy
+    layers: [PPonPSUB, INDALL]
+  - name: ACTorPOLY
+    op: union
+    mode: lazy
+    layers: [ACT, POLY]
+  - name: ACTorPOLYDev
+    op: interacting
+    mode: lazy
+    layers: [ACTorPOLY, GATEDev]
+  - name: NatDevACTorPOLY
+    op: intersection
+    mode: lazy
+    layers: [ACTorPOLYDev, PSUB]
+  - name: PPonNatDev
+    op: interacting
+    mode: lazy
+    layers: [PPonPSUBNoInd, NatDevACTorPOLY]
+  - name: ACTNoIndTouch
+    op: not_interacting
+    mode: lazy
+    layers: [ACT, INDALL]
+  - name: PSUBMultiACT
+    op: interacting
+    mode: lazy
+    min: 2
+    layers: [PSUB, ACTNoIndTouch]
+  - name: ACTnoNVT3
+    op: difference
+    mode: lazy
+    layers: [ACT, NVT3]
+  - name: NPACTxNVT3
+    op: intersection
+    mode: lazy
+    layers: [NPACT, NVT3]
+  - name: PPACTxPVT3
+    op: intersection
+    mode: lazy
+    layers: [PPACT, PVT3]
+  - name: NPACTxNVT1
+    op: intersection
+    mode: lazy
+    layers: [NPACT, NVT1]
+  - name: PPACTxPVT1
+    op: intersection
+    mode: lazy
+    layers: [PPACT, PVT1]
+  - name: NPACTnoNVT1
+    op: difference
+    mode: lazy
+    layers: [NPACT, NVT1]
+  - name: PPACTnoNVT1
+    op: difference
+    mode: lazy
+    layers: [PPACT, NVT1]
+  - name: NPACTnoPVT1
+    op: difference
+    mode: lazy
+    layers: [NPACT, PVT1]
+  - name: PPACTnoPVT1
+    op: difference
+    mode: lazy
+    layers: [PPACT, PVT1]
+  - name: ACTSABoutNVT3
+    op: not_inside
+    mode: lazy
+    layers: [ACTSAB, NVT3]
+  - name: ACTSABoutPVT3
+    op: not_inside
+    mode: lazy
+    layers: [ACTSAB, PVT3]
+  - name: ACTSABoutNVT1
+    op: not_inside
+    mode: lazy
+    layers: [ACTSAB, NVT1]
+  - name: NVT3NotInSRAM
+    op: not_inside
+    mode: lazy
+    layers: [NVT3, SRAMALL]
+  - name: PVT3NotInSRAM
+    op: not_inside
+    mode: lazy
+    layers: [PVT3, SRAMALL]
+  - name: ULLDnoNVT3
+    op: not_interacting
+    mode: lazy
+    layers: [ULLD, NVT3]
+  - name: ULLDnoPVT3
+    op: not_interacting
+    mode: lazy
+    layers: [ULLD, PVT3]
+  # The runset's local AA of the ULLD rules: PACT or NACT.
+  - name: NPPPACT
+    op: union
+    mode: lazy
+    layers: [NPACT, PPACT]
+  # Bands reaching 0.2 along a gate's AA-end edges (ULLD-Ex.3a): x for gates whose
+  # AA-end edges run along x, y for the others; the hair takes in the edge itself.
+  - name: GATEAlongX
+    op: grow_x
+    mode: lazy
+    radius: 0.2
+    layers: [GATEDev]
+  - name: GATEAlongXBand
+    op: grow_y
+    mode: lazy
+    radius: 0.001
+    layers: [GATEAlongX]
+  - name: GATEAlongY
+    op: grow_y
+    mode: lazy
+    radius: 0.2
+    layers: [GATEDev]
+  - name: GATEAlongYBand
+    op: grow_x
+    mode: lazy
+    radius: 0.001
+    layers: [GATEAlongY]
+  - name: GATEinDGOX
+    op: inside
+    mode: lazy
+    layers: [GATEDev, DGOX]
+  - name: GATEinTGOX
+    op: inside
+    mode: lazy
+    layers: [GATEDev, TGOX]
+  # Runset GATE: a poly-on-active piece whose two sides are each a contacted S/D or
+  # one shared with a second gate (GATE1), or any poly on active in LDMOS (GATE2).
+  - name: ACTGated
+    op: interacting
+    mode: lazy
+    layers: [ACT, GATE]
+  - name: ACTGatedSD
+    op: difference
+    mode: lazy
+    layers: [ACTGated, POLY]
+  - name: ACTSDShared
+    op: interacting
+    min: 2
+    max: 2
+    mode: lazy
+    layers: [ACTGatedSD, GATE]
+  - name: CTorBar
+    op: union
+    mode: lazy
+    layers: [CT, CTbar]
+  - name: ACTSDContacted
+    op: interacting
+    mode: lazy
+    layers: [ACTGatedSD, CTorBar]
+  - name: ACTSDTerm
+    op: union
+    mode: lazy
+    layers: [ACTSDShared, ACTSDContacted]
+  - name: GATEDevPair
+    op: interacting
+    min: 2
+    max: 2
+    mode: lazy
+    layers: [GATE, ACTSDTerm]
+  - name: GATEDevLD
+    op: intersection
+    mode: lazy
+    layers: [GATE, LDMOS]
+  - name: GATEDev
+    op: union
+    mode: lazy
+    layers: [GATEDevPair, GATEDevLD]
+  - name: GATEDevCore
+    op: difference
+    mode: lazy
+    layers: [GATEDev, DGOX, TGOX]
+  - name: GATEDevDG
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, DGOX]
+  - name: GATEDevIO1
+    op: difference
+    mode: lazy
+    layers: [GATEDevDG, TGOX]
+  - name: GATEDevTG
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, TGOX]
+  - name: GATEDevIO2
+    op: difference
+    mode: lazy
+    layers: [GATEDevTG, DGOX]
+  - name: GATEDevNoSAB
+    op: difference
+    mode: lazy
+    layers: [GATEDev, SAB]
+  - name: SRAMorIND
+    op: union
+    mode: lazy
+    layers: [SRAMALL, INDALL]
+  # X not_inside M, built as X minus its regions that lie wholly in M: a
+  # piece of X AND M that touches no piece of X NOT M is a whole region.
+  - name: ACTNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [ACT, SRAMALL]
+  - name: ACTNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [ACT, SRAMALL]
+  - name: ACTNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNotInSRAMPart, ACTNotInSRAMRest]
+  - name: ACTNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [ACT, ACTNotInSRAMWhole]
+  - name: NPACTOutNW1
+    op: not_overlapping
+    mode: lazy
+    layers: [NPACT, NW1]
+  - name: NPACTInPW
+    op: not_overlapping
+    mode: lazy
+    layers: [NPACTOutNW1, PSUB]
+  - name: NPACTInTGOX
+    op: inside
+    mode: lazy
+    layers: [NPACT, TGOX]
+  # NW1 that holds part of a DNW boundary (the runset's NW_DNW).
+  - name: NW1DNWRingPart
+    op: intersection
+    mode: lazy
+    layers: [NW1DNW, DNW]
+  - name: NW1DNWRingRest
+    op: difference
+    mode: lazy
+    layers: [NW1DNW, DNW]
+  - name: NW1DNWRingWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NW1DNWRingPart, NW1DNWRingRest]
+  - name: NW1DNWRing
+    op: difference
+    mode: lazy
+    layers: [NW1DNW, NW1DNWRingWhole]
+  - name: PPPickupNoPSUB
+    op: difference
+    mode: lazy
+    layers: [PPPickup, PSUB]
+  - name: PPPickupS8Part
+    op: intersection
+    mode: lazy
+    layers: [PPPickupNoPSUB, LDMOS]
+  - name: PPPickupS8Rest
+    op: difference
+    mode: lazy
+    layers: [PPPickupNoPSUB, LDMOS]
+  - name: PPPickupS8Whole
+    op: not_interacting
+    mode: lazy
+    layers: [PPPickupS8Part, PPPickupS8Rest]
+  - name: PPPickupS8
+    op: difference
+    mode: lazy
+    layers: [PPPickupNoPSUB, PPPickupS8Whole]
+  - name: NPACTNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [NPACT, SRAMALL]
+  - name: NPACTNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [NPACT, SRAMALL]
+  - name: NPACTNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPACTNotInSRAMPart, NPACTNotInSRAMRest]
+  - name: NPACTNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [NPACT, NPACTNotInSRAMWhole]
+  - name: PPACTNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [PPACT, SRAMALL]
+  - name: PPACTNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [PPACT, SRAMALL]
+  - name: PPACTNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPACTNotInSRAMPart, PPACTNotInSRAMRest]
+  - name: PPACTNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [PPACT, PPACTNotInSRAMWhole]
+  - name: ACTNoImp
+    op: difference
+    mode: lazy
+    layers: [ACT, NP, PP]
+  - name: ACTNoImpChk
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNoImp, NW1res]
+  - name: ACTwithDm
+    op: union
+    mode: lazy
+    layers: [ACT, ACTdm]
+  - name: POLYNotInACTwithDmPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, ACTwithDm]
+  - name: POLYNotInACTwithDmRest
+    op: difference
+    mode: lazy
+    layers: [POLY, ACTwithDm]
+  - name: POLYNotInACTwithDmWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInACTwithDmPart, POLYNotInACTwithDmRest]
+  - name: POLYNotInACTwithDm
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInACTwithDmWhole]
+  - name: POLYNotInSRAMIndPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, SRAMorIND]
+  - name: POLYNotInSRAMIndRest
+    op: difference
+    mode: lazy
+    layers: [POLY, SRAMorIND]
+  - name: POLYNotInSRAMIndWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInSRAMIndPart, POLYNotInSRAMIndRest]
+  - name: POLYNotInSRAMInd
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInSRAMIndWhole]
+  - name: ACTSDwCT
+    op: interacting
+    mode: lazy
+    layers: [ACTSD, CTorBar]
+  - name: GATETGNP
+    op: intersection
+    mode: lazy
+    layers: [GATETG, NP]
+  - name: GATETGPP
+    op: intersection
+    mode: lazy
+    layers: [GATETG, PP]
+  - name: ACTwithDmEF
+    op: union
+    mode: lazy
+    layers: [ACTwithDm, EFUSEALL]
+  - name: POLYS6BentPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, ACTwithDmEF]
+  - name: POLYS6BentRest
+    op: difference
+    mode: lazy
+    layers: [POLY, ACTwithDmEF]
+  - name: POLYS6BentWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYS6BentPart, POLYS6BentRest]
+  - name: POLYS6Bent
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYS6BentWhole]
+  - name: POLYNotInEFPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, EFUSEALL]
+  - name: POLYNotInEFRest
+    op: difference
+    mode: lazy
+    layers: [POLY, EFUSEALL]
+  - name: POLYNotInEFWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInEFPart, POLYNotInEFRest]
+  - name: POLYNotInEF
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInEFWhole]
+  - name: FUSEorEF
+    op: union
+    mode: lazy
+    layers: [FUSEALL, EFUSEALL]
+  - name: POLYS11Excl
+    op: union
+    mode: lazy
+    layers: [ACTwithDm, SRAMorIND]
+  - name: POLYAtSAB
+    op: overlapping
+    mode: lazy
+    layers: [POLY, SAB]
+  # The ACT edges on an LDMOSSTI edge do not bound POLY-Ex.1.
+  - name: ACTwLDSTI
+    op: union
+    mode: lazy
+    layers: [ACT, LDMOSSTI]
+  - name: ACTNoSRAMLDPart
+    op: intersection
+    mode: lazy
+    layers: [ACTNotInSRAM, LDMOS]
+  - name: ACTNoSRAMLDRest
+    op: difference
+    mode: lazy
+    layers: [ACTNotInSRAM, LDMOS]
+  - name: ACTNoSRAMLDWhole
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNoSRAMLDPart, ACTNoSRAMLDRest]
+  - name: ACTNoSRAMLD
+    op: difference
+    mode: lazy
+    layers: [ACTNotInSRAM, ACTNoSRAMLDWhole]
+  - name: POLYNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [POLY, SRAMALL]
+  - name: POLYNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [POLY, SRAMALL]
+  - name: POLYNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYNotInSRAMPart, POLYNotInSRAMRest]
+  - name: POLYNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [POLY, POLYNotInSRAMWhole]
+  # (PO AND AA) WITH WIDTH > 0.01
+  - name: GATEOpenR1
+    op: open
+    radius: 0.005
+    mode: lazy
+    layers: [GATE]
+  - name: GATER1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEOpenR1, SRAMorIND]
+  - name: GATER1ChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEOpenR1, SRAMorIND]
+  - name: GATER1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATER1ChkPart, GATER1ChkRest]
+  - name: GATER1Chk
+    op: difference
+    mode: lazy
+    layers: [GATEOpenR1, GATER1ChkWhole]
+  - name: GATER1Bad
+    op: not_rectangle
+    mode: lazy
+    layers: [GATER1Chk]
+  - name: POLYwCT
+    op: interacting
+    mode: lazy
+    layers: [POLY, CTorBar]
+  - name: HRPBLKPoly
+    op: interacting
+    mode: lazy
+    layers: [POLY, HRPBLK]
+  - name: HRPBLKEnds
+    op: difference
+    mode: lazy
+    layers: [HRPBLKPoly, HRPBLK]
+  - name: HRPEndsGrown
+    op: grow
+    radius: 0.3
+    mode: lazy
+    layers: [HRPBLKEnds]
+  - name: HRPMark
+    op: union
+    mode: lazy
+    layers: [HRPBLK, HRP]
+  - name: POLYAtHRP
+    op: interacting
+    mode: lazy
+    layers: [POLY, HRPMark]
+  - name: POLYHRPMid
+    op: difference
+    mode: lazy
+    layers: [POLYAtHRP, HRPEndsGrown]
+  - name: POLYR2Bare
+    op: difference
+    mode: lazy
+    layers: [POLYwCT, POLYHRPMid, PP, NP]
+  - name: POLYR2NoMom
+    op: not_interacting
+    mode: lazy
+    layers: [POLYR2Bare, MOMLVS1]
+  - name: POLYR2ChkPart
+    op: intersection
+    mode: lazy
+    layers: [POLYR2NoMom, SRAMALL]
+  - name: POLYR2ChkRest
+    op: difference
+    mode: lazy
+    layers: [POLYR2NoMom, SRAMALL]
+  - name: POLYR2ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYR2ChkPart, POLYR2ChkRest]
+  - name: POLYR2Chk
+    op: difference
+    mode: lazy
+    layers: [POLYR2NoMom, POLYR2ChkWhole]
+  - name: NW1WithRes
+    op: interacting
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: PPACTnwFree
+    op: not_interacting
+    mode: lazy
+    layers: [PPACTnw, NP]
+  - name: PPPickupFree
+    op: not_interacting
+    mode: lazy
+    layers: [PPPickup, NP]
+  - name: NPACTpwFree
+    op: not_interacting
+    mode: lazy
+    layers: [NPACTpw, PP]
+  - name: NPPickupFree
+    op: not_interacting
+    mode: lazy
+    layers: [NPPickup, PP]
+  - name: NPandPPACT
+    op: intersection
+    mode: lazy
+    layers: [NPACT, PP]
+  - name: NPandPPACTChkPart
+    op: intersection
+    mode: lazy
+    layers: [NPandPPACT, SRAMALL]
+  - name: NPandPPACTChkRest
+    op: difference
+    mode: lazy
+    layers: [NPandPPACT, SRAMALL]
+  - name: NPandPPACTChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPandPPACTChkPart, NPandPPACTChkRest]
+  - name: NPandPPACTChk
+    op: difference
+    mode: lazy
+    layers: [NPandPPACT, NPandPPACTChkWhole]
+  - name: NPOverNWRes
+    op: interacting
+    mode: lazy
+    layers: [NP, NW1WithRes]
+  - name: ACTNPEn1
+    op: difference
+    mode: lazy
+    layers: [ACT, NPOverNWRes]
+  - name: ACTNPEn1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [ACTNPEn1, SRAMALL]
+  - name: ACTNPEn1ChkRest
+    op: difference
+    mode: lazy
+    layers: [ACTNPEn1, SRAMALL]
+  - name: ACTNPEn1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [ACTNPEn1ChkPart, ACTNPEn1ChkRest]
+  - name: ACTNPEn1Chk
+    op: difference
+    mode: lazy
+    layers: [ACTNPEn1, ACTNPEn1ChkWhole]
+  # NP-En/PP-En skip the active edges on the other implant's edge (a butted tap): a
+  # sliver of that implant along the active joins it, so such an edge is inside.
+  - name: ACTNPEn1Grow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [ACTNPEn1Chk]
+  - name: PPAtACTNPEn1
+    op: intersection
+    mode: lazy
+    layers: [PP, ACTNPEn1Grow]
+  - name: NPEn1In
+    op: union
+    mode: lazy
+    layers: [ACTNPEn1Chk, PPAtACTNPEn1]
+  - name: PPTapEn1
+    op: not_interacting
+    mode: lazy
+    layers: [PPPickup, NW1WithRes]
+  - name: PPTapEn1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [PPTapEn1, SRAMALL]
+  - name: PPTapEn1ChkRest
+    op: difference
+    mode: lazy
+    layers: [PPTapEn1, SRAMALL]
+  - name: PPTapEn1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPTapEn1ChkPart, PPTapEn1ChkRest]
+  - name: PPTapEn1Chk
+    op: difference
+    mode: lazy
+    layers: [PPTapEn1, PPTapEn1ChkWhole]
+  - name: PPTapEn1Grow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [PPTapEn1Chk]
+  - name: NPAtPPTap
+    op: intersection
+    mode: lazy
+    layers: [NP, PPTapEn1Grow]
+  - name: PPEn1In
+    op: union
+    mode: lazy
+    layers: [PPTapEn1Chk, NPAtPPTap]
+  - name: NPinPW
+    op: difference
+    mode: lazy
+    layers: [NP, NW1, PSUB]
+  - name: NPACTNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NPACT, NW1WithRes]
+  - name: NPACTNoNWRChkPart
+    op: intersection
+    mode: lazy
+    layers: [NPACTNoNWR, SRAMALL]
+  - name: NPACTNoNWRChkRest
+    op: difference
+    mode: lazy
+    layers: [NPACTNoNWR, SRAMALL]
+  - name: NPACTNoNWRChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPACTNoNWRChkPart, NPACTNoNWRChkRest]
+  - name: NPACTNoNWRChk
+    op: difference
+    mode: lazy
+    layers: [NPACTNoNWR, NPACTNoNWRChkWhole]
+  - name: NPACTNoNWRGrow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [NPACTNoNWRChk]
+  - name: PPAtNPACT
+    op: intersection
+    mode: lazy
+    layers: [PP, NPACTNoNWRGrow]
+  - name: NPEn2In
+    op: union
+    mode: lazy
+    layers: [NPACTNoNWRChk, PPAtNPACT]
+  - name: PPinNW
+    op: intersection
+    mode: lazy
+    layers: [PP, NW1]
+  - name: PPACTNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [PPACT, NW1WithRes]
+  - name: PPACTNoNWRChkPart
+    op: intersection
+    mode: lazy
+    layers: [PPACTNoNWR, SRAMALL]
+  - name: PPACTNoNWRChkRest
+    op: difference
+    mode: lazy
+    layers: [PPACTNoNWR, SRAMALL]
+  - name: PPACTNoNWRChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPACTNoNWRChkPart, PPACTNoNWRChkRest]
+  - name: PPACTNoNWRChk
+    op: difference
+    mode: lazy
+    layers: [PPACTNoNWR, PPACTNoNWRChkWhole]
+  - name: PPACTNoNWRGrow
+    op: grow
+    radius: 0.01
+    mode: lazy
+    layers: [PPACTNoNWRChk]
+  - name: NPAtPPACT
+    op: intersection
+    mode: lazy
+    layers: [NP, PPACTNoNWRGrow]
+  - name: PPEn2In
+    op: union
+    mode: lazy
+    layers: [PPACTNoNWRChk, NPAtPPACT]
+  # Field poly off the resistors; a piece reaching both NP and PP is out of NP-En.3/PP-En.3.
+  - name: POLYField3
+    op: difference
+    mode: lazy
+    layers: [POLY, ACT, POLYres, HRPBLK]
+  - name: POLYField3N
+    op: interacting
+    mode: lazy
+    layers: [POLYField3, NP]
+  - name: POLYField3Cut
+    op: interacting
+    mode: lazy
+    layers: [POLYField3N, PP]
+  - name: POLYField3Keep
+    op: difference
+    mode: lazy
+    layers: [POLYField3, POLYField3Cut]
+  - name: POLYField3ChkPart
+    op: intersection
+    mode: lazy
+    layers: [POLYField3Keep, SRAMALL]
+  - name: POLYField3ChkRest
+    op: difference
+    mode: lazy
+    layers: [POLYField3Keep, SRAMALL]
+  - name: POLYField3ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [POLYField3ChkPart, POLYField3ChkRest]
+  - name: POLYField3Chk
+    op: difference
+    mode: lazy
+    layers: [POLYField3Keep, POLYField3ChkWhole]
+  - name: NPNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [NP, SRAMALL]
+  - name: NPNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [NP, SRAMALL]
+  - name: NPNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [NPNotInSRAMPart, NPNotInSRAMRest]
+  - name: NPNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [NP, NPNotInSRAMWhole]
+  - name: PPNotInSRAMPart
+    op: intersection
+    mode: lazy
+    layers: [PP, SRAMALL]
+  - name: PPNotInSRAMRest
+    op: difference
+    mode: lazy
+    layers: [PP, SRAMALL]
+  - name: PPNotInSRAMWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PPNotInSRAMPart, PPNotInSRAMRest]
+  - name: PPNotInSRAM
+    op: difference
+    mode: lazy
+    layers: [PP, PPNotInSRAMWhole]
+  - name: NPTapButted
+    op: interacting
+    mode: lazy
+    layers: [NPPickup, PPACTnw]
+  - name: PPTapButted
+    op: interacting
+    mode: lazy
+    layers: [PPPickup, NPACTpw]
+  - name: ACTTouchPPEdge
+    op: interacting
+    mode: lazy
+    layers: [ACT, ACTonPPEdge]
+  - name: ACTNoTouchPP
+    op: difference
+    mode: lazy
+    layers: [ACT, ACTTouchPPEdge]
+  - name: SABACT
+    op: intersection
+    mode: lazy
+    layers: [ACT, SAB]
+  - name: SABPOLY
+    op: intersection
+    mode: lazy
+    layers: [POLY, SAB]
+  - name: SABACTPOLY
+    op: union
+    mode: lazy
+    layers: [SABACT, SABPOLY]
+  - name: SABAtPOLY
+    op: interacting
+    mode: lazy
+    layers: [SAB, POLY]
+  - name: SABS2Gap
+    op: separation_below
+    max: 0.44
+    mode: lazy
+    layers: [SABAtPOLY, SAB]
+  - name: SABS2GapPO
+    op: interacting
+    mode: lazy
+    layers: [SABS2Gap, POLY]
+  - name: SABS2GapAA
+    op: interacting
+    mode: lazy
+    layers: [SABS2Gap, ACT]
+  - name: SABS2Viol
+    op: union
+    mode: lazy
+    layers: [SABS2GapPO, SABS2GapAA]
+  - name: SABxGATE
+    op: intersection
+    mode: lazy
+    layers: [SAB, GATEDev]
+  # SAB-S.4 waives a SAB that covers some gate by exactly 0.06 from its S/D side.
+  - name: SABxGATERect
+    op: rectangle
+    mode: lazy
+    layers: [SABxGATE]
+  - name: SABxGATE60
+    op: with_bbox_min
+    min: 0.06
+    max: 0.061
+    mode: lazy
+    layers: [SABxGATERect]
+  - name: SABGATE60
+    op: interacting
+    mode: lazy
+    layers: [SABxGATE60, GATEDevNoSAB]
+  - name: SABWith60
+    op: interacting
+    mode: lazy
+    layers: [SAB, SABGATE60]
+  - name: SABNo60
+    op: difference
+    mode: lazy
+    layers: [SAB, SABWith60]
+  - name: SABS4Ovl
+    op: intersection
+    mode: lazy
+    layers: [SABNo60, GATEDev]
+  - name: SABS4ChkPart
+    op: intersection
+    mode: lazy
+    layers: [SABS4Ovl, ESDIOE]
+  - name: SABS4ChkRest
+    op: difference
+    mode: lazy
+    layers: [SABS4Ovl, ESDIOE]
+  - name: SABS4ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [SABS4ChkPart, SABS4ChkRest]
+  - name: SABS4Chk
+    op: difference
+    mode: lazy
+    layers: [SABS4Ovl, SABS4ChkWhole]
+  - name: SABR2ChkPart
+    op: intersection
+    mode: lazy
+    layers: [SABxGATE, ESDIOE]
+  - name: SABR2ChkRest
+    op: difference
+    mode: lazy
+    layers: [SABxGATE, ESDIOE]
+  - name: SABR2ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [SABR2ChkPart, SABR2ChkRest]
+  - name: SABR2Chk
+    op: difference
+    mode: lazy
+    layers: [SABxGATE, SABR2ChkWhole]
+  - name: POLYField5
+    op: difference
+    mode: lazy
+    layers: [POLY, ACT, ACTdm]
+  # Gates off SRAMALL for the channel-width and NP-S.5 edges.
+  - name: GATEDevCoreChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEDevCore, SRAMALL]
+  - name: GATEDevCoreChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEDevCore, SRAMALL]
+  - name: GATEDevCoreChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATEDevCoreChkPart, GATEDevCoreChkRest]
+  - name: GATEDevCoreChk
+    op: difference
+    mode: lazy
+    layers: [GATEDevCore, GATEDevCoreChkWhole]
+  - name: GATEDevIO1ChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEDevIO1, SRAMALL]
+  - name: GATEDevIO1ChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO1, SRAMALL]
+  - name: GATEDevIO1ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATEDevIO1ChkPart, GATEDevIO1ChkRest]
+  - name: GATEDevIO1Chk
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO1, GATEDevIO1ChkWhole]
+  - name: GATEDevIO2ChkPart
+    op: intersection
+    mode: lazy
+    layers: [GATEDevIO2, SRAMALL]
+  - name: GATEDevIO2ChkRest
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO2, SRAMALL]
+  - name: GATEDevIO2ChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [GATEDevIO2ChkPart, GATEDevIO2ChkRest]
+  - name: GATEDevIO2Chk
+    op: difference
+    mode: lazy
+    layers: [GATEDevIO2, GATEDevIO2ChkWhole]
+  - name: PGATEDev
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, PP]
+  - name: PGATEDevChkPart
+    op: intersection
+    mode: lazy
+    layers: [PGATEDev, SRAMALL]
+  - name: PGATEDevChkRest
+    op: difference
+    mode: lazy
+    layers: [PGATEDev, SRAMALL]
+  - name: PGATEDevChkWhole
+    op: not_interacting
+    mode: lazy
+    layers: [PGATEDevChkPart, PGATEDevChkRest]
+  - name: PGATEDevChk
+    op: difference
+    mode: lazy
+    layers: [PGATEDev, PGATEDevChkWhole]
+  # The runset's CT: square contacts and bars.
+  - name: CTAll
+    op: union
+    mode: lazy
+    layers: [CT, CTbar]
+  - name: M1NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: SRAMorEFUSE
+    op: union
+    mode: lazy
+    layers: [SRAMALL, EFUSEALL]
+  - name: GRIDAll
+    op: union
+    mode: lazy
+    layers: [GRBLK, SRINGBLK]
+  - name: CTW1Exempt
+    op: union
+    mode: lazy
+    layers: [GRIDAll, SRAMALL, EFUSEALL]
+  - name: POLYxGATEDevCore
+    op: interacting
+    mode: lazy
+    layers: [POLY, GATEDevCore]
+  - name: POLYxGATEDev
+    op: interacting
+    mode: lazy
+    layers: [POLY, GATEDev]
+  - name: CTonACTPart
+    op: intersection
+    mode: lazy
+    layers: [CTAll, ACT]
+  - name: CTonACTPartDG
+    op: intersection
+    mode: lazy
+    layers: [CTonACTPart, DGOX]
+  - name: CTonACTPartTG
+    op: intersection
+    mode: lazy
+    layers: [CTonACTPart, TGOX]
+  - name: CTonPOLYPart
+    op: intersection
+    mode: lazy
+    layers: [CTAll, POLY]
+  - name: EFUPOLY
+    op: interacting
+    mode: lazy
+    layers: [POLY, EFUSEALL]
+  - name: CTNoEFU
+    op: not_interacting
+    mode: lazy
+    layers: [CTAll, EFUPOLY]
+  - name: CTNoEFURect
+    op: rectangle
+    mode: lazy
+    layers: [CTNoEFU]
+  - name: CTNoEFUShort09
+    op: with_bbox_min
+    mode: lazy
+    layers: [CTNoEFURect]
+    min: 0.09
+    max: 0.091
+  - name: CTNoEFU09
+    op: with_bbox_max
+    mode: lazy
+    layers: [CTNoEFUShort09]
+    min: 0.09
+    max: 0.091
+  - name: CTNoEFUBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTNoEFU, CTNoEFU09]
+  - name: CTW1Bad
+    op: not_inside
+    mode: lazy
+    layers: [CTNoEFUBad, CTW1Exempt]
+  - name: CTInGRID
+    op: intersection
+    mode: lazy
+    layers: [CTAll, GRIDAll]
+  - name: CTInGRIDRect
+    op: rectangle
+    mode: lazy
+    layers: [CTInGRID]
+  - name: CTInGRIDShort09
+    op: with_bbox_min
+    mode: lazy
+    layers: [CTInGRIDRect]
+    min: 0.09
+    max: 0.091
+  - name: CTInGRID09
+    op: with_bbox_max
+    mode: lazy
+    layers: [CTInGRIDShort09]
+    min: 0.09
+    max: 0.091
+  - name: CTInGRIDRectBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTInGRIDRect, CTInGRID09]
+  - name: CTW1GRIDBad
+    op: not_inside
+    mode: lazy
+    layers: [CTInGRIDRectBad, SRINGBLK]
+  - name: CTInEFUSE
+    op: intersection
+    mode: lazy
+    layers: [CTAll, EFUSEALL]
+  - name: CTInEFUSESq
+    op: square
+    mode: lazy
+    layers: [CTInEFUSE]
+  - name: CTInEFUSE09
+    op: with_bbox_min
+    mode: lazy
+    layers: [CTInEFUSESq]
+    min: 0.09
+    max: 0.091
+  - name: CTInEFUSESqBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTInEFUSESq, CTInEFUSE09]
+  - name: CTW1EFUSEBad
+    op: not_inside
+    mode: lazy
+    layers: [CTInEFUSESqBad, SRINGBLK]
+  - name: CTInSRAM
+    op: intersection
+    mode: lazy
+    layers: [CTAll, SRAMALL]
+  - name: CTInSRAMSq
+    op: square
+    mode: lazy
+    layers: [CTInSRAM]
+  - name: CTInSRAM09
+    op: with_bbox_min
+    mode: lazy
+    layers: [CTInSRAMSq]
+    min: 0.09
+    max: 0.091
+  - name: CTInSRAMSqBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTInSRAMSq, CTInSRAM09]
+  - name: CTW1SRAMBad
+    op: not_inside
+    mode: lazy
+    layers: [CTInSRAMSqBad, SRINGBLK]
+  - name: CTbarNoSRAMEF
+    op: not_inside
+    mode: lazy
+    layers: [CTbar, SRAMorEFUSE]
+  - name: CTClosed
+    op: close
+    mode: lazy
+    layers: [CTAll]
+    radius: 0.075
+  - name: CTArray
+    op: open
+    mode: lazy
+    layers: [CTClosed]
+    radius: 0.24
+  - name: CTInArray
+    op: inside
+    mode: lazy
+    layers: [CTAll, CTArray]
+  - name: CTOnNPPPBoundary
+    op: overlapping
+    mode: lazy
+    layers: [CTAll, NPACTButted]
+  - name: CTCutsNPPP
+    op: overlapping
+    mode: lazy
+    layers: [CTOnNPPPBoundary, PPACTButted]
+  - name: POLYorACT
+    op: union
+    mode: lazy
+    layers: [POLY, ACT]
+  - name: M1OnPOLYorACT
+    op: intersection
+    mode: lazy
+    layers: [M1NoSlot, POLYorACT]
+  - name: CTNotLanded
+    op: difference
+    mode: lazy
+    layers: [CTAll, M1OnPOLYorACT]
+  - name: CTNotLandedNoSRAM
+    op: not_inside
+    mode: lazy
+    layers: [CTNotLanded, SRAMALL]
+  - name: CTxACT
+    op: interacting
+    mode: lazy
+    layers: [CTAll, ACT]
+  - name: CTxACTNoSRAM
+    op: not_inside
+    mode: lazy
+    layers: [CTxACT, SRAMALL]
+  - name: CTxACTGrowX
+    op: grow_x
+    mode: lazy
+    layers: [CTxACTNoSRAM]
+    radius: 0.03
+  - name: CTxACTGrowXIn
+    op: inside
+    mode: lazy
+    layers: [CTxACTGrowX, ACT]
+  - name: CTxACTGrowY
+    op: grow_y
+    mode: lazy
+    layers: [CTxACTNoSRAM]
+    radius: 0.03
+  - name: CTxACTGrowYIn
+    op: inside
+    mode: lazy
+    layers: [CTxACTGrowY, ACT]
+  - name: CTxACTPairOk
+    op: union
+    mode: lazy
+    layers: [CTxACTGrowXIn, CTxACTGrowYIn]
+  - name: CTEn2bBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTxACTNoSRAM, CTxACTPairOk]
+  - name: CTxPOLY
+    op: interacting
+    mode: lazy
+    layers: [CTAll, POLY]
+  - name: CTxPOLYNoSRAM
+    op: not_inside
+    mode: lazy
+    layers: [CTxPOLY, SRAMALL]
+  - name: CTxPOLYGrowX4
+    op: grow_x
+    mode: lazy
+    layers: [CTxPOLYNoSRAM]
+    radius: 0.04
+  - name: CTxPOLYGrowX4In
+    op: inside
+    mode: lazy
+    layers: [CTxPOLYGrowX4, POLY]
+  - name: CTxPOLYGrowY4
+    op: grow_y
+    mode: lazy
+    layers: [CTxPOLYNoSRAM]
+    radius: 0.04
+  - name: CTxPOLYGrowY4In
+    op: inside
+    mode: lazy
+    layers: [CTxPOLYGrowY4, POLY]
+  - name: CTxPOLYGrowX25
+    op: grow_x
+    mode: lazy
+    layers: [CTxPOLYNoSRAM]
+    radius: 0.025
+  - name: CTxPOLYGrowX25In
+    op: inside
+    mode: lazy
+    layers: [CTxPOLYGrowX25, POLY]
+  - name: CTxPOLYGrowY25
+    op: grow_y
+    mode: lazy
+    layers: [CTxPOLYNoSRAM]
+    radius: 0.025
+  - name: CTxPOLYGrowY25In
+    op: inside
+    mode: lazy
+    layers: [CTxPOLYGrowY25, POLY]
+  - name: CTxPOLYX25Ok
+    op: overlapping
+    mode: lazy
+    layers: [CTxPOLYNoSRAM, CTxPOLYGrowX25In]
+  - name: CTxPOLYAll25Ok
+    op: overlapping
+    mode: lazy
+    layers: [CTxPOLYX25Ok, CTxPOLYGrowY25In]
+  - name: CTxPOLYOk
+    op: union
+    mode: lazy
+    layers: [CTxPOLYGrowX4In, CTxPOLYGrowY4In, CTxPOLYAll25Ok]
+  - name: CTEn3bBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTxPOLYNoSRAM, CTxPOLYOk]
+  - name: CTNotOnM1
+    op: difference
+    mode: lazy
+    layers: [CTAll, M1NoSlot]
+  - name: CTNotOnM1NoSRAM
+    op: not_inside
+    mode: lazy
+    layers: [CTNotOnM1, SRAMALL]
+  - name: CTNoM1
+    op: not_interacting
+    mode: lazy
+    layers: [CTAll, M1NoSlot]
+  - name: CTNoM1InSRAM
+    op: inside
+    mode: lazy
+    layers: [CTNoM1, SRAMALL]
+  - name: CTNoSRAMAll
+    op: not_inside
+    mode: lazy
+    layers: [CTAll, SRAMALL]
+  - name: CTM1GrowX4
+    op: grow_x
+    mode: lazy
+    layers: [CTNoSRAMAll]
+    radius: 0.04
+  - name: CTM1GrowX4In
+    op: inside
+    mode: lazy
+    layers: [CTM1GrowX4, M1NoSlot]
+  - name: CTM1GrowY4
+    op: grow_y
+    mode: lazy
+    layers: [CTNoSRAMAll]
+    radius: 0.04
+  - name: CTM1GrowY4In
+    op: inside
+    mode: lazy
+    layers: [CTM1GrowY4, M1NoSlot]
+  - name: CTM1GrowX25
+    op: grow_x
+    mode: lazy
+    layers: [CTNoSRAMAll]
+    radius: 0.025
+  - name: CTM1GrowX25In
+    op: inside
+    mode: lazy
+    layers: [CTM1GrowX25, M1NoSlot]
+  - name: CTM1GrowY25
+    op: grow_y
+    mode: lazy
+    layers: [CTNoSRAMAll]
+    radius: 0.025
+  - name: CTM1GrowY25In
+    op: inside
+    mode: lazy
+    layers: [CTM1GrowY25, M1NoSlot]
+  - name: CTM1X25Ok
+    op: overlapping
+    mode: lazy
+    layers: [CTNoSRAMAll, CTM1GrowX25In]
+  - name: CTM1All25Ok
+    op: overlapping
+    mode: lazy
+    layers: [CTM1X25Ok, CTM1GrowY25In]
+  - name: CTM1Ok
+    op: union
+    mode: lazy
+    layers: [CTM1GrowX4In, CTM1GrowY4In, CTM1All25Ok]
+  - name: CTEn4bBad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTNoSRAMAll, CTM1Ok]
+  - name: M1Wide1
+    op: open
+    mode: lazy
+    layers: [M1NoSlot]
+    radius: 0.5
+  - name: CTonM1Wide1
+    op: overlapping
+    mode: lazy
+    layers: [CTAll, M1Wide1]
+  - name: CTonGATEDev
+    op: intersection
+    mode: lazy
+    layers: [GATEDev, CTAll]
+  - name: CTonGATEDevNoSRAM
+    op: not_inside
+    mode: lazy
+    layers: [CTonGATEDev, SRAMALL]
+  - name: CTxSAB
+    op: interacting
+    mode: lazy
+    layers: [CTAll, SAB]
+  - name: CTxSABNoSRAMEF
+    op: not_inside
+    mode: lazy
+    layers: [CTxSAB, SRAMorEFUSE]
+  - name: CTNoSR
+    op: not_inside
+    mode: lazy
+    layers: [CTAll, SRINGBLK]
+  - name: NSDRun
+    op: difference
+    mode: lazy
+    layers: [NPACTpw, POLY]
+  - name: PSDRun
+    op: difference
+    mode: lazy
+    layers: [PPACTnw, POLY]
+  - name: NTAPxNSD
+    op: interacting
+    mode: lazy
+    layers: [NPPickup, NSDRun]
+  - name: NTAPxNSDNoCT
+    op: not_interacting
+    mode: lazy
+    layers: [NTAPxNSD, CTAll]
+  - name: PTAPxPSD
+    op: interacting
+    mode: lazy
+    layers: [PPPickup, PSDRun]
+  - name: PTAPxPSDNoCT
+    op: not_interacting
+    mode: lazy
+    layers: [PTAPxPSD, CTAll]
+  - name: NTAPxPSD
+    op: interacting
+    mode: lazy
+    layers: [NPPickup, PSDRun]
+  - name: NTAPTouchPSD
+    op: not_overlapping
+    mode: lazy
+    layers: [NTAPxPSD, PSDRun]
+  - name: NTAPTouchPSDNoCT
+    op: not_interacting
+    mode: lazy
+    layers: [NTAPTouchPSD, CTAll]
+  - name: PTAPxNSD
+    op: interacting
+    mode: lazy
+    layers: [PPPickup, NSDRun]
+  - name: PTAPTouchNSD
+    op: not_overlapping
+    mode: lazy
+    layers: [PTAPxNSD, NSDRun]
+  - name: PTAPTouchNSDNoCT
+    op: not_interacting
+    mode: lazy
+    layers: [PTAPTouchNSD, CTAll]
+  - name: AARes
+    op: interacting
+    mode: lazy
+    layers: [ACT, ACTres]
+  - name: AAResSAB
+    op: intersection
+    mode: lazy
+    layers: [AARes, SAB]
+  - name: AAResxSAB
+    op: interacting
+    mode: lazy
+    layers: [AARes, SAB]
+  - name: AAResNoSAB
+    op: not_interacting
+    mode: lazy
+    layers: [AARes, SAB]
+  - name: NPNoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [NP, ACTres]
+  - name: PPNoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [PP, ACTres]
+  - name: NVT3NoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [NVT3, ACTres]
+  - name: PVT3NoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [PVT3, ACTres]
+  - name: NVT1NoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [NVT1, ACTres]
+  - name: PVT1NoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [PVT1, ACTres]
+  - name: ESDNoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [ESD, ACTres]
+  - name: HRPNoACTres
+    op: not_interacting
+    mode: lazy
+    layers: [HRP, ACTres]
+  - name: CTonAAResxSAB
+    op: intersection
+    mode: lazy
+    layers: [CTAll, AAResxSAB]
+  - name: CTonAAResGrow
+    op: grow
+    mode: lazy
+    layers: [CTonAAResxSAB]
+    radius: 0.21
+  - name: CTonAAResGrowx
+    op: interacting
+    mode: lazy
+    layers: [CTonAAResGrow, AAResSAB]
+  - name: CTonAAResGrowTouch
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonAAResGrowx, AAResSAB]
+  - name: CTonAAResS2Bad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonAAResGrow, CTonAAResGrowTouch]
+  - name: ACTresNoSAB
+    op: not_interacting
+    mode: lazy
+    layers: [ACTres, SAB]
+  - name: CTonAAResNoSAB
+    op: intersection
+    mode: lazy
+    layers: [CTAll, AAResNoSAB]
+  - name: PORes
+    op: interacting
+    mode: lazy
+    layers: [POLY, POLYres]
+  - name: POResSAB
+    op: intersection
+    mode: lazy
+    layers: [PORes, SAB]
+  - name: POResxSAB
+    op: interacting
+    mode: lazy
+    layers: [PORes, SAB]
+  - name: POResNoSAB
+    op: not_interacting
+    mode: lazy
+    layers: [PORes, SAB]
+  - name: PPNoPOLYres
+    op: not_interacting
+    mode: lazy
+    layers: [PP, POLYres]
+  - name: NPNoPOLYres
+    op: not_interacting
+    mode: lazy
+    layers: [NP, POLYres]
+  - name: ESDNoPOLYres
+    op: not_interacting
+    mode: lazy
+    layers: [ESD, POLYres]
+  - name: HRPNoPOLYres
+    op: not_interacting
+    mode: lazy
+    layers: [HRP, POLYres]
+  - name: NPRNoPOLYres
+    op: not_interacting
+    mode: lazy
+    layers: [NPR, POLYres]
+  - name: CTonPOResxSAB
+    op: intersection
+    mode: lazy
+    layers: [CTAll, POResxSAB]
+  - name: CTonPOResGrow
+    op: grow
+    mode: lazy
+    layers: [CTonPOResxSAB]
+    radius: 0.21
+  - name: CTonPOResGrowx
+    op: interacting
+    mode: lazy
+    layers: [CTonPOResGrow, POResSAB]
+  - name: CTonPOResGrowTouch
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonPOResGrowx, POResSAB]
+  - name: CTonPOResS2Bad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonPOResGrow, CTonPOResGrowTouch]
+  - name: POResSABGrow
+    op: grow
+    mode: lazy
+    layers: [POResSAB]
+    radius: 0.005
+  # Just outside the resistor body's poly walls: where POLYres-Ex.1 reads its margin.
+  - name: POResSABSide
+    op: difference
+    mode: lazy
+    layers: [POResSABGrow, POLY]
+  - name: POLYresNoSAB
+    op: not_interacting
+    mode: lazy
+    layers: [POLYres, SAB]
+  - name: CTonPOResNoSAB
+    op: intersection
+    mode: lazy
+    layers: [CTAll, POResNoSAB]
+  # HRPBLK (385;12) is the runset's HPR.
+  - name: POHRPBody
+    op: intersection
+    mode: lazy
+    layers: [HRPBLK, POLY, HRP, SAB]
+  - name: POLYxPOHRPBody
+    op: interacting
+    mode: lazy
+    layers: [POLY, POHRPBody]
+  - name: HRPxSAB
+    op: interacting
+    mode: lazy
+    layers: [HRP, SAB]
+  - name: SABxHRP
+    op: interacting
+    mode: lazy
+    layers: [SAB, HRP]
+  - name: CTonHRPxSAB
+    op: intersection
+    mode: lazy
+    layers: [CTAll, HRPxSAB]
+  - name: CTonHRPGrow
+    op: grow
+    mode: lazy
+    layers: [CTonHRPxSAB]
+    radius: 0.21
+  - name: CTonHRPGrowx
+    op: interacting
+    mode: lazy
+    layers: [CTonHRPGrow, SABxHRP]
+  - name: CTonHRPGrowTouch
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonHRPGrowx, SABxHRP]
+  - name: CTonHRPS3Bad
+    op: not_overlapping
+    mode: lazy
+    layers: [CTonHRPGrow, CTonHRPGrowTouch]
+  - name: SABxPOHRPBody
+    op: interacting
+    mode: lazy
+    layers: [SAB, POHRPBody]
+  - name: POLYxHRP
+    op: interacting
+    mode: lazy
+    layers: [POLY, HRP]
+  - name: POLYxHRPNoHPR
+    op: difference
+    mode: lazy
+    layers: [POLYxHRP, HRPBLK]
+  - name: HRPPolyEnd
+    op: grow
+    mode: lazy
+    layers: [POLYxHRPNoHPR]
+    radius: 0.3
+  - name: HRPPolyMid
+    op: difference
+    mode: lazy
+    layers: [POLYxHRP, HRPPolyEnd]
+  - name: SABxHRPonPOLY
+    op: intersection
+    mode: lazy
+    layers: [SABxHRP, POLY]
+  - name: HPRonPOLY
+    op: intersection
+    mode: lazy
+    layers: [HRPBLK, POLY]
+  - name: NWR
+    op: interacting
+    mode: lazy
+    layers: [NW1, NW1res]
+  - name: SABHoles
+    op: holes
+    mode: lazy
+    layers: [SAB]
+  - name: SABFilled
+    op: union
+    mode: lazy
+    layers: [SAB, SABHoles]
+  - name: SABRing
+    op: interacting
+    mode: lazy
+    layers: [SAB, SABHoles]
+  - name: NWResAABody
+    op: intersection
+    mode: lazy
+    layers: [NW1res, ACT, NW1, SAB]
+  - name: NWRxSABHoles
+    op: interacting
+    mode: lazy
+    layers: [NWR, SABHoles]
+  - name: NW1NoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NW1, NWR]
+  - name: NVT3NoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NVT3, NWR]
+  - name: PVT3NoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [PVT3, NWR]
+  - name: NVT1NoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NVT1, NWR]
+  - name: PVT1NoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [PVT1, NWR]
+  - name: NPNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NP, NWR]
+  - name: PPNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [PP, NWR]
+  - name: NPRNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [NPR, NWR]
+  - name: ESDNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [ESD, NWR]
+  - name: HRPNoNWR
+    op: not_interacting
+    mode: lazy
+    layers: [HRP, NWR]
+  - name: ACTxNW1res
+    op: interacting
+    mode: lazy
+    layers: [ACT, NW1res]
+  - name: CTonACTxNW1res
+    op: intersection
+    mode: lazy
+    layers: [CTAll, ACTxNW1res]
+  - name: CTonACTxNW1resGrow
+    op: grow
+    mode: lazy
+    layers: [CTonACTxNW1res]
+    radius: 0.28
+  - name: ACTcovNW1R
+    op: covering
+    mode: lazy
+    layers: [ACT, NW1R]
+  - name: NW1xACTcovNW1R
+    op: interacting
+    mode: lazy
+    layers: [NW1, ACTcovNW1R]
+  - name: ACTcovNWResAABody
+    op: covering
+    mode: lazy
+    layers: [ACT, NWResAABody]
+  - name: NWRxSABHolesBare
+    op: difference
+    mode: lazy
+    layers: [NWRxSABHoles, SABFilled]
+  - name: CTInSABHoles
+    op: intersection
+    mode: lazy
+    layers: [CTAll, SABHoles]
+  - name: NW1covNWResAABody
+    op: covering
+    mode: lazy
+    layers: [NW1, NWResAABody]
+  - name: NW1resxSAB
+    op: interacting
+    mode: lazy
+    layers: [NW1res, SAB]
+  - name: ACTcovNW1res
+    op: covering
+    mode: lazy
+    layers: [ACT, NW1res]
+  - name: NWResO1Area
+    op: intersection
+    mode: lazy
+    layers: [SAB, ACTcovNW1res, NW1]
+  - name: NPxNWResO1Area
+    op: interacting
+    mode: lazy
+    layers: [NP, NWResO1Area]
+  - name: NPonSABxNWRes
+    op: intersection
+    mode: lazy
+    layers: [NPxNWResO1Area, SAB]
+  - name: NW1resxACT
+    op: overlapping
+    mode: lazy
+    layers: [NW1res, ACT]
+  - name: SABFilledxNW1res
+    op: interacting
+    mode: lazy
+    layers: [SABFilled, NW1resxACT]
+  - name: SABFilledNoNW1R
+    op: not_covering
+    mode: lazy
+    layers: [SABFilledxNW1res, NW1R]
+  - name: NW1RNotRect
+    op: not_rectangle
+    mode: lazy
+    layers: [NW1R]
+  - name: NW1RSAB
+    op: intersection
+    mode: lazy
+    layers: [NW1R, SAB]
+  - name: ACTcovNW1RSAB
+    op: covering
+    mode: lazy
+    layers: [ACT, NW1RSAB]
+  - name: NWResAAMultiNW1
+    op: interacting
+    mode: lazy
+    layers: [ACTcovNW1RSAB, NW1]
+    min: 2
+  - name: NWResAAMultiNP
+    op: interacting
+    mode: lazy
+    layers: [ACTcovNW1RSAB, NP]
+    min: 3
+  - name: NWResAAOneNP
+    op: interacting
+    mode: lazy
+    layers: [ACTcovNW1RSAB, NP]
+    min: 1
+    max: 1
+  - name: SABHolesxNWResAA
+    op: interacting
+    mode: lazy
+    layers: [SABHoles, ACTcovNW1RSAB]
+  - name: NWResAAMultiHoles
+    op: interacting
+    mode: lazy
+    layers: [ACTcovNW1RSAB, SABHolesxNWResAA]
+    min: 3
+  - name: NWRSTI
+    op: not_interacting
+    mode: lazy
+    layers: [NWR, SAB]
+  - name: NW1RNoSAB
+    op: not_interacting
+    mode: lazy
+    layers: [NW1R, SAB]
+  - name: ACTxNWRSTI
+    op: interacting
+    mode: lazy
+    layers: [ACT, NWRSTI]
+  - name: CTonNWRSTI
+    op: intersection
+    mode: lazy
+    layers: [CTAll, NWRSTI]
+  - name: CTonNWRSTIGrow
+    op: grow
+    mode: lazy
+    layers: [CTonNWRSTI]
+    radius: 0.28
+  - name: ACTxCTonNWRSTIGrow
+    op: interacting
+    mode: lazy
+    layers: [ACT, CTonNWRSTIGrow]
+  - name: ACTonNWRSTI
+    op: intersection
+    mode: lazy
+    layers: [ACT, NWRSTI]
+  - name: NPxNWRSTI
+    op: interacting
+    mode: lazy
+    layers: [NP, NWRSTI]
+  - name: ACTNoCT
+    op: not_interacting
+    mode: lazy
+    layers: [ACT, CTAll]
+  - name: NW1resxNP
+    op: interacting
+    mode: lazy
+    layers: [NW1res, NP]
+  - name: VIA1All
+    op: union
+    mode: lazy
+    layers: [VIA1, VIA1bar]
+  - name: VIA1OutMOMLVS1
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA1All, MOMLVS1]
+  - name: VIA2All
+    op: union
+    mode: lazy
+    layers: [VIA2, VIA2bar]
+  - name: VIA2OutMOMLVS1
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA2All, MOMLVS1]
+  - name: VIA3All
+    op: union
+    mode: lazy
+    layers: [VIA3, VIA3bar]
+  - name: VIA3OutMOMLVS1
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA3All, MOMLVS1]
+  - name: VIA4All
+    op: union
+    mode: lazy
+    layers: [VIA4, VIA4bar]
+  - name: VIA4OutMOMLVS1
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA4All, MOMLVS1]
+  - name: T4V2All
+    op: union
+    mode: lazy
+    layers: [T4V2, T4V2bar]
+  - name: T4V2OutMOMLVS1
+    op: not_overlapping
+    mode: lazy
+    layers: [T4V2All, MOMLVS1]
+  - name: M2NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: M3NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: M4NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: M5NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: MOMM1
+    op: intersection
+    mode: lazy
+    layers: [M1NoSlot, MET1mom, MOMLVS1]
+  - name: MOMM2
+    op: intersection
+    mode: lazy
+    layers: [M2NoSlot, MET2mom, MOMLVS1]
+  - name: MOMM3
+    op: intersection
+    mode: lazy
+    layers: [M3NoSlot, MET3mom, MOMLVS1]
+  - name: MOMM4
+    op: intersection
+    mode: lazy
+    layers: [M4NoSlot, MET4mom, MOMLVS1]
+  - name: MOMM5
+    op: intersection
+    mode: lazy
+    layers: [M5NoSlot, MET5mom, MOMLVS1]
+  - name: MOMLVS1Cap12
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap12
+  - name: MOMLVS1Cap13
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap13
+  - name: MOMLVS1Cap14
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap14
+  - name: MOMLVS1Cap15
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap15
+  - name: MOMLVS1Cap23
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap23
+  - name: MOMLVS1Cap24
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap24
+  - name: MOMLVS1Cap25
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap25
+  - name: MOMLVS1Cap26
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap26
+  - name: MOMLVS1Cap27
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap27
+  - name: MOMLVS1Cap28
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap28
+  - name: MOMLVS1Cap34
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap34
+  - name: MOMLVS1Cap35
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap35
+  - name: MOMLVS1Cap36
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap36
+  - name: MOMLVS1Cap37
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap37
+  - name: MOMLVS1Cap38
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap38
+  - name: MOMLVS1Cap45
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap45
+  - name: MOMLVS1Cap46
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap46
+  - name: MOMLVS1Cap47
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap47
+  - name: MOMLVS1Cap48
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap48
+  - name: MOMLVS1Cap56
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap56
+  - name: MOMLVS1Cap57
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap57
+  - name: MOMLVS1Cap58
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap58
+  - name: MOMLVS1Cap67
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap67
+  - name: MOMLVS1Cap68
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap68
+  - name: MOMLVS1Cap78
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1, MOMLVS1]
+    text: momcap78
+  - name: MOMLVS1NotM1
+    op: union
+    mode: lazy
+    layers:
+      - MOMLVS1Cap23
+      - MOMLVS1Cap24
+      - MOMLVS1Cap25
+      - MOMLVS1Cap26
+      - MOMLVS1Cap27
+      - MOMLVS1Cap28
+      - MOMLVS1Cap34
+      - MOMLVS1Cap35
+      - MOMLVS1Cap36
+      - MOMLVS1Cap37
+      - MOMLVS1Cap38
+      - MOMLVS1Cap45
+      - MOMLVS1Cap46
+      - MOMLVS1Cap47
+      - MOMLVS1Cap48
+      - MOMLVS1Cap56
+      - MOMLVS1Cap57
+      - MOMLVS1Cap58
+      - MOMLVS1Cap67
+      - MOMLVS1Cap68
+      - MOMLVS1Cap78
+  - name: MET1momWrongCap
+    op: interacting
+    mode: lazy
+    layers: [MET1mom, MOMLVS1NotM1]
+  - name: MOMLVS1NotM2
+    op: union
+    mode: lazy
+    layers:
+      - MOMLVS1Cap34
+      - MOMLVS1Cap35
+      - MOMLVS1Cap36
+      - MOMLVS1Cap37
+      - MOMLVS1Cap38
+      - MOMLVS1Cap45
+      - MOMLVS1Cap46
+      - MOMLVS1Cap47
+      - MOMLVS1Cap48
+      - MOMLVS1Cap56
+      - MOMLVS1Cap57
+      - MOMLVS1Cap58
+      - MOMLVS1Cap67
+      - MOMLVS1Cap68
+      - MOMLVS1Cap78
+  - name: MET2momWrongCap
+    op: interacting
+    mode: lazy
+    layers: [MET2mom, MOMLVS1NotM2]
+  - name: MOMLVS1NotM3
+    op: union
+    mode: lazy
+    layers:
+      - MOMLVS1Cap12
+      - MOMLVS1Cap45
+      - MOMLVS1Cap46
+      - MOMLVS1Cap47
+      - MOMLVS1Cap48
+      - MOMLVS1Cap56
+      - MOMLVS1Cap57
+      - MOMLVS1Cap58
+      - MOMLVS1Cap67
+      - MOMLVS1Cap68
+      - MOMLVS1Cap78
+  - name: MET3momWrongCap
+    op: interacting
+    mode: lazy
+    layers: [MET3mom, MOMLVS1NotM3]
+  - name: MOMLVS1NotM4
+    op: union
+    mode: lazy
+    layers:
+      - MOMLVS1Cap12
+      - MOMLVS1Cap13
+      - MOMLVS1Cap23
+      - MOMLVS1Cap56
+      - MOMLVS1Cap57
+      - MOMLVS1Cap58
+      - MOMLVS1Cap67
+      - MOMLVS1Cap68
+      - MOMLVS1Cap78
+  - name: MET4momWrongCap
+    op: interacting
+    mode: lazy
+    layers: [MET4mom, MOMLVS1NotM4]
+  - name: MOMLVS1NotM5
+    op: union
+    mode: lazy
+    layers:
+      - MOMLVS1Cap12
+      - MOMLVS1Cap13
+      - MOMLVS1Cap14
+      - MOMLVS1Cap23
+      - MOMLVS1Cap24
+      - MOMLVS1Cap34
+      - MOMLVS1Cap67
+      - MOMLVS1Cap68
+      - MOMLVS1Cap78
+  - name: MET5momWrongCap
+    op: interacting
+    mode: lazy
+    layers: [MET5mom, MOMLVS1NotM5]
+  - name: MOMLVS1Cap12NoM1
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap12, MET1mom]
+  - name: MOMLVS1Cap12NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap12, MET2mom]
+  - name: MOMLVS1Cap13NoM1
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap13, MET1mom]
+  - name: MOMLVS1Cap13NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap13, MET2mom]
+  - name: MOMLVS1Cap13NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap13, MET3mom]
+  - name: MOMLVS1Cap14NoM1
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap14, MET1mom]
+  - name: MOMLVS1Cap14NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap14, MET2mom]
+  - name: MOMLVS1Cap14NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap14, MET3mom]
+  - name: MOMLVS1Cap14NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap14, MET4mom]
+  - name: MOMLVS1Cap15NoM1
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap15, MET1mom]
+  - name: MOMLVS1Cap15NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap15, MET2mom]
+  - name: MOMLVS1Cap15NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap15, MET3mom]
+  - name: MOMLVS1Cap15NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap15, MET4mom]
+  - name: MOMLVS1Cap15NoM5
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap15, MET5mom]
+  - name: MOMLVS1Cap23NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap23, MET2mom]
+  - name: MOMLVS1Cap23NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap23, MET3mom]
+  - name: MOMLVS1Cap24NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap24, MET2mom]
+  - name: MOMLVS1Cap24NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap24, MET3mom]
+  - name: MOMLVS1Cap24NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap24, MET4mom]
+  - name: MOMLVS1Cap25NoM2
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap25, MET2mom]
+  - name: MOMLVS1Cap25NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap25, MET3mom]
+  - name: MOMLVS1Cap25NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap25, MET4mom]
+  - name: MOMLVS1Cap25NoM5
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap25, MET5mom]
+  - name: MOMLVS1Cap34NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap34, MET3mom]
+  - name: MOMLVS1Cap34NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap34, MET4mom]
+  - name: MOMLVS1Cap35NoM3
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap35, MET3mom]
+  - name: MOMLVS1Cap35NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap35, MET4mom]
+  - name: MOMLVS1Cap35NoM5
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap35, MET5mom]
+  - name: MOMLVS1Cap45NoM4
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap45, MET4mom]
+  - name: MOMLVS1Cap45NoM5
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Cap45, MET5mom]
+  - name: MOMLVS1Stack12M1
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET1mom]
+  - name: MOMLVS1Stack12M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack12M1, MET2mom]
+  - name: MOMNot12
+    op: union
+    mode: lazy
+    layers: [MET3mom, MET4mom, MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack12
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack12M2, MOMNot12]
+  - name: MOMLVS1Stack12Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack12, MOMLVS1]
+    text: momcap12
+  - name: MOMLVS1Stack12NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack12, MOMLVS1Stack12Cap]
+  - name: MOMLVS1Stack13M1
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET1mom]
+  - name: MOMLVS1Stack13M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack13M1, MET2mom]
+  - name: MOMLVS1Stack13M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack13M2, MET3mom]
+  - name: MOMNot13
+    op: union
+    mode: lazy
+    layers: [MET4mom, MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack13
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack13M3, MOMNot13]
+  - name: MOMLVS1Stack13Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack13, MOMLVS1]
+    text: momcap13
+  - name: MOMLVS1Stack13NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack13, MOMLVS1Stack13Cap]
+  - name: MOMLVS1Stack14M1
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET1mom]
+  - name: MOMLVS1Stack14M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack14M1, MET2mom]
+  - name: MOMLVS1Stack14M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack14M2, MET3mom]
+  - name: MOMLVS1Stack14M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack14M3, MET4mom]
+  - name: MOMNot14
+    op: union
+    mode: lazy
+    layers: [MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack14
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack14M4, MOMNot14]
+  - name: MOMLVS1Stack14Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack14, MOMLVS1]
+    text: momcap14
+  - name: MOMLVS1Stack14NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack14, MOMLVS1Stack14Cap]
+  - name: MOMLVS1Stack15M1
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET1mom]
+  - name: MOMLVS1Stack15M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack15M1, MET2mom]
+  - name: MOMLVS1Stack15M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack15M2, MET3mom]
+  - name: MOMLVS1Stack15M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack15M3, MET4mom]
+  - name: MOMLVS1Stack15M5
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack15M4, MET5mom]
+  - name: MOMNot15
+    op: union
+    mode: lazy
+    layers: [MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack15
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack15M5, MOMNot15]
+  - name: MOMLVS1Stack15Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack15, MOMLVS1]
+    text: momcap15
+  - name: MOMLVS1Stack15NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack15, MOMLVS1Stack15Cap]
+  - name: MOMLVS1Stack23M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET2mom]
+  - name: MOMLVS1Stack23M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack23M2, MET3mom]
+  - name: MOMNot23
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET4mom, MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack23
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack23M3, MOMNot23]
+  - name: MOMLVS1Stack23Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack23, MOMLVS1]
+    text: momcap23
+  - name: MOMLVS1Stack23NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack23, MOMLVS1Stack23Cap]
+  - name: MOMLVS1Stack24M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET2mom]
+  - name: MOMLVS1Stack24M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack24M2, MET3mom]
+  - name: MOMLVS1Stack24M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack24M3, MET4mom]
+  - name: MOMNot24
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack24
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack24M4, MOMNot24]
+  - name: MOMLVS1Stack24Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack24, MOMLVS1]
+    text: momcap24
+  - name: MOMLVS1Stack24NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack24, MOMLVS1Stack24Cap]
+  - name: MOMLVS1Stack25M2
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET2mom]
+  - name: MOMLVS1Stack25M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack25M2, MET3mom]
+  - name: MOMLVS1Stack25M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack25M3, MET4mom]
+  - name: MOMLVS1Stack25M5
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack25M4, MET5mom]
+  - name: MOMNot25
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack25
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack25M5, MOMNot25]
+  - name: MOMLVS1Stack25Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack25, MOMLVS1]
+    text: momcap25
+  - name: MOMLVS1Stack25NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack25, MOMLVS1Stack25Cap]
+  - name: MOMLVS1Stack34M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET3mom]
+  - name: MOMLVS1Stack34M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack34M3, MET4mom]
+  - name: MOMNot34
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET2mom, MET5mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack34
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack34M4, MOMNot34]
+  - name: MOMLVS1Stack34Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack34, MOMLVS1]
+    text: momcap34
+  - name: MOMLVS1Stack34NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack34, MOMLVS1Stack34Cap]
+  - name: MOMLVS1Stack35M3
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET3mom]
+  - name: MOMLVS1Stack35M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack35M3, MET4mom]
+  - name: MOMLVS1Stack35M5
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack35M4, MET5mom]
+  - name: MOMNot35
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET2mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack35
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack35M5, MOMNot35]
+  - name: MOMLVS1Stack35Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack35, MOMLVS1]
+    text: momcap35
+  - name: MOMLVS1Stack35NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack35, MOMLVS1Stack35Cap]
+  - name: MOMLVS1Stack45M4
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1, MET4mom]
+  - name: MOMLVS1Stack45M5
+    op: interacting
+    mode: lazy
+    layers: [MOMLVS1Stack45M4, MET5mom]
+  - name: MOMNot45
+    op: union
+    mode: lazy
+    layers: [MET1mom, MET2mom, MET3mom, MET6mom, MET7mom, MET8mom]
+  - name: MOMLVS1Stack45
+    op: not_interacting
+    mode: lazy
+    layers: [MOMLVS1Stack45M5, MOMNot45]
+  - name: MOMLVS1Stack45Cap
+    op: with_text
+    mode: lazy
+    layers: [MOMLVS1Stack45, MOMLVS1]
+    text: momcap45
+  - name: MOMLVS1Stack45NoCap
+    op: not_overlapping
+    mode: lazy
+    layers: [MOMLVS1Stack45, MOMLVS1Stack45Cap]
+  - name: VIA1Net
+    op: union
+    mode: lazy
+    layers: [VIA1, VIA1bar]
+  - name: VIA2Net
+    op: union
+    mode: lazy
+    layers: [VIA2, VIA2bar]
+  - name: VIA3Net
+    op: union
+    mode: lazy
+    layers: [VIA3, VIA3bar]
+  - name: VIA4Net
+    op: union
+    mode: lazy
+    layers: [VIA4, VIA4bar]
+  - name: GRBLKorSRING
+    op: union
+    mode: lazy
+    layers: [GRBLK, SRINGBLK]
+  - name: SRAMorFUSE
+    op: union
+    mode: lazy
+    layers: [SRAMALL, EFUSEALL, FUSEALL]
+  - name: SRAMorSRING
+    op: union
+    mode: lazy
+    layers: [SRAMALL, SRINGBLK]
+  - name: MET1NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: MET1All
+    op: union
+    mode: lazy
+    layers: [MET1NoSlot, MET1dm]
+  - name: MET1Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET1All]
+  - name: MET1Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET1All]
+  - name: MET1NoSlotNoSRAM
+    op: difference
+    mode: lazy
+    layers: [MET1NoSlot, SRAMALL]
+  - name: MET1Small
+    op: with_area
+    mode: lazy
+    max: 0.042
+    layers: [MET1NoSlot]
+  - name: MET1SmallOutSRAM
+    op: not_inside
+    mode: lazy
+    layers: [MET1Small, SRAMALL]
+  - name: MET1slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET1slot]
+  - name: MET1slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET1slotOkRect]
+  - name: MET1slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET1slotOkShort]
+  - name: MET2NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: MET2All
+    op: union
+    mode: lazy
+    layers: [MET2NoSlot, MET2dm]
+  - name: MET2Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET2All]
+  - name: MET2Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET2All]
+  - name: MET2NoSlotNoSRAM
+    op: difference
+    mode: lazy
+    layers: [MET2NoSlot, SRAMALL]
+  - name: MET2Small
+    op: with_area
+    mode: lazy
+    max: 0.052
+    layers: [MET2NoSlot]
+  - name: MET2SmallOutSRAM
+    op: not_inside
+    mode: lazy
+    layers: [MET2Small, SRAMALL]
+  - name: MET2slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET2slot]
+  - name: MET2slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET2slotOkRect]
+  - name: MET2slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET2slotOkShort]
+  - name: MET3NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: MET3All
+    op: union
+    mode: lazy
+    layers: [MET3NoSlot, MET3dm]
+  - name: MET3Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET3All]
+  - name: MET3Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET3All]
+  - name: MET3slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET3slot]
+  - name: MET3slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET3slotOkRect]
+  - name: MET3slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET3slotOkShort]
+  - name: MET4NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: MET4All
+    op: union
+    mode: lazy
+    layers: [MET4NoSlot, MET4dm]
+  - name: MET4Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET4All]
+  - name: MET4Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET4All]
+  - name: MET4slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET4slot]
+  - name: MET4slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET4slotOkRect]
+  - name: MET4slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET4slotOkShort]
+  - name: MET5NoSlot
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: MET5All
+    op: union
+    mode: lazy
+    layers: [MET5NoSlot, MET5dm]
+  - name: MET5Wide0p42
+    op: open
+    mode: lazy
+    radius: 0.21
+    layers: [MET5All]
+  - name: MET5Wide1p5
+    op: open
+    mode: lazy
+    radius: 0.75
+    layers: [MET5All]
+  - name: MET5NoSlotNoPad
+    op: difference
+    mode: lazy
+    layers: [MET5NoSlot, DEUPAD]
+  - name: MET5slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [MET5slot]
+  - name: MET5slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [MET5slotOkRect]
+  - name: MET5slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [MET5slotOkShort]
+  - name: T4M2NoSlot
+    op: difference
+    mode: lazy
+    layers: [T4M2, T4M2slot]
+  - name: T4M2All
+    op: union
+    mode: lazy
+    layers: [T4M2NoSlot, T4M2dm]
+  - name: T4M2Wide2
+    op: open
+    mode: lazy
+    radius: 1.0
+    layers: [T4M2All]
+  - name: T4M2NoSlotNoPad
+    op: difference
+    mode: lazy
+    layers: [T4M2NoSlot, DEUPAD]
+  - name: T4M2Over20
+    op: open
+    mode: lazy
+    radius: 10.0
+    layers: [T4M2NoSlotNoPad]
+  - name: T4M2Over20NoCB
+    op: not_interacting
+    mode: lazy
+    layers: [T4M2Over20, CB]
+  - name: T4M2Over20Chk
+    op: difference
+    mode: lazy
+    layers: [T4M2Over20NoCB, INDALL]
+  - name: T4M2slotOkRect
+    op: rectangle
+    mode: lazy
+    layers: [T4M2slot]
+  - name: T4M2slotOkShort
+    op: with_bbox_min
+    mode: lazy
+    min: 2
+    layers: [T4M2slotOkRect]
+  - name: T4M2slotOk
+    op: with_bbox_max
+    mode: lazy
+    min: 4.5
+    layers: [T4M2slotOkShort]
+  - name: VIA1SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA1Conn]
+  - name: VIA1SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA1SqRect]
+  - name: VIA1Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA1SqShort]
+  - name: VIA1NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA1Conn, VIA1Sq]
+  - name: VIA1NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA1NotSq, GRBLKorSRING]
+  - name: VIA1barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA1bar, SRAMorFUSE]
+  - name: VIA1Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA1Conn]
+  - name: VIA1Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA1Close]
+  - name: VIA1InArray
+    op: inside
+    mode: lazy
+    layers: [VIA1Conn, VIA1Array]
+  - name: VIA1BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA1Conn]
+  - name: VIA1BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotX04, MET1NoSlot]
+  - name: VIA1BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotX04, VIA1BotX04Out]
+  - name: VIA1BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA1Conn]
+  - name: VIA1BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotY04, MET1NoSlot]
+  - name: VIA1BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotY04, VIA1BotY04Out]
+  - name: VIA1BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA1Conn, VIA1BotX04Bad]
+  - name: VIA1BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotShortX04, VIA1BotY04Bad]
+  - name: VIA1BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA1Conn]
+  - name: VIA1BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotX03, MET1NoSlot]
+  - name: VIA1BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotX03, VIA1BotX03Out]
+  - name: VIA1BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA1Conn]
+  - name: VIA1BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA1BotY03, MET1NoSlot]
+  - name: VIA1BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotY03, VIA1BotY03Out]
+  - name: VIA1Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA1BotX03Bad, VIA1BotY03Bad]
+  - name: VIA1BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1BotShort04, VIA1Bot03Bad]
+  - name: VIA1BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA1BotEncBad, SRAMorSRING]
+  - name: VIA1TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA1Conn]
+  - name: VIA1TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA1TopX02, MET2NoSlot]
+  - name: VIA1TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1TopX02, VIA1TopX02Out]
+  - name: VIA1TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA1Conn]
+  - name: VIA1TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA1TopY02, MET2NoSlot]
+  - name: VIA1TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA1TopY02, VIA1TopY02Out]
+  - name: VIA1TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA1Conn, VIA1TopX02Bad]
+  - name: VIA1TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA1TopShortX02, VIA1TopY02Bad]
+  - name: VIA1NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA1Conn, SRINGBLK]
+  - name: VIA2SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA2Conn]
+  - name: VIA2SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA2SqRect]
+  - name: VIA2Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA2SqShort]
+  - name: VIA2NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA2Conn, VIA2Sq]
+  - name: VIA2NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA2NotSq, GRBLKorSRING]
+  - name: VIA2barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA2bar, SRAMorFUSE]
+  - name: VIA2Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA2Conn]
+  - name: VIA2Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA2Close]
+  - name: VIA2InArray
+    op: inside
+    mode: lazy
+    layers: [VIA2Conn, VIA2Array]
+  - name: VIA2BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA2Conn]
+  - name: VIA2BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotX04, MET2NoSlot]
+  - name: VIA2BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotX04, VIA2BotX04Out]
+  - name: VIA2BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA2Conn]
+  - name: VIA2BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotY04, MET2NoSlot]
+  - name: VIA2BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotY04, VIA2BotY04Out]
+  - name: VIA2BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA2Conn, VIA2BotX04Bad]
+  - name: VIA2BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotShortX04, VIA2BotY04Bad]
+  - name: VIA2BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA2Conn]
+  - name: VIA2BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotX03, MET2NoSlot]
+  - name: VIA2BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotX03, VIA2BotX03Out]
+  - name: VIA2BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA2Conn]
+  - name: VIA2BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA2BotY03, MET2NoSlot]
+  - name: VIA2BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotY03, VIA2BotY03Out]
+  - name: VIA2Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA2BotX03Bad, VIA2BotY03Bad]
+  - name: VIA2BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2BotShort04, VIA2Bot03Bad]
+  - name: VIA2BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA2BotEncBad, SRAMorSRING]
+  - name: VIA2TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA2Conn]
+  - name: VIA2TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA2TopX02, MET3NoSlot]
+  - name: VIA2TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2TopX02, VIA2TopX02Out]
+  - name: VIA2TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA2Conn]
+  - name: VIA2TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA2TopY02, MET3NoSlot]
+  - name: VIA2TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA2TopY02, VIA2TopY02Out]
+  - name: VIA2TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA2Conn, VIA2TopX02Bad]
+  - name: VIA2TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA2TopShortX02, VIA2TopY02Bad]
+  - name: VIA2NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA2Conn, SRINGBLK]
+  - name: VIA3SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA3Conn]
+  - name: VIA3SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA3SqRect]
+  - name: VIA3Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA3SqShort]
+  - name: VIA3NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA3Conn, VIA3Sq]
+  - name: VIA3NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA3NotSq, GRBLKorSRING]
+  - name: VIA3barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA3bar, SRAMorFUSE]
+  - name: VIA3Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA3Conn]
+  - name: VIA3Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA3Close]
+  - name: VIA3InArray
+    op: inside
+    mode: lazy
+    layers: [VIA3Conn, VIA3Array]
+  - name: VIA3BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA3Conn]
+  - name: VIA3BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotX04, MET3NoSlot]
+  - name: VIA3BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotX04, VIA3BotX04Out]
+  - name: VIA3BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA3Conn]
+  - name: VIA3BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotY04, MET3NoSlot]
+  - name: VIA3BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotY04, VIA3BotY04Out]
+  - name: VIA3BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA3Conn, VIA3BotX04Bad]
+  - name: VIA3BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotShortX04, VIA3BotY04Bad]
+  - name: VIA3BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA3Conn]
+  - name: VIA3BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotX03, MET3NoSlot]
+  - name: VIA3BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotX03, VIA3BotX03Out]
+  - name: VIA3BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA3Conn]
+  - name: VIA3BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA3BotY03, MET3NoSlot]
+  - name: VIA3BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotY03, VIA3BotY03Out]
+  - name: VIA3Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA3BotX03Bad, VIA3BotY03Bad]
+  - name: VIA3BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3BotShort04, VIA3Bot03Bad]
+  - name: VIA3BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA3BotEncBad, SRAMorSRING]
+  - name: VIA3TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA3Conn]
+  - name: VIA3TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA3TopX02, MET4NoSlot]
+  - name: VIA3TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3TopX02, VIA3TopX02Out]
+  - name: VIA3TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA3Conn]
+  - name: VIA3TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA3TopY02, MET4NoSlot]
+  - name: VIA3TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA3TopY02, VIA3TopY02Out]
+  - name: VIA3TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA3Conn, VIA3TopX02Bad]
+  - name: VIA3TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA3TopShortX02, VIA3TopY02Bad]
+  - name: VIA3NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA3Conn, SRINGBLK]
+  - name: VIA4SqRect
+    op: rectangle
+    mode: lazy
+    layers: [VIA4Conn]
+  - name: VIA4SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA4SqRect]
+  - name: VIA4Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.09
+    max: 0.091
+    layers: [VIA4SqShort]
+  - name: VIA4NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [VIA4Conn, VIA4Sq]
+  - name: VIA4NotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA4NotSq, GRBLKorSRING]
+  - name: VIA4barInSRAM
+    op: inside
+    mode: lazy
+    layers: [VIA4bar, SRAMorFUSE]
+  - name: VIA4Close
+    op: close
+    mode: lazy
+    radius: 0.07
+    layers: [VIA4Conn]
+  - name: VIA4Array
+    op: open
+    mode: lazy
+    radius: 0.24
+    layers: [VIA4Close]
+  - name: VIA4InArray
+    op: inside
+    mode: lazy
+    layers: [VIA4Conn, VIA4Array]
+  - name: VIA4BotX04
+    op: grow_x
+    mode: lazy
+    radius: 0.04
+    layers: [VIA4Conn]
+  - name: VIA4BotX04Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotX04, MET4NoSlot]
+  - name: VIA4BotX04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotX04, VIA4BotX04Out]
+  - name: VIA4BotY04
+    op: grow_y
+    mode: lazy
+    radius: 0.04
+    layers: [VIA4Conn]
+  - name: VIA4BotY04Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotY04, MET4NoSlot]
+  - name: VIA4BotY04Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotY04, VIA4BotY04Out]
+  - name: VIA4BotShortX04
+    op: overlapping
+    mode: lazy
+    layers: [VIA4Conn, VIA4BotX04Bad]
+  - name: VIA4BotShort04
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotShortX04, VIA4BotY04Bad]
+  - name: VIA4BotX03
+    op: grow_x
+    mode: lazy
+    radius: 0.03
+    layers: [VIA4Conn]
+  - name: VIA4BotX03Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotX03, MET4NoSlot]
+  - name: VIA4BotX03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotX03, VIA4BotX03Out]
+  - name: VIA4BotY03
+    op: grow_y
+    mode: lazy
+    radius: 0.03
+    layers: [VIA4Conn]
+  - name: VIA4BotY03Out
+    op: difference
+    mode: lazy
+    layers: [VIA4BotY03, MET4NoSlot]
+  - name: VIA4BotY03Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotY03, VIA4BotY03Out]
+  - name: VIA4Bot03Bad
+    op: union
+    mode: lazy
+    layers: [VIA4BotX03Bad, VIA4BotY03Bad]
+  - name: VIA4BotEncBad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4BotShort04, VIA4Bot03Bad]
+  - name: VIA4BotEncChk
+    op: not_inside
+    mode: lazy
+    layers: [VIA4BotEncBad, SRAMorSRING]
+  - name: VIA4TopX02
+    op: grow_x
+    mode: lazy
+    radius: 0.02
+    layers: [VIA4Conn]
+  - name: VIA4TopX02Out
+    op: difference
+    mode: lazy
+    layers: [VIA4TopX02, MET5NoSlot]
+  - name: VIA4TopX02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4TopX02, VIA4TopX02Out]
+  - name: VIA4TopY02
+    op: grow_y
+    mode: lazy
+    radius: 0.02
+    layers: [VIA4Conn]
+  - name: VIA4TopY02Out
+    op: difference
+    mode: lazy
+    layers: [VIA4TopY02, MET5NoSlot]
+  - name: VIA4TopY02Bad
+    op: overlapping
+    mode: lazy
+    layers: [VIA4TopY02, VIA4TopY02Out]
+  - name: VIA4TopShortX02
+    op: overlapping
+    mode: lazy
+    layers: [VIA4Conn, VIA4TopX02Bad]
+  - name: VIA4TopShort02
+    op: overlapping
+    mode: lazy
+    layers: [VIA4TopShortX02, VIA4TopY02Bad]
+  - name: VIA4NoSR
+    op: not_inside
+    mode: lazy
+    layers: [VIA4Conn, SRINGBLK]
+  - name: T4V2SqRect
+    op: rectangle
+    mode: lazy
+    layers: [T4V2All]
+  - name: T4V2SqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2SqRect]
+  - name: T4V2Sq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2SqShort]
+  - name: T4V2NotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [T4V2All, T4V2Sq]
+  - name: T4V2NotSqOut
+    op: difference
+    mode: lazy
+    layers: [T4V2NotSq, GRBLKorSRING]
+  - name: T4V2InGrid
+    op: intersection
+    mode: lazy
+    layers: [T4V2All, GRBLKorSRING]
+  - name: T4V2InGridSqRect
+    op: rectangle
+    mode: lazy
+    layers: [T4V2InGrid]
+  - name: T4V2InGridSqShort
+    op: with_bbox_min
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2InGridSqRect]
+  - name: T4V2InGridSq
+    op: with_bbox_max
+    mode: lazy
+    min: 0.36
+    max: 0.361
+    layers: [T4V2InGridSqShort]
+  - name: T4V2InGridNotSq
+    op: not_overlapping
+    mode: lazy
+    layers: [T4V2InGridSqRect, T4V2InGridSq]
+  - name: T4V2InGridNotSqChk
+    op: not_inside
+    mode: lazy
+    layers: [T4V2InGridNotSq, SRINGBLK]
+  - name: T4V2Close
+    op: close
+    mode: lazy
+    radius: 0.28
+    layers: [T4V2All]
+  - name: T4V2Array
+    op: open
+    mode: lazy
+    radius: 0.855
+    layers: [T4V2Close]
+  - name: T4V2InArray
+    op: inside
+    mode: lazy
+    layers: [T4V2All, T4V2Array]
+  - name: T4V2BotX05
+    op: grow_x
+    mode: lazy
+    radius: 0.05
+    layers: [T4V2All]
+  - name: T4V2BotX05Out
+    op: difference
+    mode: lazy
+    layers: [T4V2BotX05, MET5NoSlot]
+  - name: T4V2BotX05Bad
+    op: overlapping
+    mode: lazy
+    layers: [T4V2BotX05, T4V2BotX05Out]
+  - name: T4V2BotY05
+    op: grow_y
+    mode: lazy
+    radius: 0.05
+    layers: [T4V2All]
+  - name: T4V2BotY05Out
+    op: difference
+    mode: lazy
+    layers: [T4V2BotY05, MET5NoSlot]
+  - name: T4V2BotY05Bad
+    op: overlapping
+    mode: lazy
+    layers: [T4V2BotY05, T4V2BotY05Out]
+  - name: T4V2BotShortX05
+    op: overlapping
+    mode: lazy
+    layers: [T4V2All, T4V2BotX05Bad]
+  - name: T4V2BotShort05
+    op: overlapping
+    mode: lazy
+    layers: [T4V2BotShortX05, T4V2BotY05Bad]
+  - name: T4V2NoSR
+    op: not_inside
+    mode: lazy
+    layers: [T4V2All, SRINGBLK]
+  - name: MET1slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET1slot, MET1slotOk]
+  - name: MET2slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET2slot, MET2slotOk]
+  - name: MET3slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET3slot, MET3slotOk]
+  - name: MET4slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET4slot, MET4slotOk]
+  - name: MET5slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [MET5slot, MET5slotOk]
+  - name: T4M2slotBad
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M2slot, T4M2slotOk]
+  - name: T4M2Solid
+    op: difference
+    mode: lazy
+    layers: [T4M2, T4M2slot]
+  - name: MET1Solid
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: MET2Solid
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: MET3Solid
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: MET4Solid
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: MET5Solid
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: SRGrid
+    op: union
+    mode: lazy
+    layers: [GRBLK, SRINGBLK]
+  # RV of an RDL laser fuse: in an empty RDL ring over FUTR, or on the ring in SRGrid.
+  - name: RDLHole
+    op: holes
+    mode: lazy
+    layers: [RDL]
+  - name: RDLHoleSpace
+    op: difference
+    mode: lazy
+    layers: [RDLHole, RDL]
+  - name: RDLHoleRing
+    op: with_holes
+    mode: lazy
+    layers: [RDLHoleSpace]
+  - name: RDLHoleInner
+    op: difference
+    mode: lazy
+    layers: [RDLHoleSpace, RDLHoleRing]
+  - name: RDLFuseHole
+    op: interacting
+    mode: lazy
+    layers: [RDLHoleInner, FUTR]
+  - name: RVInFuseHole
+    op: inside
+    mode: lazy
+    layers: [RV, RDLFuseHole]
+  - name: RDLFuseRing
+    op: interacting
+    mode: lazy
+    layers: [RDL, RDLFuseHole]
+  - name: RDLFuseGrid
+    op: intersection
+    mode: lazy
+    layers: [RDLFuseRing, SRGrid]
+  - name: RVAtFuseGrid
+    op: interacting
+    mode: lazy
+    layers: [RV, RDLFuseGrid]
+  - name: RVFuse
+    op: union
+    mode: lazy
+    layers: [RVInFuseHole, RVAtFuseGrid]
+  - name: RVNoFuse
+    op: difference
+    mode: lazy
+    layers: [RV, RVFuse]
+  - name: RVSq
+    op: difference
+    mode: lazy
+    layers: [RVNoFuse, SRGrid]
+  - name: RVSqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [RVSq]
+  - name: RVSqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [RVSq]
+    max: 3
+  - name: RVSqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [RVSq]
+    min: 3.001
+  - name: RVSqBad
+    op: union
+    mode: lazy
+    layers: [RVSqCurved, RVSqNarrow, RVSqLong]
+  - name: RVEnMetSkip
+    op: union
+    mode: lazy
+    layers: [LOGO, SRGrid]
+  - name: RVEnMet
+    op: not_inside
+    mode: lazy
+    layers: [RVNoFuse, RVEnMetSkip]
+  - name: RVEnRDLSkip
+    op: union
+    mode: lazy
+    layers: [LOGO, SRGrid, FUTR]
+  - name: RVEnRDL
+    op: not_inside
+    mode: lazy
+    layers: [RVNoFuse, RVEnRDLSkip]
+  # ALPA of the runset: CB sized by 1.5, RDL and ALPAD.
+  - name: CBGrow
+    op: grow
+    mode: lazy
+    layers: [CB]
+    radius: 1.5
+  - name: AL
+    op: union
+    mode: lazy
+    layers: [CBGrow, RDL, ALPAD]
+  - name: ALOpen5x
+    op: shrink_x
+    mode: lazy
+    layers: [AL]
+    radius: 5
+  - name: ALOpen5y
+    op: shrink_y
+    mode: lazy
+    layers: [ALOpen5x]
+    radius: 5
+  - name: ALBig10
+    op: overlapping
+    mode: lazy
+    layers: [AL, ALOpen5y]
+  - name: ALOpen17p5x
+    op: shrink_x
+    mode: lazy
+    layers: [AL]
+    radius: 17.5
+  - name: ALOpen17p5y
+    op: shrink_y
+    mode: lazy
+    layers: [ALOpen17p5x]
+    radius: 17.5
+  - name: ALBig35
+    op: overlapping
+    mode: lazy
+    layers: [AL, ALOpen17p5y]
+  - name: RDLNoInd
+    op: not_inside
+    mode: lazy
+    layers: [RDL, INDALL]
+  - name: COVERSkip
+    op: union
+    mode: lazy
+    layers: [SRBLK, SRINGBLK]
+  - name: COVERChk
+    op: not_inside
+    mode: lazy
+    layers: [COVER, COVERSkip]
+  # COVER-L.1: a 40 x 65 rectangle fits; exact on a rectangle, 1 nm short on other shapes.
+  - name: COVERRect
+    op: rectangle
+    mode: lazy
+    layers: [COVERChk]
+  - name: COVERRectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [COVERRect]
+    min: 40
+  - name: COVERRectOk
+    op: with_bbox_max
+    mode: lazy
+    layers: [COVERRectWide]
+    min: 65
+  - name: COVERCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [COVERChk]
+  - name: COVERFitAx
+    op: shrink_x
+    mode: lazy
+    layers: [COVERCurved]
+    radius: 19.999
+  - name: COVERFitA
+    op: shrink_y
+    mode: lazy
+    layers: [COVERFitAx]
+    radius: 32.499
+  - name: COVERFitBx
+    op: shrink_x
+    mode: lazy
+    layers: [COVERCurved]
+    radius: 32.499
+  - name: COVERFitB
+    op: shrink_y
+    mode: lazy
+    layers: [COVERFitBx]
+    radius: 19.999
+  - name: COVERFit
+    op: union
+    mode: lazy
+    layers: [COVERFitA, COVERFitB]
+  - name: COVERCurvedOk
+    op: overlapping
+    mode: lazy
+    layers: [COVERCurved, COVERFit]
+  - name: COVEROk
+    op: union
+    mode: lazy
+    layers: [COVERRectOk, COVERCurvedOk]
+  - name: COVERShort
+    op: difference
+    mode: lazy
+    layers: [COVERChk, COVEROk]
+  # COVER-S.2: the metal pad under a COVER, slots filled, opened by 21.499.
+  - name: MET1PadHole
+    op: holes
+    mode: lazy
+    layers: [MET1]
+  - name: MET1PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET1PadHole, MET1]
+  - name: MET1PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET1PadSlot0, COVER]
+  - name: MET1PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET1, COVER]
+  - name: MET1PadRaw
+    op: union
+    mode: lazy
+    layers: [MET1PadMet, MET1PadSlot]
+  - name: MET1Pad
+    op: open
+    mode: lazy
+    layers: [MET1PadRaw]
+    radius: 21.499
+  - name: MET2PadHole
+    op: holes
+    mode: lazy
+    layers: [MET2]
+  - name: MET2PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET2PadHole, MET2]
+  - name: MET2PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET2PadSlot0, COVER]
+  - name: MET2PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET2, COVER]
+  - name: MET2PadRaw
+    op: union
+    mode: lazy
+    layers: [MET2PadMet, MET2PadSlot]
+  - name: MET2Pad
+    op: open
+    mode: lazy
+    layers: [MET2PadRaw]
+    radius: 21.499
+  - name: MET3PadHole
+    op: holes
+    mode: lazy
+    layers: [MET3]
+  - name: MET3PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET3PadHole, MET3]
+  - name: MET3PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET3PadSlot0, COVER]
+  - name: MET3PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET3, COVER]
+  - name: MET3PadRaw
+    op: union
+    mode: lazy
+    layers: [MET3PadMet, MET3PadSlot]
+  - name: MET3Pad
+    op: open
+    mode: lazy
+    layers: [MET3PadRaw]
+    radius: 21.499
+  - name: MET4PadHole
+    op: holes
+    mode: lazy
+    layers: [MET4]
+  - name: MET4PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET4PadHole, MET4]
+  - name: MET4PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET4PadSlot0, COVER]
+  - name: MET4PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET4, COVER]
+  - name: MET4PadRaw
+    op: union
+    mode: lazy
+    layers: [MET4PadMet, MET4PadSlot]
+  - name: MET4Pad
+    op: open
+    mode: lazy
+    layers: [MET4PadRaw]
+    radius: 21.499
+  - name: MET5PadHole
+    op: holes
+    mode: lazy
+    layers: [MET5]
+  - name: MET5PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [MET5PadHole, MET5]
+  - name: MET5PadSlot
+    op: interacting
+    mode: lazy
+    layers: [MET5PadSlot0, COVER]
+  - name: MET5PadMet
+    op: interacting
+    mode: lazy
+    layers: [MET5, COVER]
+  - name: MET5PadRaw
+    op: union
+    mode: lazy
+    layers: [MET5PadMet, MET5PadSlot]
+  - name: MET5Pad
+    op: open
+    mode: lazy
+    layers: [MET5PadRaw]
+    radius: 21.499
+  - name: T4M2PadHole
+    op: holes
+    mode: lazy
+    layers: [T4M2]
+  - name: T4M2PadSlot0
+    op: not_overlapping
+    mode: lazy
+    layers: [T4M2PadHole, T4M2]
+  - name: T4M2PadSlot
+    op: interacting
+    mode: lazy
+    layers: [T4M2PadSlot0, COVER]
+  - name: T4M2PadMet
+    op: interacting
+    mode: lazy
+    layers: [T4M2Solid, COVER]
+  - name: T4M2PadRaw
+    op: union
+    mode: lazy
+    layers: [T4M2PadMet, T4M2PadSlot]
+  - name: T4M2Pad
+    op: open
+    mode: lazy
+    layers: [T4M2PadRaw]
+    radius: 21.499
+  - name: DupMD
+    op: union
+    mode: lazy
+    layers: [CB, COVER]
+  - name: DupMDAtPad
+    op: interacting
+    mode: lazy
+    layers: [DupMD, DEUPAD]
+  - name: DupPad
+    op: intersection
+    mode: lazy
+    layers: [DEUPAD, DupMD]
+  - name: DupT4M2Res
+    op: intersection
+    mode: lazy
+    layers: [T4M2res, T4M2Solid]
+  - name: DupMET5Res
+    op: intersection
+    mode: lazy
+    layers: [MET5res, MET5Solid]
+  # DEUPAD-R.7: a T4V2 with another within 0.51 is in an array.
+  - name: T4V2Reach
+    op: grow
+    mode: lazy
+    layers: [T4V2All]
+    radius: 0.255
+  - name: T4V2Cluster
+    op: covering
+    mode: lazy
+    layers: [T4V2Reach, T4V2All]
+    min: 2
+  - name: T4V2PadArray
+    op: overlapping
+    mode: lazy
+    layers: [T4V2All, T4V2Cluster]
+  - name: DupNoArray
+    op: not_interacting
+    mode: lazy
+    layers: [DupPad, T4V2PadArray]
+  # CHIPEDGE of the runset: CHIPBLK with its holes filled.
+  - name: ChipEdgeHole
+    op: holes
+    mode: lazy
+    layers: [CHIPBLK]
+  - name: ChipEdge
+    op: union
+    mode: lazy
+    layers: [CHIPBLK, ChipEdgeHole]
+  - name: ChipEdgeNoSR
+    op: difference
+    mode: lazy
+    layers: [ChipEdge, SRINGBLK]
+  - name: MET1InSR
+    op: intersection
+    mode: lazy
+    layers: [MET1, SRINGBLK]
+  - name: MET2InSR
+    op: intersection
+    mode: lazy
+    layers: [MET2, SRINGBLK]
+  - name: MET3InSR
+    op: intersection
+    mode: lazy
+    layers: [MET3, SRINGBLK]
+  - name: MET4InSR
+    op: intersection
+    mode: lazy
+    layers: [MET4, SRINGBLK]
+  - name: MET5InSR
+    op: intersection
+    mode: lazy
+    layers: [MET5, SRINGBLK]
+  - name: MET6InSR
+    op: intersection
+    mode: lazy
+    layers: [MET6, SRINGBLK]
+  - name: MET7InSR
+    op: intersection
+    mode: lazy
+    layers: [MET7, SRINGBLK]
+  - name: MET8InSR
+    op: intersection
+    mode: lazy
+    layers: [MET8, SRINGBLK]
+  - name: T4M1InSR
+    op: intersection
+    mode: lazy
+    layers: [T4M1, SRINGBLK]
+  - name: T4M2InSR
+    op: intersection
+    mode: lazy
+    layers: [T4M2, SRINGBLK]
+  - name: RDLInSR
+    op: intersection
+    mode: lazy
+    layers: [RDL, SRINGBLK]
+  # Seal ring: the outer ring touches one hole and lies in no hole, the inner ring lies
+  # in the outer one's hole.
+  - name: SRMET1
+    op: intersection
+    mode: lazy
+    layers: [MET1Solid, SRINGBLK]
+  - name: SRMET1Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET1]
+  - name: SRMET1OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET1, SRMET1Hole]
+    min: 1
+    max: 1
+  - name: SRMET1Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET1OneHole, SRMET1Hole]
+  - name: SRMET1Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET1, SRMET1Hole]
+  - name: SRMET1OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET1Outer]
+  - name: SRMET1InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET1Inner]
+  - name: SRMET1Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET1OuterHole, SRMET1InnerHole, SRMET1Inner]
+  - name: SRMET2
+    op: intersection
+    mode: lazy
+    layers: [MET2Solid, SRINGBLK]
+  - name: SRMET2Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET2]
+  - name: SRMET2OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET2, SRMET2Hole]
+    min: 1
+    max: 1
+  - name: SRMET2Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET2OneHole, SRMET2Hole]
+  - name: SRMET2Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET2, SRMET2Hole]
+  - name: SRMET2OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET2Outer]
+  - name: SRMET2InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET2Inner]
+  - name: SRMET2Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET2OuterHole, SRMET2InnerHole, SRMET2Inner]
+  - name: SRMET3
+    op: intersection
+    mode: lazy
+    layers: [MET3Solid, SRINGBLK]
+  - name: SRMET3Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET3]
+  - name: SRMET3OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET3, SRMET3Hole]
+    min: 1
+    max: 1
+  - name: SRMET3Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET3OneHole, SRMET3Hole]
+  - name: SRMET3Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET3, SRMET3Hole]
+  - name: SRMET3OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET3Outer]
+  - name: SRMET3InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET3Inner]
+  - name: SRMET3Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET3OuterHole, SRMET3InnerHole, SRMET3Inner]
+  - name: SRMET4
+    op: intersection
+    mode: lazy
+    layers: [MET4Solid, SRINGBLK]
+  - name: SRMET4Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET4]
+  - name: SRMET4OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET4, SRMET4Hole]
+    min: 1
+    max: 1
+  - name: SRMET4Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET4OneHole, SRMET4Hole]
+  - name: SRMET4Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET4, SRMET4Hole]
+  - name: SRMET4OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET4Outer]
+  - name: SRMET4InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET4Inner]
+  - name: SRMET4Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET4OuterHole, SRMET4InnerHole, SRMET4Inner]
+  - name: SRMET5
+    op: intersection
+    mode: lazy
+    layers: [MET5Solid, SRINGBLK]
+  - name: SRMET5Hole
+    op: holes
+    mode: lazy
+    layers: [SRMET5]
+  - name: SRMET5OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRMET5, SRMET5Hole]
+    min: 1
+    max: 1
+  - name: SRMET5Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRMET5OneHole, SRMET5Hole]
+  - name: SRMET5Inner
+    op: intersection
+    mode: lazy
+    layers: [SRMET5, SRMET5Hole]
+  - name: SRMET5OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRMET5Outer]
+  - name: SRMET5InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRMET5Inner]
+  - name: SRMET5Gap
+    op: difference
+    mode: lazy
+    layers: [SRMET5OuterHole, SRMET5InnerHole, SRMET5Inner]
+  - name: SRT4M2
+    op: intersection
+    mode: lazy
+    layers: [T4M2Solid, SRINGBLK]
+  - name: SRT4M2Hole
+    op: holes
+    mode: lazy
+    layers: [SRT4M2]
+  - name: SRT4M2OneHole
+    op: interacting
+    mode: lazy
+    layers: [SRT4M2, SRT4M2Hole]
+    min: 1
+    max: 1
+  - name: SRT4M2Outer
+    op: not_inside
+    mode: lazy
+    layers: [SRT4M2OneHole, SRT4M2Hole]
+  - name: SRT4M2Inner
+    op: intersection
+    mode: lazy
+    layers: [SRT4M2, SRT4M2Hole]
+  - name: SRT4M2OuterHole
+    op: holes
+    mode: lazy
+    layers: [SRT4M2Outer]
+  - name: SRT4M2InnerHole
+    op: holes
+    mode: lazy
+    layers: [SRT4M2Inner]
+  - name: SRT4M2Gap
+    op: difference
+    mode: lazy
+    layers: [SRT4M2OuterHole, SRT4M2InnerHole, SRT4M2Inner]
+  - name: SRRV
+    op: intersection
+    mode: lazy
+    layers: [RV, SRINGBLK]
+  # Seal-ring cuts: a bar holds a w x l rectangle (1 nm short off a rectangle), the
+  # rest are squares.
+  - name: SRCT
+    op: intersection
+    mode: lazy
+    layers: [CTAll, SRINGBLK]
+  - name: SRCTRect
+    op: rectangle
+    mode: lazy
+    layers: [SRCT]
+  - name: SRCTRectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRCTRect]
+    min: 0.09
+  - name: SRCTBarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRCTRectWide]
+    min: 0.27
+  - name: SRCTCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRCT]
+  - name: SRCTFitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRCTCurved]
+    radius: 0.044
+  - name: SRCTFitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRCTFitAx]
+    radius: 0.134
+  - name: SRCTFitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRCTCurved]
+    radius: 0.134
+  - name: SRCTFitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRCTFitBx]
+    radius: 0.044
+  - name: SRCTFit
+    op: union
+    mode: lazy
+    layers: [SRCTFitA, SRCTFitB]
+  - name: SRCTBarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRCTCurved, SRCTFit]
+  - name: SRCTBar
+    op: union
+    mode: lazy
+    layers: [SRCTBarRect, SRCTBarCurved]
+  - name: SRCTSq
+    op: difference
+    mode: lazy
+    layers: [SRCT, SRCTBar]
+  - name: SRCTSqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRCTSq]
+  - name: SRCTSqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRCTSq]
+    max: 0.09
+  - name: SRCTSqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRCTSq]
+    min: 0.091
+  - name: SRCTSqBad
+    op: union
+    mode: lazy
+    layers: [SRCTSqCurved, SRCTSqNarrow, SRCTSqLong]
+  - name: SRVIA1
+    op: intersection
+    mode: lazy
+    layers: [VIA1All, SRINGBLK]
+  - name: SRVIA1Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA1]
+  - name: SRVIA1RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA1Rect]
+    min: 0.09
+  - name: SRVIA1BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA1RectWide]
+    min: 0.27
+  - name: SRVIA1Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA1]
+  - name: SRVIA1FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA1Curved]
+    radius: 0.044
+  - name: SRVIA1FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA1FitAx]
+    radius: 0.134
+  - name: SRVIA1FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA1Curved]
+    radius: 0.134
+  - name: SRVIA1FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA1FitBx]
+    radius: 0.044
+  - name: SRVIA1Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA1FitA, SRVIA1FitB]
+  - name: SRVIA1BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA1Curved, SRVIA1Fit]
+  - name: SRVIA1Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA1BarRect, SRVIA1BarCurved]
+  - name: SRVIA1Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA1, SRVIA1Bar]
+  - name: SRVIA1SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA1Sq]
+  - name: SRVIA1SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA1Sq]
+    max: 0.09
+  - name: SRVIA1SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA1Sq]
+    min: 0.091
+  - name: SRVIA1SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA1SqCurved, SRVIA1SqNarrow, SRVIA1SqLong]
+  - name: SRVIA2
+    op: intersection
+    mode: lazy
+    layers: [VIA2All, SRINGBLK]
+  - name: SRVIA2Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA2]
+  - name: SRVIA2RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA2Rect]
+    min: 0.09
+  - name: SRVIA2BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA2RectWide]
+    min: 0.27
+  - name: SRVIA2Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA2]
+  - name: SRVIA2FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA2Curved]
+    radius: 0.044
+  - name: SRVIA2FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA2FitAx]
+    radius: 0.134
+  - name: SRVIA2FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA2Curved]
+    radius: 0.134
+  - name: SRVIA2FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA2FitBx]
+    radius: 0.044
+  - name: SRVIA2Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA2FitA, SRVIA2FitB]
+  - name: SRVIA2BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA2Curved, SRVIA2Fit]
+  - name: SRVIA2Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA2BarRect, SRVIA2BarCurved]
+  - name: SRVIA2Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA2, SRVIA2Bar]
+  - name: SRVIA2SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA2Sq]
+  - name: SRVIA2SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA2Sq]
+    max: 0.09
+  - name: SRVIA2SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA2Sq]
+    min: 0.091
+  - name: SRVIA2SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA2SqCurved, SRVIA2SqNarrow, SRVIA2SqLong]
+  - name: SRVIA3
+    op: intersection
+    mode: lazy
+    layers: [VIA3All, SRINGBLK]
+  - name: SRVIA3Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA3]
+  - name: SRVIA3RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA3Rect]
+    min: 0.09
+  - name: SRVIA3BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA3RectWide]
+    min: 0.27
+  - name: SRVIA3Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA3]
+  - name: SRVIA3FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA3Curved]
+    radius: 0.044
+  - name: SRVIA3FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA3FitAx]
+    radius: 0.134
+  - name: SRVIA3FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA3Curved]
+    radius: 0.134
+  - name: SRVIA3FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA3FitBx]
+    radius: 0.044
+  - name: SRVIA3Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA3FitA, SRVIA3FitB]
+  - name: SRVIA3BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA3Curved, SRVIA3Fit]
+  - name: SRVIA3Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA3BarRect, SRVIA3BarCurved]
+  - name: SRVIA3Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA3, SRVIA3Bar]
+  - name: SRVIA3SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA3Sq]
+  - name: SRVIA3SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA3Sq]
+    max: 0.09
+  - name: SRVIA3SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA3Sq]
+    min: 0.091
+  - name: SRVIA3SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA3SqCurved, SRVIA3SqNarrow, SRVIA3SqLong]
+  - name: SRVIA4
+    op: intersection
+    mode: lazy
+    layers: [VIA4All, SRINGBLK]
+  - name: SRVIA4Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRVIA4]
+  - name: SRVIA4RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA4Rect]
+    min: 0.09
+  - name: SRVIA4BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA4RectWide]
+    min: 0.27
+  - name: SRVIA4Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA4]
+  - name: SRVIA4FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA4Curved]
+    radius: 0.044
+  - name: SRVIA4FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA4FitAx]
+    radius: 0.134
+  - name: SRVIA4FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRVIA4Curved]
+    radius: 0.134
+  - name: SRVIA4FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRVIA4FitBx]
+    radius: 0.044
+  - name: SRVIA4Fit
+    op: union
+    mode: lazy
+    layers: [SRVIA4FitA, SRVIA4FitB]
+  - name: SRVIA4BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA4Curved, SRVIA4Fit]
+  - name: SRVIA4Bar
+    op: union
+    mode: lazy
+    layers: [SRVIA4BarRect, SRVIA4BarCurved]
+  - name: SRVIA4Sq
+    op: difference
+    mode: lazy
+    layers: [SRVIA4, SRVIA4Bar]
+  - name: SRVIA4SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRVIA4Sq]
+  - name: SRVIA4SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRVIA4Sq]
+    max: 0.09
+  - name: SRVIA4SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRVIA4Sq]
+    min: 0.091
+  - name: SRVIA4SqBad
+    op: union
+    mode: lazy
+    layers: [SRVIA4SqCurved, SRVIA4SqNarrow, SRVIA4SqLong]
+  - name: SRT4V2
+    op: intersection
+    mode: lazy
+    layers: [T4V2All, SRINGBLK]
+  - name: SRT4V2Rect
+    op: rectangle
+    mode: lazy
+    layers: [SRT4V2]
+  - name: SRT4V2RectWide
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRT4V2Rect]
+    min: 0.36
+  - name: SRT4V2BarRect
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRT4V2RectWide]
+    min: 1.08
+  - name: SRT4V2Curved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRT4V2]
+  - name: SRT4V2FitAx
+    op: shrink_x
+    mode: lazy
+    layers: [SRT4V2Curved]
+    radius: 0.179
+  - name: SRT4V2FitA
+    op: shrink_y
+    mode: lazy
+    layers: [SRT4V2FitAx]
+    radius: 0.539
+  - name: SRT4V2FitBx
+    op: shrink_x
+    mode: lazy
+    layers: [SRT4V2Curved]
+    radius: 0.539
+  - name: SRT4V2FitB
+    op: shrink_y
+    mode: lazy
+    layers: [SRT4V2FitBx]
+    radius: 0.179
+  - name: SRT4V2Fit
+    op: union
+    mode: lazy
+    layers: [SRT4V2FitA, SRT4V2FitB]
+  - name: SRT4V2BarCurved
+    op: overlapping
+    mode: lazy
+    layers: [SRT4V2Curved, SRT4V2Fit]
+  - name: SRT4V2Bar
+    op: union
+    mode: lazy
+    layers: [SRT4V2BarRect, SRT4V2BarCurved]
+  - name: SRT4V2Sq
+    op: difference
+    mode: lazy
+    layers: [SRT4V2, SRT4V2Bar]
+  - name: SRT4V2SqCurved
+    op: not_rectangle
+    mode: lazy
+    layers: [SRT4V2Sq]
+  - name: SRT4V2SqNarrow
+    op: with_bbox_min
+    mode: lazy
+    layers: [SRT4V2Sq]
+    max: 0.36
+  - name: SRT4V2SqLong
+    op: with_bbox_max
+    mode: lazy
+    layers: [SRT4V2Sq]
+    min: 0.361
+  - name: SRT4V2SqBad
+    op: union
+    mode: lazy
+    layers: [SRT4V2SqCurved, SRT4V2SqNarrow, SRT4V2SqLong]
+  - name: SRCTSqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRCTSq, SRMET1Outer]
+  - name: SRCTSqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRCTSqAtOuter, SRMET1Outer]
+  - name: SRVIA1SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA1Sq, SRMET1Outer]
+  - name: SRVIA1SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA1SqAtOuter, SRMET1Outer]
+  - name: SRVIA2SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA2Sq, SRMET2Outer]
+  - name: SRVIA2SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA2SqAtOuter, SRMET2Outer]
+  - name: SRVIA3SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA3Sq, SRMET3Outer]
+  - name: SRVIA3SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA3SqAtOuter, SRMET3Outer]
+  - name: SRVIA4SqAtOuter
+    op: overlapping
+    mode: lazy
+    layers: [SRVIA4Sq, SRMET4Outer]
+  - name: SRVIA4SqCutsOuter
+    op: not_inside
+    mode: lazy
+    layers: [SRVIA4SqAtOuter, SRMET4Outer]
+  # The connect graph's conductors and vias as the runsets read them: bars join the
+  # cuts, slots leave the metals.
+  - name: CTConn
+    op: union
+    mode: lazy
+    layers: [CT, CTbar]
+  - name: MET1Conn
+    op: difference
+    mode: lazy
+    layers: [MET1, MET1slot]
+  - name: MET2Conn
+    op: difference
+    mode: lazy
+    layers: [MET2, MET2slot]
+  - name: MET3Conn
+    op: difference
+    mode: lazy
+    layers: [MET3, MET3slot]
+  - name: MET4Conn
+    op: difference
+    mode: lazy
+    layers: [MET4, MET4slot]
+  - name: MET5Conn
+    op: difference
+    mode: lazy
+    layers: [MET5, MET5slot]
+  - name: T4M2Conn
+    op: difference
+    mode: lazy
+    layers: [T4M2, T4M2slot]
+  - name: VIA1Conn
+    op: union
+    mode: lazy
+    layers: [VIA1, VIA1bar]
+  - name: VIA2Conn
+    op: union
+    mode: lazy
+    layers: [VIA2, VIA2bar]
+  - name: VIA3Conn
+    op: union
+    mode: lazy
+    layers: [VIA3, VIA3bar]
+  - name: VIA4Conn
+    op: union
+    mode: lazy
+    layers: [VIA4, VIA4bar]
+  - name: T4V2Conn
+    op: union
+    mode: lazy
+    layers: [T4V2, T4V2bar]
+  - name: RDV
+    op: union
+    mode: lazy
+    layers: [RV, CB]
+  # Joins a well to the deep well it sits in, looked up inside both.
+  # The antenna runset's GATE: a channel with source/drain beside it.
+  - name: AntGate
+    op: interacting
+    mode: lazy
+    min: 2
+    max: 2
+    layers: [GATE, ACTSD]
+  - name: AntGate18
+    op: intersection
+    mode: lazy
+    layers: [AntGate, DGOX]
+  - name: AntGate1825
+    op: intersection
+    mode: lazy
+    layers: [AntGate, IOOX]
+  - name: ACTImp
+    op: union
+    mode: lazy
+    layers: [NPACT, PPACT]
+  - name: AntSD
+    op: difference
+    mode: lazy
+    layers: [ACTImp, POLY]
+  - name: ESDCT
+    op: intersection
+    mode: lazy
+    layers: [CTAll, ESDIOE]
+  - name: ESDGATE
+    op: intersection
+    mode: lazy
+    layers: [GATE, ESDIOE]
+  - name: ESDNACT
+    op: intersection
+    mode: lazy
+    layers: [NPACT, ESDIOE]
+  - name: ESDPACT
+    op: intersection
+    mode: lazy
+    layers: [PPACT, ESDIOE]
+  - name: ESDNMOS
+    op: covering
+    mode: lazy
+    layers: [ESDNACT, ESDGATE]
+  - name: ESDPMOS
+    op: covering
+    mode: lazy
+    layers: [ESDPACT, ESDGATE]
+  - name: ESDNSD
+    op: difference
+    mode: lazy
+    layers: [ESDNMOS, ESDGATE]
+  - name: ESDPSD
+    op: difference
+    mode: lazy
+    layers: [ESDPMOS, ESDGATE]
+  - name: ESDSAB
+    op: intersection
+    mode: lazy
+    layers: [SAB, ESDIOE]
+  - name: ESDNSDSal
+    op: difference
+    mode: lazy
+    layers: [ESDNSD, ESDSAB]
+  - name: ESDPSDSal
+    op: difference
+    mode: lazy
+    layers: [ESDPSD, ESDSAB]
+  # ESD MOS source: salicided S/D touching the gate; drain: salicided S/D the SAB
+  # keeps off the gate.
+  - name: ESDNS
+    op: interacting
+    mode: lazy
+    layers: [ESDNSDSal, ESDGATE]
+  - name: ESDND
+    op: not_interacting
+    mode: lazy
+    layers: [ESDNSDSal, ESDGATE]
+  - name: ESDPS
+    op: interacting
+    mode: lazy
+    layers: [ESDPSDSal, ESDGATE]
+  - name: ESDPD
+    op: not_interacting
+    mode: lazy
+    layers: [ESDPSDSal, ESDGATE]
+  - name: ESDNDrainSD
+    op: interacting
+    mode: lazy
+    layers: [ESDNSD, ESDND]
+  - name: ESDNDrain
+    op: interacting
+    mode: lazy
+    layers: [ESDNDrainSD, ESDCT]
+  - name: ESDPDrainSD
+    op: interacting
+    mode: lazy
+    layers: [ESDPSD, ESDPD]
+  - name: ESDPDrain
+    op: interacting
+    mode: lazy
+    layers: [ESDPDrainSD, ESDCT]
+  - name: ESDMOSS
+    op: union
+    mode: lazy
+    layers: [ESDNS, ESDPS]
+  - name: ESDMOSD
+    op: union
+    mode: lazy
+    layers: [ESDND, ESDPD]
+  # The drain opening: a hole of the ESD SAB with no SAB in it (HOLES INNER EMPTY).
+  - name: ESDSABHoles
+    op: holes
+    mode: lazy
+    layers: [ESDSAB]
+  - name: ESDSABHole
+    op: not_covering
+    mode: lazy
+    layers: [ESDSABHoles, ESDSAB]
+  - name: ESDSABHO
+    op: union
+    mode: lazy
+    layers: [ESDSABHole, ESDMOSD]
+  - name: ESDCTS
+    op: not_overlapping
+    mode: lazy
+    layers: [ESDCT, ESDSABHO]
+  - name: ESDCTD
+    op: inside
+    mode: lazy
+    layers: [ESDCT, ESDSABHO]
+  - name: ESDGATEPOLY
+    op: covering
+    mode: lazy
+    layers: [POLY, ESDGATE]
+  - name: ESDACT
+    op: covering
+    mode: lazy
+    layers: [ACT, ESDGATE]
+  - name: ESDNGATETG
+    op: intersection
+    mode: lazy
+    layers: [ESDGATE, ESDNACT, TGOX]
+  - name: ESDNGATEHV
+    op: difference
+    mode: lazy
+    layers: [ESDNGATETG, DGOX]
+  # ESD-A.2: the innermost holes of ESD, less the ESD inside them.
+  - name: ESDHoles
+    op: holes
+    mode: lazy
+    layers: [ESD]
+  - name: ESDWithHoles
+    op: with_holes
+    mode: lazy
+    layers: [ESD]
+  - name: ESDHoleInner
+    op: not_covering
+    mode: lazy
+    layers: [ESDHoles, ESDWithHoles]
+  - name: ESDHoleEmpty
+    op: difference
+    mode: lazy
+    layers: [ESDHoleInner, ESD]
+  - name: RDLonALPAD
+    op: intersection
+    mode: lazy
+    layers: [RDL, ALPAD]
+  # A well tap beside the gate it may carry: a tap spanning a channel (an n-type
+  # varactor) is looked up on the diffusion, not under the poly.
+  - name: NW1TapConn
+    op: difference
+    mode: lazy
+    layers: [NPPickup, POLY]
+
+edge_layers:
+  - name: ESDGATE.edges
+    op: edges
+    layers: [ESDGATE]
+  - name: ESDGATEPOLY.edges
+    op: edges
+    layers: [ESDGATEPOLY]
+  - name: ESDNGATE.edges
+    op: inside_part
+    layers: [ESDGATE.edges, ESDNMOS]
+  - name: ESDPGATE.edges
+    op: inside_part
+    layers: [ESDGATE.edges, ESDPMOS]
+  # ESD gate edges along the poly: the finger (channel) width.
+  - name: ESDNGATEW
+    op: and
+    layers: [ESDNGATE.edges, ESDGATEPOLY.edges]
+  - name: ESDPGATEW
+    op: and
+    layers: [ESDPGATE.edges, ESDGATEPOLY.edges]
+  - name: ESDNGATEHV.edges
+    op: edges
+    layers: [ESDNGATEHV]
+  - name: ESDACT.edges
+    op: edges
+    layers: [ESDACT]
+  # 3.3V ESD NMOS gate edges along the active: the channel length.
+  - name: ESDNGATEHVL
+    op: and
+    layers: [ESDNGATEHV.edges, ESDACT.edges]
+  - name: ACT.edges
+    op: edges
+    layers: [ACT]
+  - name: POLY.edges
+    op: edges
+    layers: [POLY]
+  - name: NW1.edges
+    op: edges
+    layers: [NW1]
+  - name: RACTns.edges
+    op: edges
+    layers: [RACTns]
+  - name: RACTnsCut
+    op: not
+    layers: [RACTns.edges, ACT.edges]
+  - name: RPOns.edges
+    op: edges
+    layers: [RPOns]
+  - name: RPOnsCut
+    op: not
+    layers: [RPOns.edges, POLY.edges]
+  - name: NWResAABody.edges
+    op: edges
+    layers: [NWResAABody]
+  - name: NWResAABodyCut
+    op: not
+    layers: [NWResAABody.edges, NW1.edges]
+  - name: NW1RNoSAB.edges
+    op: edges
+    layers: [NW1RNoSAB]
+  - name: NW1RNoSABCut
+    op: not
+    layers: [NW1RNoSAB.edges, NW1.edges]
+  - name: ACTresNoSAB.edges
+    op: edges
+    layers: [ACTresNoSAB]
+  - name: ACTresNoSABInACT
+    op: inside_part
+    layers: [ACTresNoSAB.edges, ACT]
+  - name: ACTresNoSABCut
+    op: not
+    layers: [ACTresNoSABInACT, ACT.edges]
+  - name: ACTresR4X.edges
+    op: edges
+    layers: [CTonAAResNoSAB]
+  - name: ACTresR4Shared
+    op: and
+    layers: [ACTresNoSABCut, ACTresR4X.edges]
+  - name: ACTresR4SharedMid
+    op: centers
+    layers: [ACTresR4Shared]
+    fraction: 0.99
+  - name: ACTresR4Bad
+    op: not_interacting_edges
+    layers: [ACTresNoSABCut, ACTresR4SharedMid]
+  - name: POLYresNoSAB.edges
+    op: edges
+    layers: [POLYresNoSAB]
+  - name: POLYresNoSABInPOLY
+    op: inside_part
+    layers: [POLYresNoSAB.edges, POLY]
+  - name: POLYresNoSABCut
+    op: not
+    layers: [POLYresNoSABInPOLY, POLY.edges]
+  - name: POLYresR3X.edges
+    op: edges
+    layers: [CTonPOResNoSAB]
+  - name: POLYresR3Shared
+    op: and
+    layers: [POLYresNoSABCut, POLYresR3X.edges]
+  - name: POLYresR3SharedMid
+    op: centers
+    layers: [POLYresR3Shared]
+    fraction: 0.99
+  - name: POLYresR3Bad
+    op: not_interacting_edges
+    layers: [POLYresNoSABCut, POLYresR3SharedMid]
+  - name: SAB.edges
+    op: edges
+    layers: [SAB]
+  - name: NWR.edges
+    op: edges
+    layers: [NWR]
+  - name: SABInNWR
+    op: inside_part
+    layers: [SAB.edges, NWR]
+  - name: SABInNWRCut
+    op: not
+    layers: [SABInNWR, NWR.edges]
+  - name: NWResS2X.edges
+    op: edges
+    layers: [CTonACTxNW1resGrow]
+  - name: NWResS2Shared
+    op: and
+    layers: [SABInNWRCut, NWResS2X.edges]
+  - name: NWResS2SharedMid
+    op: centers
+    layers: [NWResS2Shared]
+    fraction: 0.99
+  - name: NWResS2Bad
+    op: not_interacting_edges
+    layers: [SABInNWRCut, NWResS2SharedMid]
+  - name: NW1res.edges
+    op: edges
+    layers: [NW1res]
+  - name: NW1xACTcovNW1R.edges
+    op: edges
+    layers: [NW1xACTcovNW1R]
+  - name: NW1resInNWS4
+    op: inside_part
+    layers: [NW1res.edges, NW1xACTcovNW1R]
+  - name: NW1resInNWS4Cut
+    op: not
+    layers: [NW1resInNWS4, NW1xACTcovNW1R.edges]
+  - name: NWResS4X.edges
+    op: edges
+    layers: [NP]
+  - name: NWResS4Shared
+    op: and
+    layers: [NW1resInNWS4Cut, NWResS4X.edges]
+  - name: NWResS4SharedMid
+    op: centers
+    layers: [NWResS4Shared]
+    fraction: 0.99
+  - name: NWResS4Bad
+    op: not_interacting_edges
+    layers: [NW1resInNWS4Cut, NWResS4SharedMid]
+  - name: ACTxCTonNWRSTIGrow.edges
+    op: edges
+    layers: [ACTxCTonNWRSTIGrow]
+  - name: NWRSTI.edges
+    op: edges
+    layers: [NWRSTI]
+  - name: ACTInNWRSTI
+    op: inside_part
+    layers: [ACTxCTonNWRSTIGrow.edges, NWRSTI]
+  - name: ACTInNWRSTICut
+    op: not
+    layers: [ACTInNWRSTI, NWRSTI.edges]
+  - name: NWStiEn1X.edges
+    op: edges
+    layers: [CTonNWRSTIGrow]
+  - name: NWStiEn1Shared
+    op: and
+    layers: [ACTInNWRSTICut, NWStiEn1X.edges]
+  - name: NWStiEn1SharedMid
+    op: centers
+    layers: [NWStiEn1Shared]
+    fraction: 0.99
+  - name: NWStiEn1Bad
+    op: not_interacting_edges
+    layers: [ACTInNWRSTICut, NWStiEn1SharedMid]
+  # Channel widths: the gate walls on the poly (runset GATE_*_W).
+  - name: GATEDevCore.edges
+    op: edges
+    layers: [GATEDevCoreChk]
+  - name: GATEDevCoreW
+    op: and
+    layers: [GATEDevCore.edges, POLY.edges]
+  - name: GATEDevIO1.edges
+    op: edges
+    layers: [GATEDevIO1Chk]
+  - name: GATEDevIO1W
+    op: and
+    layers: [GATEDevIO1.edges, POLY.edges]
+  - name: GATEDevIO2.edges
+    op: edges
+    layers: [GATEDevIO2Chk]
+  - name: GATEDevIO2W
+    op: and
+    layers: [GATEDevIO2.edges, POLY.edges]
+  # NP-S.5: a PMOS gate's walls on its poly; PP-S.5: the poly walls on N+ACT.
+  - name: PGATEDev.edges
+    op: edges
+    layers: [PGATEDevChk]
+  - name: PGATEDevW
+    op: and
+    layers: [PGATEDev.edges, POLY.edges]
+  - name: POLYinNPACT
+    op: inside_part
+    layers: [POLY.edges, NPACTNotInSRAM]
+  - name: NP.edges
+    op: edges
+    layers: [NP]
+  - name: PP.edges
+    op: edges
+    layers: [PP]
+  - name: ACTonPPEdge
+    op: and
+    layers: [ACT.edges, PP.edges]
+  - name: NPPPButt
+    op: and
+    layers: [NP.edges, PP.edges]
+  - name: NPPPButtUnsil
+    op: inside_part
+    layers: [NPPPButt, SABACTPOLY]
+  - name: SABonPOLY
+    op: and
+    layers: [SAB.edges, POLY.edges]
+  - name: SABonACT
+    op: and
+    layers: [SAB.edges, ACT.edges]
+  - name: DNW.edges
+    op: edges
+    layers: [DNW]
+  - name: DNWinNW1.edges
+    op: inside_part
+    layers: [DNW.edges, NW1]
+  - name: DNWinNW1Strict.edges
+    op: not
+    layers: [DNWinNW1.edges, NW1.edges]
+  # DNW-En.1: the DNW boundary not strictly inside NW1 (outside or coincident).
+  - name: DNWnotInNW1.edges
+    op: not
+    layers: [DNW.edges, DNWinNW1Strict.edges]
+  - name: DNWoutNW1All.edges
+    op: outside_part
+    layers: [DNW.edges, NW1]
+  # DNW-R.1: the DNW boundary outside NW1, coincident stretches excluded.
+  - name: DNWoutNW1.edges
+    op: not
+    layers: [DNWoutNW1All.edges, NW1.edges]
+  - name: PSUB.edges
+    op: edges
+    layers: [PSUB]
+  - name: PSUBonDNW.edges
+    op: and
+    layers: [PSUB.edges, DNW.edges]
+  - name: GATE.edges
+    op: edges
+    layers: [GATEDev]
+  # GATE_W: the gate's poly walls; their length is the channel width.
+  - name: GATEW.edges
+    op: and
+    layers: [GATE.edges, POLY.edges]
+  - name: GATEWNat.edges
+    op: interacting
+    layers: [GATEW.edges, PSUB]
+  - name: GATECore.edges
+    op: edges
+    layers: [GATEDevCore]
+  - name: GATECoreOnACT.edges
+    op: and
+    layers: [GATECore.edges, ACT.edges]
+  # GATE_core_L: the core gate's active walls; their length is the channel length.
+  - name: GATECoreL.edges
+    op: not
+    layers: [GATECoreOnACT.edges, POLY.edges]
+  - name: GATECoreLNat.edges
+    op: interacting
+    layers: [GATECoreL.edges, PSUB]
+  - name: GATEio1.edges
+    op: edges
+    layers: [GATEDevIO1]
+  - name: GATEio1OnACT.edges
+    op: and
+    layers: [GATEio1.edges, ACT.edges]
+  - name: GATEio1L.edges
+    op: not
+    layers: [GATEio1OnACT.edges, POLY.edges]
+  - name: GATEio1LNat.edges
+    op: interacting
+    layers: [GATEio1L.edges, PSUB]
+  # AA INSIDE EDGE PO: the active walls under the poly, boundary stretches excluded.
+  - name: ACTinPOLYAll.edges
+    op: inside_part
+    layers: [ACT.edges, POLY]
+  - name: ACTinPOLY.edges
+    op: not
+    layers: [ACTinPOLYAll.edges, POLY.edges]
+  - name: NPACT.edges
+    op: edges
+    layers: [NPACT]
+  - name: PPACT.edges
+    op: edges
+    layers: [PPACT]
+  # (NACT or PACT) TOUCH EDGE (AA INSIDE EDGE PO): the implanted active's walls that
+  # run along a gate's end.  TOUCH EDGE is read as sharing a stretch: the shared
+  # stretches, their middles, and the whole walls holding them.
+  - name: NPACTinPOLY.edges
+    op: and
+    layers: [NPACT.edges, ACTinPOLY.edges]
+  - name: NPACTinPOLYmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPACTinPOLY.edges]
+  - name: NPACTside.edges
+    op: interacting_edges
+    layers: [NPACT.edges, NPACTinPOLYmid.edges]
+  - name: PPACTinPOLY.edges
+    op: and
+    layers: [PPACT.edges, ACTinPOLY.edges]
+  - name: PPACTinPOLYmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [PPACTinPOLY.edges]
+  - name: PPACTside.edges
+    op: interacting_edges
+    layers: [PPACT.edges, PPACTinPOLYmid.edges]
+  - name: ACTside.edges
+    op: or
+    layers: [NPACTside.edges, PPACTside.edges]
+  - name: ACTsideNoSRAM.edges
+    op: outside_part
+    layers: [ACTside.edges, SRAMALL]
+  # PO INSIDE EDGE AA: the poly walls inside the active, boundary stretches excluded.
+  - name: POLYinACTAll.edges
+    op: inside_part
+    layers: [POLY.edges, ACT]
+  - name: POLYinACT.edges
+    op: not
+    layers: [POLYinACTAll.edges, ACT.edges]
+  - name: GATEwall.edges
+    op: and
+    layers: [POLYinACT.edges, GATE.edges]
+  - name: NVT3.edges
+    op: edges
+    layers: [NVT3]
+  - name: PVT3.edges
+    op: edges
+    layers: [PVT3]
+  - name: NVT1.edges
+    op: edges
+    layers: [NVT1]
+  - name: PVT1.edges
+    op: edges
+    layers: [PVT1]
+  - name: ULLD.edges
+    op: edges
+    layers: [ULLD]
+  - name: DGOX.edges
+    op: edges
+    layers: [DGOX]
+  - name: TGOX.edges
+    op: edges
+    layers: [TGOX]
+  # NVT3-S.2: gate walls on active outside NVT3.
+  - name: ACTnoNVT3.edges
+    op: edges
+    layers: [ACTnoNVT3]
+  - name: POLYinACTnoNVT3All.edges
+    op: inside_part
+    layers: [POLY.edges, ACTnoNVT3]
+  - name: POLYinACTnoNVT3.edges
+    op: not
+    layers: [POLYinACTnoNVT3All.edges, ACTnoNVT3.edges]
+  - name: GATEwallNoNVT3.edges
+    op: and
+    layers: [POLYinACTnoNVT3.edges, GATE.edges]
+  # NVT3-Ex.1 / PVT3-Ex.1: gate walls on N+ (P+) active inside NVT3 (PVT3).
+  - name: NPACTxNVT3.edges
+    op: edges
+    layers: [NPACTxNVT3]
+  - name: POLYinNPACTxNVT3All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTxNVT3]
+  - name: POLYinNPACTxNVT3.edges
+    op: not
+    layers: [POLYinNPACTxNVT3All.edges, NPACTxNVT3.edges]
+  - name: GATEwallNVT3.edges
+    op: and
+    layers: [POLYinNPACTxNVT3.edges, GATE.edges]
+  - name: PPACTxPVT3.edges
+    op: edges
+    layers: [PPACTxPVT3]
+  - name: POLYinPPACTxPVT3All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTxPVT3]
+  - name: POLYinPPACTxPVT3.edges
+    op: not
+    layers: [POLYinPPACTxPVT3All.edges, PPACTxPVT3.edges]
+  - name: GATEwallPVT3.edges
+    op: and
+    layers: [POLYinPPACTxPVT3.edges, GATE.edges]
+  # NVT1-Ex.1 / PVT1-Ex.1: poly walls on N+ (P+) active inside NVT1 (PVT1).
+  - name: NPACTxNVT1.edges
+    op: edges
+    layers: [NPACTxNVT1]
+  - name: POLYinNPACTxNVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTxNVT1]
+  - name: POLYinNPACTxNVT1.edges
+    op: not
+    layers: [POLYinNPACTxNVT1All.edges, NPACTxNVT1.edges]
+  - name: PPACTxPVT1.edges
+    op: edges
+    layers: [PPACTxPVT1]
+  - name: POLYinPPACTxPVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTxPVT1]
+  - name: POLYinPPACTxPVT1.edges
+    op: not
+    layers: [POLYinPPACTxPVT1All.edges, PPACTxPVT1.edges]
+  # NVT1-S.2 / PVT1-S.2: poly walls on N+ or P+ active outside NVT1 (PVT1).
+  - name: NPACTnoNVT1.edges
+    op: edges
+    layers: [NPACTnoNVT1]
+  - name: POLYinNPACTnoNVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTnoNVT1]
+  - name: POLYinNPACTnoNVT1.edges
+    op: not
+    layers: [POLYinNPACTnoNVT1All.edges, NPACTnoNVT1.edges]
+  - name: PPACTnoNVT1.edges
+    op: edges
+    layers: [PPACTnoNVT1]
+  - name: POLYinPPACTnoNVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTnoNVT1]
+  - name: POLYinPPACTnoNVT1.edges
+    op: not
+    layers: [POLYinPPACTnoNVT1All.edges, PPACTnoNVT1.edges]
+  - name: POLYinACTnoNVT1.edges
+    op: or
+    layers: [POLYinNPACTnoNVT1.edges, POLYinPPACTnoNVT1.edges]
+  - name: NPACTnoPVT1.edges
+    op: edges
+    layers: [NPACTnoPVT1]
+  - name: POLYinNPACTnoPVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, NPACTnoPVT1]
+  - name: POLYinNPACTnoPVT1.edges
+    op: not
+    layers: [POLYinNPACTnoPVT1All.edges, NPACTnoPVT1.edges]
+  - name: PPACTnoPVT1.edges
+    op: edges
+    layers: [PPACTnoPVT1]
+  - name: POLYinPPACTnoPVT1All.edges
+    op: inside_part
+    layers: [POLY.edges, PPACTnoPVT1]
+  - name: POLYinPPACTnoPVT1.edges
+    op: not
+    layers: [POLYinPPACTnoPVT1All.edges, PPACTnoPVT1.edges]
+  - name: POLYinACTnoPVT1.edges
+    op: or
+    layers: [POLYinNPACTnoPVT1.edges, POLYinPPACTnoPVT1.edges]
+  # Ex.2: the Vt-covered implanted active's walls that touch a gate.
+  - name: NPACTxNVT3onGATE.edges
+    op: and
+    layers: [NPACTxNVT3.edges, GATE.edges]
+  - name: NPACTxNVT3onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPACTxNVT3onGATE.edges]
+  - name: NPACTxNVT3side.edges
+    op: interacting_edges
+    layers: [NPACTxNVT3.edges, NPACTxNVT3onGATEmid.edges]
+  - name: NPACTxNVT3sideNoSRAM.edges
+    op: outside_part
+    layers: [NPACTxNVT3side.edges, SRAMALL]
+  - name: PPACTxPVT3onGATE.edges
+    op: and
+    layers: [PPACTxPVT3.edges, GATE.edges]
+  - name: PPACTxPVT3onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [PPACTxPVT3onGATE.edges]
+  - name: PPACTxPVT3side.edges
+    op: interacting_edges
+    layers: [PPACTxPVT3.edges, PPACTxPVT3onGATEmid.edges]
+  - name: PPACTxPVT3sideNoSRAM.edges
+    op: outside_part
+    layers: [PPACTxPVT3side.edges, SRAMALL]
+  - name: NPACTxNVT1onGATE.edges
+    op: and
+    layers: [NPACTxNVT1.edges, GATE.edges]
+  - name: NPACTxNVT1onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPACTxNVT1onGATE.edges]
+  - name: NPACTxNVT1side.edges
+    op: interacting_edges
+    layers: [NPACTxNVT1.edges, NPACTxNVT1onGATEmid.edges]
+  - name: PPACTxPVT1onGATE.edges
+    op: and
+    layers: [PPACTxPVT1.edges, GATE.edges]
+  - name: PPACTxPVT1onGATEmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [PPACTxPVT1onGATE.edges]
+  - name: PPACTxPVT1side.edges
+    op: interacting_edges
+    layers: [PPACTxPVT1.edges, PPACTxPVT1onGATEmid.edges]
+  # S.4: non-salicided active not inside the implant.
+  - name: ACTSABoutNVT3.edges
+    op: edges
+    layers: [ACTSABoutNVT3]
+  - name: ACTSABoutPVT3.edges
+    op: edges
+    layers: [ACTSABoutPVT3]
+  - name: ACTSABoutNVT1.edges
+    op: edges
+    layers: [ACTSABoutNVT1]
+  # ULLD: the runset's local AA is PACT or NACT.
+  - name: NPPPACT.edges
+    op: edges
+    layers: [NPPPACT]
+  - name: POLYinNPPPACTAll.edges
+    op: inside_part
+    layers: [POLY.edges, NPPPACT]
+  - name: POLYinNPPPACT.edges
+    op: not
+    layers: [POLYinNPPPACTAll.edges, NPPPACT.edges]
+  - name: NPPPACTinPOLYAll.edges
+    op: inside_part
+    layers: [NPPPACT.edges, POLY]
+  - name: NPPPACTinPOLY.edges
+    op: not
+    layers: [NPPPACTinPOLYAll.edges, POLY.edges]
+  - name: NPPPACTinPOLYmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [NPPPACTinPOLY.edges]
+  - name: NPPPACTside.edges
+    op: interacting_edges
+    layers: [NPPPACT.edges, NPPPACTinPOLYmid.edges]
+  - name: NPPPACTsideX.edges
+    op: with_angle
+    min: 0
+    max: 1
+    layers: [NPPPACTside.edges]
+  - name: NPPPACTsideY.edges
+    op: with_angle
+    min: 90
+    max: 91
+    layers: [NPPPACTside.edges]
+  - name: NPPPACTsideNearX.edges
+    op: inside_part
+    layers: [NPPPACTsideX.edges, GATEAlongXBand]
+  - name: NPPPACTsideNearY.edges
+    op: inside_part
+    layers: [NPPPACTsideY.edges, GATEAlongYBand]
+  - name: NPPPACTsideNear.edges
+    op: or
+    layers: [NPPPACTsideNearX.edges, NPPPACTsideNearY.edges]
+  - name: NPPPACTsideFar.edges
+    op: not
+    layers: [NPPPACTside.edges, NPPPACTsideNear.edges]
+  # DGOX-En.2 / TGOX-En.2: MOS walls touching a gate inside the oxide.
+  - name: MOSAA.edges
+    op: edges
+    layers: [MOSAA]
+  - name: GATEinDGOX.edges
+    op: edges
+    layers: [GATEinDGOX]
+  - name: MOSonGATEinDGOX.edges
+    op: and
+    layers: [MOSAA.edges, GATEinDGOX.edges]
+  - name: MOSonGATEinDGOXmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [MOSonGATEinDGOX.edges]
+  - name: MOSsideDGOX.edges
+    op: interacting_edges
+    layers: [MOSAA.edges, MOSonGATEinDGOXmid.edges]
+  - name: GATEinTGOX.edges
+    op: edges
+    layers: [GATEinTGOX]
+  - name: MOSonGATEinTGOX.edges
+    op: and
+    layers: [MOSAA.edges, GATEinTGOX.edges]
+  - name: MOSonGATEinTGOXmid.edges
+    op: centers
+    fraction: 0.99
+    layers: [MOSonGATEinTGOX.edges]
+  - name: MOSsideTGOX.edges
+    op: interacting_edges
+    layers: [MOSAA.edges, MOSonGATEinTGOXmid.edges]
+
+layers:
+  - name: ACT
+    gds_layer: 2
+    gds_datatype: 1
+  - name: ACTdm
+    gds_layer: 2
+    gds_datatype: 2
+  - name: ACTdmb
+    gds_layer: 2
+    gds_datatype: 3
+  - name: ACTres
+    gds_layer: 2
+    gds_datatype: 4
+  - name: ACTopcblk
+    gds_layer: 2
+    gds_datatype: 5
+  - name: DNW
+    gds_layer: 7
+    gds_datatype: 1
+  - name: NW1
+    gds_layer: 9
+    gds_datatype: 1
+  - name: NW1res
+    gds_layer: 9
+    gds_datatype: 4
+  - name: PSUB
+    gds_layer: 261
+    gds_datatype: 12
+  - name: ULLD
+    gds_layer: 152
+    gds_datatype: 12
+  - name: NVT1
+    gds_layer: 17
+    gds_datatype: 1
+  - name: PVT1
+    gds_layer: 18
+    gds_datatype: 1
+  - name: NVT3
+    gds_layer: 21
+    gds_datatype: 1
+  - name: PVT3
+    gds_layer: 22
+    gds_datatype: 1
+  - name: DGOX
+    gds_layer: 27
+    gds_datatype: 1
+  - name: TGOX
+    gds_layer: 28
+    gds_datatype: 1
+  - name: UD
+    gds_layer: 153
+    gds_datatype: 12
+  - name: OD
+    gds_layer: 154
+    gds_datatype: 12
+  - name: POLY
+    gds_layer: 41
+    gds_datatype: 1
+  - name: POLYdm
+    gds_layer: 41
+    gds_datatype: 2
+  - name: POLYdmb
+    gds_layer: 41
+    gds_datatype: 3
+  - name: POLYres
+    gds_layer: 41
+    gds_datatype: 4
+  - name: POLYopcblk
+    gds_layer: 41
+    gds_datatype: 5
+  - name: POLYtxt
+    gds_layer: 41
+    gds_datatype: 6
+  - name: POLYbar
+    gds_layer: 41
+    gds_datatype: 7
+  - name: NPD
+    gds_layer: 43
+    gds_datatype: 1
+  - name: RES3TPOLY
+    gds_layer: 329
+    gds_datatype: 12
+  - name: NPR
+    gds_layer: 384
+    gds_datatype: 12
+  - name: HRP
+    gds_layer: 54
+    gds_datatype: 1
+  - name: HRPBLK
+    gds_layer: 385
+    gds_datatype: 12
+  - name: NP
+    gds_layer: 52
+    gds_datatype: 1
+  - name: PP
+    gds_layer: 53
+    gds_datatype: 1
+  - name: ESD
+    gds_layer: 55
+    gds_datatype: 1
+  - name: SAB
+    gds_layer: 71
+    gds_datatype: 1
+  - name: CT
+    gds_layer: 72
+    gds_datatype: 1
+  - name: CTopcblk
+    gds_layer: 72
+    gds_datatype: 5
+  - name: CTbar
+    gds_layer: 72
+    gds_datatype: 7
+  - name: MET1
+    gds_layer: 81
+    gds_datatype: 1
+  - name: MET1dm
+    gds_layer: 81
+    gds_datatype: 2
+  - name: MET1dmb
+    gds_layer: 81
+    gds_datatype: 3
+  - name: MET1res
+    gds_layer: 81
+    gds_datatype: 4
+  - name: MET1opcblk
+    gds_layer: 81
+    gds_datatype: 5
+  - name: MET1txt
+    gds_layer: 81
+    gds_datatype: 6
+  - name: MET1slot
+    gds_layer: 81
+    gds_datatype: 8
+  - name: MET1slotblk
+    gds_layer: 81
+    gds_datatype: 9
+  - name: MET1mom
+    gds_layer: 81
+    gds_datatype: 10
+  - name: MET2
+    gds_layer: 82
+    gds_datatype: 1
+  - name: MET2dm
+    gds_layer: 82
+    gds_datatype: 2
+  - name: MET2dmb
+    gds_layer: 82
+    gds_datatype: 3
+  - name: MET2res
+    gds_layer: 82
+    gds_datatype: 4
+  - name: MET2opcblk
+    gds_layer: 82
+    gds_datatype: 5
+  - name: MET2txt
+    gds_layer: 82
+    gds_datatype: 6
+  - name: MET2slot
+    gds_layer: 82
+    gds_datatype: 8
+  - name: MET2slotblk
+    gds_layer: 82
+    gds_datatype: 9
+  - name: MET2mom
+    gds_layer: 82
+    gds_datatype: 10
+  - name: MET3
+    gds_layer: 83
+    gds_datatype: 1
+  - name: MET3dm
+    gds_layer: 83
+    gds_datatype: 2
+  - name: MET3dmb
+    gds_layer: 83
+    gds_datatype: 3
+  - name: MET3res
+    gds_layer: 83
+    gds_datatype: 4
+  - name: MET3opcblk
+    gds_layer: 83
+    gds_datatype: 5
+  - name: MET3txt
+    gds_layer: 83
+    gds_datatype: 6
+  - name: MET3slot
+    gds_layer: 83
+    gds_datatype: 8
+  - name: MET3slotblk
+    gds_layer: 83
+    gds_datatype: 9
+  - name: MET3mom
+    gds_layer: 83
+    gds_datatype: 10
+  - name: MET4
+    gds_layer: 84
+    gds_datatype: 1
+  - name: MET4dm
+    gds_layer: 84
+    gds_datatype: 2
+  - name: MET4dmb
+    gds_layer: 84
+    gds_datatype: 3
+  - name: MET4res
+    gds_layer: 84
+    gds_datatype: 4
+  - name: MET4opcblk
+    gds_layer: 84
+    gds_datatype: 5
+  - name: MET4txt
+    gds_layer: 84
+    gds_datatype: 6
+  - name: MET4slot
+    gds_layer: 84
+    gds_datatype: 8
+  - name: MET4slotblk
+    gds_layer: 84
+    gds_datatype: 9
+  - name: MET4mom
+    gds_layer: 84
+    gds_datatype: 10
+  - name: MET5
+    gds_layer: 85
+    gds_datatype: 1
+  - name: MET5dm
+    gds_layer: 85
+    gds_datatype: 2
+  - name: MET5dmb
+    gds_layer: 85
+    gds_datatype: 3
+  - name: MET5res
+    gds_layer: 85
+    gds_datatype: 4
+  - name: MET5opcblk
+    gds_layer: 85
+    gds_datatype: 5
+  - name: MET5txt
+    gds_layer: 85
+    gds_datatype: 6
+  - name: MET5slot
+    gds_layer: 85
+    gds_datatype: 8
+  - name: MET5slotblk
+    gds_layer: 85
+    gds_datatype: 9
+  - name: MET5mom
+    gds_layer: 85
+    gds_datatype: 10
+  - name: MET6
+    gds_layer: 86
+    gds_datatype: 1
+  - name: MET6dm
+    gds_layer: 86
+    gds_datatype: 2
+  - name: MET6dmb
+    gds_layer: 86
+    gds_datatype: 3
+  - name: MET6res
+    gds_layer: 86
+    gds_datatype: 4
+  - name: MET6opcblk
+    gds_layer: 86
+    gds_datatype: 5
+  - name: MET6txt
+    gds_layer: 86
+    gds_datatype: 6
+  - name: MET6slot
+    gds_layer: 86
+    gds_datatype: 8
+  - name: MET6slotblk
+    gds_layer: 86
+    gds_datatype: 9
+  - name: MET6mom
+    gds_layer: 86
+    gds_datatype: 10
+  - name: MET7
+    gds_layer: 87
+    gds_datatype: 1
+  - name: MET7dm
+    gds_layer: 87
+    gds_datatype: 2
+  - name: MET7dmb
+    gds_layer: 87
+    gds_datatype: 3
+  - name: MET7res
+    gds_layer: 87
+    gds_datatype: 4
+  - name: MET7opcblk
+    gds_layer: 87
+    gds_datatype: 5
+  - name: MET7txt
+    gds_layer: 87
+    gds_datatype: 6
+  - name: MET7slot
+    gds_layer: 87
+    gds_datatype: 8
+  - name: MET7slotblk
+    gds_layer: 87
+    gds_datatype: 9
+  - name: MET7mom
+    gds_layer: 87
+    gds_datatype: 10
+  - name: MET8
+    gds_layer: 88
+    gds_datatype: 1
+  - name: MET8dm
+    gds_layer: 88
+    gds_datatype: 2
+  - name: MET8dmb
+    gds_layer: 88
+    gds_datatype: 3
+  - name: MET8res
+    gds_layer: 88
+    gds_datatype: 4
+  - name: MET8opcblk
+    gds_layer: 88
+    gds_datatype: 5
+  - name: MET8txt
+    gds_layer: 88
+    gds_datatype: 6
+  - name: MET8slot
+    gds_layer: 88
+    gds_datatype: 8
+  - name: MET8slotblk
+    gds_layer: 88
+    gds_datatype: 9
+  - name: MET8mom
+    gds_layer: 88
+    gds_datatype: 10
+  - name: VIA1
+    gds_layer: 91
+    gds_datatype: 1
+  - name: VIA1bar
+    gds_layer: 91
+    gds_datatype: 7
+  - name: VIA2
+    gds_layer: 92
+    gds_datatype: 1
+  - name: VIA2bar
+    gds_layer: 92
+    gds_datatype: 7
+  - name: VIA3
+    gds_layer: 93
+    gds_datatype: 1
+  - name: VIA3bar
+    gds_layer: 93
+    gds_datatype: 7
+  - name: VIA4
+    gds_layer: 94
+    gds_datatype: 1
+  - name: VIA4bar
+    gds_layer: 94
+    gds_datatype: 7
+  - name: VIA5
+    gds_layer: 95
+    gds_datatype: 1
+  - name: VIA5bar
+    gds_layer: 95
+    gds_datatype: 7
+  - name: VIA6
+    gds_layer: 96
+    gds_datatype: 1
+  - name: VIA6bar
+    gds_layer: 96
+    gds_datatype: 7
+  - name: VIA7
+    gds_layer: 97
+    gds_datatype: 1
+  - name: VIA7bar
+    gds_layer: 97
+    gds_datatype: 7
+  - name: T2M1
+    gds_layer: 100
+    gds_datatype: 1
+  - name: T2M1dm
+    gds_layer: 100
+    gds_datatype: 2
+  - name: T2M1dmb
+    gds_layer: 100
+    gds_datatype: 3
+  - name: T2M1res
+    gds_layer: 100
+    gds_datatype: 4
+  - name: T2M1opcblk
+    gds_layer: 100
+    gds_datatype: 5
+  - name: T2M1txt
+    gds_layer: 100
+    gds_datatype: 6
+  - name: T2M1slot
+    gds_layer: 100
+    gds_datatype: 8
+  - name: T2M1slotblk
+    gds_layer: 100
+    gds_datatype: 9
+  - name: T2M2
+    gds_layer: 101
+    gds_datatype: 1
+  - name: T2M2dm
+    gds_layer: 101
+    gds_datatype: 2
+  - name: T2M2dmb
+    gds_layer: 101
+    gds_datatype: 3
+  - name: T2M2res
+    gds_layer: 101
+    gds_datatype: 4
+  - name: T2M2opcblk
+    gds_layer: 101
+    gds_datatype: 5
+  - name: T2M2txt
+    gds_layer: 101
+    gds_datatype: 6
+  - name: T2M2slot
+    gds_layer: 101
+    gds_datatype: 8
+  - name: T2M2slotblk
+    gds_layer: 101
+    gds_datatype: 9
+  - name: T4M1
+    gds_layer: 102
+    gds_datatype: 1
+  - name: T4M1dm
+    gds_layer: 102
+    gds_datatype: 2
+  - name: T4M1dmb
+    gds_layer: 102
+    gds_datatype: 3
+  - name: T4M1res
+    gds_layer: 102
+    gds_datatype: 4
+  - name: T4M1opcblk
+    gds_layer: 102
+    gds_datatype: 5
+  - name: T4M1txt
+    gds_layer: 102
+    gds_datatype: 6
+  - name: T4M1slot
+    gds_layer: 102
+    gds_datatype: 8
+  - name: T4M1slotblk
+    gds_layer: 102
+    gds_datatype: 9
+  - name: T4M2
+    gds_layer: 103
+    gds_datatype: 1
+  - name: T4M2dm
+    gds_layer: 103
+    gds_datatype: 2
+  - name: T4M2dmb
+    gds_layer: 103
+    gds_datatype: 3
+  - name: T4M2res
+    gds_layer: 103
+    gds_datatype: 4
+  - name: T4M2opcblk
+    gds_layer: 103
+    gds_datatype: 5
+  - name: T4M2txt
+    gds_layer: 103
+    gds_datatype: 6
+  - name: T4M2slot
+    gds_layer: 103
+    gds_datatype: 8
+  - name: T4M2slotblk
+    gds_layer: 103
+    gds_datatype: 9
+  - name: T8M1
+    gds_layer: 104
+    gds_datatype: 1
+  - name: T8M1dm
+    gds_layer: 104
+    gds_datatype: 2
+  - name: T8M1dmb
+    gds_layer: 104
+    gds_datatype: 3
+  - name: T8M1res
+    gds_layer: 104
+    gds_datatype: 4
+  - name: T8M1opcblk
+    gds_layer: 104
+    gds_datatype: 5
+  - name: T8M1txt
+    gds_layer: 104
+    gds_datatype: 6
+  - name: T8M1slot
+    gds_layer: 104
+    gds_datatype: 8
+  - name: T8M1slotblk
+    gds_layer: 104
+    gds_datatype: 9
+  - name: T8M2
+    gds_layer: 105
+    gds_datatype: 1
+  - name: T8M2dm
+    gds_layer: 105
+    gds_datatype: 2
+  - name: T8M2dmb
+    gds_layer: 105
+    gds_datatype: 3
+  - name: T8M2res
+    gds_layer: 105
+    gds_datatype: 4
+  - name: T8M2opcblk
+    gds_layer: 105
+    gds_datatype: 5
+  - name: T8M2txt
+    gds_layer: 105
+    gds_datatype: 6
+  - name: T8M2slot
+    gds_layer: 105
+    gds_datatype: 8
+  - name: T8M2slotblk
+    gds_layer: 105
+    gds_datatype: 9
+  - name: T2V1
+    gds_layer: 110
+    gds_datatype: 1
+  - name: T2V1bar
+    gds_layer: 110
+    gds_datatype: 7
+  - name: T2V2
+    gds_layer: 111
+    gds_datatype: 1
+  - name: T2V2bar
+    gds_layer: 111
+    gds_datatype: 7
+  - name: T4V1
+    gds_layer: 112
+    gds_datatype: 1
+  - name: T4V1bar
+    gds_layer: 112
+    gds_datatype: 7
+  - name: T4V2
+    gds_layer: 113
+    gds_datatype: 1
+  - name: T4V2bar
+    gds_layer: 113
+    gds_datatype: 7
+  - name: T8V1
+    gds_layer: 114
+    gds_datatype: 1
+  - name: T8V1bar
+    gds_layer: 114
+    gds_datatype: 7
+  - name: T8V2
+    gds_layer: 115
+    gds_datatype: 1
+  - name: T8V2bar
+    gds_layer: 115
+    gds_datatype: 7
+  - name: CB
+    gds_layer: 121
+    gds_datatype: 1
+  - name: CBtxt
+    gds_layer: 121
+    gds_datatype: 6
+  - name: RV
+    gds_layer: 120
+    gds_datatype: 1
+  - name: RDL
+    gds_layer: 123
+    gds_datatype: 1
+  - name: ALPAD
+    gds_layer: 122
+    gds_datatype: 1
+  - name: ALPADres
+    gds_layer: 122
+    gds_datatype: 4
+  - name: ALPADtxt
+    gds_layer: 122
+    gds_datatype: 6
+  - name: ALPADslot
+    gds_layer: 122
+    gds_datatype: 8
+  - name: ALPADslotblk
+    gds_layer: 122
+    gds_datatype: 9
+  - name: COVER
+    gds_layer: 124
+    gds_datatype: 1
+  - name: BMIM
+    gds_layer: 140
+    gds_datatype: 1
+  - name: TMIM
+    gds_layer: 141
+    gds_datatype: 1
+  - name: IO
+    gds_layer: 150
+    gds_datatype: 12
+  - name: CORE
+    gds_layer: 151
+    gds_datatype: 12
+  - name: SRAMALL
+    gds_layer: 171
+    gds_datatype: 12
+  - name: SRAMPG
+    gds_layer: 172
+    gds_datatype: 12
+  - name: SRAM6THD
+    gds_layer: 173
+    gds_datatype: 12
+  - name: SRAM6THS
+    gds_layer: 174
+    gds_datatype: 12
+  - name: SRAM8THD
+    gds_layer: 176
+    gds_datatype: 12
+  - name: SRAM8THS
+    gds_layer: 177
+    gds_datatype: 12
+  - name: DIODE
+    gds_layer: 191
+    gds_datatype: 12
+  - name: VARA
+    gds_layer: 192
+    gds_datatype: 12
+  - name: VARAM
+    gds_layer: 193
+    gds_datatype: 12
+  - name: VARAJ
+    gds_layer: 194
+    gds_datatype: 12
+  - name: BJT
+    gds_layer: 195
+    gds_datatype: 12
+  - name: ESDIOT
+    gds_layer: 231
+    gds_datatype: 12
+  - name: ESDIOE
+    gds_layer: 232
+    gds_datatype: 12
+  - name: RFALL
+    gds_layer: 241
+    gds_datatype: 12
+  - name: RFD
+    gds_layer: 242
+    gds_datatype: 12
+  - name: RFTER
+    gds_layer: 243
+    gds_datatype: 12
+  - name: CAP
+    gds_layer: 271
+    gds_datatype: 12
+  - name: MOMCAP
+    gds_layer: 281
+    gds_datatype: 12
+  - name: MOMTER
+    gds_layer: 282
+    gds_datatype: 12
+  - name: FUTR
+    gds_layer: 291
+    gds_datatype: 12
+  - name: FUSEALL
+    gds_layer: 292
+    gds_datatype: 12
+  - name: EFUSEALL
+    gds_layer: 293
+    gds_datatype: 12
+  - name: POEFUSEBLK
+    gds_layer: 294
+    gds_datatype: 12
+  - name: INDDMY
+    gds_layer: 301
+    gds_datatype: 12
+  - name: INDALL
+    gds_layer: 302
+    gds_datatype: 12
+  - name: INDVIA
+    gds_layer: 303
+    gds_datatype: 12
+  - name: NOLVS
+    gds_layer: 311
+    gds_datatype: 12
+  - name: MOSMF
+    gds_layer: 312
+    gds_datatype: 12
+  - name: SUBCKTLVS
+    gds_layer: 313
+    gds_datatype: 12
+  - name: RESCKTLVS
+    gds_layer: 314
+    gds_datatype: 12
+  - name: MOSCKTLVS
+    gds_layer: 315
+    gds_datatype: 12
+  - name: LATCHUP
+    gds_layer: 316
+    gds_datatype: 12
+  - name: RFSDLVS
+    gds_layer: 317
+    gds_datatype: 12
+  - name: RF5TERLVS
+    gds_layer: 318
+    gds_datatype: 12
+  - name: RF6TERLVS
+    gds_layer: 319
+    gds_datatype: 12
+  - name: VARAJMRK
+    gds_layer: 320
+    gds_datatype: 12
+  - name: LDMOSSTI
+    gds_layer: 321
+    gds_datatype: 12
+  - name: FUSEDRC
+    gds_layer: 322
+    gds_datatype: 12
+  - name: MOMLVS1
+    gds_layer: 323
+    gds_datatype: 12
+  - name: MOMLVS2
+    gds_layer: 324
+    gds_datatype: 12
+  - name: MOMLVS3
+    gds_layer: 325
+    gds_datatype: 12
+  - name: MOMLVS4
+    gds_layer: 326
+    gds_datatype: 12
+  - name: MOMLVS5
+    gds_layer: 327
+    gds_datatype: 12
+  - name: MOMLVS6
+    gds_layer: 328
+    gds_datatype: 12
+  - name: LDMOS
+    gds_layer: 211
+    gds_datatype: 12
+  - name: CHIPBLK
+    gds_layer: 351
+    gds_datatype: 12
+  - name: SRBLK
+    gds_layer: 352
+    gds_datatype: 12
+  - name: GRBLK
+    gds_layer: 353
+    gds_datatype: 12
+  - name: SRINGBLK
+    gds_layer: 354
+    gds_datatype: 13
+  - name: LOGO
+    gds_layer: 355
+    gds_datatype: 12
+  - name: NOSHRINK
+    gds_layer: 356
+    gds_datatype: 12
+  - name: NODRC
+    gds_layer: 357
+    gds_datatype: 12
+  - name: OPCBLKALL
+    gds_layer: 358
+    gds_datatype: 12
+  - name: DMYBLK
+    gds_layer: 359
+    gds_datatype: 12
+  - name: NOEBBLK
+    gds_layer: 360
+    gds_datatype: 12
+  - name: METBLK
+    gds_layer: 361
+    gds_datatype: 12
+  - name: DEUPAD
+    gds_layer: 381
+    gds_datatype: 12
+  - name: VDD
+    gds_layer: 382
+    gds_datatype: 12
+  - name: VSS
+    gds_layer: 383
+    gds_datatype: 12
+  - name: TTXT
+    gds_layer: 386
+    gds_datatype: 12
+  - name: NW1CAP
+    gds_layer: 387
+    gds_datatype: 12
+  - name: WELTXT
+    gds_layer: 388
+    gds_datatype: 12
+  - name: FRAME
+    gds_layer: 183
+    gds_datatype: 4

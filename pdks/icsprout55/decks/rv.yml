@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: RV-W.1
+    check: forbidden
+    layers: [RVSqBad]
+    value: 0.0
+  - id: RV-S.1
+    check: min_space
+    layers: [RVNoFuse]
+    value: 3
+  - id: RV-S.1
+    check: min_notch
+    layers: [RVNoFuse]
+    value: 3
+  - id: RV-S.2
+    check: min_space
+    layers: [RV, CB]
+    value: 6
+    layer_params:
+      gap_outside: INDALL
+  - id: RV-En.2
+    check: min_enclosure
+    layers: [T4M2Solid, RVEnMet]
+    value: 1.5
+    params:
+      metric: euclidian
+  - id: RV-En.3
+    check: forbidden
+    layers: [RV, RDL]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: RV-En.4
+    check: min_enclosure
+    layers: [RDL, RVEnRDL]
+    value: 1.5
+    params:
+      metric: euclidian

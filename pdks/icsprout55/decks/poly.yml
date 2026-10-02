@@ -1,0 +1,146 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: POLY-W.1
+    check: min_width
+    layers: [POLY]
+    value: 0.06
+  - id: POLY-W.2a
+    check: min_gate_length
+    layers: [POLY, GATECore]
+    value: 0.06
+  - id: POLY-W.2b
+    check: min_gate_length
+    layers: [POLY, GATEDG]
+    value: 0.2
+    layer_params:
+      outside: SRAMALL
+  - id: POLY-W.2d
+    check: min_gate_length
+    layers: [POLY, GATETGNP]
+    value: 0.38
+    layer_params:
+      outside: SRAMALL
+  - id: POLY-W.2d
+    check: min_gate_length
+    layers: [POLY, GATETGPP]
+    value: 0.38
+    layer_params:
+      outside: SRAMALL
+  - id: POLY-W.3
+    check: min_width
+    layers: [POLYNotInACTwithDm]
+    value: 0.18
+    params:
+      angle: bent
+  - id: POLY-S.1
+    check: min_space
+    layers: [POLY]
+    value: 0.12
+    layer_params:
+      gap_outside: SRAMorIND
+  - id: POLY-S.1
+    check: min_notch
+    layers: [POLYNotInSRAMInd]
+    value: 0.12
+  - id: POLY-S.2
+    check: min_space
+    layers: [POLY]
+    value: 0.18
+    params:
+      width: 0.13
+      length: 0.18
+  - id: POLY-S.3
+    check: min_space
+    layers: [GATENoInd]
+    value: 0.13
+    layer_params:
+      gap_outside: POLY
+  - id: POLY-S.5
+    check: min_gate_length
+    layers: [ACTSDwCT, GATETG]
+    value: 0.24
+    layer_params:
+      outside: SRAMorIND
+  - id: POLY-S.6
+    check: min_space
+    layers: [POLYS6Bent, POLYNotInEF]
+    value: 0.18
+    params:
+      angle: bent
+    layer_params:
+      gap_outside: FUSEorEF
+  - id: POLY-S.11
+    check: min_space
+    layers: [ACT, POLY]
+    value: 0.05
+    params:
+      pairs: any
+    layer_params:
+      gap_outside: POLYS11Excl
+  - id: POLY-S.12
+    check: min_space
+    layers: [POLYAtSAB]
+    value: 0.25
+    params:
+      length: 0.0
+  - id: POLY-S.12
+    check: min_notch
+    layers: [POLYAtSAB]
+    value: 0.25
+  - id: POLY-Ex.1
+    check: min_enclosure
+    layers: [ACTwLDSTI, POLYNotInSRAMInd]
+    value: 0.11
+    params:
+      interacting_only: 1
+  - id: POLY-Ex.2
+    check: min_enclosure
+    layers: [POLY, ACTNoSRAMLD]
+    value: 0.14
+    params:
+      interacting_only: 1
+  - id: POLY-A.1
+    check: min_area
+    layers: [POLYNotInSRAM]
+    value: 0.04
+    params:
+      touching: separate
+  - id: POLY-A.2
+    check: min_area
+    layers: [POLY]
+    value: 0.09
+    params:
+      scope: hole
+  - id: POLY-D.1
+    check: min_density
+    layers: [POLY, POLYdm]
+    value: 14.0
+  - id: POLY-D.1
+    check: max_density
+    layers: [POLY, POLYdm]
+    value: 40.0
+  - id: POLY-D.2
+    check: min_density
+    layers: [POLY, POLYdm]
+    value: 20.0
+    params:
+      scope: window
+      window: 100.0
+  - id: POLY-D.2
+    check: max_density
+    layers: [POLY, POLYdm]
+    value: 65.0
+    params:
+      scope: window
+      window: 100.0
+  - id: POLY-R.1
+    check: forbidden
+    layers: [GATER1Bad]
+    value: 0.0
+  - id: POLY-R.2
+    check: forbidden
+    layers: [POLYR2Chk]
+    value: 0.0

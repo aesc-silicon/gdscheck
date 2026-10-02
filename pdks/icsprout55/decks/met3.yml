@@ -1,0 +1,185 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+rules:
+  - id: MET3-W.1
+    check: min_width
+    layers: [MET3NoSlot]
+    value: 0.1
+  - id: MET3-W.1
+    check: max_width
+    layers: [MET3NoSlot]
+    value: 12
+    params:
+      span: narrowest
+  - id: MET3-W.2
+    check: min_width
+    layers: [MET3NoSlot]
+    value: 0.19
+    params:
+      angle: bent
+  - id: MET3-S.1
+    check: min_space
+    layers: [MET3NoSlot]
+    value: 0.1
+  - id: MET3-S.1
+    check: min_notch
+    layers: [MET3NoSlot]
+    value: 0.1
+  - id: MET3-S.2
+    check: min_space
+    layers: [MET3Wide0p42, MET3All]
+    value: 0.15
+    params:
+      length: 0.419
+      pairs: any
+  - id: MET3-S.3
+    check: min_space
+    layers: [MET3Wide1p5, MET3All]
+    value: 0.5
+    params:
+      length: 1.499
+      pairs: any
+  - id: MET3-S.4
+    check: min_space
+    layers: [MET3NoSlot]
+    value: 0.19
+    params:
+      angle: bent
+  - id: MET3-A.1
+    check: min_area
+    layers: [MET3NoSlot]
+    value: 0.052
+    params:
+      touching: separate
+  - id: MET3-A.2
+    check: min_area
+    layers: [MET3NoSlot]
+    value: 0.18
+    params:
+      scope: hole
+  - id: MET3dm-W.1
+    check: forbidden
+    layers: [MET3dmBad]
+    value: 0.0
+  - id: MET3dm-S.1
+    check: min_space
+    layers: [MET3dm2x2]
+    value: 0.8
+  - id: MET3dm-S.2
+    check: min_space
+    layers: [MET3dm2x2, MET3NoSlot]
+    value: 10
+    params:
+      abutting: report
+  - id: MET3dm-S.3
+    check: min_space
+    layers: [MET3dm1x1]
+    value: 0.3
+  - id: MET3dm-S.4
+    check: min_space
+    layers: [MET3dm1x1, MET3NoSlot]
+    value: 3
+    params:
+      abutting: report
+  - id: MET3dm-S.5
+    check: min_space
+    layers: [MET3dmBar]
+    value: 0.25
+  - id: MET3dm-S.6
+    check: min_space
+    layers: [MET3dmBar, MET3NoSlot]
+    value: 0.3
+    params:
+      abutting: report
+  - id: MET3dm-S.7
+    check: min_space
+    layers: [MET3dm, MET3All]
+    value: 0.6
+    params:
+      width: 1.499
+      length: 1.499
+  - id: MET3dm-S.8
+    check: min_space
+    layers: [MET3dm, MET3NoSlot]
+    value: 0.4
+    params:
+      angle: bent
+  - id: MET3dm-S.9
+    check: min_space
+    layers: [MET3dm, FUSEALL]
+    value: 3
+    params:
+      abutting: report
+  - id: MET3dm-S.9
+    check: min_enclosure
+    layers: [FUSEALL, MET3dm]
+    value: 3
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: MET3dm-S.10
+    check: min_space
+    layers: [MET3dm, BMIM]
+    value: 2
+    params:
+      abutting: report
+  - id: MET3dm-S.10
+    check: min_enclosure
+    layers: [BMIM, MET3dm]
+    value: 2
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: MET3dm-S.11
+    check: min_space
+    layers: [MET3dm, LOGO]
+    value: 0.1
+    params:
+      abutting: report
+  - id: MET3dm-S.11
+    check: min_enclosure
+    layers: [LOGO, MET3dm]
+    value: 0.1
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: MET3dm-S.12
+    check: min_space
+    layers: [MET3dm, INDALL]
+    value: 3
+    params:
+      abutting: report
+  - id: MET3dm-S.12
+    check: min_enclosure
+    layers: [INDALL, MET3dm]
+    value: 3
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: MET3dm-S.13
+    check: min_space
+    layers: [MET3dm, CHIPBLK]
+    value: 2.5
+    params:
+      abutting: report
+  - id: MET3dm-S.13
+    check: min_enclosure
+    layers: [CHIPBLK, MET3dm]
+    value: 2.5
+    params:
+      interacting_only: 1
+      metric: euclidian
+  - id: MET3dm-S.14
+    check: min_space
+    layers: [MET3dm, MET3dmb]
+    value: 2
+    params:
+      abutting: report
+  - id: MET3dm-S.15
+    check: min_space
+    layers: [MET3dm, DMYBLK]
+    value: 2
+    params:
+      abutting: report

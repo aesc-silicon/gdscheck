@@ -20,6 +20,7 @@ body:
       options:
         - ihp-sg13g2
         - ihp-sg13cmos5l
+        - icsprout55
         - gf180mcuD
         - gf180mcuA
         - a PDK of my own (say which below)
