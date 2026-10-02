@@ -9,7 +9,7 @@ ASAP7
 Overview
 --------
 
-``asap7`` is the 7 nm predictive FinFET PDK from Arizona State University and ARM,
+``asap7`` is the 7 nm predictive FinFET PDK from Arizona State University,
 release 1p7. The Calibre deck is not public, so the rules follow the design rule
 manual (``asap7_drm_201207a.pdf``), with the `KLayout port
 <https://github.com/laurentc2/ASAP7_for_KLayout>`_ read alongside it. Layouts are read
@@ -66,9 +66,8 @@ wording:
 Tests
 -----
 
-``tests/asap7.rs`` uses synthetic cases to check the SRAM
-SDT–ACTIVE overlap at 17 nm and V1's asymmetric 5/2 nm enclosure on the same opposite
-pair, including rotated pairs and shapes crossing tile boundaries.
+``tests/asap7.rs`` uses synthetic cases to check the SRAM SDT–ACTIVE overlap at 17 nm and V1's asymmetric 5/2 nm enclosure on 
+the same opposite pair, including rotated pairs and shapes crossing tile boundaries.
 
 The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
 Rust CI. They exercise SRAM marker classification and both well-rule thresholds,
