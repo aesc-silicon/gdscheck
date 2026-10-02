@@ -69,3 +69,8 @@ Tests
 ``tests/asap7.rs`` uses synthetic cases to check the SRAM
 SDT–ACTIVE overlap at 17 nm and V1's asymmetric 5/2 nm enclosure on the same opposite
 pair, including rotated pairs and shapes crossing tile boundaries.
+
+The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
+Rust CI. They exercise SRAM marker classification and both well-rule thresholds,
+SDT overlap, asymmetric V1 enclosure, M4 width, length-dependent M8 width, and
+three routed upper-metal nets with a deliberately defective companion.

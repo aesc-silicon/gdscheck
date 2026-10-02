@@ -31,6 +31,52 @@ fn the_feol_and_beol_suites_split_main() {
     assert!(missing.is_empty(), "in main, in neither half: {missing:?}");
 }
 
+/// Portable GDS cases shared with the independent KLayout comparison. Each row
+/// names a manual-derived target; incidental rules remain visible in the oracle
+/// report but do not change that target's expectation.
+#[test]
+fn generated_oracle_cases_follow_the_manual() {
+    use std::collections::BTreeMap;
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let rules = pdk.load_suite("main").unwrap();
+    let mut cases: BTreeMap<&str, Vec<(&str, bool)>> = BTreeMap::new();
+    for line in include_str!("data/asap7/generated/cases.tsv").lines() {
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(columns.len(), 4);
+        assert!(matches!(columns[2], "pass" | "fail"));
+        cases
+            .entry(columns[0])
+            .or_default()
+            .push((columns[1], columns[2] == "fail"));
+    }
+    assert!(!cases.is_empty());
+    for (name, expectations) in cases {
+        let path = format!("tests/data/asap7/generated/{name}.gds.gz");
+        let violations = run_drc(&path, PDK, &[], Some("main"), "TOP", false).unwrap();
+        for (rule, bad) in expectations {
+            assert!(
+                rules.iter().any(|r| r.id == rule),
+                "unknown target rule {rule}"
+            );
+            assert_eq!(
+                violations.iter().any(|v| v.rule_id == rule),
+                bad,
+                "{name}: {rule}: {violations:?}"
+            );
+        }
+        if name == "routed_clean" {
+            assert!(violations.is_empty(), "{violations:?}");
+        }
+        if name == "routed_bad" {
+            assert_eq!(violations.len(), 1, "{violations:?}");
+            assert_eq!(violations[0].rule_id, "V8.M9.EN.2");
+        }
+    }
+}
+
 /// Rectangles in nm, on ASAP7's 0.25 nm grid. Moving the same drawing across tile
 /// boundaries checks that a rule reads whole regions, including both via sides.
 fn rectangles(
