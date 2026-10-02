@@ -3561,6 +3561,33 @@ pub fn opposite_margin(inner: &Outline, outer: &Outline, largest: bool) -> i64 {
     m.round() as i64
 }
 
+/// The larger margin of the best opposite pair whose two sides both reach `other`.
+/// Each outward direction keeps its least margin, so a short segment cannot borrow
+/// enclosure from another segment on the same side. Returns zero if no pair qualifies.
+/// Comparing this with a larger bound implements "5 on one side and 2 opposite it"
+/// without allowing the two requirements to be satisfied on different axes.
+pub fn asymmetric_opposite_margin(inner: &Outline, outer: &Outline, other: i64) -> i64 {
+    let margins = side_margins(inner, &[outer]);
+    let mut sides: [Option<f64>; 4] = [None; 4];
+    for (&(a, b), margin) in inner.segs.iter().zip(margins) {
+        let side = if a.0 == b.0 && a.1 != b.1 {
+            usize::from(b.1 > a.1)
+        } else if a.1 == b.1 && a.0 != b.0 {
+            2 + usize::from(b.0 > a.0)
+        } else {
+            continue;
+        };
+        sides[side] = Some(sides[side].map_or(margin, |m| m.min(margin)));
+    }
+    [(sides[0], sides[1]), (sides[2], sides[3])]
+        .into_iter()
+        .filter_map(|(a, b)| a.zip(b))
+        .filter(|&(a, b)| a.min(b) >= other as f64)
+        .map(|(a, b)| a.max(b).floor() as i64)
+        .max()
+        .unwrap_or(0)
+}
+
 /// The endcap margin of `inner` within `outer`: the largest of the four box margins,
 /// in DBU.  A wire's endcap is read off the boxes on purpose - an edge-to-contour
 /// distance is corner-limited and would understate a long endcap run.
