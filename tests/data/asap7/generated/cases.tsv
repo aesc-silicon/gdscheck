@@ -73,6 +73,12 @@ active_enclosure_crossing_108	ACTIVE.WELL.EN.1	pass	DRM 3.5: non-SRAM ACTIVE use
 active_enclosure_crossing_108	SRAM.ACTIVE.WELL.EN.2	pass	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
 active_enclosure_crossing_109	ACTIVE.WELL.EN.1	pass	DRM 3.5: non-SRAM ACTIVE uses 27 nm; interacting polygons are exempt
 active_enclosure_crossing_109	SRAM.ACTIVE.WELL.EN.2	pass	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
+active_space_crossing_far_53	ACTIVE.WELL.S.4	pass	DRM 3.5: non-SRAM ACTIVE uses 27 nm; interacting polygons are exempt
+active_space_crossing_far_53	SRAM.ACTIVE.WELL.S.5	fail	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
+active_space_crossing_far_54	ACTIVE.WELL.S.4	pass	DRM 3.5: non-SRAM ACTIVE uses 27 nm; interacting polygons are exempt
+active_space_crossing_far_54	SRAM.ACTIVE.WELL.S.5	pass	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
+active_space_crossing_far_107	ACTIVE.WELL.S.4	pass	DRM 3.5: non-SRAM ACTIVE uses 27 nm; interacting polygons are exempt
+active_space_crossing_far_107	SRAM.ACTIVE.WELL.S.5	pass	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
 sdt_overlap_67	SRAM.SDT.ACTIVE.OV.3	fail	DRM 3.7: vertical overlap >= 17 nm
 sdt_overlap_68	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.7: vertical overlap >= 17 nm
 sdt_overlap_69	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.7: vertical overlap >= 17 nm
@@ -88,5 +94,7 @@ m4_width_97	M4.W.1	pass	DRM 3.14: M4 vertical width >= 24 nm
 m8_long_width_239	M8.W.2	fail	DRM 3.18: 400 nm long M8 needs width >= 60 nm
 m8_long_width_240	M8.W.2	pass	DRM 3.18: 400 nm long M8 needs width >= 60 nm
 m8_long_width_241	M8.W.2	pass	DRM 3.18: 400 nm long M8 needs width >= 60 nm
+m8_short_width_239	M8.W.2	pass	DRM 3.18: M8 shorter than 400 nm is outside the 60 nm rule
 routed_clean	V8.M9.EN.2	pass	DRM 3.19: V8 needs 20 nm M9 enclosure on opposite sides
+routed_exact	V8.M9.EN.2	pass	DRM 3.19: V8 needs 20 nm M9 enclosure on opposite sides
 routed_bad	V8.M9.EN.2	fail	DRM 3.19: V8 needs 20 nm M9 enclosure on opposite sides

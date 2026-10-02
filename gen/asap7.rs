@@ -110,6 +110,35 @@ pub fn generate(pdk: &PdkConfig) {
         }
     }
 
+    // The crossing cases above put the marker over the half of ACTIVE that faces the
+    // well, where clipping ACTIVE at the marker reads the same. Here it covers the far
+    // half: a clipped non-SRAM fragment would face the well under the 27 nm rule.
+    for margin in [13.25, 13.5, 26.75] {
+        let name = format!("active_space_crossing_far_{}", (margin * 4.0) as i32);
+        c.layout(
+            &name,
+            &[
+                ("ACTIVE", [0.0, 0.0, 32.0, 27.0]),
+                ("NSELECT", [-100.0, -100.0, 300.0, 300.0]),
+                ("NWELL", [32.0 + margin, -100.0, 232.0 + margin, 200.0]),
+                ("SRAMDRC", [-200.0, -200.0, 16.0, 400.0]),
+            ],
+            6990.0,
+        );
+        c.expect(
+            &name,
+            "ACTIVE.WELL.S.4",
+            false,
+            "DRM 3.5: non-SRAM ACTIVE uses 27 nm; interacting polygons are exempt",
+        );
+        c.expect(
+            &name,
+            "SRAM.ACTIVE.WELL.S.5",
+            margin < 13.5,
+            "DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm",
+        );
+    }
+
     // DRM 3.7: minimum vertical SDT overlap with ACTIVE in SRAM is 17 nm.
     for overlap in [16.75, 17.0, 17.25] {
         let name = format!("sdt_overlap_{}", (overlap * 4.0) as i32);
@@ -178,11 +207,26 @@ pub fn generate(pdk: &PdkConfig) {
             "DRM 3.18: 400 nm long M8 needs width >= 60 nm",
         );
     }
+    // One DBU short of 400 nm, the same 59.75 nm wire answers to M8.W.1's 40 nm only.
+    c.layout(
+        "m8_short_width_239",
+        &[("M8", [0.0, 0.0, 399.75, 59.75])],
+        19990.0,
+    );
+    c.expect(
+        "m8_short_width_239",
+        "M8.W.2",
+        false,
+        "DRM 3.18: M8 shorter than 400 nm is outside the 60 nm rule",
+    );
 
     // Three routed nets exercise all upper metals M4-M9 and V4/V6/V8.
-    // The defective companion shortens one M9 end to give V8 only 19.75 nm.
-    for bad in [false, true] {
-        let name = if bad { "routed_bad" } else { "routed_clean" };
+    // The companions shorten one M9 end to give V8 exactly 20 nm, then only 19.75 nm.
+    for (name, m9_top, bad) in [
+        ("routed_clean", 100.0, false),
+        ("routed_exact", 40.0, false),
+        ("routed_bad", 39.75, true),
+    ] {
         c.layout(
             name,
             &[
@@ -193,10 +237,7 @@ pub fn generate(pdk: &PdkConfig) {
                 ("M7", [984.0, -100.0, 1016.0, 100.0]),
                 ("V6", [984.0, -16.0, 1016.0, 16.0]),
                 ("M8", [1900.0, -30.0, 2100.0, 30.0]),
-                (
-                    "M9",
-                    [1970.0, -100.0, 2030.0, if bad { 39.75 } else { 100.0 }],
-                ),
+                ("M9", [1970.0, -100.0, 2030.0, m9_top]),
                 ("V8", [1980.0, -20.0, 2020.0, 20.0]),
             ],
             19990.0,
