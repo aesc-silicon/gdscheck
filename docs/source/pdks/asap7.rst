@@ -67,7 +67,20 @@ Tests
 -----
 
 ``tests/asap7.rs`` runs the full suite over the whole ASAP7 LVT standard-cell library,
-vendored under ``tests/data/asap7/static/`` (BSD-3-Clause). It asserts that only the
-library's own known violations are reported. Synthetic cases also check the SRAM
+vendored under ``tests/data/asap7/static/`` (BSD-3-Clause). It asserts the reviewed
+regression baseline, including isolated filler-cell context effects. Synthetic cases also check the SRAM
 SDT–ACTIVE overlap at 17 nm and V1's asymmetric 5/2 nm enclosure on the same opposite
 pair, including rotated pairs and shapes crossing tile boundaries.
+
+The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
+Rust CI. They exercise SRAM marker classification and both well-rule thresholds,
+SDT overlap, asymmetric V1 enclosure, M4 width, length-dependent M8 width, and
+three routed upper-metal nets with a deliberately defective companion.
+
+``hardening/oracle-asap7.sh --pdk /path/to/ASAP7_for_KLayout`` compares the library
+and these fixtures against the pinned KLayout port at 20 and 7 micrometre tiles.
+It saves both checker reports, normalized marker locations, rule counts and
+manual-derived target verdicts. See ``hardening/asap7/README.md`` for setup and
+``hardening/reports/asap7/parity.md`` for the initial findings. Agreement on these
+targeted cases is not a whole-PDK parity measurement; missing checks and known
+differences remain explicitly documented.

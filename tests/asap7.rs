@@ -10,13 +10,15 @@
 //! once, is the fixture.  A rule that reads the manual wrongly shows up here as a
 //! violation on a cell that has none.
 //!
-//! The few violations the run does report are the library's own.  The half-width
+//! The baseline includes isolated-cell context effects. The half-width
 //! filler FILLERxp5 and the TAPCELL_WITH_FILLER are 54 nm wide, under the 108 nm the
 //! manual asks of a well, an implant and a fin across, which only abutting cells make
 //! up; and DFFASRHQNx1 draws one LIG 3 nm from an SDT.  The KLayout port of the manual
 //! reports these too.  FILLERxp5's gate also has no neighbour until a cell is placed
 //! beside it, which the port's GATE.S.3 - a gate grown and tested against itself -
 //! cannot see.
+//! The external comparison also records additional KLayout findings which need
+//! individual review; these counts alone do not establish checker parity.
 
 use gdscheck::run_drc;
 use rstest::rstest;
@@ -33,10 +35,10 @@ fn counts(gds: &str, suite: &str) -> Vec<(String, usize)> {
     by_rule.into_iter().collect()
 }
 
-/// The whole library under the full run: only the violations it is known to hold.  A
-/// width is two markers, one per wall.
+/// Freeze the reviewed library baseline. A width is two markers, one per wall;
+/// the independent comparison records disagreements beyond this regression test.
 #[test]
-fn the_standard_cell_library_holds_only_its_own_violations() {
+fn the_standard_cell_library_matches_the_reviewed_baseline() {
     let want: Vec<(String, usize)> = [
         ("FIN.W.2", 20),
         ("GATE.S.3", 2),
@@ -72,6 +74,52 @@ fn the_feol_and_beol_suites_split_main() {
     let both: std::collections::BTreeSet<String> = feol.union(&beol).cloned().collect();
     let missing: Vec<&String> = main.difference(&both).collect();
     assert!(missing.is_empty(), "in main, in neither half: {missing:?}");
+}
+
+/// Portable GDS cases shared with the independent KLayout comparison. Each row
+/// names a manual-derived target; incidental rules remain visible in the oracle
+/// report but do not change that target's expectation.
+#[test]
+fn generated_oracle_cases_follow_the_manual() {
+    use std::collections::BTreeMap;
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let rules = pdk.load_suite("main").unwrap();
+    let mut cases: BTreeMap<&str, Vec<(&str, bool)>> = BTreeMap::new();
+    for line in include_str!("data/asap7/generated/cases.tsv").lines() {
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(columns.len(), 4);
+        assert!(matches!(columns[2], "pass" | "fail"));
+        cases
+            .entry(columns[0])
+            .or_default()
+            .push((columns[1], columns[2] == "fail"));
+    }
+    assert!(!cases.is_empty());
+    for (name, expectations) in cases {
+        let path = format!("tests/data/asap7/generated/{name}.gds.gz");
+        let violations = run_drc(&path, PDK, &[], Some("main"), "TOP", false).unwrap();
+        for (rule, bad) in expectations {
+            assert!(
+                rules.iter().any(|r| r.id == rule),
+                "unknown target rule {rule}"
+            );
+            assert_eq!(
+                violations.iter().any(|v| v.rule_id == rule),
+                bad,
+                "{name}: {rule}: {violations:?}"
+            );
+        }
+        if name == "routed_clean" {
+            assert!(violations.is_empty(), "{violations:?}");
+        }
+        if name == "routed_bad" {
+            assert_eq!(violations.len(), 1, "{violations:?}");
+            assert_eq!(violations[0].rule_id, "V8.M9.EN.2");
+        }
+    }
 }
 
 /// Rectangles in nm, on ASAP7's 0.25 nm grid. Moving the same drawing across tile
