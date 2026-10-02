@@ -3,22 +3,23 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # GCUT (DRM section 3.6).
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
 rules:
   - id: GCUT.W.1
     check: min_width
-    layers: [GCUT]
+    layers: [GcutNoSram]
     value: 0.017
     params:
       facing: y
   - id: GCUT.ACTIVE.S.1
     check: min_space
-    layers: [GCUT, Channel]
+    layers: [GcutNoSram, ChannelNoSram]
     value: 0.004
     params:
       facing: y
   - id: GCUT.GATE.EX.1
     check: min_enclosure
-    layers: [GCUT, GATE]
+    layers: [GCUT, GateNoSram]
     value: 0.017
     params:
       facing: x
@@ -26,17 +27,17 @@ rules:
   # The gates a GCUT cuts overlap it and are no pair; this is the space to the rest.
   - id: GCUT.GATE.S.2
     check: min_space
-    layers: [GCUT, GATE]
+    layers: [GcutNoSram, GateNoSram]
     value: 0.017
   - id: GCUT.S.3
     check: min_space
-    layers: [GCUT]
+    layers: [GcutNoSram]
     value: 0.035
     params:
       facing: y
   - id: GCUT.S.3
     check: min_notch
-    layers: [GCUT]
+    layers: [GcutNoSram]
     value: 0.035
     params:
       facing: y

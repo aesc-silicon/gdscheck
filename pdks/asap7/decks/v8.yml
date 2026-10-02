@@ -4,10 +4,11 @@
 
 # V8, the via from M8 to M9 (DRM section 3.19).  A V8 is a 40 x 40, 40 x 120 or
 # 120 x 40 nm rectangle: its short side exactly 40 nm, its long side one of the two.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
 rules:
   - id: V8.W.1
     check: exact_dim
-    layers: [V8]
+    layers: [V8NoSram]
     value: 0.04
   - id: V8.W.1
     check: forbidden
@@ -19,29 +20,29 @@ rules:
     value: 0.0
   - id: V8.S.1
     check: min_space
-    layers: [V8]
+    layers: [V8NoSram]
     value: 0.057
   - id: V8.M8.EN.1
     check: min_enclosure
-    layers: [M8, V8]
+    layers: [M8, V8NoSram]
     value: 0.02
     params:
       sides: opposite
   - id: V8.M9.EN.2
     check: min_enclosure
-    layers: [M9, V8]
+    layers: [M9, V8NoSram]
     value: 0.02
     params:
       sides: opposite
   - id: V8.AUX.1
     check: forbidden
-    layers: [V8, M8]
+    layers: [V8NoSram, M8]
     value: 0.0
     params:
       op: uncovered
   - id: V8.AUX.1
     check: forbidden
-    layers: [V8, M9]
+    layers: [V8NoSram, M9]
     value: 0.0
     params:
       op: uncovered

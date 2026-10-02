@@ -5,42 +5,43 @@
 # V7, the via from M7 to M8 (DRM section 3.17).  V7.S.1, V7.S.2 and V7.S.3 - the
 # same net, different nets, corner to corner - share one value, so one rule reads them all
 # under V7.S.2.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
 rules:
   - id: V7.W.1
     check: exact_dim
-    layers: [V7]
+    layers: [V7NoSram]
     value: 0.032
   - id: V7.S.2
     check: min_space
-    layers: [V7]
+    layers: [V7NoSram]
     value: 0.045
   - id: V7.M7.EN.1
     check: min_enclosure
-    layers: [M7, V7]
+    layers: [M7, V7NoSram]
     value: 0.011
     params:
       sides: opposite
   - id: V7.M8.EN.2
     check: min_enclosure
-    layers: [M8, V7]
+    layers: [M8, V7NoSram]
     value: 0.011
     params:
       sides: opposite
   - id: V7.AUX.1
     check: forbidden
-    layers: [V7, M7]
+    layers: [V7NoSram, M7]
     value: 0.0
     params:
       op: uncovered
   - id: V7.AUX.1
     check: forbidden
-    layers: [V7, M8]
+    layers: [V7NoSram, M8]
     value: 0.0
     params:
       op: uncovered
   - id: V7.M8.AUX.2
     check: max_enclosure
-    layers: [M8, V7]
+    layers: [M8, V7NoSram]
     value: 0.0
     params:
       sides: opposite

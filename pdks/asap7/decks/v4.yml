@@ -5,42 +5,43 @@
 # V4, the via from M4 to M5 (DRM section 3.15).  V4.S.1, V4.S.2 and V4.S.3 - the
 # same net, different nets, corner to corner - share one value, so one rule reads them all
 # under V4.S.2.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
 rules:
   - id: V4.W.1
     check: exact_dim
-    layers: [V4]
+    layers: [V4NoSram]
     value: 0.024
   - id: V4.S.2
     check: min_space
-    layers: [V4]
+    layers: [V4NoSram]
     value: 0.033
   - id: V4.M4.EN.1
     check: min_enclosure
-    layers: [M4, V4]
+    layers: [M4, V4NoSram]
     value: 0.011
     params:
       sides: opposite
   - id: V4.M5.EN.2
     check: min_enclosure
-    layers: [M5, V4]
+    layers: [M5, V4NoSram]
     value: 0.011
     params:
       sides: opposite
   - id: V4.AUX.1
     check: forbidden
-    layers: [V4, M4]
+    layers: [V4NoSram, M4]
     value: 0.0
     params:
       op: uncovered
   - id: V4.AUX.1
     check: forbidden
-    layers: [V4, M5]
+    layers: [V4NoSram, M5]
     value: 0.0
     params:
       op: uncovered
   - id: V4.M5.AUX.2
     check: max_enclosure
-    layers: [M5, V4]
+    layers: [M5, V4NoSram]
     value: 0.0
     params:
       sides: opposite

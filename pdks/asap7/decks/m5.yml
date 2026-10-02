@@ -10,16 +10,17 @@
 # M5.S.4 and M5.S.5, the tip-to-tip space and the run two lines on adjacent tracks share;
 # and M5.AUX.1, M5.AUX.2 and M5.AUX.4, the routing grid and tracks, which the manual
 # places by an offset set per design.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
 rules:
   - id: M5.W.1
     check: min_width
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.024
     params:
       facing: x
   - id: M5.W.2
     check: max_width
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.48
     params:
       # Apply facing even when the perpendicular dimension is smaller.
@@ -27,38 +28,38 @@ rules:
       facing: x
   - id: M5.W.5
     check: min_width
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.044
     params:
       facing: y
   - id: M5.S.1
     check: min_space
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.024
     params:
       facing: x
   - id: M5.S.1
     check: min_notch
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.024
     params:
       facing: x
   - id: M5.S.2
     check: min_space
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.04
     params:
       facing: y
   - id: M5.S.2
     check: min_notch
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.04
     params:
       facing: y
   # Two tips on adjacent tracks that share no run face each other nowhere.
   - id: M5.S.3
     check: min_space
-    layers: [M5]
+    layers: [M5NoSram]
     value: 0.04
     params:
       facing: none

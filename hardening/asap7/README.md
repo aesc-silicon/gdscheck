@@ -119,3 +119,11 @@ KLayout installation. The Python comparison machinery is tested in CI separately
 The external comparison is an explicit integration run, with known disagreements
 documented in `hardening/reports/asap7/parity.md`. Expectations come from the manual
 and must not be updated merely to match a checker's current output.
+
+`sram-scope.tsv` inventories every implemented rule/check and its SRAM applicability.
+The PDK documentation explains the convention-7 interpretation: whole-polygon
+selection, positive-area marker overlap, both subjects outside for ordinary spacing,
+and complete reference layers for enclosure/coverage. Rust regressions cover contact
+boundaries, remote marker overlap, mixed spacing pairs and reference geometry. The
+pinned KLayout port does not apply this default consistently, so further SRAM
+disagreements are expected; fewer markers alone do not establish correctness.

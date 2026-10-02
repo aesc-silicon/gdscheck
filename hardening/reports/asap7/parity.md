@@ -5,6 +5,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # ASAP7 initial KLayout comparison
 
+This report records the initial comparison before the deck-wide convention-7 audit.
+The current decks apply ordinary rules to non-SRAM subjects across all layers and
+require positive-area SRAMDRC overlap for membership, retaining edge/vertex contact
+in ordinary checks. See the PDK's **SRAM applicability** documentation and
+`hardening/asap7/sram-scope.tsv`. The measurements below are historical results;
+they have not been updated to claim parity for the expanded SRAM scope policy.
+
 The initial corpus agrees on **80 of 89 targeted verdicts across nine rules**.
 All gdscheck expectations pass, and marker rule/location/multiplicity is invariant
 between 20 and 7 micrometre tiles. This is a coverage-limited result, not a

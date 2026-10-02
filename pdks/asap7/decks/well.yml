@@ -5,56 +5,57 @@
 # N-well (DRM section 3.2).  The well is drawn in rows, so its width and space are asked
 # one way across and another along: WELL.W.1 and WELL.S.2 read the vertical walls,
 # WELL.W.2 and WELL.S.1 the horizontal ones.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
 rules:
   - id: WELL.W.1
     check: min_width
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.108
     params:
       facing: x
   - id: WELL.W.2
     check: min_width
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.054
     params:
       facing: y
   - id: WELL.S.1
     check: min_space
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.108
     params:
       facing: y
   - id: WELL.S.1
     check: min_notch
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.108
     params:
       facing: y
   - id: WELL.S.2
     check: min_space
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.054
     params:
       facing: x
   - id: WELL.S.2
     check: min_notch
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.054
     params:
       facing: x
   - id: WELL.A.1A
     check: min_area
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.005832
   - id: WELL.A.1B
     check: min_area
-    layers: [NWELL]
+    layers: [WellNoSram]
     value: 0.005832
     params:
       scope: hole
   - id: WELL.GATE.EX.1
     check: min_enclosure
-    layers: [NWELL, GateNoCut]
+    layers: [NWELL, GateNoCutNoSram]
     value: 0.007
     params:
       facing: x
