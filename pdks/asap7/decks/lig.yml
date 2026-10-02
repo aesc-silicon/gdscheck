@@ -7,18 +7,19 @@
 # The LIG-to-LISD and LIG-to-SDT spacings are the manual's "not on the same net" read
 # geometrically: an LIG that overlaps an LISD is joined to it and no pair, and every
 # other pair is measured.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: LIG.W.1
     check: min_width
-    layers: [LIG]
+    layers: [LigNoSram]
     value: 0.016
   - id: LIG.S.1
     check: min_space
-    layers: [LIG.long, LIG.long]
+    layers: [LigNoSram.long, LigNoSram.long]
     value: 0.018
   - id: LIG.S.2
     check: min_space
-    layers: [LIG.short, LIG.long]
+    layers: [LigNoSram.short, LigNoSram.long]
     value: 0.025
   - id: LIG.S.3
     check: min_space
@@ -34,43 +35,43 @@ rules:
     value: 0.031
   - id: LIG.LISD.S.6
     check: min_space
-    layers: [LIG, LISD]
+    layers: [LigNoSram, LisdNoSram]
     value: 0.014
   - id: LIG.LISD.S.7
     check: min_space
-    layers: [LIG, LISD]
+    layers: [LigNoSram, LisdNoSram]
     value: 0.015
     params:
       facing: none
   - id: LIG.SDT.S.8
     check: min_space
-    layers: [LIG, SDT]
+    layers: [LigNoSram, SdtNoSram]
     value: 0.014
   - id: LIG.GATE.S.9A
     check: min_space
-    layers: [LIG, GateNoCut]
+    layers: [LigNoSram, GateNoCutNoSram]
     value: 0.014
     params:
       facing: y
   - id: LIG.GATE.S.9B
     check: min_space
-    layers: [LIG, GateNoCut]
+    layers: [LigNoSram, GateNoCutNoSram]
     value: 0.017
     params:
       facing: x
   - id: LIG.GATE.S.10
     check: min_space
-    layers: [LIG, ChannelNoCut]
+    layers: [LigNoSram, GateNoCutNoSramOnActive]
     value: 0.005
   - id: LIG.GCUT.S.11
     check: min_space
-    layers: [LIG, GCUT]
+    layers: [LigNoSram, GcutNoSram]
     value: 0.005
     params:
       facing: y
   - id: LIG.A.1
     check: min_area
-    layers: [LIG]
+    layers: [LigNoSram]
     value: 0.000324
   - id: LIG.LISD.A.2
     check: min_area
@@ -105,7 +106,7 @@ rules:
       interacting_only: 1
   - id: LIG.LISD.OV.1
     check: min_overlap
-    layers: [LIG, LISD]
+    layers: [LigNoSram, LISD]
     value: 0.008
   - id: SRAM.LIG.GATE.OV.2
     check: min_overlap

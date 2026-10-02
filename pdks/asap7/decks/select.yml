@@ -6,16 +6,17 @@
 # The manual states each rule for NSELECT and applies it to the other four layers; the
 # ids here carry the layer each one reads.  An enclosure or extension reads the ACTIVE or
 # GATE the layer covers, so a p-device outside NSELECT is PSELECT's business.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: NSELECT.W.1
     check: min_width
-    layers: [NSELECT]
+    layers: [NselectNoSram]
     value: 0.108
     params:
       facing: x
   - id: NSELECT.W.2
     check: min_width
-    layers: [NSELECT]
+    layers: [NselectNoSram]
     value: 0.054
     params:
       facing: y
@@ -49,27 +50,27 @@ rules:
       interacting_only: 1
   - id: NSELECT.GATE.EX.1
     check: min_enclosure
-    layers: [NSELECT, GateNoCut]
+    layers: [NSELECT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: x
       interacting_only: 1
   - id: NSELECT.GATE.EX.2
     check: min_enclosure
-    layers: [NSELECT, GateNoCut]
+    layers: [NSELECT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: y
       interacting_only: 1
   - id: PSELECT.W.1
     check: min_width
-    layers: [PSELECT]
+    layers: [PselectNoSram]
     value: 0.108
     params:
       facing: x
   - id: PSELECT.W.2
     check: min_width
-    layers: [PSELECT]
+    layers: [PselectNoSram]
     value: 0.054
     params:
       facing: y
@@ -103,27 +104,27 @@ rules:
       interacting_only: 1
   - id: PSELECT.GATE.EX.1
     check: min_enclosure
-    layers: [PSELECT, GateNoCut]
+    layers: [PSELECT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: x
       interacting_only: 1
   - id: PSELECT.GATE.EX.2
     check: min_enclosure
-    layers: [PSELECT, GateNoCut]
+    layers: [PSELECT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: y
       interacting_only: 1
   - id: SLVT.W.1
     check: min_width
-    layers: [SLVT]
+    layers: [SlvtNoSram]
     value: 0.108
     params:
       facing: x
   - id: SLVT.W.2
     check: min_width
-    layers: [SLVT]
+    layers: [SlvtNoSram]
     value: 0.054
     params:
       facing: y
@@ -157,27 +158,27 @@ rules:
       interacting_only: 1
   - id: SLVT.GATE.EX.1
     check: min_enclosure
-    layers: [SLVT, GateNoCut]
+    layers: [SLVT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: x
       interacting_only: 1
   - id: SLVT.GATE.EX.2
     check: min_enclosure
-    layers: [SLVT, GateNoCut]
+    layers: [SLVT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: y
       interacting_only: 1
   - id: LVT.W.1
     check: min_width
-    layers: [LVT]
+    layers: [LvtNoSram]
     value: 0.108
     params:
       facing: x
   - id: LVT.W.2
     check: min_width
-    layers: [LVT]
+    layers: [LvtNoSram]
     value: 0.054
     params:
       facing: y
@@ -211,27 +212,27 @@ rules:
       interacting_only: 1
   - id: LVT.GATE.EX.1
     check: min_enclosure
-    layers: [LVT, GateNoCut]
+    layers: [LVT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: x
       interacting_only: 1
   - id: LVT.GATE.EX.2
     check: min_enclosure
-    layers: [LVT, GateNoCut]
+    layers: [LVT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: y
       interacting_only: 1
   - id: SRAMVT.W.1
     check: min_width
-    layers: [SRAMVT]
+    layers: [SramvtNoSram]
     value: 0.108
     params:
       facing: x
   - id: SRAMVT.W.2
     check: min_width
-    layers: [SRAMVT]
+    layers: [SramvtNoSram]
     value: 0.054
     params:
       facing: y
@@ -265,39 +266,39 @@ rules:
       interacting_only: 1
   - id: SRAMVT.GATE.EX.1
     check: min_enclosure
-    layers: [SRAMVT, GateNoCut]
+    layers: [SRAMVT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: x
       interacting_only: 1
   - id: SRAMVT.GATE.EX.2
     check: min_enclosure
-    layers: [SRAMVT, GateNoCut]
+    layers: [SRAMVT, GateNoCutNoSram]
     value: 0.007
     params:
       facing: y
       interacting_only: 1
   - id: NSELECT.PSELECT.AUX.1
     check: forbidden
-    layers: [NSELECT, PSELECT]
+    layers: [NselectNoSram, PselectNoSram]
     value: 0.0
     params:
       op: overlap
   - id: VT.AUX.2
     check: forbidden
-    layers: [LVT, SLVT]
+    layers: [LvtNoSram, SlvtNoSram]
     value: 0.0
     params:
       op: overlap
   - id: VT.AUX.2
     check: forbidden
-    layers: [LVT, SRAMVT]
+    layers: [LvtNoSram, SramvtNoSram]
     value: 0.0
     params:
       op: overlap
   - id: VT.AUX.2
     check: forbidden
-    layers: [SLVT, SRAMVT]
+    layers: [SlvtNoSram, SramvtNoSram]
     value: 0.0
     params:
       op: overlap

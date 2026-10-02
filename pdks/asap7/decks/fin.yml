@@ -7,28 +7,29 @@
 # FIN.S.1 is an exact 27 nm pitch.  The deck reads its lower half, a space of at least
 # 20 nm (the pitch less the 7 nm fin); a fin farther from its neighbour than the pitch is
 # off the fin grid, which no rule here reads.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: FIN.W.1
     check: exact_width
-    layers: [FIN]
+    layers: [FinNoSram]
     value: 0.007
     params:
       facing: y
   - id: FIN.W.2
     check: min_width
-    layers: [FIN]
+    layers: [FinNoSram]
     value: 0.108
     params:
       facing: x
   - id: FIN.S.1
     check: min_space
-    layers: [FIN]
+    layers: [FinNoSram]
     value: 0.02
     params:
       facing: y
   - id: FIN.S.1
     check: min_notch
-    layers: [FIN]
+    layers: [FinNoSram]
     value: 0.02
     params:
       facing: y

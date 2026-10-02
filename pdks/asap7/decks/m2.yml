@@ -5,38 +5,43 @@
 # M2 (DRM section 3.12).  The side, tip and tip-to-tip spacings read edge layers sorted
 # by length (see `virtual_layers` in pdk.yml); M2.S.6 is the corner-to-corner space, read on
 # the pairs that face each other nowhere under it.
+#
+# SRAM exemption (DRM convention 7): skip whole M2 polygons with positive-area overlap
+# with SRAMDRC. Edge-only and point-only contact remain checked. Spacing is measured
+# when neither polygon overlaps the marker.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: M2.W.1
     check: min_width
-    layers: [M2]
+    layers: [M2NoSram]
     value: 0.018
   - id: M2.S.1
     check: min_space
-    layers: [M2.long, M2.long]
+    layers: [M2NoSram.long, M2NoSram.long]
     value: 0.018
   - id: M2.S.2
     check: min_space
-    layers: [M2.short, M2.long]
+    layers: [M2NoSram.short, M2NoSram.long]
     value: 0.025
   - id: M2.S.3
     check: min_space
-    layers: [M2.mid, M2.mid]
+    layers: [M2NoSram.mid, M2NoSram.mid]
     value: 0.027
   - id: M2.S.4
     check: min_space
-    layers: [M2.tiny, M2.tiny]
+    layers: [M2NoSram.tiny, M2NoSram.tiny]
     value: 0.031
   - id: M2.S.5
     check: min_space
-    layers: [M2.mid, M2.tiny]
+    layers: [M2NoSram.mid, M2NoSram.tiny]
     value: 0.031
   - id: M2.S.6
     check: min_space
-    layers: [M2]
+    layers: [M2NoSram]
     value: 0.02
     params:
       facing: none
   - id: M2.A.1
     check: min_area
-    layers: [M2]
+    layers: [M2NoSram]
     value: 0.000504

@@ -44,6 +44,56 @@ the routing grids and tracks, the width-multiple rules, the net-aware ``ACTIVE.S
 the latch-up reach ``ACTIVE.LUP.1``, and the via spacings that depend on an end-cap.
 ``FIN.S.1``, an exact 27 nm pitch, is checked only as a space of at least 20 nm.
 
+SRAM applicability
+------------------
+
+DRM section 1.2.2, convention 7 makes non-SRAM geometry the default scope of a
+rule unless its wording says otherwise. This applies throughout the decks,
+including ordinary LISD/LIG, via and M4–M9 checks, not only M1–M3.
+
+SRAM membership requires **positive-area overlap** with ``SRAMDRC``. Both ordinary
+and explicitly SRAM-scoped checks use this partition. Edge-only and point-only
+contact remain non-SRAM. This is a deliberate conservative deviation from the
+manual's convention 4: the manual counts shared-edge contact as interaction, but
+excludes isolated vertex contact. The general engine ``interacting`` operator also
+counts vertex contact, so it is not the predicate used for SRAM membership here.
+
+Classification keeps or drops a whole merged polygon, including its geometry
+outside the marker and across tile boundaries. Edge layers are extracted after
+selection, preserving original edge lengths. A marker on the remote end of a wire
+can therefore exempt an ordinary width or spacing violation outside the array.
+This does not exempt other layers connected to that wire through vias, and marker
+locations alone cannot determine whether a violation should be exempt.
+
+The rules use the selected subjects as follows:
+
+* Ordinary single-layer checks read non-SRAM polygons. Ordinary spacing between
+  two subjects reads a pair only when both are non-SRAM. No extra SRAM/non-SRAM
+  boundary-spacing requirement is inferred. This is the literal convention-7
+  interpretation; mixed-pair behavior has not been verified against Calibre.
+* Via checks select the via instance, retaining full landing metal and LIG/LISD
+  references. A non-SRAM via still sees metal that overlaps SRAMDRC somewhere
+  else. This includes ``V0.LIG.EN.4``, whose existing implementation measures LIG
+  walls inside the selected V0. Other enclosure/extension checks select the
+  enclosed subject and keep the enclosing reference layer whole. Extension checks
+  select FIN, ACTIVE or cut-GATE subjects; where the engine measures a channel
+  fragment, selection precedes that intersection. Coverage predicates likewise
+  retain their full reference geometry.
+* Explicit qualifications take precedence. ACTIVE/WELL and implant enclosures
+  select ACTIVE as their subject; SRAM SDT overlap and LIG/GATE overlap select SDT
+  or LIG, respectively, retaining their full reference layers. The existing
+  SRAM-specific limits and ACTIVE/LISD/LIG boundary-contact prohibitions remain
+  active. These prohibitions test contact independently of the membership filter.
+* The SRAMDRC marker's own non-orthogonal-geometry check remains active everywhere
+  as a supplemental marker-integrity check. A marker is not exempted against
+  itself. ``SRAMVT`` is a threshold-adjust layer, not the SRAMDRC marker; its name
+  alone does not give it SRAM scope.
+
+Rules absent from the implementation remain coverage gaps. In particular,
+``ACTIVE.S.2A`` is not implemented; its explicit note requiring the rule within
+SRAM must be honored if it is added. The inventory is an implementation audit,
+not evidence of Calibre parity or permission to waive fabrication requirements.
+
 
 Readings
 --------

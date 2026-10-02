@@ -120,13 +120,50 @@ decks:
     description: Via 9 to the pad
 
 virtual_layers:
+  # DRM 1.2.2 convention 7: ordinary checks select whole non-SRAM polygons.
+  # This deck requires positive-area overlap for SRAM membership. Edge/vertex-only
+  # contact stays in ordinary checks, a conservative shared-edge deviation from note 4.
+  # Keep drawn layers intact for reference geometry (e.g. metal enclosing a via).
+  WellNoSram: NWELL not_overlapping SRAMDRC
+  FinNoSram: FIN not_overlapping SRAMDRC
+  GateNoSram: GATE not_overlapping SRAMDRC
+  GcutNoSram: GCUT not_overlapping SRAMDRC
+  NselectNoSram: NSELECT not_overlapping SRAMDRC
+  PselectNoSram: PSELECT not_overlapping SRAMDRC
+  SlvtNoSram: SLVT not_overlapping SRAMDRC
+  LvtNoSram: LVT not_overlapping SRAMDRC
+  SramvtNoSram: SRAMVT not_overlapping SRAMDRC
+  DummyNoSram: DUMMY not_overlapping SRAMDRC
+  PadNoSram: PAD not_overlapping SRAMDRC
+  M4NoSram: M4 not_overlapping SRAMDRC
+  M5NoSram: M5 not_overlapping SRAMDRC
+  M6NoSram: M6 not_overlapping SRAMDRC
+  M7NoSram: M7 not_overlapping SRAMDRC
+  M8NoSram: M8 not_overlapping SRAMDRC
+  M9NoSram: M9 not_overlapping SRAMDRC
+  V0NoSram: V0 not_overlapping SRAMDRC
+  V1NoSram: V1 not_overlapping SRAMDRC
+  V2NoSram: V2 not_overlapping SRAMDRC
+  V3NoSram: V3 not_overlapping SRAMDRC
+  V4NoSram: V4 not_overlapping SRAMDRC
+  V5NoSram: V5 not_overlapping SRAMDRC
+  V6NoSram: V6 not_overlapping SRAMDRC
+  V7NoSram: V7 not_overlapping SRAMDRC
+  V8NoSram: V8 not_overlapping SRAMDRC
+  V9NoSram: V9 not_overlapping SRAMDRC
+
   # GATE regions a GCUT does not cut: what the manual calls "GATE (not cut by GCUT)".
   GateNoCut: GATE not GCUT
-  GateNoCutNoSram: GateNoCut not_interacting SRAMDRC
-  GateNoCutOffActive: GateNoCut not_interacting ACTIVE
+  GateNoCutNoSram: GateNoCut not_overlapping SRAMDRC
+  GateNoCutOffActive: GateNoCutNoSram not_interacting ACTIVE
   # The channel: GATE over ACTIVE.
   Channel: GATE and ACTIVE
   ChannelNoCut: GateNoCut and ACTIVE
+  ChannelNoSram: Channel not_overlapping SRAMDRC
+  # Extension subjects are selected before intersection, so a remote marker overlap
+  # exempts the whole source polygon, including channel fragments outside the marker.
+  ActiveNoSramOnGate: ActiveNoSram and GATE
+  GateNoCutNoSramOnActive: GateNoCutNoSram and ACTIVE
   # GATE.S.3: every gate needs another within one 54 nm pitch, centre to centre, beside it -
   # a space of at most 34 nm.  Grown by half that across x, two such gates meet and make one
   # region at least 108 nm wide; a gate alone makes one 54 nm wide, which an erosion by 27 nm
@@ -135,15 +172,15 @@ virtual_layers:
   GatePaired: GateReach shrink_x 0.027
   GateSolitary: GateNoCutNoSram not_interacting GatePaired
   # "May not bend": a shape that is not a rectangle.
-  FinBent: FIN not_rectangle
-  GateBent: GATE not_rectangle
-  M4Bent: M4 not_rectangle
-  M5Bent: M5 not_rectangle
-  M6Bent: M6 not_rectangle
-  M7Bent: M7 not_rectangle
-  # ACTIVE, and its parts inside and outside the SRAM marker.
-  ActiveSram: ACTIVE interacting SRAMDRC
-  ActiveNoSram: ACTIVE not_interacting SRAMDRC
+  FinBent: FinNoSram not_rectangle
+  GateBent: GateNoSram not_rectangle
+  M4Bent: M4NoSram not_rectangle
+  M5Bent: M5NoSram not_rectangle
+  M6Bent: M6NoSram not_rectangle
+  M7Bent: M7NoSram not_rectangle
+  # Whole ACTIVE polygons selected by positive-area SRAM marker overlap.
+  ActiveSram: ACTIVE overlapping SRAMDRC
+  ActiveNoSram: ACTIVE not_overlapping SRAMDRC
   # SRAM.ACTIVE.AUX.2 and its LISD and LIG twins: a shape that shares no area with SRAMDRC
   # may not touch it either.
   ActiveOffSram: ACTIVE not_overlapping SRAMDRC
@@ -153,67 +190,68 @@ virtual_layers:
   LigOffSram: LIG not_overlapping SRAMDRC
   LigAbutSram: LigOffSram interacting SRAMDRC
   Select: NSELECT or PSELECT
-  GcutOffGate: GCUT not_interacting GATE
-  GcutOnChannel: GCUT interacting Channel
-  SdtNoSram: SDT not_interacting SRAMDRC
-  SdtSram: SDT interacting SRAMDRC
+  GcutOffGate: GcutNoSram not_interacting GATE
+  GcutOnChannel: GcutNoSram interacting ChannelNoSram
+  SdtNoSram: SDT not_overlapping SRAMDRC
+  SdtSram: SDT overlapping SRAMDRC
   SdtSramOnActive: SdtSram and ACTIVE
-  SdtOnGate: SDT interacting GATE
-  SdtOffActive: SDT not_overlapping ACTIVE
-  LisdNoSram: LISD not_interacting SRAMDRC
-  LisdSram: LISD interacting SRAMDRC
-  LigNoSram: LIG not_interacting SRAMDRC
-  LigSram: LIG interacting SRAMDRC
-  LigOnLisd: LIG and LISD
+  SdtOnGate: SdtNoSram interacting GateNoSram
+  SdtOffActive: SdtNoSram not_overlapping ACTIVE
+  LisdNoSram: LISD not_overlapping SRAMDRC
+  LisdSram: LISD overlapping SRAMDRC
+  LigNoSram: LIG not_overlapping SRAMDRC
+  LigSram: LIG overlapping SRAMDRC
+  LigOnLisd: LigNoSram and LisdNoSram
   LigNoSramOnGate: LigNoSram and GateNoCut
   LigSramOnGate: LigSram and GateNoCut
+  M1NoSram: M1 not_overlapping SRAMDRC
+  M2NoSram: M2 not_overlapping SRAMDRC
+  M3NoSram: M3 not_overlapping SRAMDRC
   # V0 against what it lands on.
   LisdOrLig: LISD or LIG
-  V0OffM1: V0 not_interacting M1
-  V0OffLisdLig: V0 not_interacting LisdOrLig
-  V0OnLisd: V0 interacting LISD
+  V0OffM1: V0NoSram not_interacting M1
+  V0OffLisdLig: V0NoSram not_interacting LisdOrLig
+  V0OnLisd: V0NoSram interacting LISD
   V0OnLisdOnly: V0OnLisd not_interacting LIG
-  V0OnLig: V0 interacting LIG
+  V0OnLig: V0NoSram interacting LIG
   V0OnLigOffLisd: V0OnLig not_inside LISD
   V0OnLigArea: V0OnLigOffLisd and LIG
   # V8.W.1 and V9.W.1: a long side of 40 or 120 nm, to the DBU.
-  V8Len40: V8 with_bbox_max min 0.04 max 0.04025
-  V8Len120: V8 with_bbox_max min 0.12 max 0.12025
+  V8Len40: V8NoSram with_bbox_max min 0.04 max 0.04025
+  V8Len120: V8NoSram with_bbox_max min 0.12 max 0.12025
   V8GoodLength: V8Len40 or V8Len120
-  V8BadLength: V8 not V8GoodLength
-  V8NotRect: V8 not_rectangle
-  V9Len40: V9 with_bbox_max min 0.04 max 0.04025
-  V9Len120: V9 with_bbox_max min 0.12 max 0.12025
+  V8BadLength: V8NoSram not V8GoodLength
+  V8NotRect: V8NoSram not_rectangle
+  V9Len40: V9NoSram with_bbox_max min 0.04 max 0.04025
+  V9Len120: V9NoSram with_bbox_max min 0.12 max 0.12025
   V9GoodLength: V9Len40 or V9Len120
-  V9BadLength: V9 not V9GoodLength
-  V9NotRect: V9 not_rectangle
+  V9BadLength: V9NoSram not V9GoodLength
+  V9NotRect: V9NoSram not_rectangle
 
   # Edge layers share the virtual-layer expression mapping.
   # The M1-style spacings (M1-M3, LISD, LIG) turn on the lengths of the two facing edges: a
   # line's side is its long edge (over 36 nm), its tip the short one (36 nm or less), and a
   # tip is `mid` from 24 to 36 nm and `tiny` under 24.  Lengths are whole DBU, so "36 nm or
-  # less" is "under 36.25".
-  M1.edges: M1 edges
-  M1.long: M1.edges with_length min 0.03625
-  M1.short: M1.edges with_length max 0.03625
-  M1.mid: M1.edges with_length min 0.024 max 0.03625
-  M1.tiny: M1.edges with_length max 0.024
-  M2.edges: M2 edges
-  M2.long: M2.edges with_length min 0.03625
-  M2.short: M2.edges with_length max 0.03625
-  M2.mid: M2.edges with_length min 0.024 max 0.03625
-  M2.tiny: M2.edges with_length max 0.024
-  M3.edges: M3 edges
-  M3.long: M3.edges with_length min 0.03625
-  M3.short: M3.edges with_length max 0.03625
-  M3.mid: M3.edges with_length min 0.024 max 0.03625
-  M3.tiny: M3.edges with_length max 0.024
-  LISD.edges: LISD edges
-  LISD.long: LISD.edges with_length min 0.03625
-  LISD.short: LISD.edges with_length max 0.03625
-  LIG.edges: LIG edges
-  LIG.long: LIG.edges with_length min 0.03625
-  LIG.short: LIG.edges with_length max 0.03625
+  # less" is "under 36.25". Ordinary edge layers are extracted after SRAM selection.
+  M1NoSram.edges: M1NoSram edges
+  M1NoSram.long: M1NoSram.edges with_length min 0.03625
+  M1NoSram.short: M1NoSram.edges with_length max 0.03625
+  M1NoSram.mid: M1NoSram.edges with_length min 0.024 max 0.03625
+  M1NoSram.tiny: M1NoSram.edges with_length max 0.024
+  M2NoSram.edges: M2NoSram edges
+  M2NoSram.long: M2NoSram.edges with_length min 0.03625
+  M2NoSram.short: M2NoSram.edges with_length max 0.03625
+  M2NoSram.mid: M2NoSram.edges with_length min 0.024 max 0.03625
+  M2NoSram.tiny: M2NoSram.edges with_length max 0.024
+  M3NoSram.edges: M3NoSram edges
+  M3NoSram.long: M3NoSram.edges with_length min 0.03625
+  M3NoSram.short: M3NoSram.edges with_length max 0.03625
+  M3NoSram.mid: M3NoSram.edges with_length min 0.024 max 0.03625
+  M3NoSram.tiny: M3NoSram.edges with_length max 0.024
+  LisdNoSram.long: LisdNoSram.edges with_length min 0.03625
+  LisdNoSram.short: LisdNoSram.edges with_length max 0.03625
+  LigNoSram.long: LigNoSram.edges with_length min 0.03625
+  LigNoSram.short: LigNoSram.edges with_length max 0.03625
   LisdNoSram.edges: LisdNoSram edges
   LisdNoSram.mid: LisdNoSram.edges with_length min 0.024 max 0.03625
   LisdSram.edges: LisdSram edges
@@ -222,20 +260,21 @@ virtual_layers:
   LigNoSram.mid: LigNoSram.edges with_length min 0.024 max 0.03625
   LigNoSram.tiny: LigNoSram.edges with_length max 0.024
   # M8 and M9: an edge is long from 80 nm.
-  M8.edges: M8 edges
-  M8.long: M8.edges with_length min 0.08
-  M8.short: M8.edges with_length max 0.08
-  M9.edges: M9 edges
-  M9.long: M9.edges with_length min 0.08
-  M9.short: M9.edges with_length max 0.08
+  M8NoSram.edges: M8NoSram edges
+  M8NoSram.long: M8NoSram.edges with_length min 0.08
+  M8NoSram.short: M8NoSram.edges with_length max 0.08
+  M9NoSram.edges: M9NoSram edges
+  M9NoSram.long: M9NoSram.edges with_length min 0.08
+  M9NoSram.short: M9NoSram.edges with_length max 0.08
   # Vertical edges lying inside a GATE, or on its outline.
   ACTIVE.edges: ACTIVE edges
-  GCUT.edges: GCUT edges
+  ActiveNoSram.edges: ActiveNoSram edges
+  GcutNoSram.edges: GcutNoSram edges
   GATE.edges: GATE edges
-  ActiveVEdges: ACTIVE.edges with_angle min 90.0 max 90.0
+  ActiveVEdges: ActiveNoSram.edges with_angle min 90.0 max 90.0
   ActiveVEdgesInside: ActiveVEdges inside_part GATE
   ActiveVEdgesOnGate: ActiveVEdges and GATE.edges
-  GcutVEdges: GCUT.edges with_angle min 90.0 max 90.0
+  GcutVEdges: GcutNoSram.edges with_angle min 90.0 max 90.0
   GcutVEdgesInside: GcutVEdges inside_part GATE
   GcutVEdgesOnGate: GcutVEdges and GATE.edges
   LigVEdges: LigNoSram.edges with_angle min 90.0 max 90.0
@@ -243,7 +282,7 @@ virtual_layers:
   LigVEdgesOnGate: LigVEdges and GATE.edges
   # ACTIVE.AUX.1: no ACTIVE edge on a select edge.
   Select.edges: Select edges
-  ActiveOnSelectEdge: ACTIVE.edges and Select.edges
+  ActiveOnSelectEdge: ActiveNoSram.edges and Select.edges
   # SDT.ACTIVE.AUX.2: an SDT's horizontal edges lie on ACTIVE's, so an SDT does not end
   # inside its ACTIVE.  Where the ACTIVE steps, the libraries run the SDT on past it; the
   # rule reads the edges inside the ACTIVE, off its outline.

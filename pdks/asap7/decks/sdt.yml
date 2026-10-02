@@ -9,10 +9,11 @@
 # which SDT.ACTIVE.AUX.2, SDT.LISD.AUX.4 and the SDT widths already bound: an SDT whose
 # horizontal edges lie on ACTIVE's, inside LISD, is as tall as the ACTIVE it sits on.
 # SRAM SDT is exempt from ACTIVE edge alignment, so its overlap needs its own check.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: SDT.W.1
     check: min_width
-    layers: [SDT]
+    layers: [SdtNoSram]
     value: 0.024
     params:
       facing: x
@@ -36,19 +37,19 @@ rules:
       facing: y
   - id: SDT.S.1
     check: min_space
-    layers: [SDT]
+    layers: [SdtNoSram]
     value: 0.03
     params:
       facing: x
   - id: SDT.S.1
     check: min_notch
-    layers: [SDT]
+    layers: [SdtNoSram]
     value: 0.03
     params:
       facing: x
   - id: SDT.GATE.S.2
     check: min_space
-    layers: [SDT, GATE]
+    layers: [SdtNoSram, GateNoSram]
     value: 0.005
     params:
       facing: x
@@ -66,7 +67,7 @@ rules:
     value: 0.0
   - id: SDT.LISD.AUX.4
     check: forbidden
-    layers: [SDT, LISD]
+    layers: [SdtNoSram, LISD]
     value: 0.0
     params:
       op: uncovered
