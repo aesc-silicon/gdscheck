@@ -88,6 +88,12 @@ Parameters
       ends, or the other way round (ASAP7 ``V2.M2.EN.1``: "on at least two opposite
       sides"). Each side is read on its own facing run, not off the bounding boxes.
 
+      With ``opposite_value``, one side must reach ``value`` and its opposite must
+      reach ``opposite_value``. Either orientation and either axis may satisfy the
+      pair, but the two bounds must hold on the same pair. For example, ASAP7
+      ``V1.M1.EN.1`` uses ``value: 0.005`` and ``opposite_value: 0.002``; margins of
+      5/0 nm on x and 2/2 nm on y fail.
+
    ``adjacent``
       A side enclosed by less than ``trigger`` is allowed only if the sides bordering it
       reach ``value`` (GF180 ``S.CO.6_ii``: a contact may sit flush on one side when the
@@ -120,6 +126,11 @@ Parameters
    thick oxide's edge where that edge crosses the Activ (``over: Activ``); the oxide's
    edge past the Activ's end is ``TGO.a``'s, and an Activ ending inside the oxide has no
    oxide edge over it at all.
+
+``opposite_value``
+   Optional smaller enclosure in µm for ``sides: opposite``. Must be between zero
+   and ``value``. Only supported by ``min_enclosure``; omitted, both sides must
+   reach ``value``.
 
 ``trigger``
    With ``sides: adjacent``: the margin below which a side starts asking something of

@@ -351,6 +351,20 @@ pub fn run(
     sides: Sides,
 ) -> Vec<Violation> {
     let max = kind == Kind::Max;
+    let opposite_value = rule.num("opposite_value");
+    if rule.params.contains_key("opposite_value")
+        && (max
+            || sides != Sides::Opposite
+            || !opposite_value.is_some_and(|v| v.is_finite() && v >= 0.0 && v <= rule.value))
+    {
+        eprintln!(
+            "[{}] opposite_value requires min_enclosure with sides: opposite and a number \
+             between zero and value",
+            rule.id
+        );
+        return vec![];
+    }
+    let opposite_dbu = opposite_value.map(|v| Limit::at_least(v, dbu_to_um).dbu());
     // Which margin of a shape the bound is judged on: see `worse`.
     let largest = max != matches!(sides, Sides::Any | Sides::Opposite);
     let Some(euclidian) = euclidian(rule, kind.name()) else {
@@ -821,7 +835,9 @@ pub fn run(
                         first.1.1 as f64,
                     );
                     if (sides == Sides::Any && !max) || sides == Sides::Opposite {
-                        let m = if sides == Sides::Opposite {
+                        let m = if let Some(other) = opposite_dbu {
+                            asymmetric_opposite_margin(&bp, a, other)
+                        } else if sides == Sides::Opposite {
                             opposite_margin(&bp, a, max)
                         } else {
                             endcap_margin(&bp, a)
@@ -1158,6 +1174,18 @@ pub fn run(
                     {
                         let d = um((num as f64 / den as f64).sqrt());
                         let (x1, y1, x2, y2) = edge_um(e);
+                        let message = if let Some(other) = opposite_value {
+                            format!(
+                                "no opposite pair encloses {bname} within {aname} by \
+                                 {value:.4} µm on one side and {other:.4} µm on the other \
+                                 at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                            )
+                        } else {
+                            format!(
+                                "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within \
+                                 {aname} at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                            )
+                        };
                         out.push((
                             region,
                             None,
@@ -1166,10 +1194,7 @@ pub fn run(
                             Violation::edge(
                                 rid,
                                 title,
-                                format!(
-                                    "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within \
-                                     {aname} at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
-                                ),
+                                message,
                                 x1,
                                 y1,
                                 x2,
