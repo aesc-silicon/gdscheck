@@ -152,6 +152,29 @@ fn longer(a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)) -> bool {
     len2(a) > len2(b)
 }
 
+/// The extent of two projected stretches on the same line. Closest-approach
+/// segments at an angle are not stretches of that wall and must not be joined.
+fn joined_stretch(
+    a: (f64, f64, f64, f64),
+    b: (f64, f64, f64, f64),
+) -> Option<(f64, f64, f64, f64)> {
+    let (dx, dy) = (a.2 - a.0, a.3 - a.1);
+    let len2 = dx * dx + dy * dy;
+    if len2 == 0.0 {
+        return None;
+    }
+    let (mut lo, mut hi) = (0.0f64, 1.0f64);
+    for (x, y) in [(b.0, b.1), (b.2, b.3)] {
+        if ((x - a.0) * dy - (y - a.1) * dx).abs() > 1e-6 * len2.sqrt() {
+            return None;
+        }
+        let t = ((x - a.0) * dx + (y - a.1) * dy) / len2;
+        lo = lo.min(t);
+        hi = hi.max(t);
+    }
+    Some((a.0 + lo * dx, a.1 + lo * dy, a.0 + hi * dx, a.1 + hi * dy))
+}
+
 /// The walls of one enclosed shape with the margin read on each: a shape has a few,
 /// and a map per contact was an allocation per contact.
 struct Walls(Vec<(Seg, Read)>);
@@ -1114,8 +1137,19 @@ pub fn run(
                                     worst = Some(m);
                                 }
                                 let e = walls.entry(Walls::key(&p), m);
-                                if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
+                                if worse(largest, m.0, e.0) {
                                     *e = m;
+                                } else if same(m.0, e.0) {
+                                    // Equal projected margins on separate parts
+                                    // of one wall contribute their full extent,
+                                    // just as the cross-tile reduction does.
+                                    // Keep the usual closest-approach selection
+                                    // for oblique/corner reads.
+                                    if !p.oblique && let Some(joined) = joined_stretch(e.1, m.1) {
+                                        e.1 = joined;
+                                    } else if longer(m.1, e.1) {
+                                        *e = m;
+                                    }
                                 }
                             }
                         }

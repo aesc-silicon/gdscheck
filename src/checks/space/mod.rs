@@ -72,6 +72,10 @@ pub struct Gates {
     /// Walls of the two facing each other under the value across one axis, or - as
     /// [`Facing::Neither`] - facing nowhere under it, so that only a corner is closer.
     pub facing: Option<Facing>,
+    /// With `facing: none`, how many of the two nearest corners lie in the
+    /// reference region (boundary included). The deck can derive that region
+    /// from metal with sufficient end-cap, without classifying a whole via.
+    pub corner_cover: Option<(LayerKey, u8)>,
 }
 
 impl Gates {
@@ -96,16 +100,46 @@ impl Gates {
         let run = (width.is_some() || length.is_some())
             .then(|| (width.unwrap_or(0.0), length.unwrap_or(0.0)));
         let facing = facing(rule, name, true)?;
+        let corner_cover = if rule.params.contains_key("corner_cover")
+            || rule.params.contains_key("covered_corners")
+        {
+            let (Some(layer), Some(dt), Some(count)) = (
+                rule.num("corner_cover"),
+                rule.num("corner_cover_dt"),
+                rule.num("covered_corners"),
+            ) else {
+                eprintln!(
+                    "[{}] {name}: corner_cover needs a layer_params entry and covered_corners",
+                    rule.id
+                );
+                return None;
+            };
+            if facing != Some(Facing::Neither) || ![0.0, 1.0, 2.0].contains(&count) {
+                eprintln!(
+                    "[{}] {name}: corner_cover needs facing: none and covered_corners: 0, 1 or 2",
+                    rule.id
+                );
+                return None;
+            }
+            Some(((layer as i16, dt as i16), count as u8))
+        } else {
+            None
+        };
         Some(Gates {
             bent,
             net,
             run,
             facing,
+            corner_cover,
         })
     }
 
     fn any(self) -> bool {
-        self.bent || self.net.is_some() || self.run.is_some() || self.facing.is_some()
+        self.bent
+            || self.net.is_some()
+            || self.run.is_some()
+            || self.facing.is_some()
+            || self.corner_cover.is_some()
     }
 }
 
@@ -165,6 +199,11 @@ pub fn run_min_gated(
     // wide rail running alongside a wire at the clean gap must not lend its width, nor
     // a bend elsewhere on the net its angle, to a narrow tooth that dips below it.
     let limit = Limit::at_least(rule.value, dbu_to_um).dbu();
+    let cover = gates.corner_cover.map(|(key, count)| {
+        merged.ensure(layout, key.0, key.1);
+        (merged.tiles(key.0, key.1), count)
+    });
+    let tile_dbu = merged.tile_dbu() as f64;
     let run = gates.run.map(|(w, l)| {
         (
             on_grid(w / dbu_to_um, f64::round),
@@ -189,6 +228,32 @@ pub fn run_min_gated(
                 }
                 Some(Facing::Neither) if faces_within(a, b, limit, None) => return false,
                 _ => {}
+            }
+            if let Some((tiles, count)) = &cover {
+                let Some((_, _, pa, pb)) = crate::geom::closest_approach(a, b, limit) else {
+                    return false;
+                };
+                let covered = |(x, y): (f64, f64)| {
+                    // The reference may end exactly on a core boundary, leaving
+                    // no area in the point's owning tile. Read both incident
+                    // tiles on each such axis: closed-set membership includes
+                    // the boundary even when its reference has no right/top tile.
+                    let (tx, ty) = ((x / tile_dbu).floor() as i32, (y / tile_dbu).floor() as i32);
+                    let x0 = tx - i32::from(x == tx as f64 * tile_dbu);
+                    let y0 = ty - i32::from(y == ty as f64 * tile_dbu);
+                    (x0..=tx).any(|cx| {
+                        (y0..=ty).any(|cy| {
+                            tiles.get(&(cx, cy)).is_some_and(|polys| {
+                                polys
+                                    .iter()
+                                    .any(|p| crate::merge::point_on_or_in_merged(x, y, p))
+                            })
+                        })
+                    })
+                };
+                if u8::from(covered(pa)) + u8::from(covered(pb)) != *count {
+                    return false;
+                }
             }
             if let Some((wide, min_run)) = run
                 && let read = parallel_run(a, b, limit, wide, min_run, Some(ctx.zone))

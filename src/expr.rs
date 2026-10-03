@@ -696,7 +696,13 @@ impl Lowerer<'_> {
             }),
             Kind::Edge => Def::Edge(EdgeLayerDef {
                 name: name.to_string(),
-                op: spec.canonical.to_string(),
+                op: if matches!(spec.canonical, "with_length" | "without_length")
+                    && matches!(values.as_slice(), [Value::Num(_)])
+                {
+                    format!("{}_exact", spec.canonical)
+                } else {
+                    spec.canonical.to_string()
+                },
                 layers,
                 min: lo,
                 max: hi,

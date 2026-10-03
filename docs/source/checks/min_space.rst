@@ -86,6 +86,16 @@ Parameters
    mind that the merge then joins the nets of what it bridges: a rule about two nets
    too close to merge reads the drawn layer instead, as IHP's NW.b1 does.
 
+``corner_cover`` / ``covered_corners``
+   Optional: ``corner_cover`` is a layer reference under ``layer_params`` and
+   ``covered_corners`` is a numeric param, 0, 1 or 2. Requires ``facing: none``.
+   The rule applies when exactly that many of the two closest corners lie in the
+   reference region, including its boundary. Membership is read at the gap, not
+   at a shape's centre or remote end. For orthogonal vias, ASAP7 derives the
+   reference as ``(M1 shrink_x 0.005) or (M1 shrink_y 0.005)``: the corner retains
+   at least 5 nm of metal along either axis. Three rules then select the 23, 27
+   and 30 nm limits for two, one and zero covered corners respectively.
+
 ``width`` / ``length``
    Optional, µm, alone or together. The rule then applies only where some pair of facing
    edges, one from each region, runs alongside for a projected overlap of more than
