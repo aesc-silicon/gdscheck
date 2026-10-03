@@ -173,7 +173,12 @@ def corpus():
             "input": FIXTURES / "static/asap7sc7p5t_28_L.gds.gz",
             "top": "ALLCELLS",
             "expectations": [],
-        }
+        },
+        "sram_bank": {
+            "input": FIXTURES / "static/srambank_32b.gds.gz",
+            "top": "srambank_32b",
+            "expectations": [],
+        },
     }
     for line in (FIXTURES / "generated/cases.tsv").read_text().splitlines():
         if not line or line.startswith("#"):

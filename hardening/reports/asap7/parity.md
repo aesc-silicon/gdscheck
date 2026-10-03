@@ -3,14 +3,64 @@ SPDX-FileCopyrightText: 2026 aesc silicon
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# ASAP7 initial KLayout comparison
+# ASAP7 KLayout comparison
+
+## Coverage update — 2026-10-02
+
+The expanded corpus contains **100 generated layouts, the standard-cell library,
+and the real `srambank_32b` macro**. All **203 manual-derived target verdicts
+across 22 rules** pass in gdscheck. The pinned KLayout port agrees on **171/203**;
+the remaining 32 verdicts differ. All 102 cases preserve marker rules, locations
+and multiplicities between 20 and 7 micrometre gdscheck tiles. These targeted
+results do not measure whole-PDK coverage or establish signoff parity.
+
+This update adds the missing 17 nm `SRAM.SDT.LISD.OV.4` check and rejects empty
+or touching-only SDT overlaps with LISD and ACTIVE. V0–V3 corner spacing now
+selects 23/27/30 nm from the two gap-facing 5 nm end-caps, including the exact
+threshold. Other changes cover partial V0–LISD enclosure, net-aware LIG spacing,
+and forbidden even M4–M7 width multiples. Engine fixes preserve exact edge-length
+selection and tile-invariant region and partial-enclosure marker locations.
+
+| Full layout | gdscheck markers | KLayout markers |
+|---|---:|---:|
+| Standard cells | 34 | 68 |
+| SRAM bank | 1,052 | 107,544 |
+
+The standard-cell baseline dropped from 35 to 34: the old `LIG.SDT.S.8` finding
+in `DFFASRHQNx1` connects through the extracted interconnect and is now correctly
+excluded by the different-net condition. The SRAM bank's explicit SDT overlap
+checks pass; its SDT-only CI baseline retains eight ordinary `SDT.LISD.AUX.4`
+findings. Neither full-layout count is a claim that the layout is clean. The
+large SRAM difference includes differing rule coverage and SRAM policy; its
+individual findings have not all been adjudicated.
+
+The reference pin and macro hash below are unchanged. Completed KLayout 0.30.2
+reports were reused after checking the fixture hashes, reference revision/macro
+hash, and parsed raw reports. Every gdscheck case was rerun at both tile sizes
+with the final frozen binary. Source baseline: `963a993f63f7837bb290a450408e92bfc9a5655f`
+plus the uncommitted coverage fixes; binary SHA-256:
+`76aab32449576b8a47e18011066714f91b862d39ac280a889df248b5c08f46b2`.
+Local detailed artifact: `/tmp/gdscheck-gap-review/oracle-verified-final/comparison.json`.
+The standard runner below reproduces the full comparison without cached reports.
+
+Known gaps remain: routing grids and track counts, ACTIVE/SDT width increments,
+transistor-aware `ACTIVE.S.2A`, latch-up reach, `V0.LIG.AUX.2`, and the 27 nm
+unaligned parallel-track branch of V0–V3 `S.1`. Conditional metal tip rules also
+remain incomplete. See the deck headers and PDK documentation for the scope;
+the new checks do not close those gaps.
+
+Validation: all 3,075 Rust tests pass at both tile sizes, as do the seven
+comparison-tool tests, Clippy with warnings denied, and the Sphinx documentation
+build with warnings treated as errors.
+
+## Historical initial comparison
 
 This report records the initial comparison before the deck-wide convention-7 audit.
 The current decks apply ordinary rules to non-SRAM subjects across all layers and
 require positive-area SRAMDRC overlap for membership, retaining edge/vertex contact
 in ordinary checks. See the PDK's **SRAM applicability** documentation and
-`hardening/asap7/sram-scope.tsv`. The measurements below are historical results;
-they have not been updated to claim parity for the expanded SRAM scope policy.
+`hardening/asap7/sram-scope.tsv`. The measurements in this historical section predate that policy. The current
+coverage-limited results are recorded above.
 
 The initial corpus agrees on **80 of 89 targeted verdicts across nine rules**.
 All gdscheck expectations pass, and marker rule/location/multiplicity is invariant

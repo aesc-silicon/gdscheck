@@ -88,9 +88,9 @@ lig	LIG.S.2	min_space	ordinary	LigNoSram.short,LigNoSram.long	1.2.2(7); both spa
 lig	LIG.S.3	min_space	ordinary	LigNoSram.mid,LigNoSram.mid	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
 lig	LIG.S.4	min_space	ordinary	LigNoSram.tiny,LigNoSram.tiny	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
 lig	LIG.S.5	min_space	ordinary	LigNoSram.mid,LigNoSram.tiny	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
-lig	LIG.LISD.S.6	min_space	ordinary	LigNoSram,LisdNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
-lig	LIG.LISD.S.7	min_space	ordinary	LigNoSram,LisdNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
-lig	LIG.SDT.S.8	min_space	ordinary	LigNoSram,SdtNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.LISD.S.6	min_space	ordinary	LigNoSram,LisdNoSram	3.10; ordinary subjects; different nets on full physical conductors including SRAM
+lig	LIG.LISD.S.7	min_space	ordinary	LigNoSram,LisdNoSram	3.10; ordinary subjects; different nets on full physical conductors including SRAM
+lig	LIG.SDT.S.8	min_space	ordinary	LigNoSram,SdtNoSram	3.10; ordinary subjects; different nets on full physical conductors including SRAM
 lig	LIG.GATE.S.9A	min_space	ordinary	LigNoSram,GateNoCutNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
 lig	LIG.GATE.S.9B	min_space	ordinary	LigNoSram,GateNoCutNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
 lig	LIG.GATE.S.10	min_space	ordinary	LigNoSram,GateNoCutNoSramOnActive	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
@@ -345,3 +345,19 @@ well	WELL.A.1A	min_area	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete
 well	WELL.A.1B	min_area	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
 well	WELL.GATE.EX.1	min_enclosure	ordinary	NWELL,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
 well	WELL.GATE.EX.2	min_enclosure	ordinary	NWELL,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+m4	M4.W.3	forbidden	ordinary	M4EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+m5	M5.W.3	forbidden	ordinary	M5EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+m6	M6.W.3	forbidden	ordinary	M6EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+m7	M7.W.3	forbidden	ordinary	M7EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+sdt	SRAM.SDT.ACTIVE.OV.3	forbidden	sram	SdtSramOffActive	3.8; SRAM SDT requires positive overlap with full ACTIVE reference
+sdt	SRAM.SDT.LISD.OV.4	forbidden	sram	SdtSramOffLisd	3.8; SRAM SDT requires positive overlap with full LISD reference
+sdt	SRAM.SDT.LISD.OV.4	min_width	sram	SdtSramOnLisd	3.8; SRAM SDT vertical overlap with full LISD reference
+v0	V0.LISD.EN.3	min_enclosure	ordinary	LISD,V0PartialLisdArea	3.11; select non-SRAM via before clipping; full LISD/LIG references
+v0	V0.S.3	min_space	ordinary	V0NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v0	V0.S.4	min_space	ordinary	V0NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v1	V1.S.3	min_space	ordinary	V1NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v1	V1.S.4	min_space	ordinary	V1NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v2	V2.S.3	min_space	ordinary	V2NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v2	V2.S.4	min_space	ordinary	V2NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v3	V3.S.3	min_space	ordinary	V3NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v3	V3.S.4	min_space	ordinary	V3NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners

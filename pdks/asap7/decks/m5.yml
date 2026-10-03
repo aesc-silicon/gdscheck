@@ -6,7 +6,7 @@
 # between tracks read the walls facing across x, its length and the tip-to-tip
 # space those facing across y.
 #
-# Not checked: M5.W.3 and M5.W.4, a width that is an even multiple of the minimum;
+# Not checked: M5.W.4 (even track counts);
 # M5.S.4 and M5.S.5, the tip-to-tip space and the run two lines on adjacent tracks share;
 # and M5.AUX.1, M5.AUX.2 and M5.AUX.4, the routing grid and tracks, which the manual
 # places by an offset set per design.
@@ -26,6 +26,10 @@ rules:
       # Apply facing even when the perpendicular dimension is smaller.
       span: any
       facing: x
+  - id: M5.W.3
+    check: forbidden
+    layers: [M5EvenWidthEdges]
+    value: 0.0
   - id: M5.W.5
     check: min_width
     layers: [M5NoSram]

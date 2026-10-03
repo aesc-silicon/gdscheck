@@ -139,7 +139,7 @@ pub fn generate(pdk: &PdkConfig) {
         );
     }
 
-    // DRM 3.7: minimum vertical SDT overlap with ACTIVE in SRAM is 17 nm.
+    // DRM 3.8: minimum vertical SDT overlap with ACTIVE in SRAM is 17 nm.
     for overlap in [16.75, 17.0, 17.25] {
         let name = format!("sdt_overlap_{}", (overlap * 4.0) as i32);
         c.layout(
@@ -156,11 +156,68 @@ pub fn generate(pdk: &PdkConfig) {
             &name,
             "SRAM.SDT.ACTIVE.OV.3",
             overlap < 17.0,
-            "DRM 3.7: vertical overlap >= 17 nm",
+            "DRM 3.8: vertical overlap >= 17 nm",
         );
     }
 
-    // DRM 3.11: the 5 nm and 2 nm margins must be on the SAME opposite pair.
+    // DRM 3.8: both explicit SRAM overlaps, including zero-area/absent references.
+    for (reference, other, rule, tag) in [
+        ("LISD", "ACTIVE", "SRAM.SDT.LISD.OV.4", "lisd"),
+        ("ACTIVE", "LISD", "SRAM.SDT.ACTIVE.OV.3", "active"),
+    ] {
+        for (label, overlap) in [
+            ("absent", None),
+            ("touch", Some(0.0)),
+            ("under", Some(16.75)),
+            ("exact", Some(17.0)),
+            ("over", Some(17.25)),
+        ] {
+            let name = format!("sram_sdt_{tag}_{label}");
+            let mut shapes = vec![
+                ("SDT", [0.0, 0.0, 24.0, 27.0]),
+                (other, [-10.0, -10.0, 40.0, 40.0]),
+                ("SRAMDRC", [23.75, 26.75, 40.0, 40.0]),
+            ];
+            if let Some(h) = overlap {
+                shapes.push((reference, [0.0, h - 50.0, 24.0, h]));
+            }
+            c.layout(&name, &shapes, 19990.0);
+            c.expect(&name, rule, overlap.is_none_or(|h| h < 17.0), "DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection");
+        }
+    }
+
+    // DRM 3.11/3.13: end-caps at the measured corners, not the remote ends.
+    for i in 0..4 {
+        let via = format!("V{i}");
+        let metal = format!("M{}", i + 1);
+        for (caps, a, b, suffix, below, at_or_above) in [
+            ("both", 5.0, 5.0, "S.2", 14.25, 14.5),
+            ("neither", 0.0, 0.0, "S.3", 23.75, 24.0),
+            ("one", 5.0, 0.0, "S.4", 20.0, 20.25),
+            ("under", 4.75, 4.75, "S.3", 23.75, 24.0),
+        ] {
+            for (label, gap, bad) in [("bad", below, true), ("good", at_or_above, false)] {
+                let name = format!("v{i}_endcap_{caps}_{label}");
+                let x = 18.0 + gap;
+                c.layout(
+                    &name,
+                    &[
+                        (&via, [0.0, 0.0, 18.0, 18.0]),
+                        (&via, [x, 36.0, x + 18.0, 54.0]),
+                        (&metal, [-5.0, 0.0, 18.0 + a, 18.0]),
+                        (&metal, [x - b, 36.0, x + 23.0, 54.0]),
+                    ],
+                    6982.0,
+                );
+                for s in ["S.2", "S.3", "S.4"] {
+                    c.expect(&name, &format!("{via}.{s}"), s == suffix && bad,
+                        "DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify");
+                }
+            }
+        }
+    }
+
+    // DRM 3.13: the 5 nm and 2 nm margins must be on the SAME opposite pair.
     for (name, margins, bad) in [
         ("v1_split_axes", [5.0, 0.0, 2.0, 2.0], true),
         ("v1_small_under", [5.0, 1.75, 0.0, 0.0], true),

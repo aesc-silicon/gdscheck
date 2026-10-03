@@ -119,7 +119,72 @@ decks:
     path: decks/v9.yml
     description: Via 9 to the pad
 
+# Physical conductors remain whole for net extraction; SRAM selection only gates
+# the rule subjects. Alias edges attach those selected subjects to the full nets.
+connectivity:
+  - connector: LigGateContact
+    layers: [LIG, GateNoCut]
+  - connector: LigLisdContact
+    layers: [LIG, LISD]
+  - connector: SdtLisdContact
+    layers: [SDT, LISD]
+  - connector: LigNoSram
+    layers: [LigNoSram, LIG]
+  - connector: LisdNoSram
+    layers: [LisdNoSram, LISD]
+  - connector: SdtNoSram
+    layers: [SdtNoSram, SDT]
+  - connector: V0LisdContact
+    layers: [V0, LISD]
+  - connector: V0LigContact
+    layers: [V0, LIG]
+  - connector: V0
+    layers: [V0, M1]
+  - connector: V1
+    layers: [M1]
+  - connector: V1
+    layers: [M2]
+  - connector: V2
+    layers: [M2]
+  - connector: V2
+    layers: [M3]
+  - connector: V3
+    layers: [M3]
+  - connector: V3
+    layers: [M4]
+  - connector: V4
+    layers: [M4]
+  - connector: V4
+    layers: [M5]
+  - connector: V5
+    layers: [M5]
+  - connector: V5
+    layers: [M6]
+  - connector: V6
+    layers: [M6]
+  - connector: V6
+    layers: [M7]
+  - connector: V7
+    layers: [M7]
+  - connector: V7
+    layers: [M8]
+  - connector: V8
+    layers: [M8]
+  - connector: V8
+    layers: [M9]
+  - connector: V9
+    layers: [M9]
+  - connector: V9
+    layers: [PAD]
+
 virtual_layers:
+  # Contact intersections keep the extraction anchor on actual shared material,
+  # even when LIG or V0 overlaps its landing layer only at one end.
+  LigGateContact: LIG and GateNoCut
+  LigLisdContact: LIG and LISD
+  SdtLisdContact: SDT and LISD
+  V0LisdContact: V0 and LISD
+  V0LigContact: V0 and LIG
   # DRM 1.2.2 convention 7: ordinary checks select whole non-SRAM polygons.
   # This deck requires positive-area overlap for SRAM membership. Edge/vertex-only
   # contact stays in ordinary checks, a conservative shared-edge deviation from note 4.
@@ -196,6 +261,9 @@ virtual_layers:
   SdtNoSram: SDT not_overlapping SRAMDRC
   SdtSram: SDT overlapping SRAMDRC
   SdtSramOnActive: SdtSram and ACTIVE
+  SdtSramOffActive: SdtSram not_overlapping ACTIVE
+  SdtSramOnLisd: SdtSram and LISD
+  SdtSramOffLisd: SdtSram not_overlapping LISD
   SdtOnGate: SdtNoSram interacting GateNoSram
   SdtOffActive: SdtNoSram not_overlapping ACTIVE
   LisdNoSram: LISD not_overlapping SRAMDRC
@@ -208,6 +276,13 @@ virtual_layers:
   M1NoSram: M1 not_overlapping SRAMDRC
   M2NoSram: M2 not_overlapping SRAMDRC
   M3NoSram: M3 not_overlapping SRAMDRC
+  # A via corner has a 5 nm end-cap if it survives shrinking its landing
+  # metal along either routing axis. Membership is tested at the facing corner,
+  # including the shrunken boundary (exactly 5 nm), never at the remote via end.
+  M1Endcap5: (M1 shrink_x 0.005) or (M1 shrink_y 0.005)
+  M2Endcap5: (M2 shrink_x 0.005) or (M2 shrink_y 0.005)
+  M3Endcap5: (M3 shrink_x 0.005) or (M3 shrink_y 0.005)
+  M4Endcap5: (M4 shrink_x 0.005) or (M4 shrink_y 0.005)
   # V0 against what it lands on.
   LisdOrLig: LISD or LIG
   V0OffM1: V0NoSram not_interacting M1
@@ -217,6 +292,58 @@ virtual_layers:
   V0OnLig: V0NoSram interacting LIG
   V0OnLigOffLisd: V0OnLig not_inside LISD
   V0OnLigArea: V0OnLigOffLisd and LIG
+  LisdOnLig: LISD interacting LIG
+  V0PartlyOnLisd: (V0NoSram overlapping LisdOnLig) not_inside LISD
+  V0PartialLisdArea: V0PartlyOnLisd and LISD
+  # Forbidden even width multiples through each metal's maximum width.
+  M4WidthEdges: M4NoSram edges with_angle min 90 max 90
+  M4EvenWidthEdges: >-
+    (M4WidthEdges with_length 0.048)
+    or (M4WidthEdges with_length 0.096)
+    or (M4WidthEdges with_length 0.144)
+    or (M4WidthEdges with_length 0.192)
+    or (M4WidthEdges with_length 0.24)
+    or (M4WidthEdges with_length 0.288)
+    or (M4WidthEdges with_length 0.336)
+    or (M4WidthEdges with_length 0.384)
+    or (M4WidthEdges with_length 0.432)
+    or (M4WidthEdges with_length 0.48)
+  M5WidthEdges: M5NoSram edges with_angle min 0 max 0
+  M5EvenWidthEdges: >-
+    (M5WidthEdges with_length 0.048)
+    or (M5WidthEdges with_length 0.096)
+    or (M5WidthEdges with_length 0.144)
+    or (M5WidthEdges with_length 0.192)
+    or (M5WidthEdges with_length 0.24)
+    or (M5WidthEdges with_length 0.288)
+    or (M5WidthEdges with_length 0.336)
+    or (M5WidthEdges with_length 0.384)
+    or (M5WidthEdges with_length 0.432)
+    or (M5WidthEdges with_length 0.48)
+  M6WidthEdges: M6NoSram edges with_angle min 90 max 90
+  M6EvenWidthEdges: >-
+    (M6WidthEdges with_length 0.064)
+    or (M6WidthEdges with_length 0.128)
+    or (M6WidthEdges with_length 0.192)
+    or (M6WidthEdges with_length 0.256)
+    or (M6WidthEdges with_length 0.32)
+    or (M6WidthEdges with_length 0.384)
+    or (M6WidthEdges with_length 0.448)
+    or (M6WidthEdges with_length 0.512)
+    or (M6WidthEdges with_length 0.576)
+    or (M6WidthEdges with_length 0.64)
+  M7WidthEdges: M7NoSram edges with_angle min 0 max 0
+  M7EvenWidthEdges: >-
+    (M7WidthEdges with_length 0.064)
+    or (M7WidthEdges with_length 0.128)
+    or (M7WidthEdges with_length 0.192)
+    or (M7WidthEdges with_length 0.256)
+    or (M7WidthEdges with_length 0.32)
+    or (M7WidthEdges with_length 0.384)
+    or (M7WidthEdges with_length 0.448)
+    or (M7WidthEdges with_length 0.512)
+    or (M7WidthEdges with_length 0.576)
+    or (M7WidthEdges with_length 0.64)
   # V8.W.1 and V9.W.1: a long side of 40 or 120 nm, to the DBU.
   V8Len40: V8NoSram with_bbox_max min 0.04 max 0.04025
   V8Len120: V8NoSram with_bbox_max min 0.12 max 0.12025
