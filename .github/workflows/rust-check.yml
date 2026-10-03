@@ -42,6 +42,9 @@ jobs:
       - name: Test suite
         run: cargo test --all-features
 
+      - name: ASAP7 comparison tooling
+        run: python3 -m unittest discover -s hardening/asap7 -p 'test_*.py'
+
   # The same suite with the merge cache tiled at 7 µm instead of 20: every
   # expectation holds at any tile size, and a tile line through a fixture's
   # shapes is where a result depended on it.

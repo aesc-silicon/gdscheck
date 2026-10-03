@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# FIN (DRM section 3.3).
+#
+# FIN.S.1 is an exact 27 nm pitch.  The deck reads its lower half, a space of at least
+# 20 nm (the pitch less the 7 nm fin); a fin farther from its neighbour than the pitch is
+# off the fin grid, which no rule here reads.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
+rules:
+  - id: FIN.W.1
+    check: exact_width
+    layers: [FinNoSram]
+    value: 0.007
+    params:
+      facing: y
+  - id: FIN.W.2
+    check: min_width
+    layers: [FinNoSram]
+    value: 0.108
+    params:
+      facing: x
+  - id: FIN.S.1
+    check: min_space
+    layers: [FinNoSram]
+    value: 0.02
+    params:
+      facing: y
+  - id: FIN.S.1
+    check: min_notch
+    layers: [FinNoSram]
+    value: 0.02
+    params:
+      facing: y
+  - id: FIN.AUX.1
+    check: forbidden
+    layers: [FinBent]
+    value: 0.0

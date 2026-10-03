@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# LISD, the source/drain local interconnect (DRM section 3.9).
+#
+# The spacings depend on the lengths of the two facing edges, so they read edge layers
+# sorted by length (see `virtual_layers` in pdk.yml): a line's tip is its short edge, its
+# side the long one.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
+rules:
+  - id: LISD.S.1
+    check: min_space
+    layers: [LisdNoSram.long, LisdNoSram.long]
+    value: 0.018
+  - id: LISD.S.2
+    check: min_space
+    layers: [LisdNoSram.short, LisdNoSram.long]
+    value: 0.025
+  - id: LISD.S.3
+    check: min_space
+    layers: [LisdNoSram.mid, LisdNoSram.mid]
+    value: 0.027
+  - id: SRAM.LISD.S.4
+    check: min_space
+    layers: [LisdSram.short, LisdSram.short]
+    value: 0.027
+  - id: LISD.W.1
+    check: min_width
+    layers: [LisdNoSram]
+    value: 0.024
+  - id: LISD.A.1
+    check: min_area
+    layers: [LisdNoSram]
+    value: 0.000648
+  - id: SRAM.LISD.AUX.1
+    check: forbidden
+    layers: [LisdAbutSram]
+    value: 0.0

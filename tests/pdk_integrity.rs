@@ -242,6 +242,7 @@ fn every_mode_word_is_one_its_check_knows() {
         ("abutting", &["ignore", "report", "related"]),
         ("angle", &["bent"]),
         ("diode", &["with", "without"]),
+        ("facing", &["x", "y", "none"]),
         ("metric", &["euclidian", "square", "sidewall"]),
         ("net", &["same", "different", "connected"]),
         ("op", &["apart", "beyond", "overlap", "uncovered"]),
@@ -260,8 +261,8 @@ fn every_mode_word_is_one_its_check_knows() {
                 "window",
             ],
         ),
-        ("sides", &["all", "adjacent", "line_end"]),
-        ("span", &["narrowest"]),
+        ("sides", &["all", "any", "opposite", "adjacent", "line_end"]),
+        ("span", &["any", "narrowest"]),
         ("touching", &["separate"]),
         ("walls", &["unshared"]),
     ];

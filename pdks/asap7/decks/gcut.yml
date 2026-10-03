@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GCUT (DRM section 3.6).
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
+rules:
+  - id: GCUT.W.1
+    check: min_width
+    layers: [GcutNoSram]
+    value: 0.017
+    params:
+      facing: y
+  - id: GCUT.ACTIVE.S.1
+    check: min_space
+    layers: [GcutNoSram, ChannelNoSram]
+    value: 0.004
+    params:
+      facing: y
+  - id: GCUT.GATE.EX.1
+    check: min_enclosure
+    layers: [GCUT, GateNoSram]
+    value: 0.017
+    params:
+      facing: x
+      interacting_only: 1
+  # The gates a GCUT cuts overlap it and are no pair; this is the space to the rest.
+  - id: GCUT.GATE.S.2
+    check: min_space
+    layers: [GcutNoSram, GateNoSram]
+    value: 0.017
+  - id: GCUT.S.3
+    check: min_space
+    layers: [GcutNoSram]
+    value: 0.035
+    params:
+      facing: y
+  - id: GCUT.S.3
+    check: min_notch
+    layers: [GcutNoSram]
+    value: 0.035
+    params:
+      facing: y
+  - id: GCUT.AUX.1
+    check: forbidden
+    layers: [GcutOffGate]
+    value: 0.0
+  - id: GCUT.AUX.2
+    check: forbidden
+    layers: [GcutVEdgesInside]
+    value: 0.0
+  - id: GCUT.AUX.2
+    check: forbidden
+    layers: [GcutVEdgesOnGate]
+    value: 0.0
+  - id: GCUT.AUX.3
+    check: forbidden
+    layers: [GcutOnChannel]
+    value: 0.0

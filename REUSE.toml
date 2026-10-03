@@ -54,3 +54,18 @@ SPDX-License-Identifier = "Apache-2.0"
 path = ["tests/data/gf180mcuD/generated/*.gds.gz", "tests/data/gf180mcuD/generated/**/*.gds.gz"]
 SPDX-FileCopyrightText = "2026 aesc silicon"
 SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+# The ASAP7 7.5-track LVT standard-cell library (asap7sc7p5t_28, release 220121a),
+# every cell placed once under one top cell ALLCELLS, 20 to a row with 1 um between
+# them; no cell was touched.  Listed after the generic tests/data globs so this more
+# specific entry takes precedence over them.
+path = "tests/data/asap7/static/asap7sc7p5t_28_L.gds.gz"
+SPDX-FileCopyrightText = "2022 Lawrence T. Clark, Vinay Vashishtha, or Arizona State University"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+# The unmodified hierarchical 32-bit SRAM bank from asap7_sram_0p0.
+[[annotations]]
+path = "tests/data/asap7/static/srambank_32b.gds.gz"
+SPDX-FileCopyrightText = "2023 The OpenROAD Project"
+SPDX-License-Identifier = "BSD-3-Clause"

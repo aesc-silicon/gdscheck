@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M1 (DRM section 3.12).  The side, tip and tip-to-tip spacings read edge layers sorted
+# by length (see `virtual_layers` in pdk.yml); M1.S.6 is the corner-to-corner space, read on
+# the pairs that face each other nowhere under it.
+#
+# SRAM exemption (DRM convention 7): skip whole M1 polygons with positive-area overlap
+# with SRAMDRC. Edge-only and point-only contact remain checked. Spacing is measured
+# when neither polygon overlaps the marker.
+# SRAM applicability: see hardening/asap7/sram-scope.tsv and the PDK documentation.
+rules:
+  - id: M1.W.1
+    check: min_width
+    layers: [M1NoSram]
+    value: 0.018
+  - id: M1.S.1
+    check: min_space
+    layers: [M1NoSram.long, M1NoSram.long]
+    value: 0.018
+  - id: M1.S.2
+    check: min_space
+    layers: [M1NoSram.short, M1NoSram.long]
+    value: 0.025
+  - id: M1.S.3
+    check: min_space
+    layers: [M1NoSram.mid, M1NoSram.mid]
+    value: 0.027
+  - id: M1.S.4
+    check: min_space
+    layers: [M1NoSram.tiny, M1NoSram.tiny]
+    value: 0.031
+  - id: M1.S.5
+    check: min_space
+    layers: [M1NoSram.mid, M1NoSram.tiny]
+    value: 0.031
+  - id: M1.S.6
+    check: min_space
+    layers: [M1NoSram]
+    value: 0.02
+    params:
+      facing: none
+  - id: M1.A.1
+    check: min_area
+    layers: [M1NoSram]
+    value: 0.000504

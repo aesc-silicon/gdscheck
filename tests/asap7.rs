@@ -1,0 +1,884 @@
+// SPDX-FileCopyrightText: 2026 aesc silicon
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+//! ASAP7 tests.
+//!
+//! The Calibre deck the manual was written against is not public, so there are no
+//! foundry test cases to run the decks on.  What there is, is the standard-cell
+//! library the PDK ships, which was verified with that deck: every cell of it, placed
+//! once, is the fixture.  A rule that reads the manual wrongly shows up here as a
+//! violation on a cell that has none.
+//!
+//! The baseline includes isolated-cell context effects. The half-width
+//! filler FILLERxp5 and the TAPCELL_WITH_FILLER are 54 nm wide, under the 108 nm the
+//! manual asks of a well, an implant and a fin across, which only abutting cells make
+//! up. DFFASRHQNx1 also draws an LIG 3 nm from an SDT on the same extracted net;
+//! the net-aware spacing correctly waives it, unlike the geometric approximation.
+//! The KLayout port reports that spacing and the isolated-cell findings.  FILLERxp5's gate also has no neighbour until a cell is placed
+//! beside it, which the port's GATE.S.3 - a gate grown and tested against itself -
+//! cannot see.
+//! The external comparison also records additional KLayout findings which need
+//! individual review; these counts alone do not establish checker parity.
+
+use gdscheck::run_drc;
+use rstest::rstest;
+
+const PDK: &str = "asap7";
+const LIB: &str = "tests/data/asap7/static/asap7sc7p5t_28_L.gds.gz";
+
+fn counts(gds: &str, suite: &str) -> Vec<(String, usize)> {
+    let violations = run_drc(gds, PDK, &[], Some(suite), "ALLCELLS", true).expect("DRC run failed");
+    let mut by_rule: std::collections::BTreeMap<String, usize> = std::collections::BTreeMap::new();
+    for v in violations {
+        *by_rule.entry(v.rule_id).or_default() += 1;
+    }
+    by_rule.into_iter().collect()
+}
+
+/// Freeze the reviewed library baseline. A width is two markers, one per wall;
+/// the independent comparison records disagreements beyond this regression test.
+#[test]
+fn the_standard_cell_library_matches_the_reviewed_baseline() {
+    let want: Vec<(String, usize)> = [
+        ("FIN.W.2", 20),
+        ("GATE.S.3", 2),
+        ("LVT.W.1", 2),
+        ("NSELECT.W.1", 4),
+        ("PSELECT.W.1", 4),
+        ("WELL.W.1", 2),
+    ]
+    .iter()
+    .map(|(id, n)| ((*id).to_string(), *n))
+    .collect();
+    assert_eq!(counts(LIB, "main"), want);
+}
+
+/// The front-end and back-end suites split the full run between them: every deck is
+/// in one or the other, and none in both.
+#[test]
+fn the_feol_and_beol_suites_split_main() {
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).expect("PDK loads");
+    let ids = |suite: &str| -> std::collections::BTreeSet<String> {
+        pdk.load_suite(suite)
+            .expect("suite loads")
+            .iter()
+            .map(|r| {
+                let layers: Vec<&str> = r.layers.iter().map(|l| l.name.as_str()).collect();
+                format!("{} {} {:?} {}", r.id, r.check, layers, r.value)
+            })
+            .collect()
+    };
+    let (main, feol, beol) = (ids("main"), ids("feol"), ids("beol"));
+    assert!(feol.is_disjoint(&beol), "a rule in both feol and beol");
+    let both: std::collections::BTreeSet<String> = feol.union(&beol).cloned().collect();
+    let missing: Vec<&String> = main.difference(&both).collect();
+    assert!(missing.is_empty(), "in main, in neither half: {missing:?}");
+}
+
+/// Portable GDS cases shared with the independent KLayout comparison. Each row
+/// names a manual-derived target; incidental rules remain visible in the oracle
+/// report but do not change that target's expectation.
+#[test]
+fn generated_oracle_cases_follow_the_manual() {
+    use std::collections::BTreeMap;
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let rules = pdk.load_suite("main").unwrap();
+    let mut cases: BTreeMap<&str, Vec<(&str, bool)>> = BTreeMap::new();
+    for line in include_str!("data/asap7/generated/cases.tsv").lines() {
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(columns.len(), 4);
+        assert!(matches!(columns[2], "pass" | "fail"));
+        cases
+            .entry(columns[0])
+            .or_default()
+            .push((columns[1], columns[2] == "fail"));
+    }
+    assert!(!cases.is_empty());
+    for (name, expectations) in cases {
+        let path = format!("tests/data/asap7/generated/{name}.gds.gz");
+        let violations = run_drc(&path, PDK, &[], Some("main"), "TOP", false).unwrap();
+        for (rule, bad) in expectations {
+            assert!(
+                rules.iter().any(|r| r.id == rule),
+                "unknown target rule {rule}"
+            );
+            assert_eq!(
+                violations.iter().any(|v| v.rule_id == rule),
+                bad,
+                "{name}: {rule}: {violations:?}"
+            );
+        }
+        if name == "routed_clean" {
+            assert!(violations.is_empty(), "{violations:?}");
+        }
+        if name == "routed_bad" {
+            assert_eq!(violations.len(), 1, "{violations:?}");
+            assert_eq!(violations[0].rule_id, "V8.M9.EN.2");
+        }
+    }
+}
+
+/// Rectangles in nm, on ASAP7's 0.25 nm grid. Moving the same drawing across tile
+/// boundaries checks that a rule reads whole regions, including both via sides.
+fn rectangles(
+    deck: &str,
+    shapes: &[(&str, [f64; 4])],
+    origin: f64,
+    tile_um: f64,
+) -> Vec<gdscheck::Violation> {
+    use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStruct, GdsUnits};
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let mut top = GdsStruct::new("TOP");
+    for &(name, [x0, y0, x1, y1]) in shapes {
+        let layer = pdk.layer(name).unwrap();
+        let point = |x: f64, y: f64| {
+            GdsPoint::new(
+                ((origin + x) * 4.0).round() as i32,
+                ((origin + y) * 4.0).round() as i32,
+            )
+        };
+        top.elems.push(GdsElement::GdsBoundary(GdsBoundary {
+            layer: layer.gds_layer as i16,
+            datatype: layer.gds_datatype as i16,
+            xy: vec![
+                point(x0, y0),
+                point(x1, y0),
+                point(x1, y1),
+                point(x0, y1),
+                point(x0, y0),
+            ],
+            ..Default::default()
+        }));
+    }
+    let mut lib = GdsLibrary::new("ASAP7_REGRESSION");
+    lib.units = GdsUnits(0.00025, 0.25e-9);
+    lib.structs = vec![top];
+    gdscheck::run_drc_with_options(
+        &lib,
+        PDK,
+        &[deck],
+        None,
+        "TOP",
+        true,
+        &gdscheck::RunOptions {
+            tile_um,
+            ..Default::default()
+        },
+    )
+    .unwrap()
+}
+
+/// DRM 3.14/3.16 bound vertical M4/M6 width; M5/M7 rotate that bound.
+/// A short, over-wide rectangle must fail even when its other dimension is
+/// narrow. Long legal wires must pass: the limit is across the specified axis.
+#[rstest]
+#[case::m4("m4", "M4", 480.0, true)]
+#[case::m5("m5", "M5", 480.0, false)]
+#[case::m6("m6", "M6", 640.0, true)]
+#[case::m7("m7", "M7", 640.0, false)]
+fn directional_max_width_uses_the_routing_axis(
+    #[case] deck: &str,
+    #[case] layer: &str,
+    #[case] limit: f64,
+    #[case] horizontal: bool,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for (width, length, bad) in [
+            (limit - 0.25, 100.0, false),
+            (limit, 100.0, false),
+            (limit + 0.25, 100.0, true),
+            (100.0, 5_000.0, false),
+            (limit + 0.25, 5_000.0, true),
+        ] {
+            let (x, y) = if horizontal {
+                (length, width)
+            } else {
+                (width, length)
+            };
+            let v = rectangles(deck, &[(layer, [0.0, 0.0, x, y])], origin, tile);
+            assert_eq!(
+                v.iter()
+                    .filter(|v| v.rule_id == format!("{layer}.W.2"))
+                    .count(),
+                if bad { 2 } else { 0 },
+                "{layer}: {width} nm across, {length} nm along, tile {tile}: {v:?}"
+            );
+            assert!(
+                v.iter()
+                    .all(|v| [format!("{layer}.W.2"), format!("{layer}.W.3")].contains(&v.rule_id)),
+                "{v:?}"
+            );
+        }
+    }
+}
+
+/// Two 18 nm line ends 24.5 nm apart break the 31 nm tip-to-tip space. The SRAM
+/// exemption requires positive-area overlap with either wire; edge-only and
+/// point-only contact leave the pair checked, including across tile boundaries.
+#[rstest]
+#[case::m1("m1", "M1")]
+#[case::m2("m2", "M2")]
+#[case::m3("m3", "M3")]
+fn m1_to_m3_spacing_skips_shapes_overlapping_sramdrc(#[case] deck: &str, #[case] layer: &str) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for (marker, bad) in [
+            (None, true),
+            (Some([500.0, 0.0, 600.0, 100.0]), true),
+            (Some([-50.0, -50.0, 70.0, 300.0]), false),
+            (Some([-50.0, 150.0, 70.0, 300.0]), false),
+            (Some([18.0, 150.0, 70.0, 300.0]), true),
+            (Some([18.0, 224.5, 70.0, 300.0]), true),
+            (Some([18.25, 224.5, 70.0, 300.0]), true),
+            (Some([17.75, 224.25, 70.0, 300.0]), false),
+        ] {
+            let mut shapes = vec![
+                (layer, [0.0, 0.0, 18.0, 100.0]),
+                (layer, [0.0, 124.5, 18.0, 224.5]),
+            ];
+            shapes.extend(marker.map(|m| ("SRAMDRC", m)));
+            let v = rectangles(deck, &shapes, origin, tile);
+            assert_eq!(!v.is_empty(), bad, "{layer}, marker {marker:?}: {v:?}");
+            assert!(
+                v.iter().all(|v| v.rule_id == format!("{layer}.S.4")),
+                "{v:?}"
+            );
+        }
+    }
+}
+
+/// Width and area exemptions have the same positive-area boundary as spacing.
+#[rstest]
+#[case::m1_width("m1", "M1", 17.75, 100.0, "M1.W.1")]
+#[case::m2_width("m2", "M2", 17.75, 100.0, "M2.W.1")]
+#[case::m3_width("m3", "M3", 17.75, 100.0, "M3.W.1")]
+#[case::m1_area("m1", "M1", 18.0, 27.75, "M1.A.1")]
+#[case::m2_area("m2", "M2", 18.0, 27.75, "M2.A.1")]
+#[case::m3_area("m3", "M3", 18.0, 27.75, "M3.A.1")]
+fn m1_to_m3_width_and_area_skip_shapes_overlapping_sramdrc(
+    #[case] deck: &str,
+    #[case] layer: &str,
+    #[case] width: f64,
+    #[case] height: f64,
+    #[case] rule: &str,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for (marker, bad) in [
+            (None, true),
+            (
+                Some([width + 0.25, height, width + 100.0, height + 100.0]),
+                true,
+            ),
+            (Some([width, 0.0, width + 100.0, height]), true),
+            (Some([width, height, width + 100.0, height + 100.0]), true),
+            (
+                Some([width - 0.25, height - 0.25, width + 100.0, height + 100.0]),
+                false,
+            ),
+            (Some([-1.0, -1.0, width + 1.0, height + 1.0]), false),
+        ] {
+            let mut shapes = vec![(layer, [0.0, 0.0, width, height])];
+            shapes.extend(marker.map(|m| ("SRAMDRC", m)));
+            let v = rectangles(deck, &shapes, origin, tile);
+            assert_eq!(!v.is_empty(), bad, "{layer}, marker {marker:?}: {v:?}");
+            assert!(v.iter().all(|v| v.rule_id == rule), "{v:?}");
+        }
+    }
+}
+
+/// Keep the reviewed inventory complete when a new rule or operand is introduced.
+#[test]
+fn every_implemented_check_has_a_reviewed_sram_scope() {
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let mut actual = Vec::new();
+    for deck in &pdk.decks {
+        for rule in pdk.load_deck(&deck.name).unwrap() {
+            let layers = rule
+                .layers
+                .iter()
+                .map(|l| l.name.as_str())
+                .collect::<Vec<_>>()
+                .join(",");
+            actual.push(format!(
+                "{}\t{}\t{}\t{}",
+                deck.name, rule.id, rule.check, layers
+            ));
+        }
+    }
+    let mut reviewed = Vec::new();
+    for line in include_str!("../hardening/asap7/sram-scope.tsv").lines() {
+        if line.starts_with('#') || line.starts_with("deck\t") || line.is_empty() {
+            continue;
+        }
+        let cols: Vec<_> = line.split('\t').collect();
+        assert_eq!(cols.len(), 6, "{line}");
+        assert!(
+            matches!(cols[3], "ordinary" | "sram" | "boundary" | "both"),
+            "{line}"
+        );
+        assert!(!cols[5].is_empty(), "{line}");
+        reviewed.push(format!(
+            "{}\t{}\t{}\t{}",
+            cols[0], cols[1], cols[2], cols[4]
+        ));
+    }
+    actual.sort();
+    reviewed.sort();
+    assert_eq!(
+        actual, reviewed,
+        "Review the SRAM scope of every changed check"
+    );
+}
+
+/// Each ordinary width family must flag its defect outside SRAM and retain contact-only
+/// cases, while even a one-DBU overlap at the far corner exempts the entire polygon.
+#[rstest]
+#[case::well("well", "NWELL", 107.75, 54.0, "WELL.W.1")]
+#[case::fin("fin", "FIN", 120.0, 6.75, "FIN.W.1")]
+#[case::gate("gate", "GATE", 19.75, 100.0, "GATE.W.1")]
+#[case::gcut("gcut", "GCUT", 40.0, 16.75, "GCUT.W.1")]
+#[case::active("active", "ACTIVE", 15.75, 27.0, "ACTIVE.W.3")]
+#[case::sdt("sdt", "SDT", 23.75, 27.0, "SDT.W.1")]
+#[case::lisd("lisd", "LISD", 23.75, 100.0, "LISD.W.1")]
+#[case::lig("lig", "LIG", 15.75, 100.0, "LIG.W.1")]
+#[case::nselect("select", "NSELECT", 107.75, 54.0, "NSELECT.W.1")]
+#[case::pselect("select", "PSELECT", 107.75, 54.0, "PSELECT.W.1")]
+#[case::slvt("select", "SLVT", 107.75, 54.0, "SLVT.W.1")]
+#[case::lvt("select", "LVT", 107.75, 54.0, "LVT.W.1")]
+#[case::sramvt("select", "SRAMVT", 107.75, 54.0, "SRAMVT.W.1")]
+#[case::m4("m4", "M4", 100.0, 23.75, "M4.W.1")]
+#[case::m5("m5", "M5", 23.75, 100.0, "M5.W.1")]
+#[case::m6("m6", "M6", 100.0, 31.75, "M6.W.1")]
+#[case::m7("m7", "M7", 31.75, 100.0, "M7.W.1")]
+#[case::m8("m8", "M8", 39.75, 100.0, "M8.W.1")]
+#[case::m9("m9", "M9", 39.75, 100.0, "M9.W.1")]
+#[case::v0("v0", "V0", 17.75, 18.0, "V0.W.1")]
+#[case::v1("v1", "V1", 17.75, 18.0, "V1.W.1")]
+#[case::v2("v2", "V2", 17.75, 18.0, "V2.W.1")]
+#[case::v3("v3", "V3", 17.75, 18.0, "V3.W.1")]
+#[case::v4("v4", "V4", 23.75, 24.0, "V4.W.1")]
+#[case::v5("v5", "V5", 23.75, 24.0, "V5.W.1")]
+#[case::v6("v6", "V6", 31.75, 32.0, "V6.W.1")]
+#[case::v7("v7", "V7", 31.75, 32.0, "V7.W.1")]
+#[case::v8("v8", "V8", 39.75, 40.0, "V8.W.1")]
+#[case::v9("v9", "V9", 39.75, 40.0, "V9.W.1")]
+fn ordinary_width_rules_share_the_sram_partition(
+    #[case] deck: &str,
+    #[case] layer: &str,
+    #[case] width: f64,
+    #[case] height: f64,
+    #[case] rule: &str,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for (marker, bad) in [
+            (None, true),
+            (Some([width, 0.0, width + 100.0, height]), true),
+            (Some([width, height, width + 100.0, height + 100.0]), true),
+            (
+                Some([width - 0.25, height - 0.25, width + 100.0, height + 100.0]),
+                false,
+            ),
+            (Some([-1.0, -1.0, width + 1.0, height + 1.0]), false),
+        ] {
+            let mut shapes = vec![(layer, [0.0, 0.0, width, height])];
+            shapes.extend(marker.map(|m| ("SRAMDRC", m)));
+            let v = rectangles(deck, &shapes, origin, tile);
+            assert_eq!(
+                v.iter().any(|v| v.rule_id == rule),
+                bad,
+                "{rule}, marker {marker:?}, tile {tile}: {v:?}"
+            );
+        }
+    }
+}
+
+/// A marker over all physical geometry must leave only explicit SRAM checks active.
+/// This also exercises derived forbidden/coverage predicates, not just width checks.
+#[test]
+fn a_fully_marked_layout_keeps_only_explicit_sram_checks() {
+    let raw: serde_norway::Value =
+        serde_norway::from_str(include_str!("../pdks/asap7/pdk.yml")).unwrap();
+    let names: Vec<_> = raw["layers"]
+        .as_sequence()
+        .unwrap()
+        .iter()
+        .map(|l| l["name"].as_str().unwrap())
+        .filter(|n| !n.contains('.') && *n != "SRAMDRC")
+        .collect();
+    let mut shapes: Vec<_> = names.iter().map(|&n| (n, [0.0, 0.0, 10.0, 10.0])).collect();
+    shapes.push(("SRAMDRC", [-1.0, -1.0, 11.0, 11.0]));
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let mut saw_sram = false;
+    for deck in &pdk.decks {
+        let v = rectangles(&deck.name, &shapes, 6_995.0, 7.0);
+        assert!(
+            v.iter().all(|v| v.rule_id.starts_with("SRAM.")),
+            "{}: {v:?}",
+            deck.name
+        );
+        saw_sram |= !v.is_empty();
+    }
+    assert!(
+        saw_sram,
+        "The marker must not disable the explicit SRAM rules"
+    );
+}
+
+#[rstest]
+#[case::lisd("lisd", "LISD", 24.0, 17.75, "LISD.S.1")]
+#[case::lig("lig", "LIG", 16.0, 17.75, "LIG.S.1")]
+#[case::m8("m8", "M8", 40.0, 39.75, "M8.S.1")]
+#[case::m9("m9", "M9", 40.0, 39.75, "M9.S.1")]
+fn ordinary_edge_spacing_requires_two_non_sram_polygons(
+    #[case] deck: &str,
+    #[case] layer: &str,
+    #[case] width: f64,
+    #[case] gap: f64,
+    #[case] rule: &str,
+) {
+    for tile in [7.0, 20.0] {
+        for (marker, bad) in [
+            (None, true),
+            (Some([0.0, 90.0, width, 110.0]), false),
+            (Some([width, 90.0, width + 1.0, 110.0]), true),
+        ] {
+            let mut shapes = vec![
+                (layer, [0.0, 0.0, width, 100.0]),
+                (layer, [width + gap, 0.0, 2.0 * width + gap, 100.0]),
+            ];
+            shapes.extend(marker.map(|m| ("SRAMDRC", m)));
+            let v = rectangles(deck, &shapes, 6_990.0, tile);
+            assert_eq!(
+                v.iter().any(|v| v.rule_id == rule),
+                bad,
+                "{rule}, {marker:?}: {v:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_remote_marker_exempts_the_whole_wire_across_tiles() {
+    for tile in [7.0, 20.0] {
+        let mut shapes = vec![
+            ("M1", [0.0, 0.0, 18.0, 25_000.0]),
+            ("M1", [0.0, 25_024.5, 18.0, 25_124.5]),
+        ];
+        let v = rectangles("m1", &shapes, 100.0, tile);
+        assert!(v.iter().any(|v| v.rule_id == "M1.S.4"), "{v:?}");
+        shapes.push(("SRAMDRC", [0.0, 0.0, 18.0, 1.0]));
+        let v = rectangles("m1", &shapes, 100.0, tile);
+        assert!(
+            v.is_empty(),
+            "A marker 25 um from the gap must select the whole wire: {v:?}"
+        );
+    }
+}
+
+/// An outside via must still see all its landing metal, even if that metal is SRAM
+/// elsewhere. A defective enclosure must remain visible too; filtering both operands
+/// would either erase the defect or create a false missing-metal finding.
+#[rstest]
+#[case::v1(("v1", "V1", "M1", "M2"), (18.0, 5.0, 1.0), "V1.M1.EN.1")]
+#[case::v8(("v8", "V8", "M9", "M8"), (40.0, 20.0, 19.75), "V8.M9.EN.2")]
+fn enclosure_keeps_full_reference_metal(
+    #[case] stack: (&str, &str, &str, &str),
+    #[case] dimensions: (f64, f64, f64),
+    #[case] rule: &str,
+) {
+    let (deck, via, metal, other) = stack;
+    let (size, good, bad) = dimensions;
+    for tile in [7.0, 20.0] {
+        for margin in [good, bad] {
+            let mut shapes = vec![
+                (via, [0.0, 0.0, size, size]),
+                (metal, [-margin, -margin, 120.0, size + margin]),
+                (other, [-good, -good, size + good, size + good]),
+            ];
+            let before = rectangles(deck, &shapes, 6_990.0, tile);
+            shapes.push(("SRAMDRC", [100.0, 0.0, 130.0, size]));
+            let after = rectangles(deck, &shapes, 6_990.0, tile);
+            let count = |v: &[gdscheck::Violation]| v.iter().filter(|v| v.rule_id == rule).count();
+            assert_eq!(
+                count(&before),
+                count(&after),
+                "{rule}: {before:?} vs {after:?}"
+            );
+            assert_eq!(count(&after) > 0, margin == bad, "{rule}: {after:?}");
+            assert_eq!(
+                before.len(),
+                after.len(),
+                "Reference membership changed another via check"
+            );
+        }
+    }
+}
+
+#[rstest]
+#[case::one_nm(1.0, true)]
+#[case::just_under(16.75, true)]
+#[case::exact(17.0, false)]
+#[case::over(17.25, false)]
+#[case::full(27.0, false)]
+fn sram_sdt_requires_seventeen_nm_of_active_overlap(#[case] overlap: f64, #[case] bad: bool) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        let shapes = [
+            ("SDT", [0.0, 0.0, 24.0, 27.0]),
+            ("ACTIVE", [-10.0, 27.0 - overlap, 40.0, 54.0 - overlap]),
+            ("LISD", [-5.0, -5.0, 30.0, 60.0]),
+            ("SRAMDRC", [-20.0, -20.0, 70.0, 70.0]),
+        ];
+        let v = rectangles("sdt", &shapes, origin, tile);
+        assert_eq!(v.len(), if bad { 2 } else { 0 }, "{v:?}");
+        assert!(
+            v.iter().all(|v| v.rule_id == "SRAM.SDT.ACTIVE.OV.3"),
+            "{v:?}"
+        );
+    }
+}
+
+#[test]
+fn sram_sdt_overlap_also_checks_an_active_contained_inside_it() {
+    let v = rectangles(
+        "sdt",
+        &[
+            ("SDT", [0.0, 0.0, 24.0, 27.0]),
+            ("ACTIVE", [2.0, 2.0, 22.0, 18.75]),
+            ("LISD", [-5.0, -5.0, 30.0, 60.0]),
+            ("SRAMDRC", [-20.0, -20.0, 70.0, 70.0]),
+        ],
+        100.0,
+        20.0,
+    );
+    assert_eq!(v.len(), 2, "{v:?}");
+    assert!(v.iter().all(|v| v.rule_id == "SRAM.SDT.ACTIVE.OV.3"));
+}
+
+#[rstest]
+#[case::split_axes([5.0, 0.0, 2.0, 2.0], true)]
+#[case::small_side_under([5.0, 1.75, 0.0, 0.0], true)]
+#[case::large_side_under([4.75, 2.0, 0.0, 0.0], true)]
+#[case::both_small([2.0, 2.0, 2.0, 2.0], true)]
+#[case::left([5.0, 2.0, 0.0, 0.0], false)]
+#[case::right([2.0, 5.0, 0.0, 0.0], false)]
+#[case::bottom([0.0, 0.0, 5.0, 2.0], false)]
+#[case::top([0.0, 0.0, 2.0, 5.0], false)]
+#[case::over([5.25, 2.25, 0.0, 0.0], false)]
+fn v1_enclosure_requires_five_and_two_on_the_same_pair(
+    #[case] margins: [f64; 4],
+    #[case] bad: bool,
+) {
+    let [left, right, bottom, top] = margins;
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        let v = rectangles(
+            "v1",
+            &[
+                ("V1", [0.0, 0.0, 18.0, 18.0]),
+                ("M1", [-left, -bottom, 18.0 + right, 18.0 + top]),
+                ("M2", [0.0, -5.0, 18.0, 23.0]),
+            ],
+            origin,
+            tile,
+        );
+        assert_eq!(v.len(), usize::from(bad), "{v:?}");
+        assert!(v.iter().all(|v| v.rule_id == "V1.M1.EN.1"), "{v:?}");
+    }
+}
+
+/// Neither an empty intersection nor ordinary containment can stand in for the
+/// explicit 17 nm SRAM overlap. Select the whole SDT, retaining full references.
+#[rstest]
+#[case::active("ACTIVE", "LISD", "SRAM.SDT.ACTIVE.OV.3")]
+#[case::lisd("LISD", "ACTIVE", "SRAM.SDT.LISD.OV.4")]
+fn sram_sdt_requires_overlap_even_when_reference_is_absent(
+    #[case] reference: &str,
+    #[case] other: &str,
+    #[case] rule: &str,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for overlap in [
+            None,
+            Some(-0.25),
+            Some(0.0),
+            Some(0.25),
+            Some(16.75),
+            Some(17.0),
+            Some(17.25),
+        ] {
+            for marker in [[-10.0, -10.0, 40.0, 40.0], [23.75, 26.75, 40.0, 40.0]] {
+                let mut shapes = vec![
+                    ("SDT", [0.0, 0.0, 24.0, 27.0]),
+                    (other, [-10.0, -10.0, 40.0, 40.0]),
+                    ("SRAMDRC", marker),
+                ];
+                if let Some(h) = overlap {
+                    shapes.push((reference, [0.0, h - 50.0, 24.0, h]));
+                }
+                let v = rectangles("sdt", &shapes, origin, tile);
+                assert_eq!(
+                    v.iter().any(|v| v.rule_id == rule),
+                    overlap.is_none_or(|h| h < 17.0),
+                    "{reference}, overlap {overlap:?}, marker {marker:?}, tile {tile}: {v:?}"
+                );
+                assert!(v.iter().all(|v| v.rule_id == rule), "{v:?}");
+            }
+        }
+    }
+}
+
+/// DRM figures 3.11.1(b,c) and 3.13.1: only end-caps at the gap's
+/// corners relax its spacing. Both vias always have a remote 5 nm end-cap.
+#[rstest]
+#[case::v0("v0", "V0", "M1")]
+#[case::v1("v1", "V1", "M2")]
+#[case::v2("v2", "V2", "M3")]
+#[case::v3("v3", "V3", "M4")]
+fn via_corner_spacing_reads_the_local_endcaps(
+    #[case] deck: &str,
+    #[case] via: &str,
+    #[case] metal: &str,
+) {
+    for (origin, tile) in [
+        (100.0, 20.0),
+        (6_990.0, 7.0),
+        (19_990.0, 20.0),
+        (-10.0, 7.0),
+        (6_982.0, 7.0),
+    ] {
+        for (cap_a, cap_b, suffix, gap_bad, gap_good) in [
+            (5.0, 5.0, "S.2", 14.25, 14.5),
+            (5.25, 5.0, "S.2", 14.25, 14.5),
+            (0.0, 0.0, "S.3", 23.75, 24.0),
+            (4.75, 4.75, "S.3", 23.75, 24.0),
+            (5.0, 0.0, "S.4", 20.0, 20.25),
+            (0.0, 5.0, "S.4", 20.0, 20.25),
+            (4.75, 5.0, "S.4", 20.0, 20.25),
+        ] {
+            for (gap, bad) in [(gap_bad, true), (gap_good, false)] {
+                for rotate in [false, true] {
+                    for sram in [false, true] {
+                        let x = 18.0 + gap;
+                        let mut shapes = vec![
+                            (via, [0.0, 0.0, 18.0, 18.0]),
+                            (via, [x, 36.0, x + 18.0, 54.0]),
+                            (metal, [-5.0, 0.0, 18.0 + cap_a, 18.0]),
+                            (metal, [x - cap_b, 36.0, x + 23.0, 54.0]),
+                        ];
+                        if sram {
+                            shapes.push(("SRAMDRC", [-10.0, -10.0, 100.0, 100.0]));
+                        }
+                        if rotate {
+                            for (_, r) in &mut shapes {
+                                *r = [r[1], r[0], r[3], r[2]];
+                            }
+                        }
+                        let v = rectangles(deck, &shapes, origin, tile);
+                        let ids: Vec<_> = v
+                            .iter()
+                            .filter(|v| {
+                                ["S.2", "S.3", "S.4"]
+                                    .iter()
+                                    .any(|s| v.rule_id == format!("{via}.{s}"))
+                            })
+                            .map(|v| v.rule_id.as_str())
+                            .collect();
+                        let expected = format!("{via}.{suffix}");
+                        assert_eq!(
+                            ids,
+                            if bad && !sram {
+                                vec![expected.as_str()]
+                            } else {
+                                vec![]
+                            },
+                            "{via}, caps {cap_a}/{cap_b}, gap {gap}, rotate {rotate}, SRAM {sram}, origin {origin}, tile {tile}: {v:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// DRM 3.11 figure 3.11.1(d): a via may protrude past LISD onto LIG,
+/// but the overlap still needs 3 nm on the same opposite pair of lateral sides.
+#[test]
+fn partly_landed_v0_keeps_its_lateral_lisd_enclosure() {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for (left, right, bad) in [
+            (3.0, 3.0, false),
+            (3.25, 3.25, false),
+            (2.75, 3.0, true),
+            (3.0, 2.75, true),
+            (0.0, 6.0, true),
+        ] {
+            for rotate in [false, true] {
+                let mut shapes = vec![
+                    ("V0", [0.0, 0.0, 18.0, 18.0]),
+                    ("LISD", [-left, -30.0, 18.0 + right, 9.0]),
+                    ("LIG", [-20.0, 1.0, 40.0, 17.0]),
+                    ("M1", [-5.0, 0.0, 23.0, 18.0]),
+                ];
+                if rotate {
+                    for (_, r) in &mut shapes {
+                        *r = [r[1], r[0], r[3], r[2]];
+                    }
+                }
+                let v = rectangles("v0", &shapes, origin, tile);
+                assert_eq!(
+                    v.iter().any(|v| v.rule_id == "V0.LISD.EN.3"),
+                    bad,
+                    "margins {left}/{right}, rotate {rotate}, tile {tile}: {v:?}"
+                );
+                assert!(v.iter().all(|v| v.rule_id == "V0.LISD.EN.3"), "{v:?}");
+            }
+        }
+    }
+}
+
+/// Same-net qualification must include remote metal routes, including portions
+/// inside SRAM. Cutting either landing via restores the different-net violation.
+#[rstest]
+#[case::lisd("LISD", "LIG.LISD.S.6")]
+#[case::sdt("SDT", "LIG.SDT.S.8")]
+fn lig_spacing_resolves_remote_connections(#[case] other: &str, #[case] rule: &str) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for connected in [false, true] {
+            let mut shapes = vec![
+                ("LIG", [0.0, 0.0, 16.0, 100.0]),
+                (other, [29.75, 0.0, 53.75, 100.0]),
+                ("LISD", [29.75, 80.0, 53.75, 100.0]),
+                ("V0", [0.0, 80.0, 16.0, 98.0]),
+                ("M1", [-5.0, 80.0, 60.0, 98.0]),
+                // Mark only the connecting metal, not the measured subjects.
+                ("SRAMDRC", [-5.0, 85.0, -1.0, 95.0]),
+            ];
+            if connected {
+                shapes.push(("V0", [32.0, 80.0, 50.0, 98.0]));
+            }
+            let v = rectangles("lig", &shapes, origin, tile);
+            assert_eq!(
+                v.iter().any(|v| v.rule_id == rule),
+                !connected,
+                "{other}, connected {connected}, tile {tile}: {v:?}"
+            );
+        }
+    }
+}
+
+#[rstest]
+#[case::m4("m4", "M4", 24.0, true)]
+#[case::m5("m5", "M5", 24.0, false)]
+#[case::m6("m6", "M6", 32.0, true)]
+#[case::m7("m7", "M7", 32.0, false)]
+fn routing_width_cannot_be_an_even_multiple(
+    #[case] deck: &str,
+    #[case] layer: &str,
+    #[case] width: f64,
+    #[case] horizontal: bool,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for multiple in 1..=20 {
+            for delta in [-0.25, 0.0, 0.25] {
+                let w = width * multiple as f64 + delta;
+                let r = if horizontal {
+                    [0.0, 0.0, 1000.0, w]
+                } else {
+                    [0.0, 0.0, w, 1000.0]
+                };
+                for sram in [false, true] {
+                    let mut shapes = vec![(layer, r)];
+                    if sram {
+                        shapes.push(("SRAMDRC", [-1.0, -1.0, 1.0, 1.0]));
+                    }
+                    let v = rectangles(deck, &shapes, origin, tile);
+                    assert_eq!(
+                        v.iter().any(|v| v.rule_id == format!("{layer}.W.3")),
+                        multiple % 2 == 0 && delta == 0.0 && !sram,
+                        "{layer}, width {w}, SRAM {sram}: {v:?}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// The real hierarchical SRAM bank has eight ordinary SDT containment findings;
+/// its explicit SRAM SDT overlaps pass. Preserve that observed baseline across
+/// tile sizes without claiming the macro is globally DRC-clean.
+#[test]
+fn real_sram_bank_preserves_the_sdt_baseline() {
+    let lib = gdscheck::load_gds("tests/data/asap7/static/srambank_32b.gds.gz").unwrap();
+    for tile_um in [7.0, 20.0] {
+        let v = gdscheck::run_drc_with_options(
+            &lib,
+            PDK,
+            &["sdt"],
+            None,
+            "srambank_32b",
+            true,
+            &gdscheck::RunOptions {
+                tile_um,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(v.len(), 8, "tile {tile_um}: {v:?}");
+        assert!(v.iter().all(|v| v.rule_id == "SDT.LISD.AUX.4"), "{v:?}");
+    }
+}
+
+/// Marker locations, not just verdicts, must survive exact tile-corner contact.
+#[test]
+fn region_marker_is_stable_on_a_tile_corner() {
+    for (deck, layer, rect) in [
+        ("v0", "V0", [0.0, 0.0, 18.0, 18.0]),
+        // This under-area metal crosses the vertical tile line while its top
+        // lies on the horizontal line: multiple pieces, all top corners lost
+        // by a strictly-interior-only vertex average.
+        ("m1", "M1", [-5.0, 0.0, 22.75, 18.0]),
+    ] {
+        let signature = |tile| {
+            let v = rectangles(deck, &[(layer, rect)], 6_982.0, tile);
+            let mut s: Vec<_> = v
+                .iter()
+                .map(|v| format!("{} {:?}", v.rule_id, v.geometry))
+                .collect();
+            s.sort();
+            s
+        };
+        assert_eq!(signature(7.0), signature(20.0), "{deck}");
+    }
+}
+
+/// Separate ACTIVEs extending the same long FIN wall must contribute the same
+/// marker extent whether both references fit in one tile or occupy two tiles.
+#[test]
+fn fin_extension_marker_keeps_every_partial_covering_stretch() {
+    let shapes = [
+        ("FIN", [0.0, 0.0, 9_400.0, 7.0]),
+        ("ACTIVE", [0.0, -5.0, 16.0, 12.0]),
+        ("ACTIVE", [9_384.0, -5.0, 9_400.0, 12.0]),
+    ];
+    let signature = |tile| {
+        let v = rectangles("active", &shapes, 100.0, tile);
+        let mut s: Vec<_> = v
+            .iter()
+            .filter(|v| v.rule_id == "ACTIVE.FIN.EX.1")
+            .map(|v| match v.geometry {
+                // Orthogonal fixture coordinates are exact DBU; ignore only
+                // floating-point arithmetic noise in the final µm conversion.
+                gdscheck::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                    [x1, y1, x2, y2].map(|x| (x / 0.00025).round() as i64)
+                }
+                ref other => panic!("expected an edge: {other:?}"),
+            })
+            .collect();
+        s.sort();
+        s
+    };
+    assert_eq!(signature(7.0).len(), 2);
+    assert_eq!(signature(7.0), signature(20.0));
+}

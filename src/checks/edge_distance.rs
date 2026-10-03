@@ -193,12 +193,44 @@ fn run(
             }
         }
         let b_edges = &b_edges;
+        // The edges of `b` filed by cell of a grid a few limits across, so an edge of `a`
+        // reads the few within reach of it rather than every edge the tile holds: a tile
+        // of SRAM LISD holds tens of thousands.  Each is read in its place in `b_edges`,
+        // so the narrowest margin - the first of equal ones - is the one a full scan
+        // finds.
+        let cell = (limit.ceil() as i64).max(1) * 8;
+        let cell_of = |v: i32| (v as i64).div_euclid(cell);
+        let mut grid: std::collections::HashMap<(i64, i64), Vec<u32>> =
+            std::collections::HashMap::new();
+        for (i, e) in b_edges.iter().enumerate() {
+            let (x0, x1) = (e.a.x.min(e.b.x), e.a.x.max(e.b.x));
+            let (y0, y1) = (e.a.y.min(e.b.y), e.a.y.max(e.b.y));
+            for cx in cell_of(x0)..=cell_of(x1) {
+                for cy in cell_of(y0)..=cell_of(y1) {
+                    grid.entry((cx, cy)).or_default().push(i as u32);
+                }
+            }
+        }
+        let reach_dbu = limit.ceil() as i32 + 1;
+        let mut near: Vec<u32> = Vec::new();
         let mut out = Vec::new();
         for ea in a_edges {
             let Some(sa) = Seg::of(ea) else { continue };
+            near.clear();
+            let (x0, x1) = (ea.a.x.min(ea.b.x) - reach_dbu, ea.a.x.max(ea.b.x) + reach_dbu);
+            let (y0, y1) = (ea.a.y.min(ea.b.y) - reach_dbu, ea.a.y.max(ea.b.y) + reach_dbu);
+            for cx in cell_of(x0)..=cell_of(x1) {
+                for cy in cell_of(y0)..=cell_of(y1) {
+                    if let Some(v) = grid.get(&(cx, cy)) {
+                        near.extend_from_slice(v);
+                    }
+                }
+            }
+            near.sort_unstable();
+            near.dedup();
             // The narrowest offending margin along this segment, and where it sits.
             let mut worst: Option<Pair> = None;
-            for eb in b_edges {
+            for eb in near.iter().map(|&i| &b_edges[i as usize]) {
                 let Some(sb) = Seg::of(eb) else { continue };
                 // Parallel enough to measure a width between, which is not the same as
                 // parallel.  Coordinates are integers, so a wall that a boolean cut at

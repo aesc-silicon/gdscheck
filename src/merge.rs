@@ -2590,6 +2590,8 @@ pub enum EdgeOp {
     /// (KLayout `.with_length(a..b)`).  `WithoutLength` keeps the complement.
     WithLength(Option<i32>, Option<i32>),
     WithoutLength(Option<i32>, Option<i32>),
+    /// Bare-number length selector, distinct from the empty range `[v, v)`.
+    ExactLength(i32, bool),
     /// Keep edges whose orientation in degrees is in `[min, max)`, normalised to
     /// `[0, 180)` (KLayout `.with_angle`).  `WithoutAngle` keeps the complement.
     WithAngle(i32, i32),
@@ -2688,6 +2690,7 @@ fn compose_edge_tile(
                             false,
                             true,
                             0,
+                            None,
                         )
                     })
                     .map(|(x1, y1, x2, y2, _)| Edge {
@@ -2828,6 +2831,19 @@ fn compose_edge_tile(
                         // edge and would make `interacting` meaningless.
                         (a != b).then_some(Edge { a, b })
                     })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        EdgeOp::ExactLength(length, want) => edge_srcs
+            .first()
+            .map(|a| {
+                a.iter()
+                    .filter(|e| {
+                        let dx = e.b.x as i128 - e.a.x as i128;
+                        let dy = e.b.y as i128 - e.a.y as i128;
+                        (dx * dx + dy * dy == length as i128 * length as i128) == want
+                    })
+                    .copied()
                     .collect()
             })
             .unwrap_or_default(),
@@ -3873,6 +3889,7 @@ fn stitch_inner(
     let mut regions: Vec<Region> = Vec::new();
     let mut largest: Vec<(f64, usize)> = Vec::new();
     let mut vsum: Vec<(f64, f64, usize)> = Vec::new();
+    let mut multiple_pieces: Vec<bool> = Vec::new();
     for (id, p) in pieces.iter().enumerate() {
         let root = uf.find(id);
         if root_to_region[root] == usize::MAX {
@@ -3885,9 +3902,11 @@ fn stitch_inner(
             });
             largest.push((0.0, id));
             vsum.push((0.0, 0.0, 0));
+            multiple_pieces.push(false);
         }
         let region = root_to_region[root];
         piece_region[id] = region;
+        multiple_pieces[region] |= regions[region].area_dbu > 0.0;
         regions[region].area_dbu += p.area;
         regions[region].perimeter_dbu += p.perimeter;
         let v = &mut vsum[region];
@@ -3909,11 +3928,47 @@ fn stitch_inner(
     // tile it fell in.
     // Region by region in parallel: the contact layer is eight million regions of one
     // piece, and one core asking each was a third of the stitch.
+    // A rectangle crossing one tile line can have its other side *on* a tile
+    // line. The strict-interior vertex sum then loses every corner on that side.
+    // Recognize a filled rectangle by its aggregate area and whole bounding box,
+    // and use its exact centre. Only multi-piece regions need these boxes: keep
+    // the millions of single-core contacts on the small, allocation-free path.
+    let mut border_boxes: HashMap<usize, (i64, i64, i64, i64)> = HashMap::new();
+    for (&(tx, ty), ids) in &tile_pieces {
+        for &id in ids {
+            let region = piece_region[id];
+            if !multiple_pieces[region] {
+                continue;
+            }
+            let (x0, y0, x1, y1) = poly_bbox(piece_poly[id]);
+            let b = (
+                (x0 as i64).max(tx as i64 * t),
+                (y0 as i64).max(ty as i64 * t),
+                (x1 as i64).min((tx as i64 + 1) * t),
+                (y1 as i64).min((ty as i64 + 1) * t),
+            );
+            border_boxes
+                .entry(region)
+                .and_modify(|a| {
+                    *a = (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3));
+                })
+                .or_insert(b);
+        }
+    }
     let centres: Vec<Option<(f64, f64)>> = vsum
         .par_iter()
         .enumerate()
         .map(|(region, v)| {
-            if v.2 == 0 {
+            if let Some(&(x0, y0, x1, y1)) = border_boxes.get(&region)
+                && regions[region].area_dbu == (x1 - x0) as f64 * (y1 - y0) as f64
+            {
+                return Some(((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5));
+            }
+            // A single core owns the entire region, including real corners that
+            // happen to lie on its boundary. Its whole-polygon marker is exact;
+            // averaging only strictly interior vertices would drop those corners
+            // and move a rectangle's marker from its centre to its far vertex.
+            if !multiple_pieces[region] || v.2 == 0 {
                 return None;
             }
             let c = (v.0 / v.2 as f64, v.1 / v.2 as f64);
@@ -5876,7 +5931,7 @@ pub fn select_with_point(a: &[MergedPoly], points: &[(f64, f64)], keep: bool) ->
 /// [`point_in_merged`], or on one of its walls: a label on a shape's edge interacts
 /// with it, as KLayout's `interacting` reads it - IHP's SVaricap pcell puts its label
 /// on the Activ's edge.
-fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
+pub(crate) fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
     let on = |ring: &[IntPoint]| {
         let n = ring.len();
         (0..n).any(|i| {

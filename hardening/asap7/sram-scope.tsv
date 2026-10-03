@@ -1,0 +1,363 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# DRM 201207a. Ordinary scope: convention 7; positive-overlap policy: docs/source/pdks/asap7.rst.
+# One row per implemented check, including repeated rule IDs. Subjects are selected before edge extraction.
+deck	rule	check	scope	layers	basis
+active	ACTIVE.FIN.EX.1	min_enclosure	ordinary	ACTIVE,FinNoSram	1.2.2(7); select enclosed FIN; retain full ACTIVE reference
+active	ACTIVE.W.1	min_width	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.W.3	min_width	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.S.1	min_space	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.S.2B	min_space	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.S.2B	min_notch	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.WELL.S.4	min_space	ordinary	ActiveNoSram,NWELL	1.2.2(7); non-SRAM subject; complete reference layers
+active	SRAM.ACTIVE.WELL.S.5	min_space	sram	ActiveSram,NWELL	Explicit SRAM rule; complete reference layers
+active	ACTIVE.WELL.EN.1	min_enclosure	ordinary	NWELL,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	SRAM.ACTIVE.WELL.EN.2	min_enclosure	sram	NWELL,ActiveSram	Explicit SRAM rule; complete reference layers
+active	ACTIVE.A.1A	min_area	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.A.1B	min_area	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+active	SRAM.ACTIVE.A.2A	min_area	sram	ActiveSram	Explicit SRAM rule; complete reference layers
+active	SRAM.ACTIVE.A.2B	min_area	sram	ActiveSram	Explicit SRAM rule; complete reference layers
+active	ACTIVE.AUX.1	forbidden	ordinary	ActiveNoSram,NSELECT,PSELECT	1.2.2(7); non-SRAM subject; complete reference layers
+active	ACTIVE.AUX.1	forbidden	ordinary	ActiveOnSelectEdge	1.2.2(7); non-SRAM subject; complete reference layers
+active	SRAM.ACTIVE.AUX.2	forbidden	boundary	ActiveAbutSram	Explicit SRAM boundary-contact prohibition
+active	ACTIVE.AUX.3	min_notch	ordinary	ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+fin	FIN.W.1	exact_width	ordinary	FinNoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+fin	FIN.W.2	min_width	ordinary	FinNoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+fin	FIN.S.1	min_space	ordinary	FinNoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+fin	FIN.S.1	min_notch	ordinary	FinNoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+fin	FIN.AUX.1	forbidden	ordinary	FinBent	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+gate	GATE.W.1	exact_width	ordinary	GateNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.W.2	min_width	ordinary	GateNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.S.2	min_space	ordinary	GateNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.S.2	min_notch	ordinary	GateNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.S.3	forbidden	ordinary	GateSolitary	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.AUX.1	forbidden	ordinary	GateBent	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.ACTIVE.AUX.3	forbidden	ordinary	ActiveVEdgesInside	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.ACTIVE.AUX.3	forbidden	ordinary	ActiveVEdgesOnGate	1.2.2(7); non-SRAM subject; complete reference layers
+gate	GATE.ACTIVE.EX.1	min_enclosure	ordinary	GateNoCut,ActiveNoSramOnGate	1.2.2(7); select ACTIVE before channel intersection; full GATE reference
+gate	GATE.ACTIVE.EX.2	min_enclosure	ordinary	ACTIVE,GateNoCutNoSramOnActive	1.2.2(7); select cut-GATE regions before channel intersection; full ACTIVE reference
+gate	GATE.ACTIVE.S.4	min_space	ordinary	GateNoCutOffActive,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.W.1	min_width	ordinary	GcutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.ACTIVE.S.1	min_space	ordinary	GcutNoSram,ChannelNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.GATE.EX.1	min_enclosure	ordinary	GCUT,GateNoSram	1.2.2(7); select enclosed GATE; retain full GCUT reference
+gcut	GCUT.GATE.S.2	min_space	ordinary	GcutNoSram,GateNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.S.3	min_space	ordinary	GcutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.S.3	min_notch	ordinary	GcutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.AUX.1	forbidden	ordinary	GcutOffGate	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.AUX.2	forbidden	ordinary	GcutVEdgesInside	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.AUX.2	forbidden	ordinary	GcutVEdgesOnGate	1.2.2(7); non-SRAM subject; complete reference layers
+gcut	GCUT.AUX.3	forbidden	ordinary	GcutOnChannel	1.2.2(7); non-SRAM subject; complete reference layers
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	WellNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	FinNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	GateNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	GcutNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	ActiveNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	SdtNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	NselectNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	PselectNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	SlvtNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	LvtNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	SramvtNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	both	SRAMDRC	Supplemental marker-integrity check; never exempt a marker against itself
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	DummyNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	LigNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	LisdNoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V0NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M1NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V1NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M2NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V2NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M3NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V3NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M4NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V4NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M5NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V5NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M6NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V6NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M7NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V7NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M8NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V8NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	M9NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	V9NoSram	1.2.2(7); non-SRAM drawn geometry
+geometry	GEOMETRY.NONORTHOGONAL	no_angle	ordinary	PadNoSram	1.2.2(7); non-SRAM drawn geometry
+lig	LIG.W.1	min_width	ordinary	LigNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+lig	LIG.S.1	min_space	ordinary	LigNoSram.long,LigNoSram.long	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.S.2	min_space	ordinary	LigNoSram.short,LigNoSram.long	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.S.3	min_space	ordinary	LigNoSram.mid,LigNoSram.mid	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.S.4	min_space	ordinary	LigNoSram.tiny,LigNoSram.tiny	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.S.5	min_space	ordinary	LigNoSram.mid,LigNoSram.tiny	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.LISD.S.6	min_space	ordinary	LigNoSram,LisdNoSram	3.10; ordinary subjects; different nets on full physical conductors including SRAM
+lig	LIG.LISD.S.7	min_space	ordinary	LigNoSram,LisdNoSram	3.10; ordinary subjects; different nets on full physical conductors including SRAM
+lig	LIG.SDT.S.8	min_space	ordinary	LigNoSram,SdtNoSram	3.10; ordinary subjects; different nets on full physical conductors including SRAM
+lig	LIG.GATE.S.9A	min_space	ordinary	LigNoSram,GateNoCutNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.GATE.S.9B	min_space	ordinary	LigNoSram,GateNoCutNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.GATE.S.10	min_space	ordinary	LigNoSram,GateNoCutNoSramOnActive	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.GCUT.S.11	min_space	ordinary	LigNoSram,GcutNoSram	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lig	LIG.A.1	min_area	ordinary	LigNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+lig	LIG.LISD.A.2	min_area	ordinary	LigOnLisd	1.2.2(7); non-SRAM subject; complete reference layers
+lig	LIG.GATE.A.3	min_area	ordinary	LigNoSramOnGate	1.2.2(7); non-SRAM subject; complete reference layers
+lig	SRAM.LIG.GATE.A.4	min_area	sram	LigSramOnGate	Explicit SRAM rule; complete reference layers
+lig	LIG.GATE.AUX.1	forbidden	ordinary	LigVEdgesInside	1.2.2(7); non-SRAM subject; complete reference layers
+lig	LIG.GATE.AUX.1	forbidden	ordinary	LigVEdgesOnGate	1.2.2(7); non-SRAM subject; complete reference layers
+lig	SRAM.LIG.AUX.2	forbidden	boundary	LigAbutSram	Explicit SRAM boundary-contact prohibition
+lig	LIG.GATE.EX.1	min_enclosure	ordinary	LigNoSram,GateNoCut	1.2.2(7); non-SRAM subject; complete reference layers
+lig	LIG.LISD.OV.1	min_overlap	ordinary	LigNoSram,LISD	1.2.2(7); select LIG subject; retain full LISD overlap reference
+lig	SRAM.LIG.GATE.OV.2	min_overlap	sram	LigSram,GateNoCut	Explicit SRAM rule; complete reference layers
+lisd	LISD.S.1	min_space	ordinary	LisdNoSram.long,LisdNoSram.long	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lisd	LISD.S.2	min_space	ordinary	LisdNoSram.short,LisdNoSram.long	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lisd	LISD.S.3	min_space	ordinary	LisdNoSram.mid,LisdNoSram.mid	1.2.2(7); both spacing subjects non-SRAM (including derived channel)
+lisd	SRAM.LISD.S.4	min_space	sram	LisdSram.short,LisdSram.short	Explicit SRAM rule; complete reference layers
+lisd	LISD.W.1	min_width	ordinary	LisdNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+lisd	LISD.A.1	min_area	ordinary	LisdNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+lisd	SRAM.LISD.AUX.1	forbidden	boundary	LisdAbutSram	Explicit SRAM boundary-contact prohibition
+m1	M1.W.1	min_width	ordinary	M1NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.S.1	min_space	ordinary	M1NoSram.long,M1NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.S.2	min_space	ordinary	M1NoSram.short,M1NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.S.3	min_space	ordinary	M1NoSram.mid,M1NoSram.mid	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.S.4	min_space	ordinary	M1NoSram.tiny,M1NoSram.tiny	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.S.5	min_space	ordinary	M1NoSram.mid,M1NoSram.tiny	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.S.6	min_space	ordinary	M1NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m1	M1.A.1	min_area	ordinary	M1NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.W.1	min_width	ordinary	M2NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.S.1	min_space	ordinary	M2NoSram.long,M2NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.S.2	min_space	ordinary	M2NoSram.short,M2NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.S.3	min_space	ordinary	M2NoSram.mid,M2NoSram.mid	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.S.4	min_space	ordinary	M2NoSram.tiny,M2NoSram.tiny	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.S.5	min_space	ordinary	M2NoSram.mid,M2NoSram.tiny	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.S.6	min_space	ordinary	M2NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m2	M2.A.1	min_area	ordinary	M2NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.W.1	min_width	ordinary	M3NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.S.1	min_space	ordinary	M3NoSram.long,M3NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.S.2	min_space	ordinary	M3NoSram.short,M3NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.S.3	min_space	ordinary	M3NoSram.mid,M3NoSram.mid	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.S.4	min_space	ordinary	M3NoSram.tiny,M3NoSram.tiny	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.S.5	min_space	ordinary	M3NoSram.mid,M3NoSram.tiny	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.S.6	min_space	ordinary	M3NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m3	M3.A.1	min_area	ordinary	M3NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.W.1	min_width	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.W.2	max_width	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.W.5	min_width	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.S.1	min_space	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.S.1	min_notch	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.S.2	min_space	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.S.2	min_notch	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.S.3	min_space	ordinary	M4NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m4	M4.AUX.3	forbidden	ordinary	M4Bent	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.W.1	min_width	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.W.2	max_width	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.W.5	min_width	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.S.1	min_space	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.S.1	min_notch	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.S.2	min_space	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.S.2	min_notch	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.S.3	min_space	ordinary	M5NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m5	M5.AUX.3	forbidden	ordinary	M5Bent	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.W.1	min_width	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.W.2	max_width	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.W.5	min_width	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.S.1	min_space	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.S.1	min_notch	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.S.2	min_space	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.S.2	min_notch	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.S.3	min_space	ordinary	M6NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m6	M6.AUX.3	forbidden	ordinary	M6Bent	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.W.1	min_width	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.W.2	max_width	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.W.5	min_width	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.S.1	min_space	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.S.1	min_notch	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.S.2	min_space	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.S.2	min_notch	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.S.3	min_space	ordinary	M7NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m7	M7.AUX.3	forbidden	ordinary	M7Bent	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.W.1	min_width	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.W.2	min_width	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.W.3	min_width	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.W.4	min_width	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.W.5	max_width	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.1	min_space	ordinary	M8NoSram.long,M8NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.2	min_space	ordinary	M8NoSram.short,M8NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.3	min_space	ordinary	M8NoSram.short,M8NoSram.short	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.4	min_space	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.5	min_space	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.6	min_space	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.7	min_space	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.S.8	min_space	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.A.1	min_area	ordinary	M8NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m8	M8.L.1	min_edge_length	ordinary	M8NoSram.edges	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.W.1	min_width	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.W.2	min_width	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.W.3	min_width	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.W.4	min_width	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.W.5	max_width	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.1	min_space	ordinary	M9NoSram.long,M9NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.2	min_space	ordinary	M9NoSram.short,M9NoSram.long	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.3	min_space	ordinary	M9NoSram.short,M9NoSram.short	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.4	min_space	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.5	min_space	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.6	min_space	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.7	min_space	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.S.8	min_space	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.A.1	min_area	ordinary	M9NoSram	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+m9	M9.L.1	min_edge_length	ordinary	M9NoSram.edges	1.2.2(7); same-layer checks use non-SRAM polygons on both sides
+sdt	SDT.W.1	min_width	ordinary	SdtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.W.2	min_width	ordinary	SdtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SRAM.SDT.W.4	min_width	sram	SdtSram	Explicit SRAM rule; complete reference layers
+sdt	SRAM.SDT.ACTIVE.OV.3	min_width	sram	SdtSramOnActive	Explicit SRAM rule; complete reference layers
+sdt	SDT.S.1	min_space	ordinary	SdtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.S.1	min_notch	ordinary	SdtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.GATE.S.2	min_space	ordinary	SdtNoSram,GateNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.GATE.AUX.1	forbidden	ordinary	SdtOnGate	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.ACTIVE.AUX.2	forbidden	ordinary	SdtHEdgesOffActive	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.ACTIVE.AUX.3	forbidden	ordinary	SdtOffActive	1.2.2(7); non-SRAM subject; complete reference layers
+sdt	SDT.LISD.AUX.4	forbidden	ordinary	SdtNoSram,LISD	1.2.2(7); non-SRAM subject; complete reference layers
+select	NSELECT.W.1	min_width	ordinary	NselectNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	NSELECT.W.2	min_width	ordinary	NselectNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	NSELECT.ACTIVE.EN.1	min_enclosure	ordinary	NSELECT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	NSELECT.ACTIVE.EN.2	min_enclosure	ordinary	NSELECT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAM.NSELECT.ACTIVE.EN.3	min_enclosure	sram	NSELECT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SRAM.NSELECT.ACTIVE.EN.4	min_enclosure	sram	NSELECT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	NSELECT.GATE.EX.1	min_enclosure	ordinary	NSELECT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	NSELECT.GATE.EX.2	min_enclosure	ordinary	NSELECT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	PSELECT.W.1	min_width	ordinary	PselectNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	PSELECT.W.2	min_width	ordinary	PselectNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	PSELECT.ACTIVE.EN.1	min_enclosure	ordinary	PSELECT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	PSELECT.ACTIVE.EN.2	min_enclosure	ordinary	PSELECT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAM.PSELECT.ACTIVE.EN.3	min_enclosure	sram	PSELECT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SRAM.PSELECT.ACTIVE.EN.4	min_enclosure	sram	PSELECT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	PSELECT.GATE.EX.1	min_enclosure	ordinary	PSELECT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	PSELECT.GATE.EX.2	min_enclosure	ordinary	PSELECT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SLVT.W.1	min_width	ordinary	SlvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SLVT.W.2	min_width	ordinary	SlvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SLVT.ACTIVE.EN.1	min_enclosure	ordinary	SLVT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SLVT.ACTIVE.EN.2	min_enclosure	ordinary	SLVT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAM.SLVT.ACTIVE.EN.3	min_enclosure	sram	SLVT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SRAM.SLVT.ACTIVE.EN.4	min_enclosure	sram	SLVT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SLVT.GATE.EX.1	min_enclosure	ordinary	SLVT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SLVT.GATE.EX.2	min_enclosure	ordinary	SLVT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	LVT.W.1	min_width	ordinary	LvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	LVT.W.2	min_width	ordinary	LvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	LVT.ACTIVE.EN.1	min_enclosure	ordinary	LVT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	LVT.ACTIVE.EN.2	min_enclosure	ordinary	LVT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAM.LVT.ACTIVE.EN.3	min_enclosure	sram	LVT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SRAM.LVT.ACTIVE.EN.4	min_enclosure	sram	LVT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	LVT.GATE.EX.1	min_enclosure	ordinary	LVT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	LVT.GATE.EX.2	min_enclosure	ordinary	LVT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAMVT.W.1	min_width	ordinary	SramvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAMVT.W.2	min_width	ordinary	SramvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAMVT.ACTIVE.EN.1	min_enclosure	ordinary	SRAMVT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAMVT.ACTIVE.EN.2	min_enclosure	ordinary	SRAMVT,ActiveNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAM.SRAMVT.ACTIVE.EN.3	min_enclosure	sram	SRAMVT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SRAM.SRAMVT.ACTIVE.EN.4	min_enclosure	sram	SRAMVT,ActiveSram	Explicit SRAM rule; complete reference layers
+select	SRAMVT.GATE.EX.1	min_enclosure	ordinary	SRAMVT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	SRAMVT.GATE.EX.2	min_enclosure	ordinary	SRAMVT,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	NSELECT.PSELECT.AUX.1	forbidden	ordinary	NselectNoSram,PselectNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	VT.AUX.2	forbidden	ordinary	LvtNoSram,SlvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	VT.AUX.2	forbidden	ordinary	LvtNoSram,SramvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+select	VT.AUX.2	forbidden	ordinary	SlvtNoSram,SramvtNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+v0	V0.W.1	min_width	ordinary	V0NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.S.1	min_space	ordinary	V0NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.S.2	min_space	ordinary	V0NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.M1.EN.1	min_enclosure	ordinary	M1,V0NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.LISD.EN.2	min_enclosure	ordinary	LISD,V0OnLisdOnly	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.LIG.EN.4	min_enclosure	ordinary	V0OnLigOffLisd,LIG	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.LIG.A.1	min_area	ordinary	V0OnLigArea	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.AUX.1	forbidden	ordinary	V0OffM1	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.AUX.1	forbidden	ordinary	V0OffLisdLig	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v0	V0.M1.AUX.3	max_enclosure	ordinary	M1,V0NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.W.1	min_width	ordinary	V1NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.S.1	min_space	ordinary	V1NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.S.2	min_space	ordinary	V1NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.M1.EN.1	min_enclosure	ordinary	M1,V1NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.M2.EN.2	min_enclosure	ordinary	M2,V1NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.AUX.1	forbidden	ordinary	V1NoSram,M1	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.AUX.1	forbidden	ordinary	V1NoSram,M2	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v1	V1.M2.AUX.2	max_enclosure	ordinary	M2,V1NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.W.1	min_width	ordinary	V2NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.S.1	min_space	ordinary	V2NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.S.2	min_space	ordinary	V2NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.M2.EN.1	min_enclosure	ordinary	M2,V2NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.M3.EN.2	min_enclosure	ordinary	M3,V2NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.AUX.1	forbidden	ordinary	V2NoSram,M2	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.AUX.1	forbidden	ordinary	V2NoSram,M3	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v2	V2.M3.AUX.2	max_enclosure	ordinary	M3,V2NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.W.1	min_width	ordinary	V3NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.S.1	min_space	ordinary	V3NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.S.2	min_space	ordinary	V3NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.M3.EN.1	min_enclosure	ordinary	M3,V3NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.M4.EN.2	min_enclosure	ordinary	M4,V3NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.AUX.1	forbidden	ordinary	V3NoSram,M3	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.AUX.1	forbidden	ordinary	V3NoSram,M4	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v3	V3.M4.AUX.2	max_enclosure	ordinary	M4,V3NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.W.1	exact_dim	ordinary	V4NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.S.2	min_space	ordinary	V4NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.M4.EN.1	min_enclosure	ordinary	M4,V4NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.M5.EN.2	min_enclosure	ordinary	M5,V4NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.AUX.1	forbidden	ordinary	V4NoSram,M4	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.AUX.1	forbidden	ordinary	V4NoSram,M5	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v4	V4.M5.AUX.2	max_enclosure	ordinary	M5,V4NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.W.1	exact_dim	ordinary	V5NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.S.2	min_space	ordinary	V5NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.M5.EN.1	min_enclosure	ordinary	M5,V5NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.M6.EN.2	min_enclosure	ordinary	M6,V5NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.AUX.1	forbidden	ordinary	V5NoSram,M5	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.AUX.1	forbidden	ordinary	V5NoSram,M6	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v5	V5.M6.AUX.2	max_enclosure	ordinary	M6,V5NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.W.1	exact_dim	ordinary	V6NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.S.2	min_space	ordinary	V6NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.M6.EN.1	min_enclosure	ordinary	M6,V6NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.M7.EN.2	min_enclosure	ordinary	M7,V6NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.AUX.1	forbidden	ordinary	V6NoSram,M6	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.AUX.1	forbidden	ordinary	V6NoSram,M7	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v6	V6.M7.AUX.2	max_enclosure	ordinary	M7,V6NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.W.1	exact_dim	ordinary	V7NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.S.2	min_space	ordinary	V7NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.M7.EN.1	min_enclosure	ordinary	M7,V7NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.M8.EN.2	min_enclosure	ordinary	M8,V7NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.AUX.1	forbidden	ordinary	V7NoSram,M7	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.AUX.1	forbidden	ordinary	V7NoSram,M8	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v7	V7.M8.AUX.2	max_enclosure	ordinary	M8,V7NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.W.1	exact_dim	ordinary	V8NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.W.1	forbidden	ordinary	V8BadLength	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.W.1	forbidden	ordinary	V8NotRect	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.S.1	min_space	ordinary	V8NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.M8.EN.1	min_enclosure	ordinary	M8,V8NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.M9.EN.2	min_enclosure	ordinary	M9,V8NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.AUX.1	forbidden	ordinary	V8NoSram,M8	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v8	V8.AUX.1	forbidden	ordinary	V8NoSram,M9	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.W.1	exact_dim	ordinary	V9NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.W.1	forbidden	ordinary	V9BadLength	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.W.1	forbidden	ordinary	V9NotRect	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.S.1	min_space	ordinary	V9NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.M9.EN.1	min_enclosure	ordinary	M9,V9NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.PAD.EN.2	min_enclosure	ordinary	PAD,V9NoSram	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.AUX.1	forbidden	ordinary	V9NoSram,M9	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+v9	V9.AUX.1	forbidden	ordinary	V9NoSram,PAD	1.2.2(7); select via subjects; retain full landing metals/LIG/LISD
+well	WELL.W.1	min_width	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.W.2	min_width	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.S.1	min_space	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.S.1	min_notch	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.S.2	min_space	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.S.2	min_notch	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.A.1A	min_area	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.A.1B	min_area	ordinary	WellNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.GATE.EX.1	min_enclosure	ordinary	NWELL,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+well	WELL.GATE.EX.2	min_enclosure	ordinary	NWELL,GateNoCutNoSram	1.2.2(7); non-SRAM subject; complete reference layers
+m4	M4.W.3	forbidden	ordinary	M4EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+m5	M5.W.3	forbidden	ordinary	M5EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+m6	M6.W.3	forbidden	ordinary	M6EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+m7	M7.W.3	forbidden	ordinary	M7EvenWidthEdges	3.14/3.16; non-SRAM subjects before extraction; even width multiples through maximum width
+sdt	SRAM.SDT.ACTIVE.OV.3	forbidden	sram	SdtSramOffActive	3.8; SRAM SDT requires positive overlap with full ACTIVE reference
+sdt	SRAM.SDT.LISD.OV.4	forbidden	sram	SdtSramOffLisd	3.8; SRAM SDT requires positive overlap with full LISD reference
+sdt	SRAM.SDT.LISD.OV.4	min_width	sram	SdtSramOnLisd	3.8; SRAM SDT vertical overlap with full LISD reference
+v0	V0.LISD.EN.3	min_enclosure	ordinary	LISD,V0PartialLisdArea	3.11; select non-SRAM via before clipping; full LISD/LIG references
+v0	V0.S.3	min_space	ordinary	V0NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v0	V0.S.4	min_space	ordinary	V0NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v1	V1.S.3	min_space	ordinary	V1NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v1	V1.S.4	min_space	ordinary	V1NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v2	V2.S.3	min_space	ordinary	V2NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v2	V2.S.4	min_space	ordinary	V2NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v3	V3.S.3	min_space	ordinary	V3NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners
+v3	V3.S.4	min_space	ordinary	V3NoSram	3.11/3.13; non-SRAM vias; end-caps read full upper metal at gap corners

@@ -17,6 +17,9 @@ seen the engine, and what came of it.
   decks in the elements container, one line per rule either side reported.
 - `oracle-gf180.sh` - the same for GF180MCU, through the upstream `gf180mcu.drc`
   runset from the ciel checkout, in the same container.
+- `oracle-asap7.sh` - the standard-cell library and generated boundary/routing cases
+  through a pinned ASAP7 KLayout port and gdscheck. Compares rule verdicts and marker
+  locations as well as counts; see [ASAP7 usage](asap7/README.md).
 - `reports/<process>/<deck>.md` - one report per round: the findings, the oracle's
   answers, the verdicts, and a *Resolution* section saying what was fixed in the engine
   or the deck, what was kept and why, and what the gdscheck owner decided.

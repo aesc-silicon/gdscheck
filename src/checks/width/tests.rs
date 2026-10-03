@@ -543,6 +543,7 @@ fn oblique_45_thin_trace_flags_both_walls() {
         true,
         0,
         None,
+        None,
     );
     assert_eq!(v.len(), 2, "got {}", v.len());
 }
@@ -566,6 +567,7 @@ fn oblique_45_wide_trace_is_clean() {
         false,
         true,
         0,
+        None,
         None,
     );
     assert!(v.is_empty(), "got {}", v.len());
@@ -602,6 +604,7 @@ fn chamfered_corner_narrows_against_the_opposite_wall() {
             false,
             mixed,
             0,
+            None,
             None,
         )
     };
@@ -640,6 +643,7 @@ fn max_width_square_flags_four_walls() {
         false,
         false,
         0,
+        None,
         None,
     );
     assert_eq!(v.len(), 4, "got {}", v.len());
