@@ -118,7 +118,7 @@ fn rectangles(
         &[deck],
         None,
         "TOP",
-        false,
+        true,
         &gdscheck::RunOptions {
             tile_um,
             ..Default::default()
@@ -156,12 +156,15 @@ fn directional_max_width_uses_the_routing_axis(
             };
             let v = rectangles(deck, &[(layer, [0.0, 0.0, x, y])], origin, tile);
             assert_eq!(
-                v.len(),
+                v.iter()
+                    .filter(|v| v.rule_id == format!("{layer}.W.2"))
+                    .count(),
                 if bad { 2 } else { 0 },
                 "{layer}: {width} nm across, {length} nm along, tile {tile}: {v:?}"
             );
             assert!(
-                v.iter().all(|v| v.rule_id == format!("{layer}.W.2")),
+                v.iter()
+                    .all(|v| [format!("{layer}.W.2"), format!("{layer}.W.3")].contains(&v.rule_id)),
                 "{v:?}"
             );
         }
@@ -493,6 +496,223 @@ fn v1_enclosure_requires_five_and_two_on_the_same_pair(
         );
         assert_eq!(v.len(), usize::from(bad), "{v:?}");
         assert!(v.iter().all(|v| v.rule_id == "V1.M1.EN.1"), "{v:?}");
+    }
+}
+
+/// Neither an empty intersection nor ordinary containment can stand in for the
+/// explicit 17 nm SRAM overlap. Select the whole SDT, retaining full references.
+#[rstest]
+#[case::active("ACTIVE", "LISD", "SRAM.SDT.ACTIVE.OV.3")]
+#[case::lisd("LISD", "ACTIVE", "SRAM.SDT.LISD.OV.4")]
+fn sram_sdt_requires_overlap_even_when_reference_is_absent(
+    #[case] reference: &str,
+    #[case] other: &str,
+    #[case] rule: &str,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for overlap in [
+            None,
+            Some(-0.25),
+            Some(0.0),
+            Some(0.25),
+            Some(16.75),
+            Some(17.0),
+            Some(17.25),
+        ] {
+            for marker in [[-10.0, -10.0, 40.0, 40.0], [23.75, 26.75, 40.0, 40.0]] {
+                let mut shapes = vec![
+                    ("SDT", [0.0, 0.0, 24.0, 27.0]),
+                    (other, [-10.0, -10.0, 40.0, 40.0]),
+                    ("SRAMDRC", marker),
+                ];
+                if let Some(h) = overlap {
+                    shapes.push((reference, [0.0, h - 50.0, 24.0, h]));
+                }
+                let v = rectangles("sdt", &shapes, origin, tile);
+                assert_eq!(
+                    v.iter().any(|v| v.rule_id == rule),
+                    overlap.is_none_or(|h| h < 17.0),
+                    "{reference}, overlap {overlap:?}, marker {marker:?}, tile {tile}: {v:?}"
+                );
+                assert!(v.iter().all(|v| v.rule_id == rule), "{v:?}");
+            }
+        }
+    }
+}
+
+/// DRM figures 3.11.1(b,c) and 3.13.1: only end-caps at the gap's
+/// corners relax its spacing. Both vias always have a remote 5 nm end-cap.
+#[rstest]
+#[case::v0("v0", "V0", "M1")]
+#[case::v1("v1", "V1", "M2")]
+#[case::v2("v2", "V2", "M3")]
+#[case::v3("v3", "V3", "M4")]
+fn via_corner_spacing_reads_the_local_endcaps(
+    #[case] deck: &str,
+    #[case] via: &str,
+    #[case] metal: &str,
+) {
+    for (origin, tile) in [
+        (100.0, 20.0),
+        (6_990.0, 7.0),
+        (19_990.0, 20.0),
+        (-10.0, 7.0),
+        (6_982.0, 7.0),
+    ] {
+        for (cap_a, cap_b, suffix, gap_bad, gap_good) in [
+            (5.0, 5.0, "S.2", 14.25, 14.5),
+            (5.25, 5.0, "S.2", 14.25, 14.5),
+            (0.0, 0.0, "S.3", 23.75, 24.0),
+            (4.75, 4.75, "S.3", 23.75, 24.0),
+            (5.0, 0.0, "S.4", 20.0, 20.25),
+            (0.0, 5.0, "S.4", 20.0, 20.25),
+            (4.75, 5.0, "S.4", 20.0, 20.25),
+        ] {
+            for (gap, bad) in [(gap_bad, true), (gap_good, false)] {
+                for rotate in [false, true] {
+                    for sram in [false, true] {
+                        let x = 18.0 + gap;
+                        let mut shapes = vec![
+                            (via, [0.0, 0.0, 18.0, 18.0]),
+                            (via, [x, 36.0, x + 18.0, 54.0]),
+                            (metal, [-5.0, 0.0, 18.0 + cap_a, 18.0]),
+                            (metal, [x - cap_b, 36.0, x + 23.0, 54.0]),
+                        ];
+                        if sram {
+                            shapes.push(("SRAMDRC", [-10.0, -10.0, 100.0, 100.0]));
+                        }
+                        if rotate {
+                            for (_, r) in &mut shapes {
+                                *r = [r[1], r[0], r[3], r[2]];
+                            }
+                        }
+                        let v = rectangles(deck, &shapes, origin, tile);
+                        let ids: Vec<_> = v
+                            .iter()
+                            .filter(|v| {
+                                ["S.2", "S.3", "S.4"]
+                                    .iter()
+                                    .any(|s| v.rule_id == format!("{via}.{s}"))
+                            })
+                            .map(|v| v.rule_id.as_str())
+                            .collect();
+                        let expected = format!("{via}.{suffix}");
+                        assert_eq!(
+                            ids,
+                            if bad && !sram {
+                                vec![expected.as_str()]
+                            } else {
+                                vec![]
+                            },
+                            "{via}, caps {cap_a}/{cap_b}, gap {gap}, rotate {rotate}, SRAM {sram}, origin {origin}, tile {tile}: {v:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// DRM 3.11 figure 3.11.1(d): a via may protrude past LISD onto LIG,
+/// but the overlap still needs 3 nm on the same opposite pair of lateral sides.
+#[test]
+fn partly_landed_v0_keeps_its_lateral_lisd_enclosure() {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for (left, right, bad) in [
+            (3.0, 3.0, false),
+            (3.25, 3.25, false),
+            (2.75, 3.0, true),
+            (3.0, 2.75, true),
+            (0.0, 6.0, true),
+        ] {
+            for rotate in [false, true] {
+                let mut shapes = vec![
+                    ("V0", [0.0, 0.0, 18.0, 18.0]),
+                    ("LISD", [-left, -30.0, 18.0 + right, 9.0]),
+                    ("LIG", [-20.0, 1.0, 40.0, 17.0]),
+                    ("M1", [-5.0, 0.0, 23.0, 18.0]),
+                ];
+                if rotate {
+                    for (_, r) in &mut shapes {
+                        *r = [r[1], r[0], r[3], r[2]];
+                    }
+                }
+                let v = rectangles("v0", &shapes, origin, tile);
+                assert_eq!(
+                    v.iter().any(|v| v.rule_id == "V0.LISD.EN.3"),
+                    bad,
+                    "margins {left}/{right}, rotate {rotate}, tile {tile}: {v:?}"
+                );
+                assert!(v.iter().all(|v| v.rule_id == "V0.LISD.EN.3"), "{v:?}");
+            }
+        }
+    }
+}
+
+/// Same-net qualification must include remote metal routes, including portions
+/// inside SRAM. Cutting either landing via restores the different-net violation.
+#[rstest]
+#[case::lisd("LISD", "LIG.LISD.S.6")]
+#[case::sdt("SDT", "LIG.SDT.S.8")]
+fn lig_spacing_resolves_remote_connections(#[case] other: &str, #[case] rule: &str) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for connected in [false, true] {
+            let mut shapes = vec![
+                ("LIG", [0.0, 0.0, 16.0, 100.0]),
+                (other, [29.75, 0.0, 53.75, 100.0]),
+                ("LISD", [29.75, 80.0, 53.75, 100.0]),
+                ("V0", [0.0, 80.0, 16.0, 98.0]),
+                ("M1", [-5.0, 80.0, 60.0, 98.0]),
+                // Mark only the connecting metal, not the measured subjects.
+                ("SRAMDRC", [-5.0, 85.0, -1.0, 95.0]),
+            ];
+            if connected {
+                shapes.push(("V0", [32.0, 80.0, 50.0, 98.0]));
+            }
+            let v = rectangles("lig", &shapes, origin, tile);
+            assert_eq!(
+                v.iter().any(|v| v.rule_id == rule),
+                !connected,
+                "{other}, connected {connected}, tile {tile}: {v:?}"
+            );
+        }
+    }
+}
+
+#[rstest]
+#[case::m4("m4", "M4", 24.0, true)]
+#[case::m5("m5", "M5", 24.0, false)]
+#[case::m6("m6", "M6", 32.0, true)]
+#[case::m7("m7", "M7", 32.0, false)]
+fn routing_width_cannot_be_an_even_multiple(
+    #[case] deck: &str,
+    #[case] layer: &str,
+    #[case] width: f64,
+    #[case] horizontal: bool,
+) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for multiple in 1..=20 {
+            for delta in [-0.25, 0.0, 0.25] {
+                let w = width * multiple as f64 + delta;
+                let r = if horizontal {
+                    [0.0, 0.0, 1000.0, w]
+                } else {
+                    [0.0, 0.0, w, 1000.0]
+                };
+                for sram in [false, true] {
+                    let mut shapes = vec![(layer, r)];
+                    if sram {
+                        shapes.push(("SRAMDRC", [-1.0, -1.0, 1.0, 1.0]));
+                    }
+                    let v = rectangles(deck, &shapes, origin, tile);
+                    assert_eq!(
+                        v.iter().any(|v| v.rule_id == format!("{layer}.W.3")),
+                        multiple % 2 == 0 && delta == 0.0 && !sram,
+                        "{layer}, width {w}, SRAM {sram}: {v:?}"
+                    );
+                }
+            }
+        }
     }
 }
 

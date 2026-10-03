@@ -2,10 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# V3, the via from M3 to M4 (DRM section 3.13).  V1.M1.EN.1's "5 & 2" is read as two
-# rules under one id: 2 nm on a pair of opposite sides, and 5 nm on one side.
+# V3, the via from M3 to M4 (DRM section 3.13).
 #
-# Not checked: V3.S.3 and V3.S.4 (see V3.S.2).
+# Corner spacing reads the end-cap at the two corners forming the gap.
+# S.1 checks the 18 nm minimum only; its 27 nm unaligned parallel-track case
+# still needs track-aware classification.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V3.W.1
@@ -16,15 +17,33 @@ rules:
     check: min_space
     layers: [V3NoSram]
     value: 0.018
-  # The loosest of the corner-to-corner spacings V3.S.2-4, which differ by
-  # whether each via has a 5 nm M4 end-cap: that is not told apart here, so a
-  # pair between 23 and 30 nm corner to corner is not read.
   - id: V3.S.2
     check: min_space
     layers: [V3NoSram]
     value: 0.023
+    layer_params:
+      corner_cover: M4Endcap5
     params:
       facing: none
+      covered_corners: 2
+  - id: V3.S.3
+    check: min_space
+    layers: [V3NoSram]
+    value: 0.030
+    layer_params:
+      corner_cover: M4Endcap5
+    params:
+      facing: none
+      covered_corners: 0
+  - id: V3.S.4
+    check: min_space
+    layers: [V3NoSram]
+    value: 0.027
+    layer_params:
+      corner_cover: M4Endcap5
+    params:
+      facing: none
+      covered_corners: 1
   - id: V3.M3.EN.1
     check: min_enclosure
     layers: [M3, V3NoSram]

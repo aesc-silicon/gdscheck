@@ -79,9 +79,115 @@ active_space_crossing_far_54	ACTIVE.WELL.S.4	pass	DRM 3.5: non-SRAM ACTIVE uses 
 active_space_crossing_far_54	SRAM.ACTIVE.WELL.S.5	pass	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
 active_space_crossing_far_107	ACTIVE.WELL.S.4	pass	DRM 3.5: non-SRAM ACTIVE uses 27 nm; interacting polygons are exempt
 active_space_crossing_far_107	SRAM.ACTIVE.WELL.S.5	pass	DRM 3.5: whole interacting ACTIVE polygon uses 13.5 nm
-sdt_overlap_67	SRAM.SDT.ACTIVE.OV.3	fail	DRM 3.7: vertical overlap >= 17 nm
-sdt_overlap_68	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.7: vertical overlap >= 17 nm
-sdt_overlap_69	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.7: vertical overlap >= 17 nm
+sdt_overlap_67	SRAM.SDT.ACTIVE.OV.3	fail	DRM 3.8: vertical overlap >= 17 nm
+sdt_overlap_68	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.8: vertical overlap >= 17 nm
+sdt_overlap_69	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.8: vertical overlap >= 17 nm
+sram_sdt_lisd_absent	SRAM.SDT.LISD.OV.4	fail	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_lisd_touch	SRAM.SDT.LISD.OV.4	fail	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_lisd_under	SRAM.SDT.LISD.OV.4	fail	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_lisd_exact	SRAM.SDT.LISD.OV.4	pass	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_lisd_over	SRAM.SDT.LISD.OV.4	pass	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_active_absent	SRAM.SDT.ACTIVE.OV.3	fail	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_active_touch	SRAM.SDT.ACTIVE.OV.3	fail	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_active_under	SRAM.SDT.ACTIVE.OV.3	fail	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_active_exact	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+sram_sdt_active_over	SRAM.SDT.ACTIVE.OV.3	pass	DRM 3.8: whole SRAM SDT requires >= 17 nm vertical overlap, including nonempty intersection
+v0_endcap_both_bad	V0.S.2	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_both_bad	V0.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_both_bad	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_both_good	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_both_good	V0.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_both_good	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_neither_bad	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_neither_bad	V0.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_neither_bad	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_neither_good	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_neither_good	V0.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_neither_good	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_one_bad	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_one_bad	V0.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_one_bad	V0.S.4	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_one_good	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_one_good	V0.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_one_good	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_under_bad	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_under_bad	V0.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_under_bad	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_under_good	V0.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_under_good	V0.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v0_endcap_under_good	V0.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_both_bad	V1.S.2	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_both_bad	V1.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_both_bad	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_both_good	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_both_good	V1.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_both_good	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_neither_bad	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_neither_bad	V1.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_neither_bad	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_neither_good	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_neither_good	V1.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_neither_good	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_one_bad	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_one_bad	V1.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_one_bad	V1.S.4	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_one_good	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_one_good	V1.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_one_good	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_under_bad	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_under_bad	V1.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_under_bad	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_under_good	V1.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_under_good	V1.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v1_endcap_under_good	V1.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_both_bad	V2.S.2	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_both_bad	V2.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_both_bad	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_both_good	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_both_good	V2.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_both_good	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_neither_bad	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_neither_bad	V2.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_neither_bad	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_neither_good	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_neither_good	V2.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_neither_good	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_one_bad	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_one_bad	V2.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_one_bad	V2.S.4	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_one_good	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_one_good	V2.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_one_good	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_under_bad	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_under_bad	V2.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_under_bad	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_under_good	V2.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_under_good	V2.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v2_endcap_under_good	V2.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_both_bad	V3.S.2	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_both_bad	V3.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_both_bad	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_both_good	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_both_good	V3.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_both_good	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_neither_bad	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_neither_bad	V3.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_neither_bad	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_neither_good	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_neither_good	V3.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_neither_good	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_one_bad	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_one_bad	V3.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_one_bad	V3.S.4	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_one_good	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_one_good	V3.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_one_good	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_under_bad	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_under_bad	V3.S.3	fail	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_under_bad	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_under_good	V3.S.2	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_under_good	V3.S.3	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
+v3_endcap_under_good	V3.S.4	pass	DRM 3.11/3.13 figures: facing end-caps select 23/27/30 nm; 5 nm at far end does not qualify
 v1_split_axes	V1.M1.EN.1	fail	DRM 3.11: 5/2 nm on the same opposite pair
 v1_small_under	V1.M1.EN.1	fail	DRM 3.11: 5/2 nm on the same opposite pair
 v1_large_under	V1.M1.EN.1	fail	DRM 3.11: 5/2 nm on the same opposite pair

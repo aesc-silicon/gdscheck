@@ -8,8 +8,9 @@
 # one side at least, `sides: any`; "the same width as M1" is a pair of opposite sides
 # flush with the wire, `max_enclosure` of nothing on `sides: opposite`.
 #
-# Not checked: V0.S.3 and V0.S.4 (see V0.S.2); V0.LISD.EN.3, the enclosure of a V0 only
-# partly on its LISD; and V0.LIG.AUX.2.
+# Not checked: V0.LIG.AUX.2 (the local LIG length direction).
+# S.1 checks the 18 nm minimum only; its 27 nm unaligned parallel-track case
+# still needs track-aware classification.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V0.W.1
@@ -20,15 +21,33 @@ rules:
     check: min_space
     layers: [V0NoSram]
     value: 0.018
-  # The loosest of the corner-to-corner spacings V0.S.2-4, which differ by
-  # whether each via has a 5 nm M1 end-cap: that is not told apart here, so a
-  # pair between 23 and 30 nm corner to corner is not read.
   - id: V0.S.2
     check: min_space
     layers: [V0NoSram]
     value: 0.023
+    layer_params:
+      corner_cover: M1Endcap5
     params:
       facing: none
+      covered_corners: 2
+  - id: V0.S.3
+    check: min_space
+    layers: [V0NoSram]
+    value: 0.030
+    layer_params:
+      corner_cover: M1Endcap5
+    params:
+      facing: none
+      covered_corners: 0
+  - id: V0.S.4
+    check: min_space
+    layers: [V0NoSram]
+    value: 0.027
+    layer_params:
+      corner_cover: M1Endcap5
+    params:
+      facing: none
+      covered_corners: 1
   - id: V0.M1.EN.1
     check: min_enclosure
     layers: [M1, V0NoSram]
@@ -38,6 +57,14 @@ rules:
   - id: V0.LISD.EN.2
     check: min_enclosure
     layers: [LISD, V0OnLisdOnly]
+    value: 0.003
+    params:
+      sides: opposite
+  # Read the actual overlap, allowing the remainder of the via to protrude.
+  # The clipped side has zero margin; the two lateral sides must both reach 3 nm.
+  - id: V0.LISD.EN.3
+    check: min_enclosure
+    layers: [LISD, V0PartialLisdArea]
     value: 0.003
     params:
       sides: opposite

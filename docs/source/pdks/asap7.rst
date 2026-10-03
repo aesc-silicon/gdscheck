@@ -40,9 +40,34 @@ What is not checked
 -------------------
 
 Each deck's header lists the rules of its section it does not check, and why: mainly
-the routing grids and tracks, the width-multiple rules, the net-aware ``ACTIVE.S.2A``,
-the latch-up reach ``ACTIVE.LUP.1``, and the via spacings that depend on an end-cap.
+the routing grids and tracks, ACTIVE/SDT width increments, the net-aware
+``ACTIVE.S.2A``, the latch-up reach ``ACTIVE.LUP.1``, and ``V0.LIG.AUX.2``.
+M4–M7 even width multiples are checked through each layer's maximum width;
+widths above that maximum are rejected independently. Their even-track-count
+restrictions and some conditional tip-spacing rules remain unimplemented.
+V0–V3 ``S.1`` still checks only the 18 nm minimum; its 27 nm case for
+unaligned vias on parallel routing tracks needs track-aware classification.
 ``FIN.S.1``, an exact 27 nm pitch, is checked only as a space of at least 20 nm.
+
+Via end-caps and local-interconnect nets
+----------------------------------------
+
+V0–V3 corner spacing distinguishes two, one and zero 5 nm upper-metal end-caps
+at the corners facing the gap: respectively 23, 27 and 30 nm. A cap at the far
+end of a via does not relax the gap. The landing metal remains whole even when
+it intersects SRAMDRC elsewhere. Exactly 5 nm qualifies. ``V0.LISD.EN.3`` reads
+the portion of a non-SRAM via overlapping LISD that interacts with LIG, requiring
+3 nm on an opposite pair while allowing the rest of the via to protrude.
+As with ``V0.LISD.EN.2``, this reads the manual's "minimum enclosure" as a lower
+bound, despite the table's ``==`` symbol.
+
+``LIG.LISD.S.6``, ``LIG.LISD.S.7`` and ``LIG.SDT.S.8`` use electrical connectivity,
+including remote routing through M1–M9 and the pad. Contact intersections keep
+net-extraction anchors on actual overlapping material, including partial V0
+landings. SRAM conductors participate in connectivity; only the measured subjects
+are filtered. These three rules are skipped with ``--no-connectivity``. This
+interconnect graph does not yet recognize individual transistor source/drain
+terminals or well taps for ``ACTIVE.S.2A`` and ``ACTIVE.LUP.1``.
 
 SRAM applicability
 ------------------
@@ -83,7 +108,10 @@ The rules use the selected subjects as follows:
   select ACTIVE as their subject; SRAM SDT overlap and LIG/GATE overlap select SDT
   or LIG, respectively, retaining their full reference layers. The existing
   SRAM-specific limits and ACTIVE/LISD/LIG boundary-contact prohibitions remain
-  active. These prohibitions test contact independently of the membership filter.
+  active. ``SRAM.SDT.ACTIVE.OV.3`` and ``SRAM.SDT.LISD.OV.4`` both require 17 nm
+  vertical overlap, with separate checks for missing or touching-only references;
+  a width check alone cannot reject an empty intersection. Boundary prohibitions
+  test contact independently of the membership filter.
 * The SRAMDRC marker's own non-orthogonal-geometry check remains active everywhere
   as a supplemental marker-integrity check. A marker is not exempted against
   itself. ``SRAMVT`` is a threshold-adjust layer, not the SRAMDRC marker; its name
@@ -116,8 +144,10 @@ wording:
 Tests
 -----
 
-``tests/asap7.rs`` uses synthetic cases to check the SRAM SDT–ACTIVE overlap at 17 nm and V1's asymmetric 5/2 nm enclosure on 
-the same opposite pair, including rotated pairs and shapes crossing tile boundaries.
+``tests/asap7.rs`` uses synthetic cases to check both SRAM SDT overlaps at 17 nm, empty references, local via end-cap
+qualification, partial V0 landing, remote net connections, even metal widths,
+and V1's asymmetric 5/2 nm enclosure. Cases include rotation, negative coordinates,
+SRAM selection, and geometry on or crossing tile boundaries.
 
 The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
 Rust CI. They exercise SRAM marker classification and both well-rule thresholds,
