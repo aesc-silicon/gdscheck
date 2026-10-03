@@ -470,3 +470,22 @@ fn edges_of_abutting_rectangles_match_the_single_rectangle() {
     let whole = run_tiled(&[rect(A, 0, 0, 60, 30)], &[], defs, 20);
     assert_eq!(split, whole);
 }
+
+/// A bare length is equality, whereas explicit equal range bounds are empty.
+#[test]
+fn exact_edge_length_selection_is_not_an_empty_range() {
+    let a = vec![rect(A, 0, 0, 100, 50)];
+    let defs = |op| {
+        vec![
+            ((900, 0), EdgeOp::Edges, vec![A]),
+            ((901, 0), op, vec![(900, 0)]),
+        ]
+    };
+    for (name, want) in [("with_length_exact", true), ("without_length_exact", false)] {
+        let op = gdscheck::parse_edge_op(name, Some(0.05), Some(0.05), None, 0.001).unwrap();
+        let got = run(&a, &[], &defs(op));
+        assert_eq!(got.len(), 2);
+        assert!(got.iter().all(|e| (e.0 == e.2) == want), "{got:?}");
+    }
+    assert!(run(&a, &[], &defs(EdgeOp::WithLength(Some(50), Some(50)))).is_empty());
+}

@@ -495,3 +495,56 @@ fn v1_enclosure_requires_five_and_two_on_the_same_pair(
         assert!(v.iter().all(|v| v.rule_id == "V1.M1.EN.1"), "{v:?}");
     }
 }
+
+/// Marker locations, not just verdicts, must survive exact tile-corner contact.
+#[test]
+fn region_marker_is_stable_on_a_tile_corner() {
+    for (deck, layer, rect) in [
+        ("v0", "V0", [0.0, 0.0, 18.0, 18.0]),
+        // This under-area metal crosses the vertical tile line while its top
+        // lies on the horizontal line: multiple pieces, all top corners lost
+        // by a strictly-interior-only vertex average.
+        ("m1", "M1", [-5.0, 0.0, 22.75, 18.0]),
+    ] {
+        let signature = |tile| {
+            let v = rectangles(deck, &[(layer, rect)], 6_982.0, tile);
+            let mut s: Vec<_> = v
+                .iter()
+                .map(|v| format!("{} {:?}", v.rule_id, v.geometry))
+                .collect();
+            s.sort();
+            s
+        };
+        assert_eq!(signature(7.0), signature(20.0), "{deck}");
+    }
+}
+
+/// Separate ACTIVEs extending the same long FIN wall must contribute the same
+/// marker extent whether both references fit in one tile or occupy two tiles.
+#[test]
+fn fin_extension_marker_keeps_every_partial_covering_stretch() {
+    let shapes = [
+        ("FIN", [0.0, 0.0, 9_400.0, 7.0]),
+        ("ACTIVE", [0.0, -5.0, 16.0, 12.0]),
+        ("ACTIVE", [9_384.0, -5.0, 9_400.0, 12.0]),
+    ];
+    let signature = |tile| {
+        let v = rectangles("active", &shapes, 100.0, tile);
+        let mut s: Vec<_> = v
+            .iter()
+            .filter(|v| v.rule_id == "ACTIVE.FIN.EX.1")
+            .map(|v| match v.geometry {
+                // Orthogonal fixture coordinates are exact DBU; ignore only
+                // floating-point arithmetic noise in the final µm conversion.
+                gdscheck::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } => {
+                    [x1, y1, x2, y2].map(|x| (x / 0.00025).round() as i64)
+                }
+                ref other => panic!("expected an edge: {other:?}"),
+            })
+            .collect();
+        s.sort();
+        s
+    };
+    assert_eq!(signature(7.0).len(), 2);
+    assert_eq!(signature(7.0), signature(20.0));
+}
