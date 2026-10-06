@@ -40,8 +40,11 @@ What is not checked
 -------------------
 
 Each deck's header lists the rules of its section it does not check, and why: mainly
-the routing grids and tracks, ACTIVE/SDT width increments, the net-aware
-``ACTIVE.S.2A`` and the latch-up reach ``ACTIVE.LUP.1``.
+the routing grids and tracks, SDT's width increment and the net-aware
+``ACTIVE.S.2A``. ``ACTIVE.W.2`` reads every vertical ACTIVE edge up to 540 nm against
+the whole multiples of 27 nm, and a taller edge goes unread; ``ACTIVE.LUP.1`` reads the
+reach from a gated ACTIVE to a tap under the well's own implant, 30 µm round and, in a
+well, confined to that well, the way the IHP latch-up rules are read.
 ``V0.LIG.AUX.2`` is read from figure 3.11.2(c) as "a V0 crosses its LIG": the part
 of the V0 off the LIG must be two pieces, one either side, so the rule needs no
 LIG direction.
@@ -80,7 +83,7 @@ net-extraction anchors on actual overlapping material, including partial V0
 landings. SRAM conductors participate in connectivity; only the measured subjects
 are filtered. These three rules are skipped with ``--no-connectivity``. This
 interconnect graph does not yet recognize individual transistor source/drain
-terminals or well taps for ``ACTIVE.S.2A`` and ``ACTIVE.LUP.1``.
+terminals for ``ACTIVE.S.2A``.
 
 SRAM applicability
 ------------------

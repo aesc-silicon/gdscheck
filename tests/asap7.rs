@@ -79,7 +79,15 @@ fn pattern_on(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[Str
 /// abutting the SRAM marker give one each; a bar half under its select and one with
 /// a wall on the select's edge give two AUX.1 between them. The deck reads AUX.3 as
 /// a notch under 1 µm across y, which any hole in an ordinary ACTIVE is, so the A.1B
-/// test ignores it; SRAM ACTIVE has no notch rule, and its hole reads clean.
+/// test ignores it; SRAM ACTIVE has no notch rule, and its hole reads clean. A bar
+/// under 27 nm and a hole under the area are no multiples of 27 nm, so the W.1 and
+/// A.1B tests ignore W.2 as well.
+///
+/// W.2 reads every vertical edge up to 540 nm against the multiples of 27 nm: two bars
+/// off a multiple and an L whose column rises 13.5 nm give six walls, and a 600 nm bar,
+/// above the cap, none. LUP.1 reads a gated ACTIVE's reach to a tap under the well's
+/// own implant, 30 µm round: a tap a DBU too far gives one marker, in a well and in the
+/// substrate, and a tap 20 µm off in a well of its own gives another.
 #[rstest]
 #[case("ACTIVE.WELL.S.4", "outside", 2)]
 #[case("ACTIVE.WELL.EN.1", "outside", 4)]
@@ -100,9 +108,13 @@ fn pattern_on(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[Str
 #[case("ACTIVE.FIN.EX.1", "short", 1)]
 #[case("ACTIVE.AUX.1", "select", 2)]
 #[case("SRAM.ACTIVE.AUX.2", "abut", 1)]
+#[case("ACTIVE.W.2", "increment", 6)]
+#[case("ACTIVE.LUP.1", "well", 2)]
+#[case("ACTIVE.LUP.1", "substrate", 1)]
 fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
-    let ignore = match rule {
-        "ACTIVE.A.1B" => vec!["ACTIVE.AUX.3".to_string()],
+    let ignore: Vec<String> = match rule {
+        "ACTIVE.W.1" => vec!["ACTIVE.W.2".into()],
+        "ACTIVE.A.1B" => vec!["ACTIVE.AUX.3".into(), "ACTIVE.W.2".into()],
         _ => vec![],
     };
     pattern("active", rule, variant, count, &ignore);

@@ -9,24 +9,29 @@
 //! at the limit, then the one a DBU past it.
 //!
 //! The deck reads AUX.3, no notch along the vertical axis, as a notch under 1 µm, so
-//! any hole in an ordinary ACTIVE is one: the A.1B test ignores it.
+//! any hole in an ordinary ACTIVE is one; and a bar under 27 nm or a hole under the
+//! area is no multiple of 27 nm, so W.1's short bar and A.1B's hole fail W.2 too. The
+//! tests name those and ignore them; every other ACTIVE here is drawn to W.2.
 
 use super::patterns::{ROOM, boxes, bx, gap_pairs, pg};
 use super::{Corpus, DBU, nm};
-use crate::helpers::{enclosure_pattern, shift, space_pattern};
+use crate::helpers::space_pattern;
 use gds21::GdsElement;
 
-/// ACTIVE side, room between enclosure pairs, and where each pattern starts, in nm.
-const SIDE: f64 = 32.0;
+/// ACTIVE side - two fin pitches, for W.2 - room between enclosure pairs, and where
+/// each pattern starts, in nm.
+const SIDE: f64 = 54.0;
 const GAP: f64 = 100.0;
 const OFFSET: f64 = 6990.0;
-/// A bar's extent where nothing reads it.
+/// A bar's extent where nothing reads it; the height four fin pitches, for W.2.
 const LONG: f64 = 100.0;
-const TALL: f64 = 100.0;
+const TALL: f64 = 108.0;
 
 pub(super) fn generate(c: &Corpus<'_>) {
     well(c);
     shapes(c);
+    increments(c);
+    latch_up(c);
 }
 
 /// DRM 3.5: the entire ACTIVE polygon gets SRAM rules when it interacts with SRAMDRC,
@@ -66,17 +71,25 @@ fn well(c: &Corpus<'_>) {
                 let e = space_pattern(active, nwell, nm(SIDE), nm(limit), nm(OFFSET), -nm(DBU));
                 (e, 0.0)
             } else {
-                let e = enclosure_pattern(
-                    nwell,
-                    active,
-                    nm(limit),
-                    nm(SIDE),
-                    nm(GAP),
-                    nm(OFFSET),
-                    -nm(DBU),
-                );
-                // enclosure_pattern draws from y = 0; lift it level with OFFSET.
-                (shift(&e, 0.0, nm(OFFSET)), limit)
+                // Five pairs: a well `limit` round a SIDE square of ACTIVE, then one with
+                // each wall in turn a DBU in. The shared enclosure_pattern shortens a
+                // margin by growing the enclosed shape instead, which would take the
+                // ACTIVE off W.2's multiple of 27.
+                let outer = SIDE + 2.0 * limit;
+                let mut e = vec![];
+                let sides = [
+                    [0.0; 4],
+                    [DBU, 0.0, 0.0, 0.0],
+                    [0.0, DBU, 0.0, 0.0],
+                    [0.0, 0.0, DBU, 0.0],
+                    [0.0, 0.0, 0.0, DBU],
+                ];
+                for (k, [l, r, b, t]) in sides.into_iter().enumerate() {
+                    let x = OFFSET + k as f64 * (outer + GAP);
+                    e.push(bx(nwell, x + l, OFFSET + b, outer - l - r, outer - b - t));
+                    e.push(bx(active, x + limit, OFFSET + limit, SIDE, SIDE));
+                }
+                (e, limit)
             };
             let around = [-200.0, -200.0, 2000.0, 300.0];
             let marker = match mode {
@@ -142,7 +155,7 @@ fn shapes(c: &Corpus<'_>) {
         ),
     );
 
-    // A slot open upward between two 20 nm arms on a 30 nm back: its walls face
+    // A slot open upward between two 20 nm arms on a 27 nm back: its walls face
     // across x, S.2B's notch.
     let n_along = c.drm("ACTIVE.S.2B", "min_notch", 38.0);
     let mut elems = vec![];
@@ -156,8 +169,8 @@ fn shapes(c: &Corpus<'_>) {
                 (x + right, y),
                 (x + right, y + TALL),
                 (x + 20.0 + g, y + TALL),
-                (x + 20.0 + g, y + 30.0),
-                (x + 20.0, y + 30.0),
+                (x + 20.0 + g, y + 27.0),
+                (x + 20.0, y + 27.0),
                 (x + 20.0, y + TALL),
                 (x, y + TALL),
             ],
@@ -167,13 +180,13 @@ fn shapes(c: &Corpus<'_>) {
     write("ACTIVE.S.2B.notch", elems);
 
     // A plain bar, then one with a slot open to the right between two 27 nm arms on a
-    // 20 nm back: its walls face across y, 100 nm apart, which AUX.3 forbids at any
+    // 20 nm back: its walls face across y, 108 nm apart, which AUX.3 forbids at any
     // distance a cell holds.
     let n_rows = c.drm("ACTIVE.AUX.3", "min_notch", 1000.0);
-    assert!(100.0 < n_rows);
+    assert!(108.0 < n_rows);
     let mut elems = boxes(active, &[(LONG, h)], OFFSET, OFFSET);
     let (x, y) = (OFFSET, OFFSET + h + ROOM);
-    let top = 2.0 * h + 100.0;
+    let top = 2.0 * h + 108.0;
     elems.push(pg(
         active,
         &[
@@ -181,8 +194,8 @@ fn shapes(c: &Corpus<'_>) {
             (x + LONG, y),
             (x + LONG, y + h),
             (x + 20.0, y + h),
-            (x + 20.0, y + h + 100.0),
-            (x + LONG, y + h + 100.0),
+            (x + 20.0, y + h + 108.0),
+            (x + LONG, y + h + 108.0),
             (x + LONG, y + top),
             (x, y + top),
         ],
@@ -232,17 +245,17 @@ fn shapes(c: &Corpus<'_>) {
     elems.push(over(marker));
     write("SRAM.ACTIVE.A.2B.hole", elems);
 
-    // A 40 nm ACTIVE holding one 7 nm fin 10 nm up from its bottom wall, then a DBU
+    // A 54 nm ACTIVE holding one 7 nm fin 10 nm up from its bottom wall, then a DBU
     // less. The fin runs on past the ACTIVE both ways, as fins do.
     let ex = c.drm("ACTIVE.FIN.EX.1", "min_enclosure", 10.0);
     let held = |y: f64, below: f64| {
         vec![
-            bx(active, OFFSET, y, LONG, 40.0),
+            bx(active, OFFSET, y, LONG, 54.0),
             bx(fin, OFFSET - 50.0, y + below, LONG + 100.0, 7.0),
         ]
     };
     let mut elems = held(OFFSET, ex);
-    elems.extend(held(OFFSET + 40.0 + ROOM, ex - DBU));
+    elems.extend(held(OFFSET + 54.0 + ROOM, ex - DBU));
     write("ACTIVE.FIN.EX.1.short", elems);
 
     // AUX.1: a bar under a select clear of its edges; one the select covers only half
@@ -278,4 +291,96 @@ fn shapes(c: &Corpus<'_>) {
         3.0 * (h + ROOM),
     ));
     write("SRAM.ACTIVE.AUX.2.abut", elems);
+}
+
+/// ACTIVE.W.2: every vertical edge a whole multiple of 27 nm. Bars 27 and 54 nm tall,
+/// then 40.5 and 81.25, each of those two failing walls; an L whose column rises 27 nm
+/// above its bar, then 13.5 nm, where the column's wall and the riser both fail; and a
+/// 600 nm bar, no multiple either, above the cap and so unread.
+fn increments(c: &Corpus<'_>) {
+    let active = c.layer("ACTIVE");
+    let select = c.layer("NSELECT");
+    let h = c.drm("ACTIVE.W.1", "min_width", 27.0);
+    let mut elems = vec![];
+    let mut y = OFFSET;
+    for rise in [h, h / 2.0] {
+        elems.push(pg(
+            active,
+            &[
+                (OFFSET, y),
+                (OFFSET + LONG, y),
+                (OFFSET + LONG, y + h),
+                (OFFSET + 40.0, y + h),
+                (OFFSET + 40.0, y + h + rise),
+                (OFFSET, y + h + rise),
+            ],
+        ));
+        y += h + rise + ROOM;
+    }
+    let bars = [
+        (LONG, h),
+        (LONG, 2.0 * h),
+        (LONG, 1.5 * h),
+        (LONG, 81.25),
+        (LONG, 600.0),
+    ];
+    elems.extend(boxes(active, &bars, OFFSET, y));
+    let top = y + bars.iter().map(|b| b.1 + ROOM).sum::<f64>();
+    elems.push(bx(
+        select,
+        OFFSET - 100.0,
+        OFFSET - 100.0,
+        400.0,
+        top - OFFSET + 200.0,
+    ));
+    c.write("active", "ACTIVE.W.2.increment", true, elems);
+}
+
+/// ACTIVE.LUP.1: a MOS device's ACTIVE within 30 µm of a tap in its own well or in the
+/// substrate. A device is a 100 by 27 ACTIVE under its select with a gate across it; a
+/// tap the same ACTIVE under the other select. The tap's near wall is 30 µm from the
+/// device's far wall, then a DBU more; in the well, a third tap sits 20 µm off in a
+/// well of its own, which is no tap for this one.
+fn latch_up(c: &Corpus<'_>) {
+    let (active, gate, nwell) = (c.layer("ACTIVE"), c.layer("GATE"), c.layer("NWELL"));
+    let (nsel, psel) = (c.layer("NSELECT"), c.layer("PSELECT"));
+    let reach = c.drm("ACTIVE.LUP.1", "max_space", 30_000.0);
+    let device = |x: f64, y: f64, sel: (i16, i16)| {
+        vec![
+            bx(active, x, y, LONG, 27.0),
+            bx(sel, x - 20.0, y - 20.0, LONG + 40.0, 67.0),
+            bx(gate, x + 40.0, y - 30.0, 20.0, 87.0),
+        ]
+    };
+    let tap = |x: f64, y: f64, sel: (i16, i16)| {
+        vec![
+            bx(active, x, y, LONG, 27.0),
+            bx(sel, x - 20.0, y - 20.0, LONG + 40.0, 67.0),
+        ]
+    };
+    let row = |k: usize| OFFSET + k as f64 * (200.0 + ROOM);
+    let x = OFFSET + 100.0;
+
+    let mut elems = vec![];
+    for (k, d) in [reach, reach + DBU].into_iter().enumerate() {
+        let y = row(k);
+        elems.extend(device(x, y + 50.0, psel));
+        elems.extend(tap(x + d, y + 50.0, nsel));
+        elems.push(bx(nwell, OFFSET, y, d + 300.0, 200.0));
+    }
+    let y = row(2);
+    elems.extend(device(x, y + 50.0, psel));
+    elems.push(bx(nwell, OFFSET, y, 10_000.0, 200.0));
+    let tx = x + 20_000.0;
+    elems.extend(tap(tx, y + 50.0, nsel));
+    elems.push(bx(nwell, tx - 100.0, y, LONG + 200.0, 200.0));
+    c.write("active", "ACTIVE.LUP.1.well", true, elems);
+
+    let mut elems = vec![];
+    for (k, d) in [reach, reach + DBU].into_iter().enumerate() {
+        let y = row(k);
+        elems.extend(device(x, y + 50.0, nsel));
+        elems.extend(tap(x + d, y + 50.0, psel));
+    }
+    c.write("active", "ACTIVE.LUP.1.substrate", true, elems);
 }

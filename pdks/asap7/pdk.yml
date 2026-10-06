@@ -250,6 +250,18 @@ virtual_layers:
   # may not touch it either.
   ActiveOffSram: ACTIVE not_overlapping SRAMDRC
   ActiveAbutSram: ActiveOffSram interacting SRAMDRC
+  # ACTIVE.LUP.1: the reach from a MOS device's ACTIVE - an ordinary ACTIVE a gate
+  # crosses - to a tap, the ACTIVE under the well's own implant: n+ in an N-well, p+ in
+  # the substrate.
+  ActiveOnGate: ActiveNoSram interacting GATE
+  PmosActiveAll: ActiveOnGate and PSELECT
+  PmosActive: PmosActiveAll and NWELL
+  NmosActiveAll: ActiveOnGate and NSELECT
+  NmosActive: NmosActiveAll not NWELL
+  NplusActive: ACTIVE and NSELECT
+  NwellTap: NplusActive and NWELL
+  PplusActive: ACTIVE and PSELECT
+  SubstrateTap: PplusActive not NWELL
   LisdOffSram: LISD not_overlapping SRAMDRC
   LisdAbutSram: LisdOffSram interacting SRAMDRC
   LigOffSram: LIG not_overlapping SRAMDRC
@@ -417,6 +429,31 @@ virtual_layers:
   ActiveVEdges: ActiveNoSram.edges with_angle min 90.0 max 90.0
   ActiveVEdgesInside: ActiveVEdges inside_part GATE
   ActiveVEdgesOnGate: ActiveVEdges and GATE.edges
+  # ACTIVE.W.2: every vertical edge of ordinary ACTIVE is a whole multiple of 27 nm,
+  # read up to 540 nm - a cell's ACTIVE is 27, 54 or 81 - and not above it.
+  ActiveW2Edges: ActiveVEdges with_length max 0.541
+  ActiveW2Multiples: >-
+    (ActiveVEdges with_length 0.027)
+    or (ActiveVEdges with_length 0.054)
+    or (ActiveVEdges with_length 0.081)
+    or (ActiveVEdges with_length 0.108)
+    or (ActiveVEdges with_length 0.135)
+    or (ActiveVEdges with_length 0.162)
+    or (ActiveVEdges with_length 0.189)
+    or (ActiveVEdges with_length 0.216)
+    or (ActiveVEdges with_length 0.243)
+    or (ActiveVEdges with_length 0.27)
+    or (ActiveVEdges with_length 0.297)
+    or (ActiveVEdges with_length 0.324)
+    or (ActiveVEdges with_length 0.351)
+    or (ActiveVEdges with_length 0.378)
+    or (ActiveVEdges with_length 0.405)
+    or (ActiveVEdges with_length 0.432)
+    or (ActiveVEdges with_length 0.459)
+    or (ActiveVEdges with_length 0.486)
+    or (ActiveVEdges with_length 0.513)
+    or (ActiveVEdges with_length 0.54)
+  ActiveW2Off: ActiveW2Edges not ActiveW2Multiples
   GcutVEdges: GcutNoSram.edges with_angle min 90.0 max 90.0
   GcutVEdgesInside: GcutVEdges inside_part GATE
   GcutVEdgesOnGate: GcutVEdges and GATE.edges
