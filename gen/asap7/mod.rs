@@ -9,11 +9,19 @@
 //! asap7_drm_201207a.pdf; the generator checks the decks against those fixed limits.
 
 mod active;
+mod fin;
+mod gate;
+mod gcut;
+mod geometry;
+mod lig;
+mod lisd;
 mod metal;
 mod patterns;
 mod routing;
 mod sdt;
+mod select;
 mod via;
+mod well;
 
 use crate::helpers::{library, rect, write_gz};
 use gds21::{GdsElement, GdsUnits};
@@ -142,8 +150,16 @@ pub fn generate(pdk: &PdkConfig) {
         })
         .collect();
     let c = Corpus { pdk, rules };
+    well::generate(&c);
+    fin::generate(&c);
+    gate::generate(&c);
+    gcut::generate(&c);
     active::generate(&c);
     sdt::generate(&c);
+    lisd::generate(&c);
+    lig::generate(&c);
+    select::generate(&c);
+    geometry::generate(&c);
     via::generate(&c);
     metal::generate(&c);
     routing::generate(&c);

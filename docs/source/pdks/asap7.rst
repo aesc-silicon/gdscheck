@@ -164,8 +164,14 @@ rotation, negative coordinates, SRAM selection, and geometry on or crossing tile
 boundaries.
 
 The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
-Rust CI. They cover the ACTIVE/well thresholds inside, outside and across the SRAM
-marker; SDT overlap; width, spacing, area and edge rules on every metal, including
+Rust CI. They cover the WELL rows, FIN, GATE and GCUT width, spacing, area,
+extension and shape rules, each gate with a partner one pitch along; every ACTIVE
+rule, the well thresholds inside, outside and across the SRAM marker among them;
+every SDT rule, the SRAM overlaps with absent and touching references among them;
+every LISD and LIG rule, the net-gated LIG spacings with a same-net pair joined
+through V0 and M1 among them;
+every select and VT rule on all five layers; the geometry rule, a 45° chamfer on
+every layer it reads, and the same chamfers exempt under the SRAM marker; width, spacing, area and edge rules on every metal, including
 the length-class, corner, notch, even-width and wide-line cases; and every via level
 in a whole stack: width, spacing, corner spacing by end-cap, both enclosures, the
 flush upper metal, coverage, V0 on LIG and partly on LISD, and each spacing and
