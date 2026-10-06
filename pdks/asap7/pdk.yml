@@ -356,6 +356,15 @@ virtual_layers:
   V8GoodLength: V8Len40 or V8Len120
   V8BadLength: V8NoSram not V8GoodLength
   V8NotRect: V8NoSram not_rectangle
+  # V4.W.1-V6.W.1: exact along the upper metal's length - M5 and M7 run vertically, M6
+  # horizontally (DRM 3.16) - so the via's walls running that way must be exactly the
+  # width. Across the metal, V*.AUX.2 holds the via to the metal's own width.
+  V4AlongEdges: V4NoSram edges with_angle min 90 max 90
+  V4OffWidth: V4AlongEdges without_length 0.024
+  V5AlongEdges: V5NoSram edges with_angle min 0 max 0
+  V5OffWidth: V5AlongEdges without_length 0.024
+  V6AlongEdges: V6NoSram edges with_angle min 90 max 90
+  V6OffWidth: V6AlongEdges without_length 0.032
   V9Len40: V9NoSram with_bbox_max min 0.04 max 0.04025
   V9Len120: V9NoSram with_bbox_max min 0.12 max 0.12025
   V9GoodLength: V9Len40 or V9Len120

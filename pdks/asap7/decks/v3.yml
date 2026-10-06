@@ -9,6 +9,8 @@
 # overlapping in projection: 18 nm. Vias on neighbouring tracks that don't overlap
 # meet corner to corner, which S.2-S.4 read by end-cap (23/30/27 nm); S.1's 27 nm
 # for that case is S.4's value.
+# S.3 and S.4, the corner spaces with M4 end-caps under 5 nm, can't occur in a legal
+# layout: V3.M4.AUX.2 holds M4 flush across the via, so V3.M4.EN.2 asks 11 nm along it.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V3.W.1

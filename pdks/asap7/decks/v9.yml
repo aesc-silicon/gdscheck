@@ -4,6 +4,8 @@
 
 # V9, the via from M9 to PAD (DRM section 3.19).  A V9 is a 40 x 40, 40 x 120 or
 # 120 x 40 nm rectangle: its short side exactly 40 nm, its long side one of the two.
+# V9's corner-to-corner space shares S.1's 57 nm, as V8's does; S.1 reads every
+# direction, so it reads the corner too.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V9.W.1

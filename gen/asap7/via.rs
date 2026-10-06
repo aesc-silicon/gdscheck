@@ -8,8 +8,9 @@
 //! drawn for. Each pattern leads with the via or gap exactly at the limit, then one
 //! DBU past it.
 //!
-//! Not drawn here: V0.LISD.EN.3, the partly landed V0, which `tests/asap7.rs` builds
-//! inline.
+//! Each level also draws its spacing and enclosure defects under the SRAM marker,
+//! where convention 7 exempts a via that shares area with it but keeps its landing
+//! metal whole.
 
 use super::patterns::{ROOM, bx, pg};
 use super::{Corpus, DBU};
@@ -223,12 +224,14 @@ pub(super) fn generate(c: &Corpus<'_>) {
         spacing(c, &lv);
         enclosure(c, &lv);
         cover(c, &lv);
+        sram(c, &lv);
         if lv.n <= 3 {
             adjacent(c, &lv);
             corner(c, &lv);
         }
     }
     v0_on_lig(c);
+    v0_partly_on_lisd(c);
 }
 
 /// Stacks of each `(w, h)` via in `sizes`, one above another.
@@ -242,15 +245,28 @@ fn stacks(c: &Corpus<'_>, lv: &Level, sizes: &[(f64, f64)]) -> Vec<GdsElement> {
     out
 }
 
-/// DRM W.1: V0-V3 at least 18 nm, V4-V7 exactly their side, V8/V9 exactly 40 nm
+/// DRM W.1: V0-V3 at least 18 nm, V4-V6 exactly their side along the upper metal,
+/// V7 exactly its side across its short side, V8/V9 exactly 40 nm
 /// across and 40 or 120 nm long, and a rectangle. The V8/V9 L fails twice: it is not
 /// a rectangle, and its box is 120 nm across.
 fn width(c: &Corpus<'_>, lv: &Level) {
     let s = lv.side;
     let (sizes, check): (Vec<(f64, f64)>, _) = match lv.n {
         0..=3 => (vec![(s, s), (s - DBU, s), (s, s - DBU)], "min_width"),
-        // The deck reads the short side, so an oversize via has to be narrow to fail.
-        4..=7 => (vec![(s, s), (s - DBU, s), (s, s - DBU)], "exact_dim"),
+        // Exact along the upper metal - y on V4 and V6, x on V5 - and free across it:
+        // a legal via three tracks across, then one a DBU short and one a DBU long along.
+        4..=6 => {
+            let along = |a: f64, across: f64| if lv.n == 5 { (a, across) } else { (across, a) };
+            let sizes = vec![
+                along(s, s),
+                along(s, 3.0 * s),
+                along(s - DBU, s),
+                along(s + DBU, s),
+            ];
+            (sizes, "forbidden")
+        }
+        // V7 reads the short side: the manual never says which way M8 runs.
+        7 => (vec![(s, s), (s - DBU, s), (s, s - DBU)], "exact_dim"),
         _ => (
             vec![
                 (s, s),
@@ -262,7 +278,11 @@ fn width(c: &Corpus<'_>, lv: &Level) {
             "exact_dim",
         ),
     };
-    c.drm(&lv.id("W.1"), check, s);
+    if check == "forbidden" {
+        c.drm_edge_length(&format!("V{}OffWidth", lv.n), s);
+    } else {
+        c.drm(&lv.id("W.1"), check, s);
+    }
     let mut elems = stacks(c, lv, &sizes);
     if lv.n >= 8 {
         // An L of 40 nm arms, in a stack around its box.
@@ -302,13 +322,29 @@ fn width(c: &Corpus<'_>, lv: &Level) {
 
 /// DRM S.1 (V0-V3, V8/V9) or S.2 (V4-V7): two vias side by side, then corner to
 /// corner. On V0-V3 the corner reading is S.2-S.4, drawn by [`corner`].
-fn spacing(c: &Corpus<'_>, lv: &Level) {
-    let (r, value) = match lv.n {
+/// The rule a level's side-by-side spacing is read under, and its DRM value.
+fn spacing_rule(lv: &Level) -> (&'static str, f64) {
+    match lv.n {
         0..=3 => ("S.1", 18.0),
         4 | 5 => ("S.2", 33.0),
         6 | 7 => ("S.2", 45.0),
         _ => ("S.1", 57.0),
-    };
+    }
+}
+
+/// (left, right, bottom, top) margins that leave `en` one DBU short, the layer flush
+/// across so that only the pair along x is read.
+fn one_short(en: Enc) -> [f64; 4] {
+    let e = en.value;
+    match en.sides {
+        Sides::Any => [e - DBU, e - DBU, 0.0, 0.0],
+        Sides::Opposite => [e - DBU, e, 0.0, 0.0],
+        Sides::OneAndOpposite(o) => [e, o - DBU, 0.0, 0.0],
+    }
+}
+
+fn spacing(c: &Corpus<'_>, lv: &Level) {
+    let (r, value) = spacing_rule(lv);
     let limit = c.drm(&lv.id(r), "min_space", value);
     let s = lv.side;
     let pitch = s + 2.0 * (lv.en_below.value + RUN) + ROOM;
@@ -508,4 +544,92 @@ fn v0_on_lig(c: &Corpus<'_>) {
         top - OFFSET + RUN,
     ));
     c.write("v0", "V0.LIG.AUX.2.uncrossed", true, elems);
+}
+
+/// DRM 1.2.2 convention 7 under the SRAM marker: the same defect four times - a pair
+/// one DBU too close, or a via one DBU short of each enclosure - with the marker over
+/// the via (over both, for a pair), over one via of the pair, touching the via along
+/// an edge only, and over the landing layer away from the via. A via sharing area
+/// with the marker is exempt, and a pair is read only when both vias are outside it;
+/// edge contact is not membership, and the landing layer stays whole.
+fn sram(c: &Corpus<'_>, lv: &Level) {
+    let s = lv.side;
+    let marker = c.layer("SRAMDRC");
+    let reach = lv.en_below.value.max(lv.en_above.value) + RUN;
+    let pitch = s + 2.0 * reach + ROOM;
+    // The marker for case `k`, around a via at (x, y): over it, over its half nearest
+    // `x`, along its left edge, and over a landing layer clear of it - the lower one
+    // where it runs on below the via, else the far end of the upper one.
+    let mark = |k: usize, x: f64, y: f64, w: f64, on_upper: bool| match k {
+        0 => bx(marker, x - 1.0, y - 1.0, w + 2.0, s + 2.0),
+        1 => bx(marker, x - 1.0, y - 1.0, s / 2.0 + 1.0, s + 2.0),
+        2 => bx(marker, x - 10.0, y, 10.0, s),
+        _ if on_upper => bx(marker, x + s + lv.en_above.value + RUN - 5.0, y, 5.0, s),
+        _ => bx(marker, x, y - lv.en_below.value - RUN, s, 5.0),
+    };
+
+    let (r, value) = spacing_rule(lv);
+    let gap = c.drm(&lv.id(r), "min_space", value) - DBU;
+    let mut elems = vec![];
+    for k in 0..4 {
+        let y = OFFSET + k as f64 * pitch;
+        elems.extend(lv.stack(c, OFFSET, y, s, s));
+        elems.extend(lv.stack(c, OFFSET + s + gap, y, s, s));
+        elems.push(mark(
+            k,
+            OFFSET,
+            y,
+            if k == 0 { 2.0 * s + gap } else { s },
+            false,
+        ));
+    }
+    c.write(&lv.deck(), &lv.id(&format!("{r}.sram")), true, elems);
+
+    for (below, en) in [(true, lv.en_below), (false, lv.en_above)] {
+        let mut elems = vec![];
+        for k in [0, 2, 3] {
+            let y = OFFSET + k as f64 * pitch;
+            let at = (OFFSET, y, s, s);
+            elems.extend(if below {
+                lv.with(c, at, Some(one_short(en)), Some(lv.above_ok()))
+            } else {
+                lv.with(c, at, Some(lv.below_ok()), Some(one_short(en)))
+            });
+            elems.push(mark(k, OFFSET, y, s, below));
+        }
+        c.write(&lv.deck(), &format!("{}.sram", en.id), true, elems);
+    }
+}
+
+/// DRM 3.11 V0.LISD.EN.3, figure 3.11.1(d): a V0 over a LIG may run off the end of a
+/// LISD, but the part on the LISD needs 3 nm of it on both sides across. Margins of 3
+/// and 3.25 nm, then each side a DBU short.
+fn v0_partly_on_lisd(c: &Corpus<'_>) {
+    let en = c.drm("V0.LISD.EN.3", "min_enclosure", 3.0);
+    let (v0, lisd, lig, m1) = (
+        c.layer("V0"),
+        c.layer("LISD"),
+        c.layer("LIG"),
+        c.layer("M1"),
+    );
+    let s = 18.0;
+    let pitch = s + 2.0 * RUN + ROOM;
+    let mut elems = vec![];
+    for (k, (l, r)) in [
+        (en, en),
+        (en + DBU, en + DBU),
+        (en - DBU, en),
+        (en, en - DBU),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (x, y) = (OFFSET, OFFSET + k as f64 * pitch);
+        elems.push(bx(v0, x, y, s, s));
+        // The LISD ends half way up the V0; the LIG crosses it, 1 nm inside it.
+        elems.push(bx(lisd, x - l, y - RUN, s + l + r, RUN + s / 2.0));
+        elems.push(bx(lig, x - 20.0, y + 1.0, s + 40.0, s - 2.0));
+        elems.push(bx(m1, x - 5.0, y, s + 10.0, s));
+    }
+    c.write("v0", "V0.LISD.EN.3.short", true, elems);
 }

@@ -47,6 +47,24 @@ impl Corpus<'_> {
         self.agree(id, check, "value", nm, |r| Some(r.value))
     }
 
+    /// The manual's `nm` for the exact length the edge layer `name` keeps or drops,
+    /// after checking the deck's layer says the same.
+    fn drm_edge_length(&self, name: &str, nm: f64) -> f64 {
+        let def = self
+            .pdk
+            .edge_layers
+            .iter()
+            .find(|e| e.name == name)
+            .unwrap_or_else(|| panic!("no edge layer {name}"));
+        let um = def.min.unwrap_or_else(|| panic!("{name} has no length"));
+        assert!(
+            (um * 1000.0 - nm).abs() < 1e-6 && def.max == def.min,
+            "{name}: deck length is {} nm, the DRM says {nm} nm",
+            um * 1000.0
+        );
+        nm
+    }
+
     /// As [`Self::drm`], for an area in nm² (the deck writes µm²).
     fn drm_area(&self, id: &str, check: &str, nm2: f64) -> f64 {
         self.agree(id, check, "value", nm2, |r| Some(r.value * 1000.0))

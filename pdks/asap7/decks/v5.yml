@@ -5,12 +5,14 @@
 # V5, the via from M5 to M6 (DRM section 3.15).  V5.S.1, V5.S.2 and V5.S.3 - the
 # same net, different nets, corner to corner - share one value, so one rule reads them all
 # under V5.S.2.
+# W.1 is exact along M6's length, which runs horizontally: the via's horizontal walls.
+# Across M6, V5.M6.AUX.2 holds the via to the metal's width.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V5.W.1
-    check: exact_dim
-    layers: [V5NoSram]
-    value: 0.024
+    check: forbidden
+    layers: [V5OffWidth]
+    value: 0.0
   - id: V5.S.2
     check: min_space
     layers: [V5NoSram]

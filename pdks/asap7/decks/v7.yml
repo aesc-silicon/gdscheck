@@ -5,6 +5,8 @@
 # V7, the via from M7 to M8 (DRM section 3.17).  V7.S.1, V7.S.2 and V7.S.3 - the
 # same net, different nets, corner to corner - share one value, so one rule reads them all
 # under V7.S.2.
+# W.1 reads the via's short side. The manual asks for 32 nm along M8's length but never
+# says which way M8 runs, so a via oversize along M8 passes when its other side is 32 nm.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V7.W.1

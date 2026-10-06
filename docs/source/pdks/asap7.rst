@@ -64,7 +64,15 @@ it intersects SRAMDRC elsewhere. Exactly 5 nm qualifies. ``V0.LISD.EN.3`` reads
 the portion of a non-SRAM via overlapping LISD that interacts with LIG, requiring
 3 nm on an opposite pair while allowing the rest of the via to protrude.
 As with ``V0.LISD.EN.2``, this reads the manual's "minimum enclosure" as a lower
-bound, despite the table's ``==`` symbol.
+bound, despite the table's ``==`` symbol: the standard-cell libraries put V0s on
+LISD bars with tens of nanometres along the bar and as little as 2 nm across it, so
+no pair of sides is exactly 3 nm.
+
+V4–V6 ``W.1`` is exact along the upper metal's length, as the manual words it: the
+via's walls running with M5 and M7 (vertical) or M6 (horizontal) must be exactly 24
+or 32 nm, and across the metal ``AUX.2`` holds the via to the metal's width. The
+manual never says which way M8 runs, so ``V7.W.1`` reads the via's short side.
+V8/V9 corner spacing shares ``S.1``'s 57 nm, which reads every direction.
 
 ``LIG.LISD.S.6``, ``LIG.LISD.S.7`` and ``LIG.SDT.S.8`` use electrical connectivity,
 including remote routing through M1–M9 and the pad. Contact intersections keep
@@ -137,7 +145,8 @@ wording:
 * ``V0.LIG.EN.4`` is worded as the LIG's enclosure by the V0. The libraries draw both
   that case (a V0 over a 16 nm LIG rail, 1 nm past it on each side) and a V0 flush with
   the end of a wider LIG. The rule reads the LIG walls inside the via and skips the
-  flush one.
+  flush one. The manual asks for two opposite sides; with ``V0.LIG.AUX.2`` holding a
+  V0 across its LIG, the only LIG walls inside the via are that pair.
 * ``SDT.ACTIVE.AUX.2``, "SDT horizontal edges must coincide with ACTIVE horizontal
   edges", is read as "an SDT does not end inside its ACTIVE". Where an ACTIVE steps,
   the libraries run the SDT on past it.
@@ -155,17 +164,22 @@ rotation, negative coordinates, SRAM selection, and geometry on or crossing tile
 boundaries.
 
 The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
-Rust CI. They exercise SRAM marker classification and both well-rule thresholds,
-SDT overlap, asymmetric V1 enclosure, M4 width, length-dependent M8 width, and
-three routed upper-metal nets with a deliberately defective companion.
+Rust CI. They cover the ACTIVE/well thresholds inside, outside and across the SRAM
+marker; SDT overlap; width, spacing, area and edge rules on every metal, including
+the length-class, corner, notch, even-width and wide-line cases; and every via level
+in a whole stack: width, spacing, corner spacing by end-cap, both enclosures, the
+flush upper metal, coverage, V0 on LIG and partly on LISD, and each spacing and
+enclosure defect under the SRAM marker. Three routed upper-metal nets with a
+deliberately defective companion check the full main suite.
 
-``gen/asap7/`` separates ACTIVE, SDT, via, metal and routing patterns into modules.
-It writes ``<deck>/<rule>.<case>.good.gds.gz`` and ``.bad.gds.gz`` fixtures;
-numeric case labels measure distances in 0.25 nm database units. The limits come
-from the manual, and generation verifies that the deck values agree with them.
-Regenerate with ``just gen-testdata-for asap7``.
+``gen/asap7/`` separates ACTIVE, SDT, via, metal and routing patterns into modules,
+drawn with the shared helpers and the ASAP7 builders in ``gen/asap7/patterns.rs``.
+Each fixture, ``<deck>/<rule>.<case>.bad.gds.gz``, holds the shape exactly at the
+limit and the ones one DBU past it. The limits come from the manual, and generation
+verifies that the deck values agree with them. Regenerate with
+``just gen-testdata-for asap7``.
 
-Expected violation counts live in ``tests/asap7.rs``. Good cases must
-be clean in the selected deck and bad cases must report only the target rule,
-apart from documented via-landing exceptions. Routed cases check the full main
-suite. The fixture generator does not write an expected-results manifest.
+Expected violation counts live in ``tests/asap7.rs``. A fixture must report only
+its target rule, with the expected count; where two rules overlap by their nature -
+a via missing a layer also fails its enclosure, say - the test names the other rule
+and ignores it.

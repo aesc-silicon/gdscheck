@@ -111,7 +111,9 @@ const VIA_ENCLOSURES: [(&str, &str); 10] = [
 /// DRM 3.11-3.19: every via in a whole stack, each pattern a via or gap exactly at the
 /// limit and one DBU past it:
 /// - a narrow V0-V3 has two failing walls, and the patterns narrow it each way, so
-///   four; an exact-size V4-V7 one marker per via; the V8/V9 pattern holds a narrow
+///   four; a V4-V6 a DBU short or long along its upper metal has two failing walls,
+///   so four, while V7, read on its short side, gives one per via; the V8/V9 pattern
+///   holds a narrow
 ///   via, a 40 x 80 one and an L, which is both not a rectangle and 120 nm across;
 /// - each pair too close gives one, side by side on one track or, on V0-V3, partly
 ///   aligned on neighbouring tracks; V4-V9 add a corner pair under the same rule;
@@ -122,6 +124,13 @@ const VIA_ENCLOSURES: [(&str, &str); 10] = [
 /// - a via missing its lower and one missing its upper layer give one AUX.1 each.
 /// - a V0 must cross its LIG: flush with its side, a side inside it, or over its end
 ///   gives one V0.LIG.AUX.2 each.
+/// - a V0 partly on LISD needs 3 nm of it on both sides across: each side a DBU short
+///   gives one V0.LISD.EN.3;
+/// - under the SRAM marker (DRM 1.2.2, convention 7) each spacing and enclosure defect
+///   is drawn four times: with the marker over the via, over one via of a pair, along
+///   its edge only, and over its landing layer clear of it. The first two are exempt,
+///   the last two not - edge contact is not membership and the landing layer stays
+///   whole - so two.
 ///
 /// Some rules overlap by their nature, and the patterns ignore the other: a missing
 /// layer encloses nothing, a V0 that doesn't cross the whole 16 nm LIG shares less
@@ -140,6 +149,10 @@ const VIA_ENCLOSURES: [(&str, &str); 10] = [
 #[case("v0", "V0.M1.EN.1", "short", 1)]
 #[case("v0", "V0.M1.AUX.3", "overhang", 1)]
 #[case("v0", "V0.AUX.1", "uncovered", 2)]
+#[case("v0", "V0.S.1", "sram", 2)]
+#[case("v0", "V0.LISD.EN.2", "sram", 2)]
+#[case("v0", "V0.M1.EN.1", "sram", 2)]
+#[case("v0", "V0.LISD.EN.3", "short", 2)]
 #[case("v0", "V0.LIG.EN.4", "short", 1)]
 #[case("v0", "V0.LIG.A.1", "small", 1)]
 #[case("v0", "V0.LIG.AUX.2", "uncrossed", 3)]
@@ -154,6 +167,9 @@ const VIA_ENCLOSURES: [(&str, &str); 10] = [
 #[case("v1", "V1.M2.EN.2", "short", 1)]
 #[case("v1", "V1.M2.AUX.2", "overhang", 1)]
 #[case("v1", "V1.AUX.1", "uncovered", 2)]
+#[case("v1", "V1.S.1", "sram", 2)]
+#[case("v1", "V1.M1.EN.1", "sram", 2)]
+#[case("v1", "V1.M2.EN.2", "sram", 2)]
 #[case("v2", "V2.W.1", "narrow", 4)]
 #[case("v2", "V2.S.1", "close", 1)]
 #[case("v2", "V2.S.1", "adjacent", 1)]
@@ -165,6 +181,9 @@ const VIA_ENCLOSURES: [(&str, &str); 10] = [
 #[case("v2", "V2.M3.EN.2", "short", 1)]
 #[case("v2", "V2.M3.AUX.2", "overhang", 1)]
 #[case("v2", "V2.AUX.1", "uncovered", 2)]
+#[case("v2", "V2.S.1", "sram", 2)]
+#[case("v2", "V2.M2.EN.1", "sram", 2)]
+#[case("v2", "V2.M3.EN.2", "sram", 2)]
 #[case("v3", "V3.W.1", "narrow", 4)]
 #[case("v3", "V3.S.1", "close", 1)]
 #[case("v3", "V3.S.1", "adjacent", 1)]
@@ -176,40 +195,61 @@ const VIA_ENCLOSURES: [(&str, &str); 10] = [
 #[case("v3", "V3.M4.EN.2", "short", 1)]
 #[case("v3", "V3.M4.AUX.2", "overhang", 1)]
 #[case("v3", "V3.AUX.1", "uncovered", 2)]
-#[case("v4", "V4.W.1", "narrow", 2)]
+#[case("v3", "V3.S.1", "sram", 2)]
+#[case("v3", "V3.M3.EN.1", "sram", 2)]
+#[case("v3", "V3.M4.EN.2", "sram", 2)]
+#[case("v4", "V4.W.1", "narrow", 4)]
 #[case("v4", "V4.S.2", "close", 2)]
 #[case("v4", "V4.M4.EN.1", "short", 1)]
 #[case("v4", "V4.M5.EN.2", "short", 1)]
 #[case("v4", "V4.M5.AUX.2", "overhang", 1)]
 #[case("v4", "V4.AUX.1", "uncovered", 2)]
-#[case("v5", "V5.W.1", "narrow", 2)]
+#[case("v4", "V4.S.2", "sram", 2)]
+#[case("v4", "V4.M4.EN.1", "sram", 2)]
+#[case("v4", "V4.M5.EN.2", "sram", 2)]
+#[case("v5", "V5.W.1", "narrow", 4)]
 #[case("v5", "V5.S.2", "close", 2)]
 #[case("v5", "V5.M5.EN.1", "short", 1)]
 #[case("v5", "V5.M6.EN.2", "short", 1)]
 #[case("v5", "V5.M6.AUX.2", "overhang", 1)]
 #[case("v5", "V5.AUX.1", "uncovered", 2)]
-#[case("v6", "V6.W.1", "narrow", 2)]
+#[case("v5", "V5.S.2", "sram", 2)]
+#[case("v5", "V5.M5.EN.1", "sram", 2)]
+#[case("v5", "V5.M6.EN.2", "sram", 2)]
+#[case("v6", "V6.W.1", "narrow", 4)]
 #[case("v6", "V6.S.2", "close", 2)]
 #[case("v6", "V6.M6.EN.1", "short", 1)]
 #[case("v6", "V6.M7.EN.2", "short", 1)]
 #[case("v6", "V6.M7.AUX.2", "overhang", 1)]
 #[case("v6", "V6.AUX.1", "uncovered", 2)]
+#[case("v6", "V6.S.2", "sram", 2)]
+#[case("v6", "V6.M6.EN.1", "sram", 2)]
+#[case("v6", "V6.M7.EN.2", "sram", 2)]
 #[case("v7", "V7.W.1", "narrow", 2)]
 #[case("v7", "V7.S.2", "close", 2)]
 #[case("v7", "V7.M7.EN.1", "short", 1)]
 #[case("v7", "V7.M8.EN.2", "short", 1)]
 #[case("v7", "V7.M8.AUX.2", "overhang", 1)]
 #[case("v7", "V7.AUX.1", "uncovered", 2)]
+#[case("v7", "V7.S.2", "sram", 2)]
+#[case("v7", "V7.M7.EN.1", "sram", 2)]
+#[case("v7", "V7.M8.EN.2", "sram", 2)]
 #[case("v8", "V8.W.1", "narrow", 4)]
 #[case("v8", "V8.S.1", "close", 2)]
 #[case("v8", "V8.M8.EN.1", "short", 1)]
 #[case("v8", "V8.M9.EN.2", "short", 1)]
 #[case("v8", "V8.AUX.1", "uncovered", 2)]
+#[case("v8", "V8.S.1", "sram", 2)]
+#[case("v8", "V8.M8.EN.1", "sram", 2)]
+#[case("v8", "V8.M9.EN.2", "sram", 2)]
 #[case("v9", "V9.W.1", "narrow", 4)]
 #[case("v9", "V9.S.1", "close", 2)]
 #[case("v9", "V9.M9.EN.1", "short", 1)]
 #[case("v9", "V9.PAD.EN.2", "short", 1)]
 #[case("v9", "V9.AUX.1", "uncovered", 2)]
+#[case("v9", "V9.S.1", "sram", 2)]
+#[case("v9", "V9.M9.EN.1", "sram", 2)]
+#[case("v9", "V9.PAD.EN.2", "sram", 2)]
 fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let level: usize = deck[1..].parse().unwrap();
     let (lower, upper) = VIA_ENCLOSURES[level];
@@ -541,9 +581,9 @@ fn m1_to_m3_width_and_area_skip_shapes_overlapping_sramdrc(
 #[case::v1("v1", "V1", 17.75, 18.0, "V1.W.1")]
 #[case::v2("v2", "V2", 17.75, 18.0, "V2.W.1")]
 #[case::v3("v3", "V3", 17.75, 18.0, "V3.W.1")]
-#[case::v4("v4", "V4", 23.75, 24.0, "V4.W.1")]
+#[case::v4("v4", "V4", 24.0, 23.75, "V4.W.1")]
 #[case::v5("v5", "V5", 23.75, 24.0, "V5.W.1")]
-#[case::v6("v6", "V6", 31.75, 32.0, "V6.W.1")]
+#[case::v6("v6", "V6", 32.0, 31.75, "V6.W.1")]
 #[case::v7("v7", "V7", 31.75, 32.0, "V7.W.1")]
 #[case::v8("v8", "V8", 39.75, 40.0, "V8.W.1")]
 #[case::v9("v9", "V9", 39.75, 40.0, "V9.W.1")]

@@ -4,6 +4,8 @@
 
 # V8, the via from M8 to M9 (DRM section 3.19).  A V8 is a 40 x 40, 40 x 120 or
 # 120 x 40 nm rectangle: its short side exactly 40 nm, its long side one of the two.
+# V8.S.2, the corner-to-corner space, shares S.1's 57 nm; S.1 reads every direction, so
+# it reads the corner too.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V8.W.1
