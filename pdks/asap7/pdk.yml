@@ -291,6 +291,13 @@ virtual_layers:
   V0OnLig: V0NoSram interacting LIG
   V0OnLigOffLisd: V0OnLig not_inside LISD
   V0OnLigArea: V0OnLigOffLisd and LIG
+  # V0.LIG.AUX.2: a V0 on LIG crosses it - clear of the LIG on both sides along it, the
+  # LIG running on past it on both sides across - so its part off the LIG is two pieces.
+  # Flush with the LIG, a side inside it, or over its end leaves one.
+  V0OnLigEdge: V0OnLigOffLisd not_inside LIG
+  V0OffLigPart: V0OnLigEdge not LIG
+  V0CrossesLig: V0OnLigEdge interacting min 2 max 2 V0OffLigPart
+  V0NotCrossingLig: V0OnLigEdge not V0CrossesLig
   LisdOnLig: LISD interacting LIG
   V0PartlyOnLisd: (V0NoSram overlapping LisdOnLig) not_inside LISD
   V0PartialLisdArea: V0PartlyOnLisd and LISD

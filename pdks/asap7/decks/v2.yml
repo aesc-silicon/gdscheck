@@ -5,8 +5,10 @@
 # V2, the via from M2 to M3 (DRM section 3.13).
 #
 # Corner spacing reads the end-cap at the two corners forming the gap.
-# S.1 checks the 18 nm minimum only; its 27 nm unaligned parallel-track case
-# still needs track-aware classification.
+# S.1 reads vias that face each other, on one track or on neighbouring tracks
+# overlapping in projection: 18 nm. Vias on neighbouring tracks that don't overlap
+# meet corner to corner, which S.2-S.4 read by end-cap (23/30/27 nm); S.1's 27 nm
+# for that case is S.4's value.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: V2.W.1
