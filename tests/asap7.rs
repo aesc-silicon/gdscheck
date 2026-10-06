@@ -6,6 +6,7 @@
 
 use gdscheck::run_drc;
 use rstest::rstest;
+use std::collections::BTreeMap;
 
 const PDK: &str = "asap7";
 
@@ -31,50 +32,320 @@ fn the_feol_and_beol_suites_split_main() {
     assert!(missing.is_empty(), "in main, in neither half: {missing:?}");
 }
 
-/// Portable GDS cases shared with the independent KLayout comparison. Each row
-/// names a manual-derived target; incidental rules remain visible in the oracle
-/// report but do not change that target's expectation.
-#[test]
-fn generated_oracle_cases_follow_the_manual() {
-    use std::collections::BTreeMap;
+// --- Generated good/bad patterns ---
+// Expected counts follow the drawings and the DRM. Each case checks its whole deck,
+// with explicit exceptions for intentionally omitted via landing layers.
+
+/// A good fixture is silent; a bad fixture reports only its target rule, with the
+/// expected count, after excluding documented incidental rules.
+fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[String]) {
     let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
-    let rules = pdk.load_suite("main").unwrap();
-    let mut cases: BTreeMap<&str, Vec<(&str, bool)>> = BTreeMap::new();
-    for line in include_str!("data/asap7/generated/cases.tsv").lines() {
-        if line.starts_with('#') || line.is_empty() {
-            continue;
-        }
-        let columns: Vec<_> = line.split('\t').collect();
-        assert_eq!(columns.len(), 4);
-        assert!(matches!(columns[2], "pass" | "fail"));
-        cases
-            .entry(columns[0])
-            .or_default()
-            .push((columns[1], columns[2] == "fail"));
-    }
-    assert!(!cases.is_empty());
-    for (name, expectations) in cases {
-        let path = format!("tests/data/asap7/generated/{name}.gds.gz");
-        let violations = run_drc(&path, PDK, &[], Some("main"), "TOP", false).unwrap();
-        for (rule, bad) in expectations {
-            assert!(
-                rules.iter().any(|r| r.id == rule),
-                "unknown target rule {rule}"
-            );
-            assert_eq!(
-                violations.iter().any(|v| v.rule_id == rule),
-                bad,
-                "{name}: {rule}: {violations:?}"
-            );
-        }
-        if name == "routed_clean" {
-            assert!(violations.is_empty(), "{violations:?}");
-        }
-        if name == "routed_bad" {
-            assert_eq!(violations.len(), 1, "{violations:?}");
-            assert_eq!(violations[0].rule_id, "V8.M9.EN.2");
+    assert!(
+        pdk.load_deck(deck).unwrap().iter().any(|r| r.id == rule),
+        "unknown rule {rule}"
+    );
+    let polarity = if count == 0 { "good" } else { "bad" };
+    let path = format!("tests/data/asap7/generated/{deck}/{rule}.{variant}.{polarity}.gds.gz");
+    let mut got = BTreeMap::new();
+    for v in run_drc(&path, PDK, &[deck], None, "TOP", false).expect("DRC run failed") {
+        if !ignore.contains(&v.rule_id) {
+            *got.entry(v.rule_id).or_insert(0usize) += 1;
         }
     }
+    let expected = if count == 0 {
+        BTreeMap::new()
+    } else {
+        BTreeMap::from([(rule.to_string(), count)])
+    };
+    assert_eq!(got, expected, "{path}");
+}
+
+/// DRM 3.5: ordinary ACTIVE uses 27 nm and SRAM ACTIVE uses 13.5 nm.
+/// A crossing marker selects the whole polygon, even where it leaves ACTIVE unmarked.
+/// The space patterns hold two violating neighbours, the enclosure patterns four.
+#[rstest]
+#[case("ACTIVE.WELL.S.4", "outside", 2)]
+#[case("ACTIVE.WELL.EN.1", "outside", 4)]
+#[case("SRAM.ACTIVE.WELL.S.5", "inside", 2)]
+#[case("SRAM.ACTIVE.WELL.EN.2", "inside", 4)]
+#[case("SRAM.ACTIVE.WELL.S.5", "crossing", 2)]
+#[case("SRAM.ACTIVE.WELL.EN.2", "crossing", 4)]
+fn active_well(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
+    pattern("active", rule, variant, count, &[]);
+}
+
+/// DRM 3.8: 17 nm overlap is legal; one grid step under has two narrow walls.
+/// A missing or touching-only reference gives one uncovered-region marker.
+#[rstest]
+#[case("SRAM.SDT.ACTIVE.OV.3", "overlap_67", 2)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "overlap_68", 0)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "overlap_69", 0)]
+#[case("SRAM.SDT.LISD.OV.4", "absent", 1)]
+#[case("SRAM.SDT.LISD.OV.4", "touch", 1)]
+#[case("SRAM.SDT.LISD.OV.4", "under", 2)]
+#[case("SRAM.SDT.LISD.OV.4", "exact", 0)]
+#[case("SRAM.SDT.LISD.OV.4", "over", 0)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "absent", 1)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "touch", 1)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "under", 2)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "exact", 0)]
+#[case("SRAM.SDT.ACTIVE.OV.3", "over", 0)]
+fn sdt_overlap(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
+    pattern("sdt", rule, variant, count, &[]);
+}
+
+/// The two enclosure rules of each via level, the lower layer's first.
+const VIA_ENCLOSURES: [(&str, &str); 10] = [
+    ("V0.LISD.EN.2", "V0.M1.EN.1"),
+    ("V1.M1.EN.1", "V1.M2.EN.2"),
+    ("V2.M2.EN.1", "V2.M3.EN.2"),
+    ("V3.M3.EN.1", "V3.M4.EN.2"),
+    ("V4.M4.EN.1", "V4.M5.EN.2"),
+    ("V5.M5.EN.1", "V5.M6.EN.2"),
+    ("V6.M6.EN.1", "V6.M7.EN.2"),
+    ("V7.M7.EN.1", "V7.M8.EN.2"),
+    ("V8.M8.EN.1", "V8.M9.EN.2"),
+    ("V9.M9.EN.1", "V9.PAD.EN.2"),
+];
+
+/// DRM 3.11-3.19: every via in a whole stack, each pattern a via or gap exactly at the
+/// limit and one DBU past it:
+/// - a narrow V0-V3 has two failing walls, and the patterns narrow it each way, so
+///   four; an exact-size V4-V7 one marker per via; the V8/V9 pattern holds a narrow
+///   via, a 40 x 80 one and an L, which is both not a rectangle and 120 nm across;
+/// - each pair too close gives one, side by side on one track or, on V0-V3, partly
+///   aligned on neighbouring tracks; V4-V9 add a corner pair under the same rule;
+/// - V0-V3 corner spacing reads the upper layer's 5 nm end-caps at the two corners
+///   forming the gap, never the far ends;
+/// - V1.M1.EN.1's 5 and 2 must be on one pair: split across two, or either one
+///   short, gives three;
+/// - a via missing its lower and one missing its upper layer give one AUX.1 each.
+/// - a V0 must cross its LIG: flush with its side, a side inside it, or over its end
+///   gives one V0.LIG.AUX.2 each.
+///
+/// Some rules overlap by their nature, and the patterns ignore the other: a missing
+/// layer encloses nothing, a V0 that doesn't cross the whole 16 nm LIG shares less
+/// than V0.LIG.A.1's 288 nm² with it, and V3's corner patterns give M4 a 5 nm end-cap, under its
+/// 11 nm V3.M4.EN.2 - which, with V3.M4.AUX.2 holding M4 flush across, leaves the
+/// short end-caps of V3.S.3 and V3.S.4 unreachable in a legal layout.
+#[rstest]
+#[case("v0", "V0.W.1", "narrow", 4)]
+#[case("v0", "V0.S.1", "close", 1)]
+#[case("v0", "V0.S.1", "adjacent", 1)]
+#[case("v0", "V0.S.2", "both", 1)]
+#[case("v0", "V0.S.3", "neither", 1)]
+#[case("v0", "V0.S.3", "under", 1)]
+#[case("v0", "V0.S.4", "one", 1)]
+#[case("v0", "V0.LISD.EN.2", "short", 1)]
+#[case("v0", "V0.M1.EN.1", "short", 1)]
+#[case("v0", "V0.M1.AUX.3", "overhang", 1)]
+#[case("v0", "V0.AUX.1", "uncovered", 2)]
+#[case("v0", "V0.LIG.EN.4", "short", 1)]
+#[case("v0", "V0.LIG.A.1", "small", 1)]
+#[case("v0", "V0.LIG.AUX.2", "uncrossed", 3)]
+#[case("v1", "V1.W.1", "narrow", 4)]
+#[case("v1", "V1.S.1", "close", 1)]
+#[case("v1", "V1.S.1", "adjacent", 1)]
+#[case("v1", "V1.S.2", "both", 1)]
+#[case("v1", "V1.S.3", "neither", 1)]
+#[case("v1", "V1.S.3", "under", 1)]
+#[case("v1", "V1.S.4", "one", 1)]
+#[case("v1", "V1.M1.EN.1", "short", 3)]
+#[case("v1", "V1.M2.EN.2", "short", 1)]
+#[case("v1", "V1.M2.AUX.2", "overhang", 1)]
+#[case("v1", "V1.AUX.1", "uncovered", 2)]
+#[case("v2", "V2.W.1", "narrow", 4)]
+#[case("v2", "V2.S.1", "close", 1)]
+#[case("v2", "V2.S.1", "adjacent", 1)]
+#[case("v2", "V2.S.2", "both", 1)]
+#[case("v2", "V2.S.3", "neither", 1)]
+#[case("v2", "V2.S.3", "under", 1)]
+#[case("v2", "V2.S.4", "one", 1)]
+#[case("v2", "V2.M2.EN.1", "short", 1)]
+#[case("v2", "V2.M3.EN.2", "short", 1)]
+#[case("v2", "V2.M3.AUX.2", "overhang", 1)]
+#[case("v2", "V2.AUX.1", "uncovered", 2)]
+#[case("v3", "V3.W.1", "narrow", 4)]
+#[case("v3", "V3.S.1", "close", 1)]
+#[case("v3", "V3.S.1", "adjacent", 1)]
+#[case("v3", "V3.S.2", "both", 1)]
+#[case("v3", "V3.S.3", "neither", 1)]
+#[case("v3", "V3.S.3", "under", 1)]
+#[case("v3", "V3.S.4", "one", 1)]
+#[case("v3", "V3.M3.EN.1", "short", 1)]
+#[case("v3", "V3.M4.EN.2", "short", 1)]
+#[case("v3", "V3.M4.AUX.2", "overhang", 1)]
+#[case("v3", "V3.AUX.1", "uncovered", 2)]
+#[case("v4", "V4.W.1", "narrow", 2)]
+#[case("v4", "V4.S.2", "close", 2)]
+#[case("v4", "V4.M4.EN.1", "short", 1)]
+#[case("v4", "V4.M5.EN.2", "short", 1)]
+#[case("v4", "V4.M5.AUX.2", "overhang", 1)]
+#[case("v4", "V4.AUX.1", "uncovered", 2)]
+#[case("v5", "V5.W.1", "narrow", 2)]
+#[case("v5", "V5.S.2", "close", 2)]
+#[case("v5", "V5.M5.EN.1", "short", 1)]
+#[case("v5", "V5.M6.EN.2", "short", 1)]
+#[case("v5", "V5.M6.AUX.2", "overhang", 1)]
+#[case("v5", "V5.AUX.1", "uncovered", 2)]
+#[case("v6", "V6.W.1", "narrow", 2)]
+#[case("v6", "V6.S.2", "close", 2)]
+#[case("v6", "V6.M6.EN.1", "short", 1)]
+#[case("v6", "V6.M7.EN.2", "short", 1)]
+#[case("v6", "V6.M7.AUX.2", "overhang", 1)]
+#[case("v6", "V6.AUX.1", "uncovered", 2)]
+#[case("v7", "V7.W.1", "narrow", 2)]
+#[case("v7", "V7.S.2", "close", 2)]
+#[case("v7", "V7.M7.EN.1", "short", 1)]
+#[case("v7", "V7.M8.EN.2", "short", 1)]
+#[case("v7", "V7.M8.AUX.2", "overhang", 1)]
+#[case("v7", "V7.AUX.1", "uncovered", 2)]
+#[case("v8", "V8.W.1", "narrow", 4)]
+#[case("v8", "V8.S.1", "close", 2)]
+#[case("v8", "V8.M8.EN.1", "short", 1)]
+#[case("v8", "V8.M9.EN.2", "short", 1)]
+#[case("v8", "V8.AUX.1", "uncovered", 2)]
+#[case("v9", "V9.W.1", "narrow", 4)]
+#[case("v9", "V9.S.1", "close", 2)]
+#[case("v9", "V9.M9.EN.1", "short", 1)]
+#[case("v9", "V9.PAD.EN.2", "short", 1)]
+#[case("v9", "V9.AUX.1", "uncovered", 2)]
+fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
+    let level: usize = deck[1..].parse().unwrap();
+    let (lower, upper) = VIA_ENCLOSURES[level];
+    let ignore: Vec<String> = match variant {
+        "uncovered" => vec![lower.into(), upper.into()],
+        "uncrossed" => vec!["V0.LIG.A.1".into()],
+        "both" | "neither" | "under" | "one" if level == 3 => vec![upper.into()],
+        _ => vec![],
+    };
+    pattern(deck, rule, variant, count, &ignore);
+}
+
+/// DRM 3.12-3.18: width, space, area and edge patterns on every metal. Each pattern
+/// holds shapes exactly at the limit and shapes one DBU past it:
+/// - a narrow or wide rectangle has two failing walls, so the M1-M3 and M8/M9 W.1
+///   patterns, narrow once in x and once in y, give four, as do the two even widths;
+/// - a pair too close, a notch too narrow, a rectangle under the area floor and an
+///   edge too short each give one;
+/// - some rules overlap by their nature, and the patterns ignore the other one: every
+///   M8/M9 rectangle narrower than 40 nm has edges under L.1's 40 nm; every M4-M7
+///   notch makes a non-rectangle, which AUX.3 forbids; and the widest M4-M7 wire is
+///   twenty tracks, an even width W.3 forbids.
+#[rstest]
+#[case("m1", "M1.W.1", "narrow", 4)]
+#[case("m1", "M1.S.1", "close", 1)]
+#[case("m1", "M1.S.2", "close", 1)]
+#[case("m1", "M1.S.3", "close", 1)]
+#[case("m1", "M1.S.4", "close", 1)]
+#[case("m1", "M1.S.5", "close", 1)]
+#[case("m1", "M1.S.6", "corner", 1)]
+#[case("m1", "M1.A.1", "small", 1)]
+#[case("m2", "M2.W.1", "narrow", 4)]
+#[case("m2", "M2.S.1", "close", 1)]
+#[case("m2", "M2.S.2", "close", 1)]
+#[case("m2", "M2.S.3", "close", 1)]
+#[case("m2", "M2.S.4", "close", 1)]
+#[case("m2", "M2.S.5", "close", 1)]
+#[case("m2", "M2.S.6", "corner", 1)]
+#[case("m2", "M2.A.1", "small", 1)]
+#[case("m3", "M3.W.1", "narrow", 4)]
+#[case("m3", "M3.S.1", "close", 1)]
+#[case("m3", "M3.S.2", "close", 1)]
+#[case("m3", "M3.S.3", "close", 1)]
+#[case("m3", "M3.S.4", "close", 1)]
+#[case("m3", "M3.S.5", "close", 1)]
+#[case("m3", "M3.S.6", "corner", 1)]
+#[case("m3", "M3.A.1", "small", 1)]
+#[case("m4", "M4.W.1", "narrow", 2)]
+#[case("m4", "M4.W.2", "wide", 2)]
+#[case("m4", "M4.W.3", "even", 4)]
+#[case("m4", "M4.W.5", "short", 2)]
+#[case("m4", "M4.S.1", "close", 1)]
+#[case("m4", "M4.S.1", "notch", 1)]
+#[case("m4", "M4.S.2", "close", 1)]
+#[case("m4", "M4.S.2", "notch", 1)]
+#[case("m4", "M4.S.3", "corner", 1)]
+#[case("m5", "M5.W.1", "narrow", 2)]
+#[case("m5", "M5.W.2", "wide", 2)]
+#[case("m5", "M5.W.3", "even", 4)]
+#[case("m5", "M5.W.5", "short", 2)]
+#[case("m5", "M5.S.1", "close", 1)]
+#[case("m5", "M5.S.1", "notch", 1)]
+#[case("m5", "M5.S.2", "close", 1)]
+#[case("m5", "M5.S.2", "notch", 1)]
+#[case("m5", "M5.S.3", "corner", 1)]
+#[case("m6", "M6.W.1", "narrow", 2)]
+#[case("m6", "M6.W.2", "wide", 2)]
+#[case("m6", "M6.W.3", "even", 4)]
+#[case("m6", "M6.W.5", "short", 2)]
+#[case("m6", "M6.S.1", "close", 1)]
+#[case("m6", "M6.S.1", "notch", 1)]
+#[case("m6", "M6.S.2", "close", 1)]
+#[case("m6", "M6.S.2", "notch", 1)]
+#[case("m6", "M6.S.3", "corner", 1)]
+#[case("m7", "M7.W.1", "narrow", 2)]
+#[case("m7", "M7.W.2", "wide", 2)]
+#[case("m7", "M7.W.3", "even", 4)]
+#[case("m7", "M7.W.5", "short", 2)]
+#[case("m7", "M7.S.1", "close", 1)]
+#[case("m7", "M7.S.1", "notch", 1)]
+#[case("m7", "M7.S.2", "close", 1)]
+#[case("m7", "M7.S.2", "notch", 1)]
+#[case("m7", "M7.S.3", "corner", 1)]
+#[case("m8", "M8.W.1", "narrow", 4)]
+#[case("m8", "M8.W.2", "narrow", 2)]
+#[case("m8", "M8.W.3", "narrow", 2)]
+#[case("m8", "M8.W.4", "narrow", 2)]
+#[case("m8", "M8.W.5", "wide", 1)]
+#[case("m8", "M8.S.1", "close", 1)]
+#[case("m8", "M8.S.2", "close", 1)]
+#[case("m8", "M8.S.3", "close", 1)]
+#[case("m8", "M8.S.4", "close", 1)]
+#[case("m8", "M8.S.5", "close", 1)]
+#[case("m8", "M8.S.6", "close", 1)]
+#[case("m8", "M8.S.7", "close", 1)]
+#[case("m8", "M8.S.8", "close", 1)]
+#[case("m8", "M8.A.1", "small", 1)]
+#[case("m8", "M8.L.1", "step", 1)]
+#[case("m9", "M9.W.1", "narrow", 4)]
+#[case("m9", "M9.W.2", "narrow", 2)]
+#[case("m9", "M9.W.3", "narrow", 2)]
+#[case("m9", "M9.W.4", "narrow", 2)]
+#[case("m9", "M9.W.5", "wide", 1)]
+#[case("m9", "M9.S.1", "close", 1)]
+#[case("m9", "M9.S.2", "close", 1)]
+#[case("m9", "M9.S.3", "close", 1)]
+#[case("m9", "M9.S.4", "close", 1)]
+#[case("m9", "M9.S.5", "close", 1)]
+#[case("m9", "M9.S.6", "close", 1)]
+#[case("m9", "M9.S.7", "close", 1)]
+#[case("m9", "M9.S.8", "close", 1)]
+#[case("m9", "M9.A.1", "small", 1)]
+#[case("m9", "M9.L.1", "step", 1)]
+fn metal(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
+    let layer = &rule[..2];
+    let ignore = match &rule[3..] {
+        "W.1" if matches!(layer, "M8" | "M9") => vec![format!("{layer}.L.1")],
+        "S.1" | "S.2" if variant == "notch" => vec![format!("{layer}.AUX.3")],
+        "W.2" if variant == "wide" => vec![format!("{layer}.W.3")],
+        _ => vec![],
+    };
+    pattern(deck, rule, variant, count, &ignore);
+}
+
+/// DRM 3.19: three clean upper-metal nets; shortening M9's end-cap from exactly
+/// 20 nm to 19.75 nm introduces one V8 enclosure violation in the whole main suite.
+#[rstest]
+#[case("routed", 0)]
+#[case("routed_exact", 0)]
+#[case("routed", 1)]
+fn routed_enclosure(#[case] variant: &str, #[case] count: usize) {
+    let polarity = if count == 0 { "good" } else { "bad" };
+    let path = format!("tests/data/asap7/generated/v8/V8.M9.EN.2.{variant}.{polarity}.gds.gz");
+    let violations = run_drc(&path, PDK, &[], Some("main"), "TOP", false).expect("DRC run failed");
+    let ids: Vec<_> = violations.iter().map(|v| v.rule_id.as_str()).collect();
+    assert_eq!(ids, vec!["V8.M9.EN.2"; count], "{path}");
 }
 
 /// Rectangles in nm, on ASAP7's 0.25 nm grid. Moving the same drawing across tile

@@ -41,12 +41,17 @@ What is not checked
 
 Each deck's header lists the rules of its section it does not check, and why: mainly
 the routing grids and tracks, ACTIVE/SDT width increments, the net-aware
-``ACTIVE.S.2A``, the latch-up reach ``ACTIVE.LUP.1``, and ``V0.LIG.AUX.2``.
+``ACTIVE.S.2A`` and the latch-up reach ``ACTIVE.LUP.1``.
+``V0.LIG.AUX.2`` is read from figure 3.11.2(c) as "a V0 crosses its LIG": the part
+of the V0 off the LIG must be two pieces, one either side, so the rule needs no
+LIG direction.
 M4–M7 even width multiples are checked through each layer's maximum width;
 widths above that maximum are rejected independently. Their even-track-count
 restrictions and some conditional tip-spacing rules remain unimplemented.
-V0–V3 ``S.1`` still checks only the 18 nm minimum; its 27 nm case for
-unaligned vias on parallel routing tracks needs track-aware classification.
+V0–V3 ``S.1`` reads vias that face each other, on one track or on
+neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
+tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
+end-cap at 23, 30 or 27 nm; the 27 nm in the ``S.1`` row is ``S.4``'s value.
 ``FIN.S.1``, an exact 27 nm pitch, is checked only as a space of at least 20 nm.
 
 Via end-caps and local-interconnect nets
@@ -119,8 +124,7 @@ The rules use the selected subjects as follows:
 
 Rules absent from the implementation remain coverage gaps. In particular,
 ``ACTIVE.S.2A`` is not implemented; its explicit note requiring the rule within
-SRAM must be honored if it is added. The inventory is an implementation audit,
-not evidence of Calibre parity or permission to waive fabrication requirements.
+SRAM must be honored if it is added.
 
 
 Readings
@@ -144,12 +148,24 @@ wording:
 Tests
 -----
 
-``tests/asap7.rs`` uses synthetic cases to check both SRAM SDT overlaps at 17 nm, empty references, local via end-cap
-qualification, partial V0 landing, remote net connections, even metal widths,
-and V1's asymmetric 5/2 nm enclosure. Cases include rotation, negative coordinates,
-SRAM selection, and geometry on or crossing tile boundaries.
+``tests/asap7.rs`` uses synthetic cases to check both SRAM SDT overlaps at 17 nm,
+empty references, local via end-cap qualification, partial V0 landing, remote net
+connections, even metal widths, and V1's asymmetric 5/2 nm enclosure. Cases include
+rotation, negative coordinates, SRAM selection, and geometry on or crossing tile
+boundaries.
 
 The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
 Rust CI. They exercise SRAM marker classification and both well-rule thresholds,
 SDT overlap, asymmetric V1 enclosure, M4 width, length-dependent M8 width, and
 three routed upper-metal nets with a deliberately defective companion.
+
+``gen/asap7/`` separates ACTIVE, SDT, via, metal and routing patterns into modules.
+It writes ``<deck>/<rule>.<case>.good.gds.gz`` and ``.bad.gds.gz`` fixtures;
+numeric case labels measure distances in 0.25 nm database units. The limits come
+from the manual, and generation verifies that the deck values agree with them.
+Regenerate with ``just gen-testdata-for asap7``.
+
+Expected violation counts live in ``tests/asap7.rs``. Good cases must
+be clean in the selected deck and bad cases must report only the target rule,
+apart from documented via-landing exceptions. Routed cases check the full main
+suite. The fixture generator does not write an expected-results manifest.
