@@ -3145,17 +3145,33 @@ fn run_along(
         (min_run as i128) * (min_run as i128),
     );
     // The stretches of a profile deeper than `wide` within `[lo, hi]`, in the
-    // profile's own units; nothing behind at all is as deep as it gets.
+    // profile's own units; nothing behind at all is as deep as it gets.  A deep
+    // stretch counts only where it is itself longer than `wide`, read along the whole
+    // wall and not just the run: the line behind must be wide both ways, as a wide
+    // layer sized in and out again keeps it.  Behind a narrow wire's tip lies the
+    // wire's whole length - deep, but no longer than the wire is wide - and a
+    // neighbour beside a short stretch of a wide line still faces a wide line.
     let deep_stretches = |profile: &DepthProfile, len2: i128, lo: i128, hi: i128| {
-        profile
-            .iter()
-            .filter_map(|&(p0, p1, depth)| {
+        let mut joined: Vec<(i128, i128)> = Vec::new();
+        for &(p0, p1, depth) in profile.iter() {
+            let deep = match depth {
+                None => true,
+                Some(c) => c * c > wide2 * len2,
+            };
+            if p1 <= p0 || !deep {
+                continue;
+            }
+            match joined.last_mut() {
+                Some(last) if p0 <= last.1 => last.1 = last.1.max(p1),
+                _ => joined.push((p0, p1)),
+            }
+        }
+        joined
+            .into_iter()
+            .filter(|&(p0, p1)| (p1 - p0) * (p1 - p0) > wide2 * len2)
+            .filter_map(|(p0, p1)| {
                 let (p0, p1) = (p0.max(lo), p1.min(hi));
-                let deep = match depth {
-                    None => true,
-                    Some(c) => c * c > wide2 * len2,
-                };
-                (p1 > p0 && deep).then_some((p0, p1))
+                (p1 > p0).then_some((p0, p1))
             })
             .collect::<Vec<_>>()
     };
@@ -3956,6 +3972,37 @@ mod space_tests {
             "an L's box is 1 µm deep, the arm facing the gap 0.2, the line across it 0.1"
         );
         assert!(parallel_run_applies(&ol, &oc, 300, 150, 0, None));
+    }
+
+    /// A line is as wide as its narrower side.  Behind a 40 wide wire's tip lies its
+    /// whole 200 length, but the tip is 40 long, so the wire is no wider at its tip than
+    /// anywhere else; and a 200 by 1000 block is a 200 wide line, however deep.  A
+    /// narrow tip that comes near only a short stretch of a wide line's side still
+    /// faces a wide line.
+    #[test]
+    fn the_wide_line_gate_reads_the_narrower_side() {
+        let (tip, other) = (rect(0, 0, 40, 200), rect(0, 246, 40, 446));
+        let (ot, oo) = (Outline::new(&tip), Outline::new(&other));
+        assert!(
+            !parallel_run_applies(&ot, &oo, 60, 59, 0, None),
+            "two 40 wide tips are not a 60 wide line"
+        );
+        assert!(parallel_run_applies(&ot, &oo, 60, 39, 0, None));
+
+        let (deep, wire) = (rect(0, 0, 200, 1000), rect(0, 1050, 200, 1090));
+        let (od, ow) = (Outline::new(&deep), Outline::new(&wire));
+        assert!(
+            !parallel_run_applies(&od, &ow, 500, 499, 0, None),
+            "a 200 by 1000 block is a 200 wide line"
+        );
+        assert!(parallel_run_applies(&od, &ow, 500, 199, 0, None));
+
+        let (wide, near) = (rect(0, 0, 1000, 200), rect(480, 250, 520, 450));
+        let (owide, onear) = (Outline::new(&wide), Outline::new(&near));
+        assert!(
+            parallel_run_applies(&owide, &onear, 60, 199, 0, None),
+            "a 40 tip over a 200 wide line faces a wide line along 40"
+        );
     }
 
     /// A bend counts only at the gap.
