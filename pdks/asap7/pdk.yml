@@ -430,8 +430,8 @@ virtual_layers:
   ActiveVEdgesInside: ActiveVEdges inside_part GATE
   ActiveVEdgesOnGate: ActiveVEdges and GATE.edges
   # ACTIVE.W.2: every vertical edge of ordinary ACTIVE is a whole multiple of 27 nm,
-  # read up to 540 nm - a cell's ACTIVE is 27, 54 or 81 - and not above it.
-  ActiveW2Edges: ActiveVEdges with_length max 0.541
+  # read up to 1080 nm - forty fins; a cell's ACTIVE is 27, 54 or 81 - and not above it.
+  ActiveW2Edges: ActiveVEdges with_length max 1.081
   ActiveW2Multiples: >-
     (ActiveVEdges with_length 0.027)
     or (ActiveVEdges with_length 0.054)
@@ -453,6 +453,26 @@ virtual_layers:
     or (ActiveVEdges with_length 0.486)
     or (ActiveVEdges with_length 0.513)
     or (ActiveVEdges with_length 0.54)
+    or (ActiveVEdges with_length 0.567)
+    or (ActiveVEdges with_length 0.594)
+    or (ActiveVEdges with_length 0.621)
+    or (ActiveVEdges with_length 0.648)
+    or (ActiveVEdges with_length 0.675)
+    or (ActiveVEdges with_length 0.702)
+    or (ActiveVEdges with_length 0.729)
+    or (ActiveVEdges with_length 0.756)
+    or (ActiveVEdges with_length 0.783)
+    or (ActiveVEdges with_length 0.81)
+    or (ActiveVEdges with_length 0.837)
+    or (ActiveVEdges with_length 0.864)
+    or (ActiveVEdges with_length 0.891)
+    or (ActiveVEdges with_length 0.918)
+    or (ActiveVEdges with_length 0.945)
+    or (ActiveVEdges with_length 0.972)
+    or (ActiveVEdges with_length 0.999)
+    or (ActiveVEdges with_length 1.026)
+    or (ActiveVEdges with_length 1.053)
+    or (ActiveVEdges with_length 1.08)
   ActiveW2Off: ActiveW2Edges not ActiveW2Multiples
   GcutVEdges: GcutNoSram.edges with_angle min 90.0 max 90.0
   GcutVEdgesInside: GcutVEdges inside_part GATE
@@ -470,6 +490,52 @@ virtual_layers:
   SdtHEdges: SdtNoSram.edges with_angle min 0.0 max 0.0
   SdtHEdgesInActive: SdtHEdges inside_part ACTIVE
   SdtHEdgesOffActive: SdtHEdgesInActive not ACTIVE.edges
+  # SDT.W.3: every vertical edge of ordinary SDT is a whole multiple of 27 nm, read as
+  # ACTIVE.W.2 is, up to 1080 nm; a cell's SDT is 27, 54 or 81.
+  SdtVEdges: SdtNoSram.edges with_angle min 90.0 max 90.0
+  SdtW3Edges: SdtVEdges with_length max 1.081
+  SdtW3Multiples: >-
+    (SdtVEdges with_length 0.027)
+    or (SdtVEdges with_length 0.054)
+    or (SdtVEdges with_length 0.081)
+    or (SdtVEdges with_length 0.108)
+    or (SdtVEdges with_length 0.135)
+    or (SdtVEdges with_length 0.162)
+    or (SdtVEdges with_length 0.189)
+    or (SdtVEdges with_length 0.216)
+    or (SdtVEdges with_length 0.243)
+    or (SdtVEdges with_length 0.27)
+    or (SdtVEdges with_length 0.297)
+    or (SdtVEdges with_length 0.324)
+    or (SdtVEdges with_length 0.351)
+    or (SdtVEdges with_length 0.378)
+    or (SdtVEdges with_length 0.405)
+    or (SdtVEdges with_length 0.432)
+    or (SdtVEdges with_length 0.459)
+    or (SdtVEdges with_length 0.486)
+    or (SdtVEdges with_length 0.513)
+    or (SdtVEdges with_length 0.54)
+    or (SdtVEdges with_length 0.567)
+    or (SdtVEdges with_length 0.594)
+    or (SdtVEdges with_length 0.621)
+    or (SdtVEdges with_length 0.648)
+    or (SdtVEdges with_length 0.675)
+    or (SdtVEdges with_length 0.702)
+    or (SdtVEdges with_length 0.729)
+    or (SdtVEdges with_length 0.756)
+    or (SdtVEdges with_length 0.783)
+    or (SdtVEdges with_length 0.81)
+    or (SdtVEdges with_length 0.837)
+    or (SdtVEdges with_length 0.864)
+    or (SdtVEdges with_length 0.891)
+    or (SdtVEdges with_length 0.918)
+    or (SdtVEdges with_length 0.945)
+    or (SdtVEdges with_length 0.972)
+    or (SdtVEdges with_length 0.999)
+    or (SdtVEdges with_length 1.026)
+    or (SdtVEdges with_length 1.053)
+    or (SdtVEdges with_length 1.08)
+  SdtW3Off: SdtW3Edges not SdtW3Multiples
 
 layers:
   - name: NWELL

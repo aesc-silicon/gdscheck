@@ -83,9 +83,9 @@ fn pattern_on(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[Str
 /// under 27 nm and a hole under the area are no multiples of 27 nm, so the W.1 and
 /// A.1B tests ignore W.2 as well.
 ///
-/// W.2 reads every vertical edge up to 540 nm against the multiples of 27 nm: two bars
-/// off a multiple and an L whose column rises 13.5 nm give six walls, and a 600 nm bar,
-/// above the cap, none. LUP.1 reads a gated ACTIVE's reach to a tap under the well's
+/// W.2 reads every vertical edge up to 1080 nm against the multiples of 27 nm: two bars
+/// off a multiple and an L whose column rises 13.5 nm give six walls, and a 1100 nm
+/// bar, above the cap, none. LUP.1 reads a gated ACTIVE's reach to a tap under the well's
 /// own implant, 30 µm round: a tap a DBU too far gives one marker, in a well and in the
 /// substrate, and a tap 20 µm off in a well of its own gives another.
 #[rstest]
@@ -129,7 +129,10 @@ fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 /// one off its ACTIVE and one half out of its LISD give one each; a trench touching a
 /// gate and one over it give two AUX.1, and nothing under S.2, which reads a gap and a
 /// touching pair has none. An SRAM trench under 17 nm overlaps nothing by 17 nm, so the
-/// W.4 test ignores the two overlaps.
+/// W.4 test ignores the two overlaps. W.3 reads every vertical edge up to 1080 nm
+/// against the multiples of 27 nm, as ACTIVE.W.2 does: two trenches off a multiple
+/// give four walls, and a 1100 nm trench, above the cap, none. A 26.75 nm trench is no
+/// multiple of 27 nm, so the W.2 test ignores W.3.
 #[rstest]
 #[case("SRAM.SDT.ACTIVE.OV.3", "overlap_67", 2)]
 #[case("SRAM.SDT.ACTIVE.OV.3", "overlap_68", 0)]
@@ -147,6 +150,7 @@ fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 #[case("SDT.W.1", "narrow", 2)]
 #[case("SDT.W.2", "short", 2)]
 #[case("SRAM.SDT.W.4", "short", 2)]
+#[case("SDT.W.3", "increment", 4)]
 #[case("SDT.S.1", "close", 1)]
 #[case("SDT.S.1", "notch", 1)]
 #[case("SDT.GATE.S.2", "close", 1)]
@@ -157,6 +161,7 @@ fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 fn sdt(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let ignore: Vec<String> = match rule {
         "SRAM.SDT.W.4" => vec!["SRAM.SDT.ACTIVE.OV.3".into(), "SRAM.SDT.LISD.OV.4".into()],
+        "SDT.W.2" => vec!["SDT.W.3".into()],
         _ => vec![],
     };
     pattern("sdt", rule, variant, count, &ignore);

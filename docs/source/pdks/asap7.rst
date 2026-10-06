@@ -40,9 +40,9 @@ What is not checked
 -------------------
 
 Each deck's header lists the rules of its section it does not check, and why: mainly
-the routing grids and tracks, SDT's width increment and the net-aware
-``ACTIVE.S.2A``. ``ACTIVE.W.2`` reads every vertical ACTIVE edge up to 540 nm against
-the whole multiples of 27 nm, and a taller edge goes unread; ``ACTIVE.LUP.1`` reads the
+the routing grids and tracks and the net-aware ``ACTIVE.S.2A``. ``ACTIVE.W.2`` and
+``SDT.W.3`` read every vertical ACTIVE and SDT edge up to 1080 nm against the whole
+multiples of 27 nm, and a taller edge goes unread; ``ACTIVE.LUP.1`` reads the
 reach from a gated ACTIVE to a tap under the well's own implant, 30 µm round and, in a
 well, confined to that well, the way the IHP latch-up rules are read.
 ``V0.LIG.AUX.2`` is read from figure 3.11.2(c) as "a V0 crosses its LIG": the part

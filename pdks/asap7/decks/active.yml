@@ -7,7 +7,7 @@
 #
 # Not checked: ACTIVE.S.2A, 92 nm between source/drain regions on different nets, which
 # needs nets on ACTIVE.
-# ACTIVE.W.2 reads every vertical edge of ordinary ACTIVE up to 540 nm against the whole
+# ACTIVE.W.2 reads every vertical edge of ordinary ACTIVE up to 1080 nm against the whole
 # multiples of 27 nm; a taller edge goes unread. ACTIVE.LUP.1 reads the reach from a gated
 # ACTIVE to a tap under the well's own implant - n+ in an N-well, p+ in the substrate -
 # 30 um round and, in a well, confined to that well.

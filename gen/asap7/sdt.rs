@@ -9,7 +9,8 @@
 //! at the limit, then the one a DBU past it.
 //!
 //! An SRAM trench under 17 nm tall overlaps nothing by 17 nm, so SRAM.SDT.W.4's short
-//! trench fails the two overlaps too; the test names and ignores them.
+//! trench fails the two overlaps too, and a 26.75 nm trench is no multiple of 27 nm, so
+//! W.2's fails W.3; the tests name and ignore them. Every other trench is drawn to W.3.
 
 use super::patterns::{ROOM, bx, pg};
 use super::{Corpus, DBU, around};
@@ -120,6 +121,18 @@ fn shapes(c: &Corpus<'_>) {
     elems.push(bx(marker, OFFSET - 100.0, OFFSET - 100.0, 400.0, 1200.0));
     write("SRAM.SDT.W.4.short", elems);
 
+    // SDT.W.3: every vertical edge a whole multiple of 27 nm. Trenches 27 and 54 nm
+    // tall, then 40.5 and 81.25, each of those two failing walls; and a 1100 nm trench,
+    // no multiple either, above the cap and so unread. Each on an ACTIVE as tall as it,
+    // under a LISD.
+    let mut elems = vec![];
+    let mut y = OFFSET;
+    for th in [h, 2.0 * h, 1.5 * h, 81.25, 1100.0] {
+        elems.extend(trench(OFFSET, y, w, th));
+        y += th + 10.0 + ROOM;
+    }
+    write("SDT.W.3.increment", elems);
+
     // Two trenches on one ACTIVE, under one LISD.
     let s = c.drm("SDT.S.1", "min_space", 30.0);
     let mut elems = vec![];
@@ -132,13 +145,13 @@ fn shapes(c: &Corpus<'_>) {
     }
     write("SDT.S.1.close", elems);
 
-    // A U of two 24 nm arms, 40 nm tall on a 30 nm back, the slot between them facing
+    // A U of two 24 nm arms, 54 nm tall on a 27 nm back, the slot between them facing
     // across x. The ACTIVE is the same U, so every horizontal edge of the trench lies
     // on one of its own.
     let n = c.drm("SDT.S.1", "min_notch", 30.0);
     let mut elems = vec![];
     for (k, g) in [n, n - DBU].into_iter().enumerate() {
-        let (x, y, back, top) = (OFFSET, row(k), 30.0, 70.0);
+        let (x, y, back, top) = (OFFSET, row(k), 27.0, 81.0);
         let u = [
             (x, y),
             (x + 2.0 * w + g, y),
@@ -171,13 +184,13 @@ fn shapes(c: &Corpus<'_>) {
     elems.extend(beside(row(2), -5.0));
     write("SDT.GATE.AUX.1.touch", elems);
 
-    // A trench as tall as a 40 nm ACTIVE, then one 30 nm tall on it with their bottom
+    // A trench as tall as a 54 nm ACTIVE, then one 27 nm tall on it with their bottom
     // edges together: its top edge lies inside the ACTIVE.
-    let mut elems = trench(OFFSET, row(0), w, 40.0);
+    let mut elems = trench(OFFSET, row(0), w, 54.0);
     let y = row(1);
-    elems.push(bx(sdt, OFFSET, y, w, 30.0));
-    elems.push(bx(active, OFFSET - RUN, y, w + 2.0 * RUN, 40.0));
-    elems.push(bx(lisd, OFFSET - 3.0, y - 5.0, w + 6.0, 50.0));
+    elems.push(bx(sdt, OFFSET, y, w, 27.0));
+    elems.push(bx(active, OFFSET - RUN, y, w + 2.0 * RUN, 54.0));
+    elems.push(bx(lisd, OFFSET - 3.0, y - 5.0, w + 6.0, 64.0));
     write("SDT.ACTIVE.AUX.2.inside", elems);
 
     // A trench on its ACTIVE, then one whose ACTIVE lies 50 nm to its right.
