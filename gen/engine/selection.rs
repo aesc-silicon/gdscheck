@@ -8,6 +8,10 @@
 //! A tile's copy of a boolean is exact out to the thinner of its sources' reaches; past
 //! it, an Inner reaching further than the Diode keeps what the Diode covers.  A copy
 //! handed on whole carried that into every reader.
+//!
+//! And `walls`: the edges of Inner cut at Outer's boundary, with one Inner wall lying
+//! on each of Outer's four walls.  A wall edge is inside on every side; it used to be
+//! inside on Outer's left and bottom walls and outside on its right and top ones.
 
 use crate::helpers::{layer, library, poly, rect, write_gz};
 use gdscheck::pdk::PdkConfig;
@@ -49,5 +53,27 @@ pub fn generate(pdk: &PdkConfig) {
     write_gz(
         &format!("{DIR}/tab_short.gds.gz"),
         library("TOP", vec![frame, bar(2.2), tab_cover]),
+    );
+    // walls: an Outer square at 5..25, four Inner bars outside it each with one wall on
+    // one of its walls, an Inner square well inside it and one well outside.  Every
+    // Inner is 5 µm or more from the next, past SEL.reach, and the inner square 8 µm
+    // inside the Outer, past SEL.enc.  Of the 24 Inner edges, the four on Outer's walls
+    // and the inner square's four are inside - SEL.in 8 - and the bars' other twelve
+    // and the outer square's four are outside - SEL.out 16.  Read by which wall they
+    // lay on, the four flush edges split two and two: 6 and 18.
+    write_gz(
+        &format!("{DIR}/walls.gds.gz"),
+        library(
+            "TOP",
+            vec![
+                rect(outer, 5.0, 5.0, 25.0, 25.0),
+                rect(inner, 3.0, 12.0, 5.0, 18.0), // on the left wall
+                rect(inner, 25.0, 12.0, 27.0, 18.0), // on the right wall
+                rect(inner, 12.0, 3.0, 18.0, 5.0), // on the bottom wall
+                rect(inner, 12.0, 25.0, 18.0, 27.0), // on the top wall
+                rect(inner, 13.0, 13.0, 17.0, 17.0), // inside
+                rect(inner, 35.0, 12.0, 39.0, 18.0), // outside
+            ],
+        ),
     );
 }

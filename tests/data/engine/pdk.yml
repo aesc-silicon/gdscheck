@@ -70,6 +70,11 @@ virtual_layers:
   InnerBareInOuter: InnerBare inside Outer
   # The edges of Outer, for a reach rule read per edge.
   Outer.edges: Outer edges
+  # The edges of Inner cut at Outer's boundary: what lies inside Outer and what outside,
+  # an edge on Outer's wall counting as inside on every side.
+  Inner.edges: Inner edges
+  InnerEdgesInOuter: Inner.edges inside_part Outer
+  InnerEdgesOutOuter: Inner.edges outside_part Outer
 
 # Via joins Inner, then Diode, then Outer, for the rules gated on nets and for the
 # antenna rule's levels: through Inner's step alone, Outer is not yet on the net.

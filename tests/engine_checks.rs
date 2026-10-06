@@ -1223,3 +1223,18 @@ fn a_whole_selection_keeps_only_what_its_boolean_is(
     );
     assert_eq!(count("selection", pattern, "SEL.reach"), 0, "{pattern}");
 }
+
+/// An edge cut at a region's boundary: `inside_part` keeps what lies inside and
+/// `outside_part` what lies outside, and an edge on the region's wall is inside, on
+/// every side alike.  `walls` puts one Inner wall on each of Outer's four walls, an
+/// Inner square inside and one outside: 4 + 4 inside, 12 + 4 outside.  The half-open
+/// ray cast behind the classification read a wall piece as inside on the left and
+/// bottom walls and as outside on the right and top ones - 6 and 18 - so a flush edge
+/// was selected or not by which wall it lay on (aesc-silicon/gdscheck#44).
+#[test]
+fn an_edge_on_a_wall_is_inside_on_every_side() {
+    assert_eq!(count("selection", "walls", "SEL.in"), 8);
+    assert_eq!(count("selection", "walls", "SEL.out"), 16);
+    assert_eq!(count("selection", "walls", "SEL.enc"), 0);
+    assert_eq!(count("selection", "walls", "SEL.reach"), 0);
+}

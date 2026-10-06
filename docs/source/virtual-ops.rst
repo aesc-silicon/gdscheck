@@ -293,6 +293,11 @@ would say so.
      - region
      - the parts lying inside (or outside) the region, **cut** at its boundary. Every
        region selector keeps or drops a region whole; these keep a piece of a segment.
+       A piece lying on the region's wall is inside, on every side alike - the reading
+       of KLayout's ``edges & region`` and ``edges - region``, which is what a runset's
+       band and outline selections are written with. (KLayout's own ``inside_part``
+       reads a wall as outside; a deck that wants that takes the wall out again with
+       ``not (region edges)``, as GF180's ``pp5b_in_nwell`` does.)
    * - ``interacting`` / ``not_interacting``
      - region
      - the segments that touch (or do not touch) the region.
