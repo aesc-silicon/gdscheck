@@ -40,7 +40,7 @@ What is not checked
 -------------------
 
 Each deck's header lists the rules of its section it does not check, and why: mainly
-the routing grids and tracks and the net-aware ``ACTIVE.S.2A``. ``ACTIVE.W.2`` and
+the routing grids and tracks. ``ACTIVE.W.2`` and
 ``SDT.W.3`` read every vertical ACTIVE and SDT edge up to 1080 nm against the whole
 multiples of 27 nm, and a taller edge goes unread; ``ACTIVE.LUP.1`` reads the
 reach from a gated ACTIVE to a tap under the well's own implant, 30 µm round and, in a
@@ -81,9 +81,13 @@ V8/V9 corner spacing shares ``S.1``'s 57 nm, which reads every direction.
 including remote routing through M1–M9 and the pad. Contact intersections keep
 net-extraction anchors on actual overlapping material, including partial V0
 landings. SRAM conductors participate in connectivity; only the measured subjects
-are filtered. These three rules are skipped with ``--no-connectivity``. This
-interconnect graph does not yet recognize individual transistor source/drain
-terminals for ``ACTIVE.S.2A``.
+are filtered. ``ACTIVE.S.2A`` reads the nets too, through the source/drain regions - the ACTIVE a
+gate crosses, less the gate - which reach the graph through their SDT contacts. It
+reads the 1 nm lips of the regions flanking a break under 92 nm, the lips of one
+ACTIVE polygon being related and no pair; a lip faces across its own break alone, so
+the region behind an exempt same-net pair, which an unshielded space check would
+otherwise reach, is never read. These four rules are skipped
+with ``--no-connectivity``.
 
 SRAM applicability
 ------------------
@@ -133,9 +137,7 @@ The rules use the selected subjects as follows:
   itself. ``SRAMVT`` is a threshold-adjust layer, not the SRAMDRC marker; its name
   alone does not give it SRAM scope.
 
-Rules absent from the implementation remain coverage gaps. In particular,
-``ACTIVE.S.2A`` is not implemented; its explicit note requiring the rule within
-SRAM must be honored if it is added.
+``ACTIVE.S.2A`` is read in SRAM as well as outside it, as its own note requires.
 
 
 Readings

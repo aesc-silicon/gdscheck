@@ -128,6 +128,10 @@ connectivity:
     layers: [LIG, LISD]
   - connector: SdtLisdContact
     layers: [SDT, LISD]
+  - connector: SdtActiveContact
+    layers: [SDT, ActiveSD]
+  - connector: BreakLip
+    layers: [BreakLip, ActiveSD]
   - connector: LigNoSram
     layers: [LigNoSram, LIG]
   - connector: LisdNoSram
@@ -254,6 +258,23 @@ virtual_layers:
   # crosses - to a tap, the ACTIVE under the well's own implant: n+ in an N-well, p+ in
   # the substrate.
   ActiveOnGate: ActiveNoSram interacting GATE
+  # ACTIVE.S.2A: a source/drain region is the ACTIVE a gate crosses, less the gate - in
+  # SRAM too, by the manual's note - reached by the nets through its SDT contacts. The
+  # rule reads the lips of the regions flanking a break: a break is the ground between
+  # two ACTIVEs under 92 nm apart across x, which the halos 46 nm out from each span,
+  # and a lip the 1 nm of a region along it. The space check does not shield, so a
+  # whole region would also be read against the region behind an exempt pair at the
+  # next break; a lip faces across its own break alone, two lips of different breaks
+  # being a region, a gate and a gap apart, and the space between two lips is the
+  # break's own.
+  ActiveGated: ACTIVE interacting GATE
+  ActiveSD: ActiveGated not GATE
+  SdtActiveContact: SDT and ActiveSD
+  ActiveReach: ACTIVE grow_x 0.046
+  ActiveHalo: ActiveReach not ACTIVE
+  ActiveBreak: ActiveHalo interacting min 2 ACTIVE
+  BreakReach: ActiveBreak grow_x 0.001
+  BreakLip: ActiveSD and BreakReach
   PmosActiveAll: ActiveOnGate and PSELECT
   PmosActive: PmosActiveAll and NWELL
   NmosActiveAll: ActiveOnGate and NSELECT

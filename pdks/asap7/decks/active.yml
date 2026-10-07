@@ -5,8 +5,13 @@
 # ACTIVE (DRM section 3.5).  SRAM rules are the ones prefixed SRAM, read on the ACTIVE
 # that interacts with SRAMDRC; the rest read the ACTIVE that does not.
 #
-# Not checked: ACTIVE.S.2A, 92 nm between source/drain regions on different nets, which
-# needs nets on ACTIVE.
+# ACTIVE.S.2A reads the horizontal space between the source/drain regions of different
+# transistors on different nets: a region is the ACTIVE a gate crosses, less the gate,
+# reached by the nets through its SDT contacts, and the rule reads the lips of the
+# regions flanking a break under 92 nm (see `BreakLip` in pdk.yml); the lips of one ACTIVE - a
+# transistor's own source and drain, or neighbours sharing a diffusion - are no pair.
+# A region no net reaches is not known to share one and is read. The manual's note 1
+# holds the rule in SRAM too, and its note 2 that only the horizontal space is meant.
 # ACTIVE.W.2 reads every vertical edge of ordinary ACTIVE up to 1080 nm against the whole
 # multiples of 27 nm; a taller edge goes unread. ACTIVE.LUP.1 reads the reach from a gated
 # ACTIVE to a tap under the well's own implant - n+ in an N-well, p+ in the substrate -
@@ -42,6 +47,15 @@ rules:
     value: 0.027
     params:
       facing: y
+  - id: ACTIVE.S.2A
+    check: min_space
+    layers: [BreakLip, BreakLip]
+    value: 0.092
+    params:
+      facing: x
+      net: different
+    layer_params:
+      related_by: ACTIVE
   - id: ACTIVE.S.2B
     check: min_space
     layers: [ActiveNoSram]

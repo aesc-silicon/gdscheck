@@ -87,7 +87,12 @@ fn pattern_on(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[Str
 /// off a multiple and an L whose column rises 13.5 nm give six walls, and a 1100 nm
 /// bar, above the cap, none. LUP.1 reads a gated ACTIVE's reach to a tap under the well's
 /// own implant, 30 µm round: a tap a DBU too far gives one marker, in a well and in the
-/// substrate, and a tap 20 µm off in a well of its own gives another.
+/// substrate, and a tap 20 µm off in a well of its own gives another. S.2A, with the
+/// nets extracted: two gated ACTIVEs' facing source/drain regions a DBU under 92 nm
+/// apart give one, and two at 38 nm another; the same pairs joined through SDT and
+/// LISD are one net, and the regions of one ACTIVE under two gates are no pair, so
+/// none of those reads - nor do the far regions behind a joined pair, 83 nm apart on
+/// no net, whose lips face other breaks.
 #[rstest]
 #[case("ACTIVE.WELL.S.4", "outside", 2)]
 #[case("ACTIVE.WELL.EN.1", "outside", 4)]
@@ -111,13 +116,14 @@ fn pattern_on(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[Str
 #[case("ACTIVE.W.2", "increment", 6)]
 #[case("ACTIVE.LUP.1", "well", 2)]
 #[case("ACTIVE.LUP.1", "substrate", 1)]
+#[case("ACTIVE.S.2A", "nets", 2)]
 fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let ignore: Vec<String> = match rule {
         "ACTIVE.W.1" => vec!["ACTIVE.W.2".into()],
         "ACTIVE.A.1B" => vec!["ACTIVE.AUX.3".into(), "ACTIVE.W.2".into()],
         _ => vec![],
     };
-    pattern("active", rule, variant, count, &ignore);
+    pattern_nets("active", rule, variant, count, &ignore);
 }
 
 /// DRM 3.8. The SRAM overlaps: 17 nm is legal, one grid step under has two narrow

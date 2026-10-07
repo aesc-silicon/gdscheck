@@ -32,6 +32,7 @@ pub(super) fn generate(c: &Corpus<'_>) {
     shapes(c);
     increments(c);
     latch_up(c);
+    nets(c);
 }
 
 /// DRM 3.5: the entire ACTIVE polygon gets SRAM rules when it interacts with SRAMDRC,
@@ -383,4 +384,77 @@ fn latch_up(c: &Corpus<'_>) {
         elems.extend(tap(x + d, y + 50.0, psel));
     }
     c.write("active", "ACTIVE.LUP.1.substrate", true, elems);
+}
+
+/// ACTIVE.S.2A: 92 nm between the source/drain regions of different transistors on
+/// different nets, across x. Gated ACTIVEs 70 nm long, 25 nm of source and drain
+/// either side of the gate, end to end: facing regions 92 nm apart, then a DBU less;
+/// the same joined through SDT and one LISD, one net, which the rule leaves alone; one
+/// ACTIVE under two gates, whose regions are all its own, no pair; and two at S.2B's
+/// 38 nm, the NAND2 case, facing regions joined and not; and the DFF case, a 92 nm
+/// break before a single transistor whose other break is joined. Behind a joined pair
+/// the far regions are 83 nm apart on no net, which an unshielded check would read;
+/// only a region's lip at its own break is, and theirs face elsewhere. A tap keeps
+/// LUP.1 quiet.
+fn nets(c: &Corpus<'_>) {
+    let (active, gate) = (c.layer("ACTIVE"), c.layer("GATE"));
+    let (nsel, psel) = (c.layer("NSELECT"), c.layer("PSELECT"));
+    let (sdt, lisd) = (c.layer("SDT"), c.layer("LISD"));
+    let s = c.drm("ACTIVE.S.2A", "min_space", 92.0);
+    let (len, h) = (70.0, 27.0);
+    let device = |x: f64, y: f64| {
+        vec![
+            bx(active, x, y, len, h),
+            bx(gate, x + 25.0, y - 20.0, 20.0, h + 40.0),
+        ]
+    };
+    let row = |k: usize| OFFSET + k as f64 * (h + ROOM);
+    let mut elems = vec![];
+    let rows = [
+        (s, false),
+        (s - DBU, false),
+        (s - DBU, true),
+        (38.0, true),
+        (38.0, false),
+    ];
+    for (k, (g, joined)) in rows.into_iter().enumerate() {
+        let y = row(k);
+        elems.extend(device(OFFSET, y));
+        elems.extend(device(OFFSET + len + g, y));
+        if joined {
+            elems.push(bx(sdt, OFFSET + 46.0, y, 24.0, h));
+            elems.push(bx(sdt, OFFSET + len + g, y, 24.0, h));
+            elems.push(bx(lisd, OFFSET + 44.0, y - 5.0, g + 52.0, h + 10.0));
+        }
+    }
+    let y = row(5);
+    elems.push(bx(active, OFFSET, y, 2.0 * len, h));
+    elems.push(bx(gate, OFFSET + 25.0, y - 20.0, 20.0, h + 40.0));
+    elems.push(bx(gate, OFFSET + 95.0, y - 20.0, 20.0, h + 40.0));
+    // The DFF case: a 92 nm break, a single transistor, then a 38 nm break whose facing
+    // pair is joined. The transistor's left region, flanking the first break, is 83 nm
+    // from the region across the second; only its lip at the first break is read.
+    let y = row(6);
+    elems.extend(device(OFFSET, y));
+    elems.extend(device(OFFSET + len + s, y));
+    elems.extend(device(OFFSET + 2.0 * len + s + 38.0, y));
+    elems.push(bx(sdt, OFFSET + len + s + 46.0, y, 24.0, h));
+    elems.push(bx(sdt, OFFSET + 2.0 * len + s + 38.0, y, 24.0, h));
+    elems.push(bx(lisd, OFFSET + len + s + 44.0, y - 5.0, 90.0, h + 10.0));
+    elems.push(bx(
+        nsel,
+        OFFSET - 100.0,
+        OFFSET - 100.0,
+        600.0,
+        7.0 * (h + ROOM),
+    ));
+    elems.push(bx(active, OFFSET + 700.0, OFFSET, LONG, h));
+    elems.push(bx(
+        psel,
+        OFFSET + 680.0,
+        OFFSET - 20.0,
+        LONG + 40.0,
+        h + 40.0,
+    ));
+    c.write("active", "ACTIVE.S.2A.nets", true, elems);
 }
