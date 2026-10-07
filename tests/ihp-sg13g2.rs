@@ -4070,3 +4070,31 @@ fn test_svaricap(#[case] deck: &str, #[case] unlabelled: Vec<&str>) {
     assert!(run("varicap/SVaricap.gds.gz").is_empty(), "{deck}");
     assert_eq!(run("varicap/SVaricap.nolabel.gds.gz"), unlabelled, "{deck}");
 }
+
+// --- SRAM ---
+
+const DECK_SRAM: &str = "sram";
+
+// Under the SRAM marker the main decks skip these rules; the SRAM deck checks them at
+// the values of IHP's own bit cells.  Each fixture has a case at the SRAM value (clean)
+// and one 5 nm under it.
+#[rstest]
+#[case::gat_c("sram/SRAM.Gat.c.gds.gz", "gatpoly", "Gat.c", vec!["SRAM.Gat.c"])]
+#[case::nw_c("sram/SRAM.NW.c.gds.gz", "nwell", "NW.c", vec!["SRAM.NW.c"])]
+#[case::nw_d("sram/SRAM.NW.d.gds.gz", "nwell", "NW.d", vec!["SRAM.NW.d"])]
+#[case::cnt_c("sram/SRAM.Cnt.c.gds.gz", "cont", "Cnt.c", vec!["SRAM.Cnt.c"])]
+#[case::tgo("sram/SRAM.TGO.gds.gz", "tgo", "-", vec!["SRAM.TGO"])]
+fn test_sram(
+    #[case] gds: &str,
+    #[case] main_deck: &str,
+    #[case] main_rule: &str,
+    #[case] expected: Vec<&str>,
+) {
+    assert_eq!(drc(PDK_IHP, DECK_SRAM, gds, "TOP", &[]), expected);
+    // the main deck's rule stays silent under the marker: the SRAM deck replaces it
+    let main = drc(PDK_IHP, main_deck, gds, "TOP", &[]);
+    assert!(
+        !main.iter().any(|id| id == main_rule),
+        "{main_rule} fired: {main:?}"
+    );
+}

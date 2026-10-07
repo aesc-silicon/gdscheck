@@ -9,6 +9,12 @@ Changelog
 user-visible changes: new checks, new PDKs, breaking deck/CLI changes and notable
 correctness fixes. The commit history is the full record of what changed and why.
 
+Unreleased
+----------
+
+* IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
+  the SRAM marker, at the values of IHP's own SRAM bit cells.
+
 v0.2.0 (2026-10-05)
 -------------------
 

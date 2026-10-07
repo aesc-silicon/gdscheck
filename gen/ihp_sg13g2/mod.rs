@@ -33,6 +33,7 @@ mod salblock;
 mod sdiod;
 mod sealring;
 mod slit;
+mod sram;
 mod tgo;
 mod topmetal;
 mod topvia;
@@ -68,6 +69,7 @@ pub fn generate(pdk: &PdkConfig) {
     resistor::generate(pdk);
     nmosi::generate(pdk);
     npn::generate(pdk);
+    sram::generate(pdk);
     sdiod::generate(pdk);
     sealring::generate(pdk);
     nwell::generate(pdk);
