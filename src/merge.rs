@@ -2532,7 +2532,7 @@ fn edge_vs_polygons(e: &Edge, polys: &[(&MergedPoly, &[Edge])], keep_inside: boo
         // of the region it lay on.
         let inside = polys
             .iter()
-            .any(|(m, _)| point_in_merged(mx, my, m) || point_on_merged_wall(mx, my, m));
+            .any(|(m, _)| point_in_merged(mx, my, m) || point_on_merged_wall(mx, my, m, 1e-6));
         if inside == keep_inside {
             let (p, q) = (at(w[0]), at(w[1]));
             if p != q {
@@ -5886,25 +5886,28 @@ pub fn select_with_point(a: &[MergedPoly], points: &[(f64, f64)], keep: bool) ->
 /// with it, as KLayout's `interacting` reads it - IHP's SVaricap pcell puts its label
 /// on the Activ's edge.
 fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
-    point_in_merged(px, py, m) || point_on_merged_wall(px, py, m)
+    point_in_merged(px, py, m) || point_on_merged_wall(px, py, m, 0.5)
 }
 
-/// Whether `(px, py)` lies on a wall of `m`, outer or hole, to within half a DBU.
+/// Whether `(px, py)` lies on a wall of `m`, outer or hole, to within `tol` DBU: half
+/// a DBU for a label, which sits on the grid, and next to nothing for the midpoint of
+/// an edge piece, which lies on the wall's own line if it lies on the wall at all - a
+/// one-DBU stub cut off past a wall has its midpoint half a DBU away, and is not on it.
 /// [`point_in_merged`] casts a half-open ray, so it calls a point on a wall inside on
 /// a shape's left and bottom walls and outside on its right and top ones; a caller
 /// that must treat every wall alike asks this first.
-fn point_on_merged_wall(px: f64, py: f64, m: &MergedPoly) -> bool {
+fn point_on_merged_wall(px: f64, py: f64, m: &MergedPoly, tol: f64) -> bool {
     let on = |ring: &[IntPoint]| {
         let n = ring.len();
         (0..n).any(|i| {
             let (a, b) = (ring[i], ring[(i + 1) % n]);
             let (ax, ay, bx, by) = (a.x as f64, a.y as f64, b.x as f64, b.y as f64);
             let cross = (bx - ax) * (py - ay) - (by - ay) * (px - ax);
-            cross.abs() <= 0.5 * (bx - ax).hypot(by - ay)
-                && px >= ax.min(bx) - 0.5
-                && px <= ax.max(bx) + 0.5
-                && py >= ay.min(by) - 0.5
-                && py <= ay.max(by) + 0.5
+            cross.abs() <= tol * (bx - ax).hypot(by - ay)
+                && px >= ax.min(bx) - tol
+                && px <= ax.max(bx) + tol
+                && py >= ay.min(by) - tol
+                && py <= ay.max(by) + tol
         })
     };
     on(&m.outer) || m.holes.iter().any(|h| on(h))
@@ -8210,6 +8213,49 @@ mod tests {
         let bars = compose_tile(VirtualOp::NotSquare, &[&src]);
         assert_eq!(squares.len(), 1, "one square contact");
         assert_eq!(bars.len(), 2, "the rectangle and the L-shape are bars");
+    }
+
+    /// A piece cut off an edge at a wall is not on the wall for being near it: a one-DBU
+    /// stub past the wall has its midpoint half a DBU off it, which the tolerance a
+    /// label point gets would call on the wall, and so inside.  Each way round.
+    #[test]
+    fn a_stub_past_a_wall_is_outside() {
+        let r = rect(0, 0, 100, 100);
+        let contour = region_edges(&r);
+        let polys = [(&r, contour.as_slice())];
+        for (e, inside, outside) in [
+            (
+                edge(50, 50, 50, 101),
+                edge(50, 50, 50, 100),
+                edge(50, 100, 50, 101),
+            ),
+            (
+                edge(50, -1, 50, 50),
+                edge(50, 0, 50, 50),
+                edge(50, -1, 50, 0),
+            ),
+            (
+                edge(-1, 50, 50, 50),
+                edge(0, 50, 50, 50),
+                edge(-1, 50, 0, 50),
+            ),
+            (
+                edge(50, 50, 101, 50),
+                edge(50, 50, 100, 50),
+                edge(100, 50, 101, 50),
+            ),
+        ] {
+            assert_eq!(
+                edge_vs_polygons(&e, &polys, true),
+                vec![inside],
+                "{e:?} inside"
+            );
+            assert_eq!(
+                edge_vs_polygons(&e, &polys, false),
+                vec![outside],
+                "{e:?} outside"
+            );
+        }
     }
 
     /// An edge on a region's wall is inside it on every side, as KLayout's `edges &
