@@ -7,8 +7,8 @@
 # Not checked: the vertical overlaps SDT.ACTIVE.OV.1 and SDT.LISD.OV.2, which
 # SDT.ACTIVE.AUX.2, SDT.LISD.AUX.4 and the SDT widths already bound: an SDT whose
 # horizontal edges lie on ACTIVE's, inside LISD, is as tall as the ACTIVE it sits on.
-# SDT.W.3 reads every vertical edge of ordinary SDT up to 1080 nm against the whole
-# multiples of 27 nm, as ACTIVE.W.2 does; a taller edge goes unread.
+# SDT.W.3 reads every vertical edge of ordinary SDT against the whole multiples of 27 nm,
+# as ACTIVE.W.2 does.
 # SRAM SDT is exempt from ordinary edge alignment and LISD containment. Both
 # explicit SRAM overlaps need their own checks, including absent or touching-only
 # references: an empty intersection has no width to measure.

@@ -122,12 +122,12 @@ fn shapes(c: &Corpus<'_>) {
     write("SRAM.SDT.W.4.short", elems);
 
     // SDT.W.3: every vertical edge a whole multiple of 27 nm. Trenches 27 and 54 nm
-    // tall, then 40.5 and 81.25, each of those two failing walls; and a 1100 nm trench,
-    // no multiple either, above the cap and so unread. Each on an ACTIVE as tall as it,
-    // under a LISD.
+    // tall, then 40.5 and 81.25, each of those two failing walls; and a 1107 nm trench,
+    // forty-one fins, a multiple and clean: there is no cap. Each on an ACTIVE as tall as
+    // it, under a LISD.
     let mut elems = vec![];
     let mut y = OFFSET;
-    for th in [h, 2.0 * h, 1.5 * h, 81.25, 1100.0] {
+    for th in [h, 2.0 * h, 1.5 * h, 81.25, 1107.0] {
         elems.extend(trench(OFFSET, y, w, th));
         y += th + 10.0 + ROOM;
     }

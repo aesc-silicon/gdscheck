@@ -297,7 +297,7 @@ fn shapes(c: &Corpus<'_>) {
 /// ACTIVE.W.2: every vertical edge a whole multiple of 27 nm. Bars 27 and 54 nm tall,
 /// then 40.5 and 81.25, each of those two failing walls; an L whose column rises 27 nm
 /// above its bar, then 13.5 nm, where the column's wall and the riser both fail; and a
-/// 1100 nm bar, no multiple either, above the cap and so unread.
+/// 1107 nm bar, forty-one fins, a multiple and clean: there is no cap.
 fn increments(c: &Corpus<'_>) {
     let active = c.layer("ACTIVE");
     let select = c.layer("NSELECT");
@@ -323,7 +323,7 @@ fn increments(c: &Corpus<'_>) {
         (LONG, 2.0 * h),
         (LONG, 1.5 * h),
         (LONG, 81.25),
-        (LONG, 1100.0),
+        (LONG, 1107.0),
     ];
     elems.extend(boxes(active, &bars, OFFSET, y));
     let top = y + bars.iter().map(|b| b.1 + ROOM).sum::<f64>();
