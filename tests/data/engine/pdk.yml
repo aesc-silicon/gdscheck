@@ -72,6 +72,8 @@ virtual_layers:
   InnerBareInOuter: InnerBare inside Outer
   # The edges of Outer, for a reach rule read per edge.
   Outer.edges: Outer edges
+  # Outer's edges that are no whole multiple of half a micron.
+  OuterOffHalf: Outer.edges without_length_multiple 0.5
 
 # Via joins Inner, then Diode, then Outer, for the rules gated on nets and for the
 # antenna rule's levels: through Inner's step alone, Outer is not yet on the net.

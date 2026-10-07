@@ -316,6 +316,8 @@ fn spec(word: &str, left: Kind) -> Option<OpSpec> {
         (Edge, "centers") => s("centers", none, Edge, Centers),
         (Edge, "with_length") => s("with_length", none, Edge, Bounds),
         (Edge, "without_length") => s("without_length", none, Edge, Bounds),
+        (Edge, "with_length_multiple") => s("with_length_multiple", none, Edge, OneMin),
+        (Edge, "without_length_multiple") => s("without_length_multiple", none, Edge, OneMin),
         (Edge, "with_angle") => s("with_angle", none, Edge, Bounds),
         (Edge, "without_angle") => s("without_angle", none, Edge, Bounds),
         _ => Option::None,

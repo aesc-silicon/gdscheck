@@ -375,6 +375,10 @@ pub fn parse_edge_op(
             to_dbu(min).ok_or_else(|| format!("edge op '{op}' requires a length"))?,
             op == "with_length_exact",
         ),
+        "with_length_multiple" | "without_length_multiple" => MultipleLength(
+            to_dbu(min).ok_or_else(|| format!("edge op '{op}' requires a length"))?,
+            op == "with_length_multiple",
+        ),
         "without_length" => {
             let (lo, hi) = bounds()?;
             WithoutLength(lo, hi)

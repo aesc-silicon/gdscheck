@@ -1216,6 +1216,7 @@ fn overlap_meets_the_bound_exactly_and_reads_the_pair(
 #[case("array_tile_lines", "R.array", 1)]
 #[case("bare", "R.bare", 3)]
 #[case("bare", "R.edges", 4)]
+#[case("multiple", "R.multiple", 2)]
 #[case("covered_exact", "R.uncovered", 0)]
 #[case("covered_exact", "R.polygon", 0)]
 #[case("covered_short", "R.uncovered", 1)]

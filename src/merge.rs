@@ -2592,6 +2592,10 @@ pub enum EdgeOp {
     WithoutLength(Option<i32>, Option<i32>),
     /// Bare-number length selector, distinct from the empty range `[v, v)`.
     ExactLength(i32, bool),
+    /// Edges whose length is a whole multiple of the step, in DBU (`with_length_multiple`),
+    /// or the complement: a width-increment rule read on edges, with no list of the
+    /// multiples to keep and no cap where the list would end.
+    MultipleLength(i32, bool),
     /// Keep edges whose orientation in degrees is in `[min, max)`, normalised to
     /// `[0, 180)` (KLayout `.with_angle`).  `WithoutAngle` keeps the complement.
     WithAngle(i32, i32),
@@ -2842,6 +2846,22 @@ fn compose_edge_tile(
                         let dx = e.b.x as i128 - e.a.x as i128;
                         let dy = e.b.y as i128 - e.a.y as i128;
                         (dx * dx + dy * dy == length as i128 * length as i128) == want
+                    })
+                    .copied()
+                    .collect()
+            })
+            .unwrap_or_default(),
+        EdgeOp::MultipleLength(step, want) => edge_srcs
+            .first()
+            .map(|a| {
+                a.iter()
+                    .filter(|e| {
+                        // Half a DBU of slack, as the ranges allow: an axis-aligned
+                        // edge is a whole number of DBU long, a diagonal one is never
+                        // a multiple.
+                        let l = e.length();
+                        let k = (l / step as f64).round();
+                        (k >= 1.0 && (l - k * step as f64).abs() <= 0.5) == want
                     })
                     .copied()
                     .collect()
@@ -8248,6 +8268,25 @@ mod tests {
         let bars = compose_tile(VirtualOp::NotSquare, &[&src]);
         assert_eq!(squares.len(), 1, "one square contact");
         assert_eq!(bars.len(), 2, "the rectangle and the L-shape are bars");
+    }
+
+    /// A width increment read on edges: 108 DBU is 27 nm on ASAP7's grid. Edges of 27,
+    /// 54 and 540 nm are multiples of it; 40.5 and 81.25 nm are not, nor is a diagonal.
+    #[test]
+    fn an_edge_a_whole_multiple_of_a_length() {
+        let edges = [
+            edge(0, 0, 0, 108),
+            edge(0, 0, 0, 216),
+            edge(0, 0, 0, 2160),
+            edge(0, 0, 0, 162),
+            edge(0, 0, 0, 325),
+            edge(0, 0, 108, 108),
+        ];
+        let core = (0, 0, 100_000, 100_000);
+        let on = compose_edge_tile(EdgeOp::MultipleLength(108, true), &[&edges], &[], core);
+        assert_eq!(on, vec![edges[0], edges[1], edges[2]]);
+        let off = compose_edge_tile(EdgeOp::MultipleLength(108, false), &[&edges], &[], core);
+        assert_eq!(off, vec![edges[3], edges[4], edges[5]]);
     }
 }
 
