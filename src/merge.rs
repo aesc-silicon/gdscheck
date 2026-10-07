@@ -2530,8 +2530,9 @@ fn edge_vs_polygons(e: &Edge, polys: &[(&MergedPoly, &[Edge])], keep_inside: boo
         // wall piece inside on a shape's left and bottom walls but outside on its right
         // and top ones, so one flush edge was read one way or the other by which wall
         // of the region it lay on.
-        let inside = polys.iter().any(|(m, _)| point_on_merged_wall(mx, my, m))
-            || polys.iter().any(|(m, _)| point_in_merged(mx, my, m));
+        let inside = polys
+            .iter()
+            .any(|(m, _)| point_in_merged(mx, my, m) || point_on_merged_wall(mx, my, m));
         if inside == keep_inside {
             let (p, q) = (at(w[0]), at(w[1]));
             if p != q {
