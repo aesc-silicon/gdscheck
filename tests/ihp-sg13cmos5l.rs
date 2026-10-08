@@ -12,7 +12,7 @@
 //! Only the genuinely different rules get their own fixtures (see
 //! gen/ihp_sg13cmos5l).
 
-use gdscheck::pdk::{PdkConfig, RuleDefinition};
+use gdscheck::pdk::{Param, PdkConfig, RuleDefinition};
 use gdscheck::run_drc;
 use rstest::rstest;
 
@@ -32,6 +32,11 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
     ids
 }
 
+/// The SG13G2 derived layers CMOS5L defines itself.  `nBuLayDerived`: SG13G2 generates an
+/// nBuLay under every wide NWell (section 4.2); CMOS5L's section 4 has no such layer and
+/// forbids the drawn one, so the rules reading it see none (issue #46).
+const CMOS5L_OWN: &[&str] = &["nBuLayDerived"];
+
 /// The decks CMOS5L reads from the SG13G2 tree, by name.
 fn shared_decks() -> Vec<String> {
     let c5l = PdkConfig::for_process(C5L).unwrap();
@@ -47,45 +52,90 @@ fn shared_decks() -> Vec<String> {
 
 /// A shared deck is the same rules over the same layers under both PDKs, and the engine
 /// reads nothing else, so it answers the same on any layout.  Compared as loaded: every
-/// rule of every shared deck (its layers with their GDS numbers, its value, its params
-/// with the layer params resolved), every SG13G2 virtual layer's definition and assigned
-/// number and the numbers of its sources (CMOS5L may add its own, and a same-name child
-/// entry would replace the base one, which is what this would catch), the waivers, and
-/// the connect graph: SG13G2's through Metal4, CMOS5L's own stack top, and the well step
-/// as SG13G2 has it, so every net a shared rule can read is the same net.  Structural,
+/// rule of every shared deck (its drawn layers with their GDS numbers, its derived ones
+/// by name, its value, its params with the layer params resolved), every SG13G2 virtual
+/// layer's definition and the GDS numbers of its drawn sources (CMOS5L may add its own,
+/// and a same-name child entry would replace the base one, which is what this would
+/// catch), the waivers, and the connect graph: SG13G2's through Metal4, CMOS5L's own
+/// stack top, and the well step as SG13G2 has it, so every net a shared rule can read is
+/// the same net.  A derived layer's synthetic number is its place in the list, which a
+/// replaced entry moves; its definition is what is compared.  The one replaced entry is
+/// [`CMOS5L_OWN`]'s, pinned by its own tests below.  Structural,
 /// so it costs nothing; the DRC walk it replaces ran 700 fixtures twice and took 40 s
 /// of the 7 µm tile suite to say what this says.
 #[test]
 fn shared_decks_are_sg13g2s_as_loaded() {
     let g2 = PdkConfig::for_process(G2).unwrap();
     let c5l = PdkConfig::for_process(C5L).unwrap();
-    // One line per rule, its params in key order (they live in a `HashMap`).
-    let canon = |rules: Vec<RuleDefinition>| -> String {
+    let derived = |name: &str| {
+        g2.virtual_layers.iter().any(|v| v.name == name)
+            || g2.edge_layers.iter().any(|e| e.name == name)
+    };
+    // A drawn layer with its GDS numbers, a derived one by name.
+    let show = |layers: &[gdscheck::pdk::Layer]| -> String {
+        layers
+            .iter()
+            .map(|l| match derived(&l.name) {
+                true => l.name.clone(),
+                false => format!("{l:?}"),
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    // One line per rule, its params in key order (they live in a `HashMap`), a layer
+    // param (`key` and `key_dt`, resolved to numbers) naming a derived layer by name.
+    let canon = |pdk: &PdkConfig, rules: Vec<RuleDefinition>| -> String {
+        let named = |n: f64, dt: f64| {
+            pdk.layers()
+                .find(|(name, l)| {
+                    derived(name) && l.gds_layer as f64 == n && l.gds_datatype as f64 == dt
+                })
+                .map(|(name, _)| name.to_string())
+        };
         rules
             .iter()
             .map(|r| {
-                let mut params: Vec<String> =
-                    r.params.iter().map(|(k, v)| format!("{k}={v:?}")).collect();
+                let mut params: Vec<String> = r
+                    .params
+                    .iter()
+                    .filter(|(k, _)| {
+                        !k.strip_suffix("_dt")
+                            .is_some_and(|base| r.params.contains_key(base))
+                    })
+                    .map(|(k, v)| {
+                        let dt = r.params.get(&format!("{k}_dt"));
+                        match (v, dt) {
+                            (Param::Num(n), Some(Param::Num(dt))) => match named(*n, *dt) {
+                                Some(name) => format!("{k}={name}"),
+                                None => format!("{k}={v:?}/{dt}"),
+                            },
+                            _ => format!("{k}={v:?}"),
+                        }
+                    })
+                    .collect();
                 params.sort();
                 format!(
-                    "{} {} {:?} {} [{}] ignore={:?} text={:?}\n",
+                    "{} {} [{}] {} [{}] ignore=[{}] text={:?}\n",
                     r.id,
                     r.check,
-                    r.layers,
+                    show(&r.layers),
                     r.value,
                     params.join(" "),
-                    r.ignore,
+                    show(&r.ignore),
                     r.text
                 )
             })
             .collect()
     };
     for deck in shared_decks() {
-        let a = canon(g2.load_deck(&deck).unwrap());
-        let b = canon(c5l.load_deck(&deck).unwrap());
+        let a = canon(&g2, g2.load_deck(&deck).unwrap());
+        let b = canon(&c5l, c5l.load_deck(&deck).unwrap());
         assert_eq!(a, b, "deck '{deck}' loads differently under CMOS5L");
     }
     for vl in &g2.virtual_layers {
+        if CMOS5L_OWN.contains(&vl.name.as_str()) {
+            continue;
+        }
         let twin = c5l
             .virtual_layers
             .iter()
@@ -97,7 +147,7 @@ fn shared_decks_are_sg13g2s_as_loaded() {
             "virtual layer '{}'",
             vl.name
         );
-        for name in std::iter::once(&vl.name).chain(&vl.layers) {
+        for name in vl.layers.iter().filter(|n| !derived(n)) {
             assert_eq!(
                 format!("{:?}", g2.layer(name)),
                 format!("{:?}", c5l.layer(name)),
@@ -119,23 +169,38 @@ fn shared_decks_are_sg13g2s_as_loaded() {
             .unwrap_or_else(|| panic!("no layer '{name}'"));
         (l.gds_layer as i16, l.gds_datatype as i16)
     };
-    let step =
-        |s: &gdscheck::connectivity::ConnectSpec| format!("{:?} -> {:?}", s.connector, s.layers);
+    // A step with its drawn layers by GDS number and its derived ones by name.
+    let label = |pdk: &PdkConfig, (n, dt): (i16, i16)| {
+        pdk.layers()
+            .find(|(name, l)| {
+                derived(name) && l.gds_layer as i16 == n && l.gds_datatype as i16 == dt
+            })
+            .map_or(format!("({n}, {dt})"), |(name, _)| name.to_string())
+    };
+    let step = |pdk: &PdkConfig, s: &gdscheck::connectivity::ConnectSpec| {
+        let layers: Vec<String> = s.layers.iter().map(|&k| label(pdk, k)).collect();
+        format!("{} -> [{}]", label(pdk, s.connector), layers.join(", "))
+    };
     let through_m4 = g2
         .connectivity
         .iter()
         .rposition(|s| s.connector == key("Via3"))
         .expect("SG13G2 connects Via3")
         + 1;
-    let g2_steps: Vec<String> = g2.connectivity.iter().map(step).collect();
-    let c5l_steps: Vec<String> = c5l.connectivity.iter().map(step).collect();
+    let g2_steps: Vec<String> = g2.connectivity.iter().map(|s| step(&g2, s)).collect();
+    let c5l_steps: Vec<String> = c5l.connectivity.iter().map(|s| step(&c5l, s)).collect();
     assert_eq!(
         c5l_steps[..through_m4],
         g2_steps[..through_m4],
         "the stack through Metal4"
     );
-    let top =
-        |connector: &str, layer: &str| format!("{:?} -> {:?}", key(connector), vec![key(layer)]);
+    let top = |connector: &str, layer: &str| {
+        format!(
+            "{} -> [{}]",
+            label(&g2, key(connector)),
+            label(&g2, key(layer))
+        )
+    };
     assert_eq!(
         c5l_steps[through_m4..],
         [
@@ -143,7 +208,7 @@ fn shared_decks_are_sg13g2s_as_loaded() {
             top("TopVia1", "TopMetal1"),
             g2_steps
                 .iter()
-                .find(|s| s.starts_with(&format!("{:?}", key("NActivInNWell"))))
+                .find(|s| s.starts_with(&label(&g2, key("NActivInNWell"))))
                 .expect("SG13G2 connects the well")
                 .clone(),
         ]
@@ -255,6 +320,98 @@ fn test_cmos5l(
     expected.sort();
     let path = format!("{C5L_DATA}/{gds}");
     assert_eq!(drc(C5L, &path, deck, &ignore), expected);
+}
+
+/// What SG13G2 reads through its generated nBuLay, CMOS5L does not: AFil.d and GFil.e hold
+/// a filler off the NWell alone, and a ContBar in a SalBlock / nSD:block / PWell:block
+/// stack is no Schottky diode, so CntB.a and PWB.f1 apply to it.  Each fixture is run
+/// under SG13G2 too, whose answer differs, so it keeps exercising the generated nBuLay.
+/// CMOS5L's answers are those of IHP's CMOS5L deck (the driver for AFil.d, GFil.e and
+/// PWB.f1, the maximal deck for CntB.a, which the driver lacks).
+#[rstest]
+// A 10 µm NWell: a filler 1.72 inside (SG13G2: 0.72 from its nBuLay), one 0.99 inside,
+// one 0.99 and one 1.00 outside.
+#[case::afil_d("activ/AFil.d.gds.gz", "activ", &["AFil.g", "AFil.g1", "AFil.g2", "AFil.g3"],
+    vec!["AFil.d"; 2], vec!["AFil.d"; 3])]
+// A 10 µm NWell: a filler 0.15 inside (SG13G2: 0.05 from its nBuLay), one 1.09 and one
+// 1.10 outside.
+#[case::gfil_e("gatpoly/GFil.e.gds.gz", "gatpoly", &["GFil.g"], vec!["GFil.e"], vec!["GFil.e"; 2])]
+// The Schottky stack in a solid NWell that SG13G2 grows an nBuLay in: the 0.3 bar and
+// the PWell:block ring 0.5 from the P+ tie are exempt there only.
+#[case::schottky_cntb_a("contbar/schottky.gds.gz", "contbar", &[], vec!["CntB.a"], vec![])]
+#[case::schottky_pwb_f1("contbar/schottky.gds.gz", "pwellblock", &[], vec!["PWB.f1"], vec![])]
+fn no_generated_nbulay(
+    #[case] gds: &str,
+    #[case] deck: &str,
+    #[case] ignore: &[&str],
+    #[case] c5l: Vec<&str>,
+    #[case] g2: Vec<&str>,
+) {
+    let path = format!("{C5L_DATA}/{gds}");
+    assert_eq!(drc(C5L, &path, deck, ignore), c5l, "CMOS5L");
+    assert_eq!(drc(G2, &path, deck, ignore), g2, "SG13G2");
+}
+
+/// A layer CMOS5L forbids is empty in a layout it accepts, so a shared rule reading it
+/// reads nothing - unless a derived layer unites it with one CMOS5L does have.  That
+/// union is SG13G2's way of saying "the layer, or what the process generates in its
+/// place" (nBuLay OR the NWell inset, section 4.2), and in CMOS5L it puts the generated
+/// part back without the layer (issue #46).  Every rule's layers, its layer params and
+/// everything they derive from are walked; a union of a forbidden layer with any other
+/// source fails, and CMOS5L redefines the layer above it (see [`CMOS5L_OWN`]).
+#[test]
+fn no_rule_reads_a_forbidden_layer_united_with_another() {
+    let c5l = PdkConfig::for_process(C5L).unwrap();
+    let forbidden: Vec<String> = c5l
+        .load_deck("forbidden")
+        .unwrap()
+        .into_iter()
+        .filter(|r| r.check == "forbidden")
+        .flat_map(|r| r.layers.into_iter().map(|l| l.name))
+        .collect();
+    assert!(forbidden.iter().any(|l| l == "nBuLay"), "{forbidden:?}");
+    let derived = |name: &str| -> Option<(&str, &[String])> {
+        let v = c5l.virtual_layers.iter().find(|v| v.name == name);
+        let e = c5l.edge_layers.iter().find(|e| e.name == name);
+        v.map(|v| (v.op.as_str(), v.layers.as_slice()))
+            .or(e.map(|e| (e.op.as_str(), e.layers.as_slice())))
+    };
+    let mut bad = Vec::new();
+    for deck in &c5l.decks {
+        for rule in c5l.load_deck(&deck.name).unwrap() {
+            let words = rule.params.values().filter_map(|p| match p {
+                Param::Word(w) if c5l.layer(w).is_some() => Some(w.clone()),
+                _ => None,
+            });
+            let mut todo: Vec<String> = rule.layers.iter().map(|l| l.name.clone()).collect();
+            todo.extend(words);
+            let mut seen = std::collections::HashSet::new();
+            while let Some(name) = todo.pop() {
+                if !seen.insert(name.clone()) {
+                    continue;
+                }
+                let Some((op, sources)) = derived(&name) else {
+                    continue;
+                };
+                let union = matches!(op, "union" | "or");
+                if union
+                    && sources.len() > 1
+                    && sources.iter().any(|s| forbidden.contains(s))
+                    && sources.iter().any(|s| !forbidden.contains(s))
+                {
+                    bad.push(format!("{} ({}): {name} = {sources:?}", rule.id, deck.name));
+                }
+                todo.extend(sources.iter().cloned());
+            }
+        }
+    }
+    bad.sort();
+    bad.dedup();
+    assert!(
+        bad.is_empty(),
+        "rules reading a forbidden layer united with another:\n{}",
+        bad.join("\n")
+    );
 }
 
 // The recommended pad rules.  Those CMOS5L shares with SG13G2 run on SG13G2's fixtures

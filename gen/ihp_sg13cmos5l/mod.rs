@@ -9,8 +9,9 @@
 //! against the SG13G2 fixture tree directly (see the parity tests in
 //! tests/ihp-sg13cmos5l.rs).  Only the rules that genuinely differ get fixtures:
 //! TV1.c (TopVia1 lands on Metal4), Pas.c / Pad.i (TopMetal1 is the top metal),
-//! the §3.2 extra forbidden layers, and the chapter-8 DigiBnd splits of Cnt.c and
-//! NW.f1.
+//! the §3.2 extra forbidden layers, the chapter-8 DigiBnd splits of Cnt.c and
+//! NW.f1, and the rules SG13G2 reads through its generated nBuLay (section 4.2),
+//! which CMOS5L does not have: AFil.d, GFil.e and the Schottky exemptions.
 
 use crate::helpers::{enclosure_pattern, layer, library, rect, write_gz};
 use gds21::GdsElement;
@@ -28,6 +29,9 @@ pub fn generate(pdk: &PdkConfig) {
     cnt_digi(pdk);
     nw_f1_digi(pdk);
     pad_gr_kr(pdk);
+    afil_d(pdk);
+    gfil_e(pdk);
+    schottky_stack(pdk);
 }
 
 fn dir(sub: &str) -> String {
@@ -223,4 +227,86 @@ fn pad_gr_kr(pdk: &PdkConfig) {
     e.push(via(o + 30.0, o + 30.0));
     e.push(via(o + 5.0, o + 5.0));
     write_gz(&format!("{d}/Pad.kR.gds.gz"), library("TOP", e));
+}
+
+/// AFil.d against NWell alone: CMOS5L generates no nBuLay under a wide well, so a filler
+/// inside one keeps 1.00 from the well's wall and nothing else (issue #46).  A 10 µm
+/// NWell, wide enough for SG13G2's generated nBuLay 1.0 inside it:
+/// - a filler 1.72 inside: clean (SG13G2: 0.72 from its nBuLay, AFil.d);
+/// - a filler 0.99 inside the right wall: AFil.d;
+/// - a filler 0.99 left of the well: AFil.d;
+/// - a filler 1.00 below it: clean.
+fn afil_d(pdk: &PdkConfig) {
+    let o = OFFSET;
+    let f = layer(pdk, "Activ.filler");
+    let elems = vec![
+        rect(layer(pdk, "NWell"), o, o, o + 10.0, o + 10.0),
+        rect(f, o + 1.72, o + 1.72, o + 3.72, o + 3.72),
+        rect(f, o + 7.01, o + 6.0, o + 9.01, o + 8.0),
+        rect(f, o - 2.99, o + 4.0, o - 0.99, o + 6.0),
+        rect(f, o + 5.0, o - 3.0, o + 7.0, o - 1.0),
+    ];
+    write_gz(
+        &format!("{}/AFil.d.gds.gz", dir("activ")),
+        library("TOP", elems),
+    );
+}
+
+/// GFil.e against NWell alone, as AFil.d.  A 10 µm NWell:
+/// - a filler 0.15 inside the left wall: clean (SG13G2: 0.05 from its nBuLay, GFil.e);
+/// - a filler 1.09 right of the well: GFil.e;
+/// - a filler 1.10 above it: clean.
+fn gfil_e(pdk: &PdkConfig) {
+    let o = OFFSET;
+    let f = layer(pdk, "GatPoly.filler");
+    let elems = vec![
+        rect(layer(pdk, "NWell"), o, o, o + 10.0, o + 10.0),
+        rect(f, o + 0.15, o + 4.0, o + 0.95, o + 5.0),
+        rect(f, o + 11.09, o + 4.0, o + 12.09, o + 5.0),
+        rect(f, o + 4.0, o + 11.1, o + 5.0, o + 12.1),
+    ];
+    write_gz(
+        &format!("{}/GFil.e.gds.gz", dir("gatpoly")),
+        library("TOP", elems),
+    );
+}
+
+/// The four boxes of a ring between two boxes.
+fn ring(l: (i16, i16), outer: [f64; 4], inner: [f64; 4]) -> Vec<GdsElement> {
+    vec![
+        rect(l, outer[0], outer[1], outer[2], inner[1]),
+        rect(l, outer[0], inner[3], outer[2], outer[3]),
+        rect(l, outer[0], inner[1], inner[0], inner[3]),
+        rect(l, inner[2], inner[1], outer[2], inner[3]),
+    ]
+}
+
+/// SG13G2's Schottky diode without a drawn nBuLay: a 0.3 x 1.0 bar in the
+/// PWell:block / nSD:block / SalBlock stack at the diode's margins, inside a solid NWell
+/// 2.0 past the bar, which SG13G2 grows an nBuLay in (its Sdiod.d.h3).  Round it, as
+/// the reference cell has them, a PWell:block ring 2.0 to 2.85 past the bar and a P+
+/// tie ring under ThickGateOx 0.5 outside that.  SG13G2 reads a diode and exempts the
+/// bar from CntB.a and the ring from PWB.f1; CMOS5L has no Schottky diode, so the bar
+/// is CntB.a (it is not 0.16 wide) and the ring PWB.f1 (0.5 < 0.62 to the tie).
+fn schottky_stack(pdk: &PdkConfig) {
+    let (cx, cy) = (OFFSET + 5.0, OFFSET + 5.0);
+    let grown = |m: f64| [cx - 0.15 - m, cy - 0.5 - m, cx + 0.15 + m, cy + 0.5 + m];
+    let bx = |name: &str, b: [f64; 4]| rect(layer(pdk, name), b[0], b[1], b[2], b[3]);
+    let mut elems = vec![
+        bx("Cont", grown(0.0)),
+        bx("Metal1", grown(0.05)),
+        bx("PWell.block", grown(0.25)),
+        bx("nSD.block", grown(0.40)),
+        bx("SalBlock", grown(0.45)),
+        bx("Activ", grown(0.85)),
+        bx("NWell", grown(2.0)),
+        bx("ThickGateOx", grown(3.9)),
+    ];
+    elems.extend(ring(layer(pdk, "PWell.block"), grown(2.85), grown(2.0)));
+    elems.extend(ring(layer(pdk, "Activ"), grown(3.65), grown(3.35)));
+    elems.extend(ring(layer(pdk, "pSD"), grown(3.75), grown(3.25)));
+    write_gz(
+        &format!("{}/schottky.gds.gz", dir("contbar")),
+        library("TOP", elems),
+    );
 }
