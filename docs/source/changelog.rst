@@ -12,6 +12,12 @@ correctness fixes. The commit history is the full record of what changed and why
 Unreleased
 ----------
 
+PDKs
+~~~~
+
+* IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
+  the SRAM marker, at the values of IHP's own SRAM bit cells.
+
 Checks
 ~~~~~~
 

@@ -1,0 +1,101 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Under the SRAM marker (25/0) the main decks leave these rules unchecked, as IHP's own
+# KLayout deck does: the layout rules mark the SRAM values as "TBD".  This deck applies
+# them again under the marker, at the smallest value IHP's own SRAM bit cells use
+# (sg13g2_sram, 1P and 2P), so a cell drawn to it is no tighter than one IHP ships.
+# Where the bit cells meet the public value, the public value stays.  Cnt.c.SRAM is
+# the one SRAM value of the public decks.
+rules:
+  - id: SRAM.Cnt.c
+    check: min_enclosure
+    layers: [Activ, ContOnActivSRAM]
+    value: 0.006
+    params:
+      metric: euclidian
+  - id: SRAM.Cnt.g1
+    check: min_space
+    layers: [pSD, ContOnNsdActivSRAM]
+    value: 0.09
+    params:
+      abutting: report
+  - id: SRAM.Cnt.g2
+    check: min_enclosure
+    layers: [pSD, ContOnPsdActivSRAM]
+    value: 0.09
+    params:
+      metric: euclidian
+  - id: SRAM.Gat.c
+    check: min_enclosure
+    layers: [GatPolySRAM, Activ]
+    value: 0.13  # public 0.18
+    params:
+      metric: euclidian
+      interacting_only: 1
+  - id: SRAM.Gat.c
+    check: forbidden
+    layers: [GatPolySRAMInsideActiv]
+    value: 0.0
+  - id: SRAM.NW.c
+    check: min_enclosure
+    layers: [NWell, PsdActivInNWellNoTGOSRAM]
+    value: 0.27  # public 0.31
+    params:
+      metric: euclidian
+  - id: SRAM.NW.d
+    check: min_space
+    layers: [NWellSRAM, NActExtNoTGO]
+    value: 0.27  # public 0.31
+    params:
+      abutting: report
+  - id: SRAM.pSD.e
+    check: forbidden
+    layers: [TieTooNarrowSRAM]
+    value: 0.0
+  - id: SRAM.pSD.g
+    check: min_area
+    layers: [NTapAbuttedSRAM]
+    value: 0.09
+    params:
+      touching: separate
+  - id: SRAM.pSD.g
+    check: min_area
+    layers: [PTapAbuttedSRAM]
+    value: 0.09
+    params:
+      touching: separate
+  # the PFET gate grown along its channel by the value (PsdISramReach*) and not
+  # covered by pSD is short
+  - id: SRAM.pSD.i
+    check: forbidden
+    layers: [PsdISramShort]
+    value: 0.0
+  - id: SRAM.pSD.j
+    check: min_space
+    layers: [pSDSRAM, GatPolyOverNsdActivNoTGONoSVaricap]
+    value: 0.30
+    params:
+      abutting: report
+  - id: SRAM.LU.c
+    check: max_space
+    layers: [NWellTieAbuttedNoContSRAM, ContOnPsdActivInNWell]
+    value: 6.00
+    layer_params:
+      within: ActivNotGat
+  - id: SRAM.LU.c1
+    check: max_space
+    layers: [SubstrateTieAbuttedNoContSRAM, ContOnNsdActivInPWell]
+    value: 6.00
+    layer_params:
+      within: ActivNotGat
+  - id: SRAM.npnG2.d1
+    check: min_space
+    layers: [GatPolySRAM, TransInTie]
+    value: 0.90
+  # thick-oxide devices (NW.d1, pSD.i1/j1) have no SRAM values; none under the marker
+  - id: SRAM.TGO
+    check: forbidden
+    layers: [ThickGateOxSRAM]
+    value: 0.0

@@ -12,7 +12,7 @@ Overview
 The bundled ``ihp-sg13g2`` PDK covers IHP's open-source SG13G2 SiGe BiCMOS process:
 the full front-end device set (isolated NMOS, bipolar npn HBT, Schottky diodes,
 resistors), the M1-M5/TopMetal1-2 back-end stack with vias, latch-up, metal slotting,
-seal-ring, bond-pad and the §7.1 antenna rule family. Ships six suites:
+seal-ring, bond-pad and the §7.1 antenna rule family. Ships seven suites:
 
 .. list-table::
    :header-rows: 1
@@ -34,6 +34,9 @@ seal-ring, bond-pad and the §7.1 antenna rule family. Ships six suites:
    * - ``recommended``
      - The recommended (``*R``) rules only — see *Recommended rules* below. Not part of
        ``main``.
+   * - ``sram``
+     - The rules ``main`` skips under the SRAM marker, at the values of IHP's own bit
+       cells — see *SRAM rules* below. Not part of ``main``.
 
 Cross-checked throughout development against IHP's own KLayout reference decks (the
 per-topic ``.lydrc`` scripts and the combined "maximal" deck) run in a container, and
@@ -155,6 +158,48 @@ Activ or the chip's Activ in reach, rather than measuring a space: a 25 µm spac
 Activ does not fit in memory on a full chip. ``Pad.gR`` follows the manual, TopMetal1
 within dfpad, where KLayout encloses TopVia2 in Metal5. ``npn13G2V.cR`` counts emitters
 drawn on EmWiHV (as IHP's pcell draws them) as well as EmWind.
+
+
+SRAM rules
+----------
+
+Under the SRAM marker (``SRAM``, 25/0) IHP's KLayout deck, and ``main`` with it, does
+not check a group of front-end rules: the layout rules leave their SRAM values "TBD".
+The ``sram`` deck checks them again under the marker, at the smallest value IHP's own
+SRAM bit cells (``sg13g2_sram``, 1P and 2P) use. A cell drawn to it is no tighter than
+one IHP ships, and all 28 macros of ``sg13g2_sram`` pass it. Run it with ``--deck sram``
+next to a ``core`` or ``main`` run on layouts that draw the marker.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 20 55
+
+   * - Rule
+     - Value
+     - Note
+   * - ``SRAM.Gat.c``
+     - 0.13
+     - GatPoly endcap over Activ (``Gat.c`` 0.18).
+   * - ``SRAM.NW.c``
+     - 0.27
+     - NWell enclosure of P+Activ (``NW.c`` 0.31).
+   * - ``SRAM.NW.d``
+     - 0.27
+     - NWell space to N+Activ (``NW.d`` 0.31).
+   * - ``SRAM.Cnt.c``
+     - 0.006
+     - Activ enclosure of Cont, KLayout's ``Cnt.c.SRAM`` (``Cnt.c`` 0.07).
+   * - ``SRAM.Cnt.g1``/``g2``, ``SRAM.pSD.e``/``g``/``i``/``j``, ``SRAM.LU.c``/``c1``,
+       ``SRAM.npnG2.d1``
+     - public
+     - IHP's bit cells meet the public value, which stays.
+   * - ``SRAM.TGO``
+     - —
+     - No ThickGateOx under the marker: the thick-oxide rules (``NW.d1``, ``pSD.i1``,
+       ``pSD.j1``) have no SRAM values.
+
+The values follow from IHP's shipped cells, not from a published rule: they show what
+IHP qualifies, not the process limit.
 
 
 Documented divergences from the KLayout deck

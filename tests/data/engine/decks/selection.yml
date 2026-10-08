@@ -16,3 +16,12 @@ rules:
     check: min_space
     layers: [Inner]
     value: 5.0
+  # The two halves of an edge cut at a boundary, counted: one marker per edge.
+  - id: SEL.in
+    check: forbidden
+    layers: [InnerEdgesInOuter]
+    value: 0.0
+  - id: SEL.out
+    check: forbidden
+    layers: [InnerEdgesOutOuter]
+    value: 0.0

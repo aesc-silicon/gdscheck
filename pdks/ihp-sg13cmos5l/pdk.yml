@@ -57,6 +57,9 @@ decks:
   - name: gatpoly
     path: ../ihp-sg13g2/decks/gatpoly.yml
     description: Gate poly
+  - name: sram
+    path: ../ihp-sg13g2/decks/sram.yml
+    description: Rules the main decks skip under the SRAM marker, at IHP's bit-cell values
   - name: extblock
     path: ../ihp-sg13g2/decks/extblock.yml
     description: EXTBlock

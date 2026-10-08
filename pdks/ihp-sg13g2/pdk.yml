@@ -165,6 +165,9 @@ decks:
   - name: mim_recommended
     path: decks/recommended/mim.yml
     description: MIM area per chip, recommended
+  - name: sram
+    path: decks/sram.yml
+    description: Rules the main decks skip under the SRAM marker, at IHP's bit-cell values
 
 # Cells checked as delivered.  A violation of the listed rules whose marker lies inside
 # a placed instance of one is reported, but as waived.  IHP's SRAM macros put Via1 at
@@ -807,6 +810,39 @@ virtual_layers:
     or (Recog.diode interacting nBuLay interacting AntHNactNwell)
   AntHIsolbox: AntHIsolbox1 not_interacting AntHSchottky with_text "isolbox" TEXT
   AntHError: AntHCand not_interacting AntHIsolbox and NWell
+
+  # SRAM deck (decks/sram.yml): the shapes the main decks leave unchecked under the SRAM
+  # marker (25/0), whole shapes that touch it, so the marker's edge cuts nothing.
+  GatPolySRAM: GatPoly overlapping SRAM
+  GatPolySRAMInsideActiv: GatPolySRAM inside Activ
+  ContOnActivSRAM: ContOnActiv overlapping SRAM
+  ContSquareSRAM: ContSquare overlapping SRAM
+  ContOnNsdActivSRAM: ContSquareSRAM and NActFull
+  ContOnPsdActivSRAM: ContSquareSRAM and PsdActiv
+  PsdActivInNWellNoTGOSRAM: PsdActivInNWellNoTGO overlapping SRAM
+  NWellSRAM: NWell overlapping SRAM
+  pSDSRAM: pSD overlapping SRAM
+  ThickGateOxSRAM: ThickGateOx and SRAM
+  # pSD.i under the marker: the PFET gate grown along its channel by the SRAM value
+  PsdISramReachX: PsdIGateChX grow_x 0.30
+  PsdISramReachY: PsdIGateChY grow_y 0.30
+  PsdISramReach: PsdISramReachX or PsdISramReachY
+  PsdISramReachIn: PsdISramReach and SRAM
+  PsdISramShort: PsdISramReachIn not pSD
+  # abutted ties under the marker (pSD.e, pSD.g, LU.c/c1)
+  ActivSRAM: Activ overlapping SRAM
+  ActivSRAMOutsidePsd: ActivSRAM not pSD
+  ActivSRAMStraddlePsd: ActivSRAM overlapping ActivSRAMOutsidePsd
+  TieCandidateSRAM: ActivSRAMStraddlePsd overlapping pSD
+  TieOverlapSRAM: TieCandidateSRAM and pSD
+  TieOverlapSRAMOpened: TieOverlapSRAM open 0.149
+  TieTooNarrowSRAM: TieOverlapSRAM not_overlapping TieOverlapSRAMOpened
+  NTapNoGateSRAM: NTapNoGate overlapping SRAM
+  PTapNoGateSRAM: PTapNoGate overlapping SRAM
+  NTapAbuttedSRAM: NTapNoGateSRAM interacting PsdActiv
+  PTapAbuttedSRAM: PTapNoGateSRAM interacting NActiv
+  NWellTieAbuttedNoContSRAM: NTapAbuttedSRAM not_overlapping Cont
+  SubstrateTieAbuttedNoContSRAM: PTapAbuttedSRAM not_overlapping Cont
 
 layers:
   - name: Activ

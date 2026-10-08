@@ -2245,7 +2245,12 @@ virtual_layers:
   # PP.5b: the Pplus boundary that is not a butting edge, where it lies in an N-well or
   # inside DNWELL but out of the LVPWELL, against the COMP boundary it must extend past.
   pp5b_pplus_all: pplus.edges not pplus_butted_edges
-  pp5b_in_nwell: pp5b_pplus_all inside_part nwell
+  # A Pplus wall drawn on the N-well's wall is not in the well: the condition is on the
+  # COMP, and a tap just outside the well with its marker flush to it is PP.5d's case
+  # (reports, pplus finding 2).  `inside_part` keeps a wall edge, as upstream's `and`
+  # does and as upstream reports there, so the wall is taken out again.
+  pp5b_in_nwell_all: pp5b_pplus_all inside_part nwell
+  pp5b_in_nwell: pp5b_in_nwell_all not (nwell edges)
   pp5b_out_lvpwell: pp5b_pplus_all outside_part lvpwell
   pp5b_in_dnwell: pp5b_out_lvpwell inside_part dnwell
   pp5b_pplus: pp5b_in_nwell or pp5b_in_dnwell

@@ -2523,7 +2523,16 @@ fn edge_vs_polygons(e: &Edge, polys: &[(&MergedPoly, &[Edge])], keep_inside: boo
             e.a.x as f64 + dx as f64 * mid,
             e.a.y as f64 + dy as f64 * mid,
         );
-        let inside = polys.iter().any(|(m, _)| point_in_merged(mx, my, m));
+        // A piece along a wall is inside, on every side alike: the reading of KLayout's
+        // `edges & region` and `edges - region`, which is what the decks' band and
+        // outline selections were written against (KLayout's own `inside_part` reads a
+        // wall as outside; see the docs).  The ray cast alone is half-open and called a
+        // wall piece inside on a shape's left and bottom walls but outside on its right
+        // and top ones, so one flush edge was read one way or the other by which wall
+        // of the region it lay on.
+        let inside = polys
+            .iter()
+            .any(|(m, _)| point_in_merged(mx, my, m) || point_on_merged_wall(mx, my, m, 1e-6));
         if inside == keep_inside {
             let (p, q) = (at(w[0]), at(w[1]));
             if p != q {
@@ -6005,20 +6014,31 @@ pub fn select_with_point(a: &[MergedPoly], points: &[(f64, f64)], keep: bool) ->
 /// with it, as KLayout's `interacting` reads it - IHP's SVaricap pcell puts its label
 /// on the Activ's edge.
 pub(crate) fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
+    point_in_merged(px, py, m) || point_on_merged_wall(px, py, m, 0.5)
+}
+
+/// Whether `(px, py)` lies on a wall of `m`, outer or hole, to within `tol` DBU: half
+/// a DBU for a label, which sits on the grid, and next to nothing for the midpoint of
+/// an edge piece, which lies on the wall's own line if it lies on the wall at all - a
+/// one-DBU stub cut off past a wall has its midpoint half a DBU away, and is not on it.
+/// [`point_in_merged`] casts a half-open ray, so it calls a point on a wall inside on
+/// a shape's left and bottom walls and outside on its right and top ones; a caller
+/// that must treat every wall alike asks this first.
+fn point_on_merged_wall(px: f64, py: f64, m: &MergedPoly, tol: f64) -> bool {
     let on = |ring: &[IntPoint]| {
         let n = ring.len();
         (0..n).any(|i| {
             let (a, b) = (ring[i], ring[(i + 1) % n]);
             let (ax, ay, bx, by) = (a.x as f64, a.y as f64, b.x as f64, b.y as f64);
             let cross = (bx - ax) * (py - ay) - (by - ay) * (px - ax);
-            cross.abs() <= 0.5 * (bx - ax).hypot(by - ay)
-                && px >= ax.min(bx) - 0.5
-                && px <= ax.max(bx) + 0.5
-                && py >= ay.min(by) - 0.5
-                && py <= ay.max(by) + 0.5
+            cross.abs() <= tol * (bx - ax).hypot(by - ay)
+                && px >= ax.min(bx) - tol
+                && px <= ax.max(bx) + tol
+                && py >= ay.min(by) - tol
+                && py <= ay.max(by) + tol
         })
     };
-    point_in_merged(px, py, m) || on(&m.outer) || m.holes.iter().any(|h| on(h))
+    on(&m.outer) || m.holes.iter().any(|h| on(h))
 }
 
 pub fn point_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
@@ -8377,6 +8397,97 @@ mod tests {
         assert_eq!(on, vec![edges[0], edges[1], edges[2]]);
         let off = compose_edge_tile(EdgeOp::MultipleLength(108, false), &[&edges], &[], core);
         assert_eq!(off, vec![edges[3], edges[4], edges[5]]);
+    }
+
+    /// A piece cut off an edge at a wall is not on the wall for being near it: a one-DBU
+    /// stub past the wall has its midpoint half a DBU off it, which the tolerance a
+    /// label point gets would call on the wall, and so inside.  Each way round.
+    #[test]
+    fn a_stub_past_a_wall_is_outside() {
+        let r = rect(0, 0, 100, 100);
+        let contour = region_edges(&r);
+        let polys = [(&r, contour.as_slice())];
+        for (e, inside, outside) in [
+            (
+                edge(50, 50, 50, 101),
+                edge(50, 50, 50, 100),
+                edge(50, 100, 50, 101),
+            ),
+            (
+                edge(50, -1, 50, 50),
+                edge(50, 0, 50, 50),
+                edge(50, -1, 50, 0),
+            ),
+            (
+                edge(-1, 50, 50, 50),
+                edge(0, 50, 50, 50),
+                edge(-1, 50, 0, 50),
+            ),
+            (
+                edge(50, 50, 101, 50),
+                edge(50, 50, 100, 50),
+                edge(100, 50, 101, 50),
+            ),
+        ] {
+            assert_eq!(
+                edge_vs_polygons(&e, &polys, true),
+                vec![inside],
+                "{e:?} inside"
+            );
+            assert_eq!(
+                edge_vs_polygons(&e, &polys, false),
+                vec![outside],
+                "{e:?} outside"
+            );
+        }
+    }
+
+    /// An edge on a region's wall is inside it on every side, as KLayout's `edges &
+    /// region` reads it, which is what `inside_part` stands for in the decks.  The ray
+    /// cast behind `point_in_merged` is half-open, so on its own it called a wall piece
+    /// inside on the left and bottom walls and outside on the right and top ones - and
+    /// a band selection read the same flush edge one way or the other by which wall of
+    /// the band it lay on.
+    #[test]
+    fn an_edge_on_a_wall_is_inside_on_every_side() {
+        let r = rect(0, 0, 100, 100);
+        let contour = region_edges(&r);
+        let polys = [(&r, contour.as_slice())];
+        let walls = [
+            ("left", edge(0, 20, 0, 80)),
+            ("right", edge(100, 20, 100, 80)),
+            ("bottom", edge(20, 0, 80, 0)),
+            ("top", edge(20, 100, 80, 100)),
+            ("left, reversed", edge(0, 80, 0, 20)),
+            ("top, reversed", edge(80, 100, 20, 100)),
+        ];
+        for (name, e) in walls {
+            assert_eq!(
+                edge_vs_polygons(&e, &polys, true),
+                vec![e],
+                "{name} wall: inside, whole"
+            );
+            assert!(
+                edge_vs_polygons(&e, &polys, false).is_empty(),
+                "{name} wall: not outside"
+            );
+        }
+        // The interior and the exterior read as before, and a crossing edge is cut.
+        let inside = edge(50, 20, 50, 80);
+        assert_eq!(edge_vs_polygons(&inside, &polys, true), vec![inside]);
+        assert!(edge_vs_polygons(&inside, &polys, false).is_empty());
+        let outside = edge(150, 20, 150, 80);
+        assert!(edge_vs_polygons(&outside, &polys, true).is_empty());
+        assert_eq!(edge_vs_polygons(&outside, &polys, false), vec![outside]);
+        let across = edge(-50, 50, 150, 50);
+        assert_eq!(
+            edge_vs_polygons(&across, &polys, true),
+            vec![edge(0, 50, 100, 50)]
+        );
+        assert_eq!(
+            edge_vs_polygons(&across, &polys, false),
+            vec![edge(-50, 50, 0, 50), edge(100, 50, 150, 50)]
+        );
     }
 }
 
