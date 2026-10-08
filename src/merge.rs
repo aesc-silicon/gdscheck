@@ -4182,6 +4182,24 @@ pub(crate) struct CellGrid {
     items: Vec<u32>,
 }
 
+/// Reusable query storage for one grid, kept local to the querying tile/task.
+pub(crate) struct CellGridQuery {
+    seen: Vec<u32>,
+    generation: u32,
+    items: Vec<u32>,
+}
+
+impl CellGridQuery {
+    /// `pieces` is the number of boxes used to build the grid.
+    pub(crate) fn new(pieces: usize) -> Self {
+        Self {
+            seen: vec![0; pieces],
+            generation: 0,
+            items: Vec::new(),
+        }
+    }
+}
+
 impl CellGrid {
     const SIDE: i32 = 32;
 
@@ -4225,26 +4243,40 @@ impl CellGrid {
         }
     }
 
-    /// The pieces filed in any cell the box touches, each once.
-    pub(crate) fn covering(&self, (bx0, by0, bx1, by1): (i32, i32, i32, i32)) -> Vec<u32> {
+    /// The pieces filed in any cell the box touches, each once, in unspecified order.
+    /// Reuses query storage for this grid; a single cell is borrowed directly.
+    pub(crate) fn covering<'a>(
+        &'a self,
+        (bx0, by0, bx1, by1): (i32, i32, i32, i32),
+        query: &'a mut CellGridQuery,
+    ) -> &'a [u32] {
         let cx0 = ((bx0 - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
         let cx1 = ((bx1 - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
         let cy0 = ((by0 - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
         let cy1 = ((by1 - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
-        let mut out = Vec::new();
+        if cx0 == cx1 && cy0 == cy1 {
+            let c = (cy0 * Self::SIDE + cx0) as usize;
+            return &self.items[self.start[c] as usize..self.start[c + 1] as usize];
+        }
+        query.items.clear();
+        query.generation = query.generation.wrapping_add(1);
+        if query.generation == 0 {
+            query.seen.fill(0);
+            query.generation = 1;
+        }
         for cy in cy0..=cy1 {
             for cx in cx0..=cx1 {
                 let c = (cy * Self::SIDE + cx) as usize;
-                out.extend_from_slice(
-                    &self.items[self.start[c] as usize..self.start[c + 1] as usize],
-                );
+                for &i in &self.items[self.start[c] as usize..self.start[c + 1] as usize] {
+                    let seen = &mut query.seen[i as usize];
+                    if *seen != query.generation {
+                        *seen = query.generation;
+                        query.items.push(i);
+                    }
+                }
             }
         }
-        if cy0 != cy1 || cx0 != cx1 {
-            out.sort_unstable();
-            out.dedup();
-        }
-        out
+        &query.items
     }
 
     /// The pieces filed in the cell holding `(x, y)`.
@@ -5608,10 +5640,11 @@ fn build_counted_selection_tiles(
                 .map(|b| (b.0.max(gx0), b.1.max(gy0), b.2.min(gx1), b.3.min(gy1)))
                 .collect();
             let grid = CellGrid::new(gx0, gy0, tile_dbu, &boxes);
+            let mut query = CellGridQuery::new(boxes.len());
             for (poly, rid) in polys {
                 for piece in clip_to_box(vec![poly.clone()], cx0, cy0, cx1, cy1) {
                     let (x0, y0, x1, y1) = poly_bbox(&piece);
-                    for i in grid.covering((x0, y0, x1, y1)) {
+                    for &i in grid.covering((x0, y0, x1, y1), &mut query) {
                         let (fp, frid) = fpolys[i as usize];
                         let (fx0, fy0, fx1, fy1) = fboxes[i as usize];
                         if x1 < fx0 || fx1 < x0 || y1 < fy0 || fy1 < y0 {
@@ -8078,6 +8111,43 @@ impl SharedCache {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cell_grid_queries_deduplicate_and_reuse_marks() {
+        // Index order differs from cell traversal order, and the large box is
+        // encountered in many cells. Repeating a query must return every hit again.
+        let boxes = [(90, 90, 110, 110), (0, 0, 120, 120), (10, 10, 10, 10)];
+        let grid = CellGrid::new(0, 0, 320, &boxes);
+        let mut query = CellGridQuery::new(boxes.len());
+        for _ in 0..3 {
+            let mut hits = grid.covering((0, 0, 110, 110), &mut query).to_vec();
+            hits.sort_unstable();
+            assert_eq!(hits, vec![0, 1, 2]);
+            assert_eq!(grid.covering((95, 95, 99, 99), &mut query), &[0, 1]);
+            assert!(grid.covering((200, 200, 250, 250), &mut query).is_empty());
+        }
+        // Old generation-one marks must not hide hits after the counter wraps.
+        query.seen.fill(1);
+        query.generation = u32::MAX;
+        let mut hits = grid.covering((0, 0, 110, 110), &mut query).to_vec();
+        hits.sort_unstable();
+        assert_eq!(hits, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn cell_grid_queries_include_closed_boundaries_and_negative_tiles() {
+        let boxes = [(-330, -330, -320, -320), (-20, -20, 0, 0)];
+        let grid = CellGrid::new(-320, -320, 320, &boxes);
+        let mut query = CellGridQuery::new(boxes.len());
+        assert_eq!(grid.covering((-320, -320, -310, -310), &mut query), &[0]);
+        assert_eq!(grid.covering((-20, -20, 0, 0), &mut query), &[1]);
+        assert_eq!(grid.covering((0, 0, 0, 0), &mut query), &[1]);
+
+        let empty = CellGrid::new(-320, -320, 320, &[]);
+        let mut query = CellGridQuery::new(0);
+        assert!(empty.covering((-320, -320, 0, 0), &mut query).is_empty());
+        assert!(empty.covering((0, 0, 0, 0), &mut query).is_empty());
+    }
 
     /// A contact's copy is the polygon and nothing else: four points held inline, no
     /// holes but an empty pointer.  Forty-five million of them on one design.

@@ -733,6 +733,7 @@ pub fn run(
             };
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).map(|t| &**t).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
+            let mut grid_query = crate::merge::CellGridQuery::new(a_conv.len());
             // The line-end caps of each enclosing shape of the tile, found once: a
             // track's caps are the same for every via on it, and finding them walks
             // every pair of the track's walls.
@@ -812,10 +813,17 @@ pub fn run(
                     match a_boxes.get(&(tx, ty)) {
                         Some((_, grid)) => {
                             let (x0, y0, x1, y1) = bp.bbox;
-                            grid.covering((x0 as i32, y0 as i32, x1 as i32, y1 as i32))
-                                .into_iter()
-                                .map(|i| i as usize)
-                                .collect()
+                            let mut near: Vec<usize> = grid
+                                .covering(
+                                    (x0 as i32, y0 as i32, x1 as i32, y1 as i32),
+                                    &mut grid_query,
+                                )
+                                .iter()
+                                .map(|&i| i as usize)
+                                .collect();
+                            // Preserve polygon order when equal margins choose a marker.
+                            near.sort_unstable();
+                            near
                         }
                         None => Vec::new(),
                     }
