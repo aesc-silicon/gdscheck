@@ -8,7 +8,7 @@
 //! Not drawn here: the rules each deck lists as not checked (M4-M7 even track counts,
 //! tip-to-tip runs on adjacent tracks, the routing grid).
 
-use super::patterns::{ROOM, boxes, boxes_apart, corner_pairs, gap_pairs, pg, stacked_pairs};
+use super::patterns::{ROOM, boxes, boxes_apart, bx, corner_pairs, gap_pairs, pg, stacked_pairs};
 use super::{Corpus, DBU};
 
 const OFFSET: f64 = 6990.0;
@@ -206,6 +206,7 @@ fn routing(c: &Corpus<'_>, n: u8, across: f64, horizontal: bool) {
         pg(l, &p.map(at))
     });
     c.write(&deck, &id("S.2.notch"), true, notches.to_vec());
+
     // A straight wire, then one that jogs across the track by a DBU half way along:
     // each half is a track wide and longer than the shortest wire, so only the bend
     // is wrong.
@@ -224,6 +225,54 @@ fn routing(c: &Corpus<'_>, n: u8, across: f64, horizontal: bool) {
     let lift = |(a, b): (f64, f64)| at((a, b + w + ROOM));
     elems.push(pg(l, &jog.map(lift)));
     c.write(&deck, &id("AUX.3.bent"), true, elems);
+
+    // The routing grid and tracks, from the manual's default offset of 0: every wall
+    // across the track on the width's grid, and a track's lower wall every two widths
+    // from the origin, so a wire is on a track when its centre is half a width past
+    // one. These lie at 6912 nm across the track - a multiple of every pitch here -
+    // where OFFSET is on none, and nothing else here is drawn on the grid.
+    assert_eq!(c.drm(&id("AUX.1"), "offgrid", across), w);
+    assert_eq!(c.drm_param(&id("AUX.1"), "offgrid", "offset", 0.0), 0.0);
+    let pitch = c.drm(&id("AUX.2"), "offtrack", 2.0 * w);
+    assert_eq!(c.drm(&id("W.4"), "offtrack", 2.0 * w), pitch);
+    for r in ["AUX.2", "W.4"] {
+        c.drm_param(&id(r), "offtrack", "offset", w / 2.0);
+    }
+    let base = 6912.0;
+    assert_eq!(base % pitch, 0.0);
+    // A wire RUN long along the track and `wide` across it, its lower wall at `lo`.
+    let track = |lo: f64, wide: f64| {
+        let (bw, bh) = wire(RUN, wide);
+        let (x, y) = if horizontal {
+            (OFFSET, lo)
+        } else {
+            (lo, OFFSET)
+        };
+        bx(l, x, y, bw, bh)
+    };
+
+    // A minimum-width wire on a track and a three-width wire centred on one; then a
+    // wire a nanometre over the width, centred on a track but with both walls off the
+    // grid: four vertices.
+    let elems = vec![
+        track(base, w),
+        track(base + 21.0 * w, 3.0 * w),
+        track(base + 40.0 * w - 0.5, w + 1.0),
+    ];
+    c.write(&deck, &id("AUX.1.offgrid"), true, elems);
+
+    // A minimum-width wire on a track, then one a width up, in the space between
+    // tracks: on the grid, off the tracks.
+    let elems = vec![track(base, w), track(base + 21.0 * w, w)];
+    c.write(&deck, &id("AUX.2.offtrack"), true, elems);
+
+    // A three-width wire centred on a track, then one with its lower wall on a track,
+    // which spans two of them.
+    let elems = vec![
+        track(base + 21.0 * w, 3.0 * w),
+        track(base + 40.0 * w, 3.0 * w),
+    ];
+    c.write(&deck, &id("W.4.span"), true, elems);
 }
 
 /// M8/M9 (DRM 3.18/3.19): the base width, the three length-gated tiers and the

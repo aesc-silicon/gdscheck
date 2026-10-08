@@ -6,10 +6,15 @@
 # between tracks read the walls facing across y, its length and the tip-to-tip
 # space those facing across x.
 #
-# Not checked: M4.W.4 (even track counts);
-# M4.S.4 and M4.S.5, the tip-to-tip space and the run two lines on adjacent tracks share;
-# and M4.AUX.1, M4.AUX.2 and M4.AUX.4, the routing grid and tracks, which the manual
-# places by an offset set per design.
+# The routing grid and tracks: AUX.1 reads every horizontal edge on the 24 nm grid, and
+# AUX.2 and W.4 read a wire's centre on the tracks, two widths apart - a minimum-width
+# wire lies on one, and a wider wire spans an odd number of them, which is the same wire
+# centred on one.  The manual sets the grid's offset per design and defaults it to 0; a
+# design routed on other tracks sets `offset` on AUX.1 to its grid's, and on AUX.2 and
+# W.4 to its tracks' centreline, the grid's offset plus half a width.
+#
+# Not checked: M4.S.4 and M4.S.5, the tip-to-tip space and the run two lines on adjacent
+# tracks share; and M4.AUX.4, a wide wire's outside edge on a track's edge.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: M4.W.1
@@ -30,6 +35,13 @@ rules:
     check: forbidden
     layers: [M4EvenWidthEdges]
     value: 0.0
+  - id: M4.W.4
+    check: offtrack
+    layers: [M4Wide]
+    value: 0.048
+    params:
+      facing: y
+      offset: 0.012
   - id: M4.W.5
     check: min_width
     layers: [M4NoSram]
@@ -67,6 +79,20 @@ rules:
     value: 0.04
     params:
       facing: none
+  - id: M4.AUX.1
+    check: offgrid
+    layers: [M4NoSram]
+    value: 0.024
+    params:
+      facing: y
+      offset: 0.0
+  - id: M4.AUX.2
+    check: offtrack
+    layers: [M4Track]
+    value: 0.048
+    params:
+      facing: y
+      offset: 0.012
   - id: M4.AUX.3
     check: forbidden
     layers: [M4Bent]

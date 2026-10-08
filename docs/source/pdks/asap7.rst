@@ -39,8 +39,8 @@ The M1–M3, LISD, LIG and M8/M9 spacings depend on the lengths of the two facin
 What is not checked
 -------------------
 
-Each deck's header lists the rules of its section it does not check, and why: mainly
-the routing grids and tracks. ``ACTIVE.W.2`` and
+Each deck's header lists the rules of its section it does not check, and why.
+``ACTIVE.W.2`` and
 ``SDT.W.3`` read every vertical ACTIVE and SDT edge against the whole multiples of
 27 nm; ``ACTIVE.LUP.1`` reads the
 reach from a gated ACTIVE to a tap under the well's own implant, 30 µm round and, in a
@@ -49,13 +49,24 @@ well, confined to that well, the way the IHP latch-up rules are read.
 of the V0 off the LIG must be two pieces, one either side, so the rule needs no
 LIG direction.
 M4–M7 even width multiples are checked through each layer's maximum width;
-widths above that maximum are rejected independently. Their even-track-count
-restrictions and some conditional tip-spacing rules remain unimplemented.
+widths above that maximum are rejected independently. Their routing grid and
+tracks are read from the manual's default offset of 0: ``AUX.1`` is
+:doc:`offgrid </checks/offgrid>` on the one coordinate the layer's edges run at, and
+``AUX.2`` and ``W.4`` are :doc:`offtrack </checks/offtrack>`, a wire's centre on the
+tracks two widths apart - a minimum-width wire lies on one, and a wider wire spans an
+odd number of them, which is the same wire centred on one. A design routed on other
+tracks sets the three rules' ``offset`` in each deck, from its tech LEF: the grid's
+offset on ``AUX.1``, and that plus half a width - the tracks' centreline - on ``AUX.2``
+and ``W.4``. Their conditional tip-spacing rules (``S.4``, ``S.5``) and ``AUX.4``
+remain unimplemented.
 V0–V3 ``S.1`` reads vias that face each other, on one track or on
 neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
 tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
 end-cap at 23, 30 or 27 nm; the 27 nm in the ``S.1`` row is ``S.4``'s value.
-``FIN.S.1``, an exact 27 nm pitch, is checked only as a space of at least 20 nm.
+``FIN.S.1`` and ``GATE.S.1``, the exact 27 and 54 nm pitches, are ``offtrack`` in the
+standard cells' frame - fins centred 13.5 nm and gates 27 nm past a multiple of the
+pitch, as every library cell has them and so every design placing them on the row and
+the site; a design drawn in another frame sets ``offset``.
 
 Via end-caps and local-interconnect nets
 ----------------------------------------
@@ -169,7 +180,7 @@ rotation, negative coordinates, SRAM selection, and geometry on or crossing tile
 boundaries.
 
 The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
-Rust CI. They cover the WELL rows, FIN, GATE and GCUT width, spacing, area,
+Rust CI. They cover the WELL rows, FIN, GATE and GCUT width, spacing, pitch, area,
 extension and shape rules, each gate with a partner one pitch along; every ACTIVE
 rule, the well thresholds inside, outside and across the SRAM marker among them;
 every SDT rule, the SRAM overlaps with absent and touching references among them;
@@ -177,7 +188,7 @@ every LISD and LIG rule, the net-gated LIG spacings with a same-net pair joined
 through V0 and M1 among them;
 every select and VT rule on all five layers; the geometry rule, a 45° chamfer on
 every layer it reads, and the same chamfers exempt under the SRAM marker; width, spacing, area and edge rules on every metal, including
-the length-class, corner, notch, even-width, wide-line and bent-wire cases; and every via level
+the length-class, corner, notch, even-width, wide-line, bent-wire, grid and track cases; and every via level
 in a whole stack: width, spacing, corner spacing by end-cap, both enclosures, the
 flush upper metal, coverage, V0 on LIG and partly on LISD, and each spacing and
 enclosure defect under the SRAM marker. Three routed upper-metal nets with a

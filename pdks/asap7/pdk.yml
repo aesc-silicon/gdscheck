@@ -247,6 +247,16 @@ virtual_layers:
   M5Bent: M5NoSram not_rectangle
   M6Bent: M6NoSram not_rectangle
   M7Bent: M7NoSram not_rectangle
+  # A routing layer's minimum-width wires, by the shorter side of the box, and the rest:
+  # a wire is on a track by its centre whichever it is, each under its own rule.
+  M4Track: M4NoSram with_bbox_min max 0.02425
+  M4Wide: M4NoSram not M4Track
+  M5Track: M5NoSram with_bbox_min max 0.02425
+  M5Wide: M5NoSram not M5Track
+  M6Track: M6NoSram with_bbox_min max 0.03225
+  M6Wide: M6NoSram not M6Track
+  M7Track: M7NoSram with_bbox_min max 0.03225
+  M7Wide: M7NoSram not M7Track
   # Whole ACTIVE polygons selected by positive-area SRAM marker overlap.
   ActiveSram: ACTIVE overlapping SRAMDRC
   ActiveNoSram: ACTIVE not_overlapping SRAMDRC

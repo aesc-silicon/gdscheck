@@ -10,8 +10,6 @@ use std::collections::BTreeMap;
 
 const PDK: &str = "asap7";
 
-/// The front-end and back-end suites split the full run between them: every deck is
-/// in one or the other, and none in both.
 #[test]
 fn the_feol_and_beol_suites_split_main() {
     let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).expect("PDK loads");
@@ -238,23 +236,35 @@ fn well(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     pattern("well", rule, variant, count, &ignore);
 }
 
-/// DRM 3.3: a fin runs along x, exactly 7 nm across and at least 108 nm long, on a
-/// 27 nm pitch, and does not bend. A fin a DBU narrow or wide has two failing walls,
-/// as does one a DBU short; a pair too close and a jogged fin give one each.
+/// DRM 3.3: a fin runs along x, exactly 7 nm across and at least 108 nm long, centred
+/// on a 27 nm pitch, and does not bend. A fin a DBU narrow or wide has two failing
+/// walls, as does one a DBU short; a fin a DBU under or over the pitch from its
+/// neighbour is off the pitch either way; a jogged fin gives one.
+///
+/// A fin a DBU narrow or wide, or jogged by a DBU, has its centre half a DBU off the
+/// pitch, so those tests ignore FIN.S.1.
 #[rstest]
 #[case("FIN.W.1", "narrow", 4)]
 #[case("FIN.W.2", "short", 2)]
-#[case("FIN.S.1", "close", 1)]
+#[case("FIN.S.1", "pitch", 2)]
 #[case("FIN.AUX.1", "bent", 1)]
 fn fin(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
-    pattern("fin", rule, variant, count, &[]);
+    let ignore = match rule {
+        "FIN.W.1" | "FIN.AUX.1" => vec!["FIN.S.1".to_string()],
+        _ => vec![],
+    };
+    pattern("fin", rule, variant, count, &ignore);
 }
 
-/// DRM 3.4: a gate runs along y, exactly 20 nm across, at least 40 nm tall, on a 54 nm
-/// pitch, and every gate drawn with a partner one pitch along for GATE.S.3. Narrow,
-/// wide or short gates have two failing walls each; a pair too close, a jogged gate and
-/// a short ACTIVE end give one; a gate a DBU short of ACTIVE fails on both gates of its
-/// pair; a lone gate and a pair a DBU too far apart give three GATE.S.3.
+/// DRM 3.4: a gate runs along y, exactly 20 nm across, at least 40 nm tall, centred on
+/// a 54 nm pitch, and every gate drawn with a partner one pitch along for GATE.S.3.
+/// Narrow, wide or short gates have two failing walls each; a pair too close, a jogged
+/// gate and a short ACTIVE end give one; a gate a DBU short of ACTIVE fails on both
+/// gates of its pair; a lone gate and a pair a DBU too far apart give three GATE.S.3; a
+/// pair a DBU off the pitch and one half a pitch off give four GATE.S.1.
+///
+/// A gate a DBU narrow or wide, a partner a DBU near or far and a jogged gate put a
+/// centre off the pitch, so those tests ignore GATE.S.1.
 ///
 /// An ACTIVE side inside a gate or flush with it also runs no way past the gate, which
 /// GATE.ACTIVE.EX.2 reads, so that rule is ignored. The flush side, on the gate's left
@@ -265,6 +275,7 @@ fn fin(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 #[rstest]
 #[case("GATE.W.1", "narrow", 4)]
 #[case("GATE.W.2", "short", 4)]
+#[case("GATE.S.1", "pitch", 4)]
 #[case("GATE.S.2", "close", 1)]
 #[case("GATE.S.3", "solitary", 3)]
 #[case("GATE.AUX.1", "bent", 1)]
@@ -275,6 +286,7 @@ fn fin(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 fn gate(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let ignore = match rule {
         "GATE.ACTIVE.AUX.3" => vec!["GATE.ACTIVE.EX.2".to_string()],
+        "GATE.W.1" | "GATE.S.2" | "GATE.S.3" | "GATE.AUX.1" => vec!["GATE.S.1".to_string()],
         _ => vec![],
     };
     pattern("gate", rule, variant, count, &ignore);
@@ -648,6 +660,9 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m4", "M4.S.2", "notch", 1)]
 #[case("m4", "M4.S.3", "corner", 1)]
 #[case("m4", "M4.AUX.3", "bent", 1)]
+#[case("m4", "M4.AUX.1", "offgrid", 4)]
+#[case("m4", "M4.AUX.2", "offtrack", 1)]
+#[case("m4", "M4.W.4", "span", 1)]
 #[case("m5", "M5.W.1", "narrow", 2)]
 #[case("m5", "M5.W.2", "wide", 2)]
 #[case("m5", "M5.W.3", "even", 4)]
@@ -658,6 +673,9 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m5", "M5.S.2", "notch", 1)]
 #[case("m5", "M5.S.3", "corner", 1)]
 #[case("m5", "M5.AUX.3", "bent", 1)]
+#[case("m5", "M5.AUX.1", "offgrid", 4)]
+#[case("m5", "M5.AUX.2", "offtrack", 1)]
+#[case("m5", "M5.W.4", "span", 1)]
 #[case("m6", "M6.W.1", "narrow", 2)]
 #[case("m6", "M6.W.2", "wide", 2)]
 #[case("m6", "M6.W.3", "even", 4)]
@@ -668,6 +686,9 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m6", "M6.S.2", "notch", 1)]
 #[case("m6", "M6.S.3", "corner", 1)]
 #[case("m6", "M6.AUX.3", "bent", 1)]
+#[case("m6", "M6.AUX.1", "offgrid", 4)]
+#[case("m6", "M6.AUX.2", "offtrack", 1)]
+#[case("m6", "M6.W.4", "span", 1)]
 #[case("m7", "M7.W.1", "narrow", 2)]
 #[case("m7", "M7.W.2", "wide", 2)]
 #[case("m7", "M7.W.3", "even", 4)]
@@ -678,6 +699,9 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m7", "M7.S.2", "notch", 1)]
 #[case("m7", "M7.S.3", "corner", 1)]
 #[case("m7", "M7.AUX.3", "bent", 1)]
+#[case("m7", "M7.AUX.1", "offgrid", 4)]
+#[case("m7", "M7.AUX.2", "offtrack", 1)]
+#[case("m7", "M7.W.4", "span", 1)]
 #[case("m8", "M8.W.1", "narrow", 4)]
 #[case("m8", "M8.W.2", "narrow", 2)]
 #[case("m8", "M8.W.3", "narrow", 2)]
@@ -710,12 +734,19 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m9", "M9.L.1", "step", 1)]
 fn metal(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let layer = &rule[..2];
-    let ignore = match &rule[3..] {
+    let mut ignore = match &rule[3..] {
         "W.1" if matches!(layer, "M8" | "M9") => vec![format!("{layer}.L.1")],
         "S.1" | "S.2" if variant == "notch" => vec![format!("{layer}.AUX.3")],
         "W.2" if variant == "wide" => vec![format!("{layer}.W.3")],
         _ => vec![],
     };
+    // The width, spacing and bend fixtures are not drawn on the routing grid - a wire a
+    // DBU narrow has a wall off it wherever it lies - so M4-M7's grid and track rules
+    // are ignored on every fixture but their own, which lie on the grid.
+    let grid = ["AUX.1", "AUX.2", "W.4"];
+    if matches!(layer, "M4" | "M5" | "M6" | "M7") && !grid.contains(&&rule[3..]) {
+        ignore.extend(grid.iter().map(|r| format!("{layer}.{r}")));
+    }
     pattern(deck, rule, variant, count, &ignore);
 }
 
@@ -731,6 +762,17 @@ fn routed_enclosure(#[case] variant: &str, #[case] count: usize) {
     let violations = run_drc(&path, PDK, &[], Some("main"), "TOP", false).expect("DRC run failed");
     let ids: Vec<_> = violations.iter().map(|v| v.rule_id.as_str()).collect();
     assert_eq!(ids, vec!["V8.M9.EN.2"; count], "{path}");
+}
+
+/// Whether a rule reads where a shape lies rather than what it is: the pitch, grid and
+/// track rules, which a drawing placed for its dimensions alone does not keep.
+fn placed(rule: &str) -> bool {
+    matches!(rule, "FIN.S.1" | "GATE.S.1")
+        || ["M4", "M5", "M6", "M7"].iter().any(|m| {
+            ["AUX.1", "AUX.2", "W.4"]
+                .iter()
+                .any(|r| rule == format!("{m}.{r}"))
+        })
 }
 
 /// Rectangles in nm, on ASAP7's 0.25 nm grid. Moving the same drawing across tile
@@ -810,7 +852,10 @@ fn directional_max_width_uses_the_routing_axis(
             } else {
                 (width, length)
             };
-            let v = rectangles(deck, &[(layer, [0.0, 0.0, x, y])], origin, tile);
+            let v: Vec<_> = rectangles(deck, &[(layer, [0.0, 0.0, x, y])], origin, tile)
+                .into_iter()
+                .filter(|v| !placed(&v.rule_id))
+                .collect();
             assert_eq!(
                 v.iter()
                     .filter(|v| v.rule_id == format!("{layer}.W.2"))
@@ -893,7 +938,10 @@ fn m1_to_m3_width_and_area_skip_shapes_overlapping_sramdrc(
         ] {
             let mut shapes = vec![(layer, [0.0, 0.0, width, height])];
             shapes.extend(marker.map(|m| ("SRAMDRC", m)));
-            let v = rectangles(deck, &shapes, origin, tile);
+            let v: Vec<_> = rectangles(deck, &shapes, origin, tile)
+                .into_iter()
+                .filter(|v| !placed(&v.rule_id))
+                .collect();
             assert_eq!(!v.is_empty(), bad, "{layer}, marker {marker:?}: {v:?}");
             assert!(v.iter().all(|v| v.rule_id == rule), "{v:?}");
         }
