@@ -267,11 +267,9 @@ fn fin(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 /// centre off the pitch, so those tests ignore GATE.S.1.
 ///
 /// An ACTIVE side inside a gate or flush with it also runs no way past the gate, which
-/// GATE.ACTIVE.EX.2 reads, so that rule is ignored. The flush side, on the gate's left
-/// wall, is reported twice: `inside_part` counts an edge on a polygon's left or bottom
-/// wall as inside it but not one on its right or top wall, so both of AUX.3's entries
-/// (inside, and coincident) see it. A side flush with a gate's right wall is reported
-/// once. When that asymmetry is fixed, this count drops to 2.
+/// GATE.ACTIVE.EX.2 reads, so that rule is ignored. The side inside and the side flush
+/// are one AUX.3 each: the inside entry reads the edges strictly inside the gate, and
+/// the coincident one those on its outline, so a flush side is reported once on any wall.
 #[rstest]
 #[case("GATE.W.1", "narrow", 4)]
 #[case("GATE.W.2", "short", 4)]
@@ -281,7 +279,7 @@ fn fin(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 #[case("GATE.AUX.1", "bent", 1)]
 #[case("GATE.ACTIVE.EX.1", "short", 2)]
 #[case("GATE.ACTIVE.EX.2", "short", 1)]
-#[case("GATE.ACTIVE.AUX.3", "inside", 3)]
+#[case("GATE.ACTIVE.AUX.3", "inside", 2)]
 #[case("GATE.ACTIVE.S.4", "close", 1)]
 fn gate(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let ignore = match rule {
@@ -342,9 +340,8 @@ fn lisd(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 /// A 16 nm LIG reaching under 8 nm into a LISD shares under 128 nm² with it, so A.2's
 /// test ignores OV.1. A LIG ending inside a gate shares 160 nm² with it, so AUX.1's
 /// test ignores A.3 - EX.1 reads only a gate wall the LIG covers, and says nothing of
-/// a LIG ending in or flush with one. The flush end on the gate's left wall is reported
-/// twice, as GATE.ACTIVE.AUX.3's is and for the same reason, so three until that is
-/// fixed, then two.
+/// a LIG ending in or flush with one. The end inside and the end flush are one AUX.1
+/// each, as GATE.ACTIVE.AUX.3's sides are.
 #[rstest]
 #[case("LIG.W.1", "narrow", 4)]
 #[case("LIG.A.1", "small", 1)]
@@ -362,7 +359,7 @@ fn lisd(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 #[case("LIG.GCUT.S.11", "close", 1)]
 #[case("LIG.GATE.EX.1", "short", 1)]
 #[case("LIG.GATE.A.3", "small", 1)]
-#[case("LIG.GATE.AUX.1", "inside", 3)]
+#[case("LIG.GATE.AUX.1", "inside", 2)]
 #[case("LIG.LISD.OV.1", "short", 1)]
 #[case("LIG.LISD.A.2", "small", 1)]
 #[case("SRAM.LIG.GATE.OV.2", "short", 1)]

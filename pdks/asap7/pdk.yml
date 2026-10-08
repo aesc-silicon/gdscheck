@@ -452,21 +452,23 @@ virtual_layers:
   M9NoSram.edges: M9NoSram edges
   M9NoSram.long: M9NoSram.edges with_length min 0.08
   M9NoSram.short: M9NoSram.edges with_length max 0.08
-  # Vertical edges lying inside a GATE, or on its outline.
+  # Vertical edges lying inside a GATE, or on its outline.  `inside_part` counts an edge
+  # on a region's wall as inside it, on every wall alike, so the inside layers take the
+  # outline away and leave a flush edge to the `OnGate` layer: one marker per edge.
   ACTIVE.edges: ACTIVE edges
   ActiveNoSram.edges: ActiveNoSram edges
   GcutNoSram.edges: GcutNoSram edges
   GATE.edges: GATE edges
   ActiveVEdges: ActiveNoSram.edges with_angle min 90.0 max 90.0
-  ActiveVEdgesInside: ActiveVEdges inside_part GATE
+  ActiveVEdgesInside: (ActiveVEdges inside_part GATE) not GATE.edges
   ActiveVEdgesOnGate: ActiveVEdges and GATE.edges
   # ACTIVE.W.2: every vertical edge of ordinary ACTIVE is a whole multiple of 27 nm.
   ActiveW2Off: ActiveVEdges without_length_multiple 0.027
   GcutVEdges: GcutNoSram.edges with_angle min 90.0 max 90.0
-  GcutVEdgesInside: GcutVEdges inside_part GATE
+  GcutVEdgesInside: (GcutVEdges inside_part GATE) not GATE.edges
   GcutVEdgesOnGate: GcutVEdges and GATE.edges
   LigVEdges: LigNoSram.edges with_angle min 90.0 max 90.0
-  LigVEdgesInside: LigVEdges inside_part GATE
+  LigVEdgesInside: (LigVEdges inside_part GATE) not GATE.edges
   LigVEdgesOnGate: LigVEdges and GATE.edges
   # ACTIVE.AUX.1: no ACTIVE edge on a select edge.
   Select.edges: Select edges
