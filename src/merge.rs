@@ -5574,7 +5574,7 @@ fn build_counted_selection_tiles(
         .by_tile
         .par_iter()
         .flat_map_iter(|(tile, polys)| {
-            let mut pairs: Vec<(usize, usize)> = Vec::new();
+            let mut pairs: HashSet<(usize, usize)> = HashSet::new();
             let mut fpolys: Vec<(&MergedPoly, usize)> = fl
                 .by_tile
                 .get(tile)
@@ -5589,19 +5589,39 @@ fn build_counted_selection_tiles(
             }
             let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
             let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
+            // The filter pieces filed by their boxes, held to the tile, so a candidate
+            // piece meets the few whose cells its box touches and not every piece of
+            // the tile; and the pairs met kept as a set, asked after the boxes.  Asked
+            // of a list before them, for every pair of pieces, the question grew with
+            // the pairs already met: ActiveBreak on sha256 - five thousand halo pieces
+            // against four thousand ACTIVE per tile - took eighteen minutes of a run
+            // whose rules took half a minute.
+            let (gx0, gy0) = (
+                tile.0.saturating_mul(tile_dbu),
+                tile.1.saturating_mul(tile_dbu),
+            );
+            let (gx1, gy1) = (gx0.saturating_add(tile_dbu), gy0.saturating_add(tile_dbu));
+            // Keep the original boxes for rejection checks without rescanning vertices.
+            let fboxes: Vec<_> = fpolys.iter().map(|(fp, _)| poly_bbox(fp)).collect();
+            let boxes: Vec<_> = fboxes
+                .iter()
+                .map(|b| (b.0.max(gx0), b.1.max(gy0), b.2.min(gx1), b.3.min(gy1)))
+                .collect();
+            let grid = CellGrid::new(gx0, gy0, tile_dbu, &boxes);
             for (poly, rid) in polys {
                 for piece in clip_to_box(vec![poly.clone()], cx0, cy0, cx1, cy1) {
                     let (x0, y0, x1, y1) = poly_bbox(&piece);
-                    for &(fp, frid) in &fpolys {
-                        if pairs.contains(&(*rid, frid)) {
-                            continue;
-                        }
-                        let (fx0, fy0, fx1, fy1) = poly_bbox(fp);
+                    for i in grid.covering((x0, y0, x1, y1)) {
+                        let (fp, frid) = fpolys[i as usize];
+                        let (fx0, fy0, fx1, fy1) = fboxes[i as usize];
                         if x1 < fx0 || fx1 < x0 || y1 < fy0 || fy1 < y0 {
                             continue;
                         }
+                        if pairs.contains(&(*rid, frid)) {
+                            continue;
+                        }
                         if piece_meets(kind, &piece, fp) {
-                            pairs.push((*rid, frid));
+                            pairs.insert((*rid, frid));
                         }
                     }
                 }

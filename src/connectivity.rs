@@ -29,8 +29,8 @@
 
 use crate::layout::FlatLayout;
 use crate::merge::{
-    LabeledRegions, MergedCache, TileMap, UnionFind, overlap_within, point_in_merged, poly_bbox,
-    stitch_labeled, stitch_labeled_indexed, stitch_regions_small,
+    CellGrid, LabeledRegions, MergedCache, TileMap, UnionFind, overlap_within, point_in_merged,
+    poly_bbox, stitch_labeled, stitch_labeled_indexed, stitch_regions_small,
 };
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
@@ -59,6 +59,33 @@ struct LayerData {
     sizes: Vec<RegionSize>,
     /// Whether `labeled.by_tile` is kept for point lookups (see [`Connectivity::keep_lookups`]).
     lookups: bool,
+    /// Per tile, the pieces of `labeled.by_tile` filed by their boxes, so a point is
+    /// looked up among the few whose cell holds it and not against every piece of the
+    /// tile.  A 20 µm tile of a 7 nm design holds thirty thousand pieces of M1 and
+    /// eighty thousand V0, each looked up on three layers: scanned, the lookups of
+    /// sha256 on ASAP7 were 73 s of a run whose rules took 12; filed, half a second.
+    grids: HashMap<(i32, i32), CellGrid>,
+}
+
+/// Each tile's pieces filed by their boxes, the boxes held to the tile: a point looked
+/// up in a tile lies in it, and a rail across the chip is filed in the tile's cells only.
+fn piece_grids(labeled: &LabeledRegions, tile_dbu: i32) -> HashMap<(i32, i32), CellGrid> {
+    labeled
+        .by_tile
+        .par_iter()
+        .map(|(&(tx, ty), pieces)| {
+            let (x0, y0) = (tx.saturating_mul(tile_dbu), ty.saturating_mul(tile_dbu));
+            let (x1, y1) = (x0.saturating_add(tile_dbu), y0.saturating_add(tile_dbu));
+            let boxes: Vec<_> = pieces
+                .iter()
+                .map(|(p, _)| {
+                    let b = poly_bbox(p);
+                    (b.0.max(x0), b.1.max(y0), b.2.min(x1), b.3.min(y1))
+                })
+                .collect();
+            ((tx, ty), CellGrid::new(x0, y0, tile_dbu, &boxes))
+        })
+        .collect()
 }
 
 /// A layer that only ever bridges: its regions, and for each the node of a conductor
@@ -298,6 +325,7 @@ impl Connectivity {
             if indexed {
                 let base = next_base;
                 next_base += labeled.regions.len();
+                let grids = piece_grids(&labeled, tile_dbu);
                 layers.insert(
                     key,
                     LayerData {
@@ -305,6 +333,7 @@ impl Connectivity {
                         base,
                         sizes: Vec::new(),
                         lookups: true,
+                        grids,
                     },
                 );
             } else {
@@ -619,6 +648,7 @@ impl Connectivity {
         for (key, d) in self.layers.iter_mut() {
             if !keep.contains(key) {
                 d.labeled.by_tile = HashMap::new();
+                d.grids = HashMap::new();
                 d.lookups = false;
             }
         }
@@ -809,7 +839,11 @@ fn region_node_at(
     let t = tile_dbu as f64;
     let tile = ((x / t).floor() as i32, (y / t).floor() as i32);
     let polys = data.labeled.by_tile.get(&tile)?;
-    for (poly, region) in polys {
+    // Only the pieces whose box reaches the point's cell; a box is filed in every cell
+    // it covers, so the piece holding the point is among them.
+    let grid = data.grids.get(&tile)?;
+    for &i in grid.at(x.floor() as i32, y.floor() as i32) {
+        let (poly, region) = &polys[i as usize];
         if point_in_merged(x, y, poly) {
             return Some(data.base + region);
         }

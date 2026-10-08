@@ -19,6 +19,17 @@ Checks
   the routing-track rules of a one-way metal, and an exact gate or fin pitch.
 * ``offgrid`` takes ``facing`` (one coordinate instead of both) and ``offset``.
 
+Performance
+~~~~~~~~~~~
+
+* A counted ``interacting`` / ``not_interacting`` (``min``/``max``) no longer asks a
+  growing list, for every pair of pieces in a tile, whether the pair was met already:
+  ASAP7's ``ACTIVE.S.2A`` chain on a 66 µm SHA-256 took eighteen minutes to build, and
+  now takes under a second.
+* Net extraction looks a via up among the conductor pieces filed in its cell rather than
+  every piece of the tile: 73 s to half a second on the same design, whose 20 µm tiles
+  hold thirty thousand pieces of M1.
+
 v0.2.0 (2026-10-05)
 -------------------
 
