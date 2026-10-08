@@ -28,6 +28,12 @@ Differences from SG13G2
 * No HBT module and no MIM capacitors — the ``npn``, ``sdiod``, ``nmosi``, ``nbulay``,
   ``nbulayblock`` and ``mim`` decks don't exist for this process (their layers are
   forbidden, see below), so there is nothing for them to check.
+* No generated nBuLay: SG13G2 grows one 1.0 µm inside every NWell at least 3.0 µm wide
+  (its section 4.2), CMOS5L's section 4 has no such layer. ``AFil.d`` and ``GFil.e``
+  hold a filler off the NWell alone, and a ContBar in a SalBlock / nSD:block /
+  PWell:block stack is no Schottky diode, so ``CntB.a``, ``NW.c1``, ``NW.e1``,
+  ``PWB.f1`` and ``LU.d`` apply to it. CMOS5L redefines ``nBuLayDerived`` as the drawn
+  layer, which is forbidden.
 * A 4-metal stack: no ``Metal5``, ``via4``, ``topvia2``, ``topmetal2`` decks.
 * ``TopVia1`` lands directly on **Metal4** (there's no Metal5 underneath it as there is
   in SG13G2) — ``TV1.c`` encloses ``TopVia1`` in Metal4 at 0.10 µm instead of Metal5.
