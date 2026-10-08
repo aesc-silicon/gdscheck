@@ -157,3 +157,8 @@ virtual_layers:
   DfpadNoTopMetal1: dfpad not TopMetal1
   Metal4Dfpad: Metal4 and dfpad
   TopVia1UnderPad: TopVia1 and PassivDfpad
+  # Section 4: CMOS5L's derived layers have no nBuLay - nothing is generated under a
+  # wide NWell, and the drawn layer is forbidden (3.2).  SG13G2's generated nBuLay
+  # would hold every filler 1.0 off a buried layer here (AFil.d, GFil.e) and read a
+  # Schottky diode CMOS5L does not have (CntB.a, NW.c1, NW.e1, PWB.f1, LU.d).
+  nBuLayDerived: nBuLay not nBuLay.block
