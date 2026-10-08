@@ -15,7 +15,6 @@ use crate::layout::FlatLayout;
 use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
-use rayon::prelude::*;
 
 /// Which side of a feature's box a rule bounds.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -41,12 +40,9 @@ impl Axis {
 }
 
 /// Drive a bounding-box extent check over the layer's stitched regions: one point
-/// violation per offending region, at the region's marker.  The extent is the union of
-/// the region's pieces' bounding boxes, each piece cut to its tile core, so a region of
-/// any size is measured whole without any tile holding a whole copy of it - which is
-/// what the check used to need, a halo the size of its value on the drawn layers under
-/// the region: MDP.13a's 50 µm on a dense COMP was 21 copies of every shape.  An extent
-/// is a difference of two coordinates, and the bound on the grid reads it exactly.
+/// violation per offending region, at the region's marker.  The box is read whole
+/// across tiles by [`super::region_boxes`]; an extent is a difference of two
+/// coordinates, and the bound on the grid reads it exactly.
 pub fn run(
     kind: Kind,
     axis: Axis,
@@ -71,7 +67,6 @@ pub fn run(
         layer.name
     );
 
-    let tile = merged.tile_dbu() as i64;
     let rid = rule.id.as_str();
     let lname = layer.name.as_str();
     let limit_um = rule.value;
@@ -84,42 +79,14 @@ pub fn run(
         Axis::Long => format!("{} length violation", kind.word()),
     };
 
-    let labeled = crate::merge::stitch_labeled(&merged.tiles(gl, gd), merged.tile_dbu());
-    let per_tile: Vec<Vec<(usize, crate::merge::BBoxDbu)>> = labeled
-        .by_tile
-        .par_iter()
-        .map(|(&(tx, ty), polys)| {
-            let core = (
-                tx as i64 * tile,
-                ty as i64 * tile,
-                (tx as i64 + 1) * tile,
-                (ty as i64 + 1) * tile,
-            );
-            polys
-                .iter()
-                .filter_map(|(m, r)| crate::merge::core_clipped_bbox(m, core).map(|b| (*r, b)))
-                .collect()
-        })
-        .collect();
-    let mut bbox: Vec<Option<(i32, i32, i32, i32)>> = vec![None; labeled.regions.len()];
-    for v in per_tile {
-        for (r, b) in v {
-            bbox[r] = Some(match bbox[r] {
-                None => b,
-                Some(a) => (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3)),
-            });
-        }
-    }
-    bbox.iter()
-        .enumerate()
-        .filter_map(|(r, b)| {
-            let (x0, y0, x1, y1) = (*b)?;
+    super::region_boxes(merged, gl, gd)
+        .into_iter()
+        .filter_map(|((cx, cy), (x0, y0, x1, y1))| {
             let (w, h) = ((x1 - x0) as i64, (y1 - y0) as i64);
             let extent = if long { w.max(h) } else { w.min(h) };
             if !limit.broken_by(extent) {
                 return None;
             }
-            let (cx, cy) = labeled.regions[r].marker;
             let (ux, uy) = (cx * dbu_to_um, cy * dbu_to_um);
             Some(Violation::point(
                 rid,

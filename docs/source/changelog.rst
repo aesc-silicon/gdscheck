@@ -9,6 +9,16 @@ Changelog
 user-visible changes: new checks, new PDKs, breaking deck/CLI changes and notable
 correctness fixes. The commit history is the full record of what changed and why.
 
+Unreleased
+----------
+
+Checks
+~~~~~~
+
+* New: ``offtrack``, a region's centreline across one axis on a pitch from an offset -
+  the routing-track rules of a one-way metal, and an exact gate or fin pitch.
+* ``offgrid`` takes ``facing`` (one coordinate instead of both) and ``offset``.
+
 v0.2.0 (2026-10-05)
 -------------------
 

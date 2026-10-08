@@ -48,5 +48,6 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    no_hole
    no_ring
    offgrid
+   offtrack
    ring_covers_boundary
    wide_uncovered

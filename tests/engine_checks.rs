@@ -1278,3 +1278,42 @@ fn a_whole_selection_keeps_only_what_its_boolean_is(
     );
     assert_eq!(count("selection", pattern, "SEL.reach"), 0, "{pattern}");
 }
+
+/// Grids and tracks, on the drawings in `gen/engine/grid.rs`: vertices on a grid from
+/// the origin on both coordinates (`G.both`) and from an offset on one (`G.y`), and a
+/// region's centreline across an axis on a pitch (`T.y` from an offset, `T.x` from the
+/// origin) - a half-DBU centre read exactly, a region whole across a tile line, an L by
+/// its box, and negative coordinates for each.  Every Via shape is read by both track
+/// rules, so each case says what the other sees too.
+#[rstest]
+#[case("grid_on", "G.both", 0)]
+#[case("grid_x_off", "G.both", 4)]
+#[case("grid_corner", "G.both", 2)]
+#[case("grid_negative", "G.both", 4)]
+#[case("grid_inner", "G.both", 0)]
+#[case("grid_tile_line", "G.both", 4)]
+#[case("offset_on", "G.y", 0)]
+#[case("offset_off", "G.y", 4)]
+#[case("offset_negative_on", "G.y", 0)]
+#[case("offset_negative_off", "G.y", 4)]
+#[case("offset_tile_line", "G.y", 0)]
+#[case("track_on", "T.y", 0)]
+#[case("track_on", "T.x", 0)]
+#[case("track_off", "T.y", 1)]
+#[case("track_off", "T.x", 0)]
+#[case("track_half", "T.x", 1)]
+#[case("track_half", "T.y", 0)]
+#[case("track_tile_line", "T.y", 1)]
+#[case("track_tile_line", "T.x", 0)]
+#[case("track_bent_on", "T.y", 0)]
+#[case("track_bent_on", "T.x", 0)]
+#[case("track_bent_off", "T.y", 1)]
+#[case("track_negative", "T.y", 1)]
+#[case("track_negative", "T.x", 0)]
+fn grid_rules_read_the_offset_and_the_centreline(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("grid", pattern, rule), expected, "{pattern}: {rule}");
+}

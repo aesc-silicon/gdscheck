@@ -90,3 +90,13 @@ pub fn facing_axis(rule: &RuleDefinition, name: &str) -> Option<Option<Axis>> {
         _ => None,
     })
 }
+
+/// The `offset` param in µm - where a grid or the tracks start - 0 where the deck wrote
+/// nothing; `None` if it wrote a word, which the rule has said.
+pub fn offset(rule: &RuleDefinition) -> Option<f64> {
+    if rule.params.contains_key("offset") {
+        rule.num("offset")
+    } else {
+        Some(0.0)
+    }
+}
