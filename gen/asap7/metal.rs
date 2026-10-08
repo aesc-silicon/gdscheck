@@ -84,8 +84,8 @@ fn lower(c: &Corpus<'_>, n: u8) {
 }
 
 /// M4-M7 (DRM 3.14-3.17): width and space across the track and along it, the corner
-/// spacing, the notch both ways, the maximum width and the even widths. `across` is
-/// the track width; `horizontal` says the layer routes along x.
+/// spacing, the notch both ways, the maximum width, the even widths and the bend.
+/// `across` is the track width; `horizontal` says the layer routes along x.
 fn routing(c: &Corpus<'_>, n: u8, across: f64, horizontal: bool) {
     let deck = format!("m{n}");
     let l = c.layer(&format!("M{n}"));
@@ -206,6 +206,24 @@ fn routing(c: &Corpus<'_>, n: u8, across: f64, horizontal: bool) {
         pg(l, &p.map(at))
     });
     c.write(&deck, &id("S.2.notch"), true, notches.to_vec());
+    // A straight wire, then one that jogs across the track by a DBU half way along:
+    // each half is a track wide and longer than the shortest wire, so only the bend
+    // is wrong.
+    let half = RUN / 2.0;
+    let jog = [
+        (0.0, 0.0),
+        (half, 0.0),
+        (half, DBU),
+        (2.0 * half, DBU),
+        (2.0 * half, DBU + w),
+        (half, DBU + w),
+        (half, w),
+        (0.0, w),
+    ];
+    let mut elems = boxes(l, &[wire(2.0 * half, w)], OFFSET, OFFSET);
+    let lift = |(a, b): (f64, f64)| at((a, b + w + ROOM));
+    elems.push(pg(l, &jog.map(lift)));
+    c.write(&deck, &id("AUX.3.bent"), true, elems);
 }
 
 /// M8/M9 (DRM 3.18/3.19): the base width, the three length-gated tiers and the

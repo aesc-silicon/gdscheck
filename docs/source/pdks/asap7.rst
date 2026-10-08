@@ -177,7 +177,7 @@ every LISD and LIG rule, the net-gated LIG spacings with a same-net pair joined
 through V0 and M1 among them;
 every select and VT rule on all five layers; the geometry rule, a 45° chamfer on
 every layer it reads, and the same chamfers exempt under the SRAM marker; width, spacing, area and edge rules on every metal, including
-the length-class, corner, notch, even-width and wide-line cases; and every via level
+the length-class, corner, notch, even-width, wide-line and bent-wire cases; and every via level
 in a whole stack: width, spacing, corner spacing by end-cap, both enclosures, the
 flush upper metal, coverage, V0 on LIG and partly on LISD, and each spacing and
 enclosure defect under the SRAM marker. Three routed upper-metal nets with a
@@ -193,4 +193,5 @@ verifies that the deck values agree with them. Regenerate with
 Expected violation counts live in ``tests/asap7.rs``. A fixture must report only
 its target rule, with the expected count; where two rules overlap by their nature -
 a via missing a layer also fails its enclosure, say - the test names the other rule
-and ignores it.
+and ignores it. A test there also checks that every rule in every deck has a fixture,
+and that every fixture names a rule its deck still has.

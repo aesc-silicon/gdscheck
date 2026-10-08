@@ -36,6 +36,43 @@ fn the_feol_and_beol_suites_split_main() {
 // Expected counts follow the drawings and the DRM. Each case checks its whole deck,
 // with explicit exceptions for intentionally omitted via landing layers.
 
+/// Every rule in every deck has a generated fixture, and every fixture names a rule
+/// its deck still has: coverage cannot shrink, and a rename cannot strand a drawing.
+/// A fixture is `<rule>.<case>.<polarity>.gds.gz`, the rule id the only part with dots.
+#[test]
+fn every_rule_has_a_generated_fixture() {
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    for deck in &pdk.decks {
+        let ids: std::collections::BTreeSet<String> = pdk
+            .load_deck(&deck.name)
+            .unwrap()
+            .into_iter()
+            .map(|r| r.id)
+            .collect();
+        let dir = format!("tests/data/asap7/generated/{}", deck.name);
+        let mut drawn = std::collections::BTreeSet::new();
+        for entry in std::fs::read_dir(&dir).unwrap_or_else(|e| panic!("{dir}: {e}")) {
+            let name = entry.unwrap().file_name().into_string().unwrap();
+            let stem = name
+                .strip_suffix(".gds.gz")
+                .unwrap_or_else(|| panic!("{dir}/{name} is not a fixture"));
+            let rule = stem.rsplitn(3, '.').last().unwrap();
+            assert!(
+                ids.contains(rule),
+                "{dir}/{name}: {} has no rule {rule}",
+                deck.name
+            );
+            drawn.insert(rule.to_string());
+        }
+        let missing: Vec<&String> = ids.difference(&drawn).collect();
+        assert!(
+            missing.is_empty(),
+            "{}: no fixture for {missing:?}",
+            deck.name
+        );
+    }
+}
+
 /// A good fixture is silent; a bad fixture reports only its target rule, with the
 /// expected count, after excluding documented incidental rules.
 fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[String]) {
@@ -610,6 +647,7 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m4", "M4.S.2", "close", 1)]
 #[case("m4", "M4.S.2", "notch", 1)]
 #[case("m4", "M4.S.3", "corner", 1)]
+#[case("m4", "M4.AUX.3", "bent", 1)]
 #[case("m5", "M5.W.1", "narrow", 2)]
 #[case("m5", "M5.W.2", "wide", 2)]
 #[case("m5", "M5.W.3", "even", 4)]
@@ -619,6 +657,7 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m5", "M5.S.2", "close", 1)]
 #[case("m5", "M5.S.2", "notch", 1)]
 #[case("m5", "M5.S.3", "corner", 1)]
+#[case("m5", "M5.AUX.3", "bent", 1)]
 #[case("m6", "M6.W.1", "narrow", 2)]
 #[case("m6", "M6.W.2", "wide", 2)]
 #[case("m6", "M6.W.3", "even", 4)]
@@ -628,6 +667,7 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m6", "M6.S.2", "close", 1)]
 #[case("m6", "M6.S.2", "notch", 1)]
 #[case("m6", "M6.S.3", "corner", 1)]
+#[case("m6", "M6.AUX.3", "bent", 1)]
 #[case("m7", "M7.W.1", "narrow", 2)]
 #[case("m7", "M7.W.2", "wide", 2)]
 #[case("m7", "M7.W.3", "even", 4)]
@@ -637,6 +677,7 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m7", "M7.S.2", "close", 1)]
 #[case("m7", "M7.S.2", "notch", 1)]
 #[case("m7", "M7.S.3", "corner", 1)]
+#[case("m7", "M7.AUX.3", "bent", 1)]
 #[case("m8", "M8.W.1", "narrow", 4)]
 #[case("m8", "M8.W.2", "narrow", 2)]
 #[case("m8", "M8.W.3", "narrow", 2)]
