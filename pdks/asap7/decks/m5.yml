@@ -13,8 +13,12 @@
 # design routed on other tracks sets `offset` on AUX.1 to its grid's, and on AUX.2 and
 # W.4 to its tracks' centreline, the grid's offset plus half a width.
 #
-# Not checked: M5.S.4 and M5.S.5, the tip-to-tip space and the run two lines on adjacent
-# tracks share; and M5.AUX.4, a wide wire's outside edge on a track's edge.
+# Two wires on adjacent tracks - their long walls facing across x with nothing routable
+# between, under three widths (72 nm) - that run alongside at all run alongside for S.5's
+# 44 nm, and their tips on one side are aligned or S.4's 40 nm apart (DRM fig. 3.14.2(d)).
+# Two that do not run alongside are S.3's corner.
+#
+# Not checked: M5.AUX.4, a wide wire's outside edge on a track's edge.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: M5.W.1
@@ -79,6 +83,20 @@ rules:
     value: 0.04
     params:
       facing: none
+  - id: M5.S.4
+    check: min_tip_stagger
+    layers: [M5NoSram]
+    value: 0.04
+    params:
+      facing: x
+      within: 0.072
+  - id: M5.S.5
+    check: min_track_run
+    layers: [M5NoSram]
+    value: 0.044
+    params:
+      facing: x
+      within: 0.072
   - id: M5.AUX.1
     check: offgrid
     layers: [M5NoSram]

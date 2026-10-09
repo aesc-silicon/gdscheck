@@ -618,6 +618,8 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 ///   patterns, narrow once in x and once in y, give four, as do the two even widths;
 /// - a pair too close, a notch too narrow, a rectangle under the area floor and an
 ///   edge too short each give one;
+/// - M4-M7 S.5 gives two: a short run on neighbouring tracks, and one beside a
+///   three-width wire with no track free between, where two tracks apart is clean;
 /// - some rules overlap by their nature, and the patterns ignore the other one: every
 ///   M8/M9 rectangle narrower than 40 nm has edges under L.1's 40 nm; every M4-M7
 ///   notch makes a non-rectangle, which AUX.3 forbids; and the widest M4-M7 wire is
@@ -656,6 +658,8 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m4", "M4.S.2", "close", 1)]
 #[case("m4", "M4.S.2", "notch", 1)]
 #[case("m4", "M4.S.3", "corner", 1)]
+#[case("m4", "M4.S.4", "stagger", 1)]
+#[case("m4", "M4.S.5", "run", 2)]
 #[case("m4", "M4.AUX.3", "bent", 1)]
 #[case("m4", "M4.AUX.1", "offgrid", 4)]
 #[case("m4", "M4.AUX.2", "offtrack", 1)]
@@ -669,6 +673,8 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m5", "M5.S.2", "close", 1)]
 #[case("m5", "M5.S.2", "notch", 1)]
 #[case("m5", "M5.S.3", "corner", 1)]
+#[case("m5", "M5.S.4", "stagger", 1)]
+#[case("m5", "M5.S.5", "run", 2)]
 #[case("m5", "M5.AUX.3", "bent", 1)]
 #[case("m5", "M5.AUX.1", "offgrid", 4)]
 #[case("m5", "M5.AUX.2", "offtrack", 1)]
@@ -682,6 +688,8 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m6", "M6.S.2", "close", 1)]
 #[case("m6", "M6.S.2", "notch", 1)]
 #[case("m6", "M6.S.3", "corner", 1)]
+#[case("m6", "M6.S.4", "stagger", 1)]
+#[case("m6", "M6.S.5", "run", 2)]
 #[case("m6", "M6.AUX.3", "bent", 1)]
 #[case("m6", "M6.AUX.1", "offgrid", 4)]
 #[case("m6", "M6.AUX.2", "offtrack", 1)]
@@ -695,6 +703,8 @@ fn via(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 #[case("m7", "M7.S.2", "close", 1)]
 #[case("m7", "M7.S.2", "notch", 1)]
 #[case("m7", "M7.S.3", "corner", 1)]
+#[case("m7", "M7.S.4", "stagger", 1)]
+#[case("m7", "M7.S.5", "run", 2)]
 #[case("m7", "M7.AUX.3", "bent", 1)]
 #[case("m7", "M7.AUX.1", "offgrid", 4)]
 #[case("m7", "M7.AUX.2", "offtrack", 1)]

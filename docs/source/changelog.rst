@@ -17,6 +17,8 @@ PDKs
 
 * IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
   the SRAM marker, at the values of IHP's own SRAM bit cells.
+* ASAP7: M4-M7 ``S.4`` and ``S.5``, the tip stagger and the parallel run of two wires on
+  adjacent tracks.
 
 Checks
 ~~~~~~
@@ -24,6 +26,8 @@ Checks
 * New: ``offtrack``, a region's centreline across one axis on a pitch from an offset -
   the routing-track rules of a one-way metal, and an exact gate or fin pitch.
 * ``offgrid`` takes ``facing`` (one coordinate instead of both) and ``offset``.
+* New: ``min_track_run`` and ``min_tip_stagger``, the run two wires on adjacent routing
+  tracks share and the stagger of their tips on one side.
 
 Performance
 ~~~~~~~~~~~

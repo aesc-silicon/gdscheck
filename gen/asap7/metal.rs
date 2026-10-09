@@ -5,8 +5,8 @@
 //! Width, space, area and edge patterns for M1-M9 (DRM 3.12-3.18). Each pattern leads
 //! with the shape exactly at the limit, then one DBU past it.
 //!
-//! Not drawn here: the rules each deck lists as not checked (M4-M7 even track counts,
-//! tip-to-tip runs on adjacent tracks, the routing grid).
+//! Not drawn here: the rules each deck lists as not checked (M4-M7 AUX.4, a wide wire's
+//! outside edge on a track's edge).
 
 use super::patterns::{ROOM, boxes, boxes_apart, bx, corner_pairs, gap_pairs, pg, stacked_pairs};
 use super::{Corpus, DBU};
@@ -84,7 +84,7 @@ fn lower(c: &Corpus<'_>, n: u8) {
 }
 
 /// M4-M7 (DRM 3.14-3.17): width and space across the track and along it, the corner
-/// spacing, the notch both ways, the maximum width, the even widths and the bend.
+/// spacing, the run and tip stagger on adjacent tracks, the notch both ways, the maximum width, the even widths and the bend.
 /// `across` is the track width; `horizontal` says the layer routes along x.
 fn routing(c: &Corpus<'_>, n: u8, across: f64, horizontal: bool) {
     let deck = format!("m{n}");
@@ -163,6 +163,48 @@ fn routing(c: &Corpus<'_>, n: u8, across: f64, horizontal: bool) {
     let offsets = [(24.0, 32.0), (24.0, 32.0 - DBU)];
     let pairs = corner_pairs(l, wire(RUN, w), &offsets, OFFSET, OFFSET);
     c.write(&deck, &id("S.3.corner"), true, pairs);
+
+    // Two wires on adjacent tracks, a side's space apart. A wire `len` long and `wide`
+    // across whose lower wall is `b` across the track and whose tip is `a` along it.
+    let place_wide = |a: f64, b: f64, len: f64, wide: f64| {
+        let (x, y) = at((a, b));
+        let (bw, bh) = wire(len, wide);
+        bx(l, x, y, bw, bh)
+    };
+    let place = |a: f64, b: f64, len: f64| place_wide(a, b, len, w);
+    // The upper wire runs alongside the lower for S.5's 44 nm, then a DBU less; its
+    // tips are far from the lower wire's. Then the same short run two tracks apart,
+    // three widths, where a wire fits between and the two are not adjacent; and beside
+    // a three-width wire two widths away, where none does and they are: two of the
+    // four short runs.
+    let run = c.drm(&id("S.5"), "min_track_run", 44.0);
+    let within = c.drm_param(&id("S.5"), "min_track_run", "within", 3.0 * w);
+    let mut b = 0.0;
+    let mut elems = vec![];
+    for (r, lower, gap) in [
+        (run, w, side),
+        (run - DBU, w, side),
+        (run - DBU, w, within),
+        (run - DBU, 3.0 * w, 2.0 * w),
+    ] {
+        elems.push(place_wide(0.0, b, RUN, lower));
+        elems.push(place(RUN - r, b + lower + gap, RUN));
+        b += lower + gap + w + ROOM;
+    }
+    c.write(&deck, &id("S.5.run"), true, elems);
+
+    // The upper wire's left tip S.4's 40 nm past the lower one's, then a DBU less; the
+    // right tips are aligned, which is clean.
+    let stagger = c.drm(&id("S.4"), "min_tip_stagger", 40.0);
+    c.drm_param(&id("S.4"), "min_tip_stagger", "within", 3.0 * w);
+    let mut b = 0.0;
+    let mut elems = vec![];
+    for s in [stagger, stagger - DBU] {
+        elems.push(place(0.0, b, RUN));
+        elems.push(place(s, b + w + side, RUN - s));
+        b += 2.0 * w + side + ROOM;
+    }
+    c.write(&deck, &id("S.4.stagger"), true, elems);
 
     // A slot whose walls face across the track: two `w` arms with the gap between,
     // cut from the far end half way back.

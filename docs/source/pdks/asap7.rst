@@ -57,8 +57,10 @@ tracks two widths apart - a minimum-width wire lies on one, and a wider wire spa
 odd number of them, which is the same wire centred on one. A design routed on other
 tracks sets the three rules' ``offset`` in each deck, from its tech LEF: the grid's
 offset on ``AUX.1``, and that plus half a width - the tracks' centreline - on ``AUX.2``
-and ``W.4``. Their conditional tip-spacing rules (``S.4``, ``S.5``) and ``AUX.4``
-remain unimplemented.
+and ``W.4``. ``S.5`` is :doc:`min_track_run </checks/min_track_run>` and ``S.4``
+:doc:`min_tip_stagger </checks/min_tip_stagger>`: two wires on adjacent tracks - nothing
+routable between them, a gap under three widths - share 44 nm of run or none, and
+their tips on one side are aligned or 40 nm apart. ``AUX.4`` remains unimplemented.
 V0–V3 ``S.1`` reads vias that face each other, on one track or on
 neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
 tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
