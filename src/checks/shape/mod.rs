@@ -79,6 +79,35 @@ pub fn region_boxes(
     gl: i16,
     gd: i16,
 ) -> Vec<((f64, f64), crate::merge::BBoxDbu)> {
+    region_boxes_areas(merged, gl, gd)
+        .into_iter()
+        .map(|(marker, b, _)| (marker, b))
+        .collect()
+}
+
+/// The regions of [`region_boxes`] that are rectangles - whose area fills their box - as
+/// their marker and box: a wire on a routing layer that may not bend, read by its extent.
+pub fn region_rects(
+    merged: &crate::merge::SharedCache,
+    gl: i16,
+    gd: i16,
+) -> Vec<((f64, f64), crate::merge::BBoxDbu)> {
+    region_boxes_areas(merged, gl, gd)
+        .into_iter()
+        .filter(|&(_, (x0, y0, x1, y1), area)| {
+            let full = (x1 as f64 - x0 as f64) * (y1 as f64 - y0 as f64);
+            (full - area).abs() < 0.5
+        })
+        .map(|(marker, b, _)| (marker, b))
+        .collect()
+}
+
+/// [`region_boxes`] with each region's area in DBU².
+fn region_boxes_areas(
+    merged: &crate::merge::SharedCache,
+    gl: i16,
+    gd: i16,
+) -> Vec<((f64, f64), crate::merge::BBoxDbu, f64)> {
     use rayon::prelude::*;
     let tile = merged.tile_dbu() as i64;
     let labeled = crate::merge::stitch_labeled(&merged.tiles(gl, gd), merged.tile_dbu());
@@ -111,6 +140,6 @@ pub fn region_boxes(
         .regions
         .iter()
         .zip(bbox)
-        .filter_map(|(region, b)| Some((region.marker, b?)))
+        .filter_map(|(region, b)| Some((region.marker, b?, region.area_dbu)))
         .collect()
 }

@@ -81,6 +81,12 @@ pub fn run_rule(
         "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => space::run_min_overlap(rule, layout, dbu_to_um, merged),
         "max_space" => space::max::run(rule, layout, dbu_to_um, merged),
+        "min_track_run" => {
+            space::track::run(space::track::Kind::Run, rule, layout, dbu_to_um, merged)
+        }
+        "min_tip_stagger" => {
+            space::track::run(space::track::Kind::Stagger, rule, layout, dbu_to_um, merged)
+        }
         // Enclosure: the margin of one region inside another.
         "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
