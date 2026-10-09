@@ -757,6 +757,49 @@ fn metal(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] 
     pattern(deck, rule, variant, count, &ignore);
 }
 
+/// The rules the ASAP7 tech LEF falls short of are marked so in their decks, each with
+/// how - and no others - and their violations carry it.
+#[test]
+fn rules_the_tech_lef_falls_short_of() {
+    use gdscheck::pdk::TechLef::{Absent, Partial, Weaker};
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let mut marked = std::collections::BTreeMap::new();
+    for deck in &pdk.decks {
+        for r in pdk.load_deck(&deck.name).unwrap() {
+            if let Some(t) = r.tech_lef {
+                marked.insert(r.id, t);
+            }
+        }
+    }
+    let mut expected: std::collections::BTreeMap<String, _> = (4..=7)
+        .flat_map(|n| [(format!("M{n}.S.4"), Absent), (format!("M{n}.S.5"), Absent)])
+        .collect();
+    for (id, t) in [
+        ("M1.S.2", Partial),
+        ("M1.S.3", Absent),
+        ("M1.S.4", Partial),
+        ("M1.S.5", Partial),
+        ("M1.S.6", Weaker),
+        ("V0.M1.AUX.3", Absent),
+        ("V1.M1.EN.1", Absent),
+        ("V6.S.2", Weaker),
+    ] {
+        expected.insert(id.to_string(), t);
+    }
+    assert_eq!(marked, expected);
+
+    let path = "tests/data/asap7/generated/m4/M4.S.5.run.bad.gds.gz";
+    let found = run_drc(path, PDK, &["m4"], None, "TOP", false).expect("DRC run failed");
+    let run: Vec<_> = found.iter().filter(|v| v.rule_id == "M4.S.5").collect();
+    assert!(!run.is_empty() && run.iter().all(|v| v.tech_lef == Some(Absent)));
+    assert!(
+        found
+            .iter()
+            .filter(|v| v.rule_id != "M4.S.5")
+            .all(|v| v.tech_lef.is_none())
+    );
+}
+
 /// DRM 3.19: three clean upper-metal nets; shortening M9's end-cap from exactly
 /// 20 nm to 19.75 nm introduces one V8 enclosure violation in the whole main suite.
 #[rstest]

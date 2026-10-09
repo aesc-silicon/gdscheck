@@ -18,7 +18,11 @@ PDKs
 * IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
   the SRAM marker, at the values of IHP's own SRAM bit cells.
 * ASAP7: M4-M7 ``S.4`` and ``S.5``, the tip stagger and the parallel run of two wires on
-  adjacent tracks.
+  adjacent tracks.  Neither is in the ASAP7 tech LEF (nor LambdaPDK's copy of it), and
+  both say so.
+* ASAP7: the rules the tech LEF falls short of say how - ``M1.S.3``, ``V0.M1.AUX.3`` and
+  ``V1.M1.EN.1`` absent, ``M1.S.2``/``.S.4``/``.S.5`` partial, ``M1.S.6`` and
+  ``V6.S.2`` weaker.
 
 Checks
 ~~~~~~
@@ -28,6 +32,13 @@ Checks
 * ``offgrid`` takes ``facing`` (one coordinate instead of both) and ``offset``.
 * New: ``min_track_run`` and ``min_tip_stagger``, the run two wires on adjacent routing
   tracks share and the stagger of their tips on one side.
+
+Decks
+~~~~~
+
+* New: a rule's ``tech_lef:`` - ``absent``, ``partial`` or ``weaker`` - marks how the
+  PDK's tech LEF falls short of it; the summary and the report's category say so beside
+  the rule.
 
 Performance
 ~~~~~~~~~~~

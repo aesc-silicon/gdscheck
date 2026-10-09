@@ -6,6 +6,12 @@
 # by length (see `virtual_layers` in pdk.yml); M1.S.6 is the corner-to-corner space, read on
 # the pairs that face each other nowhere under it.
 #
+# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): its M1 states S.1 (`SPACING 0.018`); a tip keep-out,
+# `LEF58_EOLKEEPOUT 0.01825 EXTENSION 0.0 0.0 0.031`, 31 nm ahead of a line end at most
+# 18.25 nm wide, which covers S.2, S.4 and S.5 only where a narrow tip faces the other
+# edge (partial); nothing for S.3's edges 24 nm and longer (absent); and
+# `LEF58_CORNERSPACING ... SPACING 0.018` where S.6 asks 20 nm (weaker).
+#
 # SRAM exemption (DRM convention 7): skip whole M1 polygons with positive-area overlap
 # with SRAMDRC. Edge-only and point-only contact remain checked. Spacing is measured
 # when neither polygon overlaps the marker.
@@ -23,24 +29,29 @@ rules:
     check: min_space
     layers: [M1NoSram.short, M1NoSram.long]
     value: 0.025
+    tech_lef: partial
   - id: M1.S.3
     check: min_space
     layers: [M1NoSram.mid, M1NoSram.mid]
     value: 0.027
+    tech_lef: absent
   - id: M1.S.4
     check: min_space
     layers: [M1NoSram.tiny, M1NoSram.tiny]
     value: 0.031
+    tech_lef: partial
   - id: M1.S.5
     check: min_space
     layers: [M1NoSram.mid, M1NoSram.tiny]
     value: 0.031
+    tech_lef: partial
   - id: M1.S.6
     check: min_space
     layers: [M1NoSram]
     value: 0.02
     params:
       facing: none
+    tech_lef: weaker
   - id: M1.A.1
     check: min_area
     layers: [M1NoSram]

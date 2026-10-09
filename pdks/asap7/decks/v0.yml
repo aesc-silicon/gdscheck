@@ -8,6 +8,10 @@
 # one side at least, `sides: any`; "the same width as M1" is a pair of opposite sides
 # flush with the wire, `max_enclosure` of nothing on `sides: opposite`.
 #
+# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): `LAYER V0`
+# states only its width and spacing, nothing of V0.M1.AUX.3's M1 as wide as the via
+# (absent) - so a router's M1 pad landing over a cell's V0 may widen it.
+#
 # V0.LIG.AUX.2 - no V0 edge along the LIG may lie inside or touch it - asks, by DRM
 # figure 3.11.2(c), that the V0 cross its LIG: then the V0 off the LIG is two pieces,
 # one either side, whichever way the LIG runs.
@@ -104,3 +108,4 @@ rules:
     value: 0.0
     params:
       sides: opposite
+    tech_lef: absent

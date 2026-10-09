@@ -60,7 +60,10 @@ offset on ``AUX.1``, and that plus half a width - the tracks' centreline - on ``
 and ``W.4``. ``S.5`` is :doc:`min_track_run </checks/min_track_run>` and ``S.4``
 :doc:`min_tip_stagger </checks/min_tip_stagger>`: two wires on adjacent tracks - nothing
 routable between them, a gap under three widths - share 44 nm of run or none, and
-their tips on one side are aligned or 40 nm apart. ``AUX.4`` remains unimplemented.
+their tips on one side are aligned or 40 nm apart. Neither rule is in the ASAP7 tech
+LEF (``asap7_tech_1x_201209.lef`` and ``_4x_``, and LambdaPDK's copy of the 1x), so a
+router driven by it does not keep them; both carry ``tech_lef: absent``, and their
+markers on a routed design say so. ``AUX.4`` remains unimplemented.
 V0–V3 ``S.1`` reads vias that face each other, on one track or on
 neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
 tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
@@ -69,6 +72,23 @@ end-cap at 23, 30 or 27 nm; the 27 nm in the ``S.1`` row is ``S.4``'s value.
 standard cells' frame - fins centred 13.5 nm and gates 27 nm past a multiple of the
 pitch, as every library cell has them and so every design placing them on the row and
 the site; a design drawn in another frame sets ``offset``.
+
+Against the tech LEF
+--------------------
+
+The rules a router driven by the ASAP7 tech LEF (``asap7_tech_1x_201209.lef``, which
+LambdaPDK ships unchanged) is not asked to keep as the manual states them carry
+``tech_lef``, and their markers say so. Each deck's header names the LEF statement:
+
+- absent: M4-M7 ``S.4``/``S.5``; ``M1.S.3`` (edges 24 nm and longer); ``V0.M1.AUX.3``
+  (``LAYER V0`` states only width and spacing); ``V1.M1.EN.1`` (no V1 enclosure, and
+  ``VIA12``'s M1 pad is 0/0 and 2/2).
+- partial: ``M1.S.2``, ``.S.4`` and ``.S.5``, which the LEF reads only as a 31 nm tip
+  keep-out ahead of line ends at most 18.25 nm wide.
+- weaker: ``M1.S.6`` (corner spacing 18 nm for 20) and ``V6.S.2`` (cut spacing 34 nm
+  for 45).
+
+The rest have not been compared with the LEF; an unmarked rule says nothing either way.
 
 Via end-caps and local-interconnect nets
 ----------------------------------------
