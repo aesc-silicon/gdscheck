@@ -223,6 +223,23 @@ this block is resolved against the PDK's layers; each entry arrives in the check
 label that exempts a region from a :doc:`checks/forbidden`, together with a ``label``
 layer param naming the text layer.
 
+``tech_lef:`` says how the PDK's tech LEF falls short of the rule, so that a routed
+design's markers read as a gap in the router's collateral rather than a flow that broke
+a rule it knew:
+
+- ``absent`` - the LEF does not state the rule; reported as "not in the PDK's tech LEF".
+- ``partial`` - the LEF states an approximation covering some of the rule's cases (a
+  tip keep-out standing in for an edge-length spacing); "only partly in the PDK's tech
+  LEF".
+- ``weaker`` - the LEF states the rule with a weaker value than the manual (a cut
+  spacing of 34 nm where the manual asks 45); "weaker in the PDK's tech LEF than the
+  manual".
+
+It changes nothing about the check; the run's summary and the report's category
+description add the note beside the rule. Leaving it out says nothing either way - write
+it only where the deck has been compared with the LEF, and say in the deck's header
+which LEF statement the value rests on.
+
 
 Validating a new PDK
 -----------------------

@@ -93,6 +93,7 @@ fn rule(
             .collect(),
         ignore: vec![],
         text: None,
+        tech_lef: None,
     }
 }
 

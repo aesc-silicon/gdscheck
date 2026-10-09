@@ -27,6 +27,8 @@ fn write_text<W: std::io::Write>(
 struct CatNode<'a> {
     /// Description of the category itself (set when a violation's id ends here).
     description: Option<&'a str>,
+    /// How the PDK's tech LEF falls short of the rule, said after the description.
+    tech_lef: Option<crate::pdk::TechLef>,
     children: BTreeMap<&'a str, CatNode<'a>>,
 }
 
@@ -39,7 +41,10 @@ fn write_categories<W: std::io::Write>(
         writer.write_event(Event::Start(BytesStart::new("category")))?;
         write_text(writer, "name", name)?;
         if let Some(desc) = node.description {
-            write_text(writer, "description", desc)?;
+            match node.tech_lef {
+                Some(t) => write_text(writer, "description", &format!("{desc} ({})", t.note()))?,
+                None => write_text(writer, "description", desc)?,
+            }
         }
         if !node.children.is_empty() {
             write_categories(writer, &node.children)?;
@@ -74,6 +79,7 @@ pub fn write_lyrdb(
             node = node.children.entry(part).or_default();
         }
         node.description.get_or_insert(v.description.as_str());
+        node.tech_lef = node.tech_lef.or(v.tech_lef);
     }
 
     write_categories(&mut writer, &tree)?;
@@ -149,6 +155,38 @@ mod tests {
         assert!(text.contains("<tags>skipped</tags>"));
         assert!(text.contains("<category>M1.a</category>"));
         assert!(!text.contains("<value>edge:"));
+    }
+
+    /// A rule the PDK's tech LEF falls short of says how in its category's description,
+    /// which KLayout's marker browser shows beside the category; another rule does not.
+    #[test]
+    fn a_rule_the_tech_lef_falls_short_of_says_so_in_its_category() {
+        use crate::pdk::TechLef;
+        let marked = |id: &str, desc: &str, t: TechLef| {
+            let mut v = Violation::point(id, desc, "m".into(), 1.0, 2.0);
+            v.tech_lef = Some(t);
+            v
+        };
+        let v = vec![
+            marked("M4.S.5", "Minimum run", TechLef::Absent),
+            marked("M1.S.2", "Minimum tip space", TechLef::Partial),
+            marked("V6.S.2", "Minimum via space", TechLef::Weaker),
+            Violation::point("M4.S.1", "Minimum space", "m".into(), 1.0, 2.0),
+        ];
+        let path = std::env::temp_dir().join("gdscheck_report_lef.lyrdb");
+        write_lyrdb(path.to_str().unwrap(), "TOP", &v).unwrap();
+        let s = std::fs::read_to_string(&path).unwrap();
+        std::fs::remove_file(&path).ok();
+        // The writer escapes the apostrophe; KLayout reads it back.
+        for (desc, t) in [
+            ("Minimum run", TechLef::Absent),
+            ("Minimum tip space", TechLef::Partial),
+            ("Minimum via space", TechLef::Weaker),
+        ] {
+            let note = t.note().replace('\'', "&apos;");
+            assert!(s.contains(&format!("<description>{desc} ({note})</description>")));
+        }
+        assert!(s.contains("<description>Minimum space</description>"));
     }
 
     /// Rule ids with several dots (e.g. `Cnt.c.Digi`) must produce a category chain
