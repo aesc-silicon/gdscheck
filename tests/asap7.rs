@@ -805,6 +805,38 @@ fn rules_the_tech_lef_falls_short_of() {
     );
 }
 
+/// The `openroad` deck's rules, at the tech LEF's values: a corner 18 nm clear on M1 and
+/// two V6 cuts 34 nm apart are clean, a DBU less is not.
+#[rstest]
+#[case("M1.S.6.LEF", "corner", 1)]
+#[case("V6.S.2.LEF", "close", 2)]
+fn openroad(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
+    pattern("openroad", rule, variant, count, &[]);
+}
+
+/// The `openroad` suite is `main` without every rule marked `tech_lef` - the absent
+/// ones, the partial ones the LEF's rounding disables - and with M1.S.6 and V6.S.2, the
+/// weaker ones, read at the LEF's values instead of the manual's.
+#[test]
+fn the_openroad_suite_is_main_held_to_the_tech_lef() {
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let ids = |suite: &str| -> std::collections::BTreeSet<String> {
+        pdk.load_suite(suite)
+            .expect("suite loads")
+            .into_iter()
+            .map(|r| r.id)
+            .collect()
+    };
+    let main = pdk.load_suite("main").unwrap();
+    let held: std::collections::BTreeSet<String> = main
+        .iter()
+        .filter(|r| r.tech_lef.is_none())
+        .map(|r| r.id.clone())
+        .chain(["M1.S.6.LEF".to_string(), "V6.S.2.LEF".to_string()])
+        .collect();
+    assert_eq!(ids("openroad"), held);
+}
+
 /// DRM 3.19: three clean upper-metal nets; shortening M9's end-cap from exactly
 /// 20 nm to 19.75 nm introduces one V8 enclosure violation in the whole main suite.
 #[rstest]

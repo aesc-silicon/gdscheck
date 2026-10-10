@@ -73,6 +73,12 @@ impl Corpus<'_> {
         nm
     }
 
+    /// As [`Self::drm`], for a value the tech LEF states rather than the manual (the
+    /// `openroad` deck).
+    fn lef(&self, id: &str, check: &str, nm: f64) -> f64 {
+        self.agree(id, check, "value", nm, |r| Some(r.value))
+    }
+
     /// As [`Self::drm`], for an area in nm² (the deck writes µm²).
     fn drm_area(&self, id: &str, check: &str, nm2: f64) -> f64 {
         self.agree(id, check, "value", nm2, |r| Some(r.value * 1000.0))
@@ -161,6 +167,7 @@ pub fn generate(pdk: &PdkConfig) {
     select::generate(&c);
     geometry::generate(&c);
     via::generate(&c);
+    via::lef_spacing(&c);
     metal::generate(&c);
     routing::generate(&c);
 }

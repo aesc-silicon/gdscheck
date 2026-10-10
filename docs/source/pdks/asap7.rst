@@ -18,7 +18,8 @@ layout drawn 4× up for Calibre must be scaled down first.
 
 The decks are per layer (``well``, ``fin``, ``gate`` … ``m9``, ``v9``), plus
 ``geometry`` for non-orthogonal shapes. The suites are ``main`` (every deck), ``feol``
-(through V0, what a standard cell holds) and ``beol`` (M1 to the pad).
+(through V0, what a standard cell holds), ``beol`` (M1 to the pad) and ``openroad``
+(every deck, held to the tech LEF; see below).
 
 
 One-way layers
@@ -60,10 +61,9 @@ offset on ``AUX.1``, and that plus half a width - the tracks' centreline - on ``
 and ``W.4``. ``S.5`` is :doc:`min_track_run </checks/min_track_run>` and ``S.4``
 :doc:`min_tip_stagger </checks/min_tip_stagger>`: two wires on adjacent tracks - nothing
 routable between them, a gap under three widths - share 44 nm of run or none, and
-their tips on one side are aligned or 40 nm apart. Neither rule is in the ASAP7 tech
-LEF (``asap7_tech_1x_201209.lef`` and ``_4x_``, and LambdaPDK's copy of the 1x), so a
-router driven by it does not keep them; both carry ``tech_lef: absent``, and their
-markers on a routed design say so. ``AUX.4`` remains unimplemented.
+their tips on one side are aligned or 40 nm apart. The ASAP7 tech LEF reads both only
+as a corner keep-out about a line end, so both carry ``tech_lef: partial`` (below), and
+their markers on a routed design say so. ``AUX.4`` remains unimplemented.
 V0–V3 ``S.1`` reads vias that face each other, on one track or on
 neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
 tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
@@ -92,6 +92,13 @@ LambdaPDK ships unchanged) is not asked to keep as the manual states them carry
   for 45).
 
 The rest have not been compared with the LEF; an unmarked rule says nothing either way.
+
+The ``openroad`` suite is what a design routed on that LEF should pass: ``main``
+without the absent and partial rules, and with ``M1.S.6`` and ``V6.S.2`` read at the
+LEF's 18 and 34 nm (deck ``openroad``, rules ``M1.S.6.LEF`` and ``V6.S.2.LEF``). The
+partial rules go too because the LEF's rounding, below, leaves a router keeping none of
+them. A marker there is a rule the router was given and broke, or an unmarked rule the
+LEF may not state.
 
 The LEF declares ``DATABASE MICRONS 1000`` but writes several values on a quarter
 nanometre, which a 1 nm database rounds off. Three of them disable a rule as a router

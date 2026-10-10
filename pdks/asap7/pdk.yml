@@ -29,6 +29,9 @@ suites:
   - name: beol
     path: suites/beol.yml
     description: Routing stack, M1 to the pad
+  - name: openroad
+    path: suites/openroad.yml
+    description: Every deck, held to the tech LEF where it falls short of the manual
 
 decks:
   - name: geometry
@@ -118,6 +121,9 @@ decks:
   - name: v9
     path: decks/v9.yml
     description: Via 9 to the pad
+  - name: openroad
+    path: decks/openroad.yml
+    description: M1.S.6 and V6.S.2 at the tech LEF's values (the openroad suite)
 
 # Physical conductors remain whole for net extraction; SRAM selection only gates
 # the rule subjects. Alias edges attach those selected subjects to the full nets.

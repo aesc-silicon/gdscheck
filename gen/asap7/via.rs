@@ -346,6 +346,20 @@ fn one_short(en: Enc) -> [f64; 4] {
 fn spacing(c: &Corpus<'_>, lv: &Level) {
     let (r, value) = spacing_rule(lv);
     let limit = c.drm(&lv.id(r), "min_space", value);
+    let elems = spaced(c, lv, limit);
+    c.write(&lv.deck(), &lv.id(&format!("{r}.close")), true, elems);
+}
+
+/// The `openroad` deck's V6.S.2.LEF: [`spacing`]'s pairs at the tech LEF's 34 nm.
+pub(super) fn lef_spacing(c: &Corpus<'_>) {
+    let lv = levels(c).into_iter().find(|lv| lv.n == 6).unwrap();
+    let limit = c.lef("V6.S.2.LEF", "min_space", 34.0);
+    c.write("openroad", "V6.S.2.LEF.close", true, spaced(c, &lv, limit));
+}
+
+/// Two vias side by side `limit` apart and a DBU under it, then, on V4-V9, two
+/// corner to corner likewise.
+fn spaced(c: &Corpus<'_>, lv: &Level, limit: f64) -> Vec<GdsElement> {
     let s = lv.side;
     let pitch = s + 2.0 * (lv.en_below.value + RUN) + ROOM;
     let mut elems = vec![];
@@ -366,7 +380,7 @@ fn spacing(c: &Corpus<'_>, lv: &Level) {
             y += pitch + s + dy;
         }
     }
-    c.write(&lv.deck(), &lv.id(&format!("{r}.close")), true, elems);
+    elems
 }
 
 /// DRM 3.11/3.13 S.1 on neighbouring tracks: the upper via shifted half a via along

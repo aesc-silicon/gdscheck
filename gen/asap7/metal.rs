@@ -72,6 +72,14 @@ fn lower(c: &Corpus<'_>, n: u8) {
     assert_eq!(12.0_f64.hypot(16.0), s);
     let pairs = corner_pairs(l, tip, &[(12.0, 16.0), (12.0, 16.0 - DBU)], OFFSET, OFFSET);
     c.write(&deck, &id("S.6.corner"), true, pairs);
+    if n == 1 {
+        // The `openroad` deck's M1.S.6.LEF, the tech LEF's 18 nm: 12 and 13.5 nm clear
+        // is 18.06 nm, 12 and 13.25 is 17.88.
+        let s = c.lef("M1.S.6.LEF", "min_space", 18.0);
+        assert!(12.0_f64.hypot(13.5) >= s && 12.0_f64.hypot(13.5 - DBU) < s);
+        let pairs = corner_pairs(l, tip, &[(12.0, 13.5), (12.0, 13.5 - DBU)], OFFSET, OFFSET);
+        c.write("openroad", "M1.S.6.LEF.corner", true, pairs);
+    }
 
     let a = c.drm_area(&id("A.1"), "min_area", 504.0);
     let small = [(w, a / w), (w, a / w - DBU)];
