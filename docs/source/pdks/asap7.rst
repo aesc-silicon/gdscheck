@@ -80,15 +80,27 @@ The rules a router driven by the ASAP7 tech LEF (``asap7_tech_1x_201209.lef``, w
 LambdaPDK ships unchanged) is not asked to keep as the manual states them carry
 ``tech_lef``, and their markers say so. Each deck's header names the LEF statement:
 
-- absent: M4-M7 ``S.4``/``S.5``; ``M1.S.3`` (edges 24 nm and longer); ``V0.M1.AUX.3``
+- absent: ``M1.S.3`` (edges 24 nm and longer); ``V0.M1.AUX.3``
   (``LAYER V0`` states only width and spacing); ``V1.M1.EN.1`` (no V1 enclosure, and
   ``VIA12``'s M1 pad is 0/0 and 2/2).
 - partial: ``M1.S.2``, ``.S.4`` and ``.S.5``, which the LEF reads only as a 31 nm tip
   keep-out ahead of line ends at most 18.25 nm wide.
+- partial: M4-M7 ``S.4``/``S.5``, which the LEF reads only as a corner keep-out 48 nm
+  either way of a line end and reaching the adjacent track - stricter than the
+  manual, which allows aligned tips and a 40-48 nm stagger.
 - weaker: ``M1.S.6`` (corner spacing 18 nm for 20) and ``V6.S.2`` (cut spacing 34 nm
   for 45).
 
 The rest have not been compared with the LEF; an unmarked rule says nothing either way.
+
+The LEF declares ``DATABASE MICRONS 1000`` but writes several values on a quarter
+nanometre, which a 1 nm database rounds off. Three of them disable a rule as a router
+reads it: M1's keep-out line-end width (``0.01825`` becomes 18, so no 18 nm tip is a
+line end), M4-M7's keep-out side extension (``0.02425`` and ``0.03225`` become exactly
+the adjacent wire's edge, which a corner must lie strictly inside), and M8/M9's
+spacing-table thresholds (``0.39975`` and the like round up, so a value exactly on the
+manual's threshold falls in the row below). The marks above describe the LEF as
+written, not as rounded; a routed design's markers on those rules are this rounding.
 
 Via end-caps and local-interconnect nets
 ----------------------------------------

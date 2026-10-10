@@ -772,7 +772,12 @@ fn rules_the_tech_lef_falls_short_of() {
         }
     }
     let mut expected: std::collections::BTreeMap<String, _> = (4..=7)
-        .flat_map(|n| [(format!("M{n}.S.4"), Absent), (format!("M{n}.S.5"), Absent)])
+        .flat_map(|n| {
+            [
+                (format!("M{n}.S.4"), Partial),
+                (format!("M{n}.S.5"), Partial),
+            ]
+        })
         .collect();
     for (id, t) in [
         ("M1.S.2", Partial),
@@ -791,7 +796,7 @@ fn rules_the_tech_lef_falls_short_of() {
     let path = "tests/data/asap7/generated/m4/M4.S.5.run.bad.gds.gz";
     let found = run_drc(path, PDK, &["m4"], None, "TOP", false).expect("DRC run failed");
     let run: Vec<_> = found.iter().filter(|v| v.rule_id == "M4.S.5").collect();
-    assert!(!run.is_empty() && run.iter().all(|v| v.tech_lef == Some(Absent)));
+    assert!(!run.is_empty() && run.iter().all(|v| v.tech_lef == Some(Partial)));
     assert!(
         found
             .iter()
