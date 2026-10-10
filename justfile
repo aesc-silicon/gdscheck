@@ -36,6 +36,10 @@ gen-testdata-for pdk:
 designs process="ihp-sg13g2":
     ci/run-designs.sh {{process}}
 
+# Lint the YAML decks and fixtures, as CI does.
+yamllint:
+    uvx yamllint tests/ pdks/
+
 # Format, lint, and test — the pre-commit gate.
-check: clippy test
+check: clippy yamllint test
     cargo fmt --check
