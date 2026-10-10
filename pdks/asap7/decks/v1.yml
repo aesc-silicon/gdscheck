@@ -5,8 +5,9 @@
 # V1, the via from M1 to M2 (DRM section 3.13).  V1.M1.EN.1's "5 & 2" requires
 # 5 nm on one side and 2 nm on its opposite side, on the same axis.
 #
-# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): `LAYER V1` states no enclosure, `VIARULE M2_M1`
-# sets M1's to 0, and `VIA12`'s M1 pad is 0/0 in x and 2/2 in y - V1.M1.EN.1 is not
+# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): `LAYER V1`
+# states no enclosure, `VIARULE M2_M1` sets M1's to 0, and `VIA12`'s M1 pad is 0/0 in x
+# and 2/2 in y - V1.M1.EN.1 is not
 # there (absent), and the router's own via can only meet it with pin metal around it.
 #
 # Corner spacing reads the end-cap at the two corners forming the gap.

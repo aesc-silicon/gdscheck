@@ -6,7 +6,8 @@
 # by length (see `virtual_layers` in pdk.yml); M1.S.6 is the corner-to-corner space, read on
 # the pairs that face each other nowhere under it.
 #
-# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): its M1 states S.1 (`SPACING 0.018`); a tip keep-out,
+# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): its M1
+# states S.1 (`SPACING 0.018`); a tip keep-out,
 # `LEF58_EOLKEEPOUT 0.01825 EXTENSION 0.0 0.0 0.031`, 31 nm ahead of a line end at most
 # 18.25 nm wide, which covers S.2, S.4 and S.5 only where a narrow tip faces the other
 # edge (partial); nothing for S.3's edges 24 nm and longer (absent); and

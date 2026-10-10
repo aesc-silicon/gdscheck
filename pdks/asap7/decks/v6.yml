@@ -5,9 +5,9 @@
 # V6, the via from M6 to M7 (DRM section 3.17).  V6.S.1, V6.S.2 and V6.S.3 - the
 # same net, different nets, corner to corner - share one value, so one rule reads them all
 # under V6.S.2.
-# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): V6's `LEF58_SPACINGTABLE` spaces cuts `DEFAULT
-# 0.034`, where the manual asks 45 nm (weaker); a PDN via generated from it holds its
-# cuts 34 nm apart.
+# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): V6's
+# `LEF58_SPACINGTABLE` spaces cuts `DEFAULT 0.034`, where the manual asks 45 nm (weaker);
+# a PDN via generated from it holds its cuts 34 nm apart.
 # W.1 is exact along M7's length (the manual's table says M5, its AUX.2 says M7), which
 # runs vertically: the via's vertical walls. Across M7, V6.M7.AUX.2 holds the via to the
 # metal's width.
