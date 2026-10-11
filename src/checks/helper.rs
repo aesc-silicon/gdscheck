@@ -654,6 +654,7 @@ pub fn piece_notches(
     limit: Limit,
     bent: bool,
     min_run: i64,
+    facing: Option<Axis>,
 ) -> Vec<Violation> {
     let (gl, gd) = key;
     merged.ensure(layout, gl, gd);
@@ -695,9 +696,16 @@ pub fn piece_notches(
                     let Some(run) = shared_run(sa, sb) else {
                         continue; // a corner or an end, which a notch does not read
                     };
-                    let axis = sa.0.0 == sa.1.0 || sa.0.1 == sa.1.1;
+                    let (vertical, horizontal) = (sa.0.0 == sa.1.0, sa.0.1 == sa.1.1);
+                    let axis = vertical || horizontal;
                     if (bent && axis) || run <= min_run as f64 {
                         continue;
+                    }
+                    // Walls facing across x are vertical, across y horizontal.
+                    match facing {
+                        Some(Axis::X) if !vertical => continue,
+                        Some(Axis::Y) if !horizontal => continue,
+                        _ => {}
                     }
                     let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
                     if !core.owns_from(mx, my) {

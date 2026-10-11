@@ -86,6 +86,16 @@ Parameters
    mind that the merge then joins the nets of what it bridges: a rule about two nets
    too close to merge reads the drawn layer instead, as IHP's NW.b1 does.
 
+``corner_cover`` / ``covered_corners``
+   Optional: ``corner_cover`` is a layer reference under ``layer_params`` and
+   ``covered_corners`` is a numeric param, 0, 1 or 2. Requires ``facing: none``.
+   The rule applies when exactly that many of the two closest corners lie in the
+   reference region, including its boundary. Membership is read at the gap, not
+   at a shape's centre or remote end. For orthogonal vias, ASAP7 derives the
+   reference as ``(M1 shrink_x 0.005) or (M1 shrink_y 0.005)``: the corner retains
+   at least 5 nm of metal along either axis. Three rules then select the 23, 27
+   and 30 nm limits for two, one and zero covered corners respectively.
+
 ``width`` / ``length``
    Optional, µm, alone or together. The rule then applies only where some pair of facing
    edges, one from each region, runs alongside for a projected overlap of more than
@@ -104,6 +114,15 @@ Parameters
    0.5 µm part on its far side is wide along that part, whichever side the part is on.
    A run longer than the tile is read on the pair's regions assembled out to
    ``value + length + width`` around the gap, so the answer does not depend on the tile.
+
+``facing``
+   Optional. ``x``: the rule is about pairs with a wall of one facing a wall of the
+   other across x under the value, the two projecting onto each other. That is a
+   horizontal space, KLayout's ``space(v, projection).with_angle(90)``. ``y`` is the
+   vertical one. ``none``: the rule is about pairs that face each other *nowhere* under
+   the value, so that only a corner of one is closer to the other. That is the
+   corner-to-corner space a manual states beside a smaller side-to-side one (ASAP7
+   ``M1.S.6``: 20 nm corner to corner, where lines run 18 nm apart side by side).
 
 ``pairs``
    Optional. ``disjoint`` (the default) measures pairs that share no area at their

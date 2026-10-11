@@ -1,0 +1,127 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M6 (DRM section 3.16).  M6 routes horizontally: its width across the track and the space
+# between tracks read the walls facing across y, its length and the tip-to-tip
+# space those facing across x.
+#
+# The routing grid and tracks: AUX.1 reads every horizontal edge on the 32 nm grid, and
+# AUX.2 and W.4 read a wire's centre on the tracks, two widths apart - a minimum-width
+# wire lies on one, and a wider wire spans an odd number of them, which is the same wire
+# centred on one.  The manual sets the grid's offset per design and defaults it to 0; a
+# design routed on other tracks sets `offset` on AUX.1 to its grid's, and on AUX.2 and
+# W.4 to its tracks' centreline, the grid's offset plus half a width.
+#
+# Two wires on adjacent tracks - their long walls facing across y with nothing routable
+# between, under three widths (96 nm) - that run alongside at all run alongside for S.5's
+# 44 nm, and their tips on one side are aligned or S.4's 40 nm apart (DRM fig. 3.16.2(d)).
+# Two that do not run alongside are S.3's corner.  The ASAP7 tech LEF
+# (`asap7_tech_1x_201209.lef`, and LambdaPDK's copy of it) reads both only as
+# M6's corner keep-out about a line end, `LEF58_EOLKEEPOUT ... EXTENSION 0.048
+# 0.03225 0.048 CORNERONLY`: no corner of a wire on the adjacent track within 48 nm
+# of the tip either way.  That is stricter than the manual - it also forbids aligned
+# tips and a 40-48 nm stagger - and so `tech_lef: partial`.  Its side extension
+# reaches the adjacent wire, 32 nm away, only by the quarter nanometre a
+# DATABASE MICRONS 1000 tech rounds off, so a router reading it as written keeps
+# neither rule; 0.033 keeps the reach.
+#
+# Not checked: M6.AUX.4, a wide wire's outside edge on a track's edge.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: M6.W.1
+    check: min_width
+    layers: [M6NoSram]
+    value: 0.032
+    params:
+      facing: y
+  - id: M6.W.2
+    check: max_width
+    layers: [M6NoSram]
+    value: 0.64
+    params:
+      # Apply facing even when the perpendicular dimension is smaller.
+      span: any
+      facing: y
+  - id: M6.W.3
+    check: forbidden
+    layers: [M6EvenWidthEdges]
+    value: 0.0
+  - id: M6.W.4
+    check: offtrack
+    layers: [M6Wide]
+    value: 0.064
+    params:
+      facing: y
+      offset: 0.016
+  - id: M6.W.5
+    check: min_width
+    layers: [M6NoSram]
+    value: 0.044
+    params:
+      facing: x
+  - id: M6.S.1
+    check: min_space
+    layers: [M6NoSram]
+    value: 0.032
+    params:
+      facing: y
+  - id: M6.S.1
+    check: min_notch
+    layers: [M6NoSram]
+    value: 0.032
+    params:
+      facing: y
+  - id: M6.S.2
+    check: min_space
+    layers: [M6NoSram]
+    value: 0.04
+    params:
+      facing: x
+  - id: M6.S.2
+    check: min_notch
+    layers: [M6NoSram]
+    value: 0.04
+    params:
+      facing: x
+  # Two tips on adjacent tracks that share no run face each other nowhere.
+  - id: M6.S.3
+    check: min_space
+    layers: [M6NoSram]
+    value: 0.04
+    params:
+      facing: none
+  - id: M6.S.4
+    check: min_tip_stagger
+    layers: [M6NoSram]
+    value: 0.04
+    params:
+      facing: y
+      within: 0.096
+    tech_lef: partial
+  - id: M6.S.5
+    check: min_track_run
+    layers: [M6NoSram]
+    value: 0.044
+    params:
+      facing: y
+      within: 0.096
+    tech_lef: partial
+  - id: M6.AUX.1
+    check: offgrid
+    layers: [M6NoSram]
+    value: 0.032
+    params:
+      facing: y
+      offset: 0.0
+  - id: M6.AUX.2
+    check: offtrack
+    layers: [M6Track]
+    value: 0.064
+    params:
+      facing: y
+      offset: 0.016
+  - id: M6.AUX.3
+    check: forbidden
+    layers: [M6Bent]
+    value: 0.0

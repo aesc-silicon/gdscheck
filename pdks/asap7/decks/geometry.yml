@@ -1,0 +1,148 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Non-orthogonal shapes (DRM section 3.1), scoped by convention 7.
+# SRAMDRC itself is always checked as a supplemental marker-integrity requirement.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [WellNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [FinNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [GateNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [GcutNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [ActiveNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SdtNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [NselectNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [PselectNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SlvtNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [LvtNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SramvtNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [SRAMDRC]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [DummyNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [LigNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [LisdNoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V0NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M1NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V1NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M2NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V2NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M3NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V3NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M4NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V4NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M5NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V5NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M6NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V6NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M7NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V7NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M8NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V8NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [M9NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [V9NoSram]
+    value: 0.0
+  - id: GEOMETRY.NONORTHOGONAL
+    check: no_angle
+    layers: [PadNoSram]
+    value: 0.0

@@ -152,6 +152,29 @@ fn longer(a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)) -> bool {
     len2(a) > len2(b)
 }
 
+/// The extent of two projected stretches on the same line. Closest-approach
+/// segments at an angle are not stretches of that wall and must not be joined.
+fn joined_stretch(
+    a: (f64, f64, f64, f64),
+    b: (f64, f64, f64, f64),
+) -> Option<(f64, f64, f64, f64)> {
+    let (dx, dy) = (a.2 - a.0, a.3 - a.1);
+    let len2 = dx * dx + dy * dy;
+    if len2 == 0.0 {
+        return None;
+    }
+    let (mut lo, mut hi) = (0.0f64, 1.0f64);
+    for (x, y) in [(b.0, b.1), (b.2, b.3)] {
+        if ((x - a.0) * dy - (y - a.1) * dx).abs() > 1e-6 * len2.sqrt() {
+            return None;
+        }
+        let t = ((x - a.0) * dx + (y - a.1) * dy) / len2;
+        lo = lo.min(t);
+        hi = hi.max(t);
+    }
+    Some((a.0 + lo * dx, a.1 + lo * dy, a.0 + hi * dx, a.1 + hi * dy))
+}
+
 /// The walls of one enclosed shape with the margin read on each: a shape has a few,
 /// and a map per contact was an allocation per contact.
 struct Walls(Vec<(Seg, Read)>);
@@ -271,6 +294,9 @@ pub enum Sides {
     All,
     /// At least one side (the best side ≥ value) — a wire endcap.
     Any,
+    /// At least one pair of opposite sides, both ≥ value — a via on a wire, flush along
+    /// it and enclosed at its two ends, or the other way round.
+    Opposite,
     /// A side below `trigger` forces the sides bordering it to reach `value`.
     Adjacent,
     /// Only the side facing a *line end* of the enclosing layer: the cap across the tip
@@ -291,12 +317,13 @@ impl Sides {
         match super::super::params::mode(rule, name, "sides") {
             Ok(None) | Ok(Some("all")) => Some(Sides::All),
             Ok(Some("any")) => Some(Sides::Any),
+            Ok(Some("opposite")) => Some(Sides::Opposite),
             Ok(Some("adjacent")) => Some(Sides::Adjacent),
             Ok(Some("line_end")) => Some(Sides::LineEnd),
             Ok(Some(other)) => {
                 eprintln!(
-                    "[{}] {name}: sides can only be `all`, `any`, `adjacent` or `line_end`, \
-                     not `{other}`",
+                    "[{}] {name}: sides can only be `all`, `any`, `opposite`, `adjacent` or \
+                     `line_end`, not `{other}`",
                     rule.id
                 );
                 None
@@ -347,8 +374,22 @@ pub fn run(
     sides: Sides,
 ) -> Vec<Violation> {
     let max = kind == Kind::Max;
+    let opposite_value = rule.num("opposite_value");
+    if rule.params.contains_key("opposite_value")
+        && (max
+            || sides != Sides::Opposite
+            || !opposite_value.is_some_and(|v| v.is_finite() && v >= 0.0 && v <= rule.value))
+    {
+        eprintln!(
+            "[{}] opposite_value requires min_enclosure with sides: opposite and a number \
+             between zero and value",
+            rule.id
+        );
+        return vec![];
+    }
+    let opposite_dbu = opposite_value.map(|v| Limit::at_least(v, dbu_to_um).dbu());
     // Which margin of a shape the bound is judged on: see `worse`.
-    let largest = max != (sides == Sides::Any);
+    let largest = max != matches!(sides, Sides::Any | Sides::Opposite);
     let Some(euclidian) = euclidian(rule, kind.name()) else {
         return vec![];
     };
@@ -444,6 +485,20 @@ pub fn run(
     // approach read at a corner is read just past the corner, the way it was read; a
     // touch at a corner has no margin to lie anywhere, and the wall along the touching
     // boundary is read on its own.
+    // `facing` reads the margins across one axis alone: an inner wall that is vertical
+    // for x, horizontal for y, against the outer wall parallel to it.
+    let Some(facing) = super::super::params::facing_axis(rule, kind.name()) else {
+        return vec![];
+    };
+    let facing_pair = |p: &crate::geom::MarginPair| -> bool {
+        let ((x0, y0), (x1, y1)) = p.wall;
+        match facing {
+            None => true,
+            Some(_) if p.oblique => false,
+            Some(Axis::X) => x0 == x1,
+            Some(Axis::Y) => y0 == y1,
+        }
+    };
     let over_pair = |p: &crate::geom::MarginPair| -> bool {
         let Some((m, bx)) = &over else {
             return true;
@@ -520,7 +575,7 @@ pub fn run(
     // and whether it is enclosed at all - needs every wall in one view: the region is
     // put together from its pieces and read once, in the tile that holds its marker.
     // A minimum reads wall by wall, and every piece in its own tile will do.
-    let whole = max || sides == Sides::Any || sides == Sides::Adjacent;
+    let whole = max || matches!(sides, Sides::Any | Sides::Opposite | Sides::Adjacent);
     let jobs: Vec<Job> = if whole {
         // The stitched regions, put together and filed under the tile holding their
         // marker; the whole shapes of each tile stay with it, side by side.
@@ -678,6 +733,7 @@ pub fn run(
             };
             let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).map(|t| &**t).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
+            let mut grid_query = crate::merge::CellGridQuery::new(a_conv.len());
             // The line-end caps of each enclosing shape of the tile, found once: a
             // track's caps are the same for every via on it, and finding them walks
             // every pair of the track's walls.
@@ -757,10 +813,17 @@ pub fn run(
                     match a_boxes.get(&(tx, ty)) {
                         Some((_, grid)) => {
                             let (x0, y0, x1, y1) = bp.bbox;
-                            grid.covering((x0 as i32, y0 as i32, x1 as i32, y1 as i32))
-                                .into_iter()
-                                .map(|i| i as usize)
-                                .collect()
+                            let mut near: Vec<usize> = grid
+                                .covering(
+                                    (x0 as i32, y0 as i32, x1 as i32, y1 as i32),
+                                    &mut grid_query,
+                                )
+                                .iter()
+                                .map(|&i| i as usize)
+                                .collect();
+                            // Preserve polygon order when equal margins choose a marker.
+                            near.sort_unstable();
+                            near
                         }
                         None => Vec::new(),
                     }
@@ -802,8 +865,14 @@ pub fn run(
                         first.1.0 as f64,
                         first.1.1 as f64,
                     );
-                    if sides == Sides::Any && !max {
-                        let m = endcap_margin(&bp, a) as i128;
+                    if (sides == Sides::Any && !max) || sides == Sides::Opposite {
+                        let m = if let Some(other) = opposite_dbu {
+                            asymmetric_opposite_margin(&bp, a, other)
+                        } else if sides == Sides::Opposite {
+                            opposite_margin(&bp, a, max)
+                        } else {
+                            endcap_margin(&bp, a)
+                        } as i128;
                         let worst = ((m * m, 1), first_edge);
                         if best.is_none_or(|(b, _)| worse(largest, b, worst.0)) {
                             best = Some(worst);
@@ -837,6 +906,9 @@ pub fn run(
                             }
                         }
                         if !over_pair(&p) {
+                            continue;
+                        }
+                        if !facing_pair(&p) {
                             continue;
                         }
                         if !max && point_in_layer_at_own_tile(map_a, &a_boxes, tile, p.probe) {
@@ -1050,7 +1122,7 @@ pub fn run(
                                         None => {}
                                     }
                                 }
-                                if !over_pair(&p) {
+                                if !over_pair(&p) || !facing_pair(&p) {
                                     continue;
                                 }
                                 // A touch at an angle is a corner of the crossing
@@ -1073,8 +1145,19 @@ pub fn run(
                                     worst = Some(m);
                                 }
                                 let e = walls.entry(Walls::key(&p), m);
-                                if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
+                                if worse(largest, m.0, e.0) {
                                     *e = m;
+                                } else if same(m.0, e.0) {
+                                    // Equal projected margins on separate parts
+                                    // of one wall contribute their full extent,
+                                    // just as the cross-tile reduction does.
+                                    // Keep the usual closest-approach selection
+                                    // for oblique/corner reads.
+                                    if !p.oblique && let Some(joined) = joined_stretch(e.1, m.1) {
+                                        e.1 = joined;
+                                    } else if longer(m.1, e.1) {
+                                        *e = m;
+                                    }
                                 }
                             }
                         }
@@ -1126,13 +1209,25 @@ pub fn run(
                             cy,
                         ),
                     ));
-                } else if max || sides == Sides::Any {
+                } else if max || matches!(sides, Sides::Any | Sides::Opposite) {
                     if let Some(((num, den), e)) = best
                         && num < i128::MAX / 4
                         && limit.broken_by_sq(num, den)
                     {
                         let d = um((num as f64 / den as f64).sqrt());
                         let (x1, y1, x2, y2) = edge_um(e);
+                        let message = if let Some(other) = opposite_value {
+                            format!(
+                                "no opposite pair encloses {bname} within {aname} by \
+                                 {value:.4} µm on one side and {other:.4} µm on the other \
+                                 at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                            )
+                        } else {
+                            format!(
+                                "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within \
+                                 {aname} at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                            )
+                        };
                         out.push((
                             region,
                             None,
@@ -1141,10 +1236,7 @@ pub fn run(
                             Violation::edge(
                                 rid,
                                 title,
-                                format!(
-                                    "enclosure {d:.4} µm {cmp} {value:.2} µm of {bname} within \
-                                     {aname} at ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
-                                ),
+                                message,
                                 x1,
                                 y1,
                                 x2,

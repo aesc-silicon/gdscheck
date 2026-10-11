@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GATE (DRM section 3.4).
+#
+# GATE.S.1, the exact 54 nm pitch, reads every gate's centre on the pitch in the standard
+# cells' frame: every library cell has its gates 17 to 37 nm past a multiple of 54, and
+# so does every design placing them on the 54 nm site.  A design drawn in another frame
+# sets `offset`, its first gate's centre.
+#
+# Not checked: GATE.AUX.2, a gate discontinuous along its length, which is read from how
+# the drawn shapes were split rather than from the merged layer.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: GATE.W.1
+    check: exact_width
+    layers: [GateNoSram]
+    value: 0.02
+    params:
+      facing: x
+  - id: GATE.W.2
+    check: min_width
+    layers: [GateNoSram]
+    value: 0.04
+    params:
+      facing: y
+  - id: GATE.S.1
+    check: offtrack
+    layers: [GateNoSram]
+    value: 0.054
+    params:
+      facing: x
+      offset: 0.027
+  - id: GATE.S.2
+    check: min_space
+    layers: [GateNoSram]
+    value: 0.034
+    params:
+      facing: x
+  - id: GATE.S.2
+    check: min_notch
+    layers: [GateNoSram]
+    value: 0.034
+    params:
+      facing: x
+  # A gate with no other within one pitch, centre to centre, beside it; see
+  # GatePaired in pdk.yml.
+  - id: GATE.S.3
+    check: forbidden
+    layers: [GateSolitary]
+    value: 0.0
+  - id: GATE.AUX.1
+    check: forbidden
+    layers: [GateBent]
+    value: 0.0
+  - id: GATE.ACTIVE.AUX.3
+    check: forbidden
+    layers: [ActiveVEdgesInside]
+    value: 0.0
+  - id: GATE.ACTIVE.AUX.3
+    check: forbidden
+    layers: [ActiveVEdgesOnGate]
+    value: 0.0
+  - id: GATE.ACTIVE.EX.1
+    check: min_enclosure
+    layers: [GateNoCut, ActiveNoSramOnGate]
+    value: 0.004
+    params:
+      facing: y
+  - id: GATE.ACTIVE.EX.2
+    check: min_enclosure
+    layers: [ACTIVE, GateNoCutNoSramOnActive]
+    value: 0.025
+    params:
+      facing: x
+  - id: GATE.ACTIVE.S.4
+    check: min_space
+    layers: [GateNoCutOffActive, ActiveNoSram]
+    value: 0.009
+    params:
+      facing: x

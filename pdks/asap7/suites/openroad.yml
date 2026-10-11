@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Every deck, held to the tech LEF where the decks mark it short of the manual
+# (`tech_lef`): what a design routed by OpenROAD on the ASAP7 tech LEF
+# (`asap7_tech_1x_201209.lef`, as ORFS and LambdaPDK ship it) should pass.  A marker
+# here is a rule the router was given and broke, or one the LEF has not been compared
+# on - an unmarked rule is the manual's.
+#
+# Left out:
+# - absent: M1.S.3, V0.M1.AUX.3 and V1.M1.EN.1, which the LEF does not state.
+# - partial, M1.S.2, .S.4 and .S.5: the LEF's tip keep-out, `LEF58_EOLKEEPOUT 0.01825`,
+#   reads a line end as one under 18.25 nm wide, which DATABASE MICRONS 1000 rounds to
+#   18, so no 18 nm tip is one and the router keeps none of the three.
+# - partial, M4-M7 S.4 and S.5: the LEF's corner keep-out about a line end is stricter
+#   than both, but its side extension (`0.02425`, `0.03225`) rounds to exactly the
+#   adjacent wire's edge, which a corner must lie strictly inside, so the router keeps
+#   neither.  With the whole-nanometre values (ORFS #4663, LambdaPDK #246) it keeps
+#   both, and these four decks can come back whole.
+# Read at the LEF's value (deck `openroad`): M1.S.6 at 18 nm and V6.S.2 at 34 nm.
+include:
+  - deck: geometry
+  - deck: well
+  - deck: fin
+  - deck: gate
+  - deck: active
+  - deck: gcut
+  - deck: select
+  - deck: sdt
+  - deck: lisd
+  - deck: lig
+  - deck: v0
+    exclude: [V0.M1.AUX.3]
+  - deck: m1
+    exclude: [M1.S.2, M1.S.3, M1.S.4, M1.S.5, M1.S.6]
+  - deck: v1
+    exclude: [V1.M1.EN.1]
+  - deck: m2
+  - deck: v2
+  - deck: m3
+  - deck: v3
+  - deck: m4
+    exclude: [M4.S.4, M4.S.5]
+  - deck: v4
+  - deck: m5
+    exclude: [M5.S.4, M5.S.5]
+  - deck: v5
+  - deck: m6
+    exclude: [M6.S.4, M6.S.5]
+  - deck: v6
+    exclude: [V6.S.2]
+  - deck: m7
+    exclude: [M7.S.4, M7.S.5]
+  - deck: v7
+  - deck: m8
+  - deck: v8
+  - deck: m9
+  - deck: v9
+  - deck: openroad

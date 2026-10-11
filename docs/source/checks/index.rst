@@ -42,11 +42,14 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_notch
    min_overlap
    min_space
+   min_tip_stagger
+   min_track_run
    min_width
    no_angle
    no_corner
    no_hole
    no_ring
    offgrid
+   offtrack
    ring_covers_boundary
    wide_uncovered

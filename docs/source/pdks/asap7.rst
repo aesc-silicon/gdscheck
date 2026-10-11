@@ -1,0 +1,347 @@
+.. SPDX-FileCopyrightText: 2026 aesc silicon
+..
+.. SPDX-License-Identifier: AGPL-3.0-or-later
+
+ASAP7
+=====
+
+
+Overview
+--------
+
+``asap7`` is the 7 nm predictive FinFET PDK from Arizona State University,
+release 1p7. The Calibre deck is not public, so the rules follow the design rule
+manual (``asap7_drm_201207a.pdf``), with the `KLayout port
+<https://github.com/laurentc2/ASAP7_for_KLayout>`_ read alongside it. Layouts are read
+at the real 7 nm scale on a 0.25 nm grid, as the standard-cell libraries ship; a
+layout drawn 4× up for Calibre must be scaled down first.
+
+The decks are per layer (``well``, ``fin``, ``gate`` … ``m9``, ``v9``), plus
+``geometry`` for non-orthogonal shapes. The suites are ``main`` (every deck), ``feol``
+(through V0, what a standard cell holds), ``beol`` (M1 to the pad) and ``openroad``
+(every deck, held to the tech LEF; see below).
+
+
+One-way layers
+--------------
+
+Most layers route one way, so the manual gives them one width and space across the
+track and another along it. These rules read ``facing: x`` (vertical walls, a
+horizontal span) or ``facing: y``; a corner-to-corner space (``M1.S.6``,
+``LIG.LISD.S.7``) reads ``facing: none``. A via "enclosed on at least two opposite
+sides" is ``sides: opposite``, and "the same width as M2" is a ``max_enclosure`` of
+nothing on ``sides: opposite``.
+
+The M1–M3, LISD, LIG and M8/M9 spacings depend on the lengths of the two facing edges
+(side to side, tip to side, tip to tip), so they read edge layers sorted by length
+(``virtual_layers`` in ``pdk.yml``).
+
+
+What is not checked
+-------------------
+
+Each deck's header lists the rules of its section it does not check, and why.
+``ACTIVE.W.2`` and
+``SDT.W.3`` read every vertical ACTIVE and SDT edge against the whole multiples of
+27 nm; ``ACTIVE.LUP.1`` reads the
+reach from a gated ACTIVE to a tap under the well's own implant, 30 µm round and, in a
+well, confined to that well, the way the IHP latch-up rules are read.
+``V0.LIG.AUX.2`` is read from figure 3.11.2(c) as "a V0 crosses its LIG": the part
+of the V0 off the LIG must be two pieces, one either side, so the rule needs no
+LIG direction.
+M4–M7 even width multiples are checked through each layer's maximum width;
+widths above that maximum are rejected independently. Their routing grid and
+tracks are read from the manual's default offset of 0: ``AUX.1`` is
+:doc:`offgrid </checks/offgrid>` on the one coordinate the layer's edges run at, and
+``AUX.2`` and ``W.4`` are :doc:`offtrack </checks/offtrack>`, a wire's centre on the
+tracks two widths apart - a minimum-width wire lies on one, and a wider wire spans an
+odd number of them, which is the same wire centred on one. A design routed on other
+tracks sets the three rules' ``offset`` in each deck, from its tech LEF: the grid's
+offset on ``AUX.1``, and that plus half a width - the tracks' centreline - on ``AUX.2``
+and ``W.4``. ``S.5`` is :doc:`min_track_run </checks/min_track_run>` and ``S.4``
+:doc:`min_tip_stagger </checks/min_tip_stagger>`: two wires on adjacent tracks - nothing
+routable between them, a gap under three widths - share 44 nm of run or none, and
+their tips on one side are aligned or 40 nm apart. The ASAP7 tech LEF reads both only
+as a corner keep-out about a line end, so both carry ``tech_lef: partial`` (below), and
+their markers on a routed design say so. ``AUX.4`` remains unimplemented.
+V0–V3 ``S.1`` reads vias that face each other, on one track or on
+neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
+tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
+end-cap at 23, 30 or 27 nm; the 27 nm in the ``S.1`` row is ``S.4``'s value.
+``FIN.S.1`` and ``GATE.S.1``, the exact 27 and 54 nm pitches, are ``offtrack`` in the
+standard cells' frame - fins centred 13.5 nm and gates 27 nm past a multiple of the
+pitch, as every library cell has them and so every design placing them on the row and
+the site; a design drawn in another frame sets ``offset``.
+
+Against the tech LEF
+--------------------
+
+This is the list of where the ASAP7 1x tech LEF (``asap7_tech_1x_201209.lef``, as
+OpenROAD-flow-scripts and LambdaPDK ship it; ``asap7_tech_1x_260907.lef`` agrees on
+every row here) differs from the manual. A rule absent from both tables has not been
+compared with the LEF; it says nothing either way.
+
+The rules in the first table carry ``tech_lef`` in their decks, and their markers say
+so; ``rules_the_tech_lef_falls_short_of`` in ``tests/asap7.rs`` pins the list. Each
+deck's header quotes the LEF statement.
+
+.. list-table:: Marked ``tech_lef`` in the decks
+   :header-rows: 1
+   :widths: 18 24 44 14
+
+   * - Rule
+     - Manual
+     - Tech LEF
+     - ``tech_lef``
+   * - ``M1.S.2``
+     - 25 nm, tip to side
+     - ``LEF58_EOLKEEPOUT 0.01825 EXTENSION 0.0 0.0 0.031``: 31 nm ahead of a line
+       end at most 18.25 nm wide, so only where such a tip faces the side
+     - partial
+   * - ``M1.S.3``
+     - 27 nm between edges 24-36 nm long
+     - nothing
+     - absent
+   * - ``M1.S.4``, ``.S.5``
+     - 31 nm, tip to tip
+     - the same keep-out, only where a tip is a line end
+     - partial
+   * - ``M1.S.6``
+     - 20 nm, corner to corner
+     - ``LEF58_CORNERSPACING ... SPACING 0.018``
+     - weaker
+   * - M4-M7 ``S.4``, ``S.5``
+     - adjacent-track tips aligned or 40 nm apart; 44 nm of run or none
+     - ``LEF58_EOLKEEPOUT ... EXTENSION 0.048 0.02425 0.048 CORNERONLY`` (M6/M7
+       ``0.03225``): no corner within 48 nm of a line end on the adjacent track.
+       Stricter than the manual - it forbids aligned tips and a 40-48 nm stagger -
+       but only partly the same rule
+     - partial
+   * - ``V0.M1.AUX.3``
+     - V0 as wide as M1 across it
+     - ``LAYER V0`` states width and spacing only
+     - absent
+   * - ``V1.M1.EN.1``
+     - 5 nm and 2 nm of M1, opposite sides
+     - no V1 enclosure; ``VIARULE M2_M1`` sets M1's to 0; ``VIA12``'s M1 pad is 0/0
+       in x and 2/2 in y
+     - absent
+   * - ``V6.S.2`` (S.1-S.3)
+     - 45 nm between cuts
+     - ``LEF58_SPACINGTABLE ... DEFAULT 0.034``
+     - weaker
+
+The second table lists divergences found in routed OpenROAD-flow-scripts designs that
+the decks do not mark yet. Most are the LEF's own via definitions and generate rules
+breaking a rule, which marks a fixed via rather than a rule the router lacks.
+
+.. list-table:: Found, not marked
+   :header-rows: 1
+   :widths: 22 24 54
+
+   * - Rule
+     - Manual
+     - Tech LEF
+   * - M4-M7 ``AUX.1``, ``AUX.2``, ``W.4``
+     - edges on the 24/32 nm grid, wires centred on the tracks
+     - ``LEF58_RIGHTWAYONGRIDONLY`` on M2-M7 keeps the router's wires on the tracks
+       the flow makes; nothing holds pdngen's shapes, which need ``-ongrid`` and
+       ``-snap_to_grid``
+   * - V1-V7 ``AUX.2`` (e.g. ``V2.M3.AUX.2``, ``V4.M5.AUX.2``)
+     - a via as wide as the metal across it
+     - the generate rules size a power stack's intermediate pads freely; pdngen needs
+       ``-min_width_layers``
+   * - ``V5.M5.EN.1``
+     - 11 nm of M5, opposite sides
+     - ``VIARULE M6_M5widePWR1p152``: M5 ``ENCLOSURE 0.0 0.0``. Raising it does not
+       help: pdngen still places the V5 where a strap ends flush on an M6 wire
+   * - ``V7.M8.AUX.2``
+     - V7 as wide as M8 across it (V6/V7 rules); 32 nm along it
+     - ``VIA78``: a 32 x 32 nm V7 in a 40 nm M8 pad. OpenROAD-flow-scripts#142
+       widened the pad to M8's minimum width but not the cut; asap7sc7p5t_28's 4x LEF
+       keeps a flush pad under that width
+   * - ``V8.M8.EN.1``, ``V8.M9.EN.2``
+     - 20 nm of M8 and of M9, opposite sides
+     - ``VIA89``: M8, M9 and V8 all 40 x 40 nm; ``VIARULE M9_M8`` sets M8's to 0
+   * - ``M8.W.2``-``.W.4``, ``M9.W.2``-``.W.4``
+     - 60, 80, 120 nm once a wire runs past 0.4, 1.2, 1.8 um
+     - ``WIDTH 0.04`` only
+   * - ``M8.S.2``-``.S.8``, M9 likewise
+     - 43 nm to 1 um, growing with edge length and width
+     - ``SPACINGTABLE`` of 40 nm throughout, except 0.5 and 1 um for wires at least
+       0.5 and 1 um wide past a 1.8 um run
+
+The LEF also writes several values on a quarter nanometre under ``DATABASE MICRONS
+1000``, and three of them stop a rule doing anything as a router reads them:
+
+.. list-table:: Quarter-nanometre values
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - Statement
+     - LEF -> stored
+     - Effect
+   * - M1 ``EOLKEEPOUT`` line-end width
+     - 0.01825 -> 18 nm
+     - the test is length < width, so no 18 nm tip is a line end
+   * - M4-M7 ``EOLKEEPOUT`` side extension
+     - 0.02425, 0.03225 -> 24, 32 nm
+     - exactly the adjacent wire's edge, which a corner must lie strictly inside
+   * - M8/M9 ``SPACINGTABLE`` thresholds
+     - 0.39975 and the like, rounded up
+     - a value exactly on the manual's threshold falls in the row below
+
+The tables describe the LEF as written, not as rounded; a routed design's markers on
+those rules are this rounding.
+
+Fixes proposed upstream: whole-nanometre values for the quarter-nanometre ones in
+OpenROAD-flow-scripts#4663 and LambdaPDK#246 (asap7sc7p5t_28#10, the same, was
+withdrawn); a review of #246 suggests ``DATABASE MICRONS 4000`` instead, which holds
+them exactly. ``VIA78`` and ``VIA89`` are fixed on branch ``asap7-tech-lef-vias`` of
+jeffhsu3/OpenROAD-flow-scripts, not yet proposed.
+
+The ``openroad`` suite is what a design routed on that LEF should pass: ``main``
+without the absent and partial rules, and with ``M1.S.6`` and ``V6.S.2`` read at the
+LEF's 18 and 34 nm (deck ``openroad``, rules ``M1.S.6.LEF`` and ``V6.S.2.LEF``). The
+partial rules go too because the LEF's rounding leaves a router keeping none of them.
+A marker there is a rule the router was given and broke, or a rule of the second
+table.
+
+Via end-caps and local-interconnect nets
+----------------------------------------
+
+V0–V3 corner spacing distinguishes two, one and zero 5 nm upper-metal end-caps
+at the corners facing the gap: respectively 23, 27 and 30 nm. A cap at the far
+end of a via does not relax the gap. The landing metal remains whole even when
+it intersects SRAMDRC elsewhere. Exactly 5 nm qualifies. ``V0.LISD.EN.3`` reads
+the portion of a non-SRAM via overlapping LISD that interacts with LIG, requiring
+3 nm on an opposite pair while allowing the rest of the via to protrude.
+As with ``V0.LISD.EN.2``, this reads the manual's "minimum enclosure" as a lower
+bound, despite the table's ``==`` symbol: the standard-cell libraries put V0s on
+LISD bars with tens of nanometres along the bar and as little as 2 nm across it, so
+no pair of sides is exactly 3 nm.
+
+V4–V6 ``W.1`` is exact along the upper metal's length, as the manual words it: the
+via's walls running with M5 and M7 (vertical) or M6 (horizontal) must be exactly 24
+or 32 nm, and across the metal ``AUX.2`` holds the via to the metal's width. The
+manual never says which way M8 runs, so ``V7.W.1`` reads the via's short side.
+V8/V9 corner spacing shares ``S.1``'s 57 nm, which reads every direction.
+
+``LIG.LISD.S.6``, ``LIG.LISD.S.7`` and ``LIG.SDT.S.8`` use electrical connectivity,
+including remote routing through M1–M9 and the pad. Contact intersections keep
+net-extraction anchors on actual overlapping material, including partial V0
+landings. SRAM conductors participate in connectivity; only the measured subjects
+are filtered. ``ACTIVE.S.2A`` reads the nets too, through the source/drain regions - the ACTIVE a
+gate crosses, less the gate - which reach the graph through their SDT contacts. It
+reads the 1 nm lips of the regions flanking a break under 92 nm, the lips of one
+ACTIVE polygon being related and no pair; a lip faces across its own break alone, so
+the region behind an exempt same-net pair, which an unshielded space check would
+otherwise reach, is never read. These four rules are skipped
+with ``--no-connectivity``.
+
+SRAM applicability
+------------------
+
+DRM section 1.2.2, convention 7 makes non-SRAM geometry the default scope of a
+rule unless its wording says otherwise. This applies throughout the decks,
+including ordinary LISD/LIG, via and M4–M9 checks, not only M1–M3.
+
+SRAM membership requires **positive-area overlap** with ``SRAMDRC``. Both ordinary
+and explicitly SRAM-scoped checks use this partition. Edge-only and point-only
+contact remain non-SRAM. This is a deliberate conservative deviation from the
+manual's convention 4: the manual counts shared-edge contact as interaction, but
+excludes isolated vertex contact. The general engine ``interacting`` operator also
+counts vertex contact, so it is not the predicate used for SRAM membership here.
+
+Classification keeps or drops a whole merged polygon, including its geometry
+outside the marker and across tile boundaries. Edge layers are extracted after
+selection, preserving original edge lengths. A marker on the remote end of a wire
+can therefore exempt an ordinary width or spacing violation outside the array.
+This does not exempt other layers connected to that wire through vias, and marker
+locations alone cannot determine whether a violation should be exempt.
+
+The rules use the selected subjects as follows:
+
+* Ordinary single-layer checks read non-SRAM polygons. Ordinary spacing between
+  two subjects reads a pair only when both are non-SRAM. No extra SRAM/non-SRAM
+  boundary-spacing requirement is inferred. This is the literal convention-7
+  interpretation; mixed-pair behavior has not been verified against Calibre.
+* Via checks select the via instance, retaining full landing metal and LIG/LISD
+  references. A non-SRAM via still sees metal that overlaps SRAMDRC somewhere
+  else. This includes ``V0.LIG.EN.4``, whose existing implementation measures LIG
+  walls inside the selected V0. Other enclosure/extension checks select the
+  enclosed subject and keep the enclosing reference layer whole. Extension checks
+  select FIN, ACTIVE or cut-GATE subjects; where the engine measures a channel
+  fragment, selection precedes that intersection. Coverage predicates likewise
+  retain their full reference geometry.
+* Explicit qualifications take precedence. ACTIVE/WELL and implant enclosures
+  select ACTIVE as their subject; SRAM SDT overlap and LIG/GATE overlap select SDT
+  or LIG, respectively, retaining their full reference layers. The existing
+  SRAM-specific limits and ACTIVE/LISD/LIG boundary-contact prohibitions remain
+  active. ``SRAM.SDT.ACTIVE.OV.3`` and ``SRAM.SDT.LISD.OV.4`` both require 17 nm
+  vertical overlap, with separate checks for missing or touching-only references;
+  a width check alone cannot reject an empty intersection. Boundary prohibitions
+  test contact independently of the membership filter.
+* The SRAMDRC marker's own non-orthogonal-geometry check remains active everywhere
+  as a supplemental marker-integrity check. A marker is not exempted against
+  itself. ``SRAMVT`` is a threshold-adjust layer, not the SRAMDRC marker; its name
+  alone does not give it SRAM scope.
+
+``ACTIVE.S.2A`` is read in SRAM as well as outside it, as its own note requires.
+
+
+Readings
+--------
+
+A few rules are read differently from the manual's literal wording, because the
+shipped standard-cell libraries (verified with the Calibre deck) contradict that
+wording:
+
+* ``V0.LIG.EN.4`` is worded as the LIG's enclosure by the V0. The libraries draw both
+  that case (a V0 over a 16 nm LIG rail, 1 nm past it on each side) and a V0 flush with
+  the end of a wider LIG. The rule reads the LIG walls inside the via and skips the
+  flush one. The manual asks for two opposite sides; with ``V0.LIG.AUX.2`` holding a
+  V0 across its LIG, the only LIG walls inside the via are that pair.
+* ``SDT.ACTIVE.AUX.2``, "SDT horizontal edges must coincide with ACTIVE horizontal
+  edges", is read as "an SDT does not end inside its ACTIVE". Where an ACTIVE steps,
+  the libraries run the SDT on past it.
+* The select, VT and well minimum widths fire on the 54 nm half-width filler and tap
+  cells when these are checked on their own. Placed between other cells, they are part
+  of a wider shape.
+
+Tests
+-----
+
+``tests/asap7.rs`` uses synthetic cases to check both SRAM SDT overlaps at 17 nm,
+empty references, local via end-cap qualification, partial V0 landing, remote net
+connections, even metal widths, and V1's asymmetric 5/2 nm enclosure. Cases include
+rotation, negative coordinates, SRAM selection, and geometry on or crossing tile
+boundaries.
+
+The generated fixtures in ``tests/data/asap7/generated/`` also run in ordinary
+Rust CI. They cover the WELL rows, FIN, GATE and GCUT width, spacing, pitch, area,
+extension and shape rules, each gate with a partner one pitch along; every ACTIVE
+rule, the well thresholds inside, outside and across the SRAM marker among them;
+every SDT rule, the SRAM overlaps with absent and touching references among them;
+every LISD and LIG rule, the net-gated LIG spacings with a same-net pair joined
+through V0 and M1 among them;
+every select and VT rule on all five layers; the geometry rule, a 45° chamfer on
+every layer it reads, and the same chamfers exempt under the SRAM marker; width, spacing, area and edge rules on every metal, including
+the length-class, corner, notch, even-width, wide-line, bent-wire, grid and track cases; and every via level
+in a whole stack: width, spacing, corner spacing by end-cap, both enclosures, the
+flush upper metal, coverage, V0 on LIG and partly on LISD, and each spacing and
+enclosure defect under the SRAM marker. Three routed upper-metal nets with a
+deliberately defective companion check the full main suite.
+
+``gen/asap7/`` separates ACTIVE, SDT, via, metal and routing patterns into modules,
+drawn with the shared helpers and the ASAP7 builders in ``gen/asap7/patterns.rs``.
+Each fixture, ``<deck>/<rule>.<case>.bad.gds.gz``, holds the shape exactly at the
+limit and the ones one DBU past it. The limits come from the manual, and generation
+verifies that the deck values agree with them. Regenerate with
+``just gen-testdata-for asap7``.
+
+Expected violation counts live in ``tests/asap7.rs``. A fixture must report only
+its target rule, with the expected count; where two rules overlap by their nature -
+a via missing a layer also fails its enclosure, say - the test names the other rule
+and ignores it. A test there also checks that every rule in every deck has a fixture,
+and that every fixture names a rule its deck still has.

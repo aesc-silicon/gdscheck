@@ -16,6 +16,10 @@ rules:
     check: forbidden
     layers: [Outer.edges]
     value: 0.0
+  - id: R.multiple
+    check: forbidden
+    layers: [OuterOffHalf]
+    value: 0.0
   - id: R.uncovered
     check: forbidden
     layers: [Inner, Outer, Diode]

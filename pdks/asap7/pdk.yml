@@ -1,0 +1,664 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# ASAP7, the 7 nm predictive FinFET PDK from Arizona State University and ARM (release
+# 1p7).  The rules are the design rule manual's (asap7_drm_201207a.pdf); the foundry-style
+# Calibre deck is not public, so the manual is the reference, with the KLayout port at
+# github.com/laurentc2/ASAP7_for_KLayout read alongside it for what each rule measures.
+#
+# Layouts are drawn at the real 7 nm scale on a 0.25 nm grid (4000 DBU per um), the way
+# the standard-cell libraries ship; an older layout drawn 4x up for Calibre must be
+# scaled first.
+#
+# Most layers route one way, and the manual words their rules so: "minimum horizontal
+# width of WELL", "minimum vertical spacing of ACTIVE".  Those rules read `facing: x`
+# (vertical walls, a horizontal span) or `facing: y`.  A via "enclosed on two opposite
+# sides" is `sides: opposite`.  Each deck's header lists the rules of its section it
+# does not check, and why.
+name: ASAP7
+version: "1p7"
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every deck
+  - name: feol
+    path: suites/feol.yml
+    description: Front end and middle of line, through V0 (a standard cell)
+  - name: beol
+    path: suites/beol.yml
+    description: Routing stack, M1 to the pad
+  - name: openroad
+    path: suites/openroad.yml
+    description: Every deck, held to the tech LEF where it falls short of the manual
+
+decks:
+  - name: geometry
+    path: decks/geometry.yml
+    description: Non-orthogonal shapes
+  - name: well
+    path: decks/well.yml
+    description: N-well
+  - name: fin
+    path: decks/fin.yml
+    description: Fin
+  - name: gate
+    path: decks/gate.yml
+    description: Gate
+  - name: active
+    path: decks/active.yml
+    description: Active area
+  - name: gcut
+    path: decks/gcut.yml
+    description: Gate cut
+  - name: select
+    path: decks/select.yml
+    description: N/P implant and threshold-adjust layers
+  - name: sdt
+    path: decks/sdt.yml
+    description: Source/drain trench
+  - name: lisd
+    path: decks/lisd.yml
+    description: Source/drain local interconnect
+  - name: lig
+    path: decks/lig.yml
+    description: Gate local interconnect
+  - name: v0
+    path: decks/v0.yml
+    description: Via LIG/LISD to M1
+  - name: m1
+    path: decks/m1.yml
+    description: Metal 1
+  - name: v1
+    path: decks/v1.yml
+    description: Via 1
+  - name: m2
+    path: decks/m2.yml
+    description: Metal 2
+  - name: v2
+    path: decks/v2.yml
+    description: Via 2
+  - name: m3
+    path: decks/m3.yml
+    description: Metal 3
+  - name: v3
+    path: decks/v3.yml
+    description: Via 3
+  - name: m4
+    path: decks/m4.yml
+    description: Metal 4
+  - name: v4
+    path: decks/v4.yml
+    description: Via 4
+  - name: m5
+    path: decks/m5.yml
+    description: Metal 5
+  - name: v5
+    path: decks/v5.yml
+    description: Via 5
+  - name: m6
+    path: decks/m6.yml
+    description: Metal 6
+  - name: v6
+    path: decks/v6.yml
+    description: Via 6
+  - name: m7
+    path: decks/m7.yml
+    description: Metal 7
+  - name: v7
+    path: decks/v7.yml
+    description: Via 7
+  - name: m8
+    path: decks/m8.yml
+    description: Metal 8
+  - name: v8
+    path: decks/v8.yml
+    description: Via 8
+  - name: m9
+    path: decks/m9.yml
+    description: Metal 9
+  - name: v9
+    path: decks/v9.yml
+    description: Via 9 to the pad
+  - name: openroad
+    path: decks/openroad.yml
+    description: M1.S.6 and V6.S.2 at the tech LEF's values (the openroad suite)
+
+# Physical conductors remain whole for net extraction; SRAM selection only gates
+# the rule subjects. Alias edges attach those selected subjects to the full nets.
+connectivity:
+  - connector: LigGateContact
+    layers: [LIG, GateNoCut]
+  - connector: LigLisdContact
+    layers: [LIG, LISD]
+  - connector: SdtLisdContact
+    layers: [SDT, LISD]
+  - connector: SdtActiveContact
+    layers: [SDT, ActiveSD]
+  - connector: BreakLip
+    layers: [BreakLip, ActiveSD]
+  - connector: LigNoSram
+    layers: [LigNoSram, LIG]
+  - connector: LisdNoSram
+    layers: [LisdNoSram, LISD]
+  - connector: SdtNoSram
+    layers: [SdtNoSram, SDT]
+  - connector: V0LisdContact
+    layers: [V0, LISD]
+  - connector: V0LigContact
+    layers: [V0, LIG]
+  - connector: V0
+    layers: [V0, M1]
+  - connector: V1
+    layers: [M1]
+  - connector: V1
+    layers: [M2]
+  - connector: V2
+    layers: [M2]
+  - connector: V2
+    layers: [M3]
+  - connector: V3
+    layers: [M3]
+  - connector: V3
+    layers: [M4]
+  - connector: V4
+    layers: [M4]
+  - connector: V4
+    layers: [M5]
+  - connector: V5
+    layers: [M5]
+  - connector: V5
+    layers: [M6]
+  - connector: V6
+    layers: [M6]
+  - connector: V6
+    layers: [M7]
+  - connector: V7
+    layers: [M7]
+  - connector: V7
+    layers: [M8]
+  - connector: V8
+    layers: [M8]
+  - connector: V8
+    layers: [M9]
+  - connector: V9
+    layers: [M9]
+  - connector: V9
+    layers: [PAD]
+
+virtual_layers:
+  # Contact intersections keep the extraction anchor on actual shared material,
+  # even when LIG or V0 overlaps its landing layer only at one end.
+  LigGateContact: LIG and GateNoCut
+  LigLisdContact: LIG and LISD
+  SdtLisdContact: SDT and LISD
+  V0LisdContact: V0 and LISD
+  V0LigContact: V0 and LIG
+  # DRM 1.2.2 convention 7: ordinary checks select whole non-SRAM polygons.
+  # This deck requires positive-area overlap for SRAM membership. Edge/vertex-only
+  # contact stays in ordinary checks, a conservative shared-edge deviation from note 4.
+  # Keep drawn layers intact for reference geometry (e.g. metal enclosing a via).
+  WellNoSram: NWELL not_overlapping SRAMDRC
+  FinNoSram: FIN not_overlapping SRAMDRC
+  GateNoSram: GATE not_overlapping SRAMDRC
+  GcutNoSram: GCUT not_overlapping SRAMDRC
+  NselectNoSram: NSELECT not_overlapping SRAMDRC
+  PselectNoSram: PSELECT not_overlapping SRAMDRC
+  SlvtNoSram: SLVT not_overlapping SRAMDRC
+  LvtNoSram: LVT not_overlapping SRAMDRC
+  SramvtNoSram: SRAMVT not_overlapping SRAMDRC
+  DummyNoSram: DUMMY not_overlapping SRAMDRC
+  PadNoSram: PAD not_overlapping SRAMDRC
+  M4NoSram: M4 not_overlapping SRAMDRC
+  M5NoSram: M5 not_overlapping SRAMDRC
+  M6NoSram: M6 not_overlapping SRAMDRC
+  M7NoSram: M7 not_overlapping SRAMDRC
+  M8NoSram: M8 not_overlapping SRAMDRC
+  M9NoSram: M9 not_overlapping SRAMDRC
+  V0NoSram: V0 not_overlapping SRAMDRC
+  V1NoSram: V1 not_overlapping SRAMDRC
+  V2NoSram: V2 not_overlapping SRAMDRC
+  V3NoSram: V3 not_overlapping SRAMDRC
+  V4NoSram: V4 not_overlapping SRAMDRC
+  V5NoSram: V5 not_overlapping SRAMDRC
+  V6NoSram: V6 not_overlapping SRAMDRC
+  V7NoSram: V7 not_overlapping SRAMDRC
+  V8NoSram: V8 not_overlapping SRAMDRC
+  V9NoSram: V9 not_overlapping SRAMDRC
+
+  # GATE regions a GCUT does not cut: what the manual calls "GATE (not cut by GCUT)".
+  GateNoCut: GATE not GCUT
+  GateNoCutNoSram: GateNoCut not_overlapping SRAMDRC
+  GateNoCutOffActive: GateNoCutNoSram not_interacting ACTIVE
+  # The channel: GATE over ACTIVE.
+  Channel: GATE and ACTIVE
+  ChannelNoCut: GateNoCut and ACTIVE
+  ChannelNoSram: Channel not_overlapping SRAMDRC
+  # Extension subjects are selected before intersection, so a remote marker overlap
+  # exempts the whole source polygon, including channel fragments outside the marker.
+  ActiveNoSramOnGate: ActiveNoSram and GATE
+  GateNoCutNoSramOnActive: GateNoCutNoSram and ACTIVE
+  # GATE.S.3: every gate needs another within one 54 nm pitch, centre to centre, beside it -
+  # a space of at most 34 nm.  Grown by half that across x, two such gates meet and make one
+  # region at least 108 nm wide; a gate alone makes one 54 nm wide, which an erosion by 27 nm
+  # takes away.  A gate the survivors do not reach has no neighbour.
+  GateReach: GateNoCutNoSram grow_x 0.017
+  GatePaired: GateReach shrink_x 0.027
+  GateSolitary: GateNoCutNoSram not_interacting GatePaired
+  # "May not bend": a shape that is not a rectangle.
+  FinBent: FinNoSram not_rectangle
+  GateBent: GateNoSram not_rectangle
+  M4Bent: M4NoSram not_rectangle
+  M5Bent: M5NoSram not_rectangle
+  M6Bent: M6NoSram not_rectangle
+  M7Bent: M7NoSram not_rectangle
+  # A routing layer's minimum-width wires, by the shorter side of the box, and the rest:
+  # a wire is on a track by its centre whichever it is, each under its own rule.
+  M4Track: M4NoSram with_bbox_min max 0.02425
+  M4Wide: M4NoSram not M4Track
+  M5Track: M5NoSram with_bbox_min max 0.02425
+  M5Wide: M5NoSram not M5Track
+  M6Track: M6NoSram with_bbox_min max 0.03225
+  M6Wide: M6NoSram not M6Track
+  M7Track: M7NoSram with_bbox_min max 0.03225
+  M7Wide: M7NoSram not M7Track
+  # Whole ACTIVE polygons selected by positive-area SRAM marker overlap.
+  ActiveSram: ACTIVE overlapping SRAMDRC
+  ActiveNoSram: ACTIVE not_overlapping SRAMDRC
+  # SRAM.ACTIVE.AUX.2 and its LISD and LIG twins: a shape that shares no area with SRAMDRC
+  # may not touch it either.
+  ActiveOffSram: ACTIVE not_overlapping SRAMDRC
+  ActiveAbutSram: ActiveOffSram interacting SRAMDRC
+  # ACTIVE.LUP.1: the reach from a MOS device's ACTIVE - an ordinary ACTIVE a gate
+  # crosses - to a tap, the ACTIVE under the well's own implant: n+ in an N-well, p+ in
+  # the substrate.
+  ActiveOnGate: ActiveNoSram interacting GATE
+  # ACTIVE.S.2A: a source/drain region is the ACTIVE a gate crosses, less the gate - in
+  # SRAM too, by the manual's note - reached by the nets through its SDT contacts. The
+  # rule reads the lips of the regions flanking a break: a break is the ground between
+  # two ACTIVEs under 92 nm apart across x, which the halos 46 nm out from each span,
+  # and a lip the 1 nm of a region along it. The space check does not shield, so a
+  # whole region would also be read against the region behind an exempt pair at the
+  # next break; a lip faces across its own break alone, two lips of different breaks
+  # being a region, a gate and a gap apart, and the space between two lips is the
+  # break's own.
+  ActiveGated: ACTIVE interacting GATE
+  ActiveSD: ActiveGated not GATE
+  SdtActiveContact: SDT and ActiveSD
+  ActiveReach: ACTIVE grow_x 0.046
+  ActiveHalo: ActiveReach not ACTIVE
+  ActiveBreak: ActiveHalo interacting min 2 ACTIVE
+  BreakReach: ActiveBreak grow_x 0.001
+  BreakLip: ActiveSD and BreakReach
+  PmosActiveAll: ActiveOnGate and PSELECT
+  PmosActive: PmosActiveAll and NWELL
+  NmosActiveAll: ActiveOnGate and NSELECT
+  NmosActive: NmosActiveAll not NWELL
+  NplusActive: ACTIVE and NSELECT
+  NwellTap: NplusActive and NWELL
+  PplusActive: ACTIVE and PSELECT
+  SubstrateTap: PplusActive not NWELL
+  LisdOffSram: LISD not_overlapping SRAMDRC
+  LisdAbutSram: LisdOffSram interacting SRAMDRC
+  LigOffSram: LIG not_overlapping SRAMDRC
+  LigAbutSram: LigOffSram interacting SRAMDRC
+  Select: NSELECT or PSELECT
+  GcutOffGate: GcutNoSram not_interacting GATE
+  GcutOnChannel: GcutNoSram interacting ChannelNoSram
+  SdtNoSram: SDT not_overlapping SRAMDRC
+  SdtSram: SDT overlapping SRAMDRC
+  SdtSramOnActive: SdtSram and ACTIVE
+  SdtSramOffActive: SdtSram not_overlapping ACTIVE
+  SdtSramOnLisd: SdtSram and LISD
+  SdtSramOffLisd: SdtSram not_overlapping LISD
+  SdtOnGate: SdtNoSram interacting GateNoSram
+  SdtOffActive: SdtNoSram not_overlapping ACTIVE
+  LisdNoSram: LISD not_overlapping SRAMDRC
+  LisdSram: LISD overlapping SRAMDRC
+  LigNoSram: LIG not_overlapping SRAMDRC
+  LigSram: LIG overlapping SRAMDRC
+  LigOnLisd: LigNoSram and LisdNoSram
+  LigNoSramOnGate: LigNoSram and GateNoCut
+  LigSramOnGate: LigSram and GateNoCut
+  M1NoSram: M1 not_overlapping SRAMDRC
+  M2NoSram: M2 not_overlapping SRAMDRC
+  M3NoSram: M3 not_overlapping SRAMDRC
+  # A via corner has a 5 nm end-cap if it survives shrinking its landing
+  # metal along either routing axis. Membership is tested at the facing corner,
+  # including the shrunken boundary (exactly 5 nm), never at the remote via end.
+  M1Endcap5: (M1 shrink_x 0.005) or (M1 shrink_y 0.005)
+  M2Endcap5: (M2 shrink_x 0.005) or (M2 shrink_y 0.005)
+  M3Endcap5: (M3 shrink_x 0.005) or (M3 shrink_y 0.005)
+  M4Endcap5: (M4 shrink_x 0.005) or (M4 shrink_y 0.005)
+  # V0 against what it lands on.
+  LisdOrLig: LISD or LIG
+  V0OffM1: V0NoSram not_interacting M1
+  V0OffLisdLig: V0NoSram not_interacting LisdOrLig
+  V0OnLisd: V0NoSram interacting LISD
+  V0OnLisdOnly: V0OnLisd not_interacting LIG
+  V0OnLig: V0NoSram interacting LIG
+  V0OnLigOffLisd: V0OnLig not_inside LISD
+  V0OnLigArea: V0OnLigOffLisd and LIG
+  # V0.LIG.AUX.2: a V0 on LIG crosses it - clear of the LIG on both sides along it, the
+  # LIG running on past it on both sides across - so its part off the LIG is two pieces.
+  # Flush with the LIG, a side inside it, or over its end leaves one.
+  V0OnLigEdge: V0OnLigOffLisd not_inside LIG
+  V0OffLigPart: V0OnLigEdge not LIG
+  V0CrossesLig: V0OnLigEdge interacting min 2 max 2 V0OffLigPart
+  V0NotCrossingLig: V0OnLigEdge not V0CrossesLig
+  LisdOnLig: LISD interacting LIG
+  V0PartlyOnLisd: (V0NoSram overlapping LisdOnLig) not_inside LISD
+  V0PartialLisdArea: V0PartlyOnLisd and LISD
+  # Forbidden even width multiples through each metal's maximum width.
+  M4WidthEdges: M4NoSram edges with_angle min 90 max 90
+  M4EvenWidthEdges: >-
+    (M4WidthEdges with_length 0.048)
+    or (M4WidthEdges with_length 0.096)
+    or (M4WidthEdges with_length 0.144)
+    or (M4WidthEdges with_length 0.192)
+    or (M4WidthEdges with_length 0.24)
+    or (M4WidthEdges with_length 0.288)
+    or (M4WidthEdges with_length 0.336)
+    or (M4WidthEdges with_length 0.384)
+    or (M4WidthEdges with_length 0.432)
+    or (M4WidthEdges with_length 0.48)
+  M5WidthEdges: M5NoSram edges with_angle min 0 max 0
+  M5EvenWidthEdges: >-
+    (M5WidthEdges with_length 0.048)
+    or (M5WidthEdges with_length 0.096)
+    or (M5WidthEdges with_length 0.144)
+    or (M5WidthEdges with_length 0.192)
+    or (M5WidthEdges with_length 0.24)
+    or (M5WidthEdges with_length 0.288)
+    or (M5WidthEdges with_length 0.336)
+    or (M5WidthEdges with_length 0.384)
+    or (M5WidthEdges with_length 0.432)
+    or (M5WidthEdges with_length 0.48)
+  M6WidthEdges: M6NoSram edges with_angle min 90 max 90
+  M6EvenWidthEdges: >-
+    (M6WidthEdges with_length 0.064)
+    or (M6WidthEdges with_length 0.128)
+    or (M6WidthEdges with_length 0.192)
+    or (M6WidthEdges with_length 0.256)
+    or (M6WidthEdges with_length 0.32)
+    or (M6WidthEdges with_length 0.384)
+    or (M6WidthEdges with_length 0.448)
+    or (M6WidthEdges with_length 0.512)
+    or (M6WidthEdges with_length 0.576)
+    or (M6WidthEdges with_length 0.64)
+  M7WidthEdges: M7NoSram edges with_angle min 0 max 0
+  M7EvenWidthEdges: >-
+    (M7WidthEdges with_length 0.064)
+    or (M7WidthEdges with_length 0.128)
+    or (M7WidthEdges with_length 0.192)
+    or (M7WidthEdges with_length 0.256)
+    or (M7WidthEdges with_length 0.32)
+    or (M7WidthEdges with_length 0.384)
+    or (M7WidthEdges with_length 0.448)
+    or (M7WidthEdges with_length 0.512)
+    or (M7WidthEdges with_length 0.576)
+    or (M7WidthEdges with_length 0.64)
+  # V8.W.1 and V9.W.1: a long side of 40 or 120 nm, to the DBU.
+  V8Len40: V8NoSram with_bbox_max min 0.04 max 0.04025
+  V8Len120: V8NoSram with_bbox_max min 0.12 max 0.12025
+  V8GoodLength: V8Len40 or V8Len120
+  V8BadLength: V8NoSram not V8GoodLength
+  V8NotRect: V8NoSram not_rectangle
+  # V4.W.1-V6.W.1: exact along the upper metal's length - M5 and M7 run vertically, M6
+  # horizontally (DRM 3.16) - so the via's walls running that way must be exactly the
+  # width. Across the metal, V*.AUX.2 holds the via to the metal's own width.
+  V4AlongEdges: V4NoSram edges with_angle min 90 max 90
+  V4OffWidth: V4AlongEdges without_length 0.024
+  V5AlongEdges: V5NoSram edges with_angle min 0 max 0
+  V5OffWidth: V5AlongEdges without_length 0.024
+  V6AlongEdges: V6NoSram edges with_angle min 90 max 90
+  V6OffWidth: V6AlongEdges without_length 0.032
+  V9Len40: V9NoSram with_bbox_max min 0.04 max 0.04025
+  V9Len120: V9NoSram with_bbox_max min 0.12 max 0.12025
+  V9GoodLength: V9Len40 or V9Len120
+  V9BadLength: V9NoSram not V9GoodLength
+  V9NotRect: V9NoSram not_rectangle
+
+  # Edge layers share the virtual-layer expression mapping.
+  # The M1-style spacings (M1-M3, LISD, LIG) turn on the lengths of the two facing edges: a
+  # line's side is its long edge (over 36 nm), its tip the short one (36 nm or less), and a
+  # tip is `mid` from 24 to 36 nm and `tiny` under 24.  Lengths are whole DBU, so "36 nm or
+  # less" is "under 36.25". Ordinary edge layers are extracted after SRAM selection.
+  M1NoSram.edges: M1NoSram edges
+  M1NoSram.long: M1NoSram.edges with_length min 0.03625
+  M1NoSram.short: M1NoSram.edges with_length max 0.03625
+  M1NoSram.mid: M1NoSram.edges with_length min 0.024 max 0.03625
+  M1NoSram.tiny: M1NoSram.edges with_length max 0.024
+  M2NoSram.edges: M2NoSram edges
+  M2NoSram.long: M2NoSram.edges with_length min 0.03625
+  M2NoSram.short: M2NoSram.edges with_length max 0.03625
+  M2NoSram.mid: M2NoSram.edges with_length min 0.024 max 0.03625
+  M2NoSram.tiny: M2NoSram.edges with_length max 0.024
+  M3NoSram.edges: M3NoSram edges
+  M3NoSram.long: M3NoSram.edges with_length min 0.03625
+  M3NoSram.short: M3NoSram.edges with_length max 0.03625
+  M3NoSram.mid: M3NoSram.edges with_length min 0.024 max 0.03625
+  M3NoSram.tiny: M3NoSram.edges with_length max 0.024
+  LisdNoSram.long: LisdNoSram.edges with_length min 0.03625
+  LisdNoSram.short: LisdNoSram.edges with_length max 0.03625
+  LigNoSram.long: LigNoSram.edges with_length min 0.03625
+  LigNoSram.short: LigNoSram.edges with_length max 0.03625
+  LisdNoSram.edges: LisdNoSram edges
+  LisdNoSram.mid: LisdNoSram.edges with_length min 0.024 max 0.03625
+  LisdSram.edges: LisdSram edges
+  LisdSram.short: LisdSram.edges with_length max 0.03625
+  LigNoSram.edges: LigNoSram edges
+  LigNoSram.mid: LigNoSram.edges with_length min 0.024 max 0.03625
+  LigNoSram.tiny: LigNoSram.edges with_length max 0.024
+  # M8 and M9: an edge is long from 80 nm.
+  M8NoSram.edges: M8NoSram edges
+  M8NoSram.long: M8NoSram.edges with_length min 0.08
+  M8NoSram.short: M8NoSram.edges with_length max 0.08
+  M9NoSram.edges: M9NoSram edges
+  M9NoSram.long: M9NoSram.edges with_length min 0.08
+  M9NoSram.short: M9NoSram.edges with_length max 0.08
+  # Vertical edges lying inside a GATE, or on its outline.  `inside_part` counts an edge
+  # on a region's wall as inside it, on every wall alike, so the inside layers take the
+  # outline away and leave a flush edge to the `OnGate` layer: one marker per edge.
+  ACTIVE.edges: ACTIVE edges
+  ActiveNoSram.edges: ActiveNoSram edges
+  GcutNoSram.edges: GcutNoSram edges
+  GATE.edges: GATE edges
+  ActiveVEdges: ActiveNoSram.edges with_angle min 90.0 max 90.0
+  ActiveVEdgesInside: (ActiveVEdges inside_part GATE) not GATE.edges
+  ActiveVEdgesOnGate: ActiveVEdges and GATE.edges
+  # ACTIVE.W.2: every vertical edge of ordinary ACTIVE is a whole multiple of 27 nm.
+  ActiveW2Off: ActiveVEdges without_length_multiple 0.027
+  GcutVEdges: GcutNoSram.edges with_angle min 90.0 max 90.0
+  GcutVEdgesInside: (GcutVEdges inside_part GATE) not GATE.edges
+  GcutVEdgesOnGate: GcutVEdges and GATE.edges
+  LigVEdges: LigNoSram.edges with_angle min 90.0 max 90.0
+  LigVEdgesInside: (LigVEdges inside_part GATE) not GATE.edges
+  LigVEdgesOnGate: LigVEdges and GATE.edges
+  # ACTIVE.AUX.1: no ACTIVE edge on a select edge.
+  Select.edges: Select edges
+  ActiveOnSelectEdge: ActiveNoSram.edges and Select.edges
+  # SDT.ACTIVE.AUX.2: an SDT's horizontal edges lie on ACTIVE's, so an SDT does not end
+  # inside its ACTIVE.  Where the ACTIVE steps, the libraries run the SDT on past it; the
+  # rule reads the edges inside the ACTIVE, off its outline.
+  SdtNoSram.edges: SdtNoSram edges
+  SdtHEdges: SdtNoSram.edges with_angle min 0.0 max 0.0
+  SdtHEdgesInActive: SdtHEdges inside_part ACTIVE
+  SdtHEdgesOffActive: SdtHEdgesInActive not ACTIVE.edges
+  # SDT.W.3: every vertical edge of ordinary SDT is a whole multiple of 27 nm.
+  SdtVEdges: SdtNoSram.edges with_angle min 90.0 max 90.0
+  SdtW3Off: SdtVEdges without_length_multiple 0.027
+
+layers:
+  - name: NWELL
+    gds_layer: 1
+    gds_datatype: 0
+  - name: NWELL.pin
+    gds_layer: 1
+    gds_datatype: 251
+  - name: FIN
+    gds_layer: 2
+    gds_datatype: 0
+  - name: PSUB
+    gds_layer: 3
+    gds_datatype: 0
+  - name: THICKOX
+    gds_layer: 4
+    gds_datatype: 0
+  - name: GATE
+    gds_layer: 7
+    gds_datatype: 0
+  - name: DUMMY
+    gds_layer: 8
+    gds_datatype: 0
+  - name: GCUT
+    gds_layer: 10
+    gds_datatype: 0
+  - name: ACTIVE
+    gds_layer: 11
+    gds_datatype: 0
+  - name: NSELECT
+    gds_layer: 12
+    gds_datatype: 0
+  - name: PSELECT
+    gds_layer: 13
+    gds_datatype: 0
+  - name: LIG
+    gds_layer: 16
+    gds_datatype: 0
+  - name: LISD
+    gds_layer: 17
+    gds_datatype: 0
+  - name: V0
+    gds_layer: 18
+    gds_datatype: 0
+  - name: M1
+    gds_layer: 19
+    gds_datatype: 0
+  - name: M1.label
+    gds_layer: 19
+    gds_datatype: 2
+  - name: M1.pin
+    gds_layer: 19
+    gds_datatype: 251
+  - name: M2
+    gds_layer: 20
+    gds_datatype: 0
+  - name: M2.label
+    gds_layer: 20
+    gds_datatype: 2
+  - name: M2.pin
+    gds_layer: 20
+    gds_datatype: 251
+  - name: V1
+    gds_layer: 21
+    gds_datatype: 0
+  - name: V2
+    gds_layer: 25
+    gds_datatype: 0
+  - name: M3
+    gds_layer: 30
+    gds_datatype: 0
+  - name: M3.label
+    gds_layer: 30
+    gds_datatype: 2
+  - name: M3.pin
+    gds_layer: 30
+    gds_datatype: 251
+  - name: V3
+    gds_layer: 35
+    gds_datatype: 0
+  - name: M4
+    gds_layer: 40
+    gds_datatype: 0
+  - name: M4.label
+    gds_layer: 40
+    gds_datatype: 2
+  - name: M4.pin
+    gds_layer: 40
+    gds_datatype: 251
+  - name: V4
+    gds_layer: 45
+    gds_datatype: 0
+  - name: M5
+    gds_layer: 50
+    gds_datatype: 0
+  - name: M5.label
+    gds_layer: 50
+    gds_datatype: 2
+  - name: M5.pin
+    gds_layer: 50
+    gds_datatype: 251
+  - name: V5
+    gds_layer: 55
+    gds_datatype: 0
+  - name: M6
+    gds_layer: 60
+    gds_datatype: 0
+  - name: M6.label
+    gds_layer: 60
+    gds_datatype: 2
+  - name: M6.pin
+    gds_layer: 60
+    gds_datatype: 251
+  - name: V6
+    gds_layer: 65
+    gds_datatype: 0
+  - name: M7
+    gds_layer: 70
+    gds_datatype: 0
+  - name: M7.label
+    gds_layer: 70
+    gds_datatype: 2
+  - name: M7.pin
+    gds_layer: 70
+    gds_datatype: 251
+  - name: V7
+    gds_layer: 75
+    gds_datatype: 0
+  - name: M8
+    gds_layer: 80
+    gds_datatype: 0
+  - name: M8.label
+    gds_layer: 80
+    gds_datatype: 2
+  - name: M8.pin
+    gds_layer: 80
+    gds_datatype: 251
+  - name: V8
+    gds_layer: 85
+    gds_datatype: 0
+  - name: SDT
+    gds_layer: 88
+    gds_datatype: 0
+  - name: M9
+    gds_layer: 90
+    gds_datatype: 0
+  - name: M9.label
+    gds_layer: 90
+    gds_datatype: 2
+  - name: M9.pin
+    gds_layer: 90
+    gds_datatype: 251
+  - name: V9
+    gds_layer: 95
+    gds_datatype: 0
+  - name: PAD
+    gds_layer: 96
+    gds_datatype: 0
+  - name: SLVT
+    gds_layer: 97
+    gds_datatype: 0
+  - name: LVT
+    gds_layer: 98
+    gds_datatype: 0
+  - name: SRAMDRC
+    gds_layer: 99
+    gds_datatype: 0
+  - name: BOUNDARY
+    gds_layer: 100
+    gds_datatype: 0
+  - name: SRAMVT
+    gds_layer: 110
+    gds_datatype: 0
