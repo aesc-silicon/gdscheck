@@ -76,38 +76,136 @@ the site; a design drawn in another frame sets ``offset``.
 Against the tech LEF
 --------------------
 
-The rules a router driven by the ASAP7 tech LEF (``asap7_tech_1x_201209.lef``, which
-LambdaPDK ships unchanged) is not asked to keep as the manual states them carry
-``tech_lef``, and their markers say so. Each deck's header names the LEF statement:
+This is the list of where the ASAP7 1x tech LEF (``asap7_tech_1x_201209.lef``, as
+OpenROAD-flow-scripts and LambdaPDK ship it; ``asap7_tech_1x_260907.lef`` agrees on
+every row here) differs from the manual. A rule absent from both tables has not been
+compared with the LEF; it says nothing either way.
 
-- absent: ``M1.S.3`` (edges 24 nm and longer); ``V0.M1.AUX.3``
-  (``LAYER V0`` states only width and spacing); ``V1.M1.EN.1`` (no V1 enclosure, and
-  ``VIA12``'s M1 pad is 0/0 and 2/2).
-- partial: ``M1.S.2``, ``.S.4`` and ``.S.5``, which the LEF reads only as a 31 nm tip
-  keep-out ahead of line ends at most 18.25 nm wide.
-- partial: M4-M7 ``S.4``/``S.5``, which the LEF reads only as a corner keep-out 48 nm
-  either way of a line end and reaching the adjacent track - stricter than the
-  manual, which allows aligned tips and a 40-48 nm stagger.
-- weaker: ``M1.S.6`` (corner spacing 18 nm for 20) and ``V6.S.2`` (cut spacing 34 nm
-  for 45).
+The rules in the first table carry ``tech_lef`` in their decks, and their markers say
+so; ``rules_the_tech_lef_falls_short_of`` in ``tests/asap7.rs`` pins the list. Each
+deck's header quotes the LEF statement.
 
-The rest have not been compared with the LEF; an unmarked rule says nothing either way.
+.. list-table:: Marked ``tech_lef`` in the decks
+   :header-rows: 1
+   :widths: 18 24 44 14
+
+   * - Rule
+     - Manual
+     - Tech LEF
+     - ``tech_lef``
+   * - ``M1.S.2``
+     - 25 nm, tip to side
+     - ``LEF58_EOLKEEPOUT 0.01825 EXTENSION 0.0 0.0 0.031``: 31 nm ahead of a line
+       end at most 18.25 nm wide, so only where such a tip faces the side
+     - partial
+   * - ``M1.S.3``
+     - 27 nm between edges 24-36 nm long
+     - nothing
+     - absent
+   * - ``M1.S.4``, ``.S.5``
+     - 31 nm, tip to tip
+     - the same keep-out, only where a tip is a line end
+     - partial
+   * - ``M1.S.6``
+     - 20 nm, corner to corner
+     - ``LEF58_CORNERSPACING ... SPACING 0.018``
+     - weaker
+   * - M4-M7 ``S.4``, ``S.5``
+     - adjacent-track tips aligned or 40 nm apart; 44 nm of run or none
+     - ``LEF58_EOLKEEPOUT ... EXTENSION 0.048 0.02425 0.048 CORNERONLY`` (M6/M7
+       ``0.03225``): no corner within 48 nm of a line end on the adjacent track.
+       Stricter than the manual - it forbids aligned tips and a 40-48 nm stagger -
+       but only partly the same rule
+     - partial
+   * - ``V0.M1.AUX.3``
+     - V0 as wide as M1 across it
+     - ``LAYER V0`` states width and spacing only
+     - absent
+   * - ``V1.M1.EN.1``
+     - 5 nm and 2 nm of M1, opposite sides
+     - no V1 enclosure; ``VIARULE M2_M1`` sets M1's to 0; ``VIA12``'s M1 pad is 0/0
+       in x and 2/2 in y
+     - absent
+   * - ``V6.S.2`` (S.1-S.3)
+     - 45 nm between cuts
+     - ``LEF58_SPACINGTABLE ... DEFAULT 0.034``
+     - weaker
+
+The second table lists divergences found in routed OpenROAD-flow-scripts designs that
+the decks do not mark yet. Most are the LEF's own via definitions and generate rules
+breaking a rule, which marks a fixed via rather than a rule the router lacks.
+
+.. list-table:: Found, not marked
+   :header-rows: 1
+   :widths: 22 24 54
+
+   * - Rule
+     - Manual
+     - Tech LEF
+   * - M4-M7 ``AUX.1``, ``AUX.2``, ``W.4``
+     - edges on the 24/32 nm grid, wires centred on the tracks
+     - ``LEF58_RIGHTWAYONGRIDONLY`` on M2-M7 keeps the router's wires on the tracks
+       the flow makes; nothing holds pdngen's shapes, which need ``-ongrid`` and
+       ``-snap_to_grid``
+   * - V1-V7 ``AUX.2`` (e.g. ``V2.M3.AUX.2``, ``V4.M5.AUX.2``)
+     - a via as wide as the metal across it
+     - the generate rules size a power stack's intermediate pads freely; pdngen needs
+       ``-min_width_layers``
+   * - ``V5.M5.EN.1``
+     - 11 nm of M5, opposite sides
+     - ``VIARULE M6_M5widePWR1p152``: M5 ``ENCLOSURE 0.0 0.0``. Raising it does not
+       help: pdngen still places the V5 where a strap ends flush on an M6 wire
+   * - ``V7.M8.AUX.2``
+     - V7 as wide as M8 across it (V6/V7 rules); 32 nm along it
+     - ``VIA78``: a 32 x 32 nm V7 in a 40 nm M8 pad. OpenROAD-flow-scripts#142
+       widened the pad to M8's minimum width but not the cut; asap7sc7p5t_28's 4x LEF
+       keeps a flush pad under that width
+   * - ``V8.M8.EN.1``, ``V8.M9.EN.2``
+     - 20 nm of M8 and of M9, opposite sides
+     - ``VIA89``: M8, M9 and V8 all 40 x 40 nm; ``VIARULE M9_M8`` sets M8's to 0
+   * - ``M8.W.2``-``.W.4``, ``M9.W.2``-``.W.4``
+     - 60, 80, 120 nm once a wire runs past 0.4, 1.2, 1.8 um
+     - ``WIDTH 0.04`` only
+   * - ``M8.S.2``-``.S.8``, M9 likewise
+     - 43 nm to 1 um, growing with edge length and width
+     - ``SPACINGTABLE`` of 40 nm throughout, except 0.5 and 1 um for wires at least
+       0.5 and 1 um wide past a 1.8 um run
+
+The LEF also writes several values on a quarter nanometre under ``DATABASE MICRONS
+1000``, and three of them stop a rule doing anything as a router reads them:
+
+.. list-table:: Quarter-nanometre values
+   :header-rows: 1
+   :widths: 30 20 50
+
+   * - Statement
+     - LEF -> stored
+     - Effect
+   * - M1 ``EOLKEEPOUT`` line-end width
+     - 0.01825 -> 18 nm
+     - the test is length < width, so no 18 nm tip is a line end
+   * - M4-M7 ``EOLKEEPOUT`` side extension
+     - 0.02425, 0.03225 -> 24, 32 nm
+     - exactly the adjacent wire's edge, which a corner must lie strictly inside
+   * - M8/M9 ``SPACINGTABLE`` thresholds
+     - 0.39975 and the like, rounded up
+     - a value exactly on the manual's threshold falls in the row below
+
+The tables describe the LEF as written, not as rounded; a routed design's markers on
+those rules are this rounding.
+
+Fixes proposed upstream: whole-nanometre values for the quarter-nanometre ones in
+OpenROAD-flow-scripts#4663 and LambdaPDK#246 (asap7sc7p5t_28#10, the same, was
+withdrawn); a review of #246 suggests ``DATABASE MICRONS 4000`` instead, which holds
+them exactly. ``VIA78`` and ``VIA89`` are fixed on branch ``asap7-tech-lef-vias`` of
+jeffhsu3/OpenROAD-flow-scripts, not yet proposed.
 
 The ``openroad`` suite is what a design routed on that LEF should pass: ``main``
 without the absent and partial rules, and with ``M1.S.6`` and ``V6.S.2`` read at the
 LEF's 18 and 34 nm (deck ``openroad``, rules ``M1.S.6.LEF`` and ``V6.S.2.LEF``). The
-partial rules go too because the LEF's rounding, below, leaves a router keeping none of
-them. A marker there is a rule the router was given and broke, or an unmarked rule the
-LEF may not state.
-
-The LEF declares ``DATABASE MICRONS 1000`` but writes several values on a quarter
-nanometre, which a 1 nm database rounds off. Three of them disable a rule as a router
-reads it: M1's keep-out line-end width (``0.01825`` becomes 18, so no 18 nm tip is a
-line end), M4-M7's keep-out side extension (``0.02425`` and ``0.03225`` become exactly
-the adjacent wire's edge, which a corner must lie strictly inside), and M8/M9's
-spacing-table thresholds (``0.39975`` and the like round up, so a value exactly on the
-manual's threshold falls in the row below). The marks above describe the LEF as
-written, not as rounded; a routed design's markers on those rules are this rounding.
+partial rules go too because the LEF's rounding leaves a router keeping none of them.
+A marker there is a rule the router was given and broke, or a rule of the second
+table.
 
 Via end-caps and local-interconnect nets
 ----------------------------------------
