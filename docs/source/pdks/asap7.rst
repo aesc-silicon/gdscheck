@@ -194,13 +194,13 @@ The LEF also writes several values on a quarter nanometre under ``DATABASE MICRO
 The tables describe the LEF as written, not as rounded; a routed design's markers on
 those rules are this rounding.
 
-Fixes proposed upstream: LambdaPDK#246 sets ``DATABASE MICRONS 4000``, at its
-reviewer's request, which holds every value in the LEF exactly and leaves the
-manufacturing grid at a nanometre; OpenROAD#11695 (merged) made the same change to
-OpenROAD's own copies and warns when a LEF value rounds (``ODB-1220``).
-OpenROAD-flow-scripts#4663 still proposes whole-nanometre values for the three
-(asap7sc7p5t_28#10, the same, was withdrawn). ``VIA78`` and ``VIA89`` are fixed on
-branch ``asap7-tech-lef-vias`` of jeffhsu3/OpenROAD-flow-scripts, not yet proposed.
+Fixes proposed upstream: ``DATABASE MICRONS 4000``, which holds every value in the
+LEF exactly and leaves the manufacturing grid at a nanometre, in LambdaPDK#246 (at
+its reviewer's request), OpenROAD-flow-scripts#4663 and asap7sc7p5t_28#10, for both
+1x LEFs where a repository has two; OpenROAD#11695 (merged) made the same change to
+OpenROAD's own copies and warns when a LEF value rounds (``ODB-1220``). ``VIA78`` and
+``VIA89`` are fixed on branch ``asap7-tech-lef-vias`` of jeffhsu3/OpenROAD-flow-scripts,
+not yet proposed.
 
 The ``openroad`` suite is what a design routed on that LEF should pass: ``main``
 without the absent and partial rules, and with ``M1.S.6`` and ``V6.S.2`` read at the
