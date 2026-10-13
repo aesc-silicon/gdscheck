@@ -14,9 +14,52 @@
 //! expected count is read off the drawing: a violation is one pair.
 
 use crate::helpers::{
-    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, write_gz,
+    chamfered_tr, diamond, flat_array, layer, library, poly, rect, ref_array, strip45, um, write_gz,
 };
+use gds21::{GdsArrayRef, GdsDateTime, GdsElement, GdsPoint, GdsStruct};
 use gdscheck::pdk::PdkConfig;
+
+/// The dense array: 0.05 µm cuts at a pitch of 0.1 across and 0.2 up, 400 by 200 from
+/// the origin - 80,000 cuts over (0, 0)-(40, 40), 20,000 in each 20 µm tile, the
+/// density of a standard cell's contacts.  Across, the gap is 0.05, exactly
+/// S.dense; up it is 0.15.
+const DENSE: (i16, i16, f64, f64, f64) = (400, 200, 0.1, 0.2, 0.05);
+
+/// Where the extra cuts go, by column and the row they sit above: on the tile lines at
+/// 20 and 21 (7 µm tiles), either side of x = 20, at both edges of the array, at
+/// (20, 20), and inside a tile.
+const DENSE_EXTRA: [(i16, i16); 6] = [
+    (0, 10),
+    (105, 50),
+    (199, 99),
+    (200, 99),
+    (210, 120),
+    (399, 199),
+];
+
+/// The dense array as one array reference, with `extra` - shapes of TOP - beside it.
+fn dense(cut: (i16, i16), extra: Vec<GdsElement>) -> gds21::GdsLibrary {
+    let (cols, rows, px, py, size) = DENSE;
+    let aref = GdsElement::GdsArrayRef(GdsArrayRef {
+        name: "CUT".into(),
+        xy: [
+            GdsPoint::new(0, 0),
+            GdsPoint::new(um(px * cols as f64), 0),
+            GdsPoint::new(0, um(py * rows as f64)),
+        ],
+        cols,
+        rows,
+        ..Default::default()
+    });
+    let mut elems = vec![aref];
+    elems.extend(extra);
+    let mut lib = library("TOP", elems);
+    let mut child = GdsStruct::new("CUT");
+    child.elems = vec![rect(cut, 0.0, 0.0, size, size)];
+    lib.structs.insert(0, child);
+    lib.set_all_dates(GdsDateTime::from(&[0i16, 1, 1, 0, 0, 0]));
+    lib
+}
 
 const DIR: &str = "tests/data/engine/generated/space";
 
@@ -787,4 +830,31 @@ pub fn generate(pdk: &PdkConfig) {
             rect(inner, 1001.495, 1000.0, 1002.0, 1001.0),
         ],
     );
+
+    // Tens of thousands of cuts in a tile, and a few too close among them.  An extra cut
+    // sits in the 0.15 gap above a row, in line with a column: `drop` below the middle
+    // of the gap, 0.05 + `drop` above the row's top and 0.05 - `drop` below the next.  At
+    // 0 it is clean both ways; at 0.005 it is 0.045 above the row, one pair, and
+    // 0.055 below the next.  Its diagonal neighbours are 0.05 across and at least
+    // 0.045 up, 0.067 away.  S.dense, the extras drawn on Cut: 0 and 6; S.dense.pair,
+    // drawn on Inner: 0 and 6.
+    let cut = layer(pdk, "Cut");
+    let (_, _, px, py, size) = DENSE;
+    let extras = |l: (i16, i16), drop: f64| -> Vec<GdsElement> {
+        DENSE_EXTRA
+            .iter()
+            .map(|&(c, r)| {
+                let (x, y) = (c as f64 * px, r as f64 * py + 2.0 * size - drop);
+                rect(l, x, y, x + size, y + size)
+            })
+            .collect()
+    };
+    for (name, l, drop) in [
+        ("dense_exact", cut, 0.0),
+        ("dense_under", cut, 0.005),
+        ("dense_pair_exact", inner, 0.0),
+        ("dense_pair_under", inner, 0.005),
+    ] {
+        write_gz(&format!("{DIR}/{name}.gds.gz"), dense(cut, extras(l, drop)));
+    }
 }
