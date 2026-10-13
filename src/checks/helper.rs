@@ -69,6 +69,59 @@ impl LazyPoly<'_> {
     }
 }
 
+/// The pairs of boxes `(x0, y0, x1, y1)` within `limit` of each other on both axes, as
+/// `Outline::possibly_within` reads it: `(i, j)` with `i < j` within `a` alone, or
+/// `a[i]` against `b[j]`, in the order the nested loop over them gives.  A sweep along
+/// x: a tile of standard cells holds tens of thousands of cuts, and every cut against
+/// every other was nearly all of a via spacing rule - ASAP7's V0.S.1 compared 1.5e10
+/// pairs on an AES block, 4.8 s of its 5.9.
+fn pairs_within(
+    a: &[(i64, i64, i64, i64)],
+    b: Option<&[(i64, i64, i64, i64)]>,
+    limit: i64,
+) -> Vec<(usize, usize)> {
+    // Each box with its side (`a` first) and index, by its low x.
+    let mut order: Vec<(i64, bool, usize)> =
+        a.iter().enumerate().map(|(i, r)| (r.0, false, i)).collect();
+    if let Some(b) = b {
+        order.extend(b.iter().enumerate().map(|(j, r)| (r.0, true, j)));
+    }
+    order.sort_unstable();
+    let rect = |(in_b, k): (bool, usize)| {
+        if in_b {
+            b.expect("a box of b")[k]
+        } else {
+            a[k]
+        }
+    };
+    let mut out = Vec::new();
+    for (n, &(_, pb, pi)) in order.iter().enumerate() {
+        let p = rect((pb, pi));
+        for &(qx0, qb, qi) in &order[n + 1..] {
+            // Every later box starts at least this far right, and is out of reach too.
+            if qx0 - p.2 >= limit {
+                break;
+            }
+            if b.is_some() && pb == qb {
+                continue;
+            }
+            let q = rect((qb, qi));
+            if (p.0 - q.2).max(q.0 - p.2) >= limit || (p.1 - q.3).max(q.1 - p.3) >= limit {
+                continue;
+            }
+            out.push(match (b.is_some(), pb) {
+                (true, false) => (pi, qi),
+                (true, true) => (qi, pi),
+                (false, _) => (pi.min(qi), pi.max(qi)),
+            });
+        }
+    }
+    // The nested loop's order: what a pair reports does not depend on it, but which of
+    // two equal reports is kept does.
+    out.sort_unstable();
+    out
+}
+
 #[allow(clippy::too_many_arguments)]
 fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
     a_polys: &'a [MergedPoly],
@@ -203,198 +256,194 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             .collect()
     };
     let mut out = Vec::new();
-    for (i, a) in sa.iter().enumerate() {
-        for (j, b) in bs.iter().enumerate() {
-            if same_layer && j <= i {
+    let boxes = |sides: &[Side]| sides.iter().map(|s| s.outline.bbox).collect::<Vec<_>>();
+    let near = if same_layer {
+        pairs_within(&boxes(&sa), None, limit.dbu())
+    } else {
+        pairs_within(&boxes(&sa), Some(&boxes(&sb)), limit.dbu())
+    };
+    for (i, j) in near {
+        let (a, b) = (&sa[i], &bs[j]);
+        let (ia, ib) = (ra[i], if same_layer { ra[j] } else { rb[j] });
+        if let (Some(ia), Some(ib)) = (ia, ib) {
+            if same_layer && ia == ib {
                 continue;
             }
-            if !a.outline.possibly_within(&b.outline, limit.dbu()) {
-                continue;
-            }
-            let (ia, ib) = (ra[i], if same_layer { ra[j] } else { rb[j] });
-            if let (Some(ia), Some(ib)) = (ia, ib) {
-                if same_layer && ia == ib {
-                    continue;
-                }
-                if !same_layer
-                    && !mode.overlapping
-                    && !mode.both
-                    && kin.overlapping.contains(&(ia, ib))
-                {
-                    continue;
-                }
-            }
-            if !by_a.is_empty() {
-                let other = if same_layer { by_a[j] } else { by_b[j] };
-                if by_a[i].is_some() && by_a[i] == other {
-                    continue;
-                }
-            }
-            let (ka, kb) = (ka_all[i], if same_layer { ka_all[j] } else { kb_all[j] });
-            let pair = if same_layer {
-                (ka.min(kb), ka.max(kb))
-            } else {
-                (ka, kb)
-            };
-            // Two regions of one layer share no area: the merge made them one if they
-            // did.  Asking anyway cast every vertex of each against the other's walls,
-            // and was most of a same-layer spacing rule.
-            let overlaps = !same_layer && regions_overlap(&a.outline, &b.outline);
-            if !mode.both && overlaps != mode.overlapping {
-                continue; // this rule is about the other kind of pair
-            }
-            let shaving = !a.material || !b.material;
-            // The gap and the two points that measure it, in µm.
-            let found: Option<Gap> = if mode.overlapping || (mode.both && overlaps) {
-                // The pair shares area, so its closest approach is zero and meaningless.
-                // Take the narrowest facing gap that is genuinely empty instead - or,
-                // inward, the shallowest facing overlap that is genuinely material.
-                let mut best: Option<ClosestPair> = None;
-                for c in facing_pairs_i(&a.outline, &b.outline, limit.dbu(), mode.inward) {
-                    let (p, q) = (c.2, c.3);
-                    let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
-                    let wrong = if mode.inward {
-                        // An overlap has to be material of both, or the "facing" pair
-                        // reaches across a notch in one of them.
-                        !(crate::merge::point_in_merged(mx, my, a.outline.poly())
-                            && crate::merge::point_in_merged(mx, my, b.outline.poly()))
-                    } else {
-                        a_polys
-                            .iter()
-                            .chain(b_polys)
-                            .any(|m| crate::merge::point_in_merged(mx, my, m))
-                    };
-                    if wrong {
-                        continue; // another arm of one of the shapes lies in the gap
-                    }
-                    if best.is_none_or(|b| (c.0 as f64 / c.1 as f64) < (b.0 as f64 / b.1 as f64)) {
-                        best = Some(c);
-                    }
-                }
-                best.map(|(num, den, p, q)| {
-                    (
-                        (num as f64 / den as f64).sqrt() * dbu_to_um,
-                        (p.0 * dbu_to_um, p.1 * dbu_to_um),
-                        (q.0 * dbu_to_um, q.1 * dbu_to_um),
-                    )
-                })
-            } else if mode.square {
-                let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
-                    continue;
-                };
-                let m = closest(pa, pb, half, true);
-                if m.0 < half && (shaving || shares_boundary_run(pa, pb, half)) {
-                    continue;
-                }
-                (m.0 < value - half).then_some(m)
-            } else {
-                // A contact between two layers is a separation of *zero*, and reported:
-                // two shapes meeting at a corner have a gap that happens to be nothing
-                // wide, which is the worst spacing there is.  KLayout reads it that way
-                // and this engine used to drop it, silently, wherever it occurred.
-                //
-                // Within one layer it is a gap of zero too, and KLayout reports it: two
-                // wells meeting corner to corner merge into one self-touching shape, and
-                // `space` marks the touch point.  This engine excluded the same-layer
-                // case for a while, on the grounds that such a contact is a pinch and
-                // belongs to the width checks; that reading cost 82 logical violations
-                // across eighteen gf180mcu decks - the whole of what `nwell` and
-                // `lvpwell` were missing on their well-spacing rules - and the pinch is
-                // reported anyway, by whichever width rule covers the layer.
-                //
-                // A contact along a *run* is not a gap: two shapes drawn edge to edge
-                // abut, with no space between them anywhere.  IHP's butted substrate
-                // ties are exactly that by construction.  Only a contact at isolated
-                // points is a separation of zero, whichever layers it is between.
-                match closest_approach(&a.outline, &b.outline, limit.dbu()) {
-                    None => None,
-                    Some((0, _, p, q)) => {
-                        if shaving
-                            || mode.related
-                            || (!mode.abutting && share_boundary_run(&a.outline, &b.outline))
-                        {
-                            None
-                        } else {
-                            Some((0.0, p, q))
-                        }
-                    }
-                    Some((num, den, p, q)) => limit.broken_by_sq(num, den).then(|| {
-                        let d = (num as f64 / den as f64).sqrt() * dbu_to_um;
-                        (d, p, q)
-                    }),
-                }
-                .map(|(d, (px, py), (qx, qy))| {
-                    (
-                        d,
-                        (px * dbu_to_um, py * dbu_to_um),
-                        (qx * dbu_to_um, qy * dbu_to_um),
-                    )
-                })
-            };
-            let Some((min_dist, (ax, ay), (bx, by))) = found else {
-                continue;
-            };
-            // Own the violation by the gap midpoint; mark the gap itself.  Owned
-            // before the gate is asked: a run-gated rule assembles the pair's regions
-            // across tiles to read a run the zone cut short, and every tile along a
-            // long pair was assembling it for a gap only one of them names.
-            let mx = (ax + bx) * 0.5;
-            let my = (ay + by) * 0.5;
-            if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
-                continue;
-            }
-            let ctx = RunCtx {
-                zone,
-                kin,
-                tile: tile_key,
-                same_layer,
-                ia: a.index,
-                ib: b.index,
-                cache: &assembled,
-            };
-            if !gate(&a.outline, &b.outline, a.marker, b.marker, &ctx) {
-                continue;
-            }
-            // A gap lying wholly in the `gap_outside` layer is not the rule's: NW.b1 is
-            // the width of PWell between two wells, and under a PWell block there is no
-            // PWell to be too narrow.
-            if let Some(polys) = gap_outside
-                && covered_by(
-                    (ax / dbu_to_um, ay / dbu_to_um),
-                    (bx / dbu_to_um, by / dbu_to_um),
-                    polys,
-                )
+            if !same_layer && !mode.overlapping && !mode.both && kin.overlapping.contains(&(ia, ib))
             {
                 continue;
             }
-            let (title, what) = if mode.inward {
-                ("Minimum overlap violation", "overlap")
-            } else {
-                ("Minimum space violation", "space")
-            };
-            // The gap's two ends in a fixed order: one gap is one violation, and a rule
-            // whose layers overlap - "space to wide metal", where a wide plate lies on
-            // both - reads the gap between two such plates once from each side and
-            // named the same segment backwards the second time, which the run's own
-            // dedup then kept as two.
-            let ((ax, ay), (bx, by)) = if (ax, ay) <= (bx, by) {
-                ((ax, ay), (bx, by))
-            } else {
-                ((bx, by), (ax, ay))
-            };
-            out.push((
-                pair,
-                Violation::edge(
-                    rule_id,
-                    title,
-                    format!(
-                        "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
-                        min_dist, value, name_a, name_b, ax, ay, bx, by
-                    ),
-                    ax, ay, bx, by,
-                ),
-            ));
         }
+        if !by_a.is_empty() {
+            let other = if same_layer { by_a[j] } else { by_b[j] };
+            if by_a[i].is_some() && by_a[i] == other {
+                continue;
+            }
+        }
+        let (ka, kb) = (ka_all[i], if same_layer { ka_all[j] } else { kb_all[j] });
+        let pair = if same_layer {
+            (ka.min(kb), ka.max(kb))
+        } else {
+            (ka, kb)
+        };
+        // Two regions of one layer share no area: the merge made them one if they
+        // did.  Asking anyway cast every vertex of each against the other's walls,
+        // and was most of a same-layer spacing rule.
+        let overlaps = !same_layer && regions_overlap(&a.outline, &b.outline);
+        if !mode.both && overlaps != mode.overlapping {
+            continue; // this rule is about the other kind of pair
+        }
+        let shaving = !a.material || !b.material;
+        // The gap and the two points that measure it, in µm.
+        let found: Option<Gap> = if mode.overlapping || (mode.both && overlaps) {
+            // The pair shares area, so its closest approach is zero and meaningless.
+            // Take the narrowest facing gap that is genuinely empty instead - or,
+            // inward, the shallowest facing overlap that is genuinely material.
+            let mut best: Option<ClosestPair> = None;
+            for c in facing_pairs_i(&a.outline, &b.outline, limit.dbu(), mode.inward) {
+                let (p, q) = (c.2, c.3);
+                let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
+                let wrong = if mode.inward {
+                    // An overlap has to be material of both, or the "facing" pair
+                    // reaches across a notch in one of them.
+                    !(crate::merge::point_in_merged(mx, my, a.outline.poly())
+                        && crate::merge::point_in_merged(mx, my, b.outline.poly()))
+                } else {
+                    a_polys
+                        .iter()
+                        .chain(b_polys)
+                        .any(|m| crate::merge::point_in_merged(mx, my, m))
+                };
+                if wrong {
+                    continue; // another arm of one of the shapes lies in the gap
+                }
+                if best.is_none_or(|b| (c.0 as f64 / c.1 as f64) < (b.0 as f64 / b.1 as f64)) {
+                    best = Some(c);
+                }
+            }
+            best.map(|(num, den, p, q)| {
+                (
+                    (num as f64 / den as f64).sqrt() * dbu_to_um,
+                    (p.0 * dbu_to_um, p.1 * dbu_to_um),
+                    (q.0 * dbu_to_um, q.1 * dbu_to_um),
+                )
+            })
+        } else if mode.square {
+            let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
+                continue;
+            };
+            let m = closest(pa, pb, half, true);
+            if m.0 < half && (shaving || shares_boundary_run(pa, pb, half)) {
+                continue;
+            }
+            (m.0 < value - half).then_some(m)
+        } else {
+            // A contact between two layers is a separation of *zero*, and reported:
+            // two shapes meeting at a corner have a gap that happens to be nothing
+            // wide, which is the worst spacing there is.  KLayout reads it that way
+            // and this engine used to drop it, silently, wherever it occurred.
+            //
+            // Within one layer it is a gap of zero too, and KLayout reports it: two
+            // wells meeting corner to corner merge into one self-touching shape, and
+            // `space` marks the touch point.  This engine excluded the same-layer
+            // case for a while, on the grounds that such a contact is a pinch and
+            // belongs to the width checks; that reading cost 82 logical violations
+            // across eighteen gf180mcu decks - the whole of what `nwell` and
+            // `lvpwell` were missing on their well-spacing rules - and the pinch is
+            // reported anyway, by whichever width rule covers the layer.
+            //
+            // A contact along a *run* is not a gap: two shapes drawn edge to edge
+            // abut, with no space between them anywhere.  IHP's butted substrate
+            // ties are exactly that by construction.  Only a contact at isolated
+            // points is a separation of zero, whichever layers it is between.
+            match closest_approach(&a.outline, &b.outline, limit.dbu()) {
+                None => None,
+                Some((0, _, p, q)) => {
+                    if shaving
+                        || mode.related
+                        || (!mode.abutting && share_boundary_run(&a.outline, &b.outline))
+                    {
+                        None
+                    } else {
+                        Some((0.0, p, q))
+                    }
+                }
+                Some((num, den, p, q)) => limit.broken_by_sq(num, den).then(|| {
+                    let d = (num as f64 / den as f64).sqrt() * dbu_to_um;
+                    (d, p, q)
+                }),
+            }
+            .map(|(d, (px, py), (qx, qy))| {
+                (
+                    d,
+                    (px * dbu_to_um, py * dbu_to_um),
+                    (qx * dbu_to_um, qy * dbu_to_um),
+                )
+            })
+        };
+        let Some((min_dist, (ax, ay), (bx, by))) = found else {
+            continue;
+        };
+        // Own the violation by the gap midpoint; mark the gap itself.  Owned
+        // before the gate is asked: a run-gated rule assembles the pair's regions
+        // across tiles to read a run the zone cut short, and every tile along a
+        // long pair was assembling it for a gap only one of them names.
+        let mx = (ax + bx) * 0.5;
+        let my = (ay + by) * 0.5;
+        if !core.owns(mx / dbu_to_um, my / dbu_to_um) {
+            continue;
+        }
+        let ctx = RunCtx {
+            zone,
+            kin,
+            tile: tile_key,
+            same_layer,
+            ia: a.index,
+            ib: b.index,
+            cache: &assembled,
+        };
+        if !gate(&a.outline, &b.outline, a.marker, b.marker, &ctx) {
+            continue;
+        }
+        // A gap lying wholly in the `gap_outside` layer is not the rule's: NW.b1 is
+        // the width of PWell between two wells, and under a PWell block there is no
+        // PWell to be too narrow.
+        if let Some(polys) = gap_outside
+            && covered_by(
+                (ax / dbu_to_um, ay / dbu_to_um),
+                (bx / dbu_to_um, by / dbu_to_um),
+                polys,
+            )
+        {
+            continue;
+        }
+        let (title, what) = if mode.inward {
+            ("Minimum overlap violation", "overlap")
+        } else {
+            ("Minimum space violation", "space")
+        };
+        // The gap's two ends in a fixed order: one gap is one violation, and a rule
+        // whose layers overlap - "space to wide metal", where a wide plate lies on
+        // both - reads the gap between two such plates once from each side and
+        // named the same segment backwards the second time, which the run's own
+        // dedup then kept as two.
+        let ((ax, ay), (bx, by)) = if (ax, ay) <= (bx, by) {
+            ((ax, ay), (bx, by))
+        } else {
+            ((bx, by), (ax, ay))
+        };
+        out.push((
+            pair,
+            Violation::edge(
+                rule_id,
+                title,
+                format!(
+                    "{what} {:.4} µm < {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                    min_dist, value, name_a, name_b, ax, ay, bx, by
+                ),
+                ax, ay, bx, by,
+            ),
+        ));
     }
     out
 }
@@ -680,57 +729,57 @@ pub fn piece_notches(
                 .filter(|m| m.outer.len() >= 3)
                 .filter_map(|m| kin.region_a(m, &core).map(|r| (Outline::new(m), r)))
                 .collect();
-            for (i, (a, ra)) in sides.iter().enumerate() {
-                for (b, rb) in &sides[i + 1..] {
-                    if ra != rb || !a.possibly_within(b, limit.dbu()) {
-                        continue;
-                    }
-                    let Some(((num, den, p, q), sa, sb)) = closest_approach_segs(a, b, limit.dbu())
-                    else {
-                        continue;
-                    };
-                    if num == 0 || !limit.broken_by_sq(num, den) {
-                        continue;
-                    }
-                    let Some(run) = shared_run(sa, sb) else {
-                        continue; // a corner or an end, which a notch does not read
-                    };
-                    let axis = sa.0.0 == sa.1.0 || sa.0.1 == sa.1.1;
-                    if (bent && axis) || run <= min_run as f64 {
-                        continue;
-                    }
-                    let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
-                    if !core.owns_from(mx, my) {
-                        continue;
-                    }
-                    // A third piece lying in the gap makes it two notches, read against
-                    // that piece.
-                    if polys
-                        .iter()
-                        .any(|m| crate::merge::point_in_merged(mx, my, m))
-                    {
-                        continue;
-                    }
-                    let g = (num as f64 / den as f64).sqrt() * dbu_to_um;
-                    let (x1, y1, x2, y2) = (
-                        p.0 * dbu_to_um,
-                        p.1 * dbu_to_um,
-                        q.0 * dbu_to_um,
-                        q.1 * dbu_to_um,
-                    );
-                    out.push(Violation::edge(
-                        rid,
-                        "Minimum notch violation",
-                        format!(
-                            "{lname}: notch {g:.4} µm < {limit_um:.2} µm at \
-                             ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
-                        ),
-                        x1,
-                        y1,
-                        x2,
-                        y2,
-                    ));
+            let boxes: Vec<_> = sides.iter().map(|(o, _)| o.bbox).collect();
+            for (i, j) in pairs_within(&boxes, None, limit.dbu()) {
+                let ((a, ra), (b, rb)) = (&sides[i], &sides[j]);
+                if ra != rb {
+                    continue;
                 }
+                let Some(((num, den, p, q), sa, sb)) = closest_approach_segs(a, b, limit.dbu())
+                else {
+                    continue;
+                };
+                if num == 0 || !limit.broken_by_sq(num, den) {
+                    continue;
+                }
+                let Some(run) = shared_run(sa, sb) else {
+                    continue; // a corner or an end, which a notch does not read
+                };
+                let axis = sa.0.0 == sa.1.0 || sa.0.1 == sa.1.1;
+                if (bent && axis) || run <= min_run as f64 {
+                    continue;
+                }
+                let (mx, my) = ((p.0 + q.0) * 0.5, (p.1 + q.1) * 0.5);
+                if !core.owns_from(mx, my) {
+                    continue;
+                }
+                // A third piece lying in the gap makes it two notches, read against
+                // that piece.
+                if polys
+                    .iter()
+                    .any(|m| crate::merge::point_in_merged(mx, my, m))
+                {
+                    continue;
+                }
+                let g = (num as f64 / den as f64).sqrt() * dbu_to_um;
+                let (x1, y1, x2, y2) = (
+                    p.0 * dbu_to_um,
+                    p.1 * dbu_to_um,
+                    q.0 * dbu_to_um,
+                    q.1 * dbu_to_um,
+                );
+                out.push(Violation::edge(
+                    rid,
+                    "Minimum notch violation",
+                    format!(
+                        "{lname}: notch {g:.4} µm < {limit_um:.2} µm at \
+                         ({x1:.4}, {y1:.4})-({x2:.4}, {y2:.4}) µm"
+                    ),
+                    x1,
+                    y1,
+                    x2,
+                    y2,
+                ));
             }
             out
         })
@@ -1006,17 +1055,17 @@ impl<'a> Kin<'a> {
                             a.pieces(k).map(|(m, r)| (Outline::new(m), r)).collect();
                         let ob: Vec<(Outline, usize)> =
                             b.pieces(k).map(|(m, r)| (Outline::new(m), r)).collect();
-                        for (x, ra) in &oa {
-                            for (y, rb) in &ob {
-                                if x.possibly_within(y, 1)
-                                    && if touching {
-                                        regions_interact(x, y)
-                                    } else {
-                                        regions_overlap(x, y)
-                                    }
-                                {
-                                    found.push((*ra, *rb));
-                                }
+                        let boxes = |o: &[(Outline, usize)]| -> Vec<_> {
+                            o.iter().map(|(x, _)| x.bbox).collect()
+                        };
+                        for (i, j) in pairs_within(&boxes(&oa), Some(&boxes(&ob)), 1) {
+                            let ((x, ra), (y, rb)) = (&oa[i], &ob[j]);
+                            if if touching {
+                                regions_interact(x, y)
+                            } else {
+                                regions_overlap(x, y)
+                            } {
+                                found.push((*ra, *rb));
                             }
                         }
                     }
@@ -1145,6 +1194,60 @@ fn region_at(l: &Labeled, px: f64, py: f64, tile: i32) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `pairs_within` against the nested loop it replaces, on boxes drawn to catch a
+    /// sweep out: many starting at one x, touching and overlapping, a wide one across
+    /// all the others, at the kinship index's reach of 1 and a spacing rule's of 50.
+    #[test]
+    fn pairs_within_is_the_nested_loop() {
+        let within = |p: &(i64, i64, i64, i64), q: &(i64, i64, i64, i64), limit: i64| {
+            (p.0 - q.2).max(q.0 - p.2) < limit && (p.1 - q.3).max(q.1 - p.3) < limit
+        };
+        // A fixed linear congruential sequence: the same boxes every run.
+        let mut seed = 0x2545_f491_4f6c_dd1du64;
+        let mut next = move |n: i64| {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            ((seed >> 33) % n as u64) as i64
+        };
+        let mut draw = |count: usize| {
+            let mut boxes: Vec<(i64, i64, i64, i64)> = (0..count)
+                .map(|_| {
+                    // On a coarse grid, so that starts coincide and walls touch.
+                    let (x, y) = (next(40) * 25, next(40) * 25);
+                    (x, y, x + 1 + next(4) * 25, y + 1 + next(4) * 25)
+                })
+                .collect();
+            boxes.push((-500, 300, 2000, 320));
+            boxes
+        };
+        let (a, b) = (draw(300), draw(200));
+        for limit in [1, 50] {
+            let near = |xs: &[(i64, i64, i64, i64)], i: usize, p: &(i64, i64, i64, i64)| {
+                xs.iter()
+                    .enumerate()
+                    .filter(|(_, q)| within(p, q, limit))
+                    .map(|(j, _)| (i, j))
+                    .collect::<Vec<_>>()
+            };
+            let same: Vec<_> = a
+                .iter()
+                .enumerate()
+                .flat_map(|(i, p)| near(&a, i, p).into_iter().filter(|&(i, j)| j > i))
+                .collect();
+            let cross: Vec<_> = a
+                .iter()
+                .enumerate()
+                .flat_map(|(i, p)| near(&b, i, p))
+                .collect();
+            assert!(!same.is_empty() && !cross.is_empty());
+            assert_eq!(pairs_within(&a, None, limit), same, "one layer at {limit}");
+            assert_eq!(pairs_within(&a, Some(&b), limit), cross, "two at {limit}");
+        }
+        assert!(pairs_within(&[], None, 50).is_empty());
+        assert!(pairs_within(&a, Some(&[]), 50).is_empty());
+    }
 
     /// The square metric is L-infinity, so a purely diagonal separation reads as the
     /// larger of the two axis distances and not the hypotenuse. Two collinear-facing
