@@ -5,7 +5,8 @@
 # The spacing check on plain layers: the plain bound, and each gate once.  Outer carries
 # the plain rule, the bent rule and the two net rules; Inner the width and the length
 # gate on their own; Via the two together.  Outer against Inner carries the two-layer
-# rules: the plain pair, each reading of a touch, and each choice of pairs.
+# rules: the plain pair, each reading of a touch, and each choice of pairs.  Cut carries
+# a rule of its own and one against Inner, read across tens of thousands of cuts a tile.
 rules:
   - id: S.min
     check: min_space
@@ -77,3 +78,12 @@ rules:
     value: 0.5
     params:
       pairs: any
+  # Cuts at standard-cell density: one layer, and against another.
+  - id: S.dense
+    check: min_space
+    layers: [Cut]
+    value: 0.05
+  - id: S.dense.pair
+    check: min_space
+    layers: [Cut, Inner]
+    value: 0.05
