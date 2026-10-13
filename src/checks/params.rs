@@ -52,7 +52,7 @@ pub fn min_run(rule: &RuleDefinition, dbu_to_um: f64) -> i64 {
 }
 
 /// Which walls a rule measures between: those facing each other along one axis, or -
-/// for a spacing rule only - those facing along neither, the corner-to-corner reading.
+/// for a spacing rule only - local corner gaps with no projected side run at the gap.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Facing {
     Along(Axis),

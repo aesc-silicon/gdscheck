@@ -119,10 +119,12 @@ Parameters
    Optional. ``x``: the rule is about pairs with a wall of one facing a wall of the
    other across x under the value, the two projecting onto each other. That is a
    horizontal space, KLayout's ``space(v, projection).with_angle(90)``. ``y`` is the
-   vertical one. ``none``: the rule is about pairs that face each other *nowhere* under
-   the value, so that only a corner of one is closer to the other. That is the
-   corner-to-corner space a manual states beside a smaller side-to-side one (ASAP7
-   ``M1.S.6``: 20 nm corner to corner, where lines run 18 nm apart side by side).
+   vertical one. ``none`` measures local corner-to-corner gaps: neither corner has
+   an incident edge closer to the other, and the corners do not bound a projected
+   side-to-side run. A legal side gap elsewhere on the same polygons does not
+   exempt a corner gap, even if that side gap is closer. This is the corner spacing
+   stated beside a smaller side spacing (ASAP7 ``M1.S.6``: 20 nm corner to corner,
+   where lines run 18 nm apart side by side).
 
 ``pairs``
    Optional. ``disjoint`` (the default) measures pairs that share no area at their

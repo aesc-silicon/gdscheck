@@ -173,8 +173,14 @@ fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 /// W.4 test ignores the two overlaps. W.3 reads every vertical edge against the
 /// multiples of 27 nm, as ACTIVE.W.2 does: two trenches off a multiple give four
 /// walls, and a 1107 nm trench, a multiple, none. A 26.75 nm trench is no
-/// multiple of 27 nm, so the W.2 test ignores W.3.
+/// multiple of 27 nm and overlaps ACTIVE by less than 27 nm, so the W.2 test ignores
+/// W.3 and SDT.ACTIVE.OV.1. The ordinary overlap fixtures straddle ACTIVE and keep
+/// the trench off a remote SRAM marker, testing the 27 nm bound independently.
 #[rstest]
+#[case("SDT.ACTIVE.OV.1", "sram", 2)]
+#[case("SDT.ACTIVE.OV.1", "under", 2)]
+#[case("SDT.ACTIVE.OV.1", "exact", 0)]
+#[case("SDT.ACTIVE.OV.1", "over", 0)]
 #[case("SRAM.SDT.ACTIVE.OV.3", "overlap_67", 2)]
 #[case("SRAM.SDT.ACTIVE.OV.3", "overlap_68", 0)]
 #[case("SRAM.SDT.ACTIVE.OV.3", "overlap_69", 0)]
@@ -202,7 +208,7 @@ fn active(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
 fn sdt(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let ignore: Vec<String> = match rule {
         "SRAM.SDT.W.4" => vec!["SRAM.SDT.ACTIVE.OV.3".into(), "SRAM.SDT.LISD.OV.4".into()],
-        "SDT.W.2" => vec!["SDT.W.3".into()],
+        "SDT.W.2" => vec!["SDT.W.3".into(), "SDT.ACTIVE.OV.1".into()],
         _ => vec![],
     };
     pattern("sdt", rule, variant, count, &ignore);
@@ -910,6 +916,104 @@ fn rectangles(
         },
     )
     .unwrap()
+}
+
+/// A long edge must find neighbours near either end, even when neither neighbour
+/// is near its midpoint's tile. Distinct gaps along that edge stay distinct reports.
+#[test]
+fn edge_spacing_keeps_every_pair_across_tiles_and_reflections() {
+    for length in [200.0, 100_000.0] {
+        for tile in [7.0, 20.0, 100.0] {
+            for reflect in [false, true] {
+                for rotate in [false, true] {
+                    let mut shapes = vec![
+                        ("M1", [0.0, 0.0, length, 18.0]),
+                        ("M1", [0.0, 35.0, 80.0, 53.0]),
+                        ("M1", [length - 80.0, 35.0, length, 53.0]),
+                    ];
+                    for (_, r) in &mut shapes {
+                        if reflect {
+                            *r = [r[0], -r[3], r[2], -r[1]];
+                        }
+                        if rotate {
+                            *r = [r[1], r[0], r[3], r[2]];
+                        }
+                    }
+                    let v = rectangles("m1", &shapes, 100.0, tile);
+                    let ids: Vec<_> = v.iter().map(|v| v.rule_id.as_str()).collect();
+                    assert_eq!(
+                        ids,
+                        vec!["M1.S.1"; 2],
+                        "length {length}, tile {tile}, reflect {reflect}, rotate {rotate}: {v:?}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// A legal side gap elsewhere on the same polygons cannot exempt their corner.
+/// The side may even be closer than the corner: the marker must still name the
+/// corner gap, and a corner above the bound must not borrow the side's distance.
+#[test]
+fn corner_spacing_is_local_even_when_the_same_polygons_also_face() {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (-19_990.0, 20.0)] {
+        for delta in [10.25, 10.75] {
+            for side in [14.25, 14.5, 16.0] {
+                let shapes = [
+                    ("LIG", [0.0, 0.0, 100.0, 16.0]),
+                    ("LISD", [100.0 + delta, 16.0 + delta, 150.0, 68.0]),
+                    ("LISD", [0.0, 44.0, 150.0, 68.0]),
+                    ("LISD", [0.0, 16.0 + side, 40.0, 68.0]),
+                ];
+                let v = rectangles("lig", &shapes, origin, tile);
+                let bad = delta == 10.25;
+                assert_eq!(
+                    v.len(),
+                    usize::from(bad),
+                    "delta {delta}, side {side}: {v:?}"
+                );
+                if bad {
+                    assert_eq!(v[0].rule_id, "LIG.LISD.S.7");
+                    let gdscheck::violation::ViolationGeometry::Edge { x1, y1, x2, y2 } =
+                        v[0].geometry
+                    else {
+                        panic!("expected a corner gap: {v:?}");
+                    };
+                    let gap_nm = (x2 - x1).hypot(y2 - y1) * 1000.0;
+                    assert!((gap_nm - delta * 2.0_f64.sqrt()).abs() < 1e-6);
+                }
+            }
+        }
+    }
+}
+
+/// The SRAM marker selects ACTIVE at its remote end, but never selects the SDT.
+/// Its 27 nm overlap requirement remains in force even though its own horizontal
+/// edges lie outside the ACTIVE and therefore pass the relaxed alignment rule.
+#[test]
+fn ordinary_sdt_requires_27_nm_of_active_even_beside_sram() {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        for height in [17.0, 26.75, 27.0, 27.25] {
+            let v = rectangles(
+                "sdt",
+                &[
+                    ("SDT", [10.0, 0.0, 34.0, 54.0]),
+                    ("ACTIVE", [0.0, 10.0, 100.0, 10.0 + height]),
+                    ("LISD", [10.0, 0.0, 34.0, 54.0]),
+                    ("SRAMDRC", [60.0, 0.0, 110.0, 54.0]),
+                ],
+                origin,
+                tile,
+            );
+            let ids: Vec<_> = v.iter().map(|v| v.rule_id.as_str()).collect();
+            assert_eq!(
+                ids,
+                vec!["SDT.ACTIVE.OV.1"; if height < 27.0 { 2 } else { 0 }],
+                "height {height}, tile {tile}: {v:?}"
+            );
+        }
+    }
 }
 
 /// DRM 3.14/3.16 bound vertical M4/M6 width; M5/M7 rotate that bound.

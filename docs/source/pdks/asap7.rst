@@ -306,7 +306,9 @@ wording:
   V0 across its LIG, the only LIG walls inside the via are that pair.
 * ``SDT.ACTIVE.AUX.2``, "SDT horizontal edges must coincide with ACTIVE horizontal
   edges", is read as "an SDT does not end inside its ACTIVE". Where an ACTIVE steps,
-  the libraries run the SDT on past it.
+  the libraries run the SDT on past it. ``SDT.ACTIVE.OV.1`` independently requires
+  27 nm of vertical overlap for non-SRAM SDT, including when its ACTIVE overlaps
+  SRAMDRC remotely; the alignment rule alone does not imply this overlap.
 * The select, VT and well minimum widths fire on the 54 nm half-width filler and tap
   cells when these are checked on their own. Placed between other cells, they are part
   of a wider shape.

@@ -161,156 +161,31 @@ fn run(
     // parameter name. GF180 draws Pplus flush to COMP wherever the implant is cut by a
     // neighbouring one, and upstream's `enclosing` reports nothing there.
     let skip_coincident = rule.num("skip_coincident").is_some_and(|v| v != 0.0);
-    // A spacing within one edge layer is symmetric: each edge of a facing pair finds
-    // the other.  As the polygon checks do for a pair within one layer, read it once -
-    // from the edge whose line comes first.  The line, not the edge: an operation cuts
-    // an edge at the tile lines, and every piece of it stays on the one line, so the
-    // pieces all choose the same side and the run joins up as before.  Enclosure needs
-    // no such rule: its margin is signed, so only one of the two reads it.
+    // Same-layer spacing is symmetric. Both sides are indexed across every tile
+    // they span before choosing a direction, so a long wall can find a short one
+    // near either end, even far from the long wall's midpoint.
     let one_layer_space = rel == Rel::Space && ka == kb;
     let tile = merged.tile_dbu() as i64;
-    // Half a DBU: coordinates are integers, so anything under this is a rounding artefact.
     let tol = 0.5;
-
-    // An edge of `a` is read in the tile its middle falls in, against every edge of
-    // `b` that runs through that tile or within the limit of it - filed under every
-    // tile it crosses, so a wall whose middle is a tile away is still there.  The
-    // tiles are independent, so they are read in parallel.  Reports are keyed by the
-    // edge they were read on; an edge an operation cut at a tile line comes back as
-    // pieces that share an endpoint on one line, which are joined into one report
-    // afterwards, so the count does not move with the tile.
-    let a_tiles = merged.edges(ka);
-    let b_spans = merged.edge_spans(kb);
-    let reach = ((limit.ceil() as i64) / tile + 1) as i32;
-    let keys: Vec<(i32, i32)> = a_tiles.keys().copied().collect();
-    let found: Vec<Found> = keys
-        .par_iter()
-        .flat_map_iter(|&(tx, ty)| {
-        let a_edges = &a_tiles[&(tx, ty)];
-        let mut b_edges: Vec<Edge> = Vec::new();
-        let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
-            std::collections::HashSet::new();
-        for dy in -reach..=reach {
-            for dx in -reach..=reach {
-                for e in b_spans.get(&(tx + dx, ty + dy)).into_iter().flatten() {
-                    if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
-                        b_edges.push(*e);
-                    }
-                }
-            }
-        }
-        let b_edges = &b_edges;
-        // The edges of `b` filed by cell of a grid a few limits across, so an edge of `a`
-        // reads the few within reach of it rather than every edge the tile holds: a tile
-        // of SRAM LISD holds tens of thousands.  Each is read in its place in `b_edges`,
-        // so the narrowest margin - the first of equal ones - is the one a full scan
-        // finds.
-        let cell = (limit.ceil() as i64).max(1) * 8;
-        let cell_of = |v: i32| (v as i64).div_euclid(cell);
-        let mut grid: std::collections::HashMap<(i64, i64), Vec<u32>> =
-            std::collections::HashMap::new();
-        for (i, e) in b_edges.iter().enumerate() {
-            let (x0, x1) = (e.a.x.min(e.b.x), e.a.x.max(e.b.x));
-            let (y0, y1) = (e.a.y.min(e.b.y), e.a.y.max(e.b.y));
-            for cx in cell_of(x0)..=cell_of(x1) {
-                for cy in cell_of(y0)..=cell_of(y1) {
-                    grid.entry((cx, cy)).or_default().push(i as u32);
-                }
-            }
-        }
-        let reach_dbu = limit.ceil() as i32 + 1;
-        let mut near: Vec<u32> = Vec::new();
-        let mut out = Vec::new();
-        for ea in a_edges {
-            let Some(sa) = Seg::of(ea) else { continue };
-            let line_a = line_of(ea);
-            near.clear();
-            let (x0, x1) = (ea.a.x.min(ea.b.x) - reach_dbu, ea.a.x.max(ea.b.x) + reach_dbu);
-            let (y0, y1) = (ea.a.y.min(ea.b.y) - reach_dbu, ea.a.y.max(ea.b.y) + reach_dbu);
-            for cx in cell_of(x0)..=cell_of(x1) {
-                for cy in cell_of(y0)..=cell_of(y1) {
-                    if let Some(v) = grid.get(&(cx, cy)) {
-                        near.extend_from_slice(v);
-                    }
-                }
-            }
-            near.sort_unstable();
-            near.dedup();
-            // The narrowest offending margin along this segment, and where it sits.
-            let mut worst: Option<Pair> = None;
-            for eb in near.iter().map(|&i| &b_edges[i as usize]) {
-                let Some(sb) = Seg::of(eb) else { continue };
-                if one_layer_space && line_of(eb) < line_a {
-                    continue; // read from eb's side
-                }
-                // Parallel enough to measure a width between, which is not the same as
-                // parallel.  Coordinates are integers, so a wall that a boolean cut at
-                // an angle keeps its direction only to the nearest DBU: the two sides of
-                // one 45° bar can come out as (1160, 1160) and (1160, 1161), which is
-                // 0.05° apart and was rejected outright by a test that wanted agreement
-                // to six decimal places.  What matters is whether the gap between them
-                // stays put along the run they share - the cross product of the unit
-                // directions is the sine of the angle, so times the shorter run it is how
-                // far the far end drifts, and a drift under one DBU is a straight gap as
-                // far as the grid can say.
-                // A wall one DBU out of true drifts by almost exactly one DBU over its
-                // own length, whatever that length is, so the bound sits just above one.
-                let drift = (sa.u.0 * sb.u.1 - sa.u.1 * sb.u.0).abs() * sa.len.min(sb.len);
-                if drift > 1.5 {
-                    continue; // not parallel: no steady gap to measure
-                }
-                let dot = sa.n.0 * sb.n.0 + sa.n.1 * sb.n.1;
-                if (rel == Rel::Enclosure) != (dot > 0.0) {
-                    // Enclosure wants nested boundaries (normals the same way); the other
-                    // two want facing ones (normals opposed).
-                    continue;
-                }
-                // Which side of a the span lies on: outward for a spacing, inward for an
-                // enclosure. One sign covers both.
-                let along = (sb.o.0 - sa.o.0) * sa.n.0 + (sb.o.1 - sa.o.1) * sa.n.1;
-                let margin = if rel == Rel::Space { along } else { -along };
-                // Behind this edge either way, or already far enough.
-                if margin < -tol || margin >= limit {
-                    continue;
-                }
-                if skip_coincident && margin <= tol {
-                    continue; // flush, not short
-                }
-                // Projected overlap: only the stretch the two share counts.
-                let t0 = (sb.o.0 - sa.o.0) * sa.u.0 + (sb.o.1 - sa.o.1) * sa.u.1;
-                let t1 = t0 + sb.len * (sb.u.0 * sa.u.0 + sb.u.1 * sa.u.1);
-                let (s0, s1) = (t0.min(t1).max(0.0), t0.max(t1).min(sa.len));
-                if s1 - s0 <= tol {
-                    continue;
-                }
-                if worst.is_some_and(|(m, _, _)| m <= margin) {
-                    continue;
-                }
-                // The marker is the span measured, across the middle of the run the two
-                // share, which is short enough to stand for where the violation is.
-                let mid = (s0 + s1) * 0.5;
-                let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
-                let q = if rel != Rel::Space {
-                    (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
-                } else {
-                    (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
-                };
-                worst = Some((margin, p, q));
-            }
-            let Some((margin, p, q)) = worst else {
-                continue;
-            };
-            // The edge is filed under one tile, so it is read and reported once.
-            let (what, title) = match rel {
-                Rel::Enclosure => ("enclosure", "Minimum enclosure violation"),
-                Rel::Space => ("space", "Minimum space violation"),
-            };
-            let cmp = "<";
-            out.push(((ea.a.x as i64, ea.a.y as i64), (ea.b.x as i64, ea.b.y as i64), margin, Violation::edge(
+    let a_tiles = if rel == Rel::Space {
+        merged.edge_spans(ka)
+    } else {
+        merged.edges(ka)
+    };
+    let report = |ea: &Edge, (margin, p, q): Pair, partner| {
+        let (what, title) = match rel {
+            Rel::Enclosure => ("enclosure", "Minimum enclosure violation"),
+            Rel::Space => ("space", "Minimum space violation"),
+        };
+        (
+            (ea.a.x as i64, ea.a.y as i64),
+            (ea.b.x as i64, ea.b.y as i64),
+            margin,
+            Violation::edge(
                 &rule.id,
                 title,
                 format!(
-                    "{what} {:.4} µm {cmp} {:.2} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
+                    "{what} {:.4} µm < {:.4} µm between {} and {} at ({:.4}, {:.4})-({:.4}, {:.4}) µm",
                     margin * dbu_to_um,
                     rule.value,
                     la.name,
@@ -324,33 +199,234 @@ fn run(
                 p.1 * dbu_to_um,
                 q.0 * dbu_to_um,
                 q.1 * dbu_to_um,
-            )));
-        }
-        out.into_iter()
+            ),
+            partner,
+        )
+    };
+    let b_spans = merged.edge_spans(kb);
+    let reach = ((limit.ceil() as i64) / tile + 1) as i32;
+    let keys: Vec<(i32, i32)> = a_tiles.keys().copied().collect();
+    let found: Vec<Found> = keys
+        .par_iter()
+        .flat_map_iter(|&(tx, ty)| {
+            let a_edges = &a_tiles[&(tx, ty)];
+            let mut b_edges: Vec<Edge> = Vec::new();
+            let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
+                std::collections::HashSet::new();
+            for dy in -reach..=reach {
+                for dx in -reach..=reach {
+                    for e in b_spans.get(&(tx + dx, ty + dy)).into_iter().flatten() {
+                        if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+                            b_edges.push(*e);
+                        }
+                    }
+                }
+            }
+            let b_edges = &b_edges;
+            // The edges of `b` filed by cell of a grid a few limits across, so an edge of `a`
+            // reads the few within reach of it rather than every edge the tile holds: a tile
+            // of SRAM LISD holds tens of thousands. Spacing reads each long edge in
+            // every tile it spans, so bound each tile's index and queries to its reach.
+            let reach_dbu = limit.ceil() as i64 + 1;
+            let zone = if rel == Rel::Space {
+                (
+                    tx as i64 * tile - reach_dbu,
+                    ty as i64 * tile - reach_dbu,
+                    (tx as i64 + 1) * tile + reach_dbu,
+                    (ty as i64 + 1) * tile + reach_dbu,
+                )
+            } else {
+                (i64::MIN, i64::MIN, i64::MAX, i64::MAX)
+            };
+            let cell = (limit.ceil() as i64).max(1) * 8;
+            let cell_of = |v: i64| v.div_euclid(cell);
+            let mut grid: std::collections::HashMap<(i64, i64), Vec<u32>> =
+                std::collections::HashMap::new();
+            for (i, e) in b_edges.iter().enumerate() {
+                let (x0, x1) = (
+                    (e.a.x.min(e.b.x) as i64).max(zone.0),
+                    (e.a.x.max(e.b.x) as i64).min(zone.2),
+                );
+                let (y0, y1) = (
+                    (e.a.y.min(e.b.y) as i64).max(zone.1),
+                    (e.a.y.max(e.b.y) as i64).min(zone.3),
+                );
+                for cx in cell_of(x0)..=cell_of(x1) {
+                    for cy in cell_of(y0)..=cell_of(y1) {
+                        grid.entry((cx, cy)).or_default().push(i as u32);
+                    }
+                }
+            }
+            let mut near: Vec<u32> = Vec::new();
+            let mut out = Vec::new();
+            for ea in a_edges {
+                let Some(sa) = Seg::of(ea) else { continue };
+                let line_a = line_of(ea);
+                near.clear();
+                let (x0, x1) = (
+                    (ea.a.x.min(ea.b.x) as i64 - reach_dbu).max(zone.0),
+                    (ea.a.x.max(ea.b.x) as i64 + reach_dbu).min(zone.2),
+                );
+                let (y0, y1) = (
+                    (ea.a.y.min(ea.b.y) as i64 - reach_dbu).max(zone.1),
+                    (ea.a.y.max(ea.b.y) as i64 + reach_dbu).min(zone.3),
+                );
+                for cx in cell_of(x0)..=cell_of(x1) {
+                    for cy in cell_of(y0)..=cell_of(y1) {
+                        if let Some(v) = grid.get(&(cx, cy)) {
+                            near.extend_from_slice(v);
+                        }
+                    }
+                }
+                near.sort_unstable();
+                near.dedup();
+                // The narrowest offending margin along this segment, and where it sits.
+                let mut worst: Option<Pair> = None;
+                for eb in near.iter().map(|&i| &b_edges[i as usize]) {
+                    let Some(sb) = Seg::of(eb) else { continue };
+                    if one_layer_space && line_of(eb) < line_a {
+                        continue; // read from eb's side
+                    }
+                    // Parallel enough to measure a width between, which is not the same as
+                    // parallel.  Coordinates are integers, so a wall that a boolean cut at
+                    // an angle keeps its direction only to the nearest DBU: the two sides of
+                    // one 45° bar can come out as (1160, 1160) and (1160, 1161), which is
+                    // 0.05° apart and was rejected outright by a test that wanted agreement
+                    // to six decimal places.  What matters is whether the gap between them
+                    // stays put along the run they share - the cross product of the unit
+                    // directions is the sine of the angle, so times the shorter run it is how
+                    // far the far end drifts, and a drift under one DBU is a straight gap as
+                    // far as the grid can say.
+                    // A wall one DBU out of true drifts by almost exactly one DBU over its
+                    // own length, whatever that length is, so the bound sits just above one.
+                    let drift = (sa.u.0 * sb.u.1 - sa.u.1 * sb.u.0).abs() * sa.len.min(sb.len);
+                    if drift > 1.5 {
+                        continue; // not parallel: no steady gap to measure
+                    }
+                    let dot = sa.n.0 * sb.n.0 + sa.n.1 * sb.n.1;
+                    if (rel == Rel::Enclosure) != (dot > 0.0) {
+                        // Enclosure wants nested boundaries (normals the same way); the other
+                        // two want facing ones (normals opposed).
+                        continue;
+                    }
+                    // Which side of a the span lies on: outward for a spacing, inward for an
+                    // enclosure. One sign covers both.
+                    let along = (sb.o.0 - sa.o.0) * sa.n.0 + (sb.o.1 - sa.o.1) * sa.n.1;
+                    let margin = if rel == Rel::Space { along } else { -along };
+                    // Behind this edge either way, or already far enough.
+                    if margin < -tol || margin >= limit {
+                        continue;
+                    }
+                    if skip_coincident && margin <= tol {
+                        continue; // flush, not short
+                    }
+                    // Projected overlap: only the stretch the two share counts.
+                    let t0 = (sb.o.0 - sa.o.0) * sa.u.0 + (sb.o.1 - sa.o.1) * sa.u.1;
+                    let t1 = t0 + sb.len * (sb.u.0 * sa.u.0 + sb.u.1 * sa.u.1);
+                    let (s0, s1) = (t0.min(t1).max(0.0), t0.max(t1).min(sa.len));
+                    if s1 - s0 <= tol {
+                        continue;
+                    }
+                    if rel == Rel::Enclosure && worst.is_some_and(|(m, _, _)| m <= margin) {
+                        continue;
+                    }
+                    // The marker is the span measured, across the middle of the run the two
+                    // share, which is short enough to stand for where the violation is.
+                    let mid = (s0 + s1) * 0.5;
+                    let p = (sa.o.0 + mid * sa.u.0, sa.o.1 + mid * sa.u.1);
+                    let q = if rel != Rel::Space {
+                        (p.0 - sa.n.0 * margin, p.1 - sa.n.1 * margin)
+                    } else {
+                        (p.0 + sa.n.0 * margin, p.1 + sa.n.1 * margin)
+                    };
+                    if rel == Rel::Space {
+                        // The projected midpoint on a owns this pair. It lies on a,
+                        // so that tile necessarily indexes a and can reach b; the gap's
+                        // midpoint need not lie in any tile a spans.
+                        if (
+                            (p.0 / tile as f64).floor() as i32,
+                            (p.1 / tile as f64).floor() as i32,
+                        ) != (tx, ty)
+                        {
+                            continue;
+                        }
+                        // Keep every offending pair, not just the nearest neighbour
+                        // of this edge. Join only contiguous runs against the same
+                        // partner line after scanning all tiles.
+                        let coord = |s: f64| {
+                            if line_a.0 != 0 {
+                                sa.o.0 + s * sa.u.0
+                            } else {
+                                sa.o.1 + s * sa.u.1
+                            }
+                        };
+                        let (lo, hi) = (coord(s0), coord(s1));
+                        out.push(report(
+                            ea,
+                            (margin, p, q),
+                            Some((line_of(eb), (lo.min(hi), lo.max(hi)))),
+                        ));
+                    } else {
+                        worst = Some((margin, p, q));
+                    }
+                }
+                if let Some(pair) = worst {
+                    out.push(report(ea, pair, None));
+                }
+            }
+            out.into_iter()
         })
         .collect();
     join_runs(found)
 }
 
 /// A report as read: the edge's two ends, the margin, and the report.
-type Found = ((i64, i64), (i64, i64), f64, Violation);
+type Found = (
+    (i64, i64),
+    (i64, i64),
+    f64,
+    Violation,
+    Option<(Line, (f64, f64))>,
+);
 /// A line through integer points, as its reduced direction and offset.
 type Line = (i64, i64, i64);
 
-/// One report per run of collinear edges that share endpoints - the pieces an
-/// operation cut one edge into at the tile lines - at the run's smallest margin.
+/// Enclosure joins collinear pieces of its subject wall. Spacing joins overlapping
+/// or adjacent projected runs of the same two wall lines, preserving separate gaps
+/// against different neighbours even when they share one long subject wall.
 fn join_runs(found: Vec<Found>) -> Vec<Violation> {
+    // A projected interval and the report read on it.
+    type Run = (f64, f64, usize);
     let mut uf = crate::merge::UnionFind::new(found.len());
     let mut at: std::collections::HashMap<(Line, (i64, i64)), usize> =
         std::collections::HashMap::new();
-    for (i, (p, q, _, _)) in found.iter().enumerate() {
+    let mut pairs: std::collections::HashMap<(Line, Line), Vec<Run>> =
+        std::collections::HashMap::new();
+    for (i, (p, q, _, _, partner)) in found.iter().enumerate() {
         let l = line(*p, *q);
+        if let Some((other, (lo, hi))) = partner {
+            pairs.entry((l, *other)).or_default().push((*lo, *hi, i));
+            continue;
+        }
         for v in [*p, *q] {
             match at.get(&(l, v)) {
                 Some(&j) => uf.union(i, j),
                 None => {
                     at.insert((l, v), i);
                 }
+            }
+        }
+    }
+    for runs in pairs.values_mut() {
+        runs.sort_unstable_by(|a, b| a.0.total_cmp(&b.0).then(a.1.total_cmp(&b.1)));
+        let mut joined: Option<(f64, usize)> = None;
+        for &(lo, hi, i) in runs.iter() {
+            match joined {
+                Some((end, j)) if lo <= end + 1e-6 => {
+                    uf.union(i, j);
+                    joined = Some((end.max(hi), j));
+                }
+                _ => joined = Some((hi, i)),
             }
         }
     }

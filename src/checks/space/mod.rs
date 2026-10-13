@@ -73,8 +73,8 @@ pub struct Gates {
     /// with a line deeper than `width` µm behind at least one of them.  Either alone
     /// is the other at zero.
     pub run: Option<(f64, f64)>,
-    /// Walls of the two facing each other under the value across one axis, or - as
-    /// [`Facing::Neither`] - facing nowhere under it, so that only a corner is closer.
+    /// Walls facing across one axis, or local corner-to-corner gaps under
+    /// [`Facing::Neither`], even when other walls of the regions face elsewhere.
     pub facing: Option<Facing>,
     /// With `facing: none`, how many of the two nearest corners lie in the
     /// reference region (boundary included). The deck can derive that region
@@ -230,14 +230,14 @@ pub fn run_min_gated(
                 Some(Facing::Along(axis)) if !faces_within(a, b, limit, Some(axis)) => {
                     return false;
                 }
-                Some(Facing::Neither) if faces_within(a, b, limit, None) => return false,
                 _ => {}
             }
             if let Some((tiles, count)) = &cover {
-                let Some((_, _, pa, pb)) = crate::geom::closest_approach(a, b, limit) else {
-                    return false;
-                };
+                let (pa, pb) = ctx.gap;
                 let covered = |(x, y): (f64, f64)| {
+                    // Corners are integer vertices; undo only the noise from the
+                    // marker's DBU-to-µm conversion before testing tile boundaries.
+                    let (x, y) = (x.round(), y.round());
                     // The reference may end exactly on a core boundary, leaving
                     // no area in the point's owning tile. Read both incident
                     // tiles on each such axis: closed-set membership includes

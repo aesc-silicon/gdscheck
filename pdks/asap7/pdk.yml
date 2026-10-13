@@ -307,6 +307,7 @@ virtual_layers:
   GcutOffGate: GcutNoSram not_interacting GATE
   GcutOnChannel: GcutNoSram interacting ChannelNoSram
   SdtNoSram: SDT not_overlapping SRAMDRC
+  SdtNoSramOnActive: SdtNoSram and ACTIVE
   SdtSram: SDT overlapping SRAMDRC
   SdtSramOnActive: SdtSram and ACTIVE
   SdtSramOffActive: SdtSram not_overlapping ACTIVE

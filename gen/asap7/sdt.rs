@@ -22,8 +22,34 @@ const GATE: f64 = 20.0;
 const RUN: f64 = 20.0;
 
 pub(super) fn generate(c: &Corpus<'_>) {
+    ordinary_overlap(c);
     sram_overlaps(c);
     shapes(c);
+}
+
+/// A tall ordinary trench can straddle a shorter ACTIVE without ending inside it.
+/// A remote SRAM marker exempts only ACTIVE; the trench still needs 27 nm of it.
+fn ordinary_overlap(c: &Corpus<'_>) {
+    let limit = c.drm("SDT.ACTIVE.OV.1", "min_width", 27.0);
+    for (label, height) in [
+        ("sram", 17.0),
+        ("under", limit - DBU),
+        ("exact", limit),
+        ("over", limit + DBU),
+    ] {
+        c.layout(
+            "sdt",
+            &format!("SDT.ACTIVE.OV.1.{label}"),
+            height < limit,
+            &[
+                ("SDT", [10.0, 0.0, 34.0, 54.0]),
+                ("ACTIVE", [0.0, 10.0, 100.0, 10.0 + height]),
+                ("LISD", [10.0, 0.0, 34.0, 54.0]),
+                ("SRAMDRC", [60.0, 0.0, 110.0, 54.0]),
+            ],
+            OFFSET,
+        );
+    }
 }
 
 /// DRM 3.8: the two explicit SRAM overlaps at 17 nm, including a reference that is

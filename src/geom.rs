@@ -2790,6 +2790,73 @@ pub fn closest_approach(a: &Outline, b: &Outline, limit: i64) -> Option<ClosestP
     closest_approach_segs(a, b, limit).map(|(pair, _, _)| pair)
 }
 
+/// A convex corner and the two boundary rays leading away from it. Material lies
+/// to the left of a contour, including hole contours, so a convex turn has a
+/// negative cross product between the rays pointing back and forward.
+fn convex_corners<'a>(
+    o: &'a Outline<'_>,
+) -> impl Iterator<Item = ((i64, i64), [(i128, i128); 2])> + 'a {
+    o.poly.rings().flat_map(|ring| {
+        (0..ring.len()).filter_map(move |i| {
+            let n = ring.len();
+            let (p, before, after) = (ring[i], ring[(i + n - 1) % n], ring[(i + 1) % n]);
+            let ray =
+                |q: crate::merge::IntPoint| (q.x as i128 - p.x as i128, q.y as i128 - p.y as i128);
+            let (u, v) = (ray(before), ray(after));
+            (u.0 * v.1 - u.1 * v.0 < 0).then_some(((p.x as i64, p.y as i64), [u, v]))
+        })
+    })
+}
+
+/// The nearest local corner-to-corner gap. Moving along either incident edge
+/// must not shorten the gap. Parallel walls extending in the same direction from
+/// its endpoints make it a side gap instead; aligned tips with no common run are
+/// still corners. Facing walls elsewhere on these regions have no bearing on it.
+pub fn closest_corner_approach(
+    a: &Outline,
+    b: &Outline,
+    limit: i64,
+    square: bool,
+) -> Option<ClosestPair> {
+    let mut best: Option<ClosestPair> = None;
+    let dot = |u: (i128, i128), v: (i128, i128)| u.0 * v.0 + u.1 * v.1;
+    let bound = limit as i128 * limit as i128;
+    for (p, rays_a) in convex_corners(a) {
+        for (q, rays_b) in convex_corners(b) {
+            let d = ((q.0 - p.0) as i128, (q.1 - p.1) as i128);
+            let num = if square {
+                d.0.abs().max(d.1.abs()).pow(2)
+            } else {
+                dot(d, d)
+            };
+            if num >= bound || best.is_some_and(|c| num >= c.0) {
+                continue;
+            }
+            if rays_a.iter().any(|&r| dot(d, r) > 0) || rays_b.iter().any(|&r| dot(d, r) < 0) {
+                continue; // an adjacent wall, not this vertex, is nearer
+            }
+            if rays_a.iter().any(|&u| {
+                dot(d, u) == 0
+                    && rays_b
+                        .iter()
+                        .any(|&v| dot(d, v) == 0 && u.0 * v.1 == u.1 * v.0 && dot(u, v) > 0)
+            }) {
+                continue; // the gap belongs to a projected side-to-side run
+            }
+            // A distant arm of either polygon must not pass through the gap.
+            if a.segs
+                .iter()
+                .chain(&b.segs)
+                .any(|&(s, t)| s != p && t != p && s != q && t != q && segs_meet_i((p, q), (s, t)))
+            {
+                continue;
+            }
+            best = Some((num, 1, (p.0 as f64, p.1 as f64), (q.0 as f64, q.1 as f64)));
+        }
+    }
+    best
+}
+
 /// [`closest_approach`] with the two segments it was read between.
 pub fn closest_approach_segs(
     a: &Outline,
@@ -2999,8 +3066,8 @@ impl Outline<'_> {
 /// Whether a wall of `a` and a wall of `b` face each other across empty ground closer
 /// than `limit` DBU, projecting onto each other - KLayout's `projection` metric - and,
 /// with an `axis`, facing across that axis: vertical walls for [`Axis::X`], horizontal
-/// ones for [`Axis::Y`].  A pair that faces nowhere under the limit is closer only
-/// corner to corner.
+/// ones for [`Axis::Y`]. Corner gaps are measured separately by
+/// [`closest_corner_approach`], even if these regions also have facing walls.
 pub fn faces_within(a: &Outline, b: &Outline, limit: i64, axis: Option<Axis>) -> bool {
     let lim2 = (limit as i128) * (limit as i128);
     a.segs.iter().any(|&(s0, s1)| {
@@ -3876,6 +3943,32 @@ mod space_tests {
         assert_eq!((n, d), (25, 1), "3² + 4²");
         assert!(Limit::AtLeast(6).broken_by_sq(n, d));
         assert!(!Limit::AtLeast(5).broken_by_sq(n, d));
+    }
+
+    /// A 3/4/5 corner reads exactly at the bound, aligned tips still form a
+    /// corner, and the endpoints of a side-to-side run do not become corners.
+    #[test]
+    fn corner_gaps_distinguish_aligned_tips_from_projecting_sides() {
+        let a = rect(0, 0, 100, 100);
+        let oa = Outline::new(&a);
+        let corner = rect(103, 104, 203, 204);
+        let oc = Outline::new(&corner);
+        assert!(closest_corner_approach(&oa, &oc, 5, false).is_none());
+        assert_eq!(closest_corner_approach(&oa, &oc, 6, false).unwrap().0, 25);
+        assert!(closest_corner_approach(&oa, &oc, 4, true).is_none());
+        assert_eq!(closest_corner_approach(&oa, &oc, 5, true).unwrap().0, 16);
+        for (b, expected) in [
+            (rect(100, 104, 200, 204), Some(16)), // tips aligned in x
+            (rect(100, 100, 200, 200), Some(0)),  // isolated corner contact
+            (rect(0, 104, 100, 204), None),       // sides with aligned ends
+            (rect(50, 104, 150, 204), None),      // sides with staggered ends
+            (rect(100, 20, 200, 120), None),      // shared boundary run
+        ] {
+            assert_eq!(
+                closest_corner_approach(&oa, &Outline::new(&b), 10, false).map(|c| c.0),
+                expected,
+            );
+        }
     }
 
     /// A pair whose boxes are the limit apart is not looked at.

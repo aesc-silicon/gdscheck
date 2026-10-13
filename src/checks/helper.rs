@@ -30,6 +30,8 @@ use std::sync::Arc;
 /// Which pairs a spacing rule is about, in which direction, and in which metric.
 #[derive(Clone, Copy)]
 pub struct SpaceMode {
+    /// Measure local convex corner pairs, leaving projected side gaps to their rules.
+    corners: bool,
     /// Scan pairs that share area for their narrowest empty gap, rather than pairs that
     /// share none for their closest approach.  See [`facing_pairs_i`].
     overlapping: bool,
@@ -278,7 +280,7 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                         (q.0 * dbu_to_um, q.1 * dbu_to_um),
                     )
                 })
-            } else if mode.square {
+            } else if mode.square && !mode.corners {
                 let (Some(pa), Some(pb)) = (a.lazy.poly(), b.lazy.poly()) else {
                     continue;
                 };
@@ -306,7 +308,12 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
                 // abut, with no space between them anywhere.  IHP's butted substrate
                 // ties are exactly that by construction.  Only a contact at isolated
                 // points is a separation of zero, whichever layers it is between.
-                match closest_approach(&a.outline, &b.outline, limit.dbu()) {
+                let approach = if mode.corners {
+                    closest_corner_approach(&a.outline, &b.outline, limit.dbu(), mode.square)
+                } else {
+                    closest_approach(&a.outline, &b.outline, limit.dbu())
+                };
+                match approach {
                     None => None,
                     Some((0, _, p, q)) => {
                         if shaving
@@ -345,6 +352,10 @@ fn check_tile<'a, G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool>(
             }
             let ctx = RunCtx {
                 zone,
+                gap: (
+                    (ax / dbu_to_um, ay / dbu_to_um),
+                    (bx / dbu_to_um, by / dbu_to_um),
+                ),
                 kin,
                 tile: tile_key,
                 same_layer,
@@ -412,6 +423,7 @@ pub fn run_overlap(
     merged: &SharedCache,
 ) -> Vec<Violation> {
     let mode = SpaceMode {
+        corners: false,
         overlapping: true,
         both: false,
         square: false,
@@ -517,6 +529,7 @@ fn run_gated_with<G: Fn(&Outline, &Outline, Marker, Marker, &RunCtx) -> bool + S
         }
     };
     let mode = forced.unwrap_or(SpaceMode {
+        corners: rule.word("facing") == Some("none"),
         overlapping: overlapping_pairs,
         both: both_pairs,
         square,
@@ -799,6 +812,9 @@ pub struct RunCtx<'c> {
     /// The tile's core grown by the layers' halo: a copy is exact within it, and the
     /// merged region it is a piece of may be missing shapes beyond it.
     pub zone: Zone,
+    /// The measured gap's endpoints in DBU, before marker ordering. Conditions on
+    /// the gap (such as via end-cap coverage) must read these same endpoints.
+    pub gap: (Marker, Marker),
     kin: &'c Kin<'c>,
     tile: (i32, i32),
     same_layer: bool,

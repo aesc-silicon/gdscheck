@@ -4,9 +4,10 @@
 
 # SDT, the source/drain trench (DRM section 3.8).
 #
-# Not checked: the vertical overlaps SDT.ACTIVE.OV.1 and SDT.LISD.OV.2, which
-# SDT.ACTIVE.AUX.2, SDT.LISD.AUX.4 and the SDT widths already bound: an SDT whose
-# horizontal edges lie on ACTIVE's, inside LISD, is as tall as the ACTIVE it sits on.
+# SDT.ACTIVE.OV.1 measures the actual intersection: AUX.2 allows the trench to
+# extend beyond ACTIVE, so its own height does not guarantee 27 nm of overlap.
+# An absent or touching-only ACTIVE is rejected by SDT.ACTIVE.AUX.3.
+# SDT.LISD.OV.2 is implied by full LISD containment (SDT.LISD.AUX.4) and SDT.W.2.
 # SDT.W.3 reads every vertical edge of ordinary SDT against the whole multiples of 27 nm,
 # as ACTIVE.W.2 does.
 # SRAM SDT is exempt from ordinary edge alignment and LISD containment. Both
@@ -30,6 +31,12 @@ rules:
     check: forbidden
     layers: [SdtW3Off]
     value: 0.0
+  - id: SDT.ACTIVE.OV.1
+    check: min_width
+    layers: [SdtNoSramOnActive]
+    value: 0.027
+    params:
+      facing: y
   - id: SRAM.SDT.W.4
     check: min_width
     layers: [SdtSram]
