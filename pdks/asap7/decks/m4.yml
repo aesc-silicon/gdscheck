@@ -24,7 +24,8 @@
 # tips and a 40-48 nm stagger - and so `tech_lef: partial`.  Its side extension
 # reaches the adjacent wire, 24 nm away, only by the quarter nanometre a
 # DATABASE MICRONS 1000 tech rounds off, so a router reading it as written keeps
-# neither rule; 0.025 keeps the reach.
+# neither rule; DATABASE MICRONS 4000 (LambdaPDK #246) or 0.025 (ORFS #4663)
+# keeps the reach.
 #
 # Not checked: M4.AUX.4, a wide wire's outside edge on a track's edge.
 # SRAM applicability: see docs/source/pdks/asap7.rst.

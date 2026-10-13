@@ -16,8 +16,8 @@
 # - partial, M4-M7 S.4 and S.5: the LEF's corner keep-out about a line end is stricter
 #   than both, but its side extension (`0.02425`, `0.03225`) rounds to exactly the
 #   adjacent wire's edge, which a corner must lie strictly inside, so the router keeps
-#   neither.  With the whole-nanometre values (ORFS #4663, LambdaPDK #246) it keeps
-#   both, and these four decks can come back whole.
+#   neither.  Under DATABASE MICRONS 4000 (LambdaPDK #246) or the whole-nanometre
+#   values (ORFS #4663) it keeps both, and these four decks can come back whole.
 # Read at the LEF's value (deck `openroad`): M1.S.6 at 18 nm and V6.S.2 at 34 nm.
 include:
   - deck: geometry
