@@ -26,7 +26,7 @@ build:
     cargo build --release
 
 # Regenerate every PDK's generated test fixtures.
-gen-testdata: (gen-testdata-for "ihp-sg13g2") (gen-testdata-for "gf180mcuD")
+gen-testdata: (gen-testdata-for "ihp-sg13g2") (gen-testdata-for "gf180mcuD") (gen-testdata-for "asap7")
 
 # Regenerate one PDK's generated test fixtures.
 gen-testdata-for pdk:
@@ -36,6 +36,10 @@ gen-testdata-for pdk:
 designs process="ihp-sg13g2":
     ci/run-designs.sh {{process}}
 
+# Lint the YAML decks and fixtures, as CI does.
+yamllint:
+    uvx yamllint tests/ pdks/
+
 # Format, lint, and test — the pre-commit gate.
-check: clippy test
+check: clippy yamllint test
     cargo fmt --check

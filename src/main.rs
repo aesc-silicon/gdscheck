@@ -418,27 +418,36 @@ fn run(args: RunArgs, dirs: &[PathBuf]) {
     } else if args.verbose {
         println!("{headline}");
         for v in &violations {
+            let lef = v
+                .tech_lef
+                .map(|t| format!(" ({})", t.note()))
+                .unwrap_or_default();
             match &v.waived {
-                Some(why) => println!("  [{}] {} (waived: {why})", v.rule_id, v.message),
-                None => println!("  [{}] {}", v.rule_id, v.message),
+                Some(why) => println!("  [{}] {}{lef} (waived: {why})", v.rule_id, v.message),
+                None => println!("  [{}] {}{lef}", v.rule_id, v.message),
             }
         }
     } else {
         println!("{headline}");
-        let mut counts: std::collections::BTreeMap<&str, (usize, usize)> =
+        let mut counts: std::collections::BTreeMap<&str, (usize, usize, Option<pdk::TechLef>)> =
             std::collections::BTreeMap::new();
         for v in &violations {
-            let e = counts.entry(v.rule_id.as_str()).or_insert((0, 0));
+            let e = counts
+                .entry(v.rule_id.as_str())
+                .or_insert((0, 0, v.tech_lef));
             e.0 += 1;
             if v.waived.is_some() {
                 e.1 += 1;
             }
         }
-        for (rule_id, (count, waived)) in counts {
+        for (rule_id, (count, waived, tech_lef)) in counts {
+            let lef = tech_lef
+                .map(|t| format!(" ({})", t.note()))
+                .unwrap_or_default();
             if waived > 0 {
-                println!("  [{rule_id}] {count} ({waived} waived)");
+                println!("  [{rule_id}] {count} ({waived} waived){lef}");
             } else {
-                println!("  [{rule_id}] {count}");
+                println!("  [{rule_id}] {count}{lef}");
             }
         }
     }

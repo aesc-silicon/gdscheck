@@ -230,6 +230,7 @@ pub fn run(
         params: rule.params.clone(),
         ignore: rule.ignore.clone(),
         text: rule.text.clone(),
+        tech_lef: None,
     };
 
     println!(

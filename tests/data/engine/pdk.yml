@@ -38,6 +38,10 @@ decks:
     path: decks/overlap.yml
   - name: selection
     path: decks/selection.yml
+  - name: facing
+    path: decks/facing.yml
+  - name: grid
+    path: decks/grid.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.
@@ -70,6 +74,8 @@ virtual_layers:
   InnerBareInOuter: InnerBare inside Outer
   # The edges of Outer, for a reach rule read per edge.
   Outer.edges: Outer edges
+  # Outer's edges that are no whole multiple of half a micron.
+  OuterOffHalf: Outer.edges without_length_multiple 0.5
   # The edges of Inner cut at Outer's boundary: what lies inside Outer and what outside,
   # an edge on Outer's wall counting as inside on every side.
   Inner.edges: Inner edges

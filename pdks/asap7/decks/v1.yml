@@ -1,0 +1,86 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V1, the via from M1 to M2 (DRM section 3.13).  V1.M1.EN.1's "5 & 2" requires
+# 5 nm on one side and 2 nm on its opposite side, on the same axis.
+#
+# Against the tech LEF (LambdaPDK `asap7_tech.lef`, the ASAP7 1x tech LEF): `LAYER V1`
+# states no enclosure, `VIARULE M2_M1` sets M1's to 0, and `VIA12`'s M1 pad is 0/0 in x
+# and 2/2 in y - V1.M1.EN.1 is not
+# there (absent), and the router's own via can only meet it with pin metal around it.
+#
+# Corner spacing reads the end-cap at the two corners forming the gap.
+# S.1 reads vias that face each other, on one track or on neighbouring tracks
+# overlapping in projection: 18 nm. Vias on neighbouring tracks that don't overlap
+# meet corner to corner, which S.2-S.4 read by end-cap (23/30/27 nm); S.1's 27 nm
+# for that case is S.4's value.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: V1.W.1
+    check: min_width
+    layers: [V1NoSram]
+    value: 0.018
+  - id: V1.S.1
+    check: min_space
+    layers: [V1NoSram]
+    value: 0.018
+  - id: V1.S.2
+    check: min_space
+    layers: [V1NoSram]
+    value: 0.023
+    layer_params:
+      corner_cover: M2Endcap5
+    params:
+      facing: none
+      covered_corners: 2
+  - id: V1.S.3
+    check: min_space
+    layers: [V1NoSram]
+    value: 0.030
+    layer_params:
+      corner_cover: M2Endcap5
+    params:
+      facing: none
+      covered_corners: 0
+  - id: V1.S.4
+    check: min_space
+    layers: [V1NoSram]
+    value: 0.027
+    layer_params:
+      corner_cover: M2Endcap5
+    params:
+      facing: none
+      covered_corners: 1
+  - id: V1.M1.EN.1
+    check: min_enclosure
+    layers: [M1, V1NoSram]
+    value: 0.005
+    params:
+      sides: opposite
+      opposite_value: 0.002
+    tech_lef: absent
+  - id: V1.M2.EN.2
+    check: min_enclosure
+    layers: [M2, V1NoSram]
+    value: 0.005
+    params:
+      sides: any
+  - id: V1.AUX.1
+    check: forbidden
+    layers: [V1NoSram, M1]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: V1.AUX.1
+    check: forbidden
+    layers: [V1NoSram, M2]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: V1.M2.AUX.2
+    check: max_enclosure
+    layers: [M2, V1NoSram]
+    value: 0.0
+    params:
+      sides: opposite

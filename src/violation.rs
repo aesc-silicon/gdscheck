@@ -39,6 +39,9 @@ pub struct Violation {
     /// it would have needed was not there.  Reported under its rule, so nothing is
     /// silently missing; the run's exit status says the report is incomplete.
     pub skipped: bool,
+    /// How the PDK's tech LEF falls short of the rule (see
+    /// [`RuleDefinition::tech_lef`](crate::pdk::RuleDefinition)).
+    pub tech_lef: Option<crate::pdk::TechLef>,
 }
 
 impl Violation {
@@ -58,6 +61,7 @@ impl Violation {
             geometry: ViolationGeometry::Edge { x1, y1, x2, y2 },
             waived: None,
             skipped: false,
+            tech_lef: None,
         }
     }
 
@@ -69,6 +73,7 @@ impl Violation {
             geometry: ViolationGeometry::Point { x, y },
             waived: None,
             skipped: false,
+            tech_lef: None,
         }
     }
 
@@ -88,6 +93,7 @@ impl Violation {
             geometry: ViolationGeometry::None,
             waived: None,
             skipped: false,
+            tech_lef: None,
         }
     }
 }

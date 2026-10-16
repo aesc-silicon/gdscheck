@@ -19,6 +19,9 @@ Thumbs.db
 # Documentation
 docs/build/
 
+# Python comparison tooling
+__pycache__/
+
 # DRC reports
 *.lyrdb
 

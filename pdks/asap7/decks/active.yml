@@ -1,0 +1,145 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# ACTIVE (DRM section 3.5).  SRAM rules are the ones prefixed SRAM, read on the ACTIVE
+# that interacts with SRAMDRC; the rest read the ACTIVE that does not.
+#
+# ACTIVE.S.2A reads the horizontal space between the source/drain regions of different
+# transistors on different nets: a region is the ACTIVE a gate crosses, less the gate,
+# reached by the nets through its SDT contacts, and the rule reads the lips of the
+# regions flanking a break under 92 nm (see `BreakLip` in pdk.yml); the lips of one ACTIVE - a
+# transistor's own source and drain, or neighbours sharing a diffusion - are no pair.
+# A region no net reaches is not known to share one and is read. The manual's note 1
+# holds the rule in SRAM too, and its note 2 that only the horizontal space is meant.
+# ACTIVE.W.2 reads every vertical edge of ordinary ACTIVE against the whole multiples of
+# 27 nm. ACTIVE.LUP.1 reads the reach from a gated
+# ACTIVE to a tap under the well's own implant - n+ in an N-well, p+ in the substrate -
+# 30 um round and, in a well, confined to that well.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: ACTIVE.FIN.EX.1
+    check: min_enclosure
+    layers: [ACTIVE, FinNoSram]
+    value: 0.01
+    params:
+      facing: y
+      interacting_only: 1
+  - id: ACTIVE.W.1
+    check: min_width
+    layers: [ActiveNoSram]
+    value: 0.027
+    params:
+      facing: y
+  - id: ACTIVE.W.2
+    check: forbidden
+    layers: [ActiveW2Off]
+    value: 0.0
+  - id: ACTIVE.W.3
+    check: min_width
+    layers: [ActiveNoSram]
+    value: 0.016
+    params:
+      facing: x
+  - id: ACTIVE.S.1
+    check: min_space
+    layers: [ActiveNoSram]
+    value: 0.027
+    params:
+      facing: y
+  - id: ACTIVE.S.2A
+    check: min_space
+    layers: [BreakLip, BreakLip]
+    value: 0.092
+    params:
+      facing: x
+      net: different
+    layer_params:
+      related_by: ACTIVE
+  - id: ACTIVE.S.2B
+    check: min_space
+    layers: [ActiveNoSram]
+    value: 0.038
+    params:
+      facing: x
+  - id: ACTIVE.S.2B
+    check: min_notch
+    layers: [ActiveNoSram]
+    value: 0.038
+    params:
+      facing: x
+  - id: ACTIVE.WELL.S.4
+    check: min_space
+    layers: [ActiveNoSram, NWELL]
+    value: 0.027
+  - id: SRAM.ACTIVE.WELL.S.5
+    check: min_space
+    layers: [ActiveSram, NWELL]
+    value: 0.0135
+  - id: ACTIVE.WELL.EN.1
+    check: min_enclosure
+    layers: [NWELL, ActiveNoSram]
+    value: 0.027
+    params:
+      interacting_only: 1
+  - id: SRAM.ACTIVE.WELL.EN.2
+    check: min_enclosure
+    layers: [NWELL, ActiveSram]
+    value: 0.0135
+    params:
+      interacting_only: 1
+  - id: ACTIVE.A.1A
+    check: min_area
+    layers: [ActiveNoSram]
+    value: 0.000864
+  - id: ACTIVE.A.1B
+    check: min_area
+    layers: [ActiveNoSram]
+    value: 0.000864
+    params:
+      scope: hole
+  - id: SRAM.ACTIVE.A.2A
+    check: min_area
+    layers: [ActiveSram]
+    value: 0.000432
+  - id: SRAM.ACTIVE.A.2B
+    check: min_area
+    layers: [ActiveSram]
+    value: 0.000432
+    params:
+      scope: hole
+  - id: ACTIVE.AUX.1
+    check: forbidden
+    layers: [ActiveNoSram, NSELECT, PSELECT]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: ACTIVE.AUX.1
+    check: forbidden
+    layers: [ActiveOnSelectEdge]
+    value: 0.0
+  - id: SRAM.ACTIVE.AUX.2
+    check: forbidden
+    layers: [ActiveAbutSram]
+    value: 0.0
+  # No notch along the vertical axis at all: 1 um is past any notch a cell holds.
+  - id: ACTIVE.AUX.3
+    check: min_notch
+    layers: [ActiveNoSram]
+    value: 1.0
+    params:
+      facing: y
+  - id: ACTIVE.LUP.1
+    check: max_space
+    layers: [PmosActive, NwellTap]
+    value: 30.0
+    params:
+      reach: round
+    layer_params:
+      within: NWELL
+  - id: ACTIVE.LUP.1
+    check: max_space
+    layers: [NmosActive, SubstrateTap]
+    value: 30.0
+    params:
+      reach: round

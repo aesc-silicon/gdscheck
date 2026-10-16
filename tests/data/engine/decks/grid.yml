@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The grid readings of the shape family: Outer's vertices on a half-micron grid both
+# ways; Inner's y on the same grid from 0.2 µm, its x free; and Via's centre across y on
+# tracks a micron apart from 0.3 µm, and across x a micron apart from the origin.
+rules:
+  - id: G.both
+    check: offgrid
+    layers: [Outer]
+    value: 0.5
+  - id: G.y
+    check: offgrid
+    layers: [Inner]
+    value: 0.5
+    params:
+      facing: y
+      offset: 0.2
+  - id: T.y
+    check: offtrack
+    layers: [Via]
+    value: 1.0
+    params:
+      facing: y
+      offset: 0.3
+  - id: T.x
+    check: offtrack
+    layers: [Via]
+    value: 1.0
+    params:
+      facing: x

@@ -316,6 +316,8 @@ fn spec(word: &str, left: Kind) -> Option<OpSpec> {
         (Edge, "centers") => s("centers", none, Edge, Centers),
         (Edge, "with_length") => s("with_length", none, Edge, Bounds),
         (Edge, "without_length") => s("without_length", none, Edge, Bounds),
+        (Edge, "with_length_multiple") => s("with_length_multiple", none, Edge, OneMin),
+        (Edge, "without_length_multiple") => s("without_length_multiple", none, Edge, OneMin),
         (Edge, "with_angle") => s("with_angle", none, Edge, Bounds),
         (Edge, "without_angle") => s("without_angle", none, Edge, Bounds),
         _ => Option::None,
@@ -696,7 +698,13 @@ impl Lowerer<'_> {
             }),
             Kind::Edge => Def::Edge(EdgeLayerDef {
                 name: name.to_string(),
-                op: spec.canonical.to_string(),
+                op: if matches!(spec.canonical, "with_length" | "without_length")
+                    && matches!(values.as_slice(), [Value::Num(_)])
+                {
+                    format!("{}_exact", spec.canonical)
+                } else {
+                    spec.canonical.to_string()
+                },
                 layers,
                 min: lo,
                 max: hi,

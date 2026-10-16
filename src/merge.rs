@@ -2599,6 +2599,12 @@ pub enum EdgeOp {
     /// (KLayout `.with_length(a..b)`).  `WithoutLength` keeps the complement.
     WithLength(Option<i32>, Option<i32>),
     WithoutLength(Option<i32>, Option<i32>),
+    /// Bare-number length selector, distinct from the empty range `[v, v)`.
+    ExactLength(i32, bool),
+    /// Edges whose length is a whole multiple of the step, in DBU (`with_length_multiple`),
+    /// or the complement: a width-increment rule read on edges, with no list of the
+    /// multiples to keep and no cap where the list would end.
+    MultipleLength(i32, bool),
     /// Keep edges whose orientation in degrees is in `[min, max)`, normalised to
     /// `[0, 180)` (KLayout `.with_angle`).  `WithoutAngle` keeps the complement.
     WithAngle(i32, i32),
@@ -2697,6 +2703,7 @@ fn compose_edge_tile(
                             false,
                             true,
                             0,
+                            None,
                         )
                     })
                     .map(|(x1, y1, x2, y2, _)| Edge {
@@ -2837,6 +2844,35 @@ fn compose_edge_tile(
                         // edge and would make `interacting` meaningless.
                         (a != b).then_some(Edge { a, b })
                     })
+                    .collect()
+            })
+            .unwrap_or_default(),
+        EdgeOp::ExactLength(length, want) => edge_srcs
+            .first()
+            .map(|a| {
+                a.iter()
+                    .filter(|e| {
+                        let dx = e.b.x as i128 - e.a.x as i128;
+                        let dy = e.b.y as i128 - e.a.y as i128;
+                        (dx * dx + dy * dy == length as i128 * length as i128) == want
+                    })
+                    .copied()
+                    .collect()
+            })
+            .unwrap_or_default(),
+        EdgeOp::MultipleLength(step, want) => edge_srcs
+            .first()
+            .map(|a| {
+                a.iter()
+                    .filter(|e| {
+                        // Half a DBU of slack, as the ranges allow: an axis-aligned
+                        // edge is a whole number of DBU long, a diagonal one is never
+                        // a multiple.
+                        let l = e.length();
+                        let k = (l / step as f64).round();
+                        (k >= 1.0 && (l - k * step as f64).abs() <= 0.5) == want
+                    })
+                    .copied()
                     .collect()
             })
             .unwrap_or_default(),
@@ -3882,6 +3918,7 @@ fn stitch_inner(
     let mut regions: Vec<Region> = Vec::new();
     let mut largest: Vec<(f64, usize)> = Vec::new();
     let mut vsum: Vec<(f64, f64, usize)> = Vec::new();
+    let mut multiple_pieces: Vec<bool> = Vec::new();
     for (id, p) in pieces.iter().enumerate() {
         let root = uf.find(id);
         if root_to_region[root] == usize::MAX {
@@ -3894,9 +3931,11 @@ fn stitch_inner(
             });
             largest.push((0.0, id));
             vsum.push((0.0, 0.0, 0));
+            multiple_pieces.push(false);
         }
         let region = root_to_region[root];
         piece_region[id] = region;
+        multiple_pieces[region] |= regions[region].area_dbu > 0.0;
         regions[region].area_dbu += p.area;
         regions[region].perimeter_dbu += p.perimeter;
         let v = &mut vsum[region];
@@ -3918,11 +3957,47 @@ fn stitch_inner(
     // tile it fell in.
     // Region by region in parallel: the contact layer is eight million regions of one
     // piece, and one core asking each was a third of the stitch.
+    // A rectangle crossing one tile line can have its other side *on* a tile
+    // line. The strict-interior vertex sum then loses every corner on that side.
+    // Recognize a filled rectangle by its aggregate area and whole bounding box,
+    // and use its exact centre. Only multi-piece regions need these boxes: keep
+    // the millions of single-core contacts on the small, allocation-free path.
+    let mut border_boxes: HashMap<usize, (i64, i64, i64, i64)> = HashMap::new();
+    for (&(tx, ty), ids) in &tile_pieces {
+        for &id in ids {
+            let region = piece_region[id];
+            if !multiple_pieces[region] {
+                continue;
+            }
+            let (x0, y0, x1, y1) = poly_bbox(piece_poly[id]);
+            let b = (
+                (x0 as i64).max(tx as i64 * t),
+                (y0 as i64).max(ty as i64 * t),
+                (x1 as i64).min((tx as i64 + 1) * t),
+                (y1 as i64).min((ty as i64 + 1) * t),
+            );
+            border_boxes
+                .entry(region)
+                .and_modify(|a| {
+                    *a = (a.0.min(b.0), a.1.min(b.1), a.2.max(b.2), a.3.max(b.3));
+                })
+                .or_insert(b);
+        }
+    }
     let centres: Vec<Option<(f64, f64)>> = vsum
         .par_iter()
         .enumerate()
         .map(|(region, v)| {
-            if v.2 == 0 {
+            if let Some(&(x0, y0, x1, y1)) = border_boxes.get(&region)
+                && regions[region].area_dbu == (x1 - x0) as f64 * (y1 - y0) as f64
+            {
+                return Some(((x0 + x1) as f64 * 0.5, (y0 + y1) as f64 * 0.5));
+            }
+            // A single core owns the entire region, including real corners that
+            // happen to lie on its boundary. Its whole-polygon marker is exact;
+            // averaging only strictly interior vertices would drop those corners
+            // and move a rectangle's marker from its centre to its far vertex.
+            if !multiple_pieces[region] || v.2 == 0 {
                 return None;
             }
             let c = (v.0 / v.2 as f64, v.1 / v.2 as f64);
@@ -4116,6 +4191,24 @@ pub(crate) struct CellGrid {
     items: Vec<u32>,
 }
 
+/// Reusable query storage for one grid, kept local to the querying tile/task.
+pub(crate) struct CellGridQuery {
+    seen: Vec<u32>,
+    generation: u32,
+    items: Vec<u32>,
+}
+
+impl CellGridQuery {
+    /// `pieces` is the number of boxes used to build the grid.
+    pub(crate) fn new(pieces: usize) -> Self {
+        Self {
+            seen: vec![0; pieces],
+            generation: 0,
+            items: Vec::new(),
+        }
+    }
+}
+
 impl CellGrid {
     const SIDE: i32 = 32;
 
@@ -4159,26 +4252,40 @@ impl CellGrid {
         }
     }
 
-    /// The pieces filed in any cell the box touches, each once.
-    pub(crate) fn covering(&self, (bx0, by0, bx1, by1): (i32, i32, i32, i32)) -> Vec<u32> {
+    /// The pieces filed in any cell the box touches, each once, in unspecified order.
+    /// Reuses query storage for this grid; a single cell is borrowed directly.
+    pub(crate) fn covering<'a>(
+        &'a self,
+        (bx0, by0, bx1, by1): (i32, i32, i32, i32),
+        query: &'a mut CellGridQuery,
+    ) -> &'a [u32] {
         let cx0 = ((bx0 - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
         let cx1 = ((bx1 - self.x0) / self.cell).clamp(0, Self::SIDE - 1);
         let cy0 = ((by0 - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
         let cy1 = ((by1 - self.y0) / self.cell).clamp(0, Self::SIDE - 1);
-        let mut out = Vec::new();
+        if cx0 == cx1 && cy0 == cy1 {
+            let c = (cy0 * Self::SIDE + cx0) as usize;
+            return &self.items[self.start[c] as usize..self.start[c + 1] as usize];
+        }
+        query.items.clear();
+        query.generation = query.generation.wrapping_add(1);
+        if query.generation == 0 {
+            query.seen.fill(0);
+            query.generation = 1;
+        }
         for cy in cy0..=cy1 {
             for cx in cx0..=cx1 {
                 let c = (cy * Self::SIDE + cx) as usize;
-                out.extend_from_slice(
-                    &self.items[self.start[c] as usize..self.start[c + 1] as usize],
-                );
+                for &i in &self.items[self.start[c] as usize..self.start[c + 1] as usize] {
+                    let seen = &mut query.seen[i as usize];
+                    if *seen != query.generation {
+                        *seen = query.generation;
+                        query.items.push(i);
+                    }
+                }
             }
         }
-        if cy0 != cy1 || cx0 != cx1 {
-            out.sort_unstable();
-            out.dedup();
-        }
-        out
+        &query.items
     }
 
     /// The pieces filed in the cell holding `(x, y)`.
@@ -5508,7 +5615,7 @@ fn build_counted_selection_tiles(
         .by_tile
         .par_iter()
         .flat_map_iter(|(tile, polys)| {
-            let mut pairs: Vec<(usize, usize)> = Vec::new();
+            let mut pairs: HashSet<(usize, usize)> = HashSet::new();
             let mut fpolys: Vec<(&MergedPoly, usize)> = fl
                 .by_tile
                 .get(tile)
@@ -5523,19 +5630,40 @@ fn build_counted_selection_tiles(
             }
             let (cx0, cy0) = (tile.0 as i64 * t, tile.1 as i64 * t);
             let (cx1, cy1) = ((tile.0 as i64 + 1) * t, (tile.1 as i64 + 1) * t);
+            // The filter pieces filed by their boxes, held to the tile, so a candidate
+            // piece meets the few whose cells its box touches and not every piece of
+            // the tile; and the pairs met kept as a set, asked after the boxes.  Asked
+            // of a list before them, for every pair of pieces, the question grew with
+            // the pairs already met: ActiveBreak on sha256 - five thousand halo pieces
+            // against four thousand ACTIVE per tile - took eighteen minutes of a run
+            // whose rules took half a minute.
+            let (gx0, gy0) = (
+                tile.0.saturating_mul(tile_dbu),
+                tile.1.saturating_mul(tile_dbu),
+            );
+            let (gx1, gy1) = (gx0.saturating_add(tile_dbu), gy0.saturating_add(tile_dbu));
+            // Keep the original boxes for rejection checks without rescanning vertices.
+            let fboxes: Vec<_> = fpolys.iter().map(|(fp, _)| poly_bbox(fp)).collect();
+            let boxes: Vec<_> = fboxes
+                .iter()
+                .map(|b| (b.0.max(gx0), b.1.max(gy0), b.2.min(gx1), b.3.min(gy1)))
+                .collect();
+            let grid = CellGrid::new(gx0, gy0, tile_dbu, &boxes);
+            let mut query = CellGridQuery::new(boxes.len());
             for (poly, rid) in polys {
                 for piece in clip_to_box(vec![poly.clone()], cx0, cy0, cx1, cy1) {
                     let (x0, y0, x1, y1) = poly_bbox(&piece);
-                    for &(fp, frid) in &fpolys {
-                        if pairs.contains(&(*rid, frid)) {
-                            continue;
-                        }
-                        let (fx0, fy0, fx1, fy1) = poly_bbox(fp);
+                    for &i in grid.covering((x0, y0, x1, y1), &mut query) {
+                        let (fp, frid) = fpolys[i as usize];
+                        let (fx0, fy0, fx1, fy1) = fboxes[i as usize];
                         if x1 < fx0 || fx1 < x0 || y1 < fy0 || fy1 < y0 {
                             continue;
                         }
+                        if pairs.contains(&(*rid, frid)) {
+                            continue;
+                        }
                         if piece_meets(kind, &piece, fp) {
-                            pairs.push((*rid, frid));
+                            pairs.insert((*rid, frid));
                         }
                     }
                 }
@@ -5885,7 +6013,7 @@ pub fn select_with_point(a: &[MergedPoly], points: &[(f64, f64)], keep: bool) ->
 /// [`point_in_merged`], or on one of its walls: a label on a shape's edge interacts
 /// with it, as KLayout's `interacting` reads it - IHP's SVaricap pcell puts its label
 /// on the Activ's edge.
-fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
+pub(crate) fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
     point_in_merged(px, py, m) || point_on_merged_wall(px, py, m, 0.5)
 }
 
@@ -8004,6 +8132,43 @@ impl SharedCache {
 mod tests {
     use super::*;
 
+    #[test]
+    fn cell_grid_queries_deduplicate_and_reuse_marks() {
+        // Index order differs from cell traversal order, and the large box is
+        // encountered in many cells. Repeating a query must return every hit again.
+        let boxes = [(90, 90, 110, 110), (0, 0, 120, 120), (10, 10, 10, 10)];
+        let grid = CellGrid::new(0, 0, 320, &boxes);
+        let mut query = CellGridQuery::new(boxes.len());
+        for _ in 0..3 {
+            let mut hits = grid.covering((0, 0, 110, 110), &mut query).to_vec();
+            hits.sort_unstable();
+            assert_eq!(hits, vec![0, 1, 2]);
+            assert_eq!(grid.covering((95, 95, 99, 99), &mut query), &[0, 1]);
+            assert!(grid.covering((200, 200, 250, 250), &mut query).is_empty());
+        }
+        // Old generation-one marks must not hide hits after the counter wraps.
+        query.seen.fill(1);
+        query.generation = u32::MAX;
+        let mut hits = grid.covering((0, 0, 110, 110), &mut query).to_vec();
+        hits.sort_unstable();
+        assert_eq!(hits, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn cell_grid_queries_include_closed_boundaries_and_negative_tiles() {
+        let boxes = [(-330, -330, -320, -320), (-20, -20, 0, 0)];
+        let grid = CellGrid::new(-320, -320, 320, &boxes);
+        let mut query = CellGridQuery::new(boxes.len());
+        assert_eq!(grid.covering((-320, -320, -310, -310), &mut query), &[0]);
+        assert_eq!(grid.covering((-20, -20, 0, 0), &mut query), &[1]);
+        assert_eq!(grid.covering((0, 0, 0, 0), &mut query), &[1]);
+
+        let empty = CellGrid::new(-320, -320, 320, &[]);
+        let mut query = CellGridQuery::new(0);
+        assert!(empty.covering((-320, -320, 0, 0), &mut query).is_empty());
+        assert!(empty.covering((0, 0, 0, 0), &mut query).is_empty());
+    }
+
     /// A contact's copy is the polygon and nothing else: four points held inline, no
     /// holes but an empty pointer.  Forty-five million of them on one design.
     #[test]
@@ -8213,6 +8378,25 @@ mod tests {
         let bars = compose_tile(VirtualOp::NotSquare, &[&src]);
         assert_eq!(squares.len(), 1, "one square contact");
         assert_eq!(bars.len(), 2, "the rectangle and the L-shape are bars");
+    }
+
+    /// A width increment read on edges: 108 DBU is 27 nm on ASAP7's grid. Edges of 27,
+    /// 54 and 540 nm are multiples of it; 40.5 and 81.25 nm are not, nor is a diagonal.
+    #[test]
+    fn an_edge_a_whole_multiple_of_a_length() {
+        let edges = [
+            edge(0, 0, 0, 108),
+            edge(0, 0, 0, 216),
+            edge(0, 0, 0, 2160),
+            edge(0, 0, 0, 162),
+            edge(0, 0, 0, 325),
+            edge(0, 0, 108, 108),
+        ];
+        let core = (0, 0, 100_000, 100_000);
+        let on = compose_edge_tile(EdgeOp::MultipleLength(108, true), &[&edges], &[], core);
+        assert_eq!(on, vec![edges[0], edges[1], edges[2]]);
+        let off = compose_edge_tile(EdgeOp::MultipleLength(108, false), &[&edges], &[], core);
+        assert_eq!(off, vec![edges[3], edges[4], edges[5]]);
     }
 
     /// A piece cut off an edge at a wall is not on the wall for being near it: a one-DBU

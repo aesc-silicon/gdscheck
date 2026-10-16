@@ -12,8 +12,43 @@ correctness fixes. The commit history is the full record of what changed and why
 Unreleased
 ----------
 
+PDKs
+~~~~
+
 * IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
   the SRAM marker, at the values of IHP's own SRAM bit cells.
+* ASAP7: M4-M7 ``S.4`` and ``S.5``, the tip stagger and the parallel run of two wires on
+  adjacent tracks.
+* ASAP7: the rules the tech LEF falls short of say how - ``M1.S.3``, ``V0.M1.AUX.3`` and
+  ``V1.M1.EN.1`` absent; ``M1.S.2``/``.S.4``/``.S.5`` and M4-M7 ``S.4``/``S.5``
+  partial; ``M1.S.6`` and ``V6.S.2`` weaker.
+
+Checks
+~~~~~~
+
+* New: ``offtrack``, a region's centreline across one axis on a pitch from an offset -
+  the routing-track rules of a one-way metal, and an exact gate or fin pitch.
+* ``offgrid`` takes ``facing`` (one coordinate instead of both) and ``offset``.
+* New: ``min_track_run`` and ``min_tip_stagger``, the run two wires on adjacent routing
+  tracks share and the stagger of their tips on one side.
+
+Decks
+~~~~~
+
+* New: a rule's ``tech_lef:`` - ``absent``, ``partial`` or ``weaker`` - marks how the
+  PDK's tech LEF falls short of it; the summary and the report's category say so beside
+  the rule.
+
+Performance
+~~~~~~~~~~~
+
+* A counted ``interacting`` / ``not_interacting`` (``min``/``max``) no longer asks a
+  growing list, for every pair of pieces in a tile, whether the pair was met already:
+  ASAP7's ``ACTIVE.S.2A`` chain on a 66 µm SHA-256 took eighteen minutes to build, and
+  now takes under a second.
+* Net extraction looks a via up among the conductor pieces filed in its cell rather than
+  every piece of the tile: 73 s to half a second on the same design, whose 20 µm tiles
+  hold thirty thousand pieces of M1.
 
 v0.2.0 (2026-10-05)
 -------------------

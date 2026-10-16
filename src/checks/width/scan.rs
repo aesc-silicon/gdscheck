@@ -36,8 +36,9 @@ pub(super) fn scan_widths(
     mixed: bool,
     min_run: i64,
     walls: Option<&WallFilter>,
+    axis: Option<Axis>,
 ) -> Vec<Violation> {
-    width_pairs(poly, core, limit, walls, oblique_only, mixed, min_run)
+    width_pairs(poly, core, limit, walls, oblique_only, mixed, min_run, axis)
         .into_iter()
         .map(|(x1, y1, x2, y2, w_dbu)| {
             let w = w_dbu * dbu_to_um;
@@ -221,6 +222,7 @@ pub fn run_width(
     oblique_only: bool,
     mixed: bool,
     min_run_dbu: i64,
+    axis: Option<Axis>,
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
     let tile = merged.tile_dbu() as i64;
@@ -290,7 +292,12 @@ pub fn run_width(
                     y1: (ty as i64 + 1) * tile,
                 };
                 let mut pinches: Vec<Violation> = Vec::new();
-                if !oblique_only && min_run_dbu == 0 && matches!(limit, Limit::AtLeast(_)) {
+                // A pinch narrows the layer along no one axis.
+                if !oblique_only
+                    && min_run_dbu == 0
+                    && axis.is_none()
+                    && matches!(limit, Limit::AtLeast(_))
+                {
                     for (px, py) in pinch_points(polys) {
                         if !core.owns(px, py) {
                             continue; // owned by the tile the point falls in
@@ -325,6 +332,7 @@ pub fn run_width(
                             mixed,
                             min_run_dbu,
                             None,
+                            axis,
                         )
                     })
                     .collect();
@@ -557,6 +565,7 @@ pub fn run_gate(
                     false,
                     min_run,
                     Some(&walls),
+                    None,
                 ));
             }
             out.into_iter()

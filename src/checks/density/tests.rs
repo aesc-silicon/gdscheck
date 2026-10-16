@@ -58,6 +58,7 @@ fn rule(layers: &[(i16, i16)], value: f64, params: &[(&str, f64)]) -> RuleDefini
             .collect(),
         ignore: vec![],
         text: None,
+        tech_lef: None,
     }
 }
 

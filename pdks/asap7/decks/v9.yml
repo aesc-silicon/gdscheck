@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V9, the via from M9 to PAD (DRM section 3.19).  A V9 is a 40 x 40, 40 x 120 or
+# 120 x 40 nm rectangle: its short side exactly 40 nm, its long side one of the two.
+# V9's corner-to-corner space shares S.1's 57 nm, as V8's does; S.1 reads every
+# direction, so it reads the corner too.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: V9.W.1
+    check: exact_dim
+    layers: [V9NoSram]
+    value: 0.04
+  - id: V9.W.1
+    check: forbidden
+    layers: [V9BadLength]
+    value: 0.0
+  - id: V9.W.1
+    check: forbidden
+    layers: [V9NotRect]
+    value: 0.0
+  - id: V9.S.1
+    check: min_space
+    layers: [V9NoSram]
+    value: 0.057
+  - id: V9.M9.EN.1
+    check: min_enclosure
+    layers: [M9, V9NoSram]
+    value: 0.02
+    params:
+      sides: opposite
+  - id: V9.PAD.EN.2
+    check: min_enclosure
+    layers: [PAD, V9NoSram]
+    value: 0.02
+    params:
+      sides: opposite
+  - id: V9.AUX.1
+    check: forbidden
+    layers: [V9NoSram, M9]
+    value: 0.0
+    params:
+      op: uncovered
+  - id: V9.AUX.1
+    check: forbidden
+    layers: [V9NoSram, PAD]
+    value: 0.0
+    params:
+      op: uncovered

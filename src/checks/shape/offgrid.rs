@@ -2,6 +2,14 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+//! Vertices on a grid: every vertex of the merged layer has both coordinates - or, under
+//! `facing`, the one across that axis - a whole number of `value` from `offset`.  A
+//! manufacturing grid reads both coordinates from the origin; a routing layer's grid
+//! reads one, the coordinate its edges run at, from wherever the design put its first
+//! track: ASAP7's M4 has its horizontal edges every 24 nm from an offset set per design.
+
+use crate::checks::params;
+use crate::geom::Axis;
 use crate::layout::FlatLayout;
 use crate::merge::SharedCache;
 use crate::pdk::RuleDefinition;
@@ -22,11 +30,43 @@ pub fn run(
         );
         return vec![];
     }
+    // `facing: y` reads the horizontal walls, so the y of every vertex; nothing, both.
+    let Some(axis) = params::facing_axis(rule, "offgrid") else {
+        return vec![];
+    };
+    let Some(offset_um) = params::offset(rule) else {
+        return vec![];
+    };
+    let offset = offset_um / dbu_to_um;
+    if (offset - offset.round()).abs() > 1e-6 {
+        eprintln!(
+            "[{}] Offset {:.4} µm is not on the DBU grid",
+            rule.id, offset_um
+        );
+        return vec![];
+    }
+    let offset = offset.round() as i32;
+    let off = |c: i32| (c - offset).rem_euclid(grid_dbu) != 0;
+    let grid = format!(
+        "grid = {:.4} µm{}{}",
+        rule.value,
+        if offset == 0 {
+            String::new()
+        } else {
+            format!(" from {offset_um:.4} µm")
+        },
+        match axis {
+            None => "",
+            Some(Axis::X) => ", x",
+            Some(Axis::Y) => ", y",
+        }
+    );
+
     let mut violations = vec![];
     for layer in &rule.layers {
         println!(
-            "[{}] Checking offgrid (grid = {:.4} µm) on layer {} ({}/{})",
-            rule.id, rule.value, layer.name, layer.gds_layer, layer.gds_datatype
+            "[{}] Checking offgrid ({grid}) on layer {} ({}/{})",
+            rule.id, layer.name, layer.gds_layer, layer.gds_datatype
         );
         // The merged layer, not the drawn shapes: a vertex inside another shape of the
         // same layer is nobody's corner once the layer is one region, and that is what
@@ -47,12 +87,13 @@ pub fn run(
                 for poly in polys.iter() {
                     for p in poly.outer.iter().chain(poly.holes.iter().flatten()) {
                         let (x, y) = (p.x as i64, p.y as i64);
-                        if x >= x0
-                            && x < x1
-                            && y >= y0
-                            && y < y1
-                            && (p.x % grid_dbu != 0 || p.y % grid_dbu != 0)
-                        {
+                        let owned = x >= x0 && x < x1 && y >= y0 && y < y1;
+                        let bad = match axis {
+                            None => off(p.x) || off(p.y),
+                            Some(Axis::X) => off(p.x),
+                            Some(Axis::Y) => off(p.y),
+                        };
+                        if owned && bad {
                             v.push((p.x, p.y));
                         }
                     }
@@ -69,8 +110,8 @@ pub fn run(
                 &rule.id,
                 "Off-grid vertex",
                 format!(
-                    "{}: off-grid vertex (grid = {:.4} µm) at ({:.4}, {:.4}) µm",
-                    layer.name, rule.value, x, y
+                    "{}: off-grid vertex ({grid}) at ({:.4}, {:.4}) µm",
+                    layer.name, x, y
                 ),
                 x,
                 y,

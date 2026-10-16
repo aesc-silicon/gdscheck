@@ -46,8 +46,11 @@ Parameters
    side is the violation. Paired with a :doc:`min_enclosure` at the same value, ``all``
    pins every side to exactly that value and ``any`` pins one side to it (GF180
    ``HRES.10``: the implant overlaps the salicide block by exactly 0.1 µm where it
-   crosses it, however far it runs past it elsewhere). ``adjacent`` and ``line_end`` are
-   about a margin falling short and have no maximum.
+   crosses it, however far it runs past it elsewhere). ``opposite``: at least one pair
+   of opposite sides is within ``value``. At ``value`` 0 that means the shape is flush
+   with its enclosure on a pair of sides, the same width as the wire it sits on (ASAP7
+   ``V1.M2.AUX.2``). ``adjacent`` and ``line_end`` are about a margin falling short and
+   have no maximum.
 
 ``metric``
    Optional. ``projection`` (the default) or ``euclidian``, as in :doc:`min_enclosure`.

@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The routing stack, M1 to the pad.
+include:
+  - deck: m1
+  - deck: v1
+  - deck: m2
+  - deck: v2
+  - deck: m3
+  - deck: v3
+  - deck: m4
+  - deck: v4
+  - deck: m5
+  - deck: v5
+  - deck: m6
+  - deck: v6
+  - deck: m7
+  - deck: v7
+  - deck: m8
+  - deck: v8
+  - deck: m9
+  - deck: v9

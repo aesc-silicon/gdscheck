@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The front end and middle of line, through V0: what a standard cell holds, without the
+# routing stack above it.
+include:
+  - deck: geometry
+  - deck: well
+  - deck: fin
+  - deck: gate
+  - deck: active
+  - deck: gcut
+  - deck: select
+  - deck: sdt
+  - deck: lisd
+  - deck: lig
+  - deck: v0

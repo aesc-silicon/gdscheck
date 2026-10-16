@@ -128,7 +128,7 @@ See :doc:`pdk-authoring` for the full deck/suite YAML format.
 Selecting the process
 ----------------------
 
-``--process`` accepts an embedded PDK name (``ihp-sg13g2``, ``ihp-sg13cmos5l`` — built
+``--process`` accepts an embedded PDK name (``ihp-sg13g2``, ``ihp-sg13cmos5l``, ``asap7`` — built
 into the binary, no external files needed), a filesystem path to a ``pdk.yml``, or the
 name of a PDK on the *PDK path*. See :doc:`pdks/index` for the bundled PDKs and
 :doc:`pdk-authoring` for writing your own.
