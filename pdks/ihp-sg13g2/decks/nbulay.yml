@@ -33,13 +33,13 @@ rules:
       gap_outside: PWell.block
   - id: NBL.e
     check: min_space
-    layers: [nBuLay, NActiv]
+    layers: [nBuLay, NActivInPWell]
     value: 1.00
     params:
       abutting: related
   - id: NBL.f
     check: min_space
-    layers: [nBuLayNoVaricap, PsdActiv]
+    layers: [nBuLayNoVaricap, PsdActivInPWell]
     value: 0.50
     params:
       abutting: related

@@ -1063,9 +1063,10 @@ const DECK_NBL: &str = "nbulay";
 // edge (finding 1), fire; Activ under nSD:block (neither implant: finding 2), P+Activ, a
 // tap in the nBuLay's own well sinker 0.5 outside it and a tap strapped to that sinker
 // (one net, "unrelated" they are not: finding 10) are clean.
-// "Unrelated" is the glossary's "do not touch", not a net: the nBuLay's own tie 0.5
-// outside it fires (KLayout reads nets; finding 10).
-#[case::nbl_e_h5("nbulay/NBL.e.h5.gds.gz", "TOP", vec!["NBL.e"; 4], vec![])]
+// "Unrelated" is the glossary's "do not touch", not a net: the tap in PWell strapped to
+// the sinker fires (KLayout reads nets; finding 10).  The tap in the sinker is in an
+// NWell, which NBL.e does not read (issue #50).
+#[case::nbl_e_h5("nbulay/NBL.e.h5.gds.gz", "TOP", vec!["NBL.e"; 3], vec![])]
 // P+Activ 0.495 from an nBuLay, 0.497 corner to corner, a diamond tip and chamfer, and
 // P+Activ abutting the nBuLay (finding 1); 0.5, 0.502 and 0.1 in x with 0.5 in y are clean.
 // The abutting P+Activ is related (the glossary) and no pair.
@@ -1074,8 +1075,14 @@ const DECK_NBL: &str = "nbulay";
 // The P+ half of an Activ 0.495 away (its bare half is N+ 0.995 away: NBL.e) and a
 // P+Activ crossing the nBuLay edge fire; a PMOS's diffusion in the nBuLay's own well
 // sinker and a P+ tie strapped to the sinker are related (finding 10) and clean.
-// As NBL.e.h5: touching, not nets.
-#[case::nbl_f_h5("nbulay/NBL.f.h5.gds.gz", "TOP", vec!["NBL.e", "NBL.f", "NBL.f", "NBL.f"], vec![])]
+// As NBL.e.h5: touching, not nets, so the strapped tie fires; the PMOS's diffusion is in
+// an NWell, which NBL.f does not read (issue #50).
+#[case::nbl_f_h5("nbulay/NBL.f.h5.gds.gz", "TOP", vec!["NBL.e", "NBL.f", "NBL.f"], vec![])]
+// NBL.e and NBL.f read Activ in PWell, as IHP's deck: P+Activ and an N+ tap in the hole of
+// a drawn nBuLay ring over an NWell (IHP's `pmos` cell) and a contacted tap ring 0.35
+// inside a wide NWell are clean; a P+ tie 0.30 and an N+Activ 0.50 from a drawn nBuLay
+// in PWell fire (issue #50).
+#[case::nbl_ef_well("nbulay/NBL.ef.well.gds.gz", "TOP", vec!["NBL.e", "NBL.f"], vec![])]
 fn test_nbulay(
     #[case] gds: &str,
     #[case] topcell: &str,

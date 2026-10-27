@@ -21,6 +21,7 @@ pub fn generate(pdk: &PdkConfig) {
     nbl_e(pdk);
     nbl_f(pdk);
     nbl_d_same_net(pdk);
+    nbl_ef_well(pdk);
 
     hardening(pdk);
 }
@@ -196,6 +197,97 @@ fn nbl_f(pdk: &PdkConfig) {
         o + 10.0,
     ));
     write_gz(&format!("{DIR}/NBL.f.gds.gz"), library("TOP", elems));
+}
+
+/// NBL.e / NBL.f read Activ in PWell only: an Activ in an NWell is the well's own device
+/// on the nBuLay generated in it (section 4.2), as IHP's deck reads it (issue #50).  Five
+/// cells 20 apart:
+/// - a 10 µm NWell with a 1.0 drawn nBuLay ring along its edge and P+Activ 0.36 inside
+///   the ring's hole (IHP's `pmos` cell): clean;
+/// - the same ring with an N+ tap 0.50 inside the hole: clean;
+/// - a 10 µm NWell, no drawn nBuLay, a contacted N+ tap ring 0.35 inside its edge round
+///   a P+Activ: clean - the generated nBuLay 1.0 inside the well is 0.35 from the tap,
+///   so a deck reading it would flag every well tap;
+/// - a P+ substrate tie 0.30 from a drawn nBuLay in PWell: NBL.f;
+/// - an N+Activ 0.50 from a drawn nBuLay in PWell: NBL.e.
+fn nbl_ef_well(pdk: &PdkConfig) {
+    let o = OFFSET;
+    let (nw, nbl, act, psd) = (
+        layer(pdk, "NWell"),
+        layer(pdk, "nBuLay"),
+        layer(pdk, "Activ"),
+        layer(pdk, "pSD"),
+    );
+    let (cont, m1) = (layer(pdk, "Cont"), layer(pdk, "Metal1"));
+    let mut e = Vec::new();
+    // The ring's hole, P+Activ and then an N+ tap in it.
+    for (i, p_plus) in [true, false].into_iter().enumerate() {
+        let x = o + 20.0 * i as f64;
+        e.push(rect(nw, x, o, x + 10.0, o + 10.0));
+        let (x1, y1) = (x + 10.0, o + 10.0);
+        e.extend(ring(
+            nbl,
+            x,
+            o,
+            x1,
+            y1,
+            x + 1.0,
+            o + 1.0,
+            x1 - 1.0,
+            y1 - 1.0,
+        ));
+        if p_plus {
+            e.push(rect(act, x + 1.36, o + 1.36, x + 8.64, o + 8.64));
+            e.push(rect(psd, x + 1.18, o + 1.18, x + 8.82, o + 8.82));
+        } else {
+            e.push(rect(act, x + 1.5, o + 1.5, x + 8.5, o + 2.0));
+        }
+    }
+    // The contacted tap ring in a wide NWell.
+    let x = o + 40.0;
+    e.push(rect(nw, x, o, x + 10.0, o + 10.0));
+    let (a, b) = (x + 0.35, o + 0.35);
+    e.extend(ring(
+        act,
+        a,
+        b,
+        a + 9.3,
+        b + 9.3,
+        a + 0.3,
+        b + 0.3,
+        a + 9.0,
+        b + 9.0,
+    ));
+    let (a, b) = (x + 0.39, o + 0.39);
+    e.extend(ring(
+        m1,
+        a,
+        b,
+        a + 9.22,
+        b + 9.22,
+        a + 0.22,
+        b + 0.22,
+        a + 9.0,
+        b + 9.0,
+    ));
+    for i in 0..12 {
+        let t = 0.5 + i as f64 * 0.8;
+        for (cx, cy) in [(t, 0.5), (t, 9.5), (0.5, t), (9.5, t)] {
+            let (cx, cy) = (x + cx, o + cy);
+            e.push(rect(cont, cx - 0.08, cy - 0.08, cx + 0.08, cy + 0.08));
+        }
+    }
+    e.push(rect(act, x + 1.36, o + 1.36, x + 8.64, o + 8.64));
+    e.push(rect(psd, x + 1.18, o + 1.18, x + 8.82, o + 8.82));
+    // A P+ substrate tie 0.30 and an N+Activ 0.50 from a drawn nBuLay, in PWell.
+    let x = o + 60.0;
+    e.push(rect(nbl, x, o, x + 4.0, o + 4.0));
+    e.push(rect(act, x + 4.3, o + 1.5, x + 5.3, o + 2.5));
+    e.push(rect(psd, x + 4.2, o + 1.4, x + 5.4, o + 2.6));
+    let x = o + 80.0;
+    e.push(rect(nbl, x, o, x + 4.0, o + 4.0));
+    e.push(rect(act, x + 4.5, o + 1.5, x + 5.5, o + 2.5));
+    write_gz(&format!("{DIR}/NBL.ef.well.gds.gz"), library("TOP", e));
 }
 
 // --- Hardening (hardening/SPEC.md) -------------------------------------------
