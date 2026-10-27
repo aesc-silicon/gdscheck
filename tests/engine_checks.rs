@@ -489,13 +489,16 @@ fn density_rules_read_the_chip_its_windows_and_its_regions(
 /// - `dense_*`: 80,000 0.05 µm cuts at a 0.1 by 0.2 pitch, 20,000 to a 20 µm tile, the
 ///   gap across exactly S.dense (0.05); six more cuts in the gaps above rows - on the
 ///   tile lines at 20 and 21, at both edges, at (20, 20) - exactly 0.05 from the row
-///   (`exact`) or 0.045 (`under`), on Cut for S.dense and on Inner for S.dense.pair.
+///   (`exact`) or 0.045 (`under`), on Cut for S.dense and on Inner for S.dense.pair;
+///   either rule leaves the other's extras alone.
 #[rstest]
 #[case("dense_exact", "S.dense", 0)]
 #[case("dense_under", "S.dense", 6)]
+#[case("dense_under", "S.dense.pair", 0)]
 #[case("dense_pair_exact", "S.dense.pair", 0)]
 #[case("dense_pair_exact", "S.dense", 0)]
 #[case("dense_pair_under", "S.dense.pair", 6)]
+#[case("dense_pair_under", "S.dense", 0)]
 #[case("pair_bound", "S.pair", 3)]
 #[case("pair_bound", "S.abut", 3)]
 #[case("pair_bound", "S.related", 3)]

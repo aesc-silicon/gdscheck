@@ -106,7 +106,7 @@ fn pairs_within(
                 continue;
             }
             let q = rect((qb, qi));
-            if (p.0 - q.2).max(q.0 - p.2) >= limit || (p.1 - q.3).max(q.1 - p.3) >= limit {
+            if !boxes_within(p, q, limit) {
                 continue;
             }
             out.push(match (b.is_some(), pb) {
@@ -1200,9 +1200,6 @@ mod tests {
     /// all the others, at the kinship index's reach of 1 and a spacing rule's of 50.
     #[test]
     fn pairs_within_is_the_nested_loop() {
-        let within = |p: &(i64, i64, i64, i64), q: &(i64, i64, i64, i64), limit: i64| {
-            (p.0 - q.2).max(q.0 - p.2) < limit && (p.1 - q.3).max(q.1 - p.3) < limit
-        };
         // A fixed linear congruential sequence: the same boxes every run.
         let mut seed = 0x2545_f491_4f6c_dd1du64;
         let mut next = move |n: i64| {
@@ -1227,7 +1224,7 @@ mod tests {
             let near = |xs: &[(i64, i64, i64, i64)], i: usize, p: &(i64, i64, i64, i64)| {
                 xs.iter()
                     .enumerate()
-                    .filter(|(_, q)| within(p, q, limit))
+                    .filter(|(_, q)| boxes_within(*p, **q, limit))
                     .map(|(j, _)| (i, j))
                     .collect::<Vec<_>>()
             };
