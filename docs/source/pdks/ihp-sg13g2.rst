@@ -265,6 +265,11 @@ KLayout script, where the two disagree:
   other" — geometric. Plain :doc:`../checks/min_space` already implements exactly that,
   since the engine skips overlapping and touching pairs, so NBL.e/f stay geometric, as do
   Gat.b1, pSD.d, Sal.d and NBLB.d. Only "(different net)" in a rule's text means nets.
+* **NBL.e/f read Activ in PWell.** An Activ in an NWell is the well's own device, on the
+  nBuLay generated 1.0 µm inside the well (§4.2): a PMOS in the hole of a drawn nBuLay
+  ring is on nBuLay, not beside it. IHP's deck checks NBL.f on P+Activ in PWell only and
+  NBL.e on nets, which leaves a well's own taps alone; an unrelated N+Activ in another
+  NWell near the nBuLay puts that well within NBL.d's 2.20 µm.
 * **NBL.c / NBL.d and NW.b1 measure a gap, not PWell width.** The PDF words all three as
   "Min. PWell width between …", where PWell is the derived ``NOT (NWell OR PWell:block)
   OR PWell:drawing``. gdscheck measures the plain region-to-region gap instead. The two

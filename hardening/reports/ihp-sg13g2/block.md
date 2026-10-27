@@ -59,6 +59,11 @@ answer).
 Decided (2026-09-21, gdscheck owner): 7 - the block adjoining a region extends it
 (`nBuLayRegionsExt`, `NWellExt`); `NBL.c.h9` reads 1, `NBL.d.h7` 2.
 
+Decided (2026-10-22, gdscheck owner, issue #50): 10's in-well cases - NBL.e and NBL.f
+read Activ in PWell only (`NActivInPWell`, `PsdActivInPWell`), as IHP's deck; the tap in
+the nBuLay's well and the PMOS's diffusion are clean, the strapped ties in PWell still
+fire.  `NBL.e.h5` reads 3, `NBL.f.h5` NBL.e 1 and NBL.f 2.
+
 ## Findings
 
 ### 1. A touch is a space of nothing: nine two-layer space rules stay silent when the other shape abuts (false negative)
