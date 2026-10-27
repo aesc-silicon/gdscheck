@@ -833,7 +833,7 @@ pub fn generate(pdk: &PdkConfig) {
 
     // Tens of thousands of cuts in a tile, and a few too close among them.  An extra cut
     // sits in the 0.15 gap above a row, in line with a column: `drop` below the middle
-    // of the gap, 0.05 + `drop` above the row's top and 0.05 - `drop` below the next.  At
+    // of the gap, 0.05 - `drop` above the row's top and 0.05 + `drop` below the next.  At
     // 0 it is clean both ways; at 0.005 it is 0.045 above the row, one pair, and
     // 0.055 below the next.  Its diagonal neighbours are 0.05 across and at least
     // 0.045 up, 0.067 away.  S.dense, the extras drawn on Cut: 0 and 6; S.dense.pair,

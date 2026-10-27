@@ -2639,10 +2639,13 @@ impl<'a> Outline<'a> {
 
     /// Whether the boxes could be within `limit` DBU of each other.
     pub fn possibly_within(&self, other: &Outline, limit: i64) -> bool {
-        let (ax0, ay0, ax1, ay1) = self.bbox;
-        let (bx0, by0, bx1, by1) = other.bbox;
-        (ax0 - bx1).max(bx0 - ax1) < limit && (ay0 - by1).max(by0 - ay1) < limit
+        boxes_within(self.bbox, other.bbox, limit)
     }
+}
+
+/// Whether boxes `(x0, y0, x1, y1)` are less than `limit` DBU apart on both axes.
+pub fn boxes_within(a: (i64, i64, i64, i64), b: (i64, i64, i64, i64), limit: i64) -> bool {
+    (a.0 - b.2).max(b.0 - a.2) < limit && (a.1 - b.3).max(b.1 - a.3) < limit
 }
 
 /// Whether two segments properly cross - each strictly straddles the other's line.
