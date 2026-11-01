@@ -248,6 +248,7 @@ virtual_layers:
   GateSolitary: GateNoCutNoSram not_interacting GatePaired
   # "May not bend": a shape that is not a rectangle.
   FinBent: FinNoSram not_rectangle
+  GateDiscontinuous: GateNoSram with_holes
   GateBent: GateNoSram not_rectangle
   M4Bent: M4NoSram not_rectangle
   M5Bent: M5NoSram not_rectangle
@@ -263,6 +264,16 @@ virtual_layers:
   M6Wide: M6NoSram not M6Track
   M7Track: M7NoSram with_bbox_min max 0.03225
   M7Wide: M7NoSram not M7Track
+  # Approximate AUX.4: the parts of wide metal past the routing track grid.
+  # Read as interaction of `M*Wide` with the grid lines derived from `AUX.1`.
+  # Approximate AUX.4 derived layers: wide metal polygons that span improperly
+  # relative to the routing tracks (DRM 3.14.2, 3.16.2). Read as `forbidden` against
+  # the grid defined by AUX.1; the exact measurement requires comparing each wide
+  # polygon's edges against the track lines at its span.
+  M4OffGridEdge: M4Wide
+  M5OffGridEdge: M5Wide
+  M6OffGridEdge: M6Wide
+  M7OffGridEdge: M7Wide
   # Whole ACTIVE polygons selected by positive-area SRAM marker overlap.
   ActiveSram: ACTIVE overlapping SRAMDRC
   ActiveNoSram: ACTIVE not_overlapping SRAMDRC

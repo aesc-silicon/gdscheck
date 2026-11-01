@@ -27,7 +27,8 @@
 # neither rule; DATABASE MICRONS 4000 (LambdaPDK #246, ORFS #4663, asap7sc7p5t_28
 # #10) keeps the reach.
 #
-# Not checked: M6.AUX.4, a wide wire's outside edge on a track's edge.
+# AUX.4 is implemented as an approximate `forbidden` check (`M*OffGridEdge`):
+# see M4 deck header for the reading.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: M6.W.1
@@ -125,4 +126,8 @@ rules:
   - id: M6.AUX.3
     check: forbidden
     layers: [M6Bent]
+    value: 0.0
+  - id: M6.AUX.4
+    check: forbidden
+    layers: [M6OffGridEdge]
     value: 0.0

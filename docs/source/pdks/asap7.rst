@@ -63,7 +63,13 @@ and ``W.4``. ``S.5`` is :doc:`min_track_run </checks/min_track_run>` and ``S.4``
 routable between them, a gap under three widths - share 44 nm of run or none, and
 their tips on one side are aligned or 40 nm apart. The ASAP7 tech LEF reads both only
 as a corner keep-out about a line end, so both carry ``tech_lef: partial`` (below), and
-their markers on a routed design say so. ``AUX.4`` remains unimplemented.
+their markers on a routed design say so. ``AUX.4`` (M4–M7) is read as the interaction
+of wide metal (`M*Wide`) with the routing-track grid defined by ``AUX.1``; the exact
+reading compares each wide polygon's outside edge to the track lines at its span,
+which needs constructing the tracks from the grid offset (see DRM fig. 3.14.2(h),
+3.16.2(h)). The deck reads it through the derived `M*OffGridEdge` layer as a
+``forbidden`` check, which is stricter than the manual (it flags any wide polygon
+that touches the grid) but captures the defect class.
 V0–V3 ``S.1`` reads vias that face each other, on one track or on
 neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
 tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by

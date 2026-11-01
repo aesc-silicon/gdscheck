@@ -27,7 +27,12 @@
 # neither rule; DATABASE MICRONS 4000 (LambdaPDK #246, ORFS #4663, asap7sc7p5t_28
 # #10) keeps the reach.
 #
-# Not checked: M4.AUX.4, a wide wire's outside edge on a track's edge.
+# AUX.4 is implemented as an approximate `forbidden` check (`M*OffGridEdge`):
+# the exact reading compares each wide polygon's outside edge to the routing-track
+# grid defined by AUX.1 (see DRM fig. 3.14.2(h) and 3.16.2(h)), which requires
+# constructing the track lines from the grid offset. The derived layer selects
+# the wide metal that would violate it; the engine's `forbidden` reports any such
+# region, which is stricter than the manual but captures the defect class.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: M4.W.1
@@ -122,6 +127,10 @@ rules:
     params:
       facing: y
       offset: 0.012
+  - id: M4.AUX.4
+    check: forbidden
+    layers: [M4OffGridEdge]
+    value: 0.0
   - id: M4.AUX.3
     check: forbidden
     layers: [M4Bent]

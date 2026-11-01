@@ -9,8 +9,12 @@
 # so does every design placing them on the 54 nm site.  A design drawn in another frame
 # sets `offset`, its first gate's centre.
 #
-# Not checked: GATE.AUX.2, a gate discontinuous along its length, which is read from how
-# the drawn shapes were split rather than from the merged layer.
+# Not checked: GATE.AUX.2, a gate discontinuous along its length, which requires
+# the drawn shapes' split history (`with_holes`) rather than the merged layer.
+# Read here as `GateNoSram with_holes` (regions that contain a hole, which captures
+# discontinuous gates drawn with internal gaps); the manual's literal reading is
+# stricter (`with_holes` at 2+), but this is the closest the declarative engine
+# allows without script access to split history.
 # SRAM applicability: see docs/source/pdks/asap7.rst.
 rules:
   - id: GATE.W.1
@@ -53,6 +57,10 @@ rules:
   - id: GATE.AUX.1
     check: forbidden
     layers: [GateBent]
+    value: 0.0
+  - id: GATE.AUX.2
+    check: forbidden
+    layers: [GateDiscontinuous]
     value: 0.0
   - id: GATE.ACTIVE.AUX.3
     check: forbidden
