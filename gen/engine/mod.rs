@@ -18,6 +18,7 @@
 mod area;
 mod array;
 mod density;
+mod edge_distance;
 mod facing;
 mod gate_length;
 mod grid;
@@ -38,6 +39,7 @@ pub fn generate(pdk: &PdkConfig) {
     area::generate(pdk);
     array::generate(pdk);
     density::generate(pdk);
+    edge_distance::generate(pdk);
     facing::generate(pdk);
     gate_length::generate(pdk);
     grid::generate(pdk);

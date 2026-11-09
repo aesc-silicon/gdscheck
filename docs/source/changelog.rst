@@ -38,6 +38,8 @@ Checks
   narrow wire's tip no longer counts as a wide line.
 * A space between edge layers reports each offending pair, not only the nearest
   neighbour of each edge.
+* An enclosure between edge layers measures along the whole of a long wall: at small
+  tiles a violation far from the wall's middle was missed.
 
 Performance
 ~~~~~~~~~~~
