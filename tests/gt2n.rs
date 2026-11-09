@@ -7,7 +7,7 @@
 //! GT2N extends GT3, and its runset is GT3's with seven values changed and a deck for
 //! the threshold-voltage layers.
 //!
-//! Every rule has a generated pattern (`gen/gt2n`) under
+//! Every rule has a generated pattern (`gen/gt`, shared with GT3) under
 //! `tests/data/gt2n/generated/<deck>/`, drawn to the runset's values, and above M6,
 //! where the runset stops, to the tech LEF's, plus the technology file's well and
 //! area constraints.
