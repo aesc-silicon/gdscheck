@@ -12,8 +12,22 @@ correctness fixes. The commit history is the full record of what changed and why
 Unreleased
 ----------
 
+PDKs
+~~~~
+
 * IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
   the SRAM marker, at the values of IHP's own SRAM bit cells.
+
+Performance
+~~~~~~~~~~~
+
+* A counted ``interacting`` / ``not_interacting`` (``min``/``max``) no longer asks a
+  growing list, for every pair of pieces in a tile, whether the pair was met already:
+  ASAP7's ``ACTIVE.S.2A`` chain on a 66 µm SHA-256 took eighteen minutes to build, and
+  now takes under a second.
+* Net extraction looks a via up among the conductor pieces filed in its cell rather than
+  every piece of the tile: 73 s to half a second on the same design, whose 20 µm tiles
+  hold thirty thousand pieces of M1.
 
 v0.2.0 (2026-10-05)
 -------------------
