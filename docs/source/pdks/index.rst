@@ -10,3 +10,4 @@ Supported PDKs
 
    ihp-sg13g2
    ihp-sg13cmos5l
+   asap7

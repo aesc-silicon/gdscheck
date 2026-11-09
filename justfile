@@ -26,7 +26,7 @@ build:
     cargo build --release
 
 # Regenerate every PDK's generated test fixtures.
-gen-testdata: (gen-testdata-for "ihp-sg13g2") (gen-testdata-for "gf180mcuD")
+gen-testdata: (gen-testdata-for "ihp-sg13g2") (gen-testdata-for "gf180mcuD") (gen-testdata-for "asap7")
 
 # Regenerate one PDK's generated test fixtures.
 gen-testdata-for pdk:
