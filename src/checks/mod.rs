@@ -10,7 +10,7 @@
 //! - [`space`]: the gap between two regions, or between two walls of one (a notch), and
 //!   the reach nothing may lie beyond.
 //! - [`enclosure`]: the margin of one region inside another.
-//! - [`shape`]: a region's own extents, edges, corners, holes, vertices and grid.
+//! - [`shape`]: a region's own extents, edges, corners, holes, vertices, grid and tracks.
 //! - [`area`]: a region's area.
 //! - [`count`]: how many regions of a layer the chip holds.
 //! - [`density`]: the coverage of layers over an area.
@@ -149,6 +149,7 @@ pub fn run_rule(
         "ring_covers_boundary" => shape::ring_covers_boundary::run(rule, layout, dbu_to_um),
         "max_vertices" => shape::vertices::run(rule, layout, dbu_to_um),
         "offgrid" => shape::offgrid::run(rule, layout, dbu_to_um, merged),
+        "offtrack" => shape::offtrack::run(rule, layout, dbu_to_um, merged),
         "wide_uncovered" => shape::wide_uncovered::run(rule, layout, dbu_to_um, merged),
         // Area: a region's area, per region, hole, containment or chip.
         "min_area" => area::run(area::Kind::Min, rule, layout, dbu_to_um, merged, conn),

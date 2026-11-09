@@ -20,6 +20,7 @@ mod array;
 mod density;
 mod facing;
 mod gate_length;
+mod grid;
 mod max_space;
 mod min_enclosure;
 mod net;
@@ -39,6 +40,7 @@ pub fn generate(pdk: &PdkConfig) {
     density::generate(pdk);
     facing::generate(pdk);
     gate_length::generate(pdk);
+    grid::generate(pdk);
     max_space::generate(pdk);
     min_enclosure::generate(pdk);
     net::generate(pdk);
