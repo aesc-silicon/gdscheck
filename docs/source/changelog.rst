@@ -9,6 +9,15 @@ Changelog
 user-visible changes: new checks, new PDKs, breaking deck/CLI changes and notable
 correctness fixes. The commit history is the full record of what changed and why.
 
+Unreleased
+----------
+
+PDKs
+~~~~
+
+* New: GT3 (``gt3``), Georgia Tech's 3 nm GAAFET PDK, translated from its IC Validator
+  runset. Suites ``main``, ``feol`` and ``beol``.
+
 v0.2.1 (2026-11-09)
 -------------------
 

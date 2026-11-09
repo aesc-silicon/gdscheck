@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V1, the via from M1 to M2 (Include/gt3.v1.drc.rs).  V1.5, the spacing,
+# has no check upstream.
+rules:
+  - id: V1.1
+    check: min_width
+    layers: [V1]
+    value: 0.014
+    params:
+      facing: x
+  - id: V1.2
+    check: min_width
+    layers: [V1]
+    value: 0.012
+    params:
+      facing: y
+  - id: V1.3
+    check: forbidden
+    layers: [V1VEdgesOffM1]
+    value: 0.0
+  - id: V1.4
+    check: forbidden
+    layers: [V1HEdgesOffM2]
+    value: 0.0
+  - id: V1.6
+    check: min_space
+    layers: [V1]
+    value: 0.018
+    params:
+      facing: none
+  - id: V1.7
+    check: forbidden
+    layers: [V1OffM1]
+    value: 0.0
+  - id: V1.8
+    check: forbidden
+    layers: [V1OffM2]
+    value: 0.0
+  - id: V1.M1.EN
+    check: min_enclosure
+    layers: [M1, V1]
+    value: 0.004
+    params:
+      facing: y
+      interacting_only: 1
+  - id: V1.M2.EN
+    check: min_enclosure
+    layers: [M2, V1]
+    value: 0.004
+    params:
+      facing: x
+      interacting_only: 1

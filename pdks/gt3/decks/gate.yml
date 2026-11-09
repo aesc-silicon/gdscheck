@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GATE (Include/gt3.gate.drc.rs).
+#
+# GATE.2 is an exact 27 nm horizontal space; upstream reads it as the layer's extent less
+# the gates and the 27 nm gaps, and notes it misfires on gates out of line.  This deck
+# reads its lower bound.  GATE.3, a continuous gate, has no check upstream.
+rules:
+  - id: GATE.1
+    check: exact_width
+    layers: [GATE]
+    value: 0.015
+    params:
+      facing: x
+  - id: GATE.2
+    check: min_space
+    layers: [GATE]
+    value: 0.027
+    params:
+      facing: x
+  - id: GATE.2
+    check: min_notch
+    layers: [GATE]
+    value: 0.027
+    params:
+      facing: x
+  - id: GATE.4
+    check: forbidden
+    layers: [GATEBent]
+    value: 0.0

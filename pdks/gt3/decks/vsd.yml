@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# VSD, the via from SDCON to M0 (Include/gt3.vsd.drc.rs).
+rules:
+  - id: VSD.1
+    check: exact_width
+    layers: [VSD]
+    value: 0.013
+    params:
+      facing: x
+  - id: VSD.2
+    check: exact_width
+    layers: [VSD]
+    value: 0.012
+    params:
+      facing: y
+  - id: VSD.3
+    check: forbidden
+    layers: [VSDBent]
+    value: 0.0
+  - id: VSD.4
+    check: forbidden
+    layers: [VsdOutsideSdcon]
+    value: 0.0
+  - id: VSD.5
+    check: forbidden
+    layers: [VsdOutsideM0]
+    value: 0.0
+  - id: VSD.SDCON.1
+    check: min_enclosure
+    layers: [SDCON, VSD]
+    value: 0.001
+    params:
+      facing: x
+      interacting_only: 1
+  - id: VSD.M0.1
+    check: min_enclosure
+    layers: [M0, VSD]
+    value: 0.004
+    params:
+      facing: x
+      interacting_only: 1
