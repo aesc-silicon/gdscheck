@@ -23,6 +23,8 @@ Checks
 
 * The ``width`` gate of a space reads a line as wide only where it is wide both ways: a
   narrow wire's tip no longer counts as a wide line.
+* A space between edge layers reports each offending pair, not only the nearest
+  neighbour of each edge.
 
 Performance
 ~~~~~~~~~~~
@@ -34,6 +36,8 @@ Performance
 * Net extraction looks a via up among the conductor pieces filed in its cell rather than
   every piece of the tile: 73 s to half a second on the same design, whose 20 µm tiles
   hold thirty thousand pieces of M1.
+* A space or enclosure between edge layers reads the edges within reach of each edge,
+  not every edge of its tile.
 
 v0.2.0 (2026-10-05)
 -------------------
