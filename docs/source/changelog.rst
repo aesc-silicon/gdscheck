@@ -21,6 +21,12 @@ PDKs
 Checks
 ~~~~~~
 
+* ``facing: x`` / ``facing: y`` on width, space, notch and enclosure: the walls facing
+  across one axis alone, for a layer that states a rule per direction.
+* ``facing: none`` on a space: the corner-to-corner gap of two regions with no walls
+  facing at the gap, optionally gated by ``corner_cover``.
+* ``sides: opposite`` on an enclosure: one pair of opposite sides at the value, with
+  ``opposite_value`` for a smaller margin on the side opposite it.
 * New edge selectors ``with_length_multiple`` / ``without_length_multiple``; a bare
   ``with_length`` number now selects that exact length instead of nothing.
 * The ``width`` gate of a space reads a line as wide only where it is wide both ways: a

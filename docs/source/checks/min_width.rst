@@ -78,6 +78,15 @@ Parameters
    length required, the readings that have none (across a corner, at a pinch or acute
    tip, between a chamfer and a wall) are off. Optional, defaults to ``0``.
 
+``facing``
+   ``x`` reads only the walls facing each other across x (vertical walls, a horizontal
+   width); ``y`` only those across y. This is KLayout's ``width(v, projection)`` with
+   ``with_angle(90)`` or ``with_angle(0)``. A process that routes a layer one way asks
+   one width across the track and another along it (ASAP7 ``WELL.W.1``, the minimum
+   *horizontal* width of the well). On one axis, the readings that measure along none
+   are off: the 45° runs, across a corner, at a pinch or acute tip, and between a
+   chamfer and a wall. Optional.
+
 
 Violation markers
 ------------------
@@ -107,6 +116,12 @@ Example
       check: min_width
       layers: [TopMetal2]
       value: 2.00
+    - id: WELL.W.1
+      check: min_width
+      layers: [NWELL]
+      value: 0.108
+      params:
+        facing: x
     - id: M2.g
       check: min_width
       layers: [Metal2]

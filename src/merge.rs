@@ -2703,6 +2703,7 @@ fn compose_edge_tile(
                             false,
                             true,
                             0,
+                            None,
                         )
                     })
                     .map(|(x1, y1, x2, y2, _)| Edge {
@@ -6012,7 +6013,7 @@ pub fn select_with_point(a: &[MergedPoly], points: &[(f64, f64)], keep: bool) ->
 /// [`point_in_merged`], or on one of its walls: a label on a shape's edge interacts
 /// with it, as KLayout's `interacting` reads it - IHP's SVaricap pcell puts its label
 /// on the Activ's edge.
-fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
+pub(crate) fn point_on_or_in_merged(px: f64, py: f64, m: &MergedPoly) -> bool {
     point_in_merged(px, py, m) || point_on_merged_wall(px, py, m, 0.5)
 }
 

@@ -57,6 +57,13 @@ Parameters
    Optional. ``bent`` restricts the rule to the 45° gaps alone: the oblique pass runs and
    the axis-aligned ones stay the plain rule's business.
 
+``facing``
+   Optional. ``x`` reads only the notches between walls facing across x (a slot running
+   up and down), ``y`` only those across y; as in :doc:`min_width`, the 45° and mixed
+   passes measure along no one axis and are off. ASAP7 forbids any notch in ACTIVE
+   along the vertical axis (``ACTIVE.AUX.3``), and each one-way metal has its own space
+   along and across its track.
+
 ``length``
    Optional, µm. Only wall pairs sharing more than this much run count — a notch asked
    only of slots longer than so much, or of a bent gap long enough to be a slot rather

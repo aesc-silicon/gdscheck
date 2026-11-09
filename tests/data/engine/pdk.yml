@@ -38,6 +38,8 @@ decks:
     path: decks/overlap.yml
   - name: selection
     path: decks/selection.yml
+  - name: facing
+    path: decks/facing.yml
 
 # Cells checked as delivered: a violation inside a placed `PADLIB_*` instance is
 # reported waived for ENC.proj, and for nothing else.

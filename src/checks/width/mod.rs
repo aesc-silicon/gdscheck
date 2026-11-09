@@ -18,7 +18,7 @@ pub mod scan;
 #[cfg(test)]
 mod tests;
 
-use super::params::{bent_only, min_run};
+use super::params::{bent_only, facing_axis, min_run};
 use crate::geom::Limit;
 use crate::layout::FlatLayout;
 use crate::merge::SharedCache;
@@ -130,6 +130,11 @@ pub fn run(
     // only of lines longer than that, or of a bend long enough to be a trace rather than
     // a chamfer.
     let min_run_dbu = min_run(rule, dbu_to_um);
+    // `facing` reads the walls facing across one axis alone: a process that routes a
+    // layer one way asks one width of it across and another along.
+    let Some(axis) = facing_axis(rule, kind.width_name()) else {
+        return vec![];
+    };
     // A chamfer facing a straight wall has no single width to be too large or unequal,
     // so only a minimum reads the mixed pass.
     let (oblique_only, mixed) = (bent, kind == Kind::Min && !bent);
@@ -145,6 +150,7 @@ pub fn run(
         oblique_only,
         mixed,
         min_run_dbu,
+        axis,
     )
 }
 
