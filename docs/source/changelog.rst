@@ -30,6 +30,8 @@ Checks
 * New: ``offtrack``, a region's centreline across one axis on a pitch from an offset -
   the routing-track rules of a one-way metal, and an exact gate or fin pitch.
 * ``offgrid`` takes ``facing`` (one coordinate instead of both) and ``offset``.
+* New: ``min_track_run`` and ``min_tip_stagger``, the run two wires on adjacent routing
+  tracks share and the stagger of their tips on one side.
 * New edge selectors ``with_length_multiple`` / ``without_length_multiple``; a bare
   ``with_length`` number now selects that exact length instead of nothing.
 * The ``width`` gate of a space reads a line as wide only where it is wide both ways: a
