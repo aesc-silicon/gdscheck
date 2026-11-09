@@ -925,7 +925,10 @@ fn clippable_layers(
     let reads_polygons = |r: &pdk::RuleDefinition| {
         dist_check(r)
             || SHAPE_CHECKS.contains(&r.check.as_str())
-            || matches!(r.check.as_str(), "no_angle" | "offgrid" | "offtrack")
+            || matches!(
+                r.check.as_str(),
+                "no_angle" | "offgrid" | "offtrack" | "min_track_run" | "min_tip_stagger"
+            )
     };
     let mut stack: Vec<(i16, i16)> = rules
         .iter()

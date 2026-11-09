@@ -28,6 +28,9 @@
 //! And the other bound, that nothing of a layer lies *farther* than so much from
 //! another, is [`max`]: a reach rule, read per part, per polygon or per edge.
 //!
+//! Two wires on adjacent routing tracks are read along the tracks by [`track`]: the run
+//! they share, and the stagger of their tips.
+//!
 //! Declared on two *edge* layers, a plain rule measures between segments instead - see
 //! [`edge_distance`](super::edge_distance).  Which one runs is the deck's choice of layer,
 //! not a different rule; the gates read regions and have no meaning there.
@@ -35,6 +38,7 @@
 pub mod array;
 pub mod max;
 pub mod notch;
+pub mod track;
 
 use super::helper::RunCtx;
 use super::params::{Facing, NotAWord, bent_only, facing, mode};

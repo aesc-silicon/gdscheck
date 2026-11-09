@@ -42,6 +42,8 @@ One chapter per check type, as referenced by the ``check:`` field of a deck rule
    min_notch
    min_overlap
    min_space
+   min_tip_stagger
+   min_track_run
    min_width
    no_angle
    no_corner
