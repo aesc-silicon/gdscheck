@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The full run: every deck, as gt3_main.drc.rs includes them.
+include:
+  - deck: bpr
+  - deck: vbpr
+  - deck: gate
+  - deck: dummy
+  - deck: gcut
+  - deck: vg
+  - deck: act
+  - deck: npsel
+  - deck: sdcon
+  - deck: vsd
+  - deck: m0
+  - deck: v0
+  - deck: m1
+  - deck: v1
+  - deck: m2
+  - deck: v2
+  - deck: m3
+  - deck: v3
+  - deck: m4
+  - deck: v4
+  - deck: m5
+  - deck: v5
+  - deck: m6

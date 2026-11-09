@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The front end and middle of line, through V0: what a standard cell holds.
+include:
+  - deck: bpr
+  - deck: vbpr
+  - deck: gate
+  - deck: dummy
+  - deck: gcut
+  - deck: vg
+  - deck: act
+  - deck: npsel
+  - deck: sdcon
+  - deck: vsd
+  - deck: m0
+  - deck: v0

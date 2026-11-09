@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V4, the via from M4 to M5 (Include/gt3.v4.drc.rs).  V4.5, the spacing,
+# has no check upstream.  V4.M5.EN is written V4.M3.EN upstream.
+rules:
+  - id: V4.1
+    check: min_width
+    layers: [V4]
+    value: 0.021
+    params:
+      facing: x
+  - id: V4.2
+    check: min_width
+    layers: [V4]
+    value: 0.021
+    params:
+      facing: y
+  - id: V4.3
+    check: forbidden
+    layers: [V4VEdgesOffM5]
+    value: 0.0
+  - id: V4.4
+    check: forbidden
+    layers: [V4HEdgesOffM4]
+    value: 0.0
+  - id: V4.6
+    check: min_space
+    layers: [V4]
+    value: 0.027
+    params:
+      facing: none
+  - id: V4.7
+    check: forbidden
+    layers: [V4OffM4]
+    value: 0.0
+  - id: V4.8
+    check: forbidden
+    layers: [V4OffM5]
+    value: 0.0
+  - id: V4.M4.EN
+    check: min_enclosure
+    layers: [M4, V4]
+    value: 0.005
+    params:
+      facing: x
+      interacting_only: 1
+  - id: V4.M5.EN
+    check: min_enclosure
+    layers: [M5, V4]
+    value: 0.005
+    params:
+      facing: y
+      interacting_only: 1

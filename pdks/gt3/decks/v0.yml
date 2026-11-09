@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V0, the via from M0 to M1 (Include/gt3.v0.drc.rs).  Upstream names two rules V0.7: the
+# spacing on one M0 track, which has no check, and the alignment with M1, which is V0.7
+# here; V0.8 is the alignment with M0.
+rules:
+  - id: V0.1
+    check: exact_width
+    layers: [V0]
+    value: 0.014
+    params:
+      facing: x
+  - id: V0.2
+    check: exact_width
+    layers: [V0]
+    value: 0.012
+    params:
+      facing: y
+  - id: V0.3
+    check: forbidden
+    layers: [V0Bent]
+    value: 0.0
+  - id: V0.4
+    check: forbidden
+    layers: [V0OutsideM0]
+    value: 0.0
+  - id: V0.5
+    check: forbidden
+    layers: [V0OutsideM1]
+    value: 0.0
+  - id: V0.6
+    check: min_space
+    layers: [V0]
+    value: 0.018
+    params:
+      facing: none
+  - id: V0.M0.1
+    check: min_enclosure
+    layers: [M0, V0]
+    value: 0.004
+    params:
+      facing: x
+      interacting_only: 1
+  - id: V0.M1.1
+    check: min_enclosure
+    layers: [M1, V0]
+    value: 0.004
+    params:
+      facing: y
+      interacting_only: 1
+  - id: V0.7
+    check: forbidden
+    layers: [V0VEdgesOffM1]
+    value: 0.0
+  - id: V0.8
+    check: forbidden
+    layers: [V0HEdgesOffM0]
+    value: 0.0

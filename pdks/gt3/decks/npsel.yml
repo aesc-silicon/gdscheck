@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# NSEL and PSEL (Include/gt3.npsel.drc.rs).
+rules:
+  - id: NSEL.1
+    check: min_width
+    layers: [NSEL]
+    value: 0.072
+    params:
+      facing: y
+  - id: NSEL.2
+    check: min_width
+    layers: [NSEL]
+    value: 0.084
+    params:
+      facing: x
+  - id: NSEL.3
+    check: min_enclosure
+    layers: [NSEL, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: PSEL.1
+    check: min_width
+    layers: [PSEL]
+    value: 0.072
+    params:
+      facing: y
+  - id: PSEL.2
+    check: min_width
+    layers: [PSEL]
+    value: 0.084
+    params:
+      facing: x
+  - id: PSEL.3
+    check: min_enclosure
+    layers: [PSEL, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: NSEL.PSEL.1
+    check: forbidden
+    layers: [NSEL, PSEL]
+    value: 0.0
+    params:
+      op: overlap

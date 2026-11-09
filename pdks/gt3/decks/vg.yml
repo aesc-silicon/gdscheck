@@ -1,0 +1,46 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# VG, the gate contact (Include/gt3.vg.drc.rs).  VG.6 and VG.GCUT.1, the spacings, and
+# VG.M0.3 have no check upstream.
+rules:
+  - id: VG.1
+    check: exact_width
+    layers: [VG]
+    value: 0.015
+    params:
+      facing: x
+  - id: VG.2
+    check: exact_width
+    layers: [VG]
+    value: 0.012
+    params:
+      facing: y
+  - id: VG.3
+    check: forbidden
+    layers: [VgOnGcutDummy]
+    value: 0.0
+  - id: VG.4
+    check: forbidden
+    layers: [VgOffGate]
+    value: 0.0
+  - id: VG.5
+    check: forbidden
+    layers: [VgOutsideGate]
+    value: 0.0
+  - id: VG.7
+    check: forbidden
+    layers: [VGBent]
+    value: 0.0
+  - id: VG.M0.1
+    check: forbidden
+    layers: [VgOutsideM0]
+    value: 0.0
+  - id: VG.M0.2
+    check: min_enclosure
+    layers: [M0, VG]
+    value: 0.004
+    params:
+      facing: x
+      interacting_only: 1
