@@ -24,6 +24,7 @@ body:
         - gf180mcuD
         - gf180mcuA
         - gt3
+        - gt2n
         - a PDK of my own (say which below)
     validations:
       required: true

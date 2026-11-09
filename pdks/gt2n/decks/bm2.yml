@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# BM2, backside, routed horizontally, from techlib/gt2_tech.lef: the runset connects
+# the backside and checks none of it.  The rules read as M6's do, with the LEF's
+# values: .1 WIDTH, .3 SPACING, .4 the EOLKEEPOUT's forward extension, .5
+# CORNERSPACING, .6 RECTONLY.  The LEF gives BM2 no MINSIZE or AREA, so there is no .2.
+rules:
+  - id: BM2.1.LEF
+    check: min_width
+    layers: [BM2]
+    value: 0.056
+    params:
+      facing: y
+  - id: BM2.3.LEF
+    check: min_space
+    layers: [BM2]
+    value: 0.056
+    params:
+      facing: y
+  - id: BM2.3.LEF
+    check: min_notch
+    layers: [BM2]
+    value: 0.056
+    params:
+      facing: y
+  - id: BM2.4.LEF
+    check: min_space
+    layers: [BM2]
+    value: 0.08
+    params:
+      facing: x
+  - id: BM2.4.LEF
+    check: min_notch
+    layers: [BM2]
+    value: 0.08
+    params:
+      facing: x
+  - id: BM2.5.LEF
+    check: min_space
+    layers: [BM2]
+    value: 0.066
+    params:
+      facing: none
+  - id: BM2.6.LEF
+    check: forbidden
+    layers: [BM2Bent]
+    value: 0.0

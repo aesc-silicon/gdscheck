@@ -1,0 +1,49 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M10, routed horizontally, from techlib/gt2_tech.lef: the runset has no rules above M6.
+# The rules read as M6's do, with the LEF's values: .1 WIDTH, .3 SPACING, .4 the
+# EOLKEEPOUT's forward extension, .5 CORNERSPACING, .6 RECTONLY.  The LEF gives M10
+# no MINSIZE or AREA, so there is no .2.
+rules:
+  - id: M10.1.LEF
+    check: min_width
+    layers: [M10]
+    value: 0.056
+    params:
+      facing: y
+  - id: M10.3.LEF
+    check: min_space
+    layers: [M10]
+    value: 0.056
+    params:
+      facing: y
+  - id: M10.3.LEF
+    check: min_notch
+    layers: [M10]
+    value: 0.056
+    params:
+      facing: y
+  - id: M10.4.LEF
+    check: min_space
+    layers: [M10]
+    value: 0.08
+    params:
+      facing: x
+  - id: M10.4.LEF
+    check: min_notch
+    layers: [M10]
+    value: 0.08
+    params:
+      facing: x
+  - id: M10.5.LEF
+    check: min_space
+    layers: [M10]
+    value: 0.066
+    params:
+      facing: none
+  - id: M10.6.LEF
+    check: forbidden
+    layers: [M10Bent]
+    value: 0.0

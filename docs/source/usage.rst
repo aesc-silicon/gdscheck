@@ -129,8 +129,8 @@ Selecting the process
 ----------------------
 
 ``--process`` accepts an embedded PDK name (``ihp-sg13g2``, ``ihp-sg13cmos5l``,
-``asap7``, ``gt3`` — built into the binary, no external files needed), a filesystem
-path to a ``pdk.yml``, or the name of a PDK on the *PDK path*. See :doc:`pdks/index` for the bundled PDKs and
+``asap7``, ``gt3``, ``gt2n`` — built into the binary, no external files needed), a
+filesystem path to a ``pdk.yml``, or the name of a PDK on the *PDK path*. See :doc:`pdks/index` for the bundled PDKs and
 :doc:`pdk-authoring` for writing your own.
 
 The PDK path is where PDKs that cannot live in the binary go — a commercial process
