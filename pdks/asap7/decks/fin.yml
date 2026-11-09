@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# FIN (DRM section 3.3).
+#
+# FIN.S.1, the exact 27 nm pitch, reads every fin's centre on the pitch in the standard
+# cells' frame: every library cell has its fins 10 to 17 nm past a multiple of 27, and
+# so does every design placing them on the 270 nm row.  A design drawn in another frame
+# sets `offset`, its first fin's centre.
+# SRAM applicability: see docs/source/pdks/asap7.rst.
+rules:
+  - id: FIN.W.1
+    check: exact_width
+    layers: [FinNoSram]
+    value: 0.007
+    params:
+      facing: y
+  - id: FIN.W.2
+    check: min_width
+    layers: [FinNoSram]
+    value: 0.108
+    params:
+      facing: x
+  - id: FIN.S.1
+    check: offtrack
+    layers: [FinNoSram]
+    value: 0.027
+    params:
+      facing: y
+      offset: 0.0135
+  - id: FIN.AUX.1
+    check: forbidden
+    layers: [FinBent]
+    value: 0.0

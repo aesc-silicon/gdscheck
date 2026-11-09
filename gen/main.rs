@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+mod asap7;
 mod engine;
 #[allow(non_snake_case)]
 mod gf180mcuD;
@@ -37,6 +38,7 @@ fn main() {
     );
 
     match pdk.name.as_str() {
+        "ASAP7" => asap7::generate(&pdk),
         "IHP SG13G2" => ihp_sg13g2::generate(&pdk),
         "IHP SG13CMOS5L" => ihp_sg13cmos5l::generate(&pdk),
         "GlobalFoundries GF180MCU (variant D)" => gf180mcuD::generate(&pdk),

@@ -17,6 +17,9 @@ PDKs
 
 * IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
   the SRAM marker, at the values of IHP's own SRAM bit cells.
+* New: ASAP7 (``asap7``), the 7 nm predictive FinFET PDK, after its design rule manual.
+  Suites ``main``, ``feol``, ``beol``, and ``openroad``: ``main`` held to the tech LEF,
+  what a design routed by OpenROAD on it should pass.
 
 Checks
 ~~~~~~
