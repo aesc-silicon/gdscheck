@@ -165,3 +165,5 @@ virtual_layers:
   # would hold every filler 1.0 off a buried layer here (AFil.d, GFil.e) and read a
   # Schottky diode CMOS5L does not have (CntB.a, NW.c1, NW.e1, PWB.f1, LU.d).
   nBuLayDerived: nBuLay not nBuLay.block
+  # With no nBuLay, IHP's CMOS5L deck recognises the SVaricap gate by ThickGateOx.
+  SVaricapGate: GatPolyOverNsdActiv and NWell and ThickGateOx

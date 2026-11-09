@@ -37,7 +37,7 @@ mod sram;
 mod tgo;
 mod topmetal;
 mod topvia;
-mod varicap;
+pub(crate) mod varicap;
 mod via;
 
 use gdscheck::pdk::PdkConfig;
