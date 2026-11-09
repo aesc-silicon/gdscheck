@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# An enclosure between two edge layers, Inner's edges 0.01 µm inside Outer's.
+rules:
+  - id: ED.enc
+    check: min_enclosure
+    layers: [Outer.edges, Inner.edges]
+    value: 0.01

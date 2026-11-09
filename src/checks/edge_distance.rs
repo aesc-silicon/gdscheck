@@ -210,19 +210,6 @@ fn run(
         .par_iter()
         .flat_map_iter(|&(tx, ty)| {
             let a_edges = &a_tiles[&(tx, ty)];
-            let mut b_edges: Vec<Edge> = Vec::new();
-            let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
-                std::collections::HashSet::new();
-            for dy in -reach..=reach {
-                for dx in -reach..=reach {
-                    for e in b_spans.get(&(tx + dx, ty + dy)).into_iter().flatten() {
-                        if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
-                            b_edges.push(*e);
-                        }
-                    }
-                }
-            }
-            let b_edges = &b_edges;
             // The edges of `b` filed by cell of a grid a few limits across, so an edge of `a`
             // reads the few within reach of it rather than every edge the tile holds: a tile
             // of SRAM LISD holds tens of thousands. Spacing reads each long edge in
@@ -231,7 +218,9 @@ fn run(
             // whole from every tile they cross: filed along their full length in each,
             // a wall a few millimetres long was a few gigabytes of cells.  Nothing
             // beyond the reach of this tile's own edges of `a` can be read, so the index
-            // ends there too.
+            // ends there too.  The edges of `b` are gathered from every tile that reach
+            // touches, not only round the tile the edge of `a` is filed in by its middle:
+            // a wall a tile or more long has partners near its far end.
             let reach_dbu = limit.ceil() as i64 + 1;
             let zone = if rel == Rel::Space {
                 (
@@ -252,6 +241,25 @@ fn run(
                         )
                     })
             };
+            let tiles = if rel == Rel::Space {
+                (tx - reach, ty - reach, tx + reach, ty + reach)
+            } else {
+                let t = |v: i64| v.div_euclid(tile) as i32;
+                (t(zone.0), t(zone.1), t(zone.2), t(zone.3))
+            };
+            let mut b_edges: Vec<Edge> = Vec::new();
+            let mut seen: std::collections::HashSet<(i32, i32, i32, i32)> =
+                std::collections::HashSet::new();
+            for gy in tiles.1..=tiles.3 {
+                for gx in tiles.0..=tiles.2 {
+                    for e in b_spans.get(&(gx, gy)).into_iter().flatten() {
+                        if seen.insert((e.a.x, e.a.y, e.b.x, e.b.y)) {
+                            b_edges.push(*e);
+                        }
+                    }
+                }
+            }
+            let b_edges = &b_edges;
             let cell = (limit.ceil() as i64).max(1) * 8;
             let cell_of = |v: i64| v.div_euclid(cell);
             // The cells a box covers; an empty box covers none.

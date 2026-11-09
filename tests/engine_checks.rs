@@ -1344,3 +1344,20 @@ fn an_edge_on_a_wall_is_inside_on_every_side() {
     assert_eq!(count("selection", "walls", "SEL.enc"), 0);
     assert_eq!(count("selection", "walls", "SEL.reach"), 0);
 }
+
+/// An enclosure between edge layers along a wall 60 µm long.  `long_clean` insets a
+/// 1 µm strip by 0.01 µm all round; `long_outer` bumps Inner and `long_inner` dents
+/// Outer to 0.005 µm near the strip's far end, 25 µm from the middle the wall's edge is
+/// filed by.  The edges of `b` were gathered only round that middle, so at a tile of a
+/// few µm the far end had nothing to measure against and both passed.
+#[rstest]
+#[case("long_clean", 0)]
+#[case("long_outer", 1)]
+#[case("long_inner", 1)]
+fn an_edge_enclosure_reads_its_whole_wall(#[case] pattern: &str, #[case] expected: usize) {
+    assert_eq!(
+        count("edge_distance", pattern, "ED.enc"),
+        expected,
+        "{pattern}"
+    );
+}
