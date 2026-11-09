@@ -909,6 +909,9 @@ const DECK_NSDB: &str = "nsdblock";
 // a block straddling 21, at (1000, 1000), and a 0.16 × 0.5 bar in a block fire; a Cont
 // abutting the edge, touching at a corner and in a block ring's hole are no overlap.
 #[case::nsdb_e_h1("nsdblock/nSDB.e.h1.gds.gz", "TOP", vec!["nSDB.e"; 7], vec![])]
+// A Cont under nSD:block in a Schottky stack and in a TRANS are clean (issue #53); a block
+// 4 µm from the stack, the stack without its nBuLay and a block 1 µm from the TRANS fire.
+#[case::nsdb_e_h2("nsdblock/nSDB.e.h2.gds.gz", "TOP", vec!["nSDB.e"; 3], vec![])]
 fn test_nsdblock(
     #[case] gds: &str,
     #[case] topcell: &str,
