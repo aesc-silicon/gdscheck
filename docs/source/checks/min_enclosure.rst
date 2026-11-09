@@ -111,7 +111,10 @@ Parameters
    Optional. ``x`` reads only the margins across x (the enclosed shape's vertical
    walls against the enclosing shape's), ``y`` only those across y. A margin read at an
    angle is off. ASAP7 asks a horizontal and a vertical extension of one layer past
-   another separately (``NSELECT.ACTIVE.EN.1`` and ``.EN.2``).
+   another separately (``NSELECT.ACTIVE.EN.1`` and ``.EN.2``). Only with ``sides: all``,
+   ``adjacent`` or ``line_end``: ``any`` and ``opposite`` choose among both axes, and one
+   pair of opposite sides on one axis is ``sides: all`` with ``facing``. Not on edge
+   layers.
 
 ``metric``
    Optional. ``projection`` (the default) pairs each inner edge with the parallel outer

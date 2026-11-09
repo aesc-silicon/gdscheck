@@ -52,6 +52,10 @@ Parameters
    ``V1.M2.AUX.2``). ``adjacent`` and ``line_end`` are about a margin falling short and
    have no maximum.
 
+``facing``
+   Optional. ``x`` or ``y``, as in :doc:`min_enclosure`: only the margins across that
+   axis. Not with ``sides: opposite``.
+
 ``metric``
    Optional. ``projection`` (the default) or ``euclidian``, as in :doc:`min_enclosure`.
 

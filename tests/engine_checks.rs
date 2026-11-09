@@ -645,6 +645,8 @@ fn notch_rules_meet_the_bound_exactly_and_read_their_gates(
 ///   0.3 in all round, and flush with both sides of its wire.  `facing: x` reads the side
 ///   walls; `sides: opposite` passes a via with one pair of sides at the value, and its
 ///   maximum of nothing passes only the via flush on a pair.
+///   `facing` with `sides: opposite` is refused, not read as `opposite` alone: nothing,
+///   where `E.opp` reports `enc_short`.
 #[rstest]
 #[case("narrow_x", "W.x", 2)]
 #[case("narrow_x", "W.y", 0)]
@@ -672,6 +674,7 @@ fn notch_rules_meet_the_bound_exactly_and_read_their_gates(
 #[case("enc_short", "E.x", 2)]
 #[case("enc_short", "E.opp", 1)]
 #[case("enc_short", "E.max_opp", 1)]
+#[case("enc_short", "E.x_opp", 0)]
 #[case("enc_flush", "E.x", 2)]
 #[case("enc_flush", "E.opp", 0)]
 #[case("enc_flush", "E.max_opp", 0)]
