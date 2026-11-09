@@ -100,16 +100,29 @@ fn run_sides(
     // Declared on two *edge* layers, a minimum measures between segments instead - see
     // `edge_distance`.  Which one runs is the deck's choice of layer, not a different
     // rule; the sides and the maximum read regions and have no meaning there.
+    let facing = rule.params.contains_key("facing");
     if super::edge_distance::on_edge_layers(rule, merged, kind.name()) {
-        if kind == Kind::Max || sides != Sides::All {
+        if kind == Kind::Max || sides != Sides::All || facing {
             eprintln!(
-                "[{}] {}: an edge layer has no sides and no maximum - name the regions",
+                "[{}] {}: an edge layer has no sides, no facing and no maximum - name the \
+                 regions",
                 rule.id,
                 kind.name()
             );
             return vec![];
         }
         return super::edge_distance::run_enclosure(rule, layout, dbu_to_um, merged);
+    }
+    // `any` and `opposite` choose among both axes from the shape as a whole; on one axis
+    // `opposite` is that axis's pair of sides, which `sides: all` with `facing` reads.
+    if facing && (sides == Sides::Opposite || (sides == Sides::Any && kind == Kind::Min)) {
+        eprintln!(
+            "[{}] {}: facing reads one axis and sides `any` / `opposite` choose among both - \
+             write sides: all with facing for one pair of opposite sides",
+            rule.id,
+            kind.name()
+        );
+        return vec![];
     }
     // A short side asking something of its neighbours, or a track's tip: both are
     // about a margin being small, and have no reading as a maximum.
