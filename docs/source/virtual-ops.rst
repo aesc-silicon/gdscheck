@@ -308,6 +308,11 @@ would say so.
      - —
      - segments whose length (µm) is in the half-open range ``[min, max)``, or the
        complement. A bare number is an exact length.
+   * - ``with_length_multiple d`` / ``without_length_multiple d``
+     - —
+     - segments whose length is a whole multiple of ``d`` µm, to half a database unit,
+       or the complement: a width-increment rule read on edges, with no list of the
+       multiples and no cap where a list would end (ASAP7's ``ACTIVE.W.2``).
    * - ``with_angle min a max b`` / ``without_angle …``
      - —
      - segments whose orientation in degrees is in ``[min, max]``, normalised to

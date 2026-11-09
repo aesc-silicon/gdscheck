@@ -41,6 +41,16 @@ pub fn generate(pdk: &PdkConfig) {
         ],
     );
 
+    // Outer 1 by 0.5, every edge a whole multiple of half a micron, and 1.25 by 0.5,
+    // whose two long edges are not: R.multiple 2.
+    write(
+        "multiple",
+        vec![
+            rect(outer, 30.0, 60.0, 31.0, 60.5),
+            rect(outer, 35.0, 60.0, 36.25, 60.5),
+        ],
+    );
+
     // An Inner square under an Outer cover ending on its edge: nothing uncovered, R.uncovered
     // 0 and R.polygon 0.  The cover ending 0.005 short leaves a sliver: 1 and 1.
     write(

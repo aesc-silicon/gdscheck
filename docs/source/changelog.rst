@@ -21,6 +21,8 @@ PDKs
 Checks
 ~~~~~~
 
+* New edge selectors ``with_length_multiple`` / ``without_length_multiple``; a bare
+  ``with_length`` number now selects that exact length instead of nothing.
 * The ``width`` gate of a space reads a line as wide only where it is wide both ways: a
   narrow wire's tip no longer counts as a wide line.
 * A space between edge layers reports each offending pair, not only the nearest
