@@ -227,6 +227,11 @@ fn run(
             // reads the few within reach of it rather than every edge the tile holds: a tile
             // of SRAM LISD holds tens of thousands. Spacing reads each long edge in
             // every tile it spans, so bound each tile's index and queries to its reach.
+            // An enclosure reads each edge of `a` once, whole, but the edges of `b` come
+            // whole from every tile they cross: filed along their full length in each,
+            // a wall a few millimetres long was a few gigabytes of cells.  Nothing
+            // beyond the reach of this tile's own edges of `a` can be read, so the index
+            // ends there too.
             let reach_dbu = limit.ceil() as i64 + 1;
             let zone = if rel == Rel::Space {
                 (
@@ -236,12 +241,34 @@ fn run(
                     (ty as i64 + 1) * tile + reach_dbu,
                 )
             } else {
-                (i64::MIN, i64::MIN, i64::MAX, i64::MAX)
+                a_edges
+                    .iter()
+                    .fold((i64::MAX, i64::MAX, i64::MIN, i64::MIN), |z, e| {
+                        (
+                            z.0.min(e.a.x.min(e.b.x) as i64 - reach_dbu),
+                            z.1.min(e.a.y.min(e.b.y) as i64 - reach_dbu),
+                            z.2.max(e.a.x.max(e.b.x) as i64 + reach_dbu),
+                            z.3.max(e.a.y.max(e.b.y) as i64 + reach_dbu),
+                        )
+                    })
             };
             let cell = (limit.ceil() as i64).max(1) * 8;
             let cell_of = |v: i64| v.div_euclid(cell);
+            // The cells a box covers; an empty box covers none.
+            let cells = |x0: i64, y0: i64, x1: i64, y1: i64| {
+                if x1 < x0 || y1 < y0 {
+                    0
+                } else {
+                    (cell_of(x1) - cell_of(x0) + 1).saturating_mul(cell_of(y1) - cell_of(y0) + 1)
+                }
+            };
             let mut grid: std::collections::HashMap<(i64, i64), Vec<u32>> =
                 std::collections::HashMap::new();
+            // The cells are a few limits across, and a limit can be a few DBU: an edge
+            // longer than a few dozen cells is read by every query instead of filed in
+            // each.  Such edges are few, and a wall a millimetre long was otherwise a
+            // hundred thousand cells.
+            let mut long: Vec<u32> = Vec::new();
             for (i, e) in b_edges.iter().enumerate() {
                 let (x0, x1) = (
                     (e.a.x.min(e.b.x) as i64).max(zone.0),
@@ -251,6 +278,14 @@ fn run(
                     (e.a.y.min(e.b.y) as i64).max(zone.1),
                     (e.a.y.max(e.b.y) as i64).min(zone.3),
                 );
+                match cells(x0, y0, x1, y1) {
+                    0 => continue,
+                    n if n > LONG_CELLS => {
+                        long.push(i as u32);
+                        continue;
+                    }
+                    _ => {}
+                }
                 for cx in cell_of(x0)..=cell_of(x1) {
                     for cy in cell_of(y0)..=cell_of(y1) {
                         grid.entry((cx, cy)).or_default().push(i as u32);
@@ -271,12 +306,18 @@ fn run(
                     (ea.a.y.min(ea.b.y) as i64 - reach_dbu).max(zone.1),
                     (ea.a.y.max(ea.b.y) as i64 + reach_dbu).min(zone.3),
                 );
-                for cx in cell_of(x0)..=cell_of(x1) {
-                    for cy in cell_of(y0)..=cell_of(y1) {
-                        if let Some(v) = grid.get(&(cx, cy)) {
-                            near.extend_from_slice(v);
+                if cells(x0, y0, x1, y1) > LONG_CELLS {
+                    // A long edge of `a` reads every edge of `b` rather than walk the cells.
+                    near.extend(0..b_edges.len() as u32);
+                } else {
+                    for cx in cell_of(x0)..=cell_of(x1) {
+                        for cy in cell_of(y0)..=cell_of(y1) {
+                            if let Some(v) = grid.get(&(cx, cy)) {
+                                near.extend_from_slice(v);
+                            }
                         }
                     }
+                    near.extend_from_slice(&long);
                 }
                 near.sort_unstable();
                 near.dedup();
@@ -390,6 +431,10 @@ type Found = (
 );
 /// A line through integer points, as its reduced direction and offset.
 type Line = (i64, i64, i64);
+
+/// The most cells of the edge index one edge is filed in, or one query walks; past it,
+/// an edge is read by every query, and a query reads every edge.
+const LONG_CELLS: i64 = 64;
 
 /// Enclosure joins collinear pieces of its subject wall. Spacing joins overlapping
 /// or adjacent projected runs of the same two wall lines, preserving separate gaps
