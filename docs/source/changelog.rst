@@ -9,8 +9,8 @@ Changelog
 user-visible changes: new checks, new PDKs, breaking deck/CLI changes and notable
 correctness fixes. The commit history is the full record of what changed and why.
 
-Unreleased
-----------
+v0.2.1 (2026-11-09)
+-------------------
 
 PDKs
 ~~~~
@@ -20,6 +20,22 @@ PDKs
 * New: ASAP7 (``asap7``), the 7 nm predictive FinFET PDK, after its design rule manual.
   Suites ``main``, ``feol``, ``beol``, and ``openroad``: ``main`` held to the tech LEF,
   what a design routed by OpenROAD on it should pass.
+* IHP SG13G2: ``NBL.e`` and ``NBL.f`` read N+ / P+ Activ in PWell, as IHP's deck does:
+  a PMOS or well tap in the hole of a drawn nBuLay ring no longer fires.
+* IHP SG13G2: ``nSDB.e`` leaves the contacts of the Schottky diode and the npn alone
+  (#53).
+* IHP SG13CMOS5L: no nBuLay is generated inside a wide NWell - the process has none - so
+  fillers near one (``AFil.d``, ``GFil.e``) no longer fire, and a ContBar stack is no
+  longer read as a Schottky diode.
+* IHP SG13CMOS5L: the SVaricap is recognised by ThickGateOx, as IHP's CMOS5L deck does
+  (#55).
+
+Breaking changes to PDKs and decks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* ``facing`` on an enclosure with ``sides: any`` or ``opposite``, or between edge
+  layers, is refused instead of silently ignored; one pair of opposite sides on one axis
+  is ``sides: all`` with ``facing``.
 
 Checks
 ~~~~~~
@@ -43,6 +59,8 @@ Checks
   neighbour of each edge.
 * An enclosure between edge layers measures along the whole of a long wall: at small
   tiles a violation far from the wall's middle was missed.
+* ``inside_part`` / ``outside_part``: an edge piece on a region's wall is inside on every
+  side, as KLayout reads it - it was inside on the left and bottom walls only (#44).
 
 Performance
 ~~~~~~~~~~~
@@ -56,6 +74,8 @@ Performance
   hold thirty thousand pieces of M1.
 * A space or enclosure between edge layers reads the edges within reach of each edge,
   not every edge of its tile.
+* A spacing check finds a tile's pairs by a sweep rather than every shape against every
+  other: an ASAP7 AES block (114 µm square) from 64 s to 28 s.
 
 v0.2.0 (2026-10-05)
 -------------------
