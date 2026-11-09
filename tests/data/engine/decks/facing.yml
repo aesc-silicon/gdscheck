@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The rules a one-way layer words: a width, a space and a notch across one axis, a
+# space only corner to corner, an enclosure across one axis and on one pair of opposite
+# sides.  Every value is 0.5 µm but the flush-via maximum's.
+rules:
+  - id: W.x
+    check: min_width
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: x
+  - id: W.y
+    check: min_width
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: y
+  - id: S.x
+    check: min_space
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: x
+  - id: S.y
+    check: min_space
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: y
+  - id: S.none
+    check: min_space
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: none
+  - id: N.x
+    check: min_notch
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: x
+  - id: N.y
+    check: min_notch
+    layers: [Outer]
+    value: 0.5
+    params:
+      facing: y
+  - id: E.x
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      facing: x
+  - id: E.opp
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      sides: opposite
+  - id: E.max_opp
+    check: max_enclosure
+    layers: [Outer, Inner]
+    value: 0.0
+    params:
+      sides: opposite

@@ -6,10 +6,10 @@
 //! cut into a shape, or a thin hole through it.  The same walls a width is read between,
 //! facing the other way; [`notch_pairs`] is the width scan run so, and this is what a
 //! rule adds: its bound, `angle: bent` for the 45° gaps alone, `length` for gaps whose
-//! walls share more than so much run.
+//! walls share more than so much run, `facing` for the gaps across one axis.
 
 use super::super::helper::piece_notches;
-use super::super::params::{bent_only, min_run};
+use super::super::params::{bent_only, facing_axis, min_run};
 use crate::geom::{Limit, notch_pairs};
 use crate::layout::FlatLayout;
 use crate::merge::{Core, SharedCache};
@@ -28,6 +28,9 @@ pub fn run(
         return vec![];
     };
     let min_run_dbu = min_run(rule, dbu_to_um);
+    let Some(axis) = facing_axis(rule, "min_notch") else {
+        return vec![];
+    };
     // A chamfer facing a straight wall across a gap is a notch too; a bent-only rule
     // leaves it to the plain one.
     let mixed = !bent;
@@ -55,7 +58,7 @@ pub fn run(
                 polys
                     .iter()
                     .flat_map(move |poly| {
-                        notch_pairs(poly, core, limit, bent, mixed, min_run_dbu)
+                        notch_pairs(poly, core, limit, bent, mixed, min_run_dbu, axis)
                             .into_iter()
                             .map(move |(x1, y1, x2, y2, gap_dbu)| {
                                 let g = gap_dbu * dbu_to_um;
@@ -95,6 +98,7 @@ pub fn run(
             limit,
             bent,
             min_run_dbu,
+            axis,
         ));
     }
     violations
