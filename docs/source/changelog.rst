@@ -18,6 +18,12 @@ PDKs
 * IHP SG13G2 and SG13CMOS5L: an ``sram`` deck that checks the rules ``main`` skips under
   the SRAM marker, at the values of IHP's own SRAM bit cells.
 
+Checks
+~~~~~~
+
+* The ``width`` gate of a space reads a line as wide only where it is wide both ways: a
+  narrow wire's tip no longer counts as a wide line.
+
 Performance
 ~~~~~~~~~~~
 
