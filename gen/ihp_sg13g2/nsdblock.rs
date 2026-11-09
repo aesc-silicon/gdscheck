@@ -123,7 +123,7 @@ fn nsdb_c_h(l: &L) {
 }
 
 /// nSDB.e, "Min. nSD:block space to Cont 0.00 (nSD:block and Cont do not overlap)".
-fn nsdb_e_h(l: &L) {
+fn nsdb_e_h(pdk: &PdkConfig, l: &L) {
     // h1: a Cont inside a block, one half over its edge and one 0.005 over it fire; one
     // abutting the edge, one touching at a corner and one in a block ring's hole are no
     // overlap; a Cont half over a block's edge on x = 20, one in a block straddling 21, one
@@ -151,6 +151,30 @@ fn nsdb_e_h(l: &L) {
     e.push(sq(l.nsdb, 5.0, 6.0, 1.0));
     e.push(rect(l.cont, 5.4, 6.2, 5.56, 6.7));
     write("nsdblock", "nSDB.e.h1", e);
+
+    // h2: the PDK's Schottky diode and npn13G2 draw nSD:block over a Cont of the device,
+    // and IHP's deck leaves the devices out (`nsdb_exlcDev`).  A Cont in a Schottky stack
+    // (SalBlock, nSD:block, PWell:block, nBuLay) and one in a TRANS are clean; a block 4 µm
+    // from the stack, the stack without its nBuLay and a block 1 µm from the TRANS fire.
+    let nbl = layer(pdk, "nBuLay");
+    let trans = layer(pdk, "TRANS");
+    let mut e = Vec::new();
+    for d in [l.sal, l.nsdb, l.pwb, nbl] {
+        e.push(sq(d, 2.0, 2.0, 2.0));
+    }
+    e.push(sq(l.cont, 2.92, 2.92, 0.16));
+    e.push(sq(l.nsdb, 8.0, 2.0, 1.0));
+    e.push(sq(l.cont, 8.42, 2.42, 0.16));
+    for d in [l.sal, l.nsdb, l.pwb] {
+        e.push(sq(d, 12.0, 2.0, 2.0));
+    }
+    e.push(sq(l.cont, 12.92, 2.92, 0.16));
+    e.push(sq(trans, 2.0, 8.0, 2.0));
+    e.push(sq(l.nsdb, 2.0, 8.0, 2.0));
+    e.push(sq(l.cont, 2.92, 8.92, 0.16));
+    e.push(sq(l.nsdb, 5.0, 8.0, 1.0));
+    e.push(sq(l.cont, 5.42, 8.42, 0.16));
+    write("nsdblock", "nSDB.e.h2", e);
 }
 fn hardening(pdk: &PdkConfig) {
     std::fs::create_dir_all("tests/data/ihp-sg13g2/nsdblock")
@@ -159,5 +183,5 @@ fn hardening(pdk: &PdkConfig) {
     width_suite("nsdblock", "nSDB.a", l.nsdb, 0.31);
     space_suite("nsdblock", "nSDB.b", l.nsdb, 0.31, 1.0);
     nsdb_c_h(&l);
-    nsdb_e_h(&l);
+    nsdb_e_h(pdk, &l);
 }

@@ -27,7 +27,7 @@ rules:
       pairs: overlapping
   - id: nSDB.e
     check: forbidden
-    layers: [nSD.block, Cont]
+    layers: [nSD.block, ContNoDevice]
     value: 0.0
     params:
       op: overlap

@@ -544,6 +544,10 @@ virtual_layers:
   NWellTieTGOAnaNoSchottky: NWellTieTGOAna not_overlapping SchottkyDevice
   PsdActivInNWellTGOAnaNoSchottky: PsdActivInNWellTGOAna not_overlapping SchottkyDevice
   NWellTieStandaloneNoSchottky: NWellTieStandalone not_overlapping SchottkyDevice
+  # nSDB.e: IHP's deck leaves the Schottky diode and the npn out (nsdb_exlcDev); both
+  # PCells draw nSD:block over a Cont of the device.
+  ContNoSchottky: Cont not_overlapping SchottkyDevice
+  ContNoDevice: ContNoSchottky not_overlapping TRANS
 
   NWellOrPWellBlkOrSRAM: NWellOrPWellBlk or SRAM
   NWellOrPWellBlk: NWell or PWell.block
