@@ -441,8 +441,9 @@ own example flow names ``gt2_6t_filler_w31_lvt`` as its filler, so a 13 nm desig
 built from it should set ``FILL_CELLS`` to the matching 13 nm filler. The
 ``ACT.2.sheets`` pattern draws all four filler-and-neighbour pairings.
 
-Every rule in every deck also has a generated pattern, written by ``gen/gt2n`` under
-``tests/data/gt2n/generated/<deck>/`` (``just gen-testdata-for gt2n``). Each pattern
+Every rule in every deck also has a generated pattern, written by ``gen/gt`` (shared
+with GT3) under ``tests/data/gt2n/generated/<deck>/`` (``just gen-testdata-for
+gt2n``). Each pattern
 draws the shape exactly at the runset's limit, then one 0.5 nm DBU past it, inside
 whatever else its deck reads: a VG in its gate and M0, a V0 flush with both wires.
 The generator reads its limits from ``icv_runset/Include/gt2.*.drc.rs``, and above M6

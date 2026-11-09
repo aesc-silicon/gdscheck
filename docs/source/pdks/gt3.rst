@@ -46,6 +46,15 @@ covers only in part. Upstream typos are corrected: ``BRP.1`` is ``BPR.1``, and
 Tests
 -----
 
+Every rule in every deck has a generated pattern, written by ``gen/gt`` under
+``tests/data/gt3/generated/<deck>/`` (``just gen-testdata-for gt3``). Each pattern
+draws the shape exactly at the runset's limit, then one 0.5 nm DBU past it, inside
+whatever else its deck reads, such as a VG in its gate and M0. The generator is shared
+with :doc:`gt2n`, whose runset is GT3's with seven values changed; it holds GT3's values
+from ``icv_runset/Include/gt3.*.drc.rs`` and stops if a deck disagrees.
+``tests/gt3.rs`` names the count each pattern reports, and any other rule the drawing
+must also break.
+
 Run over the 6-track RVT library with every cell abutted into rows on its placement
 boundary, the way a placer would, ``main`` reports one issue that is the library's
 own: placed beside gt3_6t_oa211_x1_rvt, an M0 of gt3_6t_nor3_x2_rvt ends 16.5 nm
