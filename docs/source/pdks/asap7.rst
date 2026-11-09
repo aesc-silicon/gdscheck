@@ -62,8 +62,8 @@ and ``W.4``. ``S.5`` is :doc:`min_track_run </checks/min_track_run>` and ``S.4``
 :doc:`min_tip_stagger </checks/min_tip_stagger>`: two wires on adjacent tracks - nothing
 routable between them, a gap under three widths - share 44 nm of run or none, and
 their tips on one side are aligned or 40 nm apart. The ASAP7 tech LEF reads both only
-as a corner keep-out about a line end, so both are partial in it (below), and the
-``openroad`` suite leaves them out. ``AUX.4`` remains unimplemented.
+as a corner keep-out about a line end, so both carry ``tech_lef: partial`` (below), and
+their markers on a routed design say so. ``AUX.4`` remains unimplemented.
 V0–V3 ``S.1`` reads vias that face each other, on one track or on
 neighbouring tracks overlapping in projection, at 18 nm. Vias on neighbouring
 tracks that do not overlap meet corner to corner, which ``S.2``–``S.4`` read by
@@ -81,18 +81,18 @@ OpenROAD-flow-scripts and LambdaPDK ship it; ``asap7_tech_1x_260907.lef`` agrees
 every row here) differs from the manual. A rule absent from both tables has not been
 compared with the LEF; it says nothing either way.
 
-The ``openroad`` suite leaves out or re-reads the rules in the first table;
-``the_openroad_suite_is_main_held_to_the_tech_lef`` in ``tests/asap7.rs`` pins the
-list. Each deck's header quotes the LEF statement.
+The rules in the first table carry ``tech_lef`` in their decks, and their markers say
+so; ``rules_the_tech_lef_falls_short_of`` in ``tests/asap7.rs`` pins the list. Each
+deck's header quotes the LEF statement.
 
-.. list-table:: Short of the manual in the tech LEF
+.. list-table:: Marked ``tech_lef`` in the decks
    :header-rows: 1
    :widths: 18 24 44 14
 
    * - Rule
      - Manual
      - Tech LEF
-     - LEF
+     - ``tech_lef``
    * - ``M1.S.2``
      - 25 nm, tip to side
      - ``LEF58_EOLKEEPOUT 0.01825 EXTENSION 0.0 0.0 0.031``: 31 nm ahead of a line

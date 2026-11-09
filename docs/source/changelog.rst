@@ -20,6 +20,9 @@ PDKs
 * New: ASAP7 (``asap7``), the 7 nm predictive FinFET PDK, after its design rule manual.
   Suites ``main``, ``feol``, ``beol``, and ``openroad``: ``main`` held to the tech LEF,
   what a design routed by OpenROAD on it should pass.
+* ASAP7: the rules the tech LEF falls short of say how - ``M1.S.3``, ``V0.M1.AUX.3`` and
+  ``V1.M1.EN.1`` absent; ``M1.S.2``/``.S.4``/``.S.5`` and M4-M7 ``S.4``/``S.5``
+  partial; ``M1.S.6`` and ``V6.S.2`` weaker.
 
 Checks
 ~~~~~~
@@ -43,6 +46,13 @@ Checks
   neighbour of each edge.
 * An enclosure between edge layers measures along the whole of a long wall: at small
   tiles a violation far from the wall's middle was missed.
+
+Decks
+~~~~~
+
+* New: a rule's ``tech_lef:`` - ``absent``, ``partial`` or ``weaker`` - marks how the
+  PDK's tech LEF falls short of it; the summary and the report's category say so beside
+  the rule.
 
 Performance
 ~~~~~~~~~~~

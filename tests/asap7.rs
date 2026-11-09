@@ -763,6 +763,54 @@ fn metal(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] 
     pattern(deck, rule, variant, count, &ignore);
 }
 
+/// The rules the ASAP7 tech LEF falls short of are marked so in their decks, each with
+/// how - and no others - and their violations carry it.
+#[test]
+fn rules_the_tech_lef_falls_short_of() {
+    use gdscheck::pdk::TechLef::{Absent, Partial, Weaker};
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let mut marked = std::collections::BTreeMap::new();
+    for deck in &pdk.decks {
+        for r in pdk.load_deck(&deck.name).unwrap() {
+            if let Some(t) = r.tech_lef {
+                marked.insert(r.id, t);
+            }
+        }
+    }
+    let mut expected: std::collections::BTreeMap<String, _> = (4..=7)
+        .flat_map(|n| {
+            [
+                (format!("M{n}.S.4"), Partial),
+                (format!("M{n}.S.5"), Partial),
+            ]
+        })
+        .collect();
+    for (id, t) in [
+        ("M1.S.2", Partial),
+        ("M1.S.3", Absent),
+        ("M1.S.4", Partial),
+        ("M1.S.5", Partial),
+        ("M1.S.6", Weaker),
+        ("V0.M1.AUX.3", Absent),
+        ("V1.M1.EN.1", Absent),
+        ("V6.S.2", Weaker),
+    ] {
+        expected.insert(id.to_string(), t);
+    }
+    assert_eq!(marked, expected);
+
+    let path = "tests/data/asap7/generated/m4/M4.S.5.run.bad.gds.gz";
+    let found = run_drc(path, PDK, &["m4"], None, "TOP", false).expect("DRC run failed");
+    let run: Vec<_> = found.iter().filter(|v| v.rule_id == "M4.S.5").collect();
+    assert!(!run.is_empty() && run.iter().all(|v| v.tech_lef == Some(Partial)));
+    assert!(
+        found
+            .iter()
+            .filter(|v| v.rule_id != "M4.S.5")
+            .all(|v| v.tech_lef.is_none())
+    );
+}
+
 /// The `openroad` deck's rules, at the tech LEF's values: a corner 18 nm clear on M1 and
 /// two V6 cuts 34 nm apart are clean, a DBU less is not.
 #[rstest]
@@ -772,10 +820,9 @@ fn openroad(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     pattern("openroad", rule, variant, count, &[]);
 }
 
-/// The `openroad` suite is `main` without the rules the tech LEF does not state, or
-/// states only partly and rounds away (docs/source/pdks/asap7.rst, "Against the tech
-/// LEF"), and with M1.S.6 and V6.S.2, which it states weaker, read at the LEF's values
-/// instead of the manual's.
+/// The `openroad` suite is `main` without every rule marked `tech_lef` - the absent
+/// ones, the partial ones the LEF's rounding disables - and with M1.S.6 and V6.S.2, the
+/// weaker ones, read at the LEF's values instead of the manual's.
 #[test]
 fn the_openroad_suite_is_main_held_to_the_tech_lef() {
     let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
@@ -786,27 +833,11 @@ fn the_openroad_suite_is_main_held_to_the_tech_lef() {
             .map(|r| r.id)
             .collect()
     };
-    let short: std::collections::BTreeSet<String> = (4..=7)
-        .flat_map(|n| [format!("M{n}.S.4"), format!("M{n}.S.5")])
-        .chain(
-            [
-                "M1.S.2",
-                "M1.S.3",
-                "M1.S.4",
-                "M1.S.5",
-                "M1.S.6",
-                "V0.M1.AUX.3",
-                "V1.M1.EN.1",
-                "V6.S.2",
-            ]
-            .map(String::from),
-        )
-        .collect();
-    let main = ids("main");
-    assert!(short.is_subset(&main));
+    let main = pdk.load_suite("main").unwrap();
     let held: std::collections::BTreeSet<String> = main
-        .difference(&short)
-        .cloned()
+        .iter()
+        .filter(|r| r.tech_lef.is_none())
+        .map(|r| r.id.clone())
         .chain(["M1.S.6.LEF".to_string(), "V6.S.2.LEF".to_string()])
         .collect();
     assert_eq!(ids("openroad"), held);

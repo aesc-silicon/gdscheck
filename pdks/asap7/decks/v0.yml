@@ -108,3 +108,4 @@ rules:
     value: 0.0
     params:
       sides: opposite
+    tech_lef: absent

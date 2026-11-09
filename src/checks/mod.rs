@@ -245,5 +245,10 @@ pub fn run_rule(
             keep
         });
     }
+    if rule.tech_lef.is_some() {
+        for v in &mut out {
+            v.tech_lef = rule.tech_lef;
+        }
+    }
     out
 }

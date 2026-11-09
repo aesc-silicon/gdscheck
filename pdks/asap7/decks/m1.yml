@@ -30,24 +30,29 @@ rules:
     check: min_space
     layers: [M1NoSram.short, M1NoSram.long]
     value: 0.025
+    tech_lef: partial
   - id: M1.S.3
     check: min_space
     layers: [M1NoSram.mid, M1NoSram.mid]
     value: 0.027
+    tech_lef: absent
   - id: M1.S.4
     check: min_space
     layers: [M1NoSram.tiny, M1NoSram.tiny]
     value: 0.031
+    tech_lef: partial
   - id: M1.S.5
     check: min_space
     layers: [M1NoSram.mid, M1NoSram.tiny]
     value: 0.031
+    tech_lef: partial
   - id: M1.S.6
     check: min_space
     layers: [M1NoSram]
     value: 0.02
     params:
       facing: none
+    tech_lef: weaker
   - id: M1.A.1
     check: min_area
     layers: [M1NoSram]
