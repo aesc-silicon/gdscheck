@@ -21,7 +21,7 @@
 # M6's corner keep-out about a line end, `LEF58_EOLKEEPOUT ... EXTENSION 0.048
 # 0.03225 0.048 CORNERONLY`: no corner of a wire on the adjacent track within 48 nm
 # of the tip either way.  That is stricter than the manual - it also forbids aligned
-# tips and a 40-48 nm stagger - and so only partly the same rule.  Its side extension
+# tips and a 40-48 nm stagger - and so `tech_lef: partial`.  Its side extension
 # reaches the adjacent wire, 32 nm away, only by the quarter nanometre a
 # DATABASE MICRONS 1000 tech rounds off, so a router reading it as written keeps
 # neither rule; DATABASE MICRONS 4000 (LambdaPDK #246, ORFS #4663, asap7sc7p5t_28
@@ -99,6 +99,7 @@ rules:
     params:
       facing: y
       within: 0.096
+    tech_lef: partial
   - id: M6.S.5
     check: min_track_run
     layers: [M6NoSram]
@@ -106,6 +107,7 @@ rules:
     params:
       facing: y
       within: 0.096
+    tech_lef: partial
   - id: M6.AUX.1
     check: offgrid
     layers: [M6NoSram]

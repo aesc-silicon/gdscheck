@@ -4,7 +4,7 @@
 
 # The rules the ASAP7 tech LEF states more weakly than the manual, at the LEF's value:
 # what a router driven by it keeps.  The `openroad` suite reads these in place of the
-# manual's M1.S.6 and V6.S.2, which the LEF states weaker; no other suite does.
+# manual's M1.S.6 and V6.S.2 (`tech_lef: weaker` in their decks); no other suite does.
 #
 # M1.S.6.LEF is M1's `LEF58_CORNERSPACING CONVEXCORNER CORNERONLY 0.01 WIDTH 0.018
 # SPACING 0.018`, 18 nm corner to corner where the manual asks 20.  V6.S.2.LEF is V6's

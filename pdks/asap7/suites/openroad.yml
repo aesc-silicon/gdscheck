@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Every deck, held to the tech LEF where it falls short of the manual: what a design
-# routed by OpenROAD on the ASAP7 tech LEF (`asap7_tech_1x_201209.lef`, as ORFS and
-# LambdaPDK ship it) should pass.  A marker
+# Every deck, held to the tech LEF where the decks mark it short of the manual
+# (`tech_lef`): what a design routed by OpenROAD on the ASAP7 tech LEF
+# (`asap7_tech_1x_201209.lef`, as ORFS and LambdaPDK ship it) should pass.  A marker
 # here is a rule the router was given and broke, or one the LEF has not been compared
 # on - an unmarked rule is the manual's.
 #

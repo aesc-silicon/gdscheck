@@ -21,6 +21,7 @@ rules:
     check: min_space
     layers: [V6NoSram]
     value: 0.045
+    tech_lef: weaker
   - id: V6.M6.EN.1
     check: min_enclosure
     layers: [M6, V6NoSram]

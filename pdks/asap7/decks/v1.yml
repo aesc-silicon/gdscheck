@@ -59,6 +59,7 @@ rules:
     params:
       sides: opposite
       opposite_value: 0.002
+    tech_lef: absent
   - id: V1.M2.EN.2
     check: min_enclosure
     layers: [M2, V1NoSram]
