@@ -13,7 +13,7 @@ use gdscheck::pdk::PdkConfig;
 const DIR: &str = "tests/data/ihp-sg13g2/varicap";
 
 /// The pcell's shapes: layer, then the box.
-const SHAPES: &[(&str, f64, f64, f64, f64)] = &[
+pub(crate) const SHAPES: &[(&str, f64, f64, f64, f64)] = &[
     ("Activ", 1.035, 4.53, 1.275, 5.29),
     ("Activ", 1.035, -0.52, 1.275, 0.24),
     ("Activ", 0.24, 0.24, 1.91, 4.53),

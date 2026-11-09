@@ -34,8 +34,10 @@ fn drc(pdk: &str, path: &str, deck: &str, ignore: &[&str]) -> Vec<String> {
 
 /// The SG13G2 derived layers CMOS5L defines itself.  `nBuLayDerived`: SG13G2 generates an
 /// nBuLay under every wide NWell (section 4.2); CMOS5L's section 4 has no such layer and
-/// forbids the drawn one, so the rules reading it see none (issue #46).
-const CMOS5L_OWN: &[&str] = &["nBuLayDerived"];
+/// forbids the drawn one, so the rules reading it see none (issue #46).  `SVaricapGate`:
+/// with no nBuLay, IHP's CMOS5L deck recognises the varicap's gate by ThickGateOx
+/// (issue #55).
+const CMOS5L_OWN: &[&str] = &["nBuLayDerived", "SVaricapGate"];
 
 /// The decks CMOS5L reads from the SG13G2 tree, by name.
 fn shared_decks() -> Vec<String> {
@@ -350,6 +352,42 @@ fn no_generated_nbulay(
     let path = format!("{C5L_DATA}/{gds}");
     assert_eq!(drc(C5L, &path, deck, ignore), c5l, "CMOS5L");
     assert_eq!(drc(G2, &path, deck, ignore), g2, "SG13G2");
+}
+
+/// IHP's CMOS5L SVaricap pcell at its defaults, labelled "SVaricap", is clean in the decks
+/// it is exempt from, as in IHP's CMOS5L deck (issue #55); without the label those rules
+/// fire, as on SG13G2's.  SG13G2 reads no varicap without its nBuLay.
+#[test]
+fn svaricap_by_thickgateox() {
+    const DECKS: &[&str] = &["cont", "gatpoly", "nwell", "psd"];
+    let run = |pdk: &str, gds: &str| -> Vec<String> {
+        let path = format!("{C5L_DATA}/varicap/{gds}");
+        let mut ids: Vec<String> = DECKS
+            .iter()
+            .flat_map(|deck| drc(pdk, &path, deck, &[]))
+            .filter(|id| !id.contains("Fil."))
+            .collect();
+        ids.sort();
+        ids
+    };
+    let mut unlabelled = [
+        vec!["Cnt.e"; 4],
+        vec!["Cnt.j"; 20],
+        vec!["Gat.f"; 2],
+        vec!["NW.c1"; 2],
+        vec!["NW.e1"; 4],
+        vec!["pSD.c"; 4],
+        vec!["pSD.e"; 2],
+        vec!["pSD.j1"; 2],
+    ]
+    .concat();
+    unlabelled.sort();
+    assert!(run(C5L, "SVaricap.gds.gz").is_empty());
+    assert_eq!(run(C5L, "SVaricap.nolabel.gds.gz"), unlabelled);
+    assert_eq!(
+        run(G2, "SVaricap.gds.gz"),
+        run(G2, "SVaricap.nolabel.gds.gz")
+    );
 }
 
 /// A layer CMOS5L forbids is empty in a layout it accepts, so a shared rule reading it

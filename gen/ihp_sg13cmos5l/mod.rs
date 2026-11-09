@@ -11,9 +11,10 @@
 //! TV1.c (TopVia1 lands on Metal4), Pas.c / Pad.i (TopMetal1 is the top metal),
 //! the §3.2 extra forbidden layers, the chapter-8 DigiBnd splits of Cnt.c and
 //! NW.f1, and the rules SG13G2 reads through its generated nBuLay (section 4.2),
-//! which CMOS5L does not have: AFil.d, GFil.e and the Schottky exemptions.
+//! which CMOS5L does not have: AFil.d, GFil.e, the Schottky exemptions and the SVaricap
+//! recognition.
 
-use crate::helpers::{enclosure_pattern, layer, library, rect, write_gz};
+use crate::helpers::{enclosure_pattern, layer, library, rect, text, write_gz};
 use gds21::GdsElement;
 use gdscheck::pdk::PdkConfig;
 
@@ -32,6 +33,7 @@ pub fn generate(pdk: &PdkConfig) {
     afil_d(pdk);
     gfil_e(pdk);
     schottky_stack(pdk);
+    svaricap(pdk);
 }
 
 fn dir(sub: &str) -> String {
@@ -308,5 +310,28 @@ fn schottky_stack(pdk: &PdkConfig) {
     write_gz(
         &format!("{}/schottky.gds.gz", dir("contbar")),
         library("TOP", elems),
+    );
+}
+
+/// IHP's CMOS5L SVaricap pcell at its defaults, as KLayout draws it: SG13G2's without the
+/// nBuLay, under a ThickGateOx 0.07 narrower each side, labelled on the Activ's corner.
+/// IHP's CMOS5L deck recognises the gate by ThickGateOx instead of nBuLay.
+fn svaricap(pdk: &PdkConfig) {
+    let d = dir("varicap");
+    let shapes = || -> Vec<GdsElement> {
+        let mut e: Vec<GdsElement> = crate::ihp_sg13g2::varicap::SHAPES
+            .iter()
+            .filter(|s| s.0 != "nBuLay" && s.0 != "ThickGateOx")
+            .map(|&(l, x0, y0, x1, y1)| rect(layer(pdk, l), x0, y0, x1, y1))
+            .collect();
+        e.push(rect(layer(pdk, "ThickGateOx"), -0.03, -0.79, 2.18, 5.56));
+        e
+    };
+    let mut e = shapes();
+    e.push(text(layer(pdk, "TEXT"), "SVaricap", 0.24, 0.24));
+    write_gz(&format!("{d}/SVaricap.gds.gz"), library("TOP", e));
+    write_gz(
+        &format!("{d}/SVaricap.nolabel.gds.gz"),
+        library("TOP", shapes()),
     );
 }
