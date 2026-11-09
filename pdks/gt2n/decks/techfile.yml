@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Additional constraints from techlib/gt2_techfile.tf, foundry/spacings, at GT2N
+# revision 699e2c10b2b494a120745515f59df8815f4f0175. Values are in µm or µm².
+# ICV and LEF take precedence where they already supply the constraint. In
+# particular, do not import the stale GATE dimensions/area or M9's larger area.
+# See docs/source/pdks/gt2n.rst for the reconciliation of the three sources.
+rules:
+  - id: NWELL.width.TF
+    check: min_width
+    layers: [NWELL]
+    value: 0.042
+  - id: NWELL.space.TF
+    check: min_space
+    layers: [NWELL]
+    value: 0.042
+  - id: NWELL.space.TF
+    check: min_notch
+    layers: [NWELL]
+    value: 0.042
+  - id: NWELL.area.TF
+    check: min_area
+    layers: [NWELL]
+    value: 0.003024
+  - id: ACT.area.TF
+    check: min_area
+    layers: [ACT]
+    value: 0.00042
+  - id: BPR.area.TF
+    check: min_area
+    layers: [BPR]
+    value: 0.0001
+  - id: M10.area.TF
+    check: min_area
+    layers: [M10]
+    value: 0.00448
+  - id: M11.area.TF
+    check: min_area
+    layers: [M11]
+    value: 0.00448
+  - id: M12.area.TF
+    check: min_area
+    layers: [M12]
+    value: 0.1944
+  - id: M13.area.TF
+    check: min_area
+    layers: [M13]
+    value: 0.1944
+  - id: RDL.area.TF
+    check: min_area
+    layers: [RDL]
+    value: 3.84
+  - id: BM1.area.TF
+    check: min_area
+    layers: [BM1]
+    value: 0.00448
+  - id: BM2.area.TF
+    check: min_area
+    layers: [BM2]
+    value: 0.00448
+  - id: BM3.area.TF
+    check: min_area
+    layers: [BM3]
+    value: 0.1944
+  - id: BM4.area.TF
+    check: min_area
+    layers: [BM4]
+    value: 0.1944
+  - id: BRDL.area.TF
+    check: min_area
+    layers: [BRDL]
+    value: 3.84

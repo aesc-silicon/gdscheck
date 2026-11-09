@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# RDL, routed horizontally, from techlib/gt2_tech.lef: WIDTH and SPACING are all
+# the LEF gives it, the spacing read every way.
+rules:
+  - id: RDL.1.LEF
+    check: min_width
+    layers: [RDL]
+    value: 1.6
+    params:
+      facing: y
+  - id: RDL.3.LEF
+    check: min_space
+    layers: [RDL]
+    value: 1.6
+  - id: RDL.3.LEF
+    check: min_notch
+    layers: [RDL]
+    value: 1.6

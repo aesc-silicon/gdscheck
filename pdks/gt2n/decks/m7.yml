@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M7, routed vertically, from techlib/gt2_tech.lef: the runset has no rules above M6.
+# The rules read as M6's do, with the LEF's values: .1 WIDTH, .2 MINSIZE's length,
+# .3 SPACING, .4 the EOLKEEPOUT's forward extension, .5 CORNERSPACING, .6 RECTONLY.
+rules:
+  - id: M7.1.LEF
+    check: min_width
+    layers: [M7]
+    value: 0.038
+    params:
+      facing: x
+  - id: M7.2.LEF
+    check: min_width
+    layers: [M7]
+    value: 0.057
+    params:
+      facing: y
+  - id: M7.3.LEF
+    check: min_space
+    layers: [M7]
+    value: 0.038
+    params:
+      facing: x
+  - id: M7.3.LEF
+    check: min_notch
+    layers: [M7]
+    value: 0.038
+    params:
+      facing: x
+  - id: M7.4.LEF
+    check: min_space
+    layers: [M7]
+    value: 0.055
+    params:
+      facing: y
+  - id: M7.4.LEF
+    check: min_notch
+    layers: [M7]
+    value: 0.055
+    params:
+      facing: y
+  - id: M7.5.LEF
+    check: min_space
+    layers: [M7]
+    value: 0.045
+    params:
+      facing: none
+  - id: M7.6.LEF
+    check: forbidden
+    layers: [M7Bent]
+    value: 0.0

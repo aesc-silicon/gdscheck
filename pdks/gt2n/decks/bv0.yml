@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# BV0, the backside via from BPR to BM1, from techlib/gt2_tech.lef: the runset
+# connects the backside and checks none of it.  .1 and .2 are the cut of BV0_0
+# and BVia0Array, 40 x 32 nm; .5 the cut layer's SPACING, read every way; .7
+# and .8 the cut inside BPR and BM1, as an ENCLOSURE of 0 holds it; and each
+# metal's enclosure along its length, BVia0Array's.
+# BPR's enclosure is BVia0Array's 10 nm, as OpenROAD draws the PDN's BV0s; the
+# BV0_0 template leaves 1 nm.
+rules:
+  - id: BV0.1.LEF
+    check: min_width
+    layers: [BV0]
+    value: 0.04
+    params:
+      facing: x
+  - id: BV0.2.LEF
+    check: min_width
+    layers: [BV0]
+    value: 0.032
+    params:
+      facing: y
+  - id: BV0.5.LEF
+    check: min_space
+    layers: [BV0]
+    value: 0.032
+  - id: BV0.7.LEF
+    check: forbidden
+    layers: [BV0OutsideBPR]
+    value: 0.0
+  - id: BV0.8.LEF
+    check: forbidden
+    layers: [BV0OutsideBM1]
+    value: 0.0
+  - id: BV0.BPR.EN.LEF
+    check: min_enclosure
+    layers: [BPR, BV0]
+    value: 0.01
+    params:
+      facing: x
+      interacting_only: 1
+  - id: BV0.BM1.EN.LEF
+    check: min_enclosure
+    layers: [BM1, BV0]
+    value: 0.01
+    params:
+      facing: y
+      interacting_only: 1

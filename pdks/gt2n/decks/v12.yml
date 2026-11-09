@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V12, the via from M12 to M13, from techlib/gt2_tech.lef: the runset has no rules
+# above M6.  .1 and .2 are the cut of V12_0 and Via12Array, 360 x 360 nm; .5 the cut
+# layer's SPACING, read every way; .7 and .8 the cut inside each metal, as an
+# ENCLOSURE of 0 holds it; and each metal's enclosure along its length, Via12Array's.
+rules:
+  - id: V12.1.LEF
+    check: min_width
+    layers: [V12]
+    value: 0.36
+    params:
+      facing: x
+  - id: V12.2.LEF
+    check: min_width
+    layers: [V12]
+    value: 0.36
+    params:
+      facing: y
+  - id: V12.5.LEF
+    check: min_space
+    layers: [V12]
+    value: 0.056
+  - id: V12.7.LEF
+    check: forbidden
+    layers: [V12OutsideM12]
+    value: 0.0
+  - id: V12.8.LEF
+    check: forbidden
+    layers: [V12OutsideM13]
+    value: 0.0
+  - id: V12.M12.EN.LEF
+    check: min_enclosure
+    layers: [M12, V12]
+    value: 0.02
+    params:
+      facing: x
+      interacting_only: 1
+  - id: V12.M13.EN.LEF
+    check: min_enclosure
+    layers: [M13, V12]
+    value: 0.02
+    params:
+      facing: y
+      interacting_only: 1

@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V13, the via from M13 to RDL, from techlib/gt2_tech.lef: the runset has no rules
+# above M6.  .1 and .2 are the cut of V13_0 and Via13Array, 360 x 1600 nm; .5 the cut
+# layer's SPACING, read every way; .7 and .8 the cut inside each metal, as an
+# ENCLOSURE of 0 holds it; and each metal's enclosure along its length, Via13Array's.
+rules:
+  - id: V13.1.LEF
+    check: min_width
+    layers: [V13]
+    value: 0.36
+    params:
+      facing: x
+  - id: V13.2.LEF
+    check: min_width
+    layers: [V13]
+    value: 1.6
+    params:
+      facing: y
+  - id: V13.5.LEF
+    check: min_space
+    layers: [V13]
+    value: 0.056
+  - id: V13.7.LEF
+    check: forbidden
+    layers: [V13OutsideM13]
+    value: 0.0
+  - id: V13.8.LEF
+    check: forbidden
+    layers: [V13OutsideRDL]
+    value: 0.0
+  - id: V13.M13.EN.LEF
+    check: min_enclosure
+    layers: [M13, V13]
+    value: 0.04
+    params:
+      facing: y
+      interacting_only: 1
+  - id: V13.RDL.EN.LEF
+    check: min_enclosure
+    layers: [RDL, V13]
+    value: 0.2
+    params:
+      facing: x
+      interacting_only: 1

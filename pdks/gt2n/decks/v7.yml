@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# V7, the via from M7 to M8, from techlib/gt2_tech.lef: the runset has no rules
+# above M6.  .1 and .2 are the cut of V7_0 and Via7Array, 38 x 38 nm; .5 the cut
+# layer's SPACING, read every way; .7 and .8 the cut inside each metal, as an
+# ENCLOSURE of 0 holds it; and each metal's enclosure along its length, Via7Array's.
+rules:
+  - id: V7.1.LEF
+    check: min_width
+    layers: [V7]
+    value: 0.038
+    params:
+      facing: x
+  - id: V7.2.LEF
+    check: min_width
+    layers: [V7]
+    value: 0.038
+    params:
+      facing: y
+  - id: V7.5.LEF
+    check: min_space
+    layers: [V7]
+    value: 0.038
+  - id: V7.7.LEF
+    check: forbidden
+    layers: [V7OutsideM7]
+    value: 0.0
+  - id: V7.8.LEF
+    check: forbidden
+    layers: [V7OutsideM8]
+    value: 0.0
+  - id: V7.M7.EN.LEF
+    check: min_enclosure
+    layers: [M7, V7]
+    value: 0.008
+    params:
+      facing: y
+      interacting_only: 1
+  - id: V7.M8.EN.LEF
+    check: min_enclosure
+    layers: [M8, V7]
+    value: 0.008
+    params:
+      facing: x
+      interacting_only: 1
