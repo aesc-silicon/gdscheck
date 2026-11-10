@@ -29,6 +29,14 @@ rules:
     value: 0.03
     params:
       facing: y
+  # Upstream reads ACT.3 with `extension = RADIAL`: two actives' corners as well as
+  # their walls facing across y.
+  - id: ACT.3
+    check: min_space
+    layers: [ACT]
+    value: 0.03
+    params:
+      facing: none
   # An active ends inside a DUMMY: its vertical edges lie in one, every part of them.
   # Upstream's not_interacting_edge passes an end the DUMMY covers only in part; the
   # rule says the active ends inside it, which such an end does not.

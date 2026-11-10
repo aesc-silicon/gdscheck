@@ -26,7 +26,9 @@ Translation
 -----------
 
 * ICV's ``direction = HORIZONTAL`` reads ``facing: x``, ``VERTICAL`` reads
-  ``facing: y``, and ``external_corner1`` reads ``facing: none``.
+  ``facing: y``, and ``external_corner1`` reads ``facing: none``. A space with
+  ``extension = RADIAL`` also reads corner to corner, as ``facing: none``: ACT.3 is
+  read across y and corner to corner.
 * ``enclose`` is a ``min_enclosure`` read where the two layers interact.
 * An exact width (``internal1 == v``, then the layer ``not`` the result) is an
   ``exact_width`` on that axis.

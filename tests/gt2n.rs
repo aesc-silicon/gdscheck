@@ -401,6 +401,7 @@ fn manufacturing_grid_runs_in_each_suite(#[case] suite: &str, #[case] rules: Vec
 /// under `include_touch = ALL`. A 31 nm-sheet filler between 13 nm-sheet cells stands
 /// proud of them by two pieces one pitch across, two walls each under ACT.2; fillers
 /// matching their neighbours, and a 13 nm filler between 31 nm cells, read clean.
+/// ACT.3 reads two actives corner to corner as it does two facing across y.
 /// ACT.6 reads an end a DBU clear of its DUMMY and one
 /// the DUMMY covers half way, stricter there than upstream. GCUT.7 reads a cut's wall inside a gate, flush with
 /// its wall on either side, but not inside a gate under a DUMMY: three.
@@ -437,6 +438,7 @@ fn manufacturing_grid_runs_in_each_suite(#[case] suite: &str, #[case] rules: Vec
 #[case("act", "ACT.2", "sheets", 4)]
 #[case("act", "ACT.3", "close", 1)]
 #[case("act", "ACT.3", "notch", 1)]
+#[case("act", "ACT.3", "corner", 1)]
 #[case("act", "ACT.6", "end", 2)]
 #[case("act", "ACT.BPR.1", "close", 1)]
 #[case("npsel", "NSEL.1", "narrow", 2)]

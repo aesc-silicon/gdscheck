@@ -11,7 +11,7 @@
 //! A notch needs a shape that bends, which BPR.4, GATE.4 and so on forbid, and the
 //! bend's joint is no exact width; those patterns' tests ignore the other two rules.
 
-use super::{Corpus, DBU, Rows, bx, pg};
+use super::{Corpus, DBU, Rows, bx, corner_rise, pg};
 use gds21::GdsElement;
 
 const OFFSET: f64 = 5000.0;
@@ -578,6 +578,19 @@ fn act(c: &Corpus<'_>) {
         ));
     }
     c.write("act", "ACT.3.notch", true, elems);
+
+    // Two actives corner to corner, `dx` apart across x and `rise` across y, which
+    // ACT.3's radial extension reads as it does the space across y.
+    let dx = (s * 0.6 / DBU).round() * DBU;
+    let dy = corner_rise(s, dx);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for rise in [dy, dy - DBU] {
+        let y = rows.next(2.0 * ah + rise + dh);
+        elems.extend(device(OFFSET, y, along, ah));
+        elems.extend(device(OFFSET + along + dx, y + ah + rise, along, ah));
+    }
+    c.write("act", "ACT.3.corner", true, elems);
 
     // Both ends in a DUMMY; the right end on a DUMMY's left wall, which touches it;
     // the right end a DBU short of one; and the right end half covered, the DUMMY

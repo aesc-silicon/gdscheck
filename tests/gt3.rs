@@ -106,7 +106,8 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 ///
 /// A VBPR, GCUT or DUMMY abutting another shares no area with it, which the runset's
 /// `include_touch = NONE` does not count; a GCUT abutting ACT is counted, under
-/// `include_touch = ALL`. ACT.6 reads an end a DBU clear of its DUMMY and, stricter
+/// `include_touch = ALL`. ACT.3 reads two actives corner to corner as it does two
+/// facing across y. ACT.6 reads an end a DBU clear of its DUMMY and, stricter
 /// than upstream's `not_interacting_edge`, one the DUMMY covers only half way. GCUT.7
 /// reads a cut's wall inside a gate, flush with its wall on either side, but not
 /// inside a gate under a DUMMY: three.
@@ -140,6 +141,7 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 #[case("act", "ACT.2", "narrow", 2)]
 #[case("act", "ACT.3", "close", 1)]
 #[case("act", "ACT.3", "notch", 1)]
+#[case("act", "ACT.3", "corner", 1)]
 #[case("act", "ACT.6", "end", 2)]
 #[case("act", "ACT.BPR.1", "close", 1)]
 #[case("npsel", "NSEL.1", "narrow", 2)]
