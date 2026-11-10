@@ -148,19 +148,17 @@ fn vg(c: &Corpus<'_>) {
     elems.push(bx(m0, OFFSET - en, y + tall / 2.0, w + 2.0 * en, h));
     c.write("vg", "VG.5.outside", true, elems);
 
-    // GT2N's tech LEF spacing: two contacts side by side across x, each on its own gate,
+    // The tech LEF's spacing: two contacts side by side across x, each on its own gate,
     // `gap` apart.
-    if c.process.gt2n {
-        let s = c.src("VG.6.LEF", "min_space", 28.0);
-        let mut rows = Rows::new(OFFSET);
-        let mut elems = vec![];
-        for gap in [s, s - DBU] {
-            let y = rows.next(tall);
-            elems.extend(ok(OFFSET, y));
-            elems.extend(ok(OFFSET + w + gap, y));
-        }
-        c.write("vg", "VG.6.LEF.close", true, elems);
+    let s = c.src("VG.6.LEF", "min_space", c.process.vg_6_lef);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for gap in [s, s - DBU] {
+        let y = rows.next(tall);
+        elems.extend(ok(OFFSET, y));
+        elems.extend(ok(OFFSET + w + gap, y));
     }
+    c.write("vg", "VG.6.LEF.close", true, elems);
 
     // A contact jogged a DBU, in a gate and an M0 wide enough to hold it.
     let mut rows = Rows::new(OFFSET);
@@ -340,19 +338,17 @@ fn vsd(c: &Corpus<'_>) {
     elems.push(bx(m0, OFFSET - en_m0, y + DBU, w + 2.0 * en_m0, h));
     c.write("vsd", "VSD.5.outside", true, elems);
 
-    // GT2N's tech LEF spacing: two vias side by side across x, each in its own SDCON and
+    // The tech LEF's spacing: two vias side by side across x, each in its own SDCON and
     // M0, `gap` apart.
-    if c.process.gt2n {
-        let s = c.src("VSD.6.LEF", "min_space", 29.0);
-        let mut rows = Rows::new(OFFSET);
-        let mut elems = vec![];
-        for gap in [s, s - DBU] {
-            let y = rows.next(tall);
-            elems.extend(ok(OFFSET, y));
-            elems.extend(ok(OFFSET + w + gap, y));
-        }
-        c.write("vsd", "VSD.6.LEF.close", true, elems);
+    let s = c.src("VSD.6.LEF", "min_space", c.process.vsd_6_lef);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for gap in [s, s - DBU] {
+        let y = rows.next(tall);
+        elems.extend(ok(OFFSET, y));
+        elems.extend(ok(OFFSET + w + gap, y));
     }
+    c.write("vsd", "VSD.6.LEF.close", true, elems);
 
     // The SDCON's room to spare, 3 nm on GT2N and 2 on GT3, split evenly; on GT2N, where
     // that is more than VSD.SDCON.1's 1 nm, then 1 nm on the left; then 0.5 nm on the
@@ -570,23 +566,20 @@ fn v0(c: &Corpus<'_>) {
     }
     c.write("v0", "V0.6.corner", true, elems);
 
-    // GT2N's V0.7a: two vias on one M0 track, `gap` apart across x, each in its own M1;
-    // then two on adjacent tracks, one above the other at M0.3's 12 nm, which V0.7a
-    // leaves alone. GT3 does not check the space.
-    if c.process.gt2n {
-        let s = c.src("V0.7a", "min_space", 14.0);
-        let mut rows = Rows::new(OFFSET);
-        let mut elems = vec![];
-        for gap in [s, s - DBU] {
-            let y = rows.next(tall);
-            elems.extend(ok(OFFSET, y));
-            elems.extend(ok(OFFSET + w + gap, y));
-        }
+    // V0.7a: two vias on one M0 track, `gap` apart across x, each in its own M1; then two
+    // on adjacent tracks, one above the other at M0.3's 12 nm, which V0.7a leaves alone.
+    let s = c.src("V0.7a", "min_space", 14.0);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for gap in [s, s - DBU] {
         let y = rows.next(tall);
         elems.extend(ok(OFFSET, y));
-        elems.extend(ok(OFFSET, y + h + 12.0));
-        c.write("v0", "V0.7a.close", true, elems);
+        elems.extend(ok(OFFSET + w + gap, y));
     }
+    let y = rows.next(tall);
+    elems.extend(ok(OFFSET, y));
+    elems.extend(ok(OFFSET, y + h + 12.0));
+    c.write("v0", "V0.7a.close", true, elems);
 
     let mut rows = Rows::new(OFFSET);
     let elems = [(en0, en0), (en0 - DBU, en0), (en0, en0 - DBU)]

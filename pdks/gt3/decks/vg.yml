@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # VG, the gate contact (Include/gt3.vg.drc.rs).  VG.6 and VG.GCUT.1, the spacings, and
-# VG.M0.3 have no check upstream.
+# VG.M0.3 have no check upstream; VG.6.LEF is the tech LEF's cut-layer SPACING, read
+# every way.
 rules:
   - id: VG.1
     check: exact_width
@@ -44,3 +45,7 @@ rules:
     params:
       facing: x
       interacting_only: 1
+  - id: VG.6.LEF
+    check: min_space
+    layers: [VG]
+    value: 0.012

@@ -2,7 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# VSD, the via from SDCON to M0 (Include/gt3.vsd.drc.rs).
+# VSD, the via from SDCON to M0 (Include/gt3.vsd.drc.rs).  The runset has no spacing;
+# VSD.6.LEF is the tech LEF's cut-layer SPACING, read every way.
 rules:
   - id: VSD.1
     check: exact_width
@@ -42,3 +43,7 @@ rules:
     params:
       facing: x
       interacting_only: 1
+  - id: VSD.6.LEF
+    check: min_space
+    layers: [VSD]
+    value: 0.012

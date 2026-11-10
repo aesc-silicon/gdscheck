@@ -5,8 +5,12 @@
 # GT3, the 3 nm GAAFET PDK from the Georgia Institute of Technology (initial release).
 # The decks translate its IC Validator runset, icv_runset/gt3_main.drc.rs and the files
 # it includes, rule for rule: one deck per included file, the ids as the runset's rule
-# descriptions give them.  The runset checks the front end and M0-M6; it has no rules
-# for V6 and above, and neither has this PDK.
+# descriptions give them.  The runset checks the front end and M0-M6.
+#
+# V6 to RDL are checked from the technology LEF (techlef/gt3_tech.lef) instead, their
+# ids marked `.LEF`: M6's rules on each layer, with the LEF's values.  The LEF also
+# gives the cut spacings the runset names but does not check, as `.LEF` rules in the
+# decks below V6, and the 0.5 nm manufacturing grid (`offgrid`).
 #
 # Layouts are drawn at the real 3 nm scale on a 0.5 nm grid.  ICV's `direction =
 # HORIZONTAL` reads `facing: x`, `VERTICAL` `facing: y`; `external_corner1` is
@@ -27,6 +31,9 @@ suites:
     description: Routing stack, M1 to M6
 
 decks:
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Manufacturing grid, 0.5 nm (tech LEF)
   - name: bpr
     path: decks/bpr.yml
     description: Buried power rail
@@ -96,10 +103,63 @@ decks:
   - name: m6
     path: decks/m6.yml
     description: Metal 6
+  - name: v6
+    path: decks/v6.yml
+    description: Via 6 (tech LEF)
+  - name: m7
+    path: decks/m7.yml
+    description: Metal 7 (tech LEF)
+  - name: v7
+    path: decks/v7.yml
+    description: Via 7 (tech LEF)
+  - name: m8
+    path: decks/m8.yml
+    description: Metal 8 (tech LEF)
+  - name: v8
+    path: decks/v8.yml
+    description: Via 8 (tech LEF)
+  - name: m9
+    path: decks/m9.yml
+    description: Metal 9 (tech LEF)
+  - name: v9
+    path: decks/v9.yml
+    description: Via 9 (tech LEF)
+  - name: m10
+    path: decks/m10.yml
+    description: Metal 10 (tech LEF)
+  - name: v10
+    path: decks/v10.yml
+    description: Via 10 (tech LEF)
+  - name: m11
+    path: decks/m11.yml
+    description: Metal 11 (tech LEF)
+  - name: v11
+    path: decks/v11.yml
+    description: Via 11 (tech LEF)
+  - name: m12
+    path: decks/m12.yml
+    description: Metal 12 (tech LEF)
+  - name: v12
+    path: decks/v12.yml
+    description: Via 12 (tech LEF)
+  - name: m13
+    path: decks/m13.yml
+    description: Metal 13 (tech LEF)
+  - name: v13
+    path: decks/v13.yml
+    description: Via 13 (tech LEF)
+  - name: rdl
+    path: decks/rdl.yml
+    description: Redistribution layer (tech LEF)
 
 # The runset's connect database, for SDCON.2's different-net spacing: the buried
 # rail through VBPR to SDCON, SDCON through VSD to M0, the uncut gate through VG to M0,
-# and the via stack.
+# and the via stack.  Two of the runset's steps are left out: `{gPOLY, aACT}`, which
+# joins every uncut gate to the active it crosses, and so the gates sharing an active
+# to each other, and `{aGATE, aVG}`, which joins a VG to the whole gate, through any
+# GCUT.  A gate is insulated from its channel and a GCUT cuts it, so neither joins
+# conductors.  Without them SDCON.2 is stricter than the runset: two contacts reached
+# through M0 and VG from gates sharing an active are one net upstream, two here.
 connectivity:
   - connector: VBPR
     layers: [BPR]
@@ -171,6 +231,13 @@ connectivity:
     layers: [RDL]
 
 virtual_layers:
+  # GATE.2: a gate missing from a row.  Closing the gates along x fills every space
+  # between two that face each other within 1 µm; less the gates and the 27 nm spaces
+  # either side of each, what is left is a space wider than GATE.2's.  A row's ends and
+  # the space between rows are never filled.
+  GateRun: GATE grow_x 0.5 shrink_x 0.5
+  GateMissing: GateRun not (GATE grow_x 0.0135)
+
   # The runset's own derived layers: the gate GCUT does not cut, which VG lands on.
   GatePoly: GATE not GCUT
   GateNoDummy: GATE not DUMMY
@@ -273,6 +340,32 @@ virtual_layers:
   V5HEdges: V5.edges with_angle min 0.0 max 0.0
   V5VEdgesOffM5: V5VEdges not M5.edges
   V5HEdgesOffM6: V5HEdges not M6.edges
+
+  # V6 and above, from the tech LEF: a bent metal, and a via not wholly inside a metal
+  # it joins, which an ENCLOSURE of 0 across the metal still forbids.
+  M7Bent: M7 not_rectangle
+  M8Bent: M8 not_rectangle
+  M9Bent: M9 not_rectangle
+  M10Bent: M10 not_rectangle
+  M11Bent: M11 not_rectangle
+  M12Bent: M12 not_rectangle
+  M13Bent: M13 not_rectangle
+  V6OutsideM6: V6 not_inside M6
+  V6OutsideM7: V6 not_inside M7
+  V7OutsideM7: V7 not_inside M7
+  V7OutsideM8: V7 not_inside M8
+  V8OutsideM8: V8 not_inside M8
+  V8OutsideM9: V8 not_inside M9
+  V9OutsideM9: V9 not_inside M9
+  V9OutsideM10: V9 not_inside M10
+  V10OutsideM10: V10 not_inside M10
+  V10OutsideM11: V10 not_inside M11
+  V11OutsideM11: V11 not_inside M11
+  V11OutsideM12: V11 not_inside M12
+  V12OutsideM12: V12 not_inside M12
+  V12OutsideM13: V12 not_inside M13
+  V13OutsideM13: V13 not_inside M13
+  V13OutsideRDL: V13 not_inside RDL
 
 layers:
   - name: NWELL
