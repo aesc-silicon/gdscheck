@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Additional constraints from techlib/gt2_techfile.tf, foundry/spacings, at GT2N
-# revision 699e2c10b2b494a120745515f59df8815f4f0175. Values are in µm or µm².
+# revision 5bc689fd70e4f2d7abf3952e17f308072bc2b0f6. Values are in µm or µm².
 # ICV and LEF take precedence where they already supply the constraint. In
 # particular, do not import the stale GATE dimensions/area or M9's larger area.
 # See docs/source/pdks/gt2n.rst for the reconciliation of the three sources.
