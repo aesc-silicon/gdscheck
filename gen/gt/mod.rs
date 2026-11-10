@@ -7,18 +7,20 @@
 //!
 //! GT2N extends GT3, and its runset is GT3's with seven values changed, so one generator
 //! draws both: each pattern takes those seven from the PDK's [`Process`] and every
-//! other value, the same in both runsets, from where it is drawn. GT2N's decks add to
-//! the runset - GATE.2's pitch, V0.7a, the threshold-voltage layers, the tech LEF's
-//! rules and the technology file's - and only GT2N draws those.
+//! other value, the same in both runsets, from where it is drawn. Both PDKs' decks add
+//! to the runset - GATE.2's pitch, V0.7a, the tech LEF's rules above M6, its cut
+//! spacings below and its manufacturing grid - and the two LEFs differ only in VG's and
+//! VSD's cut spacings, also in [`Process`]. Only GT2N draws the
+//! threshold-voltage layers, the backside and the technology file's rules.
 //!
 //! Each family writes good/bad GDS fixtures under
 //! `tests/data/<process>/generated/<deck>/`. Expectations live in `tests/gt3.rs` and
 //! `tests/gt2n.rs`. Limits come from each PDK's IC Validator runset
-//! (`icv_runset/Include/gt3.*.drc.rs`, `gt2.*.drc.rs`), and for GT2N above M6, where
-//! the runset stops, from its technology LEF (`techlib/gt2_tech.lef`), with additional
-//! well and area limits from `techlib/gt2_techfile.tf`; the generator checks the decks
-//! against these sources, so a value changed in a deck - either PDK's own, or one
-//! GT2N shares with GT3 - stops it.
+//! (`icv_runset/Include/gt3.*.drc.rs`, `gt2.*.drc.rs`), and above M6, where the runset
+//! stops, from its technology LEF (`techlef/gt3_tech.lef`, `techlib/gt2_tech.lef`), with
+//! GT2N's additional well and area limits from `techlib/gt2_techfile.tf`; the generator
+//! checks the decks against these sources, so a value changed in a deck - either PDK's
+//! own, or one GT2N shares with GT3 - stops it.
 
 mod beol;
 mod feol;
@@ -32,15 +34,14 @@ use gdscheck::pdk::{PdkConfig, RuleDefinition};
 
 const DBU: f64 = 0.5;
 
-/// One of the two PDKs: its name, whether it is GT2N, and the seven values in which
-/// GT2N's runset differs from GT3's, each as its own runset states it.
+/// One of the two PDKs: its name, whether it is GT2N, the seven values in which GT2N's
+/// runset differs from GT3's, each as its own runset states it, and the two cut
+/// spacings in which the two tech LEFs differ.
 pub struct Process {
     /// The process, as `pdks/<name>` and `tests/data/<name>` spell it.
     name: &'static str,
-    /// GT2N's decks add to its runset: GATE.2's 42 nm pitch and a missing gate, V0.7a,
-    /// the threshold-voltage layers, the tech LEF's rules - the cut spacings below V6,
-    /// the stack above M6, the backside, the manufacturing grid - and the technology
-    /// file's.
+    /// GT2N has what GT3 has not: the threshold-voltage layers, two active sheets, the
+    /// backside stack and the technology file's rules.
     gt2n: bool,
     /// ACT.1, an active's least height.
     act_1: f64,
@@ -56,9 +57,14 @@ pub struct Process {
     vbpr_2: f64,
     /// VG.1, a gate contact's exact width.
     vg_1: f64,
+    /// VG.6.LEF, the LEF's VG cut spacing.
+    vg_6_lef: f64,
+    /// VSD.6.LEF, the LEF's VSD cut spacing.
+    vsd_6_lef: f64,
 }
 
-/// GT3, from `icv_runset/Include/gt3.*.drc.rs` at azadnaeemi/GT3 fff4a84.
+/// GT3, from `icv_runset/Include/gt3.*.drc.rs` and `techlef/gt3_tech.lef` at
+/// azadnaeemi/GT3 fff4a84.
 pub const GT3: Process = Process {
     name: "gt3",
     gt2n: false,
@@ -69,9 +75,12 @@ pub const GT3: Process = Process {
     sdcon_1: 15.0,
     vbpr_2: 15.0,
     vg_1: 15.0,
+    vg_6_lef: 12.0,
+    vsd_6_lef: 12.0,
 };
 
-/// GT2N, from `icv_runset/Include/gt2.*.drc.rs`.
+/// GT2N, from `icv_runset/Include/gt2.*.drc.rs` and `techlib/gt2_tech.lef` at
+/// azadnaeemi/GT2N 5bc689f.
 pub const GT2N: Process = Process {
     name: "gt2n",
     gt2n: true,
@@ -82,6 +91,8 @@ pub const GT2N: Process = Process {
     sdcon_1: 16.0,
     vbpr_2: 16.0,
     vg_1: 14.0,
+    vg_6_lef: 28.0,
+    vsd_6_lef: 29.0,
 };
 
 /// `v` nm in the units of the shared helpers, which draw in µm on a 1 nm DBU. GT3 and
@@ -266,8 +277,8 @@ pub fn generate(pdk: &PdkConfig, process: &Process) {
     };
     if process.gt2n {
         techfile::generate(&c);
-        offgrid::generate(&c);
     }
+    offgrid::generate(&c);
     feol::generate(&c);
     mol::generate(&c);
     beol::generate(&c);

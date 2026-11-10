@@ -230,33 +230,28 @@ fn gate(c: &Corpus<'_>) {
     let (w, pitch) = c.gate();
     let s = pitch - w;
     assert_eq!(c.src("GATE.2", "min_notch", c.process.gate_2), s);
-    if c.process.gt2n {
-        assert_eq!(c.src("GATE.2", "offtrack", 42.0), pitch);
-        assert_eq!(
-            c.src_param("GATE.2", "offtrack", "offset", 0.0),
-            0.0,
-            "the gates are drawn in the deck's frame"
-        );
-    }
-    // A gate's left wall, its centre on a multiple of the pitch. GT3 does not read the
-    // pitch, but its library's 42 nm site puts every gate on it all the same.
+    assert_eq!(c.src("GATE.2", "offtrack", 42.0), pitch);
+    assert_eq!(
+        c.src_param("GATE.2", "offtrack", "offset", 0.0),
+        0.0,
+        "the gates are drawn in the deck's frame"
+    );
+    // A gate's left wall, its centre on a multiple of the pitch.
     let x = (OFFSET / pitch).round() * pitch - w / 2.0;
     let tall = 100.0;
 
-    // On GT2N a gate a DBU narrow or wide has its centre a quarter nm off the pitch,
-    // which GATE.2 reads; the test ignores it.
+    // A gate a DBU narrow or wide has its centre a quarter nm off the pitch, which
+    // GATE.2 reads; the test ignores it.
     let mut rows = Rows::new(OFFSET);
     let elems = [w, w - DBU, w + DBU]
         .map(|gw| bx(gate, x, rows.next(tall), gw, tall))
         .to_vec();
     c.write("gate", "GATE.1.narrow", true, elems);
 
-    if c.process.gt2n {
-        gate_pitch(c, x);
-    }
+    gate_pitch(c, x);
 
-    // A pair GATE.2's space apart, then a DBU nearer: on GT2N the second gate is then
-    // off the pitch too.
+    // A pair GATE.2's space apart, then a DBU nearer: the second gate is then off the
+    // pitch too.
     let mut rows = Rows::new(OFFSET);
     let mut elems = vec![];
     for gap in [s, s - DBU] {
@@ -274,8 +269,8 @@ fn gate(c: &Corpus<'_>) {
         .to_vec();
     c.write("gate", "GATE.2.notch", true, elems);
 
-    // A jogged gate's extent is a DBU wider, on GT2N its centre off the pitch: the test
-    // ignores GATE.2.
+    // A jogged gate's extent is a DBU wider, its centre off the pitch: the test ignores
+    // GATE.2.
     let mut rows = Rows::new(OFFSET);
     let elems = vec![
         bx(gate, x, rows.next(tall), w, tall),
@@ -284,8 +279,8 @@ fn gate(c: &Corpus<'_>) {
     c.write("gate", "GATE.4.bent", true, elems);
 }
 
-/// GT2N's GATE.2 reads the pitch, and a gate missing from a row, as well as the space:
-/// gates drawn from `x`, the left wall of one centred on the pitch.
+/// GATE.2 reads the pitch, and a gate missing from a row, as well as the space: gates
+/// drawn from `x`, the left wall of one centred on the pitch.
 fn gate_pitch(c: &Corpus<'_>, x: f64) {
     let gate = c.layer("GATE");
     let (w, pitch) = c.gate();
@@ -301,8 +296,8 @@ fn gate_pitch(c: &Corpus<'_>, x: f64) {
     c.write("gate", "GATE.2.pitch", true, elems);
 
     // A gate missing from a row: three gates on the pitch; two with one missing between
-    // them, and with three; two 24 pitches apart, 994 nm facing, within the 1 µm the
-    // deck closes the gates over; two 25 pitches apart, beyond it, which read as two
+    // them, and with three; two 24 pitches apart, 993 nm (GT3) or 994 nm (GT2N) facing,
+    // within the 1 µm the deck closes the gates over; two 25 pitches apart, beyond it, which read as two
     // blocks; and two a pitch apart across x but in different rows, facing nowhere.
     let reach = 2.0 * c.radius("GateRun#1");
     assert_eq!(reach, 1000.0);

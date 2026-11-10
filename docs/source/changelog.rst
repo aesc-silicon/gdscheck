@@ -16,10 +16,11 @@ PDKs
 ~~~~
 
 * New: GT3 (``gt3``), Georgia Tech's 3 nm GAAFET PDK, translated from its IC Validator
-  runset. Suites ``main``, ``feol`` and ``beol``.
+  runset. Where the runset stops, from V6 up, the decks read the tech LEF, as they do
+  its cut spacings and 0.5 nm grid. Suites ``main``, ``feol`` and ``beol``.
 * New: GT2N (``gt2n``), Georgia Tech's 2 nm nanosheet PDK with backside power delivery,
-  as GT3 with its own values. Where the runset stops, from V6 up and on the backside, the
-  decks read the tech LEF; a ``backside`` suite checks BV0 to BRDL.
+  as GT3 with its own values. Its tech LEF also covers the backside, which a
+  ``backside`` suite checks from BV0 to BRDL.
 
 v0.2.1 (2026-11-09)
 -------------------

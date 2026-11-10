@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# techlef/gt3_tech.lef: MANUFACTURINGGRID 0.0005 (0.5 nm).
+# Check both coordinates on every drawing layer, including NWELL.
+# Pin annotations are not manufacturing geometry. The two groups keep the feol and
+# beol suites disjoint; main and --deck offgrid check both.
+rules:
+  - id: FEOL.offgrid.LEF
+    check: offgrid
+    value: 0.0005
+    layers: [NWELL, ACT, GATE, DUMMY, GCUT, NSEL, PSEL, BPR, VBPR, SDCON, VSD, VG, M0, V0]
+  - id: BEOL.offgrid.LEF
+    check: offgrid
+    value: 0.0005
+    layers: [M1, V1, M2, V2, M3, V3, M4, V4, M5, V5, M6, V6, M7, V7, M8, V8,
+             M9, V9, M10, V10, M11, V11, M12, V12, M13, V13, RDL]

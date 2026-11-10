@@ -9,15 +9,15 @@
 //! their tips, `.5` the space corner to corner, `.6` a bend. So one builder draws every
 //! metal, along `u` and across `v`, and turns the result onto the metal's axes.
 //!
-//! M1-M6 and V1-V5 are the runset's, the same in GT3's and GT2N's. Above them GT2N's
-//! rules are the tech LEF's, their ids marked `.LEF`: M10-M13 have no `.2`, RDL only
+//! M1-M6 and V1-V5 are the runset's, the same in GT3's and GT2N's. Above them the
+//! rules are the tech LEF's, the same in both, their ids marked `.LEF`: M10-M13 have no `.2`, RDL only
 //! `.1` and `.3`, and a via has no rules on its walls lying on its metals' outlines,
 //! only on its lying inside them, and its `.5` space, read every way, in place of the
-//! runset's `.6` corner. The backside reads as the LEF's frontside does, BPR being the
-//! runset's: BM1-BM4 have no `.2`, BRDL only `.1` and `.3`.
+//! runset's `.6` corner. GT2N's backside reads as the LEF's frontside does, BPR being
+//! the runset's: BM1-BM4 have no `.2`, BRDL only `.1` and `.3`.
 //!
-//! On GT2N, V1-V5 also take the LEF's cut-layer SPACING, which the runset numbers `.5`
-//! and leaves unchecked, as `.5.LEF`, drawn as the LEF's vias' `.5` is.
+//! V1-V5 also take the LEF's cut-layer SPACING, which the runset numbers `.5` and leaves
+//! unchecked, as `.5.LEF`, drawn as the LEF's vias' `.5` is.
 //!
 //! A via is flush with the metal running along y across x, and with the one running
 //! along x across y, as V*.3 and V*.4 ask; each metal runs past it along its length,
@@ -41,7 +41,7 @@ pub(super) fn generate(c: &Corpus<'_>) {
         metal(c, &Metal::front(n, w, Some(len), s, Some((t, k))));
     }
     // The runset: the cut's least width and height, the enclosures of the metal along y
-    // and the one along x, and the corner space; and gt2_tech.lef's cut-layer SPACING.
+    // and the one along x, and the corner space; and the tech LEF's cut-layer SPACING.
     for v in [
         Via::front(1, (14.0, 12.0), (4.0, 4.0), 18.0).lef_space(12.0),
         Via::front(2, (14.0, 12.0), (4.0, 4.0), 18.0).lef_space(12.0),
@@ -51,14 +51,15 @@ pub(super) fn generate(c: &Corpus<'_>) {
     ] {
         via(c, &v);
     }
+    lef(c);
     if c.process.gt2n {
-        lef(c);
+        backside(c);
     }
 }
 
-/// GT2N's routing stack above M6, and its backside, from the tech LEF.
+/// The routing stack above M6, from the tech LEF: GT3's and GT2N's state the same rules.
 fn lef(c: &Corpus<'_>) {
-    // gt2_tech.lef: WIDTH, MINSIZE's length, SPACING, the EOLKEEPOUT's forward
+    // The tech LEF: WIDTH, MINSIZE's length, SPACING, the EOLKEEPOUT's forward
     // extension and CORNERSPACING.
     for (n, w, len, s, t, k) in [
         (7, 38.0, Some(57.0), 38.0, 55.0, 45.0),
@@ -72,7 +73,25 @@ fn lef(c: &Corpus<'_>) {
         metal(c, &Metal::front(n, w, len, s, Some((t, k))));
     }
     metal(c, &Metal::front(14, 1600.0, None, 1600.0, None));
-    // The backside, the same way: BM1 along y, as M1.
+    for v in [
+        // The cut of each `V<n>_0` and `Via<n>Array`, the enclosures of the metal along y
+        // and the one along x, and the cut layer's SPACING.
+        Via::front(6, (38.0, 38.0), (8.0, 8.0), 38.0),
+        Via::front(7, (38.0, 38.0), (8.0, 8.0), 38.0),
+        Via::front(8, (38.0, 38.0), (8.0, 8.0), 38.0),
+        Via::front(9, (38.0, 56.0), (10.0, 10.0), 38.0),
+        Via::front(10, (56.0, 56.0), (12.0, 12.0), 56.0),
+        Via::front(11, (56.0, 360.0), (12.0, 12.0), 56.0),
+        Via::front(12, (360.0, 360.0), (20.0, 20.0), 56.0),
+        Via::front(13, (360.0, 1600.0), (40.0, 200.0), 56.0),
+    ] {
+        via(c, &v);
+    }
+}
+
+/// GT2N's backside, from its tech LEF.
+fn backside(c: &Corpus<'_>) {
+    // The same way as the frontside above M6: BM1 along y, as M1.
     for (n, w, s, t, k) in [
         (1, 56.0, 56.0, 80.0, 66.0),
         (2, 56.0, 56.0, 80.0, 66.0),
@@ -85,20 +104,6 @@ fn lef(c: &Corpus<'_>) {
         );
     }
     metal(c, &Metal::back("BRDL", true, 1600.0, 1600.0, None));
-    for v in [
-        // gt2_tech.lef: the cut of each `V<n>_0` and `Via<n>Array`, the enclosures of
-        // the metal along y and the one along x, and the cut layer's SPACING.
-        Via::front(6, (38.0, 38.0), (8.0, 8.0), 38.0),
-        Via::front(7, (38.0, 38.0), (8.0, 8.0), 38.0),
-        Via::front(8, (38.0, 38.0), (8.0, 8.0), 38.0),
-        Via::front(9, (38.0, 56.0), (10.0, 10.0), 38.0),
-        Via::front(10, (56.0, 56.0), (12.0, 12.0), 56.0),
-        Via::front(11, (56.0, 360.0), (12.0, 12.0), 56.0),
-        Via::front(12, (360.0, 360.0), (20.0, 20.0), 56.0),
-        Via::front(13, (360.0, 1600.0), (40.0, 200.0), 56.0),
-    ] {
-        via(c, &v);
-    }
     // The cut of each `BV<n>_0` and `BVia<n>Array`, the enclosures - `BVia<n>Array`'s -
     // of the metal along y and the one along x, and the cut layer's SPACING.
     for v in [
@@ -391,7 +396,7 @@ impl Via {
         }
     }
 
-    /// GT2N's LEF's cut-layer SPACING, on top of the runset's rules.
+    /// The LEF's cut-layer SPACING, on top of the runset's rules.
     fn lef_space(self, s: f64) -> Self {
         Via {
             lef_space: Some(s),
@@ -414,12 +419,11 @@ fn via(c: &Corpus<'_>, v: &Via) {
     let en_x = c.src(&v.id(&format!("{nx}.EN")), "min_enclosure", v.en.1);
     let space_rule = if v.lef { "5" } else { "6" };
     let k = c.src(&v.id(space_rule), "min_space", v.space);
-    // The `.5` space read every way: the LEF's own, or on GT2N its SPACING on a runset
-    // via.
+    // The `.5` space read every way: the LEF's own, or its SPACING on a runset via.
     let close = if v.lef {
         Some((v.id("5"), k))
     } else {
-        v.lef_space.filter(|_| c.process.gt2n).map(|s| {
+        v.lef_space.map(|s| {
             let id = format!("{}.5.LEF", v.cut);
             let k = c.src(&id, "min_space", s);
             (id, k)

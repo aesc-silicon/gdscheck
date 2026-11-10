@@ -23,7 +23,7 @@ The runset stops at M6 and checks none of the backside; ``main`` and ``beol`` go
 RDL, and a fourth suite, ``backside``, checks BV0 to BRDL, both from the technology LEF.
 The technology file supplies additional well and minimum-area constraints.
 
-Two of GT2N's own rules are read more closely than the runset does:
+Two rules are read more closely than the runset does, as :doc:`gt3` reads them:
 
 * GATE.2, an exact 28 nm gate space, is read as the 42 nm gate pitch it makes with
   GATE.1's 14 nm gate: every gate is centred on a multiple of 42 nm, as in all ten
@@ -136,92 +136,12 @@ are covered by generated fixtures.
 Above M6: the tech LEF
 ----------------------
 
-The runset checks nothing from V6 up. The decks ``v6`` to ``v13``, ``m7`` to ``m13`` and
-``rdl`` take their rules from the technology LEF (``techlib/gt2_tech.lef``, at the
-revision below) instead, and every id is marked ``.LEF``, so a marker says which
-source it answers to.
-
-Each metal reads as the runset reads M6, because M6's LEF block states the same rules
-as the runset does, with one exception: ``.1`` is the ``WIDTH``, ``.2`` the length from
-``MINSIZE``, ``.3`` the ``SPACING`` across the wires, ``.4`` the tip-to-tip space, the
-``LEF58_EOLKEEPOUT``'s forward extension, ``.5`` the ``LEF58_CORNERSPACING``, and
-``.6`` no bend, the ``LEF58_RECTONLY``. The exception is M6's length, 55 nm in the
-runset (M6.2) and 57 nm in the LEF's ``MINSIZE`` and ``AREA``; M6 keeps the runset's.
-Values in nm:
-
-.. list-table::
-   :header-rows: 1
-
-   * - Layer
-     - Direction
-     - ``.1`` width
-     - ``.2`` length
-     - ``.3`` space
-     - ``.4`` tip
-     - ``.5`` corner
-   * - M7, M9
-     - vertical
-     - 38
-     - 57
-     - 38
-     - 55
-     - 45
-   * - M8
-     - horizontal
-     - 38
-     - 57
-     - 38
-     - 55
-     - 45
-   * - M10, M11
-     - horizontal, vertical
-     - 56
-     - none
-     - 56
-     - 80
-     - 66
-   * - M12, M13
-     - horizontal, vertical
-     - 360
-     - none
-     - 360
-     - 450
-     - 450
-   * - RDL
-     - horizontal
-     - 1600
-     - none
-     - 1600
-     - none
-     - none
-
-M10 to M13 have no LEF ``MINSIZE`` or ``AREA``, so no ``.2``; their areas are checked
-by ``techfile`` above. RDL has only a LEF ``WIDTH`` and
-a ``SPACING``: its ``.3`` is read every way, and it has no ``.4``, ``.5`` or ``.6``.
-``.4`` reads every tip, as M6.4 does; the LEF's keep-out reads only a line end
-narrower than its ``EOLKEEPOUT`` width (39, 57 and 361 nm), which every
-minimum-width wire is.
-
-A via's size is the cut its ``V<n>_0`` template and ``Via<n>Array`` rule draw, not
-the cut layer's ``WIDTH``, as V5.1 and V5.2 hold V5 to its 21 × 38 nm template and
-not its 21 nm ``WIDTH``. The two disagree from V9 up: V9's cut is 38 × 56 nm, V11's
-56 × 360, V12's 360 × 360 and V13's 360 × 1600, where each ``WIDTH`` is 38 or 56 nm.
-Each via has:
-
-* ``.1`` and ``.2``, its width across x and y: the template's cut.
-* ``.5``, the cut layer's ``SPACING``, read every way: 38 nm for V6 to V9, 56 nm for
-  V10 to V13. The runset's via space (V1-V5's ``.6``) has no LEF value, and
-  ``Via<n>Array``'s ``SPACING`` is a cut pitch equal to the cut, so it says nothing.
-* ``.7`` and ``.8``, the cut inside its lower and its upper metal. The LEF's
-  ``ENCLOSURE`` of 0 across a metal requires the cut inside it, which is stricter than
-  the runset's V5.7 and V5.8, where the cut only has to touch. The LEF does not require
-  a cut's walls on its metals' outlines, so the runset's ``.3`` and ``.4`` have no
-  counterpart.
-* ``V<n>.M<k>.EN.LEF``, each metal's enclosure along its length, from
-  ``Via<n>Array``: 8 nm for V6 to V8, 10 for V9, 12 for V10 and V11, 20 for V12, and
-  for V13, 40 by M13 and 200 by RDL.
-
-The LEF's routing ``PITCH`` is not a check here, as M1 to M6 have none.
+The runset checks nothing from V6 up. GT2N's technology LEF (``techlib/gt2_tech.lef``,
+at the revision below) states the same rules from V6 to RDL as GT3's, so ``v6`` to
+``v13``, ``m7`` to ``m13`` and ``rdl`` are :doc:`gt3`'s decks, read as its *Above M6*
+section describes, with every id marked ``.LEF``. The two LEFs differ there only in
+what is not a check: GT2N's via templates draw some of their metals larger, and its
+``Via<n>Array`` ``SPACING`` equals the cut where GT3's is the cut pitch.
 
 Run over OpenROAD-flow-scripts' routed ``gt2n/aes``, which routes up to M9, these
 decks report nothing.
@@ -233,8 +153,8 @@ Below V6: the LEF's cut spacing
 The runset names a spacing for V1 to V5 (``V<n>.5``) and for VG (``VG.6``) but checks
 neither, and it has no spacing for VSD. The tech LEF gives each of these cut layers a
 ``SPACING``, which ``V<n>.5.LEF``, ``VG.6.LEF`` and ``VSD.6.LEF`` read every way, as
-``.5`` does above M6. For this, ``v1`` to ``v5`` and ``vsd`` are GT2N's own copies of
-GT3's decks, with the one rule added. Values in nm:
+:doc:`gt3` does. V1 to V5's are GT3's, so ``v0`` to ``v5`` are GT3's decks; VG's and
+VSD's are GT2N's own, in its ``vg`` and ``vsd``. Values in nm:
 
 .. list-table::
    :header-rows: 1
@@ -256,14 +176,9 @@ GT3's decks, with the one rule added. Values in nm:
      - 28
      - 29
 
-Everything else the LEF states for M0 to M6 and V0 to V5, the runset already checks at
-the same values: each metal's width, length (``MINSIZE`` and ``AREA``), spacing,
-tip-to-tip space (``LEF58_EOLKEEPOUT``), corner spacing and no bend, and each via's
-``ENCLOSURE`` along its metals (``V<n>.M<k>.EN``). M6's length is the one difference,
-covered above. For V0 the runset gives two V0s on one M0 track 14 nm, under a second
-``V0.7`` that it never checks. ``V0.7a`` checks it, in GT2N's own copy of ``v0``,
-across x only: M0 is one V0 tall, so V0s on adjacent tracks never share a y. The LEF's
-12 nm adds nothing to that.
+GT2N's LEF has no VBPR cut layer, so there is no VBPR spacing. ``V0.7a``, two V0s on
+one M0 track 14 nm apart, is GT3's. Everything else the LEF states for M0 to M6 and V0
+to V5, the runset already checks at the same values, as in GT3.
 
 The ten standard-cell libraries and the routed ``gt2n/aes`` read clean under these
 rules.

@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# V1, the via from M1 to M2 (Include/gt3.v1.drc.rs).  V1.5, the spacing,
-# has no check upstream.
+# V1, the via from M1 to M2 (Include/gt3.v1.drc.rs).  V1.5, the spacing, has
+# no check upstream; V1.5.LEF is the tech LEF's cut-layer SPACING, read every way.
 rules:
   - id: V1.1
     check: min_width
@@ -53,3 +53,7 @@ rules:
     params:
       facing: x
       interacting_only: 1
+  - id: V1.5.LEF
+    check: min_space
+    layers: [V1]
+    value: 0.012
