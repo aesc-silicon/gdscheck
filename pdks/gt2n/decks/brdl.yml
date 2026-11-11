@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# BRDL, the backside redistribution layer, routed vertically, from
+# techlib/gt2_tech.lef: WIDTH and SPACING are all the LEF gives it, the spacing
+# read every way.
+rules:
+  - id: BRDL.1.LEF
+    check: min_width
+    layers: [BRDL]
+    value: 1.6
+    params:
+      facing: x
+  - id: BRDL.3.LEF
+    check: min_space
+    layers: [BRDL]
+    value: 1.6
+  - id: BRDL.3.LEF
+    check: min_notch
+    layers: [BRDL]
+    value: 1.6

@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Active (Include/gt3.act.drc.rs).  ACT.4, a continuous active, has no check upstream,
+# and ACT.5, an active that does not bend, is commented out there.
+rules:
+  - id: ACT.1
+    check: min_width
+    layers: [ACT]
+    value: 0.01
+    params:
+      facing: y
+  - id: ACT.2
+    check: min_width
+    layers: [ACT]
+    value: 0.084
+    params:
+      facing: x
+  - id: ACT.3
+    check: min_space
+    layers: [ACT]
+    value: 0.03
+    params:
+      facing: y
+  - id: ACT.3
+    check: min_notch
+    layers: [ACT]
+    value: 0.03
+    params:
+      facing: y
+  # Upstream reads ACT.3 with `extension = RADIAL`: two actives' corners as well as
+  # their walls facing across y.
+  - id: ACT.3
+    check: min_space
+    layers: [ACT]
+    value: 0.03
+    params:
+      facing: none
+  # An active ends inside a DUMMY: its vertical edges lie in one, every part of them.
+  # Upstream's not_interacting_edge passes an end the DUMMY covers only in part; the
+  # rule says the active ends inside it, which such an end does not.
+  - id: ACT.6
+    check: forbidden
+    layers: [ActVEdgesOffDummy]
+    value: 0.0
+  - id: ACT.BPR.1
+    check: min_space
+    layers: [ACT, BPR]
+    value: 0.01
+    params:
+      facing: y

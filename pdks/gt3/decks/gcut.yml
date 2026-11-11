@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GCUT (Include/gt3.gcut.drc.rs).  GCUT.3 and GCUT.4, the spacings, have no check
+# upstream.
+rules:
+  - id: GCUT.1
+    check: min_width
+    layers: [GCUT]
+    value: 0.01
+    params:
+      facing: y
+  - id: GCUT.2
+    check: min_width
+    layers: [GCUT]
+    value: 0.042
+    params:
+      facing: x
+  - id: GCUT.5
+    check: forbidden
+    layers: [GCUTBent]
+    value: 0.0
+  - id: GCUT.6
+    check: forbidden
+    layers: [GcutOffGate]
+    value: 0.0
+  - id: GCUT.7
+    check: forbidden
+    layers: [GcutVEdgesInGate]
+    value: 0.0
+  - id: GCUT.8
+    check: forbidden
+    layers: [GcutOnAct]
+    value: 0.0
+  - id: GCUT.ACT.1
+    check: min_space
+    layers: [GCUT, ACT]
+    value: 0.01
+    params:
+      facing: y

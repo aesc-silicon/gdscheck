@@ -1,0 +1,162 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The threshold-voltage layers (Include/gt2.vt.drc.rs).  LVT is the default and has no
+# layer.  VT_OVERLAP.1 is one overlap rule per pair of the five layers.
+rules:
+  - id: ELVT.1
+    check: min_width
+    layers: [ELVT]
+    value: 0.072
+    params:
+      facing: y
+  - id: ELVT.2
+    check: min_width
+    layers: [ELVT]
+    value: 0.014
+    params:
+      facing: x
+  - id: ELVT.3
+    check: min_enclosure
+    layers: [ELVT, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: ULVT.1
+    check: min_width
+    layers: [ULVT]
+    value: 0.072
+    params:
+      facing: y
+  - id: ULVT.2
+    check: min_width
+    layers: [ULVT]
+    value: 0.014
+    params:
+      facing: x
+  - id: ULVT.3
+    check: min_enclosure
+    layers: [ULVT, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: SVT.1
+    check: min_width
+    layers: [SVT]
+    value: 0.072
+    params:
+      facing: y
+  - id: SVT.2
+    check: min_width
+    layers: [SVT]
+    value: 0.014
+    params:
+      facing: x
+  - id: SVT.3
+    check: min_enclosure
+    layers: [SVT, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: HVT.1
+    check: min_width
+    layers: [HVT]
+    value: 0.072
+    params:
+      facing: y
+  - id: HVT.2
+    check: min_width
+    layers: [HVT]
+    value: 0.014
+    params:
+      facing: x
+  - id: HVT.3
+    check: min_enclosure
+    layers: [HVT, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: SRAMVT.1
+    check: min_width
+    layers: [SRAMVT]
+    value: 0.072
+    params:
+      facing: y
+  - id: SRAMVT.2
+    check: min_width
+    layers: [SRAMVT]
+    value: 0.014
+    params:
+      facing: x
+  - id: SRAMVT.3
+    check: min_enclosure
+    layers: [SRAMVT, ACT]
+    value: 0.015
+    params:
+      facing: y
+      interacting_only: 1
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ELVT, ULVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ELVT, SVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ELVT, HVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ELVT, SRAMVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ULVT, SVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ULVT, HVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [ULVT, SRAMVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [SVT, HVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [SVT, SRAMVT]
+    value: 0.0
+    params:
+      op: overlap
+  - id: VT_OVERLAP.1
+    check: forbidden
+    layers: [HVT, SRAMVT]
+    value: 0.0
+    params:
+      op: overlap

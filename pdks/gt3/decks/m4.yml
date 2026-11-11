@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M4 (Include/gt3.m4.drc.rs), routed horizontally.
+rules:
+  - id: M4.1
+    check: min_width
+    layers: [M4]
+    value: 0.021
+    params:
+      facing: y
+  - id: M4.2
+    check: min_width
+    layers: [M4]
+    value: 0.042
+    params:
+      facing: x
+  - id: M4.3
+    check: min_space
+    layers: [M4]
+    value: 0.021
+    params:
+      facing: y
+  - id: M4.3
+    check: min_notch
+    layers: [M4]
+    value: 0.021
+    params:
+      facing: y
+  - id: M4.4
+    check: min_space
+    layers: [M4]
+    value: 0.03
+    params:
+      facing: x
+  - id: M4.4
+    check: min_notch
+    layers: [M4]
+    value: 0.03
+    params:
+      facing: x
+  - id: M4.5
+    check: min_space
+    layers: [M4]
+    value: 0.024
+    params:
+      facing: none
+  - id: M4.6
+    check: forbidden
+    layers: [M4Bent]
+    value: 0.0

@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# DUMMY, the gate marker at a diffusion break (Include/gt3.dummy.drc.rs).
+rules:
+  - id: DUMMY.1
+    check: exact_width
+    layers: [DUMMY]
+    value: 0.015
+    params:
+      facing: x
+  - id: DUMMY.2
+    check: forbidden
+    layers: [DummyOffGate]
+    value: 0.0
+  - id: DUMMY.3
+    check: forbidden
+    layers: [DUMMYBent]
+    value: 0.0
+  - id: DUMMY.4
+    check: forbidden
+    layers: [DummyOutsideGate]
+    value: 0.0

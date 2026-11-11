@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# M0 (Include/gt3.m0.drc.rs), routed horizontally.  M0.7, the track pattern, has no check
+# upstream.
+rules:
+  - id: M0.1
+    check: exact_width
+    layers: [M0]
+    value: 0.012
+    params:
+      facing: y
+  - id: M0.2
+    check: min_width
+    layers: [M0]
+    value: 0.024
+    params:
+      facing: x
+  - id: M0.3
+    check: min_space
+    layers: [M0]
+    value: 0.012
+    params:
+      facing: y
+  - id: M0.3
+    check: min_notch
+    layers: [M0]
+    value: 0.012
+    params:
+      facing: y
+  - id: M0.4
+    check: min_space
+    layers: [M0]
+    value: 0.017
+    params:
+      facing: x
+  - id: M0.4
+    check: min_notch
+    layers: [M0]
+    value: 0.017
+    params:
+      facing: x
+  - id: M0.5
+    check: min_space
+    layers: [M0]
+    value: 0.015
+    params:
+      facing: none
+  - id: M0.6
+    check: forbidden
+    layers: [M0Bent]
+    value: 0.0

@@ -1,0 +1,556 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GT3, the 3 nm GAAFET PDK from the Georgia Institute of Technology (initial release).
+# The decks translate its IC Validator runset, icv_runset/gt3_main.drc.rs and the files
+# it includes, rule for rule: one deck per included file, the ids as the runset's rule
+# descriptions give them.  The runset checks the front end and M0-M6.
+#
+# V6 to RDL are checked from the technology LEF (techlef/gt3_tech.lef) instead, their
+# ids marked `.LEF`: M6's rules on each layer, with the LEF's values.  The LEF also
+# gives the cut spacings the runset names but does not check, as `.LEF` rules in the
+# decks below V6, and the 0.5 nm manufacturing grid (`offgrid`).
+#
+# Layouts are drawn at the real 3 nm scale on a 0.5 nm grid.  ICV's `direction =
+# HORIZONTAL` reads `facing: x`, `VERTICAL` `facing: y`; `external_corner1` is
+# `facing: none`; `enclose` is a `min_enclosure` read where the two interact.  The
+# rules the runset names but does not check are listed in each deck's header.
+name: GT3
+version: "0.1"
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Full DRC - every deck
+  - name: feol
+    path: suites/feol.yml
+    description: Front end and middle of line, through V0 (a standard cell)
+  - name: beol
+    path: suites/beol.yml
+    description: Routing stack, M1 to M6
+
+decks:
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Manufacturing grid, 0.5 nm (tech LEF)
+  - name: bpr
+    path: decks/bpr.yml
+    description: Buried power rail
+  - name: vbpr
+    path: decks/vbpr.yml
+    description: Via BPR to SDCON
+  - name: gate
+    path: decks/gate.yml
+    description: Gate
+  - name: dummy
+    path: decks/dummy.yml
+    description: Diffusion-break gate marker
+  - name: gcut
+    path: decks/gcut.yml
+    description: Gate cut
+  - name: vg
+    path: decks/vg.yml
+    description: Gate contact
+  - name: act
+    path: decks/act.yml
+    description: Active
+  - name: npsel
+    path: decks/npsel.yml
+    description: N/P select
+  - name: sdcon
+    path: decks/sdcon.yml
+    description: Source/drain contact
+  - name: vsd
+    path: decks/vsd.yml
+    description: Via SDCON to M0
+  - name: m0
+    path: decks/m0.yml
+    description: Metal 0
+  - name: v0
+    path: decks/v0.yml
+    description: Via 0
+  - name: m1
+    path: decks/m1.yml
+    description: Metal 1
+  - name: v1
+    path: decks/v1.yml
+    description: Via 1
+  - name: m2
+    path: decks/m2.yml
+    description: Metal 2
+  - name: v2
+    path: decks/v2.yml
+    description: Via 2
+  - name: m3
+    path: decks/m3.yml
+    description: Metal 3
+  - name: v3
+    path: decks/v3.yml
+    description: Via 3
+  - name: m4
+    path: decks/m4.yml
+    description: Metal 4
+  - name: v4
+    path: decks/v4.yml
+    description: Via 4
+  - name: m5
+    path: decks/m5.yml
+    description: Metal 5
+  - name: v5
+    path: decks/v5.yml
+    description: Via 5
+  - name: m6
+    path: decks/m6.yml
+    description: Metal 6
+  - name: v6
+    path: decks/v6.yml
+    description: Via 6 (tech LEF)
+  - name: m7
+    path: decks/m7.yml
+    description: Metal 7 (tech LEF)
+  - name: v7
+    path: decks/v7.yml
+    description: Via 7 (tech LEF)
+  - name: m8
+    path: decks/m8.yml
+    description: Metal 8 (tech LEF)
+  - name: v8
+    path: decks/v8.yml
+    description: Via 8 (tech LEF)
+  - name: m9
+    path: decks/m9.yml
+    description: Metal 9 (tech LEF)
+  - name: v9
+    path: decks/v9.yml
+    description: Via 9 (tech LEF)
+  - name: m10
+    path: decks/m10.yml
+    description: Metal 10 (tech LEF)
+  - name: v10
+    path: decks/v10.yml
+    description: Via 10 (tech LEF)
+  - name: m11
+    path: decks/m11.yml
+    description: Metal 11 (tech LEF)
+  - name: v11
+    path: decks/v11.yml
+    description: Via 11 (tech LEF)
+  - name: m12
+    path: decks/m12.yml
+    description: Metal 12 (tech LEF)
+  - name: v12
+    path: decks/v12.yml
+    description: Via 12 (tech LEF)
+  - name: m13
+    path: decks/m13.yml
+    description: Metal 13 (tech LEF)
+  - name: v13
+    path: decks/v13.yml
+    description: Via 13 (tech LEF)
+  - name: rdl
+    path: decks/rdl.yml
+    description: Redistribution layer (tech LEF)
+
+# The runset's connect database, for SDCON.2's different-net spacing: the buried
+# rail through VBPR to SDCON, SDCON through VSD to M0, the uncut gate through VG to M0,
+# and the via stack.  Two of the runset's steps are left out: `{gPOLY, aACT}`, which
+# joins every uncut gate to the active it crosses, and so the gates sharing an active
+# to each other, and `{aGATE, aVG}`, which joins a VG to the whole gate, through any
+# GCUT.  A gate is insulated from its channel and a GCUT cuts it, so neither joins
+# conductors.  Without them SDCON.2 is stricter than the runset: two contacts reached
+# through M0 and VG from gates sharing an active are one net upstream, two here.
+connectivity:
+  - connector: VBPR
+    layers: [BPR]
+  - connector: VBPR
+    layers: [SDCON]
+  - connector: VSD
+    layers: [SDCON]
+  - connector: VSD
+    layers: [M0]
+  - connector: VG
+    layers: [GatePoly]
+  - connector: VG
+    layers: [M0]
+  - connector: V0
+    layers: [M0]
+  - connector: V0
+    layers: [M1]
+  - connector: V1
+    layers: [M1]
+  - connector: V1
+    layers: [M2]
+  - connector: V2
+    layers: [M2]
+  - connector: V2
+    layers: [M3]
+  - connector: V3
+    layers: [M3]
+  - connector: V3
+    layers: [M4]
+  - connector: V4
+    layers: [M4]
+  - connector: V4
+    layers: [M5]
+  - connector: V5
+    layers: [M5]
+  - connector: V5
+    layers: [M6]
+  - connector: V6
+    layers: [M6]
+  - connector: V6
+    layers: [M7]
+  - connector: V7
+    layers: [M7]
+  - connector: V7
+    layers: [M8]
+  - connector: V8
+    layers: [M8]
+  - connector: V8
+    layers: [M9]
+  - connector: V9
+    layers: [M9]
+  - connector: V9
+    layers: [M10]
+  - connector: V10
+    layers: [M10]
+  - connector: V10
+    layers: [M11]
+  - connector: V11
+    layers: [M11]
+  - connector: V11
+    layers: [M12]
+  - connector: V12
+    layers: [M12]
+  - connector: V12
+    layers: [M13]
+  - connector: V13
+    layers: [M13]
+  - connector: V13
+    layers: [RDL]
+
+virtual_layers:
+  # GATE.2: a gate missing from a row.  Closing the gates along x fills every space
+  # between two that face each other within 1 µm; less the gates and the 27 nm spaces
+  # either side of each, what is left is a space wider than GATE.2's.  A row's ends and
+  # the space between rows are never filled.
+  GateRun: GATE grow_x 0.5 shrink_x 0.5
+  GateMissing: GateRun not (GATE grow_x 0.0135)
+
+  # The runset's own derived layers: the gate GCUT does not cut, which VG lands on.
+  GatePoly: GATE not GCUT
+  GateNoDummy: GATE not DUMMY
+  # "May not bend" and "must be rectangle": `not_rectangles`.
+  BPRBent: BPR not_rectangle
+  GATEBent: GATE not_rectangle
+  DUMMYBent: DUMMY not_rectangle
+  GCUTBent: GCUT not_rectangle
+  VGBent: VG not_rectangle
+  SDCONBent: SDCON not_rectangle
+  VSDBent: VSD not_rectangle
+  M0Bent: M0 not_rectangle
+  V0Bent: V0 not_rectangle
+  M1Bent: M1 not_rectangle
+  M2Bent: M2 not_rectangle
+  M3Bent: M3 not_rectangle
+  M4Bent: M4 not_rectangle
+  M5Bent: M5 not_rectangle
+  M6Bent: M6 not_rectangle
+  # `interacting(a, b, include_touch = NONE)` is `overlapping`, with ALL `interacting`;
+  # `not_interacting(..., NONE)` is `not_overlapping`; `not_inside(..., ALL)` is
+  # `not_inside`.
+  VbprOnGcut: VBPR overlapping GCUT
+  VbprOutsideSdcon: VBPR not_inside SDCON
+  DummyOffGate: DUMMY not_overlapping GATE
+  DummyOutsideGate: DUMMY not_inside GATE
+  GcutOffGate: GCUT not_overlapping GATE
+  GcutOnAct: GCUT interacting ACT
+  GcutOrDummy: GCUT or DUMMY
+  VgOnGcutDummy: VG interacting GcutOrDummy
+  VgOffGate: VG not_overlapping GATE
+  VgOutsideGate: VG not_inside GATE
+  VgOutsideM0: VG not_inside M0
+  VsdOutsideSdcon: VSD not_inside SDCON
+  VsdOutsideM0: VSD not_inside M0
+  V0OutsideM0: V0 not_inside M0
+  V0OutsideM1: V0 not_inside M1
+  V1OffM1: V1 not_overlapping M1
+  V1OffM2: V1 not_overlapping M2
+  V2OffM2: V2 not_overlapping M2
+  V2OffM3: V2 not_overlapping M3
+  V3OffM3: V3 not_overlapping M3
+  V3OffM4: V3 not_overlapping M4
+  V4OffM4: V4 not_overlapping M4
+  V4OffM5: V4 not_overlapping M5
+  V5OffM5: V5 not_overlapping M5
+  V5OffM6: V5 not_overlapping M6
+
+  # Edge layers share the virtual-layer expression mapping.
+  # GCUT.7: a GCUT's vertical edge inside, or on, a gate that is not a DUMMY.  A piece
+  # on the gate's wall is inside it from either side, as upstream's interacting_edge
+  # reads it, so the one selection holds both.
+  GCUT.edges: GCUT edges
+  GcutVEdges: GCUT.edges with_angle min 90.0 max 90.0
+  GcutVEdgesInGate: GcutVEdges inside_part GateNoDummy
+  # ACT.6: an active's vertical edges lie in a DUMMY.
+  ACT.edges: ACT edges
+  ActVEdges: ACT.edges with_angle min 90.0 max 90.0
+  ActVEdgesOffDummy: ActVEdges outside_part DUMMY
+  # A via's vertical edges lie on the vertical-routed metal above or below it, its
+  # horizontal edges on the horizontal one: upstream's `not_inside_touching_edge` keeps
+  # the via edges with no inside coincidence with the metal's, so a via inside a wider
+  # metal is off it as surely as one sticking out.  These are the parts of a via's edges
+  # not on the metal's outline; a via abutting the metal from outside lies on it, and
+  # V*.4/V*.5 and V*.7/V*.8 report that via instead.
+  M0.edges: M0 edges
+  M1.edges: M1 edges
+  M2.edges: M2 edges
+  M3.edges: M3 edges
+  M4.edges: M4 edges
+  M5.edges: M5 edges
+  M6.edges: M6 edges
+  V0.edges: V0 edges
+  V0VEdges: V0.edges with_angle min 90.0 max 90.0
+  V0HEdges: V0.edges with_angle min 0.0 max 0.0
+  V0VEdgesOffM1: V0VEdges not M1.edges
+  V0HEdgesOffM0: V0HEdges not M0.edges
+  V1.edges: V1 edges
+  V1VEdges: V1.edges with_angle min 90.0 max 90.0
+  V1HEdges: V1.edges with_angle min 0.0 max 0.0
+  V1VEdgesOffM1: V1VEdges not M1.edges
+  V1HEdgesOffM2: V1HEdges not M2.edges
+  V2.edges: V2 edges
+  V2VEdges: V2.edges with_angle min 90.0 max 90.0
+  V2HEdges: V2.edges with_angle min 0.0 max 0.0
+  V2VEdgesOffM3: V2VEdges not M3.edges
+  V2HEdgesOffM2: V2HEdges not M2.edges
+  V3.edges: V3 edges
+  V3VEdges: V3.edges with_angle min 90.0 max 90.0
+  V3HEdges: V3.edges with_angle min 0.0 max 0.0
+  V3VEdgesOffM3: V3VEdges not M3.edges
+  V3HEdgesOffM4: V3HEdges not M4.edges
+  V4.edges: V4 edges
+  V4VEdges: V4.edges with_angle min 90.0 max 90.0
+  V4HEdges: V4.edges with_angle min 0.0 max 0.0
+  V4VEdgesOffM5: V4VEdges not M5.edges
+  V4HEdgesOffM4: V4HEdges not M4.edges
+  V5.edges: V5 edges
+  V5VEdges: V5.edges with_angle min 90.0 max 90.0
+  V5HEdges: V5.edges with_angle min 0.0 max 0.0
+  V5VEdgesOffM5: V5VEdges not M5.edges
+  V5HEdgesOffM6: V5HEdges not M6.edges
+
+  # V6 and above, from the tech LEF: a bent metal, and a via not wholly inside a metal
+  # it joins, which an ENCLOSURE of 0 across the metal still forbids.
+  M7Bent: M7 not_rectangle
+  M8Bent: M8 not_rectangle
+  M9Bent: M9 not_rectangle
+  M10Bent: M10 not_rectangle
+  M11Bent: M11 not_rectangle
+  M12Bent: M12 not_rectangle
+  M13Bent: M13 not_rectangle
+  V6OutsideM6: V6 not_inside M6
+  V6OutsideM7: V6 not_inside M7
+  V7OutsideM7: V7 not_inside M7
+  V7OutsideM8: V7 not_inside M8
+  V8OutsideM8: V8 not_inside M8
+  V8OutsideM9: V8 not_inside M9
+  V9OutsideM9: V9 not_inside M9
+  V9OutsideM10: V9 not_inside M10
+  V10OutsideM10: V10 not_inside M10
+  V10OutsideM11: V10 not_inside M11
+  V11OutsideM11: V11 not_inside M11
+  V11OutsideM12: V11 not_inside M12
+  V12OutsideM12: V12 not_inside M12
+  V12OutsideM13: V12 not_inside M13
+  V13OutsideM13: V13 not_inside M13
+  V13OutsideRDL: V13 not_inside RDL
+
+layers:
+  - name: NWELL
+    gds_layer: 1
+    gds_datatype: 0
+  - name: ACT
+    gds_layer: 2
+    gds_datatype: 0
+  - name: GATE
+    gds_layer: 3
+    gds_datatype: 0
+  - name: DUMMY
+    gds_layer: 4
+    gds_datatype: 0
+  - name: GCUT
+    gds_layer: 5
+    gds_datatype: 0
+  - name: NSEL
+    gds_layer: 6
+    gds_datatype: 0
+  - name: PSEL
+    gds_layer: 7
+    gds_datatype: 0
+  - name: BPR
+    gds_layer: 8
+    gds_datatype: 0
+  - name: VBPR
+    gds_layer: 9
+    gds_datatype: 0
+  - name: SDCON
+    gds_layer: 10
+    gds_datatype: 0
+  - name: VSD
+    gds_layer: 11
+    gds_datatype: 0
+  - name: VG
+    gds_layer: 12
+    gds_datatype: 0
+  - name: M0
+    gds_layer: 20
+    gds_datatype: 0
+  - name: V0
+    gds_layer: 22
+    gds_datatype: 0
+  - name: M1
+    gds_layer: 25
+    gds_datatype: 0
+  - name: V1
+    gds_layer: 27
+    gds_datatype: 0
+  - name: M2
+    gds_layer: 30
+    gds_datatype: 0
+  - name: V2
+    gds_layer: 32
+    gds_datatype: 0
+  - name: M3
+    gds_layer: 35
+    gds_datatype: 0
+  - name: V3
+    gds_layer: 37
+    gds_datatype: 0
+  - name: M4
+    gds_layer: 40
+    gds_datatype: 0
+  - name: V4
+    gds_layer: 42
+    gds_datatype: 0
+  - name: M5
+    gds_layer: 45
+    gds_datatype: 0
+  - name: V5
+    gds_layer: 47
+    gds_datatype: 0
+  - name: M6
+    gds_layer: 50
+    gds_datatype: 0
+  - name: V6
+    gds_layer: 52
+    gds_datatype: 0
+  - name: M7
+    gds_layer: 55
+    gds_datatype: 0
+  - name: V7
+    gds_layer: 57
+    gds_datatype: 0
+  - name: M8
+    gds_layer: 60
+    gds_datatype: 0
+  - name: V8
+    gds_layer: 62
+    gds_datatype: 0
+  - name: M9
+    gds_layer: 65
+    gds_datatype: 0
+  - name: V9
+    gds_layer: 67
+    gds_datatype: 0
+  - name: M10
+    gds_layer: 70
+    gds_datatype: 0
+  - name: V10
+    gds_layer: 72
+    gds_datatype: 0
+  - name: M11
+    gds_layer: 75
+    gds_datatype: 0
+  - name: V11
+    gds_layer: 77
+    gds_datatype: 0
+  - name: M12
+    gds_layer: 80
+    gds_datatype: 0
+  - name: V12
+    gds_layer: 82
+    gds_datatype: 0
+  - name: M13
+    gds_layer: 85
+    gds_datatype: 0
+  - name: V13
+    gds_layer: 87
+    gds_datatype: 0
+  - name: RDL
+    gds_layer: 90
+    gds_datatype: 0
+  - name: NWELL.pin
+    gds_layer: 1
+    gds_datatype: 251
+  - name: ACT.pin
+    gds_layer: 2
+    gds_datatype: 251
+  - name: GATE.pin
+    gds_layer: 3
+    gds_datatype: 251
+  - name: BPR.pin
+    gds_layer: 8
+    gds_datatype: 251
+  - name: SDCON.pin
+    gds_layer: 10
+    gds_datatype: 251
+  - name: M0.pin
+    gds_layer: 20
+    gds_datatype: 251
+  - name: M1.pin
+    gds_layer: 25
+    gds_datatype: 251
+  - name: M2.pin
+    gds_layer: 30
+    gds_datatype: 251
+  - name: M3.pin
+    gds_layer: 35
+    gds_datatype: 251
+  - name: M4.pin
+    gds_layer: 40
+    gds_datatype: 251
+  - name: M5.pin
+    gds_layer: 45
+    gds_datatype: 251
+  - name: M6.pin
+    gds_layer: 50
+    gds_datatype: 251
+  - name: M7.pin
+    gds_layer: 55
+    gds_datatype: 251
+  - name: M8.pin
+    gds_layer: 60
+    gds_datatype: 251
+  - name: M9.pin
+    gds_layer: 65
+    gds_datatype: 251
+  - name: M10.pin
+    gds_layer: 70
+    gds_datatype: 251
+  - name: M11.pin
+    gds_layer: 75
+    gds_datatype: 251
+  - name: M12.pin
+    gds_layer: 80
+    gds_datatype: 251
+  - name: M13.pin
+    gds_layer: 85
+    gds_datatype: 251
+  - name: RDL.pin
+    gds_layer: 90
+    gds_datatype: 251
+  - name: BOUNDARY
+    gds_layer: 235
+    gds_datatype: 250

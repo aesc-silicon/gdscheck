@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GATE (Include/gt3.gate.drc.rs).
+#
+# GATE.2 is an exact 27 nm horizontal space; upstream reads it as the layer's extent less
+# the gates and the 27 nm gaps, and notes it misfires on gates out of line.  With GATE.1's
+# exact 15 nm, it is a 42 nm gate pitch, which this deck reads as every gate's centre on
+# that pitch, in the standard cells' frame: every gate of the library is centred on a
+# multiple of 42 nm, and so is every design placing them on the site.  A design drawn in
+# another frame sets `offset`, its first gate's centre.  The lower bound is read as well,
+# so two gates too close say so as a space, and so is the upper bound: a gate missing
+# from a row - two gates on the pitch, 69 nm apart - leaves a space wider than 27 nm
+# between gates facing each other (`GateMissing` in pdk.yml).  GATE.3, a continuous
+# gate, has no check upstream.
+rules:
+  - id: GATE.1
+    check: exact_width
+    layers: [GATE]
+    value: 0.015
+    params:
+      facing: x
+  - id: GATE.2
+    check: offtrack
+    layers: [GATE]
+    value: 0.042
+    params:
+      facing: x
+      offset: 0.0
+  - id: GATE.2
+    check: min_space
+    layers: [GATE]
+    value: 0.027
+    params:
+      facing: x
+  - id: GATE.2
+    check: min_notch
+    layers: [GATE]
+    value: 0.027
+    params:
+      facing: x
+  - id: GATE.2
+    check: forbidden
+    layers: [GateMissing]
+    value: 0.0
+  - id: GATE.4
+    check: forbidden
+    layers: [GATEBent]
+    value: 0.0

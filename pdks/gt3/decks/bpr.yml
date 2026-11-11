@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Buried power rail (Include/gt3.bpr.drc.rs).  BPR.1 is written BRP.1 upstream.
+rules:
+  - id: BPR.1
+    check: exact_width
+    layers: [BPR]
+    value: 0.032
+    params:
+      facing: y
+  - id: BPR.2
+    check: min_space
+    layers: [BPR]
+    value: 0.112
+    params:
+      facing: y
+  - id: BPR.2
+    check: min_notch
+    layers: [BPR]
+    value: 0.112
+    params:
+      facing: y
+  - id: BPR.3
+    check: min_space
+    layers: [BPR]
+    value: 10.0
+    params:
+      facing: x
+  - id: BPR.3
+    check: min_notch
+    layers: [BPR]
+    value: 10.0
+    params:
+      facing: x
+  - id: BPR.4
+    check: forbidden
+    layers: [BPRBent]
+    value: 0.0

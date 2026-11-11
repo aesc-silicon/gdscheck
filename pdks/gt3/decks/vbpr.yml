@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Via from the buried power rail to SDCON (Include/gt3.vbpr.drc.rs).  The runset has no
+# spacing, and the tech LEF's VBPR SPACING of 12 nm is not read: gt3_6t_dffasync_x1_rvt
+# lands six pairs of VBPRs on its middle rail, one from the SDCON above and one from
+# the SDCON below, 10 nm apart, and GT2N's LEF has no VBPR cut layer at all.
+rules:
+  - id: VBPR.1
+    check: exact_width
+    layers: [VBPR]
+    value: 0.011
+    params:
+      facing: y
+  - id: VBPR.2
+    check: exact_width
+    layers: [VBPR]
+    value: 0.015
+    params:
+      facing: x
+  - id: VBPR.3
+    check: forbidden
+    layers: [VbprOnGcut]
+    value: 0.0
+  - id: VBPR.4
+    check: forbidden
+    layers: [VbprOutsideSdcon]
+    value: 0.0

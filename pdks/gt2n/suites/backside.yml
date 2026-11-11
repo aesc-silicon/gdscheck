@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The backside stack, from the buried power rail down to BRDL, from the tech LEF
+# and the technology file's minimum areas.
+# BPR itself is the runset's, in feol.
+include:
+  - deck: techfile
+    rules: [BM1.area.TF, BM2.area.TF, BM3.area.TF, BM4.area.TF, BRDL.area.TF]
+  - deck: offgrid
+    rules: [BACKSIDE.offgrid.LEF]
+  - deck: bv0
+  - deck: bm1
+  - deck: bv1
+  - deck: bm2
+  - deck: bv2
+  - deck: bm3
+  - deck: bv3
+  - deck: bm4
+  - deck: bv4
+  - deck: brdl

@@ -1,0 +1,352 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GT2N, the 2 nm nanosheet PDK with backside power delivery from the Georgia Institute
+# of Technology (initial release).  Its IC Validator runset (icv_runset/gt2_main.drc.rs)
+# is GT3's with seven values changed - a 14 nm gate on a 42 nm pitch, a 16 nm SDCON and
+# VBPR, an 8 nm active - and a deck for the five threshold-voltage layers, so this PDK
+# extends gt3: the decks that changed are here, the rest are GT3's files.
+#
+# The runset checks nothing above M6.  V6 to RDL are checked from the technology LEF
+# instead, their ids marked `.LEF`, by GT3's decks: techlib/gt2_tech.lef states the same
+# rules there as GT3's techlef/gt3_tech.lef.  Below V6 the two differ in VG's and VSD's
+# cut spacing, which GT2N's own vg and vsd decks hold.
+#
+# The backside stack, BV0 to BRDL, joins the buried power rail from below.  The runset
+# connects it and checks none of it; this PDK checks it from the LEF as well, the
+# same way. Additional well and area constraints come from techlib/gt2_techfile.tf,
+# with `.TF` ids. See docs/source/pdks/gt2n.rst for the source audit.
+name: GT2N
+version: "0.1"
+extends: gt3
+
+suites:
+  - name: main
+    path: suites/main.yml
+    description: Every deck, front and back
+  - name: feol
+    path: suites/feol.yml
+    description: Front end and middle of line, through V0 (a standard cell)
+  - name: beol
+    path: suites/beol.yml
+    description: Routing stack, M1 to RDL
+  - name: backside
+    path: suites/backside.yml
+    description: Backside stack, BV0 to BRDL (tech LEF and technology file)
+
+decks:
+  - name: techfile
+    path: decks/techfile.yml
+    description: Additional NWELL and minimum-area constraints (technology file)
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Manufacturing grid, 0.5 nm (tech LEF)
+  - name: bpr
+    path: ../gt3/decks/bpr.yml
+    description: Buried power rail
+  - name: vbpr
+    path: decks/vbpr.yml
+    description: Via BPR to SDCON
+  - name: gate
+    path: decks/gate.yml
+    description: Gate
+  - name: dummy
+    path: decks/dummy.yml
+    description: Diffusion-break gate marker
+  - name: gcut
+    path: ../gt3/decks/gcut.yml
+    description: Gate cut
+  - name: vg
+    path: decks/vg.yml
+    description: Gate contact
+  - name: act
+    path: decks/act.yml
+    description: Active
+  - name: npsel
+    path: ../gt3/decks/npsel.yml
+    description: N/P select
+  - name: vt
+    path: decks/vt.yml
+    description: Threshold-voltage layers
+  - name: sdcon
+    path: decks/sdcon.yml
+    description: Source/drain contact
+  - name: vsd
+    path: decks/vsd.yml
+    description: Via SDCON to M0
+  - name: m0
+    path: ../gt3/decks/m0.yml
+    description: Metal 0
+  - name: v0
+    path: ../gt3/decks/v0.yml
+    description: Via 0
+  - name: m1
+    path: ../gt3/decks/m1.yml
+    description: Metal 1
+  - name: v1
+    path: ../gt3/decks/v1.yml
+    description: Via 1
+  - name: m2
+    path: ../gt3/decks/m2.yml
+    description: Metal 2
+  - name: v2
+    path: ../gt3/decks/v2.yml
+    description: Via 2
+  - name: m3
+    path: ../gt3/decks/m3.yml
+    description: Metal 3
+  - name: v3
+    path: ../gt3/decks/v3.yml
+    description: Via 3
+  - name: m4
+    path: ../gt3/decks/m4.yml
+    description: Metal 4
+  - name: v4
+    path: ../gt3/decks/v4.yml
+    description: Via 4
+  - name: m5
+    path: ../gt3/decks/m5.yml
+    description: Metal 5
+  - name: v5
+    path: ../gt3/decks/v5.yml
+    description: Via 5
+  - name: m6
+    path: ../gt3/decks/m6.yml
+    description: Metal 6
+  - name: v6
+    path: ../gt3/decks/v6.yml
+    description: Via 6 (tech LEF)
+  - name: m7
+    path: ../gt3/decks/m7.yml
+    description: Metal 7 (tech LEF)
+  - name: v7
+    path: ../gt3/decks/v7.yml
+    description: Via 7 (tech LEF)
+  - name: m8
+    path: ../gt3/decks/m8.yml
+    description: Metal 8 (tech LEF)
+  - name: v8
+    path: ../gt3/decks/v8.yml
+    description: Via 8 (tech LEF)
+  - name: m9
+    path: ../gt3/decks/m9.yml
+    description: Metal 9 (tech LEF)
+  - name: v9
+    path: ../gt3/decks/v9.yml
+    description: Via 9 (tech LEF)
+  - name: m10
+    path: ../gt3/decks/m10.yml
+    description: Metal 10 (tech LEF)
+  - name: v10
+    path: ../gt3/decks/v10.yml
+    description: Via 10 (tech LEF)
+  - name: m11
+    path: ../gt3/decks/m11.yml
+    description: Metal 11 (tech LEF)
+  - name: v11
+    path: ../gt3/decks/v11.yml
+    description: Via 11 (tech LEF)
+  - name: m12
+    path: ../gt3/decks/m12.yml
+    description: Metal 12 (tech LEF)
+  - name: v12
+    path: ../gt3/decks/v12.yml
+    description: Via 12 (tech LEF)
+  - name: m13
+    path: ../gt3/decks/m13.yml
+    description: Metal 13 (tech LEF)
+  - name: v13
+    path: ../gt3/decks/v13.yml
+    description: Via 13 (tech LEF)
+  - name: rdl
+    path: ../gt3/decks/rdl.yml
+    description: Redistribution layer (tech LEF)
+  - name: bv0
+    path: decks/bv0.yml
+    description: Backside via 0 (tech LEF)
+  - name: bm1
+    path: decks/bm1.yml
+    description: Backside metal 1 (tech LEF)
+  - name: bv1
+    path: decks/bv1.yml
+    description: Backside via 1 (tech LEF)
+  - name: bm2
+    path: decks/bm2.yml
+    description: Backside metal 2 (tech LEF)
+  - name: bv2
+    path: decks/bv2.yml
+    description: Backside via 2 (tech LEF)
+  - name: bm3
+    path: decks/bm3.yml
+    description: Backside metal 3 (tech LEF)
+  - name: bv3
+    path: decks/bv3.yml
+    description: Backside via 3 (tech LEF)
+  - name: bm4
+    path: decks/bm4.yml
+    description: Backside metal 4 (tech LEF)
+  - name: bv4
+    path: decks/bv4.yml
+    description: Backside via 4 (tech LEF)
+  - name: brdl
+    path: decks/brdl.yml
+    description: Backside redistribution layer (tech LEF)
+
+# The runset's connect database: GT3's, with the backside stack below the buried rail.
+connectivity:
+  - connector: BV4
+    layers: [BRDL]
+  - connector: BV4
+    layers: [BM4]
+  - connector: BV3
+    layers: [BM4]
+  - connector: BV3
+    layers: [BM3]
+  - connector: BV2
+    layers: [BM3]
+  - connector: BV2
+    layers: [BM2]
+  - connector: BV1
+    layers: [BM2]
+  - connector: BV1
+    layers: [BM1]
+  - connector: BV0
+    layers: [BM1]
+  - connector: BV0
+    layers: [BPR]
+  - connector: VBPR
+    layers: [BPR]
+  - connector: VBPR
+    layers: [SDCON]
+  - connector: VSD
+    layers: [SDCON]
+  - connector: VSD
+    layers: [M0]
+  - connector: VG
+    layers: [GatePoly]
+  - connector: VG
+    layers: [M0]
+  - connector: V0
+    layers: [M0]
+  - connector: V0
+    layers: [M1]
+  - connector: V1
+    layers: [M1]
+  - connector: V1
+    layers: [M2]
+  - connector: V2
+    layers: [M2]
+  - connector: V2
+    layers: [M3]
+  - connector: V3
+    layers: [M3]
+  - connector: V3
+    layers: [M4]
+  - connector: V4
+    layers: [M4]
+  - connector: V4
+    layers: [M5]
+  - connector: V5
+    layers: [M5]
+  - connector: V5
+    layers: [M6]
+  - connector: V6
+    layers: [M6]
+  - connector: V6
+    layers: [M7]
+  - connector: V7
+    layers: [M7]
+  - connector: V7
+    layers: [M8]
+  - connector: V8
+    layers: [M8]
+  - connector: V8
+    layers: [M9]
+  - connector: V9
+    layers: [M9]
+  - connector: V9
+    layers: [M10]
+  - connector: V10
+    layers: [M10]
+  - connector: V10
+    layers: [M11]
+  - connector: V11
+    layers: [M11]
+  - connector: V11
+    layers: [M12]
+  - connector: V12
+    layers: [M12]
+  - connector: V12
+    layers: [M13]
+  - connector: V13
+    layers: [M13]
+  - connector: V13
+    layers: [RDL]
+
+virtual_layers:
+  # GATE.2: GT3's missing gate, less GT2N's 28 nm spaces either side of each gate.
+  GateMissing: GateRun not (GATE grow_x 0.014)
+
+  # The backside, from the tech LEF, as GT3's V6 and above.
+  BM1Bent: BM1 not_rectangle
+  BM2Bent: BM2 not_rectangle
+  BM3Bent: BM3 not_rectangle
+  BM4Bent: BM4 not_rectangle
+  BV0OutsideBPR: BV0 not_inside BPR
+  BV0OutsideBM1: BV0 not_inside BM1
+  BV1OutsideBM1: BV1 not_inside BM1
+  BV1OutsideBM2: BV1 not_inside BM2
+  BV2OutsideBM2: BV2 not_inside BM2
+  BV2OutsideBM3: BV2 not_inside BM3
+  BV3OutsideBM3: BV3 not_inside BM3
+  BV3OutsideBM4: BV3 not_inside BM4
+  BV4OutsideBM4: BV4 not_inside BM4
+  BV4OutsideBRDL: BV4 not_inside BRDL
+
+layers:
+  - name: ELVT
+    gds_layer: 94
+    gds_datatype: 0
+  - name: ULVT
+    gds_layer: 95
+    gds_datatype: 0
+  - name: SVT
+    gds_layer: 96
+    gds_datatype: 0
+  - name: HVT
+    gds_layer: 97
+    gds_datatype: 0
+  - name: SRAMVT
+    gds_layer: 98
+    gds_datatype: 0
+  - name: BV0
+    gds_layer: 910
+    gds_datatype: 0
+  - name: BM1
+    gds_layer: 920
+    gds_datatype: 0
+  - name: BV1
+    gds_layer: 930
+    gds_datatype: 0
+  - name: BM2
+    gds_layer: 940
+    gds_datatype: 0
+  - name: BV2
+    gds_layer: 950
+    gds_datatype: 0
+  - name: BM3
+    gds_layer: 960
+    gds_datatype: 0
+  - name: BV3
+    gds_layer: 970
+    gds_datatype: 0
+  - name: BM4
+    gds_layer: 980
+    gds_datatype: 0
+  - name: BV4
+    gds_layer: 990
+    gds_datatype: 0
+  - name: BRDL
+    gds_layer: 1000
+    gds_datatype: 0

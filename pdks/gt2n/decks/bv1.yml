@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# BV1, the backside via from BM1 to BM2, from techlib/gt2_tech.lef: the runset
+# connects the backside and checks none of it.  .1 and .2 are the cut of BV1_0
+# and BVia1Array, 56 x 56 nm; .5 the cut layer's SPACING, read every way; .7
+# and .8 the cut inside BM1 and BM2, as an ENCLOSURE of 0 holds it; and each
+# metal's enclosure along its length, BVia1Array's.
+rules:
+  - id: BV1.1.LEF
+    check: min_width
+    layers: [BV1]
+    value: 0.056
+    params:
+      facing: x
+  - id: BV1.2.LEF
+    check: min_width
+    layers: [BV1]
+    value: 0.056
+    params:
+      facing: y
+  - id: BV1.5.LEF
+    check: min_space
+    layers: [BV1]
+    value: 0.056
+  - id: BV1.7.LEF
+    check: forbidden
+    layers: [BV1OutsideBM1]
+    value: 0.0
+  - id: BV1.8.LEF
+    check: forbidden
+    layers: [BV1OutsideBM2]
+    value: 0.0
+  - id: BV1.BM1.EN.LEF
+    check: min_enclosure
+    layers: [BM1, BV1]
+    value: 0.012
+    params:
+      facing: y
+      interacting_only: 1
+  - id: BV1.BM2.EN.LEF
+    check: min_enclosure
+    layers: [BM2, BV1]
+    value: 0.012
+    params:
+      facing: x
+      interacting_only: 1

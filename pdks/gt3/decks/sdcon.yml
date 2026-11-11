@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# SDCON, the source/drain contact (Include/gt3.sdcon.drc.rs).  SDCON.GATE.1 is an exact
+# 6 nm space upstream, checked there - and here - as a minimum.
+rules:
+  - id: SDCON.1
+    check: exact_width
+    layers: [SDCON]
+    value: 0.015
+    params:
+      facing: x
+  # Tip to tip, between contacts on different nets: two on one net may sit closer
+  # where they meet the power rail.
+  - id: SDCON.2
+    check: min_space
+    layers: [SDCON]
+    value: 0.02
+    params:
+      facing: y
+      net: different
+  - id: SDCON.3
+    check: forbidden
+    layers: [SDCONBent]
+    value: 0.0
+  - id: SDCON.ACT.1
+    check: min_enclosure
+    layers: [SDCON, ACT]
+    value: 0.005
+    params:
+      facing: y
+      interacting_only: 1
+  - id: SDCON.GATE.1
+    check: min_space
+    layers: [SDCON, GATE]
+    value: 0.006
+    params:
+      facing: x
