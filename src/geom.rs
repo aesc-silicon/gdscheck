@@ -3753,8 +3753,7 @@ pub fn line_end_segs(a: &Outline, max_width: i64, min_length: i64) -> Vec<Seg> {
         if li2 < l2 {
             continue;
         }
-        for j in (i + 1)..n {
-            let (b0, b1) = a.segs[j];
+        for (j, &(b0, b1)) in a.segs.iter().enumerate().skip(i + 1) {
             let e = ((b1.0 - b0.0) as i128, (b1.1 - b0.1) as i128);
             if len2((b0, b1)) < l2 || d.0 * e.0 + d.1 * e.1 >= 0 || !parallel_i(d, e) {
                 continue; // too short, or not a facing wall
