@@ -3428,6 +3428,26 @@ fn test_npn(
     assert_eq!(drc(PDK_IHP, DECK_NPN, gds, topcell, &ignore), expected);
 }
 
+// IHP's npn13G2 (10 emitters), npn13G2V and npn13G2L PCells, placed as delivered, are
+// clean of the contact and via rules IHP's decks leave the devices out of (issue #62).
+// The exempt fixture draws each exempted case inside the device IHP exempts it in and
+// once outside it: only the outside one fires.
+#[rstest]
+#[case(DECK_CNT, vec!["Cnt.g"])]
+#[case(DECK_CNTB, vec!["CntB.b", "CntB.c", "CntB.h1"])]
+#[case(DECK_V1, vec!["V1.a", "V1.a"])]
+fn test_npn_pcells(#[case] deck: &str, #[case] exempt: Vec<&str>) {
+    assert!(
+        drc(PDK_IHP, deck, "npn/npn13G2.pcells.gds.gz", "TOP", &[]).is_empty(),
+        "{deck}"
+    );
+    assert_eq!(
+        drc(PDK_IHP, deck, "npn/npn13G2.exempt.gds.gz", "TOP", &[]),
+        exempt,
+        "{deck}"
+    );
+}
+
 // --- Schottky diode (Sdiod) ---
 
 const DECK_SDIOD: &str = "sdiod";

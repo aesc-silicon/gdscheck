@@ -530,6 +530,15 @@ virtual_layers:
   EmitG2V: EmWind overlapping TransG2V
   EmWindAny: EmWind or EmWiHV
   EmitG2VAny: EmWindAny overlapping TransG2V
+  # The npn13G2/L/V PCells draw their contacts to the device's own rules, as IHP's
+  # decks read them: outside TRANS for Cnt.g/CntB.b/CntB.g, outside the npn13G2*
+  # TRANS for CntB.c, outside npn13G2 for CntB.h1 and outside npn13G2L for V1.a.
+  NpnG2Trans: TRANS with_text "npn13G2*" TEXT
+  ContSquareNoTrans: ContSquare not_overlapping TRANS
+  ContBarNoTrans: ContBar not_overlapping TRANS
+  ContBarOnActivNoNpn: ContBarOnActiv not_overlapping NpnG2Trans
+  ContBarNoG2: ContBar not_overlapping TransG2
+  Via1NoSealringNoG2L: Via1NoSealring not TransG2L
 
   # Section 6.7: the diode is a ContBar *enclosed by* the stack - whole inside it - and
   # the nBuLay is section 4.2's, drawn or generated.

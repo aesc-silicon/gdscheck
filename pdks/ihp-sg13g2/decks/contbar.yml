@@ -17,7 +17,7 @@ rules:
     value: 0.34
   - id: CntB.b
     check: min_space
-    layers: [ContBar]
+    layers: [ContBarNoTrans]
     value: 0.28
   - id: CntB.b1
     check: min_space
@@ -27,11 +27,11 @@ rules:
       length: 5.00
   - id: CntB.b2
     check: min_space
-    layers: [ContBar, Cont]
+    layers: [ContBar, ContSquare]
     value: 0.22
   - id: CntB.c
     check: min_enclosure
-    layers: [Activ, ContBarOnActiv]
+    layers: [Activ, ContBarOnActivNoNpn]
     value: 0.07
     params:
       metric: euclidian
@@ -55,7 +55,7 @@ rules:
       abutting: report
   - id: CntB.g
     check: forbidden
-    layers: [ContBar, Activ, GatPoly]
+    layers: [ContBarNoTrans, Activ, GatPoly]
     value: 0.0
     params:
       op: uncovered
@@ -79,7 +79,7 @@ rules:
       op: uncovered
   - id: CntB.h1
     check: min_enclosure
-    layers: [Metal1, ContBar]
+    layers: [Metal1, ContBarNoG2]
     value: 0.05
     params:
       metric: euclidian
