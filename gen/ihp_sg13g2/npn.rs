@@ -15,6 +15,7 @@ pub fn generate(pdk: &PdkConfig) {
     std::fs::create_dir_all(DIR).expect("failed to create output directory");
     npn_ties(pdk);
     npn_emitters(pdk);
+    npn_exempt(pdk);
 
     hardening(pdk);
 }
@@ -133,6 +134,77 @@ fn npn_emitters(pdk: &PdkConfig) {
     e.extend(core(pdk, o + 150.0, y, 3.5, "npn13G2V", 0.12, 6.0)); // npn13G2V.b
     e.extend(core(pdk, o + 180.0, y, 1.5, "npn13G2", 0.07, 0.9)); // clean G2
     write_gz(&format!("{DIR}/npn13G2.gds.gz"), library("TOP", e));
+}
+
+/// The contact rules the npn13G2/L/V PCells are exempt from, each drawn once inside the
+/// device that IHP's deck exempts and once outside it (issue #62):
+/// - ContBars 0.20 apart (CntB.b, never CntB.b2: that is bar to square Cont), and a
+///   square Cont off Activ (Cnt.g), in a bare TRANS and outside one;
+/// - a ContBar with 0.05 of Activ on one side (CntB.c) in an "npn13G2V" TRANS and a bare
+///   TRANS;
+/// - a ContBar with 0.04 of Metal1 on one side (CntB.h1) in an "npn13G2" and an
+///   "npn13G2L" TRANS;
+/// - a 0.19 × 0.5 Via1 bar (V1.a) in an "npn13G2L" and an "npn13G2" TRANS.
+fn npn_exempt(pdk: &PdkConfig) {
+    let o = OFFSET;
+    let (trans, activ, m1) = (
+        layer(pdk, "TRANS"),
+        layer(pdk, "Activ"),
+        layer(pdk, "Metal1"),
+    );
+    let (cont, via1, txt) = (layer(pdk, "Cont"), layer(pdk, "Via1"), layer(pdk, "TEXT"));
+    let mut e: Vec<GdsElement> = Vec::new();
+    // A device box at `x` with its label, if any.
+    let device = |e: &mut Vec<GdsElement>, x: f64, label: Option<&str>| {
+        e.push(rect(trans, x, o, x + 3.0, o + 3.0));
+        if let Some(l) = label {
+            e.push(text(txt, l, x + 0.1, o + 0.1));
+        }
+    };
+    // ContBar pair 0.20 apart and a square Cont off Activ: inside a bare TRANS, outside.
+    for (i, inside) in [true, false].into_iter().enumerate() {
+        let x = o + 10.0 * i as f64;
+        if inside {
+            device(&mut e, x, None);
+        }
+        e.push(rect(activ, x + 0.5, o + 0.5, x + 1.5, o + 1.5));
+        e.push(rect(m1, x + 0.6, o + 0.6, x + 1.4, o + 1.4));
+        e.push(rect(cont, x + 0.72, o + 0.75, x + 0.88, o + 1.25));
+        e.push(rect(cont, x + 1.08, o + 0.75, x + 1.24, o + 1.25));
+        e.push(rect(m1, x + 1.9, o + 0.4, x + 2.4, o + 0.9));
+        e.push(rect(cont, x + 2.07, o + 0.57, x + 2.23, o + 0.73));
+    }
+    // ContBar with 0.05 of Activ on its left: an "npn13G2V" TRANS, a bare TRANS.
+    for (i, label) in [Some("npn13G2V"), None].into_iter().enumerate() {
+        let x = o + 20.0 + 10.0 * i as f64;
+        device(&mut e, x, label);
+        e.push(rect(activ, x + 0.5, o + 0.5, x + 1.5, o + 1.5));
+        e.push(rect(m1, x + 0.5, o + 0.6, x + 1.4, o + 1.4));
+        e.push(rect(cont, x + 0.55, o + 0.75, x + 0.71, o + 1.25));
+    }
+    // ContBar with 0.04 of Metal1 on its left: an "npn13G2" TRANS, an "npn13G2L" TRANS.
+    for (i, label) in ["npn13G2", "npn13G2L"].into_iter().enumerate() {
+        let x = o + 40.0 + 10.0 * i as f64;
+        device(&mut e, x, Some(label));
+        e.push(rect(activ, x + 0.5, o + 0.5, x + 1.5, o + 1.5));
+        e.push(rect(m1, x + 0.76, o + 0.6, x + 1.4, o + 1.4));
+        e.push(rect(cont, x + 0.8, o + 0.75, x + 0.96, o + 1.25));
+    }
+    // A 0.19 × 0.5 Via1 bar: an "npn13G2L" TRANS, an "npn13G2" TRANS.
+    for (i, label) in ["npn13G2L", "npn13G2"].into_iter().enumerate() {
+        let x = o + 60.0 + 10.0 * i as f64;
+        device(&mut e, x, Some(label));
+        e.push(rect(m1, x + 0.6, o + 0.6, x + 1.4, o + 1.4));
+        e.push(rect(
+            layer(pdk, "Metal2"),
+            x + 0.6,
+            o + 0.6,
+            x + 1.4,
+            o + 1.4,
+        ));
+        e.push(rect(via1, x + 0.9, o + 0.75, x + 1.09, o + 1.25));
+    }
+    write_gz(&format!("{DIR}/npn13G2.exempt.gds.gz"), library("TOP", e));
 }
 
 // --- Hardening (hardening/SPEC.md) -------------------------------------------

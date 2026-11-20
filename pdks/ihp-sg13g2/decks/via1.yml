@@ -5,7 +5,7 @@
 rules:
   - id: V1.a
     check: exact_width
-    layers: [Via1NoSealring]
+    layers: [Via1NoSealringNoG2L]
     value: 0.19
   - id: V1.b
     check: min_space

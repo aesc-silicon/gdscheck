@@ -50,7 +50,7 @@ rules:
       abutting: report
   - id: Cnt.g
     check: forbidden
-    layers: [ContSquare, Activ, GatPoly]
+    layers: [ContSquareNoTrans, Activ, GatPoly]
     value: 0.0
     params:
       op: uncovered
