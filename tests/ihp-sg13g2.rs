@@ -2114,6 +2114,10 @@ fn test_via4(
 // The sealring: a 4 × 4 at 0.22 under an EdgeSeal is exempt; the same outside fires
 // (finding 1).
 #[case::vn_b1_h9(".b1.h9", vec![".b1"; 1], vec![".c", ".c1"])]
+// Ten columns 0.23 apart, their gaps 0.22/0.29 in turn: staggered so a column's tight
+// gaps lie beside its neighbours' wide ones, as the cmomi PCell draws them, clean (issue
+// #63); unstaggered, the tight gaps side by side fire.
+#[case::vn_b1_h10(".b1.h10", vec![".b1"; 1], vec![".c", ".c1"])]
 // V(n).c: a via one step short below, one sticking 0.005 out, one in a pad's corner on
 // two edges and one a step short on two adjacent sides fire; the value all round is
 // clean.  The corner vias are V(n).c1 too (two adjacent short sides).

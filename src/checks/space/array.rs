@@ -9,7 +9,8 @@
 //!
 //! * `axes: 1` (default) — the spacing must reach `value` in **at least one** axis; the
 //!   other only needs the ordinary spacing rule.  A violation is an array tight in
-//!   *both* directions.  IHP's `V1.b1` is this.
+//!   *both* directions at one place: a tight gap along a row meeting a tight gap down a
+//!   column.  IHP's `V1.b1` is this.
 //! * `axes: 2` — the spacing must reach `value` in **both** axes, so *any* tight pair
 //!   inside a large enough array is a violation.  GF180's `V#.2b` is this: 0.36 µm
 //!   inside a 4×4-or-larger array against an ordinary 0.26 µm.
@@ -343,12 +344,7 @@ pub fn run(
             .count()
             > rows_thr
     };
-    // `along`: a pair across a row (`Some(true)`), down a column (`Some(false)`) or
-    // either (`None`).
-    let tight_pair_in = |stack: &[usize],
-                         members: &[usize],
-                         along: Option<bool>|
-     -> Option<(usize, usize, bool)> {
+    let tight_pair_in = |stack: &[usize], members: &[usize]| -> Option<(usize, usize, bool)> {
         let set: std::collections::HashSet<usize> = members.iter().copied().collect();
         members.iter().find_map(|&i| {
             let a = &vias[i];
@@ -371,12 +367,10 @@ pub fn run(
                             // above, its vias 0.1803 from theirs corner to corner.
                             let near_corners =
                                 xgap > 0 && ygap > 0 && xgap * xgap + ygap * ygap < value * value;
-                            let row = along != Some(false)
-                                && xgap >= 0
+                            let row = xgap >= 0
                                 && xgap < value
                                 && (a.y1.min(b.y1) - a.y0.max(b.y0) >= projection || near_corners);
-                            let col = along != Some(true)
-                                && ygap >= 0
+                            let col = ygap >= 0
                                 && ygap < value
                                 && (a.x1.min(b.x1) - a.x0.max(b.x0) >= projection || near_corners);
                             let (sx0, sx1) = if row {
@@ -388,6 +382,129 @@ pub fn run(
                         })
                     }
                 })
+            })
+        })
+    };
+
+    // Under `axes: 1` the array is in breach where a tight gap along a row and a tight
+    // gap down a column meet, the reference deck's reading: close the vias by half the
+    // value, and a gap the closing fills is a violation when it is no rectangle.  A
+    // tight gap between two row neighbours fills the band where they face each other;
+    // the band is a rectangle unless the closing runs on past its top or bottom, which
+    // it does only where vias above or below close in on the gap too.  Some tight gap
+    // in each direction is not enough: a capacitor's via columns, staggered so that a
+    // column's tight gaps lie beside its neighbours' wide ones, are tight both ways and
+    // nowhere at once (issue #63).
+    //
+    // Read in doubled coordinates, so the points probed sit half a DBU off every edge.
+    let s2 = 2 * value;
+    // `p` is in the closing when every square of side `value` holding it cuts a via:
+    // the square's corner must stay out of each via's box grown down-left by the side,
+    // and the free places for the corner, if any, include one on those boxes' edges.
+    let closed = |near: &[&Via], (px, py): (i64, i64)| -> bool {
+        let block = |v: &&Via| (2 * v.x0 - s2, 2 * v.x1, 2 * v.y0 - s2, 2 * v.y1);
+        let blocks: Vec<(i64, i64, i64, i64)> = near
+            .iter()
+            .map(block)
+            .filter(|&(x0, x1, y0, y1)| x1 > px - s2 && x0 < px && y1 > py - s2 && y0 < py)
+            .collect();
+        let axis = |lo: i64, hi: i64, ends: &mut dyn Iterator<Item = i64>| -> Vec<i64> {
+            let mut c: Vec<i64> = [lo, hi]
+                .into_iter()
+                .chain(ends.filter(|&e| e > lo && e < hi))
+                .collect();
+            c.sort_unstable();
+            c.dedup();
+            c
+        };
+        let xs = axis(px - s2, px, &mut blocks.iter().flat_map(|b| [b.0, b.1]));
+        let ys = axis(py - s2, py, &mut blocks.iter().flat_map(|b| [b.2, b.3]));
+        !xs.iter().any(|&x| {
+            ys.iter().any(|&y| {
+                !blocks
+                    .iter()
+                    .any(|&(x0, x1, y0, y1)| x > x0 && x < x1 && y > y0 && y < y1)
+            })
+        })
+    };
+    // Whether the closing runs on past the band between `a` and `b`, row neighbours
+    // with `a` on the left, on the side of `edge` (the band's top or bottom, doubled;
+    // `out` is +1 above, -1 below).  `t` transposes, for column neighbours.
+    let spills = |near: &[&Via], a: &Via, b: &Via, edge: i64, out: i64, t: bool| -> bool {
+        let tr = |v: &Via| -> (i64, i64, i64, i64) {
+            if t {
+                (v.y0, v.y1, v.x0, v.x1)
+            } else {
+                (v.x0, v.x1, v.y0, v.y1)
+            }
+        };
+        let (a, b) = (tr(a), tr(b));
+        let near: Vec<Via> = near
+            .iter()
+            .map(|v| {
+                let (x0, x1, y0, y1) = tr(v);
+                Via { x0, y0, x1, y1 }
+            })
+            .collect();
+        // Nothing but the pair itself within a square of the band's edge: the closing
+        // stops where the two stop facing.
+        let (lo, hi) = (2 * a.1 - s2, 2 * b.0 + s2);
+        let (reach0, reach1) = if out > 0 {
+            (edge, edge + s2)
+        } else {
+            (edge - s2, edge)
+        };
+        let others: Vec<&Via> = near
+            .iter()
+            .filter(|v| (v.x0, v.x1, v.y0, v.y1) != a && (v.x0, v.x1, v.y0, v.y1) != b)
+            .filter(|v| 2 * v.x1 > lo && 2 * v.x0 < hi && 2 * v.y1 > reach0 && 2 * v.y0 < reach1)
+            .collect();
+        if others.is_empty() {
+            return false;
+        }
+        let refs: Vec<&Via> = near.iter().collect();
+        let mut cuts: Vec<i64> = refs
+            .iter()
+            .flat_map(|v| [2 * v.x0 - s2, 2 * v.x0, 2 * v.x1, 2 * v.x1 + s2])
+            .chain([2 * a.1, 2 * b.0])
+            .filter(|&c| c >= 2 * a.1 && c < 2 * b.0)
+            .collect();
+        cuts.sort_unstable();
+        cuts.dedup();
+        let y = edge + out;
+        cuts.iter().any(|&c| {
+            let x = c + 1;
+            let in_via = refs
+                .iter()
+                .any(|v| x > 2 * v.x0 && x < 2 * v.x1 && y > 2 * v.y0 && y < 2 * v.y1);
+            !in_via && closed(&refs, (x, y))
+        })
+    };
+    let junction_in = |stack: &[usize], members: &[usize]| -> bool {
+        let set: std::collections::HashSet<usize> = members.iter().copied().collect();
+        members.iter().any(|&i| {
+            let a = &vias[i];
+            let (gx, gy) = cell_of(a);
+            let near: Vec<&Via> = (-2..=2)
+                .flat_map(|dx| (-2..=2).map(move |dy| (gx + dx, gy + dy)))
+                .flat_map(|c| grid.get(c))
+                .filter(|j| set.contains(j))
+                .map(|&j| &vias[j])
+                .collect();
+            near.iter().any(|b| {
+                let row = b.x0 >= a.x1 && b.x0 - a.x1 < value;
+                let col = b.y0 >= a.y1 && b.y0 - a.y1 < value;
+                let (oy0, oy1) = (a.y0.max(b.y0), a.y1.min(b.y1));
+                let (ox0, ox1) = (a.x0.max(b.x0), a.x1.min(b.x1));
+                (row && oy1 > oy0
+                    && covered(stack, a.x0, b.x1)
+                    && (spills(&near, a, b, 2 * oy1, 1, false)
+                        || spills(&near, a, b, 2 * oy0, -1, false)))
+                    || (col
+                        && ox1 > ox0
+                        && covered(stack, ox0, ox1)
+                        && (spills(&near, a, b, 2 * ox1, 1, true)
+                            || spills(&near, a, b, 2 * ox0, -1, true)))
             })
         })
     };
@@ -409,17 +526,13 @@ pub fn run(
             return None;
         }
         let pair = if axes >= 2 {
-            tight_pair_in(stack, &members, None)
+            tight_pair_in(stack, &members)
         } else {
-            // Tight in both directions, or one of them is relaxed throughout and the
-            // array is legal.
-            match (
-                tight_pair_in(stack, &members, Some(true)),
-                tight_pair_in(stack, &members, Some(false)),
-            ) {
-                (Some(_), Some(_)) => None,
-                _ => return None,
+            // Tight in both directions at one place, or the array is legal.
+            if !junction_in(stack, &members) {
+                return None;
             }
+            None
         };
         if axes >= 2 && pair.is_none() {
             return None;
