@@ -110,17 +110,17 @@ fails on the current engine.
 
 ## Notes that are not findings
 
-### MIMTM.10 reads the bottom plate as the metal under FuseTop, not the whole plate
+### MIMTM.10 reads the whole bottom plate, not only the metal under FuseTop
 
-MIMTM.10 forbids "any Vian-2 touching MIM bottom plate Metaln-1".  Per note 1 the bottom
-plate is the virtual plate, which reaches 1.06 µm past FuseTop; both gdscheck
-(`topmin1_via AND topmin1_metal AND fusetop`) and upstream (`topmin1_via.and(topmin1_metal
-.and(fusetop))`) read only the metal *under FuseTop*.  `MIMTM.10.h1` draws a Via3 in that
-1.06 µm ring and a Via3 straddling the plate's edge; both tools report one marker, the
-straddler's.  A Via3 landing in the ring therefore passes, although it is on the same
-Metal4 polygon the rule is protecting.  The two tools agree, the manual is ambiguous, and
-the case is pinned to what they both do; raising it would be a deck change, not an engine
-fix.
+MIMTM.10 forbids "any Vian-2 touching MIM bottom plate Metaln-1" and says the plate "can
+only be connected through the higher Via".  Upstream (`topmin1_via.and(topmin1_metal
+.and(fusetop))`) reads only the metal *under FuseTop*, and gdscheck did too until issue
+#65 showed a Via3 on the plate's tab, 1.5 µm past the top plate, passing.  gdscheck now
+reads the plate as the Metal4 touching FuseTop (`topmin1_metal_at_fusetop`), tab and
+1.06 µm ring included: `MIMTM.10.h1` fires on both its vias and `MIMTM.10.h2` on the tab.
+The foundry case goes 3 -> 5, its MIMTM.11 shared-plate case tying two plates together
+through Via3 and Metal3 (`vt1a`, `vt1b`), which is the connection part (b) forbids;
+option A's MIM.10 likewise 4 -> 6 on the same case.
 
 ### MIMTM.12 is correctly absent
 
@@ -164,7 +164,7 @@ matched.
 - **MIMTM.9**: 0.495/0.500 between two vias on the plate; a via on the plate and one
   straddling its edge 0.495 apart - the straddler is not `inside` the plate, so the pitch
   rule has only one via and is correctly silent.
-- **MIMTM.10**: a Via3 straddling the plate's edge.
+- **MIMTM.10**: a Via3 straddling the plate's edge, and one in the 1.06 µm ring.
 - **MIMTM.11**: two 50 x 100 capacitors on one bottom plate summing to exactly 10000 µm²
   (clean) and to 10000.25 (fires); two 60 x 100 capacitors on *separate* bottom plates
   summing to 12000 (clean - the cap is per plate, not per layout).
@@ -178,5 +178,5 @@ matched.
   KLayout's count exactly.
 - **2 (a via abutting the plate)**: fixed in the deck, `abutting: report` on MIMTM.5
   (the foundry case 8 -> 11).
-- The MIMTM.10 and MIMTM.12 notes are recorded and need nothing: the first is the
-  reading both tools share, the second is the manual's own "not coded".
+- The MIMTM.12 note is recorded and needs nothing: it is the manual's own "not coded".
+  The MIMTM.10 note's reading changed with issue #65 (see above).

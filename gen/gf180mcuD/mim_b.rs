@@ -528,13 +528,31 @@ fn hardening(c: &Ctx, write: &dyn Fn(&str, Vec<GdsElement>)) {
     // MIMTM.10.h1: left, a Via3 on the bottom plate metal but outside the top plate, in
     // the 1.06 µm ring the virtual bottom plate is made of.  The manual forbids a Via3
     // touching the bottom plate and the ring is part of it; upstream reads only the metal
-    // under FuseTop.  Right, a Via3 straddling the plate's edge, which both read as a
-    // violation.
+    // under FuseTop.  Right, a Via3 straddling the plate's edge.  Both fire.
     write("MIMTM.10.h1", {
         let mut v = cap(c, 5.0, 5.0, 6.0, 6.0, n);
         v.push(via(c.low_via, 11.0 + 0.4, 7.5, VIA));
         v.extend(cap(c, 30.0, 5.0, 6.0, 6.0, n));
         v.push(via(c.low_via, 36.0 - 0.1, 7.5, VIA));
+        v
+    });
+
+    // MIMTM.10.h2: open-pdks-regression-tests' gf180_cap_mim_2f0fF_via3 (issue #65): a
+    // 5 µm capacitor whose bottom plate runs out in a tab to the left, a Via3 on the tab
+    // 1.5 µm past the top plate.  Rule (b): the plate is reached only from above, so it
+    // fires.  Right, a Via3 on a Metal4 of its own 2.0 µm from the plate's metal (past
+    // MIMTM.1's 1.2), which is no plate: clean.
+    write("MIMTM.10.h2", {
+        let mut v = cap(c, 5.0, 5.0, 5.0, 5.0, n);
+        v.push(rect(c.metal, 2.0, 6.5, 5.0 - BOT, 8.5));
+        v.push(via(c.low_via, 5.0 - 1.5 - VIA, 7.5 - VIA * 0.5, VIA));
+        v.push(rect(c.metal, 10.0 + BOT + 2.0, 6.5, 10.0 + BOT + 4.0, 8.5));
+        v.push(via(
+            c.low_via,
+            10.0 + BOT + 3.0 - VIA * 0.5,
+            7.5 - VIA * 0.5,
+            VIA,
+        ));
         v
     });
 
