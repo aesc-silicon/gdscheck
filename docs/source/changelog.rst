@@ -9,8 +9,8 @@ Changelog
 user-visible changes: new checks, new PDKs, breaking deck/CLI changes and notable
 correctness fixes. The commit history is the full record of what changed and why.
 
-Unreleased
-----------
+v0.2.2 (2026-11-21)
+-------------------
 
 PDKs
 ~~~~
@@ -21,6 +21,24 @@ PDKs
 * New: GT2N (``gt2n``), Georgia Tech's 2 nm nanosheet PDK with backside power delivery,
   as GT3 with its own values. Its tech LEF also covers the backside, which a
   ``backside`` suite checks from BV0 to BRDL.
+* IHP SG13G2: the contacts of the npn13G2, npn13G2L and npn13G2V PCells are left to the
+  device, as IHP's decks leave them (``Cnt.g``, ``CntB.b``, ``CntB.c``, ``CntB.g``,
+  ``CntB.h1``, ``V1.a``), and ``CntB.b2`` no longer measures one ContBar against another
+  (#62).
+* GF180MCU: ``MIMTM.10`` (``MIM.10`` on variant A) reads the whole MIM bottom plate, the
+  Metal4 (Metal2) touching FuseTop: a Via3 (Via1) on the plate past the top plate now
+  fires, as the manual's "only through the higher via" asks. GF's own deck reads only
+  the metal under FuseTop (#65).
+
+Checks
+~~~~~~
+
+* A via array spacing on one axis (IHP's ``Cnt.b1`` and ``V1.b1`` to ``V4.b1``) fires
+  only where a tight gap along a row meets a tight gap down a column, as IHP's deck
+  reads it: staggered columns such as the cmomi PCell's are clean (#63).
+* An enclosure no longer reads a tile's cut as the enclosed shape's wall where the shape
+  steps across a tile line: GF180's ``PP.6`` / ``NP.6`` fired on a tap butted to a
+  transistor's source at the origin (#64).
 
 v0.2.1 (2026-11-09)
 -------------------
