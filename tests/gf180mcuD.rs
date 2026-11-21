@@ -213,7 +213,7 @@ fn guard_ring_on_a_seal_ring_reports_every_wall_on_every_level() {
 )]
 #[case::mim_b(
     "mim_b", "mim_b.gds.gz", "10_4_2_MIM_OptionB",
-    &[("MIMTM.1", 3), ("MIMTM.10", 3), ("MIMTM.11", 2), ("MIMTM.2", 7), ("MIMTM.3", 62), ("MIMTM.4", 12), ("MIMTM.5", 11), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6)]
+    &[("MIMTM.1", 3), ("MIMTM.10", 5), ("MIMTM.11", 2), ("MIMTM.2", 7), ("MIMTM.3", 62), ("MIMTM.4", 12), ("MIMTM.5", 11), ("MIMTM.6", 6), ("MIMTM.7", 2490), ("MIMTM.8a", 60), ("MIMTM.8b", 1), ("MIMTM.9", 6)]
 )]
 #[case::otp_mk(
     "otp_mk", "otp_mk.gds.gz", "10_10_OTP",
@@ -2161,9 +2161,12 @@ fn hardening_mcell(#[case] gds: &str, #[case] topcell: &str, #[case] expected: V
 // A via on the plate and one straddling its edge, 0.495 apart: the straddler is not a via
 // on the plate, so the pitch rule has only one - it is MIMTM.4's crossing instead.
 #[case::mimtm_9_h2("mim_b/MIMTM.9.h2.gds.gz", "TOP", vec!["MIMTM.4"])]
-// A Via3 in the bottom plate's 1.06 ring (report finding 4: both tools read the rule as
-// the metal under FuseTop only), and one straddling the plate's edge, which fires.
-#[case::mimtm_10_h1("mim_b/MIMTM.10.h1.gds.gz", "TOP", vec!["MIMTM.10"])]
+// A Via3 in the bottom plate's 1.06 ring and one straddling the plate's edge: both on
+// the plate's Metal4, both fire (issue #65; upstream reads only the metal under FuseTop).
+#[case::mimtm_10_h1("mim_b/MIMTM.10.h1.gds.gz", "TOP", vec!["MIMTM.10"; 2])]
+// A Via3 on the plate's tab 1.5 past the top plate fires; one on a Metal4 of its own
+// beside the plate is clean (issue #65).
+#[case::mimtm_10_h2("mim_b/MIMTM.10.h2.gds.gz", "TOP", vec!["MIMTM.10"])]
 // Two 50 × 100 capacitors on one bottom plate: 10000 µm² exactly.
 #[case::mimtm_11_h1("mim_b/MIMTM.11.h1.gds.gz", "TOP", vec![])]
 // The same pair at 10000.25 µm², over the cap.  Neither plate is near it on its own.

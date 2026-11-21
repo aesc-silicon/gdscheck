@@ -1828,9 +1828,9 @@ virtual_layers:
   # MIMTM.9 is the sea-of-via pitch on top of the plate, so only the vias fully on it.
   top_via_in_fusetop: top_via inside fusetop
   fusetop_outside_cap_mk: fusetop not cap_mk
-  # MIMTM.10: the bottom plate may only be contacted from above, so a Via3 landing on
-  # the plate under the top plate is a violation wherever it appears.
-  topmin1_via_on_mim_bottom: topmin1_via and topmin1_metal and fusetop
+  # MIMTM.10: the bottom plate may only be contacted from above, so a Via3 anywhere on
+  # the plate's Metal4 is a violation, under the top plate or past it.
+  topmin1_via_on_mim_bottom: topmin1_via and topmin1_metal_at_fusetop
 
   # ---- DN.3: the PCOMP guard ring around a deep well --------------------
   # A PCOMP ring shows up as a hole in the merged PCOMP layer; the hole minus PCOMP
