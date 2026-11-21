@@ -18,7 +18,7 @@
 use super::Kind;
 use crate::geom::*;
 use crate::layout::FlatLayout;
-use crate::merge::{Core, MergedPoly, SharedCache, TileMap, merged_centroid_dbu};
+use crate::merge::{Core, IntPoint, MergedPoly, SharedCache, TileMap, merged_centroid_dbu};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -770,7 +770,7 @@ pub fn run(
                 } else {
                     crate::merge::clip_to_box(vec![bm.clone()], core.x0, core.y0, core.x1, core.y1)
                         .into_iter()
-                        .map(Cow::Owned)
+                        .map(|piece| Cow::Owned(split_at_core(piece, bm, &core)))
                         .collect()
                 };
             // Where a report on the shape as a whole is placed: the region's marker,
@@ -1467,6 +1467,76 @@ pub fn run(
         }
     }
     out
+}
+
+/// A piece cut to its core with the shape's own vertices on the core's edge put back
+/// in its walls there.  The cut merges a stretch where the shape ends on the core line
+/// with one where it runs on past it into one wall, and a wall is told real from cut by
+/// one probe: the gf180 tap's COMP stepping out 0.01 at a contact, its step on a tile
+/// line, read the cut beside the step as a margin of 0.01 (issue #64).
+fn split_at_core(mut piece: MergedPoly, whole: &MergedPoly, core: &Core) -> MergedPoly {
+    let on_line: Vec<IntPoint> = whole
+        .rings()
+        .flatten()
+        .filter(|p| {
+            let (x, y) = (p.x as i64, p.y as i64);
+            x == core.x0 || x == core.x1 || y == core.y0 || y == core.y1
+        })
+        .copied()
+        .collect();
+    if on_line.is_empty() {
+        return piece;
+    }
+    let split = |ring: &[IntPoint]| -> Option<Vec<IntPoint>> {
+        let n = ring.len();
+        let mut out = Vec::with_capacity(n);
+        let mut grew = false;
+        for i in 0..n {
+            let (a, b) = (ring[i], ring[(i + 1) % n]);
+            out.push(a);
+            let horizontal = a.y == b.y && (a.y as i64 == core.y0 || a.y as i64 == core.y1);
+            let vertical = a.x == b.x && (a.x as i64 == core.x0 || a.x as i64 == core.x1);
+            if !horizontal && !vertical {
+                continue;
+            }
+            // Along the wall from `a`: the shape's vertices strictly between its ends.
+            let t = |p: &IntPoint| {
+                if horizontal {
+                    (p.x - a.x) * (b.x - a.x).signum()
+                } else {
+                    (p.y - a.y) * (b.y - a.y).signum()
+                }
+            };
+            let len = if horizontal {
+                (b.x - a.x).abs()
+            } else {
+                (b.y - a.y).abs()
+            };
+            let mut mids: Vec<IntPoint> = on_line
+                .iter()
+                .filter(|p| if horizontal { p.y == a.y } else { p.x == a.x })
+                .filter(|p| (1..len).contains(&t(p)))
+                .copied()
+                .collect();
+            mids.sort_unstable_by_key(t);
+            mids.dedup();
+            grew |= !mids.is_empty();
+            out.extend(mids);
+        }
+        grew.then_some(out)
+    };
+    if let Some(r) = split(&piece.outer) {
+        piece.outer = crate::merge::ring(r);
+    }
+    // Through `DerefMut` an empty `Holes` would grow a box for nothing.
+    if !piece.holes.is_empty() {
+        for h in piece.holes.iter_mut() {
+            if let Some(r) = split(h) {
+                *h = r;
+            }
+        }
+    }
+    piece
 }
 
 /// Whether two walls lie on one line.

@@ -28,6 +28,14 @@ rules:
     params:
       skip_coincident: 1
       metric: euclidian
+  # The same under the projection metric, as GF180's PP.6 and NP.6 read it.
+  - id: ENC.proj_skip
+    check: min_enclosure
+    layers: [Outer, Inner]
+    value: 0.5
+    params:
+      skip_coincident: 1
+      metric: projection
   # The other bound, and each `sides` word once: the endcap under both bounds, the
   # bordering sides of a short one, the cap of a narrow track, and the extension - the
   # margin on the walls a cover crosses - under both bounds.

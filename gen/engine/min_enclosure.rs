@@ -332,6 +332,29 @@ pub fn generate(pdk: &PdkConfig) {
     e.push(enc(40.0, 5.0, 0.5, 0.5, 0.5, 0.5)); // clean
     write("tile_lines".into(), e);
 
+    // A step on a tile line (issue #64): GF180's tap butted to a transistor's source,
+    // the COMP 0.01 lower under the contact than under the gate and the step on y = 0,
+    // a tile line at any tile size.  Inner is the source side, flush with Outer but on
+    // its right, where Outer runs on 0.5 and 0.495.  The tile above cut Inner's bottom
+    // into one wall, the shape's own edge left of the step and the cut right of it, and
+    // read the cut 0.01 from Outer.  ENC.proj_skip: 0 and 1.
+    let step = |x: f64, m: f64| {
+        let low = |right: f64| {
+            vec![
+                (x, 0.0),
+                (x + 1.2, 0.0),
+                (x + 1.2, -0.01),
+                (right, -0.01),
+                (right, 0.42),
+                (x, 0.42),
+            ]
+        };
+        vec![poly(inner, &low(x + 1.6)), poly(outer, &low(x + 1.6 + m))]
+    };
+    let mut e = step(2.0, 0.5);
+    e.extend(step(9.0, 0.495));
+    write("tile_line_step".into(), e);
+
     // Fifty squares sticking 0.005 out, flat and as an array reference.  ENC.proj: 50.
     let cell = vec![sq(0.7, 0.7), rect(outer, 0.0, 0.0, 0.895, 1.4)];
     write("array_flat".into(), flat_array(&cell, 10, 5, 2.0));
