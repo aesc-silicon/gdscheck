@@ -782,6 +782,8 @@ fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
 /// - `tile_lines`: squares sticking 0.005 out of an Outer ending on the tile lines at
 ///   20, 21, 40 and 42, at 10 and at (1000, 1000); squares straddling 20 and 40 with 0.5
 ///   all round are clean.
+/// - `tile_line_step`: an Inner flush with its Outer but on the right, both stepping
+///   0.01 down on the tile line at y = 0; 0.495 on the right fires, 0.5 is clean.
 /// - `array_flat` / `array_ref`: fifty squares sticking 0.005 out, flat and as an array
 ///   reference.
 /// - `adjacent`: a line's cap 0.495 and 0.0, a plate corner flush on two sides, 0.05 on
@@ -805,6 +807,7 @@ fn max_space_scopes_meet_the_bound_and_a_confined_reach_goes_round(
 #[case("shapes", "ENC.eucl", 6)]
 #[case("tile_lines", "ENC.proj", 6)]
 #[case("tile_lines", "ENC.eucl", 6)]
+#[case("tile_line_step", "ENC.proj_skip", 1)]
 #[case("array_flat", "ENC.proj", 50)]
 #[case("array_ref", "ENC.proj", 50)]
 #[case("adjacent", "ENC.adj", 6)]
