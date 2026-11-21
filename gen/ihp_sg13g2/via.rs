@@ -663,6 +663,29 @@ fn vn_b1(l: &L) {
     e.extend(l.grid(2.0, 2.0, 4, 4, 0.22, 0.22));
     e.extend(l.grid(8.0, 2.0, 4, 4, 0.22, 0.22));
     l.write(".b1.h9", e);
+
+    // h10 — staggered columns, as IHP's cmomi PCell draws them (issue #63).  Ten columns
+    // 0.23 apart, each of ten vias whose gaps alternate 0.22/0.29, every other column
+    // shifted up by 0.48 so its tight gaps lie beside its neighbours' wide ones: tight
+    // along every row and down every column, never both at one place (clean).  The same
+    // columns unshifted have their tight gaps side by side (fires).
+    let column = |x: f64, y: f64| -> Vec<GdsElement> {
+        let mut at = y;
+        (0..10)
+            .map(|k| {
+                let v = l.via(x, at);
+                at += if k % 2 == 0 { 0.41 } else { 0.48 };
+                v
+            })
+            .collect()
+    };
+    let mut e = vec![];
+    for c in 0..10 {
+        let x = c as f64 * 0.42;
+        e.extend(column(2.0 + x, 2.0 + if c % 2 == 1 { 0.48 } else { 0.0 }));
+        e.extend(column(8.0 + x, 2.0));
+    }
+    l.write(".b1.h10", e);
 }
 
 // --- V(n).c: min. Metal(n) enclosure of Via(n) 0.01 (Via1) / 0.005 (Via2-4) ---
